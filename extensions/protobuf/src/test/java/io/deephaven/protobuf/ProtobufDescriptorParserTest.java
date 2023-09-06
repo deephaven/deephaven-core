@@ -63,6 +63,7 @@ import io.deephaven.qst.type.BoxedIntType;
 import io.deephaven.qst.type.BoxedLongType;
 import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.Type;
+import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -633,55 +634,55 @@ public class ProtobufDescriptorParserTest {
             }
         });
 
-        checkKey(TheWrappers.getDescriptor(), List.of("int32"), BoxedIntType.of(),
+        checkKey(TheWrappers.getDescriptor(), List.of("int32"), Type.intType(),
                 new HashMap<>() {
                     {
-                        put(allNull, null);
+                        put(allNull, QueryConstants.NULL_INT);
                         put(TheWrappers.newBuilder().setInt32(Int32Value.newBuilder().setValue(42).build()).build(),
                                 42);
                     }
                 });
 
-        checkKey(TheWrappers.getDescriptor(), List.of("uint32"), BoxedIntType.of(),
+        checkKey(TheWrappers.getDescriptor(), List.of("uint32"), Type.intType(),
                 new HashMap<>() {
                     {
-                        put(allNull, null);
+                        put(allNull, QueryConstants.NULL_INT);
                         put(TheWrappers.newBuilder().setUint32(UInt32Value.newBuilder().setValue(42).build()).build(),
                                 42);
                     }
                 });
 
-        checkKey(TheWrappers.getDescriptor(), List.of("int64"), BoxedLongType.of(),
+        checkKey(TheWrappers.getDescriptor(), List.of("int64"), Type.longType(),
                 new HashMap<>() {
                     {
-                        put(allNull, null);
+                        put(allNull, QueryConstants.NULL_LONG);
                         put(TheWrappers.newBuilder().setInt64(Int64Value.newBuilder().setValue(42).build()).build(),
                                 42L);
                     }
                 });
 
-        checkKey(TheWrappers.getDescriptor(), List.of("uint64"), BoxedLongType.of(),
+        checkKey(TheWrappers.getDescriptor(), List.of("uint64"), Type.longType(),
                 new HashMap<>() {
                     {
-                        put(allNull, null);
+                        put(allNull, QueryConstants.NULL_LONG);
                         put(TheWrappers.newBuilder().setUint64(UInt64Value.newBuilder().setValue(42).build()).build(),
                                 42L);
                     }
                 });
 
-        checkKey(TheWrappers.getDescriptor(), List.of("float"), BoxedFloatType.of(),
+        checkKey(TheWrappers.getDescriptor(), List.of("float"), Type.floatType(),
                 new HashMap<>() {
                     {
-                        put(allNull, null);
+                        put(allNull, QueryConstants.NULL_FLOAT);
                         put(TheWrappers.newBuilder().setFloat(FloatValue.newBuilder().setValue(42).build()).build(),
                                 42.0f);
                     }
                 });
 
-        checkKey(TheWrappers.getDescriptor(), List.of("double"), BoxedDoubleType.of(),
+        checkKey(TheWrappers.getDescriptor(), List.of("double"), Type.doubleType(),
                 new HashMap<>() {
                     {
-                        put(allNull, null);
+                        put(allNull, QueryConstants.NULL_DOUBLE);
                         put(TheWrappers.newBuilder().setDouble(DoubleValue.newBuilder().setValue(42).build()).build(),
                                 42.0d);
                     }
@@ -1032,10 +1033,10 @@ public class ProtobufDescriptorParserTest {
         checkKey(
                 ANested.getDescriptor(),
                 List.of("baz", "foo"),
-                BoxedIntType.of(),
+                Type.intType(),
                 new HashMap<>() {
                     {
-                        put(ANested.getDefaultInstance(), null);
+                        put(ANested.getDefaultInstance(), QueryConstants.NULL_INT);
                         put(ANested.newBuilder().setBaz(SubMessage.newBuilder().setFoo(42).build()).build(), 42);
                     }
                 });
@@ -1043,10 +1044,10 @@ public class ProtobufDescriptorParserTest {
         checkKey(
                 ANested.getDescriptor(),
                 List.of("baz", "bar"),
-                BoxedLongType.of(),
+                Type.longType(),
                 new HashMap<>() {
                     {
-                        put(ANested.getDefaultInstance(), null);
+                        put(ANested.getDefaultInstance(), QueryConstants.NULL_LONG);
                         put(ANested.newBuilder().setBaz(SubMessage.newBuilder().setBar(42L).build()).build(), 42L);
                     }
                 });
@@ -1081,10 +1082,10 @@ public class ProtobufDescriptorParserTest {
         checkKey(
                 AMultiNested.getDescriptor(),
                 List.of("hello", "foo"),
-                BoxedIntType.of(),
+                Type.intType(),
                 new HashMap<>() {
                     {
-                        put(defaultInstance, null);
+                        put(defaultInstance, QueryConstants.NULL_INT);
                         put(noBaz, 42);
                         put(bazDefault, 0);
                         put(bazWorld, 0);
@@ -1094,10 +1095,10 @@ public class ProtobufDescriptorParserTest {
         checkKey(
                 AMultiNested.getDescriptor(),
                 List.of("hello", "bar"),
-                BoxedLongType.of(),
+                Type.longType(),
                 new HashMap<>() {
                     {
-                        put(defaultInstance, null);
+                        put(defaultInstance, QueryConstants.NULL_LONG);
                         put(noBaz, 43L);
                         put(bazDefault, 0L);
                         put(bazWorld, 0L);
@@ -1133,12 +1134,12 @@ public class ProtobufDescriptorParserTest {
         checkKey(
                 AMultiNested.getDescriptor(),
                 List.of("hello", "baz", "world3"),
-                BoxedDoubleType.of(),
+                Type.doubleType(),
                 new HashMap<>() {
                     {
-                        put(defaultInstance, null);
-                        put(noBaz, null);
-                        put(bazDefault, null);
+                        put(defaultInstance, QueryConstants.NULL_DOUBLE);
+                        put(noBaz, QueryConstants.NULL_DOUBLE);
+                        put(bazDefault, QueryConstants.NULL_DOUBLE);
                         put(bazWorld, 42.0d);
                     }
                 });
@@ -1211,9 +1212,15 @@ public class ProtobufDescriptorParserTest {
         assertThat(functions.get(0).path().namePath()).containsExactly("seconds");
         assertThat(functions.get(1).path().namePath()).containsExactly("seconds");
 
+        final ToLongFunction<Message> f0 = (ToLongFunction<Message>) functions.get(0).function();
+        final ToLongFunction<Message> f1 = (ToLongFunction<Message>) functions.get(1).function();
+
         final Timestamp aTs = Timestamp.newBuilder().setSeconds(42).build();
-        assertThat(((ToLongFunction<Message>) functions.get(0).function()).applyAsLong(aTs)).isEqualTo(42);
-        assertThat(((ToLongFunction<Message>) functions.get(1).function()).applyAsLong(aTs)).isEqualTo(84);
+        assertThat(f0.applyAsLong(aTs)).isEqualTo(42);
+        assertThat(f1.applyAsLong(aTs)).isEqualTo(84);
+
+        assertThat(f0.applyAsLong(Timestamp.getDefaultInstance())).isEqualTo(0);
+        assertThat(f1.applyAsLong(Timestamp.getDefaultInstance())).isEqualTo(0);
     }
 
     @Test
@@ -1252,9 +1259,16 @@ public class ProtobufDescriptorParserTest {
         assertThat(functions.get(0).path().namePath()).containsExactly("ts", "seconds");
         assertThat(functions.get(1).path().namePath()).containsExactly("ts", "seconds");
 
+        final ToLongFunction<Message> f0 = (ToLongFunction<Message>) functions.get(0).function();
+        final ToLongFunction<Message> f1 = (ToLongFunction<Message>) functions.get(1).function();
+
         final ATimestamp aTs = ATimestamp.newBuilder().setTs(Timestamp.newBuilder().setSeconds(42).build()).build();
-        assertThat(((ToObjectFunction<Message, Long>) functions.get(0).function()).apply(aTs)).isEqualTo(42);
-        assertThat(((ToObjectFunction<Message, Long>) functions.get(1).function()).apply(aTs)).isEqualTo(84);
+
+        assertThat(f0.applyAsLong(aTs)).isEqualTo(42);
+        assertThat(f1.applyAsLong(aTs)).isEqualTo(84);
+
+        assertThat(f0.applyAsLong(ATimestamp.getDefaultInstance())).isEqualTo(QueryConstants.NULL_LONG);
+        assertThat(f1.applyAsLong(ATimestamp.getDefaultInstance())).isEqualTo(QueryConstants.NULL_LONG);
     }
 
     // This is a potential improvement in parsing we might want in the future
@@ -1325,10 +1339,10 @@ public class ProtobufDescriptorParserTest {
         checkKey(
                 NestedByteWrapper.getDescriptor(),
                 List.of("my_byte"),
-                BoxedByteType.of(),
+                Type.byteType(),
                 new HashMap<>() {
                     {
-                        put(NestedByteWrapper.getDefaultInstance(), null);
+                        put(NestedByteWrapper.getDefaultInstance(), QueryConstants.NULL_BYTE);
                         put(NestedByteWrapper.newBuilder().setMyByte(ByteWrapper.getDefaultInstance()).build(),
                                 (byte) 0);
                         put(NestedByteWrapper.newBuilder().setMyByte(ByteWrapper.newBuilder().setValue(42)).build(),
