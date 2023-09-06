@@ -242,6 +242,7 @@ class ParquetTestCase(BaseTestCase):
         self.round_trip_with_compression("LZO", dh_table)
         self.round_trip_with_compression("LZ4", dh_table)
         self.round_trip_with_compression("LZ4_RAW", dh_table)
+        self.round_trip_with_compression("LZ4RAW", dh_table)
         self.round_trip_with_compression("GZIP", dh_table)
         self.round_trip_with_compression("ZSTD", dh_table)
 
@@ -291,7 +292,7 @@ class ParquetTestCase(BaseTestCase):
         # Pandas references LZ4_RAW as LZ4, so we need to convert the name
         dataframe.to_parquet('data_from_pandas.parquet',
                              compression=None if compression_codec_name is 'UNCOMPRESSED' else
-                             "LZ4" if compression_codec_name is 'LZ4_RAW'
+                             "LZ4" if compression_codec_name is 'LZ4_RAW' or compression_codec_name is 'LZ4RAW'
                              else compression_codec_name)
         result_table = read('data_from_pandas.parquet')
         self.assert_table_equals(dh_table, result_table)
