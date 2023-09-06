@@ -316,8 +316,8 @@ class ProtobufDescriptorParserImpl {
                     final int count = message.getRepeatedFieldCount(fd);
                     for (int i = 0; i < count; ++i) {
                         final Message obj = (Message) message.getRepeatedField(fd, i);
-                        final Object key = UpcastApply.apply(keyFunction, obj);
-                        final Object value = UpcastApply.apply(valueFunction, obj);
+                        final Object key = Box.apply(keyFunction, obj);
+                        final Object value = Box.apply(valueFunction, obj);
                         map.put(key, value);
                     }
                     return map;

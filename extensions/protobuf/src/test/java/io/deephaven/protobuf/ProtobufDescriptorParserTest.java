@@ -180,15 +180,15 @@ public class ProtobufDescriptorParserTest {
         final Map<List<String>, TypedFunction<Message>> nf =
                 nf(UnionType.getDescriptor());
         final UnionType message = UnionType.newBuilder().setBool(true).build();
-        assertThat(UpcastApply.apply(nf.get(List.of("bool")), message)).isEqualTo(true);
-        assertThat(UpcastApply.apply(nf.get(List.of("int32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("float")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("double")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("string")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("bytes")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bool")), message)).isEqualTo(true);
+        assertThat(Box.apply(nf.get(List.of("int32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("float")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("double")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("string")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bytes")), message)).isNull();
     }
 
     @Test
@@ -196,15 +196,15 @@ public class ProtobufDescriptorParserTest {
         final Map<List<String>, TypedFunction<Message>> nf =
                 nf(UnionType.getDescriptor());
         final UnionType message = UnionType.newBuilder().setInt32(42).build();
-        assertThat(UpcastApply.apply(nf.get(List.of("bool")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int32")), message)).isEqualTo(42);
-        assertThat(UpcastApply.apply(nf.get(List.of("uint32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("float")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("double")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("string")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("bytes")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bool")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int32")), message)).isEqualTo(42);
+        assertThat(Box.apply(nf.get(List.of("uint32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("float")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("double")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("string")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bytes")), message)).isNull();
     }
 
     @Test
@@ -212,15 +212,15 @@ public class ProtobufDescriptorParserTest {
         final Map<List<String>, TypedFunction<Message>> nf =
                 nf(UnionType.getDescriptor());
         final UnionType message = UnionType.newBuilder().setUint32(42).build();
-        assertThat(UpcastApply.apply(nf.get(List.of("bool")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint32")), message)).isEqualTo(42);
-        assertThat(UpcastApply.apply(nf.get(List.of("int64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("float")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("double")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("string")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("bytes")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bool")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint32")), message)).isEqualTo(42);
+        assertThat(Box.apply(nf.get(List.of("int64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("float")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("double")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("string")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bytes")), message)).isNull();
     }
 
     @Test
@@ -228,15 +228,15 @@ public class ProtobufDescriptorParserTest {
         final Map<List<String>, TypedFunction<Message>> nf =
                 nf(UnionType.getDescriptor());
         final UnionType message = UnionType.newBuilder().setInt64(42).build();
-        assertThat(UpcastApply.apply(nf.get(List.of("bool")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int64")), message)).isEqualTo(42L);
-        assertThat(UpcastApply.apply(nf.get(List.of("uint64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("float")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("double")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("string")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("bytes")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bool")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int64")), message)).isEqualTo(42L);
+        assertThat(Box.apply(nf.get(List.of("uint64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("float")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("double")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("string")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bytes")), message)).isNull();
     }
 
     @Test
@@ -244,15 +244,15 @@ public class ProtobufDescriptorParserTest {
         final Map<List<String>, TypedFunction<Message>> nf =
                 nf(UnionType.getDescriptor());
         final UnionType message = UnionType.newBuilder().setUint64(42).build();
-        assertThat(UpcastApply.apply(nf.get(List.of("bool")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint64")), message)).isEqualTo(42L);
-        assertThat(UpcastApply.apply(nf.get(List.of("float")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("double")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("string")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("bytes")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bool")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint64")), message)).isEqualTo(42L);
+        assertThat(Box.apply(nf.get(List.of("float")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("double")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("string")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bytes")), message)).isNull();
     }
 
     @Test
@@ -260,15 +260,15 @@ public class ProtobufDescriptorParserTest {
         final Map<List<String>, TypedFunction<Message>> nf =
                 nf(UnionType.getDescriptor());
         final UnionType message = UnionType.newBuilder().setFloat(42.0f).build();
-        assertThat(UpcastApply.apply(nf.get(List.of("bool")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("float")), message)).isEqualTo(42.0f);
-        assertThat(UpcastApply.apply(nf.get(List.of("double")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("string")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("bytes")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bool")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("float")), message)).isEqualTo(42.0f);
+        assertThat(Box.apply(nf.get(List.of("double")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("string")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bytes")), message)).isNull();
     }
 
     @Test
@@ -276,15 +276,15 @@ public class ProtobufDescriptorParserTest {
         final Map<List<String>, TypedFunction<Message>> nf =
                 nf(UnionType.getDescriptor());
         final UnionType message = UnionType.newBuilder().setDouble(42.0d).build();
-        assertThat(UpcastApply.apply(nf.get(List.of("bool")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("float")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("double")), message)).isEqualTo(42.0d);
-        assertThat(UpcastApply.apply(nf.get(List.of("string")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("bytes")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bool")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("float")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("double")), message)).isEqualTo(42.0d);
+        assertThat(Box.apply(nf.get(List.of("string")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bytes")), message)).isNull();
     }
 
     @Test
@@ -292,15 +292,15 @@ public class ProtobufDescriptorParserTest {
         final Map<List<String>, TypedFunction<Message>> nf =
                 nf(UnionType.getDescriptor());
         final UnionType message = UnionType.newBuilder().setString("hello").build();
-        assertThat(UpcastApply.apply(nf.get(List.of("bool")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("float")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("double")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("string")), message)).isEqualTo("hello");
-        assertThat(UpcastApply.apply(nf.get(List.of("bytes")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bool")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("float")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("double")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("string")), message)).isEqualTo("hello");
+        assertThat(Box.apply(nf.get(List.of("bytes")), message)).isNull();
     }
 
     @Test
@@ -308,15 +308,15 @@ public class ProtobufDescriptorParserTest {
         final Map<List<String>, TypedFunction<Message>> nf =
                 nf(UnionType.getDescriptor());
         final UnionType message = UnionType.newBuilder().setBytes(ByteString.copyFromUtf8("world")).build();
-        assertThat(UpcastApply.apply(nf.get(List.of("bool")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint32")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("int64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("uint64")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("float")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("double")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("string")), message)).isNull();
-        assertThat(UpcastApply.apply(nf.get(List.of("bytes")), message))
+        assertThat(Box.apply(nf.get(List.of("bool")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint32")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("int64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("uint64")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("float")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("double")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("string")), message)).isNull();
+        assertThat(Box.apply(nf.get(List.of("bytes")), message))
                 .isEqualTo("world".getBytes(StandardCharsets.UTF_8));
     }
 
@@ -1413,7 +1413,7 @@ public class ProtobufDescriptorParserTest {
         for (Entry<Message, T> e : expectedExamples.entrySet()) {
             assertThat(map)
                     .extractingByKey(expectedPath)
-                    .extracting(t -> UpcastApply.apply(t, e.getKey()))
+                    .extracting(t -> Box.apply(t, e.getKey()))
                     .isEqualTo(e.getValue());
         }
     }

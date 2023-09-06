@@ -16,18 +16,18 @@ import io.deephaven.functions.ToShortFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.functions.TypedFunction.Visitor;
 
-class UpcastApply<T> implements Visitor<T, Object>, ToPrimitiveFunction.Visitor<T, Object> {
+class Box<T> implements Visitor<T, Object>, ToPrimitiveFunction.Visitor<T, Object> {
     public static <T> Object apply(TypedFunction<T> f, T value) {
-        return f.walk(new UpcastApply<>(value));
+        return f.walk(new Box<>(value));
     }
 
     public static <T> Object apply(ToPrimitiveFunction<T> f, T value) {
-        return f.walk((ToPrimitiveFunction.Visitor<T, Object>) new UpcastApply<>(value));
+        return f.walk((ToPrimitiveFunction.Visitor<T, Object>) new Box<>(value));
     }
 
     private final T value;
 
-    private UpcastApply(T value) {
+    private Box(T value) {
         this.value = value;
     }
 
