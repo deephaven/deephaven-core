@@ -56,7 +56,6 @@ import io.deephaven.protobuf.test.TheWrappers;
 import io.deephaven.protobuf.test.TwoTs;
 import io.deephaven.protobuf.test.UnionType;
 import io.deephaven.qst.type.BoxedBooleanType;
-import io.deephaven.qst.type.BoxedByteType;
 import io.deephaven.qst.type.BoxedDoubleType;
 import io.deephaven.qst.type.BoxedFloatType;
 import io.deephaven.qst.type.BoxedIntType;

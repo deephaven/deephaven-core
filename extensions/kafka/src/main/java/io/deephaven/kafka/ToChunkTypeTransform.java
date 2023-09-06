@@ -42,10 +42,10 @@ class ToChunkTypeTransform {
     private static final ToLongFunction<Instant> EPOCH_NANOS = DateTimeUtils::epochNanos;
 
     /**
-     * Potentially transform the {@link TypedFunction function} {@code f} into a common... todo
+     * Transform the {@link TypedFunction function} {@code f} into its expected chunk type function.
      *
      * @param f the function
-     * @return the potentially transformed function
+     * @return the chunk type function
      * @param <T> the input type
      * @see #of(ToPrimitiveFunction)
      * @see #of(ToObjectFunction)
@@ -54,15 +54,22 @@ class ToChunkTypeTransform {
         return FunctionVisitor.of(f);
     }
 
+    /**
+     * Transform the {@link ToPrimitiveFunction function} {@code f} into its expected chunk type function.
+     *
+     * @param f the function
+     * @return the chunk type function
+     * @param <T> the input type
+     */
     public static <T> TypedFunction<T> of(ToPrimitiveFunction<T> f) {
         return f;
     }
 
     /**
-     * Potentially transforms the {@link ToObjectFunction Object function} {@code f} into a common... todo
+     * Transform the {@link ToPrimitiveFunction function} {@code f} into its expected chunk type function.
      *
      * @param f the Object function
-     * @return the potentially transformed function
+     * @return the chunk type function
      * @param <T> the input type
      * @see #toEpochNanos(ToObjectFunction)
      * @see #unboxBooleanAsByte(ToObjectFunction)

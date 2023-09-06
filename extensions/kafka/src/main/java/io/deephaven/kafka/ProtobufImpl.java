@@ -77,6 +77,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
+/**
+ * This layer builds on top of {@link ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)} by
+ * further transforming the functions according to {@link #withMostAppropriateType(TypedFunction)}, and then further
+ * adapting the functions to ensure they work for the expected chunk types {@link ToChunkTypeTransform}. This layer is
+ * also responsible for managing schema changes; in essence, ensuring that newly
+ * {@link ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions) parsed} {@link Descriptor
+ * descriptor} {@link TypedFunction functions} can be adapted into the original function type.
+ */
 class ProtobufImpl {
 
     @VisibleForTesting

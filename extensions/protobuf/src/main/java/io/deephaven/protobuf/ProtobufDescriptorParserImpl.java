@@ -32,6 +32,7 @@ import io.deephaven.functions.ToPrimitiveFunction;
 import io.deephaven.functions.ToShortFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.functions.TypedFunction.Visitor;
+import io.deephaven.util.QueryConstants;
 
 import java.lang.reflect.Array;
 import java.util.HashMap;
@@ -137,10 +138,6 @@ class ProtobufDescriptorParserImpl {
             if (!forceInclude && !fo.include()) {
                 return ProtobufFunctions.empty();
             }
-            final ProtobufFunctions wellKnown = wellKnown().orElse(null);
-            if (wellKnown != null && fo.wellKnown() == WellKnownBehavior.asWellKnown()) {
-                return wellKnown;
-            }
             if (fd.isMapField() && fo.map() == MapBehavior.asMap()) {
                 return new MapFieldObject().functions();
             }
@@ -150,13 +147,7 @@ class ProtobufDescriptorParserImpl {
             return new FieldObject().functions();
         }
 
-        private Optional<ProtobufFunctions> wellKnown() {
-            // todo: eventually have support for parsing specific fields in specific ways
-            return Optional.empty();
-        }
-
         private ProtobufFunctions namedField(TypedFunction<Message> tf) {
-            // todo: can we re-work this, so we can use fieldPath here instead and not use prefix later?
             return ProtobufFunctions.of(ProtobufFunction.of(FieldPath.of(fd), tf));
         }
 
