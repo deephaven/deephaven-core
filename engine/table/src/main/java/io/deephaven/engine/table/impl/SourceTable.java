@@ -295,11 +295,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
 
         @Override
-        final public boolean isRefreshing() {
-            return table.isRefreshing();
-        }
-
-        @Override
         public long getSize() {
             return QueryConstants.NULL_LONG;
         }

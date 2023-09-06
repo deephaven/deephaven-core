@@ -300,8 +300,11 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
      */
     public static abstract class TableReference extends LivenessArtifact implements SimpleReference<Table> {
 
+        private final boolean isRefreshing;
+
         TableReference(Table t) {
-            if (t.isRefreshing()) {
+            isRefreshing = t.isRefreshing();
+            if (isRefreshing) {
                 manage(t);
             }
         }
@@ -311,7 +314,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
          *
          * @return true if the node is updating; false otherwise.
          */
-        public abstract boolean isRefreshing();
+        public final boolean isRefreshing() {
+            return isRefreshing;
+        }
 
         /**
          * Returns the table in a form that the user can run queries on it. This may be as simple as returning a
@@ -382,11 +387,6 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         public SimpleTableReference(Table table) {
             super(table);
             this.table = table;
-        }
-
-        @Override
-        public boolean isRefreshing() {
-            return table.isRefreshing();
         }
 
         @Override

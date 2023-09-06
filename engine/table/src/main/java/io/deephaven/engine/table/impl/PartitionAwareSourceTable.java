@@ -202,7 +202,6 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 description + "-retainColumns",
                 componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
                 partitioningColumnFilters);
-        Assert.equals(redefined.isRefreshing(), "redefined.isRefreshing()", isRefreshing(), "isRefreshing()");
         return new DeferredViewTable(newDefinition, description + "-retainColumns",
                 new PartitionAwareQueryTableReference(redefined),
                 droppedPartitioningColumnDefinitions.stream().map(ColumnDefinition::getName).toArray(String[]::new),
