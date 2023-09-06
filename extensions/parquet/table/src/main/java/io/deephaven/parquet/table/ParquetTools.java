@@ -841,6 +841,11 @@ public class ParquetTools {
                         s -> s.replace(" ", "_"), takenNames)));
     }
 
+    /**
+     * Deprecated: Users are encouraged to use LZ4_RAW instead, as explained
+     * <a href="https://github.com/apache/parquet-format/blob/master/Compression.md">here</a>
+     */
+    @Deprecated
     public static final ParquetInstructions LZ4 = ParquetInstructions.builder().setCompressionCodecName("LZ4").build();
     public static final ParquetInstructions LZ4_RAW =
             ParquetInstructions.builder().setCompressionCodecName("LZ4_RAW").build();
@@ -855,6 +860,11 @@ public class ParquetTools {
             ParquetInstructions.builder().setCompressionCodecName("BROTLI").build();
     public static final ParquetInstructions LEGACY = ParquetInstructions.builder().setIsLegacyParquet(true).build();
 
+    /**
+     * Deprecated: Do not use this method directly, instead pass the above codecs as arguments to
+     * {@link #writeTable(Table, File, ParquetInstructions)} method
+     */
+    @Deprecated
     public static void setDefaultCompressionCodecName(final String compressionCodecName) {
         ParquetInstructions.setDefaultCompressionCodecName(compressionCodecName);
     }
