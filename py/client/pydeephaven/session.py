@@ -390,6 +390,39 @@ class Session:
             if response.error_message != '':
                 raise DHError("could not run script: " + response.error_message)
 
+
+    def _ticket_to_table_locked(self, ticket: str, not_found_err: str) -> Table:
+            faketable = Table(session=self, ticket=ticket)
+
+            try:
+                table_op = FetchTableOp()
+                return self.table_service.grpc_table_op(faketable, table_op)
+            except Exception as e:
+                if isinstance(e.__cause__, grpc.RpcError):
+                    if e.__cause__.code() == grpc.StatusCode.INVALID_ARGUMENT:
+                        raise DHError(not_found_err) from None
+                raise e
+            finally:
+                # Explicitly close the table without releasing it (because it isn't ours)
+                faketable.ticket = None
+                faketable.schema = None
+        
+    def ticket_to_table(self, ticket: str) -> Table:
+        """Opens a table in the global scope for the given ticket on the server.
+
+        Args:
+            ticket (str): the ticket for the table
+
+        Returns:
+            a Table object
+
+        Raises:
+            DHError
+        """
+        with self._r_lock:
+            ticket_pb = ticket_pb2.Ticket(ticket=ticket)
+            return self._ticket_to_table_locked(ticket_pb, f"no table for ticket {ticket}")
+        
     def open_table(self, name: str) -> Table:
         """Opens a table in the global scope with the given name on the server.
 
@@ -404,21 +437,7 @@ class Session:
         """
         with self._r_lock:
             ticket = ticket_pb2.Ticket(ticket=f's/{name}'.encode(encoding='ascii'))
-
-            faketable = Table(session=self, ticket=ticket)
-
-            try:
-                table_op = FetchTableOp()
-                return self.table_service.grpc_table_op(faketable, table_op)
-            except Exception as e:
-                if isinstance(e.__cause__, grpc.RpcError):
-                    if e.__cause__.code() == grpc.StatusCode.INVALID_ARGUMENT:
-                        raise DHError(f"no table by the name {name}") from None
-                raise e
-            finally:
-                # Explicitly close the table without releasing it (because it isn't ours)
-                faketable.ticket = None
-                faketable.schema = None
+            return self._ticket_to_table_locked(ticket, f"no table by the name {name}")
 
     def bind_table(self, name: str, table: Table) -> None:
         """Binds a table to the given name on the server so that it can be referenced by that name.
