@@ -841,6 +841,8 @@ public class ParquetTools {
                         s -> s.replace(" ", "_"), takenNames)));
     }
 
+    public static final ParquetInstructions UNCOMPRESSED =
+            ParquetInstructions.builder().setCompressionCodecName("UNCOMPRESSED").build();
     /**
      * Deprecated: Users are encouraged to use LZ4_RAW instead, as explained
      * <a href="https://github.com/apache/parquet-format/blob/master/Compression.md">here</a>

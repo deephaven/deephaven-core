@@ -327,6 +327,11 @@ public class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void testParquetUncompressedCompressionCodec() {
+        compressionCodecTestHelper(ParquetTools.UNCOMPRESSED);
+    }
+
+    @Test
     public void testParquetLzoCompressionCodec() {
         compressionCodecTestHelper(ParquetTools.LZO);
     }
