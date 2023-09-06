@@ -129,9 +129,9 @@ class ProtobufImpl {
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.fieldPathToColumnName = new LinkedHashMap<>();
             final FieldPathToColumnName fieldPathToColumnName = specs.pathToColumnName();
-            final Map<FieldPath, Integer> counts = new HashMap<>();
+            final Map<FieldPath, Integer> indices = new HashMap<>();
             for (ProtobufFunction f : functions.functions()) {
-                final int ix = counts.compute(f.path(), (fieldPath, ixCount) -> ixCount == null ? 0 : ixCount + 1);
+                final int ix = indices.compute(f.path(), (fieldPath, i) -> i == null ? 0 : i + 1);
                 final ColumnName columnName = fieldPathToColumnName.columnName(f.path(), ix);
                 add(columnName, f.function(), data, columnDefinitionsOut, fieldCopiers);
             }

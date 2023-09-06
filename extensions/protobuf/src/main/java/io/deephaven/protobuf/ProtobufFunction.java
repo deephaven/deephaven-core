@@ -22,7 +22,7 @@ public abstract class ProtobufFunction {
      * @param f the function
      * @return the unnamed protobuf function
      */
-    public static ProtobufFunction unnammed(TypedFunction<Message> f) {
+    public static ProtobufFunction unnamed(TypedFunction<Message> f) {
         return of(FieldPath.empty(), f);
     }
 

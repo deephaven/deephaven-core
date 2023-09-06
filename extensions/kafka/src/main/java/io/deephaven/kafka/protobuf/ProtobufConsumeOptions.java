@@ -37,7 +37,7 @@ public abstract class ProtobufConsumeOptions {
         /**
          * Creates a unique column name from {@code fieldPath} and {@code indexOccurrence}. Implementations will need to
          * take notice when {@code indexOccurrence > 0}, as that means a column name for {@code fieldPath} has already
-         * been generated {@code indexOccurrence + 1} times.
+         * been generated {@code indexOccurrence} times.
          * 
          * @param fieldPath the field path
          * @param indexOccurrence the number of times a column name for fieldPath has already been generated

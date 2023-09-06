@@ -9,7 +9,6 @@ import io.deephaven.functions.TypedFunction;
 import org.immutables.value.Value.Immutable;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * A list of {@link #functions()}.
@@ -41,7 +40,7 @@ public abstract class ProtobufFunctions {
      * @return the protobuf functions
      */
     public static ProtobufFunctions unnamed(TypedFunction<Message> function) {
-        return builder().addFunctions(ProtobufFunction.unnammed(function)).build();
+        return builder().addFunctions(ProtobufFunction.unnamed(function)).build();
     }
 
     /**
