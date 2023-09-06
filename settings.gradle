@@ -144,8 +144,6 @@ include(':Stats')
 
 include(':Container')
 
-include(':ParquetHadoop')
-
 include(':codegen')
 
 include(':cpp-client')
