@@ -54,13 +54,13 @@ import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobSchedul
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
-import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -90,7 +90,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -950,6 +949,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     public static class FilteredTable extends QueryTable implements WhereFilter.RecomputeListener {
         private final QueryTable source;
+        @ReferentialIntegrity
         private final WhereFilter[] filters;
         private boolean refilterMatchedRequested = false;
         private boolean refilterUnmatchedRequested = false;
@@ -961,7 +961,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             this.source = source;
             this.filters = filters;
             for (final WhereFilter f : filters) {
-                if (f instanceof LivenessReferent) {
+                if (f instanceof LivenessReferent && f.isRefreshing()) {
                     manage((LivenessReferent) f);
                 }
             }
@@ -1312,22 +1312,6 @@ public class QueryTable extends BaseTable<QueryTable> {
                         return result.getValue();
                     });
                 });
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    protected WritableRowSet filterRows(RowSet currentMapping, RowSet fullSet, boolean usePrev,
-            WhereFilter... filters) {
-        WritableRowSet matched = currentMapping.copy();
-
-        for (WhereFilter filter : filters) {
-            if (Thread.interrupted()) {
-                throw new CancellationException("interrupted while filtering");
-            }
-            try (final SafeCloseable ignored = matched) { // Ensure we close old matched
-                matched = filter.filter(matched, fullSet, this, usePrev);
-            }
-        }
-        return matched;
     }
 
     @Override
