@@ -171,8 +171,8 @@ Client <- R6Class("Client",
       }
     },
     make_table_handle_from_ticket = function(ticket) {
-      verify_string("ticket", ticket)
-      self$.internal_rcpp_object$make_table_handle_from_ticket(ticket)
+      verify_string("ticket", ticket, TRUE)
+      return(TableHandle$new(self$.internal_rcpp_object$make_table_handle_from_ticket(ticket)))
     },
     run_script = function(script) {
       verify_string("script", script, TRUE)

@@ -314,4 +314,13 @@ test_that("A Client created from an Rcpp::XPtr is functional.", {
   client$close()
 })
 
+test_that("make_table_handle_from_ticket works.", {
+  client <- Client$new(target = target)
+  client$run_script("from deephaven import empty_table; t = empty_table(1).update(\"A=43\")")
+  t <- client$make_table_handle_from_ticket("s/t")
+  df <- t$as_data_frame()
+  expect_true(df[1,1] == 43)
+  client$close()
+})
+
 rm(target)
