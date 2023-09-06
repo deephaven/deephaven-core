@@ -239,21 +239,12 @@ Sometime after a release, old release branches can be safely deleted.
 
 ### 15. Version bump in preparation of the next release.
 
-<<<<<<< HEAD
-Say we just did release 0.31.0. The next expected release is 0.32.0.  We update the repository with a bump to all files that
-mention the version explicitly.  The current list of files that need to be updated is listed below:
-
-```
-#
-# Edit files, updating from `X.Y.0` to `X.(Y+1).0`
-=======
 Say we just did release `0.31.0`. The next expected release is `0.32.0`  We update the repository with a bump to all files that
 mention the version explicitly. These files are listed below:
 
 ```
 #
 # Edit files for version change, updating from 0.31.0 to 0.32.0
->>>>>>> e21a62ad44a8f0c2270324167a1eab51a8464d49
 #
 authorization-codegen/protoc-gen-contextual-auth-wiring
 authorization-codegen/protoc-gen-service-auth-wiring
