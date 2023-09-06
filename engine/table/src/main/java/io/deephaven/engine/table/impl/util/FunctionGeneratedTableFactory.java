@@ -70,7 +70,7 @@ public class FunctionGeneratedTableFactory {
         for (int ii = 0; ii < sourceTables.length; ii++) {
             Table sourceTable = sourceTables[ii];
             listenerRecorders.add(
-                    new ListenerRecorder("FunctionGeneratedTable_source" + ii, sourceTable, functionBackedTableResult));
+                    new ListenerRecorder("FunctionGeneratedTable_source_" + ii, sourceTable, null));
         }
 
         final MergedListener mergedListener = new MergedListener(
