@@ -16,6 +16,7 @@ import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.UInt32Value;
 import com.google.protobuf.UInt64Value;
+import io.deephaven.functions.ToLongFunction;
 import io.deephaven.functions.ToObjectFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.protobuf.FieldOptions.BytesBehavior;
@@ -1145,18 +1146,18 @@ public class ProtobufDescriptorParserTest {
 
     @Test
     void repeatedPerson() {
-        final SingleValuedMessageParser personParser = new SingleValuedMessageParser() {
+        final MessageParser personParser = MessageParser.adapt(new MessageParserSingle() {
             @Override
             public Descriptor canonicalDescriptor() {
                 return Person.getDescriptor();
             }
 
             @Override
-            public TypedFunction<Message> messageParser(Descriptor descriptor,
+            public ToObjectFunction<Message, Person> messageParser(Descriptor descriptor,
                     ProtobufDescriptorParserOptions options, FieldPath fieldPath) {
                 return ToObjectFunction.identity(Type.ofCustom(Person.class));
             }
-        };
+        });
         final ProtobufDescriptorParserOptions options =
                 ProtobufDescriptorParserOptions.builder().parsers(List.of(personParser)).build();
         final Map<List<String>, TypedFunction<Message>> nf = nf(RepeatedMessage.getDescriptor(), options);
@@ -1172,6 +1173,88 @@ public class ProtobufDescriptorParserTest {
                 Map.of(
                         RepeatedMessage.getDefaultInstance(), new Person[] {},
                         RepeatedMessage.newBuilder().addPersons(p1).addPersons(p2).build(), new Person[] {p1, p2}));
+    }
+
+    @Test
+    void customMultiParser() {
+        final MessageParser parser = new MessageParser() {
+            @Override
+            public Descriptor canonicalDescriptor() {
+                return Timestamp.getDescriptor();
+            }
+
+            @Override
+            public ProtobufFunctions messageParsers(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                    FieldPath fieldPath) {
+                final ToObjectFunction<Message, Timestamp> ts =
+                        ToObjectFunction.identity(Type.ofCustom(Timestamp.class));
+                // This is a dumb thing to do; but it shows that we can derive two functions from the same field path
+                final ToLongFunction<Message> seconds = ts.mapToLong(Timestamp::getSeconds);
+                final ToLongFunction<Message> secondsX2 = ts.mapToLong(x -> x.getSeconds() * 2);
+                final FieldPath secondsPath =
+                        FieldPath.of(descriptor.findFieldByNumber(Timestamp.SECONDS_FIELD_NUMBER));
+                return ProtobufFunctions.builder()
+                        .addFunctions(
+                                ProtobufFunction.of(secondsPath, seconds),
+                                ProtobufFunction.of(secondsPath, secondsX2))
+                        .build();
+            }
+        };
+
+        final ProtobufDescriptorParserOptions options =
+                ProtobufDescriptorParserOptions.builder().parsers(List.of(parser)).build();
+
+        final ProtobufFunctions pf = ProtobufDescriptorParser.parse(Timestamp.getDescriptor(), options);
+        final List<ProtobufFunction> functions = pf.functions();
+        assertThat(functions).hasSize(2);
+
+        assertThat(functions.get(0).path().namePath()).containsExactly("seconds");
+        assertThat(functions.get(1).path().namePath()).containsExactly("seconds");
+
+        final Timestamp aTs = Timestamp.newBuilder().setSeconds(42).build();
+        assertThat(((ToLongFunction<Message>) functions.get(0).function()).applyAsLong(aTs)).isEqualTo(42);
+        assertThat(((ToLongFunction<Message>) functions.get(1).function()).applyAsLong(aTs)).isEqualTo(84);
+    }
+
+    @Test
+    void customMultiParserNested() {
+        final MessageParser parser = new MessageParser() {
+            @Override
+            public Descriptor canonicalDescriptor() {
+                return Timestamp.getDescriptor();
+            }
+
+            @Override
+            public ProtobufFunctions messageParsers(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                    FieldPath fieldPath) {
+                final ToObjectFunction<Message, Timestamp> ts =
+                        ToObjectFunction.identity(Type.ofCustom(Timestamp.class));
+                // This is a dumb thing to do; but it shows that we can derive two functions from the same field path
+                final ToLongFunction<Message> seconds = ts.mapToLong(Timestamp::getSeconds);
+                final ToLongFunction<Message> secondsX2 = ts.mapToLong(x -> x.getSeconds() * 2);
+                final FieldPath secondsPath =
+                        FieldPath.of(descriptor.findFieldByNumber(Timestamp.SECONDS_FIELD_NUMBER));
+                return ProtobufFunctions.builder()
+                        .addFunctions(
+                                ProtobufFunction.of(secondsPath, seconds),
+                                ProtobufFunction.of(secondsPath, secondsX2))
+                        .build();
+            }
+        };
+
+        final ProtobufDescriptorParserOptions options =
+                ProtobufDescriptorParserOptions.builder().parsers(List.of(parser)).build();
+
+        final ProtobufFunctions pf = ProtobufDescriptorParser.parse(ATimestamp.getDescriptor(), options);
+        final List<ProtobufFunction> functions = pf.functions();
+        assertThat(functions).hasSize(2);
+
+        assertThat(functions.get(0).path().namePath()).containsExactly("ts", "seconds");
+        assertThat(functions.get(1).path().namePath()).containsExactly("ts", "seconds");
+
+        final ATimestamp aTs = ATimestamp.newBuilder().setTs(Timestamp.newBuilder().setSeconds(42).build()).build();
+        assertThat(((ToObjectFunction<Message, Long>) functions.get(0).function()).apply(aTs)).isEqualTo(42);
+        assertThat(((ToObjectFunction<Message, Long>) functions.get(1).function()).apply(aTs)).isEqualTo(84);
     }
 
     // This is a potential improvement in parsing we might want in the future
@@ -1369,11 +1452,6 @@ public class ProtobufDescriptorParserTest {
                 .build();
         final Map<List<String>, TypedFunction<Message>> nf = nf(TwoTs.getDescriptor(), options);
         assertThat(nf.keySet()).containsExactly(List.of("ts1"), List.of("ts2", "seconds"), List.of("ts2", "nanos"));
-    }
-
-    @Test
-    void byteString() {
-
     }
 
     private static Map<List<String>, TypedFunction<Message>> nf(Descriptor descriptor) {

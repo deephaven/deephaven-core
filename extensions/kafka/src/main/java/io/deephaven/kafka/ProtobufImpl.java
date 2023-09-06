@@ -14,6 +14,7 @@ import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.ColumnName;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.functions.ToBooleanFunction;
@@ -35,6 +36,7 @@ import io.deephaven.kafka.ingest.FieldCopierAdapter;
 import io.deephaven.kafka.ingest.KeyOrValueProcessor;
 import io.deephaven.kafka.ingest.MultiFieldChunkAdapter;
 import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
+import io.deephaven.kafka.protobuf.ProtobufConsumeOptions.FieldPathToColumnName;
 import io.deephaven.protobuf.FieldNumberPath;
 import io.deephaven.protobuf.FieldOptions;
 import io.deephaven.protobuf.FieldPath;
@@ -118,9 +120,12 @@ class ProtobufImpl {
             final List<FieldCopier> fieldCopiers = new ArrayList<>(functions.functions().size());
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.fieldPathToColumnName = new LinkedHashMap<>();
-            final Function<FieldPath, String> pathToColumnName = specs.pathToColumnName();
+            final FieldPathToColumnName fieldPathToColumnName = specs.pathToColumnName();
+            final Map<FieldPath, Integer> counts = new HashMap<>();
             for (ProtobufFunction f : functions.functions()) {
-                add(pathToColumnName.apply(f.path()), f.function(), data, columnDefinitionsOut, fieldCopiers);
+                final int ix = counts.compute(f.path(), (fieldPath, ixCount) -> ixCount == null ? 0 : ixCount + 1);
+                final ColumnName columnName = fieldPathToColumnName.columnName(f.path(), ix);
+                add(columnName, f.function(), data, columnDefinitionsOut, fieldCopiers);
             }
             // we don't have enough info at this time to create KeyOrValueProcessorImpl
             // data.extra = new KeyOrValueProcessorImpl(MultiFieldChunkAdapter.chunkOffsets(null, null), fieldCopiers,
@@ -130,13 +135,13 @@ class ProtobufImpl {
         }
 
         private void add(
-                String columnName,
+                ColumnName columnName,
                 TypedFunction<Message> function,
                 KeyOrValueIngestData data,
                 List<ColumnDefinition<?>> columnDefinitionsOut,
                 List<FieldCopier> fieldCopiersOut) {
-            data.fieldPathToColumnName.put(columnName, columnName);
-            columnDefinitionsOut.add(ColumnDefinition.of(columnName, function.returnType()));
+            data.fieldPathToColumnName.put(columnName.name(), columnName.name());
+            columnDefinitionsOut.add(ColumnDefinition.of(columnName.name(), function.returnType()));
             fieldCopiersOut.add(FieldCopierAdapter.of(PROTOBUF_MESSAGE_OBJ.map(ToChunkTypeTransform.of(function))));
         }
 

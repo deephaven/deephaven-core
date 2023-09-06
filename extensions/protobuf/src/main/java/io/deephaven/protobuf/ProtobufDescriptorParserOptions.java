@@ -47,19 +47,19 @@ public abstract class ProtobufDescriptorParserOptions {
     }
 
     /**
-     * Controls which single-valued message parsers to use. By default, is {@link SingleValuedMessageParser#defaults()}.
+     * Controls which message parsers to use. By default, is {@link MessageParser#defaults()}.
      * 
      * @return the single-valued message parsers
      */
     @Default
-    public List<SingleValuedMessageParser> parsers() {
-        return SingleValuedMessageParser.defaults();
+    public List<MessageParser> parsers() {
+        return MessageParser.defaults();
     }
 
     public interface Builder {
         Builder fieldOptions(Function<FieldPath, FieldOptions> fieldOptions);
 
-        Builder parsers(List<SingleValuedMessageParser> parsers);
+        Builder parsers(List<MessageParser> parsers);
 
         ProtobufDescriptorParserOptions build();
     }

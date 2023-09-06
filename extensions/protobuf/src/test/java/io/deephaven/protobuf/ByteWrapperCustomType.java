@@ -8,8 +8,8 @@ import io.deephaven.protobuf.test.ByteWrapper;
 import io.deephaven.functions.ToByteFunction;
 import io.deephaven.functions.TypedFunction;
 
-@AutoService(SingleValuedMessageParser.class)
-public class ByteWrapperCustomType implements SingleValuedMessageParser {
+@AutoService(MessageParserSingle.class)
+public class ByteWrapperCustomType implements MessageParserSingle {
     public ByteWrapperCustomType() {}
 
     @Override

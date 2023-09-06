@@ -26,7 +26,6 @@ import io.deephaven.functions.ToFloatFunction;
 import io.deephaven.functions.ToIntFunction;
 import io.deephaven.functions.ToLongFunction;
 import io.deephaven.functions.ToObjectFunction;
-import io.deephaven.functions.TypedFunction;
 import io.deephaven.protobuf.FieldOptions.BytesBehavior;
 import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.GenericType;
@@ -44,7 +43,7 @@ class Builtin {
     // Due to https://github.com/confluentinc/schema-registry/issues/2708, the parsers need to be built in such a way
     // that they work with DynamicMessages.
 
-    static List<SingleValuedMessageParser> parsers() {
+    static List<MessageParserSingle> parsers() {
         // Update javadoc in io.deephaven.protobuf.SingleValuedMessageParser.builtin when editing
         return List.of(
                 TimestampParser.of(),
@@ -62,7 +61,7 @@ class Builtin {
                 customParser(FieldMask.class));
     }
 
-    static <T extends Message> SingleValuedMessageParser customParser(Class<T> clazz) {
+    static <T extends Message> MessageParserSingle customParser(Class<T> clazz) {
         try {
             final Method method = clazz.getDeclaredMethod("getDescriptor");
             final Descriptor descriptor = (Descriptor) method.invoke(null);
@@ -72,14 +71,14 @@ class Builtin {
         }
     }
 
-    private enum TimestampParser implements SingleValuedMessageParser {
+    private enum TimestampParser implements MessageParserSingle {
         INSTANCE;
 
         private static final ToObjectFunction<Message, Instant> CANONICAL_FUNCTION = ToObjectFunction
                 .<Message, Timestamp>identity(Type.ofCustom(Timestamp.class))
                 .mapToObj(TimestampParser::parseCanonical, Type.instantType());
 
-        public static SingleValuedMessageParser of() {
+        public static MessageParserSingle of() {
             return INSTANCE;
         }
 
@@ -104,7 +103,7 @@ class Builtin {
         }
     }
 
-    private enum DurationParser implements SingleValuedMessageParser {
+    private enum DurationParser implements MessageParserSingle {
         INSTANCE;
 
         private static final ToObjectFunction<Message, Duration> CANONICAL_FUNCTION =
@@ -112,7 +111,7 @@ class Builtin {
                         Type.ofCustom(com.google.protobuf.Duration.class))
                         .mapToObj(DurationParser::parseCanonical, Type.ofCustom(Duration.class));
 
-        public static SingleValuedMessageParser of() {
+        public static MessageParserSingle of() {
             return INSTANCE;
         }
 
@@ -137,14 +136,14 @@ class Builtin {
         }
     }
 
-    private enum BoolValueParser implements SingleValuedMessageParser {
+    private enum BoolValueParser implements MessageParserSingle {
         INSTANCE;
 
         private static final ToBooleanFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
                 .<Message, BoolValue>identity(Type.ofCustom(BoolValue.class))
                 .mapToBoolean(BoolValue::getValue);
 
-        public static SingleValuedMessageParser of() {
+        public static MessageParserSingle of() {
             return INSTANCE;
         }
 
@@ -164,14 +163,14 @@ class Builtin {
         }
     }
 
-    private enum Int32ValueParser implements SingleValuedMessageParser {
+    private enum Int32ValueParser implements MessageParserSingle {
         INSTANCE;
 
         private static final ToIntFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
                 .<Message, Int32Value>identity(Type.ofCustom(Int32Value.class))
                 .mapToInt(Int32Value::getValue);
 
-        public static SingleValuedMessageParser of() {
+        public static MessageParserSingle of() {
             return INSTANCE;
         }
 
@@ -191,14 +190,14 @@ class Builtin {
         }
     }
 
-    private enum UInt32ValueParser implements SingleValuedMessageParser {
+    private enum UInt32ValueParser implements MessageParserSingle {
         INSTANCE;
 
         private static final ToIntFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
                 .<Message, UInt32Value>identity(Type.ofCustom(UInt32Value.class))
                 .mapToInt(UInt32Value::getValue);
 
-        public static SingleValuedMessageParser of() {
+        public static MessageParserSingle of() {
             return INSTANCE;
         }
 
@@ -218,14 +217,14 @@ class Builtin {
         }
     }
 
-    private enum Int64ValueParser implements SingleValuedMessageParser {
+    private enum Int64ValueParser implements MessageParserSingle {
         INSTANCE;
 
         private static final ToLongFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
                 .<Message, Int64Value>identity(Type.ofCustom(Int64Value.class))
                 .mapToLong(Int64Value::getValue);
 
-        public static SingleValuedMessageParser of() {
+        public static MessageParserSingle of() {
             return INSTANCE;
         }
 
@@ -245,14 +244,14 @@ class Builtin {
         }
     }
 
-    private enum UInt64ValueParser implements SingleValuedMessageParser {
+    private enum UInt64ValueParser implements MessageParserSingle {
         INSTANCE;
 
         private static final ToLongFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
                 .<Message, UInt64Value>identity(Type.ofCustom(UInt64Value.class))
                 .mapToLong(UInt64Value::getValue);
 
-        public static SingleValuedMessageParser of() {
+        public static MessageParserSingle of() {
             return INSTANCE;
         }
 
@@ -272,14 +271,14 @@ class Builtin {
         }
     }
 
-    private enum FloatValueParser implements SingleValuedMessageParser {
+    private enum FloatValueParser implements MessageParserSingle {
         INSTANCE;
 
         private static final ToFloatFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
                 .<Message, FloatValue>identity(Type.ofCustom(FloatValue.class))
                 .mapToFloat(FloatValue::getValue);
 
-        public static SingleValuedMessageParser of() {
+        public static MessageParserSingle of() {
             return INSTANCE;
         }
 
@@ -299,14 +298,14 @@ class Builtin {
         }
     }
 
-    private enum DoubleValueParser implements SingleValuedMessageParser {
+    private enum DoubleValueParser implements MessageParserSingle {
         INSTANCE;
 
         private static final ToDoubleFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
                 .<Message, DoubleValue>identity(Type.ofCustom(DoubleValue.class))
                 .mapToDouble(DoubleValue::getValue);
 
-        public static SingleValuedMessageParser of() {
+        public static MessageParserSingle of() {
             return INSTANCE;
         }
 
@@ -326,14 +325,14 @@ class Builtin {
         }
     }
 
-    private enum StringValueParser implements SingleValuedMessageParser {
+    private enum StringValueParser implements MessageParserSingle {
         INSTANCE;
 
         private static final ToObjectFunction<Message, String> CANONICAL_FUNCTION = ToObjectFunction
                 .<Message, StringValue>identity(Type.ofCustom(StringValue.class))
                 .mapToObj(StringValue::getValue, Type.stringType());
 
-        public static SingleValuedMessageParser of() {
+        public static MessageParserSingle of() {
             return INSTANCE;
         }
 
@@ -354,7 +353,7 @@ class Builtin {
         }
     }
 
-    private enum BytesValueParser implements SingleValuedMessageParser {
+    private enum BytesValueParser implements MessageParserSingle {
         INSTANCE;
 
         private static final ToObjectFunction<Message, ByteString> CANONICAL_FUNCTION_BYTESTRING = ToObjectFunction
@@ -365,7 +364,7 @@ class Builtin {
         private static final ToObjectFunction<Message, byte[]> CANONICAL_FUNCTION_BYTEARRAY =
                 CANONICAL_FUNCTION_BYTESTRING.mapToObj(BYTESTRING_TO_BYTES);
 
-        public static SingleValuedMessageParser of() {
+        public static MessageParserSingle of() {
             return INSTANCE;
         }
 
@@ -393,7 +392,7 @@ class Builtin {
         }
     }
 
-    private static class GenericSVMP<T extends Message> implements SingleValuedMessageParser {
+    private static class GenericSVMP<T extends Message> implements MessageParserSingle {
         private final GenericType<T> type;
         private final Descriptor descriptor;
 

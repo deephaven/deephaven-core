@@ -64,7 +64,7 @@ class ProtobufDescriptorParserImpl {
             BypassOnNull.of(ToObjectFunction.of(ByteString::toByteArray, Type.byteType().arrayType()));
 
     private final ProtobufDescriptorParserOptions options;
-    private final Map<String, SingleValuedMessageParser> byFullName;
+    private final Map<String, MessageParser> byFullName;
 
     public ProtobufDescriptorParserImpl(ProtobufDescriptorParserOptions options) {
         this.options = Objects.requireNonNull(options);
@@ -98,13 +98,12 @@ class ProtobufDescriptorParserImpl {
         }
 
         private Optional<ProtobufFunctions> wellKnown() {
-            // todo: eventually support cases that are >1 field
-            final SingleValuedMessageParser svmp = byFullName.get(descriptor.getFullName());
-            if (svmp == null) {
+            final MessageParser mp = byFullName.get(descriptor.getFullName());
+            if (mp == null) {
                 return Optional.empty();
             }
             if (options.fieldOptions().apply(fieldPath).wellKnown() == WellKnownBehavior.asWellKnown()) {
-                return Optional.of(ProtobufFunctions.unnamed(svmp.messageParser(descriptor, options, fieldPath)));
+                return Optional.of(mp.messageParsers(descriptor, options, fieldPath));
             }
             return Optional.empty();
         }

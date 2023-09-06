@@ -11,7 +11,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 
-public interface SingleValuedMessageParser {
+/**
+ * A simplified interface for {@link MessageParser}. In cases where a {@link Message} is parsed into a single value,
+ * this interface provides stronger typing and is easier to implement.
+ *
+ * @see MessageParser#adapt(MessageParserSingle)
+ */
+public interface MessageParserSingle {
 
     /**
      * The built-in single-valued message parsers.
@@ -77,7 +83,7 @@ public interface SingleValuedMessageParser {
      *
      * @return the built-in parsers
      */
-    static List<SingleValuedMessageParser> builtin() {
+    static List<MessageParserSingle> builtin() {
         return Builtin.parsers();
     }
 
@@ -87,23 +93,8 @@ public interface SingleValuedMessageParser {
      * @return the service-loader single-valued message parsers
      * @see ServiceLoader#load(Class)
      */
-    static Iterable<SingleValuedMessageParser> serviceLoaders() {
-        return ServiceLoader.load(SingleValuedMessageParser.class);
-    }
-
-    /**
-     * The default single-valued message parsers. Is the concatenation of {@link #builtin()} and
-     * {@link #serviceLoaders()}.
-     * 
-     * @return the default single-valued message parsers.
-     *
-     */
-    static List<SingleValuedMessageParser> defaults() {
-        final List<SingleValuedMessageParser> out = new ArrayList<>(builtin());
-        for (SingleValuedMessageParser parser : serviceLoaders()) {
-            out.add(parser);
-        }
-        return out;
+    static Iterable<MessageParserSingle> serviceLoaders() {
+        return ServiceLoader.load(MessageParserSingle.class);
     }
 
     /**
@@ -114,7 +105,7 @@ public interface SingleValuedMessageParser {
     Descriptor canonicalDescriptor();
 
     /**
-     * The message parser.
+     * The message parsing function.
      *
      * @param descriptor the actual descriptor
      * @param options the parser options

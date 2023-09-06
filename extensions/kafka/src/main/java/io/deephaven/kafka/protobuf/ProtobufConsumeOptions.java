@@ -5,6 +5,7 @@ package io.deephaven.kafka.protobuf;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.api.ColumnName;
 import io.deephaven.kafka.KafkaTools.Consume;
 import io.deephaven.protobuf.FieldPath;
 import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
@@ -31,6 +32,20 @@ import java.util.function.Function;
 @BuildableStyle
 public abstract class ProtobufConsumeOptions {
 
+    @FunctionalInterface
+    public interface FieldPathToColumnName {
+        /**
+         * Creates a unique column name from {@code fieldPath} and {@code indexOccurrence}. Implementations will need to
+         * take notice when {@code indexOccurrence > 0}, as that means a column name for {@code fieldPath} has already
+         * been generated {@code indexOccurrence + 1} times.
+         * 
+         * @param fieldPath the field path
+         * @param indexOccurrence the number of times a column name for fieldPath has already been generated
+         * @return the column name
+         */
+        ColumnName columnName(FieldPath fieldPath, int indexOccurrence);
+    }
+
     /**
      * The builder.
      *
@@ -41,13 +56,15 @@ public abstract class ProtobufConsumeOptions {
     }
 
     /**
-     * Joins the name paths with underscores. Equivalent to {@code String.join("_", path.namePath())}.
+     * Joins the name paths with underscores, appending {@code indexOccurrence + 1} if {@code indexOccurrence != 0}.
      *
      * @param path the path
+     * @param indexOccurrence the number of times this field path has been used
      * @return the underscore joined path names
      */
-    public static String joinNamePathWithUnderscore(FieldPath path) {
-        return String.join("_", path.namePath());
+    public static ColumnName joinNamePathWithUnderscore(FieldPath path, int indexOccurrence) {
+        final String simple = String.join("_", path.namePath());
+        return ColumnName.of(indexOccurrence == 0 ? simple : simple + "_" + (indexOccurrence + 1));
     }
 
     /**
@@ -94,12 +111,12 @@ public abstract class ProtobufConsumeOptions {
 
     /**
      * The function to turn field paths into column names. By default, is the function
-     * {@link #joinNamePathWithUnderscore(FieldPath)}.
+     * {@link #joinNamePathWithUnderscore(FieldPath, int)}}.
      *
      * @return the function to create column names
      */
     @Default
-    public Function<FieldPath, String> pathToColumnName() {
+    public FieldPathToColumnName pathToColumnName() {
         return ProtobufConsumeOptions::joinNamePathWithUnderscore;
     }
 
@@ -113,7 +130,7 @@ public abstract class ProtobufConsumeOptions {
 
         Builder parserOptions(ProtobufDescriptorParserOptions options);
 
-        Builder pathToColumnName(Function<FieldPath, String> pathToColumnName);
+        Builder pathToColumnName(FieldPathToColumnName pathToColumnName);
 
         ProtobufConsumeOptions build();
     }
