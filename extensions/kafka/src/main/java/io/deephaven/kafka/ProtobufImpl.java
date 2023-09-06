@@ -339,9 +339,10 @@ class ProtobufImpl {
 
             private TypedFunction<Message> createFunctionFor(Descriptor descriptor) {
                 final Type<?> originalReturnType = originalReturnType();
-                final TypedFunction<Message> newFunction = find(ParsedStates.this.getOrCreate(descriptor), originalFunction.path().numberPath())
-                        .map(ProtobufFunction::function)
-                        .orElse(null);
+                final TypedFunction<Message> newFunction =
+                        find(ParsedStates.this.getOrCreate(descriptor), originalFunction.path().numberPath())
+                                .map(ProtobufFunction::function)
+                                .orElse(null);
                 final TypedFunction<Message> adaptedFunction =
                         SchemaChangeAdaptFunction.of(newFunction, originalReturnType).orElse(null);
                 if (adaptedFunction == null) {

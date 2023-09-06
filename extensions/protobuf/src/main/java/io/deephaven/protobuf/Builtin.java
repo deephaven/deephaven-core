@@ -20,10 +20,6 @@ import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.UInt32Value;
 import com.google.protobuf.UInt64Value;
-import io.deephaven.protobuf.FieldOptions.BytesBehavior;
-import io.deephaven.qst.type.CustomType;
-import io.deephaven.qst.type.GenericType;
-import io.deephaven.qst.type.Type;
 import io.deephaven.functions.ToBooleanFunction;
 import io.deephaven.functions.ToDoubleFunction;
 import io.deephaven.functions.ToFloatFunction;
@@ -31,6 +27,10 @@ import io.deephaven.functions.ToIntFunction;
 import io.deephaven.functions.ToLongFunction;
 import io.deephaven.functions.ToObjectFunction;
 import io.deephaven.functions.TypedFunction;
+import io.deephaven.protobuf.FieldOptions.BytesBehavior;
+import io.deephaven.qst.type.CustomType;
+import io.deephaven.qst.type.GenericType;
+import io.deephaven.qst.type.Type;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -39,17 +39,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * The implementation of the {@link SingleValuedMessageParser} may seem weird; and I agree, they are. Unfortunately,
- * the confluent serdes implementation treats nested well-known types as {@link com.google.protobuf.DynamicMessage}
- * instead of their well-known type (ie, {@link Timestamp}).
- *
- * <p>
- *
- *
- * @see <a href="https://github.com/confluentinc/schema-registry/issues/2708">https://github.com/confluentinc/schema-registry/issues/2708</a>
- */
 class Builtin {
+
+    // Due to https://github.com/confluentinc/schema-registry/issues/2708, the parsers need to be built in such a way
+    // that they work with DynamicMessages.
+
     static List<SingleValuedMessageParser> parsers() {
         // Update javadoc in io.deephaven.protobuf.SingleValuedMessageParser.builtin when editing
         return List.of(
@@ -81,8 +75,16 @@ class Builtin {
     private enum TimestampParser implements SingleValuedMessageParser {
         INSTANCE;
 
+        private static final ToObjectFunction<Message, Instant> CANONICAL_FUNCTION = ToObjectFunction
+                .<Message, Timestamp>identity(Type.ofCustom(Timestamp.class))
+                .mapToObj(TimestampParser::parseCanonical, Type.instantType());
+
         public static SingleValuedMessageParser of() {
             return INSTANCE;
+        }
+
+        private static Instant parseCanonical(Timestamp timestamp) {
+            return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
         }
 
         @Override
@@ -91,8 +93,12 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+        public ToObjectFunction<Message, Instant> messageParser(Descriptor descriptor,
+                ProtobufDescriptorParserOptions options,
                 FieldPath fieldPath) {
+            if (canonicalDescriptor() == descriptor) {
+                return CANONICAL_FUNCTION;
+            }
             checkCompatible(canonicalDescriptor(), descriptor);
             return TimestampFunction.of(descriptor);
         }
@@ -101,8 +107,17 @@ class Builtin {
     private enum DurationParser implements SingleValuedMessageParser {
         INSTANCE;
 
+        private static final ToObjectFunction<Message, Duration> CANONICAL_FUNCTION =
+                ToObjectFunction.<Message, com.google.protobuf.Duration>identity(
+                        Type.ofCustom(com.google.protobuf.Duration.class))
+                        .mapToObj(DurationParser::parseCanonical, Type.ofCustom(Duration.class));
+
         public static SingleValuedMessageParser of() {
             return INSTANCE;
+        }
+
+        private static Duration parseCanonical(com.google.protobuf.Duration duration) {
+            return Duration.ofSeconds(duration.getSeconds(), duration.getNanos());
         }
 
         @Override
@@ -111,8 +126,12 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+        public ToObjectFunction<Message, Duration> messageParser(Descriptor descriptor,
+                ProtobufDescriptorParserOptions options,
                 FieldPath fieldPath) {
+            if (canonicalDescriptor() == descriptor) {
+                return CANONICAL_FUNCTION;
+            }
             checkCompatible(canonicalDescriptor(), descriptor);
             return DurationFunction.of(descriptor);
         }
@@ -120,6 +139,10 @@ class Builtin {
 
     private enum BoolValueParser implements SingleValuedMessageParser {
         INSTANCE;
+
+        private static final ToBooleanFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
+                .<Message, BoolValue>identity(Type.ofCustom(BoolValue.class))
+                .mapToBoolean(BoolValue::getValue);
 
         public static SingleValuedMessageParser of() {
             return INSTANCE;
@@ -131,8 +154,11 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+        public ToBooleanFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
                 FieldPath fieldPath) {
+            if (canonicalDescriptor() == descriptor) {
+                return CANONICAL_FUNCTION;
+            }
             checkCompatible(canonicalDescriptor(), descriptor);
             return new BoolFieldFunction(descriptor.findFieldByNumber(BoolValue.VALUE_FIELD_NUMBER));
         }
@@ -140,6 +166,10 @@ class Builtin {
 
     private enum Int32ValueParser implements SingleValuedMessageParser {
         INSTANCE;
+
+        private static final ToIntFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
+                .<Message, Int32Value>identity(Type.ofCustom(Int32Value.class))
+                .mapToInt(Int32Value::getValue);
 
         public static SingleValuedMessageParser of() {
             return INSTANCE;
@@ -151,8 +181,11 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+        public ToIntFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
                 FieldPath fieldPath) {
+            if (canonicalDescriptor() == descriptor) {
+                return CANONICAL_FUNCTION;
+            }
             checkCompatible(canonicalDescriptor(), descriptor);
             return new IntFieldFunction(descriptor.findFieldByNumber(Int32Value.VALUE_FIELD_NUMBER));
         }
@@ -160,6 +193,10 @@ class Builtin {
 
     private enum UInt32ValueParser implements SingleValuedMessageParser {
         INSTANCE;
+
+        private static final ToIntFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
+                .<Message, UInt32Value>identity(Type.ofCustom(UInt32Value.class))
+                .mapToInt(UInt32Value::getValue);
 
         public static SingleValuedMessageParser of() {
             return INSTANCE;
@@ -171,8 +208,11 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+        public ToIntFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
                 FieldPath fieldPath) {
+            if (canonicalDescriptor() == descriptor) {
+                return CANONICAL_FUNCTION;
+            }
             checkCompatible(canonicalDescriptor(), descriptor);
             return new IntFieldFunction(descriptor.findFieldByNumber(UInt32Value.VALUE_FIELD_NUMBER));
         }
@@ -180,6 +220,10 @@ class Builtin {
 
     private enum Int64ValueParser implements SingleValuedMessageParser {
         INSTANCE;
+
+        private static final ToLongFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
+                .<Message, Int64Value>identity(Type.ofCustom(Int64Value.class))
+                .mapToLong(Int64Value::getValue);
 
         public static SingleValuedMessageParser of() {
             return INSTANCE;
@@ -191,8 +235,11 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+        public ToLongFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
                 FieldPath fieldPath) {
+            if (canonicalDescriptor() == descriptor) {
+                return CANONICAL_FUNCTION;
+            }
             checkCompatible(canonicalDescriptor(), descriptor);
             return new LongFieldFunction(descriptor.findFieldByNumber(Int64Value.VALUE_FIELD_NUMBER));
         }
@@ -200,6 +247,10 @@ class Builtin {
 
     private enum UInt64ValueParser implements SingleValuedMessageParser {
         INSTANCE;
+
+        private static final ToLongFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
+                .<Message, UInt64Value>identity(Type.ofCustom(UInt64Value.class))
+                .mapToLong(UInt64Value::getValue);
 
         public static SingleValuedMessageParser of() {
             return INSTANCE;
@@ -211,8 +262,11 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+        public ToLongFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
                 FieldPath fieldPath) {
+            if (canonicalDescriptor() == descriptor) {
+                return CANONICAL_FUNCTION;
+            }
             checkCompatible(canonicalDescriptor(), descriptor);
             return new LongFieldFunction(descriptor.findFieldByNumber(UInt64Value.VALUE_FIELD_NUMBER));
         }
@@ -220,6 +274,10 @@ class Builtin {
 
     private enum FloatValueParser implements SingleValuedMessageParser {
         INSTANCE;
+
+        private static final ToFloatFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
+                .<Message, FloatValue>identity(Type.ofCustom(FloatValue.class))
+                .mapToFloat(FloatValue::getValue);
 
         public static SingleValuedMessageParser of() {
             return INSTANCE;
@@ -231,8 +289,11 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+        public ToFloatFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
                 FieldPath fieldPath) {
+            if (canonicalDescriptor() == descriptor) {
+                return CANONICAL_FUNCTION;
+            }
             checkCompatible(canonicalDescriptor(), descriptor);
             return new FloatFieldFunction(descriptor.findFieldByNumber(FloatValue.VALUE_FIELD_NUMBER));
         }
@@ -240,6 +301,10 @@ class Builtin {
 
     private enum DoubleValueParser implements SingleValuedMessageParser {
         INSTANCE;
+
+        private static final ToDoubleFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
+                .<Message, DoubleValue>identity(Type.ofCustom(DoubleValue.class))
+                .mapToDouble(DoubleValue::getValue);
 
         public static SingleValuedMessageParser of() {
             return INSTANCE;
@@ -251,8 +316,11 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+        public ToDoubleFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
                 FieldPath fieldPath) {
+            if (canonicalDescriptor() == descriptor) {
+                return CANONICAL_FUNCTION;
+            }
             checkCompatible(canonicalDescriptor(), descriptor);
             return new DoubleFieldFunction(descriptor.findFieldByNumber(DoubleValue.VALUE_FIELD_NUMBER));
         }
@@ -260,6 +328,10 @@ class Builtin {
 
     private enum StringValueParser implements SingleValuedMessageParser {
         INSTANCE;
+
+        private static final ToObjectFunction<Message, String> CANONICAL_FUNCTION = ToObjectFunction
+                .<Message, StringValue>identity(Type.ofCustom(StringValue.class))
+                .mapToObj(StringValue::getValue, Type.stringType());
 
         public static SingleValuedMessageParser of() {
             return INSTANCE;
@@ -271,8 +343,12 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+        public ToObjectFunction<Message, String> messageParser(Descriptor descriptor,
+                ProtobufDescriptorParserOptions options,
                 FieldPath fieldPath) {
+            if (canonicalDescriptor() == descriptor) {
+                return CANONICAL_FUNCTION;
+            }
             checkCompatible(canonicalDescriptor(), descriptor);
             return new StringFieldFunction(descriptor.findFieldByNumber(StringValue.VALUE_FIELD_NUMBER));
         }
@@ -280,6 +356,14 @@ class Builtin {
 
     private enum BytesValueParser implements SingleValuedMessageParser {
         INSTANCE;
+
+        private static final ToObjectFunction<Message, ByteString> CANONICAL_FUNCTION_BYTESTRING = ToObjectFunction
+                .<Message, BytesValue>identity(Type.ofCustom(BytesValue.class))
+                .mapToObj(BytesValue::getValue, Type.ofCustom(ByteString.class));
+        private static final ToObjectFunction<ByteString, byte[]> BYTESTRING_TO_BYTES =
+                ToObjectFunction.of(ByteString::toByteArray, Type.byteType().arrayType());
+        private static final ToObjectFunction<Message, byte[]> CANONICAL_FUNCTION_BYTEARRAY =
+                CANONICAL_FUNCTION_BYTESTRING.mapToObj(BYTESTRING_TO_BYTES);
 
         public static SingleValuedMessageParser of() {
             return INSTANCE;
@@ -291,13 +375,20 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+        public ToObjectFunction<Message, ?> messageParser(Descriptor descriptor,
+                ProtobufDescriptorParserOptions options,
                 FieldPath fieldPath) {
+            final boolean asByteArray = options.fieldOptions().apply(fieldPath).bytes() == BytesBehavior.asByteArray();
+            if (canonicalDescriptor() == descriptor) {
+                return asByteArray
+                        ? CANONICAL_FUNCTION_BYTEARRAY
+                        : CANONICAL_FUNCTION_BYTESTRING;
+            }
             checkCompatible(canonicalDescriptor(), descriptor);
             final ByteStringFieldFunction bsf =
                     new ByteStringFieldFunction(descriptor.findFieldByNumber(BytesValue.VALUE_FIELD_NUMBER));
-            return options.fieldOptions().apply(fieldPath).bytes() == BytesBehavior.asByteArray()
-                    ? bsf.mapToObj(ByteString::toByteArray, Type.byteType().arrayType())
+            return asByteArray
+                    ? bsf.mapToObj(BYTESTRING_TO_BYTES)
                     : bsf;
         }
     }
@@ -317,7 +408,8 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+        public ToObjectFunction<Message, T> messageParser(Descriptor descriptor,
+                ProtobufDescriptorParserOptions options,
                 FieldPath fieldPath) {
             checkCompatible(canonicalDescriptor(), descriptor);
             return ToObjectFunction.identity(type);

@@ -50,7 +50,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param <T> the input type
      * @param <R> the return type
      */
-    static <T, R> ToObjectFunction<T, R> identity(GenericType<R> returnType) {
+    static <T, R extends T> ToObjectFunction<T, R> identity(GenericType<R> returnType) {
         return ObjectFunctions.<T>identity().cast(returnType);
     }
 
