@@ -95,7 +95,7 @@ public abstract class AbstractTableLocationProvider
     protected final void handleTableLocationKey(@NotNull final TableLocationKey locationKey) {
         if (!supportsSubscriptions()) {
             tableLocations.putIfAbsent(locationKey, TableLocationKey::makeImmutable);
-            visitLocationKey(locationKey);
+            visitLocationKey(toKeyImmutable(locationKey));
             return;
         }
 
@@ -121,7 +121,7 @@ public abstract class AbstractTableLocationProvider
      * before notifications have been delivered to any subscriptions, if applicable. The default implementation does
      * nothing, and may be overridden to implement additional features.
      *
-     * @param locationKey the {@link TableLocationKey} that was visited.
+     * @param locationKey The {@link TableLocationKey} that was visited.
      */
     protected void visitLocationKey(@NotNull final TableLocationKey locationKey) {}
 
@@ -211,30 +211,36 @@ public abstract class AbstractTableLocationProvider
         }
     }
 
-    @Override
+    /**
+     * Remove the given table location.
+     *
+     * @apiNote Use with caution: When this is called all subscribers to the specified location will be notified,
+     *          causing them to stop updating. Tables backed by those notifications will end up 'failed'. This location
+     *          provider will continue to update other locations and will no longer provide or request information about
+     *          the deleted location.
+     *
+     * @param locationKey the TableLocation to remove
+     */
     public void removeTableLocationKey(@NotNull final TableLocationKey locationKey) {
         final Object removedLocation = tableLocations.remove(locationKey);
 
+        handleTableLocationKeyRemoved(locationKey.makeImmutable());
         // need to notify subscribers of removed location, and of "removed" size
-        if (removedLocation instanceof TableLocation) {
-            // remove the location from the TableLocationProvider (and notify subscribers)
-            handleTableLocationRemoved((TableLocation) removedLocation);
-            // notify subscribers of this location that the data is gone
-            ((AbstractTableLocation) removedLocation).handleUpdate(null, System.currentTimeMillis());
-            ((AbstractTableLocation) removedLocation).clearColumnLocations();
+        if (removedLocation instanceof AbstractTableLocation) {
+            final AbstractTableLocation abstractLocation = (AbstractTableLocation)removedLocation;
+            abstractLocation.handleUpdate(null, System.currentTimeMillis());
+            abstractLocation.clearColumnLocations();
         }
     }
 
     /**
-     * Remove the location, and notify subscribers that it is gone
-     *
-     * @param location the TableLocation to be removed
+     * Notify subscribers that {@code location} was removed.
+     * @param locationKey the TableLocation that was removed
      */
-    protected void handleTableLocationRemoved(@NotNull final TableLocation location) {
-        // Note: the location has already been removed from tableLocations
+    protected void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey locationKey) {
         if (supportsSubscriptions()) {
             synchronized (subscriptions) {
-                if (subscriptions.deliverNotification(Listener::handleTableLocationRemoved, location, true)) {
+                if (subscriptions.deliverNotification(Listener::handleTableLocationKeyRemoved, locationKey, true)) {
                     onEmpty();
                 }
             }

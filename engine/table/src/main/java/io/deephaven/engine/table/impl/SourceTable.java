@@ -222,15 +222,16 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 rowSet.insert(added);
                 notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
             } catch (Exception e) {
+                getUpdateGraph().removeSource(this);
+
                 // Notify listeners to the SourceTable when we had an issue refreshing available locations.
                 notifyListenersOnError(e, null);
-                getUpdateGraph().removeSource(this);
             }
         }
     }
 
     private void throwIfLocationsRemoved(TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
-        if (!locationUpdate.getPendingRemovedLocations().isEmpty()) {
+        if (!filterLocationKeys(locationUpdate.getPendingRemovedLocationKeys()).isEmpty()) {
             throw new TableDataException(getClass().getSimpleName() + " does not support removing locations");
         }
     }

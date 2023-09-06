@@ -144,11 +144,6 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public void removeTableLocationKey(@NotNull final TableLocationKey locationKey) {
-            inputProvider.removeTableLocationKey(locationKey);
-        }
-
-        @Override
         public String getName() {
             return FilteredTableDataService.this.getName();
         }
@@ -172,10 +167,10 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public void handleTableLocationRemoved(@NotNull final TableLocation tableLocation) {
+        public void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey tableLocationKey) {
             final TableLocationProvider.Listener outputListener = getWrapped();
-            if (outputListener != null && locationKeyFilter.accept(tableLocation.getKey())) {
-                outputListener.handleTableLocationRemoved(tableLocation);
+            if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
+                outputListener.handleTableLocationKeyRemoved(tableLocationKey);
             }
         }
 

@@ -397,7 +397,7 @@ public class UnionSourceManager {
             advanceModified();
             advanceListener();
 
-            List<ConstituentTableErrorException> constituentExceptions = null;
+            List<ConstituentTableException> constituentExceptions = null;
 
             while (nextCurrentSlot < currConstituentCount || nextPreviousSlot < prevConstituentCount) {
                 // Removed constituent processing
@@ -425,7 +425,7 @@ public class UnionSourceManager {
                     } else {
                         try {
                             processExisting(nextCurrentValue);
-                        } catch (ConstituentTableErrorException ex) {
+                        } catch (ConstituentTableException ex) {
                             constituentExceptions = collectConstituentException(constituentExceptions, ex);
                         }
                     }
@@ -438,7 +438,7 @@ public class UnionSourceManager {
                 else {
                     try {
                         processExisting(nextCurrentValue);
-                    } catch (ConstituentTableErrorException ex) {
+                    } catch (ConstituentTableException ex) {
                         constituentExceptions = collectConstituentException(constituentExceptions, ex);
                     }
                     advanceCurrent();
@@ -449,8 +449,8 @@ public class UnionSourceManager {
 
             if (constituentExceptions != null) {
                 throw new UncheckedDeephavenException(
-                        MultiException.maybeWrapInMultiException("Errors occurred processing constituent tables:",
-                                constituentExceptions.toArray(Throwable[]::new)));
+                        MultiException.maybeWrapInMultiException("Constituent tables reported failures",
+                                constituentExceptions));
             }
 
             Assert.eq(nextCurrentKey, "nextCurrentKey", NULL_ROW_KEY, "NULL_ROW_KEY");
@@ -477,9 +477,9 @@ public class UnionSourceManager {
                     modifiedColumnSet);
         }
 
-        private List<ConstituentTableErrorException> collectConstituentException(
-                @Nullable List<ConstituentTableErrorException> exceptions,
-                @NotNull final ConstituentTableErrorException exception) {
+        private List<ConstituentTableException> collectConstituentException(
+                @Nullable List<ConstituentTableException> exceptions,
+                @NotNull final ConstituentTableException exception) {
             if (exceptions == null) {
                 exceptions = new ArrayList<>();
             }
@@ -541,9 +541,9 @@ public class UnionSourceManager {
                 // Make sure we propagate any actual error on to the listeners, and advance the listener so we can
                 // continue to process the rest of the tables
                 if (nextListener.error != null) {
-                    final String referentDescription = nextListener.getReferentDescription();
+                    final String referentDescription = nextListener.getParent().getDescription();
                     advanceListener();
-                    throw new ConstituentTableErrorException(referentDescription, nextListener.error);
+                    throw new ConstituentTableException(referentDescription, nextListener.error);
                 }
 
                 changes = nextListener.getUpdate();

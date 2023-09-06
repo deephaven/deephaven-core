@@ -3,11 +3,8 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.SingleTableLocationProvider;
@@ -16,6 +13,8 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscrip
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
+import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
@@ -36,8 +35,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
     private static final String KEY_COLUMN_NAME = "TableLocationKey";
     private static final String CONSTITUENT_COLUMN_NAME = "LocationTable";
-
-    private static final int CHUNK_CAPACITY = 2048;
 
     /**
      * Construct a {@link SourcePartitionedTable} from the supplied parameters.
@@ -94,6 +91,9 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         private final IntrusiveDoublyLinkedQueue<PendingLocationState> readyLocationStates;
         @SuppressWarnings("FieldCanBeLocal") // We need to hold onto this reference for reachability purposes.
         private final Runnable processNewLocationsUpdateRoot;
+
+        private UpdateCommitter<UnderlyingTableMaintainer> removedLocationsComitter = null;
+        private List<Table> removedConstituents = null;
 
         private UnderlyingTableMaintainer(
                 @NotNull final TableDefinition constituentDefinition,
@@ -158,7 +158,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 }
             }
 
-            if (result.isRefreshing()) {
+            if (refreshCombiner != null) {
                 result.getUpdateGraph().addSource(refreshCombiner);
             }
         }
@@ -201,14 +201,14 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         }
 
         private void processPendingLocations(final boolean notifyListeners) {
-            // First let's deal with removed locations
             final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = subscriptionBuffer.processPending();
             final RowSet removed = processRemovals(locationUpdate);
             final RowSet added = processAdditions(locationUpdate);
 
             resultRows.update(added, removed);
             if (notifyListeners) {
-                result.notifyListeners(new TableUpdateImpl(added,
+                result.notifyListeners(new TableUpdateImpl(
+                        added,
                         removed,
                         RowSetFactory.empty(),
                         RowSetShiftData.EMPTY,
@@ -248,9 +248,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         }
 
         private RowSet processRemovals(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
-            final Set<ImmutableTableLocationKey> relevantRemovedLocations = locationUpdate.getPendingRemovedLocations()
+            final Set<ImmutableTableLocationKey> relevantRemovedLocations = locationUpdate.getPendingRemovedLocationKeys()
                     .stream()
-                    .map(TableLocation::getKey)
                     .filter(locationKeyMatcher)
                     .collect(Collectors.toSet());
 
@@ -258,35 +257,36 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 return RowSetFactory.empty();
             }
 
+            // At the end of the cycle we need to make sure we unmanage any removed constituents.
+            this.removedConstituents = new ArrayList<>(relevantRemovedLocations.size());
+            this.removedLocationsComitter = new UpdateCommitter<>(
+                    this,
+                    result.getUpdateGraph(),
+                    ignored -> {
+                        removedConstituents.forEach(result::unmanage);
+                        removedConstituents = null;
+                    });
+            this.removedLocationsComitter.maybeActivate();
+
             final RowSetBuilderSequential deleteBuilder = RowSetFactory.builderSequential();
 
-            // We don't have a map of location to row key, so we have to iterate them. If we decide this is too slow, we
-            // could add a TObjectIntMap
-            // as we process pending added locations and then we can just make an index of rows to remove by looking up
-            // in that map.
-            try (final ChunkSource.GetContext locContext = resultTableLocationKeys.makeGetContext(CHUNK_CAPACITY);
-                    final ChunkSource.GetContext tableContext = resultLocationTables.makeGetContext(CHUNK_CAPACITY);
-                    final RowSequence.Iterator it = resultRows.getRowSequenceIterator()) {
-
-                while (it.hasMore()) {
-                    final RowSequence subSeq = it.getNextRowSequenceWithLength(CHUNK_CAPACITY);
-                    final LongChunk<OrderedRowKeys> keyChunk = subSeq.asRowKeyChunk();
-                    final ObjectChunk<Table, ? extends Values> tableChunk =
-                            resultLocationTables.getChunk(tableContext, subSeq)
-                                    .asObjectChunk();
-                    final ObjectChunk<ImmutableTableLocationKey, ? extends Values> removedKeys = resultTableLocationKeys
-                            .getChunk(locContext,
-                                    subSeq)
-                            .asObjectChunk();
-
-                    for (int chunkPos = 0; chunkPos < keyChunk.size(); chunkPos++) {
-                        if (relevantRemovedLocations.contains(removedKeys.get(chunkPos))) {
-                            deleteBuilder.appendKey(keyChunk.get(chunkPos));
-
-                            final Table deletedTable = tableChunk.get(chunkPos);
-                            result.unmanage(deletedTable);
-                            deletedTable.close();
-                        }
+            // We don't have a map of location key to row key, so we have to iterate them. If we decide this is too
+            // slow, we could add a TObjectIntMap as we process pending added locations and then we can just make an
+            // RowSet of rows to remove by looking up in that map.
+            // @formatter:off
+            try (final CloseableIterator<ImmutableTableLocationKey> keysIterator =
+                         ChunkedObjectColumnIterator.make(resultTableLocationKeys, resultRows);
+                 final CloseableIterator<Table> constituentsIterator =
+                         ChunkedObjectColumnIterator.make(resultLocationTables, resultRows);
+                 final RowSet.Iterator rowsIterator = resultRows.iterator()) {
+                // @formatter:on
+                while (keysIterator.hasNext()) {
+                    final TableLocationKey key = keysIterator.next();
+                    final Table constituent = constituentsIterator.next();
+                    final long rowKey = rowsIterator.nextLong();
+                    if (relevantRemovedLocations.contains(key)) {
+                        deleteBuilder.appendKey(rowKey);
+                        removedConstituents.add(constituent);
                     }
                 }
             }

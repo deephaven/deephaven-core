@@ -5,12 +5,11 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
-import io.deephaven.engine.table.impl.sources.ConstituentTableErrorException;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.table.impl.sources.ConstituentTableException;
 import io.deephaven.engine.testutil.locations.DependentRegistrar;
-import io.deephaven.engine.testutil.locations.TableBackedTableLocationKey;
 import io.deephaven.engine.testutil.locations.TableBackedTableLocationProvider;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
@@ -33,8 +32,12 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
     private ExtraControlledUpdateGraph updateGraph;
     private SafeCloseable myContext;
 
-    private static final class ExtraControlledUpdateGraph extends ControlledUpdateGraph {
+    private static final class ExtraControlledUpdateGraph extends PeriodicUpdateGraph {
         final List<Runnable> sources = new ArrayList<>();
+
+        private ExtraControlledUpdateGraph() {
+            super("TEST", true, 1000, 25, -1);
+        }
 
         @Override
         public void addSource(@NotNull Runnable updateSource) {
@@ -167,6 +170,6 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
                                 IllegalStateException.class) instanceof IllegalStateException)
                         &&
                         errors.stream().anyMatch(e -> FindExceptionCause.findCause(e,
-                                ConstituentTableErrorException.class) instanceof ConstituentTableErrorException));
+                                ConstituentTableException.class) instanceof ConstituentTableException));
     }
 }

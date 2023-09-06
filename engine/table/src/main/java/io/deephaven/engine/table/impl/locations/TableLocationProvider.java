@@ -3,9 +3,7 @@
  */
 package io.deephaven.engine.table.impl.locations;
 
-import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.type.NamedImplementation;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,13 +36,13 @@ public interface TableLocationProvider extends NamedImplementation {
         void handleTableLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
 
         /**
-         * Notify the listener of a table location that has been removed encountered while initiating or maintaining the
-         * location subscription. This should occur at most once per location, but the order of delivery is <i>not</i>
-         * guaranteed.
+         * Notify the listener of a {@link TableLocationKey} that has been removed encountered while initiating or
+         * maintaining the location subscription. This should occur at most once per location, but the order of
+         * delivery is <i>not</i> guaranteed.
          *
-         * @param tableLocation The table location
+         * @param tableLocationKey The table location
          */
-        void handleTableLocationRemoved(@NotNull TableLocation tableLocation);
+        void handleTableLocationKeyRemoved(@NotNull ImmutableTableLocationKey tableLocationKey);
     }
 
     /**
@@ -111,18 +109,6 @@ public interface TableLocationProvider extends NamedImplementation {
      * @return Whether the key is known to this provider
      */
     boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey);
-
-    /**
-     * Remove the given table location.
-     *
-     * @apiNote Use with caution: When this is called all subscribers to the specified location will be notified,
-     *          causing them to stop updating. Tables backed by those notifications will end up 'failed'. This location
-     *          provider will continue to update other locations and will no longer provide or request information about
-     *          the deleted location.
-     *
-     * @param locationKey the TableLocation to remove
-     */
-    void removeTableLocationKey(@NotNull final TableLocationKey locationKey);
 
     /**
      * @param tableLocationKey A {@link TableLocationKey} specifying the location to get

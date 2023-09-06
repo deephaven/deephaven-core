@@ -62,7 +62,7 @@ public class ListenerRecorder extends InstrumentedTableUpdateListener {
         this.update = upstream.acquire();
         final long currentStep = getUpdateGraph().clock().currentStep();
         Assert.lt(this.notificationStep, "this.notificationStep", currentStep, "currentStep");
-        this.notificationStep = currentStep;
+        setNotificationStep(currentStep);
 
         // notify the downstream listener merger
         if (mergedListener == null) {

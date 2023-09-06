@@ -4,7 +4,9 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.table.impl.locations.*;
+import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
+import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -18,7 +20,6 @@ import java.util.Set;
 public class TableLocationSubscriptionBuffer implements TableLocationProvider.Listener {
 
     private static final Set<ImmutableTableLocationKey> EMPTY_TABLE_LOCATION_KEYS = Collections.emptySet();
-    private static final Set<TableLocation> EMPTY_TABLE_LOCATIONS = Collections.emptySet();
 
     private final TableLocationProvider tableLocationProvider;
 
@@ -27,7 +28,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     private final Object updateLock = new Object();
     private Set<ImmutableTableLocationKey> pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
 
-    private Set<TableLocation> pendingLocationsRemoved = EMPTY_TABLE_LOCATIONS;
+    private Set<ImmutableTableLocationKey> pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
     private TableDataException pendingException = null;
 
     public TableLocationSubscriptionBuffer(@NotNull final TableLocationProvider tableLocationProvider) {
@@ -36,10 +37,10 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
 
     public static final class LocationUpdate {
         private final Collection<ImmutableTableLocationKey> pendingAddedLocationKeys;
-        private final Collection<TableLocation> pendingRemovedLocations;
+        private final Collection<ImmutableTableLocationKey> pendingRemovedLocations;
 
         public LocationUpdate(@NotNull final Collection<ImmutableTableLocationKey> pendingAddedLocationKeys,
-                @NotNull final Collection<TableLocation> pendingRemovedLocations) {
+                @NotNull final Collection<ImmutableTableLocationKey> pendingRemovedLocations) {
             this.pendingAddedLocationKeys = pendingAddedLocationKeys;
             this.pendingRemovedLocations = pendingRemovedLocations;
         }
@@ -48,7 +49,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             return pendingAddedLocationKeys;
         }
 
-        public Collection<TableLocation> getPendingRemovedLocations() {
+        public Collection<ImmutableTableLocationKey> getPendingRemovedLocationKeys() {
             return pendingRemovedLocations;
         }
     }
@@ -75,13 +76,13 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             subscribed = true;
         }
         final Collection<ImmutableTableLocationKey> resultLocationKeys;
-        final Collection<TableLocation> resultLocationsRemoved;
+        final Collection<ImmutableTableLocationKey> resultLocationsRemoved;
         final TableDataException resultException;
         synchronized (updateLock) {
             resultLocationKeys = pendingLocationKeys;
             pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
             resultLocationsRemoved = pendingLocationsRemoved;
-            pendingLocationsRemoved = EMPTY_TABLE_LOCATIONS;
+            pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
             resultException = pendingException;
             pendingException = null;
         }
@@ -105,7 +106,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
         }
         synchronized (updateLock) {
             pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
-            pendingLocationsRemoved = EMPTY_TABLE_LOCATIONS;
+            pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
             pendingException = null;
         }
     }
@@ -125,12 +126,12 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     }
 
     @Override
-    public void handleTableLocationRemoved(@NotNull TableLocation tableLocation) {
+    public void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey tableLocationKey) {
         synchronized (updateLock) {
-            if (pendingLocationsRemoved == EMPTY_TABLE_LOCATIONS) {
+            if (pendingLocationsRemoved == EMPTY_TABLE_LOCATION_KEYS) {
                 pendingLocationsRemoved = new HashSet<>();
             }
-            pendingLocationsRemoved.add(tableLocation);
+            pendingLocationsRemoved.add(tableLocationKey);
         }
     }
 
