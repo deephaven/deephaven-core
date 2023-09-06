@@ -6,14 +6,6 @@ plugins {
 
 description 'Engine Table: Implementation and closely-coupled utilities'
 
-sourceSets {
-    main {
-        resources {
-            srcDir 'groovy'
-        }
-    }
-}
-
 configurations {
     // Ensure jmh picks up the same dependencies as tests
     jmhImplementation.extendsFrom testImplementation
