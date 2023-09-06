@@ -6,15 +6,21 @@ Client <- R6Class("Client",
     initialize = function(...) {
       args <- list(...)
       if (length(args) == 1) {
-        first_arg <- args[1]
-        class_first_arg = class(first_arg)[[1]]
-        if (class_first_arg != "character" && class_first_arg != "list") {
+        first_arg <- args[[1]]
+        first_arg_class = first_class(first_arg)
+        if (first_arg_class != "character" && first_arg_class != "list") {
+          if (first_arg_class != "externalptr") {
+            stop(paste0(
+              "Client initialize first argument must be ",
+              "either a string or an Rcpp::XPtr object."))
+          }
           return(self$initialize_for_xptr(first_arg))
         }
       }
       return(do.call(self$initialize_for_target, args))
     },
     initialize_for_xptr = function(xptr) {
+      verify_type("xptr", xptr, "externalptr", "XPtr", TRUE)
       self$.internal_rcpp_object = new(INTERNAL_Client, xptr)
     },
     initialize_for_target = function(
@@ -164,12 +170,19 @@ Client <- R6Class("Client",
         stop(paste0("'table_object' must be a single data frame, tibble, arrow table, or record batch reader. Got an object of class ", table_object_class[[1]], "."))
       }
     },
+    make_table_handle_from_ticket = function(ticket) {
+      verify_string("ticket", ticket)
+      self$.internal_rcpp_object$make_table_handle_from_ticket(ticket)
+    },
     run_script = function(script) {
       verify_string("script", script, TRUE)
       self$.internal_rcpp_object$run_script(script)
     },
     close = function() {
       self$.internal_rcpp_object$close()
+    },
+    INTERNAL_client = function() {
+      return(self$.internal_rcpp_object$internal_client())
     }
   ),
   private = list(

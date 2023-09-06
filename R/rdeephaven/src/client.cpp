@@ -116,7 +116,7 @@ AggregateWrapper* INTERNAL_agg_count(std::string columnSpec) {
 class TableHandleWrapper {
 public:
     TableHandleWrapper(deephaven::client::TableHandle ref_table) :
-            internal_tbl_hdl(std::move(ref_table)) {};
+        internal_tbl_hdl(std::move(ref_table)) {};
 
     TableHandleWrapper* Select(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.Select(columnSpecs));
@@ -383,6 +383,10 @@ public:
     ClientWrapper(SEXP sexp) :
         internal_client(Rcpp::XPtr<ClientWrapper>(sexp)) {}
 
+    SEXP InternalClient() {
+      return internal_client;
+    }
+
     TableHandleWrapper* OpenTable(std::string tableName) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.FetchTable(tableName));
     }
@@ -478,7 +482,6 @@ private:
     const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client->GetManager();
 };
 
-
 // ######################### RCPP GLUE #########################
 
 using namespace Rcpp;
@@ -569,6 +572,7 @@ RCPP_MODULE(DeephavenInternalModule) {
     class_<ClientWrapper>("INTERNAL_Client")
     .constructor<std::string, const ClientOptionsWrapper&>()
     .constructor<SEXP>()
+    .method("internal_client", &ClientWrapper::InternalClient)
     .method("open_table", &ClientWrapper::OpenTable)
     .method("empty_table", &ClientWrapper::EmptyTable)
     .method("time_table", &ClientWrapper::TimeTable)
