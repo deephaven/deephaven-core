@@ -57,52 +57,51 @@ public abstract class FieldPath {
     }
 
     /**
-     * Creates a function that returns {@code true} if {@code namePath} starts with the {@link FieldPath#namePath()
-     * field path's name path}.
+     * Creates a boolean function according to {@code simplePath}, where {@code simplePath} represents a
+     * {@link FieldPath#namePath() name path} that is '/' separated. The final name path part may be a '*' to
+     * additionally match everything that starts with {@code simplePath}.
      *
-     * @param namePath the name path
-     * @return the boolean function
-     * @see FieldPath#otherStartsWithThis(List)
-     */
-    public static ToBooleanFunction<FieldPath> namePathStartsWithFieldPath(List<String> namePath) {
-        return fieldPath -> fieldPath.otherStartsWithThis(namePath);
-    }
-
-    /**
-     * Creates a function that returns {@code true} if the simple path starts with the {@link FieldPath#namePath() field
-     * path's name path}. Equivalent to {@code namePathStartsWithFieldPath(toNamePath(simplePath))}.
+     * <p>
+     * For example, {@code simplePath="/foo/bar"} will provide a function that matches the field path name paths
+     * {@code []}, {@code ["foo"]}, and {@code ["foo", "bar"]}. {@code simplePath="/foo/bar/*"} will provide a function
+     * that matches the previous example, as well as any field path name paths that start with {@code ["foo", "bar"]}:
+     * {@code ["foo", "bar", "baz"]}, {@code ["foo", "bar", "baz", "zap"}, {@code ["foo", "bar", "zip"]}, etc.
      *
      * @param simplePath the simple path
-     * @return the boolean function
-     * @see #namePathStartsWithFieldPath(List)
-     * @see #toNamePath(String)
+     * @return the field path function
      */
-    public static ToBooleanFunction<FieldPath> simplePathStartsWithFieldPath(String simplePath) {
-        return namePathStartsWithFieldPath(toNamePath(simplePath));
+    public static ToBooleanFunction<FieldPath> matches(String simplePath) {
+        simplePath = !simplePath.isEmpty() && simplePath.charAt(0) == '/' ? simplePath.substring(1) : simplePath;
+        final List<String> np = Arrays.asList(simplePath.split("/"));
+        final boolean star = !np.isEmpty() && "*".equals(np.get(np.size() - 1));
+        final List<String> namePath = star ? np.subList(0, np.size() - 1) : np;
+        // This matches everything leading up to the name path.
+        // For example, simplePath=/foo/bar, namePath=[foo, bar], this will match field paths:
+        // [], [foo], and [foo, bar].
+        final ToBooleanFunction<FieldPath> leadingUpToMatch = fieldPath -> fieldPath.otherStartsWithThis(namePath);
+        if (!star) {
+            return leadingUpToMatch;
+        }
+        // This matches everything at or after name path in the case of a star.
+        // For example, simplePath=/foo/bar/*, namePath=[foo, bar], this will match field paths:
+        // [foo, bar], [foo, bar, baz], [foo, bar, baz, zip], etc.
+        final ToBooleanFunction<FieldPath> starMatch = fieldPath -> fieldPath.startsWith(namePath);
+        return ToBooleanFunction.or(List.of(leadingUpToMatch, starMatch));
     }
 
     /**
-     * Creates a function that returns {@code true} if any of the simple paths start with the
-     * {@link FieldPath#namePath() field path's name path}.
+     * Creates a boolean function that is {@code true} when any component of {@code simplePaths} would
+     * {@link #matches(String)}.
+     *
+     * <p>
+     * Equivalent to
+     * {@code ToBooleanFunction.or(simplePaths.stream().map(FieldPath::matches).collect(Collectors.toList()))}.
      *
      * @param simplePaths the simple paths
-     * @return the boolean function
+     * @return the field path function
      */
-    @SuppressWarnings("unused")
-    public static ToBooleanFunction<FieldPath> anySimplePathStartsWithFieldPath(List<String> simplePaths) {
-        return ToBooleanFunction
-                .or(simplePaths.stream().map(FieldPath::simplePathStartsWithFieldPath).collect(Collectors.toList()));
-    }
-
-    /**
-     * Parse the simple path to a name path, treating `/` as the separating character.
-     *
-     * @param simplePath the simple path
-     * @return the name path
-     */
-    public static List<String> toNamePath(String simplePath) {
-        simplePath = !simplePath.isEmpty() && simplePath.charAt(0) == '/' ? simplePath.substring(1) : simplePath;
-        return Arrays.asList(simplePath.split("/"));
+    public static ToBooleanFunction<FieldPath> anyMatches(List<String> simplePaths) {
+        return ToBooleanFunction.or(simplePaths.stream().map(FieldPath::matches).collect(Collectors.toList()));
     }
 
     /**

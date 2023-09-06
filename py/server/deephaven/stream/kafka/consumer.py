@@ -302,7 +302,12 @@ def protobuf_spec(
         schema_message_name (Optional[str]): the schema message name, whose descriptor will be used to inform the
             resulting table definition, or None to use the first message definition in the schema. The default is None.
             It is advisable for callers to explicitly set this.
-        include (Optional[List[str]]): the '/' separated paths to include. Default is None, which includes all paths.
+        include (Optional[List[str]]): the '/' separated paths to include. The final path may be a '*' to additionally
+            match everything that starts with path. For example, include=["/foo/bar"] will include the field path
+            name paths [], ["foo"], and ["foo", "bar"]. include=["/foo/bar/*"] will additionally include any field path
+            name paths that start with ["foo", "bar"]:  ["foo", "bar", "baz"],  ["foo", "bar", "baz", "zap"], etc. When
+            multiple includes are specified, the fields will be included when any of the components matches. Default is
+            None, which includes all paths.
 
     Returns:
         a KeyValueSpec
@@ -311,7 +316,7 @@ def protobuf_spec(
     if include is not None:
         parser_options_builder.fieldOptions(
             _JFieldOptions.includeIf(
-                _JFieldPath.anySimplePathStartsWithFieldPath(j_array_list(include))
+                _JFieldPath.anyMatches(j_array_list(include))
             )
         )
     pb_consume_builder = (

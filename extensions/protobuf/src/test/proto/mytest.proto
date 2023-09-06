@@ -205,3 +205,18 @@ message AnyWrapper {
 message FieldMaskWrapper {
   google.protobuf.FieldMask my_field_mask = 1;
 }
+
+message FieldPathTesting {
+  message Baz {
+    int32 zip = 1;
+  }
+  message Bar {
+    Baz baz = 1;
+  }
+  message Foo {
+    Bar bar = 1;
+    int64 zap = 2;
+    string zoom = 3;
+  }
+  Foo foo = 1;
+}
