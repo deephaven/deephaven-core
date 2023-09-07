@@ -9,15 +9,23 @@ import java.util.function.Function;
 class DoubleFunctions {
 
     static <T> ToDoubleFunction<T> cast() {
+        return cast(PrimitiveDouble.INSTANCE);
+    }
+
+    static <T> ToDoubleFunction<T> cast(ToDoubleFunction<? super T> f) {
         // noinspection unchecked
-        return (ToDoubleFunction<T>) PrimitiveDouble.INSTANCE;
+        return (ToDoubleFunction<T>) f;
     }
 
-    static <T> ToDoubleFunction<T> of(java.util.function.ToDoubleFunction<T> f) {
-        return f instanceof ToDoubleFunction ? (ToDoubleFunction<T>) f : f::applyAsDouble;
+    static <T> ToDoubleFunction<T> of(java.util.function.ToDoubleFunction<? super T> f) {
+        return f instanceof ToDoubleFunction
+                ? cast((ToDoubleFunction<? super T>) f)
+                : f::applyAsDouble;
     }
 
-    static <T, R> ToDoubleFunction<T> map(Function<T, R> f, java.util.function.ToDoubleFunction<R> g) {
+    static <T, R> ToDoubleFunction<T> map(
+            Function<? super T, ? extends R> f,
+            java.util.function.ToDoubleFunction<? super R> g) {
         return new DoubleFunctionMap<>(f, g);
     }
 
@@ -31,10 +39,10 @@ class DoubleFunctions {
     }
 
     private static class DoubleFunctionMap<T, R> implements ToDoubleFunction<T> {
-        private final Function<T, R> f;
-        private final java.util.function.ToDoubleFunction<R> g;
+        private final Function<? super T, ? extends R> f;
+        private final java.util.function.ToDoubleFunction<? super R> g;
 
-        public DoubleFunctionMap(Function<T, R> f, java.util.function.ToDoubleFunction<R> g) {
+        public DoubleFunctionMap(Function<? super T, ? extends R> f, java.util.function.ToDoubleFunction<? super R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

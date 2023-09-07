@@ -8,11 +8,17 @@ import java.util.function.Function;
 
 class FloatFunctions {
     static <T> ToFloatFunction<T> cast() {
-        // noinspection unchecked
-        return (ToFloatFunction<T>) PrimitiveFloat.INSTANCE;
+        return cast(PrimitiveFloat.INSTANCE);
     }
 
-    static <T, R> ToFloatFunction<T> map(Function<T, R> f, ToFloatFunction<R> g) {
+    static <T> ToFloatFunction<T> cast(ToFloatFunction<? super T> f) {
+        // noinspection unchecked
+        return (ToFloatFunction<T>) f;
+    }
+
+    static <T, R> ToFloatFunction<T> map(
+            Function<? super T, ? extends R> f,
+            ToFloatFunction<? super R> g) {
         return new FloatMap<>(f, g);
     }
 
@@ -26,10 +32,10 @@ class FloatFunctions {
     }
 
     private static class FloatMap<T, R> implements ToFloatFunction<T> {
-        private final Function<T, R> f;
-        private final ToFloatFunction<R> g;
+        private final Function<? super T, ? extends R> f;
+        private final ToFloatFunction<? super R> g;
 
-        public FloatMap(Function<T, R> f, ToFloatFunction<R> g) {
+        public FloatMap(Function<? super T, ? extends R> f, ToFloatFunction<? super R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

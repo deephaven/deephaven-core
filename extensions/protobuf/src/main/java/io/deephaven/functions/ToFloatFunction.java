@@ -37,7 +37,9 @@ public interface ToFloatFunction<T> extends ToPrimitiveFunction<T> {
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> ToFloatFunction<T> map(Function<T, R> f, ToFloatFunction<R> g) {
+    static <T, R> ToFloatFunction<T> map(
+            Function<? super T, ? extends R> f,
+            ToFloatFunction<? super R> g) {
         return FloatFunctions.map(f, g);
     }
 
