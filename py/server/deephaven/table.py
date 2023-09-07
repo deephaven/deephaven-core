@@ -2293,7 +2293,7 @@ class PartitionedTable(JObjectWrapper):
             unique_keys: False
             constituent_column: the name of the first column with a Table data type
             constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
-                column. Consequently the constituent column can't be empty
+                column. Consequently, the constituent column can't be empty
             constituent_changes_permitted: the value of table.is_refreshing
 
 
@@ -2302,7 +2302,7 @@ class PartitionedTable(JObjectWrapper):
             key_cols (Union[str, List[str]]): the key column name(s) of 'table'
             unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
             constituent_column (str): the constituent column name in 'table'
-            constituent_table_columns (list[Column]): the column definitions of the constituent table
+            constituent_table_columns (List[Column]): the column definitions of the constituent table
             constituent_changes_permitted (bool): whether the values of the constituent column can change
 
         Returns:

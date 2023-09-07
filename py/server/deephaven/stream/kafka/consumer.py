@@ -3,21 +3,24 @@
 #
 
 """ The kafka.consumer module supports consuming a Kakfa topic as a Deephaven live table. """
-from typing import Dict, Tuple, List, Callable, Union
+import jpy
+from typing import Dict, Tuple, List, Callable, Union, Optional
 from warnings import warn
 
-import jpy
-
 from deephaven import dtypes
-from deephaven.jcompat import j_hashmap, j_properties
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import Column
 from deephaven.dherror import DHError
 from deephaven.dtypes import DType
+from deephaven.jcompat import j_hashmap, j_properties, j_array_list
 from deephaven.table import Table, PartitionedTable
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JKafkaTools_Consume = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
+_JProtobufConsumeOptions = jpy.get_type("io.deephaven.kafka.protobuf.ProtobufConsumeOptions")
+_JProtobufDescriptorParserOptions = jpy.get_type("io.deephaven.protobuf.ProtobufDescriptorParserOptions")
+_JFieldOptions = jpy.get_type("io.deephaven.protobuf.FieldOptions")
+_JFieldPath = jpy.get_type("io.deephaven.protobuf.FieldPath")
 _JPythonTools = jpy.get_type("io.deephaven.integrations.python.PythonTools")
 ALL_PARTITIONS = _JKafkaTools.ALL_PARTITIONS
 
@@ -119,14 +122,6 @@ def _dict_to_j_func(dict_mapping: Dict, mapped_only: bool) -> Callable[[str], st
     if not mapped_only:
         return _JPythonTools.functionFromMapWithIdentityDefaults(java_map)
     return _JPythonTools.functionFromMapWithDefault(java_map, None)
-
-
-def _build_column_definitions(ts: List[Tuple[str, DType]]) -> List[Column]:
-    """Converts a list of two-element tuples in the form of (name, DType) to a list of Columns."""
-    cols = []
-    for t in ts:
-        cols.append(Column(*t))
-    return cols
 
 
 def consume(
@@ -281,6 +276,57 @@ def _consume(
         raise DHError(e, "failed to consume a Kafka stream.") from e
 
 
+def protobuf_spec(
+        schema: str,
+        schema_version: Optional[int] = None,
+        schema_message_name: Optional[str] = None,
+        include: Optional[List[str]] = None,
+) -> KeyValueSpec:
+    """Creates a spec for how to use Kafka data when consuming a Kafka stream to a Deephaven table. This will fetch the
+    protobuf descriptor for the schema subject from the schema registry using version schema_version and create protobuf
+    message parsing functions according to parsing options. These functions will be adapted to handle schema changes.
+
+    Args:
+        schema (str): the schema subject name
+        schema_version (Optional[int]): the schema version, or None for latest, default is None. For purposes of
+            reproducibility across restarts where schema changes may occur, it is advisable for callers to set this.
+            This will ensure the resulting table definition will not change across restarts. This gives the caller an
+            explicit opportunity to update any downstream consumers when updating schema_version if necessary.
+        schema_message_name (Optional[str]): the fully-qualified protobuf message name, for example
+            "com.example.MyMessage". This message's descriptor will be used as the basis for the resulting table's
+            definition. If None, the first message descriptor in the protobuf schema will be used. The default is None.
+            It is advisable for callers to explicitly set this.
+        include (Optional[List[str]]): the '/' separated paths to include. The final path may be a '*' to additionally
+            match everything that starts with path. For example, include=["/foo/bar"] will include the field path
+            name paths [], ["foo"], and ["foo", "bar"]. include=["/foo/bar/*"] will additionally include any field path
+            name paths that start with ["foo", "bar"]:  ["foo", "bar", "baz"],  ["foo", "bar", "baz", "zap"], etc. When
+            multiple includes are specified, the fields will be included when any of the components matches. Default is
+            None, which includes all paths.
+
+    Returns:
+        a KeyValueSpec
+    """
+    parser_options_builder = _JProtobufDescriptorParserOptions.builder()
+    if include is not None:
+        parser_options_builder.fieldOptions(
+            _JFieldOptions.includeIf(
+                _JFieldPath.anyMatches(j_array_list(include))
+            )
+        )
+    pb_consume_builder = (
+        _JProtobufConsumeOptions.builder()
+        .schemaSubject(schema)
+        .parserOptions(parser_options_builder.build())
+    )
+    if schema_version:
+        pb_consume_builder.schemaVersion(schema_version)
+    if schema_message_name:
+        pb_consume_builder.schemaMessageName(schema_message_name)
+    return KeyValueSpec(
+        j_spec=_JKafkaTools_Consume.protobufSpec(pb_consume_builder.build())
+    )
+
+
 def avro_spec(
         schema: str,
         schema_version: str = "latest",
@@ -336,13 +382,13 @@ def avro_spec(
         raise DHError(e, "failed to create a Kafka key/value spec") from e
 
 
-def json_spec(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyValueSpec:
+def json_spec(col_defs: Union[Dict[str, DType], List[Tuple[str, DType]]], mapping: Dict = None) -> KeyValueSpec:
     """Creates a spec for how to use JSON data when consuming a Kafka stream to a Deephaven table.
 
     Args:
-        col_defs (List[Tuple[str, DType]]):  a list of tuples specifying names and types for columns to be
-            created on the resulting Deephaven table.  Tuples contain two elements, a string for column name
-            and a Deephaven type for column data type.
+        col_defs (Union[Dict[str, DType], List[Tuple[str, DType]]]): the column definitions, either a map of column
+            names and Deephaven types, or a list of tuples with two elements, a string for column name and a Deephaven
+            type for column data type.
         mapping (Dict):  a dict mapping JSON fields to column names defined in the col_defs
             argument.  Fields starting with a '/' character are interpreted as a JSON Pointer (see RFC 6901,
             ISSN: 2070-1721 for details, essentially nested fields are represented like "/parent/nested").
@@ -357,7 +403,11 @@ def json_spec(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyVal
         DHError
     """
     try:
-        col_defs = [c.j_column_definition for c in _build_column_definitions(col_defs)]
+        if isinstance(col_defs, dict):
+            col_defs = [Column(k, v).j_column_definition for k, v in col_defs.items()]
+        else:
+            col_defs = [Column(*t).j_column_definition for t in col_defs]
+
         if mapping is None:
             return KeyValueSpec(j_spec=_JKafkaTools_Consume.jsonSpec(col_defs))
         mapping = j_hashmap(mapping)
