@@ -34,13 +34,13 @@ KeyValueSpec.IGNORE = KeyValueSpec(_JKafkaTools_Produce.IGNORE)
 
 
 def produce(
-        table: Table,
-        kafka_config: Dict,
-        topic: str,
-        key_spec: KeyValueSpec,
-        value_spec: KeyValueSpec,
-        last_by_key_columns: bool = False,
-        publish_initial: bool = True,
+    table: Table,
+    kafka_config: Dict,
+    topic: str,
+    key_spec: KeyValueSpec,
+    value_spec: KeyValueSpec,
+    last_by_key_columns: bool = False,
+    publish_initial: bool = True,
 ) -> Callable[[], None]:
     """Produce to Kafka from a Deephaven table.
 
@@ -75,6 +75,8 @@ def produce(
             raise ValueError(
                 "at least one argument for 'key_spec' or 'value_spec' must be different from KeyValueSpec.IGNORE"
             )
+        if not publish_initial and not table.is_refreshing:
+            raise ValueError("publishInitial == False and table.is_refreshing == False")
         options = (
             _JKafkaPublishOptions.builder()
             .table(table.j_table)
@@ -94,9 +96,7 @@ def produce(
             try:
                 runnable.run()
             except Exception as ex:
-                raise DHError(
-                    ex, "failed to stop publishing to Kafka and the clean-up."
-                ) from ex
+                raise DHError(ex, "failed to stop publishing to Kafka and the clean-up.") from ex
 
         return cleanup
     except Exception as e:
