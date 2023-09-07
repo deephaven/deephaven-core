@@ -59,6 +59,19 @@ public class TestFunctionBackedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    public void testNoSources() {
+        // If no sources are specified, function should still run once on initializtaion.
+        final Table functionBacked =
+                FunctionGeneratedTableFactory.create(() -> newTable(
+                        stringCol("StringCol", "MyString"),
+                        intCol("IntCol", 12345)));
+
+        assertEquals(functionBacked.size(), 1);
+        assertTableEquals(newTable(
+                stringCol("StringCol", "MyString"),
+                intCol("IntCol", 12345)), functionBacked);
+    }
+
     public void testMultipleSources() throws Exception {
         final AppendOnlyArrayBackedMutableTable source1 = AppendOnlyArrayBackedMutableTable.make(TableDefinition.of(
                 ColumnDefinition.of("StringCol", Type.stringType())));
