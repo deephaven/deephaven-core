@@ -15,6 +15,12 @@ include(GNUInstallDirs)
 
 add_compile_options(-Wall -Werror -Wno-deprecated-declarations)
 
+option(SANITIZE_ADDRESS "Enable address sanitizer" "OFF")
+if(${SANITIZE_ADDRESS} STREQUAL "ON")
+  add_compile_options("-fsanitize=address")
+  link_libraries("-fsanitize=address")
+endif()
+
 add_subdirectory(dhclient)
 add_subdirectory(dhcore)
 add_subdirectory(tests)
