@@ -1,0 +1,21 @@
+/*
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+ */
+syntax = "proto3";
+
+package io.deephaven.kafka.protobuf.gen;
+
+option java_multiple_files = false;
+option optimize_for = SPEED;
+
+message MyMessage {
+  message FirstAndLast {
+    string first_name = 1;
+    string last_name = 2;
+  }
+  oneof name_type {
+    string name = 1;
+    FirstAndLast first_and_last = 3;
+  }
+  int32 age = 2;
+}

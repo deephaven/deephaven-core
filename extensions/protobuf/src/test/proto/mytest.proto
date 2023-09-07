@@ -1,0 +1,222 @@
+/*
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+syntax = "proto3";
+
+import "google/protobuf/any.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+
+package io.deephaven.protobuf.test;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+
+message UnionType {
+  oneof type {
+    bool bool = 1;
+    int32 int32 = 2;
+    uint32 uint32 = 3;
+    int64 int64 = 4;
+    uint64 uint64 = 5;
+    float float = 6;
+    double double = 7;
+    string string = 8;
+    bytes bytes = 9;
+  }
+}
+
+message AStringStringMap {
+  map<string, string> properties = 1;
+}
+
+message AnIntIntMap {
+  map<uint32, int32> properties = 1;
+}
+
+message ALongTimestampMap {
+  map<int64, google.protobuf.Timestamp> properties = 1;
+}
+
+message ALongNestedTimestampMap {
+  map<int64, ATimestamp> properties = 1;
+}
+
+message AnIntFooBarMap {
+  message FooBar {
+    string foo = 1;
+    int64 bar = 2;
+  }
+  map<int32, FooBar> properties = 1;
+}
+
+message ATimestamp {
+  google.protobuf.Timestamp ts = 1;
+}
+
+message TwoTs {
+  google.protobuf.Timestamp ts1 = 1;
+  google.protobuf.Timestamp ts2 = 2;
+}
+
+message ADuration {
+  google.protobuf.Duration dur = 1;
+}
+
+message AnEnum {
+  enum TheEnum {
+    FOO = 0;
+    BAR = 1;
+    BAZ = 2;
+  }
+  TheEnum fbb = 1;
+}
+
+message OptionalBasics {
+  optional bool bool = 1;
+  optional int32 int32 = 2;
+  optional uint32 uint32 = 3;
+  optional int64 int64 = 4;
+  optional uint64 uint64 = 5;
+  optional float float = 6;
+  optional double double = 7;
+  optional string string = 8;
+  optional bytes bytes = 9;
+}
+
+message TheWrappers {
+  google.protobuf.BoolValue bool = 1;
+  google.protobuf.Int32Value int32 = 2;
+  google.protobuf.UInt32Value uint32 = 3;
+  google.protobuf.Int64Value int64 = 4;
+  google.protobuf.UInt64Value uint64 = 5;
+  google.protobuf.FloatValue float = 6;
+  google.protobuf.DoubleValue double = 7;
+  google.protobuf.StringValue string = 8;
+  google.protobuf.BytesValue bytes = 9;
+}
+
+message RepeatedBasics {
+  repeated bool bool = 1;
+  repeated int32 int32 = 2;
+  repeated uint32 uint32 = 3;
+  repeated int64 int64 = 4;
+  repeated uint64 uint64 = 5;
+  repeated float float = 6;
+  repeated double double = 7;
+  repeated string string = 8;
+  repeated bytes bytes = 9;
+}
+
+message RepeatedWrappers {
+  repeated google.protobuf.BoolValue bool = 1;
+  repeated google.protobuf.Int32Value int32 = 2;
+  repeated google.protobuf.UInt32Value uint32 = 3;
+  repeated google.protobuf.Int64Value int64 = 4;
+  repeated google.protobuf.UInt64Value uint64 = 5;
+  repeated google.protobuf.FloatValue float = 6;
+  repeated google.protobuf.DoubleValue double = 7;
+  repeated google.protobuf.StringValue string = 8;
+  repeated google.protobuf.BytesValue bytes = 9;
+}
+
+message RepeatedObject {
+  message XYZ {
+    int32 x = 1;
+    string y = 2;
+    google.protobuf.Timestamp z = 3;
+  }
+  repeated XYZ xyz = 1;
+}
+
+message MultiRepeated {
+  repeated RepeatedBasics my_basics = 1;
+  repeated RepeatedWrappers my_wrappers = 2;
+  repeated RepeatedObject my_objects = 3;
+}
+
+message RepeatedTimestamp {
+  repeated google.protobuf.Timestamp ts = 1;
+}
+
+message RepeatedDuration {
+  repeated google.protobuf.Duration dur = 1;
+}
+
+message ANested {
+  message SubMessage {
+    int32 foo = 1;
+    int64 bar = 2;
+  }
+
+  SubMessage baz = 1;
+}
+
+message AMultiNested {
+  message SubMessage1 {
+    message SubMessage2 {
+      string world = 1;
+      google.protobuf.StringValue world2 = 2;
+      google.protobuf.DoubleValue world3 = 3;
+    }
+    int32 foo = 1;
+    int64 bar = 2;
+    SubMessage2 baz = 3;
+  }
+  SubMessage1 hello = 1;
+}
+
+message RepeatedMessage {
+  message Person {
+    string first_name = 1;
+    string last_name = 2;
+  }
+  repeated Person persons = 1;
+}
+
+message NestedRepeatedTimestamps {
+  message Timestamps {
+    repeated google.protobuf.Timestamp ts = 1;
+  }
+  repeated Timestamps stamps = 1;
+}
+
+// tread this type as a byte
+message ByteWrapper {
+  int32 value = 1;
+}
+
+message NestedByteWrapper {
+  // this should be treated as byte
+  ByteWrapper my_byte = 1;
+}
+
+message ByteWrapperRepeated {
+  // this should be treated as byte[]
+  repeated ByteWrapper my_bytes = 1;
+}
+
+message AnyWrapper {
+  google.protobuf.Any my_any = 1;
+}
+
+message FieldMaskWrapper {
+  google.protobuf.FieldMask my_field_mask = 1;
+}
+
+message FieldPathTesting {
+  message Baz {
+    int32 zip = 1;
+  }
+  message Bar {
+    Baz baz = 1;
+  }
+  message Foo {
+    Bar bar = 1;
+    int64 zap = 2;
+    string zoom = 3;
+  }
+  Foo foo = 1;
+}

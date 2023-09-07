@@ -88,6 +88,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      * @param kafkaValueSerializer The kafka {@link Serializer} to use for values
      * @param valueChunkSerializer Optional {@link KeyOrValueSerializer} to consume table data and produce Kafka record
      *        values in chunk-oriented fashion
+     * @param publishInitial If the initial data in {@code table} should be published
      */
     public PublishToKafka(
             final Properties props,
@@ -98,7 +99,8 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
             final KeyOrValueSerializer<K> keyChunkSerializer,
             final String[] valueColumns,
             final Serializer<V> kafkaValueSerializer,
-            final KeyOrValueSerializer<V> valueChunkSerializer) {
+            final KeyOrValueSerializer<V> valueChunkSerializer,
+            final boolean publishInitial) {
         this.table = table;
         this.producer = new KafkaProducer<>(
                 props,
@@ -107,12 +109,12 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
         this.topic = topic;
         this.keyChunkSerializer = keyChunkSerializer;
         this.valueChunkSerializer = valueChunkSerializer;
-
-        // Publish the initial table state
-        try (final PublicationGuard guard = new PublicationGuard()) {
-            publishMessages(table.getRowSet(), false, true, guard);
+        if (publishInitial) {
+            // Publish the initial table state
+            try (final PublicationGuard guard = new PublicationGuard()) {
+                publishMessages(table.getRowSet(), false, true, guard);
+            }
         }
-
         // Install a listener to publish subsequent updates
         if (table.isRefreshing()) {
             table.addUpdateListener(publishListener = new PublishListener(

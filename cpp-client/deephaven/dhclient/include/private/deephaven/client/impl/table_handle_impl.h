@@ -269,6 +269,9 @@ public:
   std::shared_ptr<TableHandleImpl> WhereIn(const TableHandleImpl &filter_table,
       std::vector<std::string> columns);
 
+  void AddTable(const TableHandleImpl &table_to_add);
+  void RemoveTable(const TableHandleImpl &table_to_remove);
+
   [[nodiscard]]
   std::vector<std::shared_ptr<ColumnImpl>> GetColumnImpls();
   [[nodiscard]]
