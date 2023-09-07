@@ -114,16 +114,6 @@ public class TimeLiteralReplacedExpression {
                 newVariables.put("_duration" + durationIndex, Duration.class);
 
                 durationIndex++;
-            } else if (DateTimeUtils.parseDurationNanosQuiet(s) != NULL_LONG) {
-                matcher.appendReplacement(convertedFormula, "_nanos" + nanosIndex);
-                instanceVariablesString
-                        .append("        private long _nanos").append(nanosIndex)
-                        .append("=DateTimeUtils.parseDurationNanos(\"")
-                        .append(expression, matcher.start() + 1, matcher.end() - 1)
-                        .append("\");\n");
-                newVariables.put("_nanos" + nanosIndex, long.class);
-
-                nanosIndex++;
             } else if (DateTimeUtils.parseLocalDateQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_localDate" + localDateIndex);
                 instanceVariablesString.append("        private java.time.LocalDate _localDate").append(localDateIndex)

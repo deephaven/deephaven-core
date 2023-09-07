@@ -747,7 +747,7 @@ public class QueryLanguageFunctionGenerator {
 
         String cast = "";
 
-        if (op == BinaryExpr.Operator.DIVIDE && QueryLanguageParser.isNonFPNumber(type2)) {
+        if (op == BinaryExpr.Operator.DIVIDE && isNonFPNumber(type2)) {
             cast = "(double)";
             promotedType = double.class;
         }
@@ -815,7 +815,7 @@ public class QueryLanguageFunctionGenerator {
     }
 
     /**
-     * Returns a String of an small example literal value of {@code type}. Used for generating comparison tests.
+     * Returns a String of an example small literal value of {@code type}. Used for generating comparison tests.
      */
     private static String getSmallLiteral(Class<?> type) {
         if (type.equals(boolean.class)) {
@@ -840,7 +840,7 @@ public class QueryLanguageFunctionGenerator {
     }
 
     /**
-     * Returns a String of an bigger example literal value of {@code type}. Must be larger than the value produced by
+     * Returns a String of an example bigger literal value of {@code type}. Must be larger than the value produced by
      * getSmallLiteral (across all types). Used for generating comparison tests.
      */
     private static String getBiggerLiteral(Class<?> type) {
@@ -863,6 +863,18 @@ public class QueryLanguageFunctionGenerator {
         } else {
             throw new IllegalArgumentException("Unsupported type " + type);
         }
+    }
+
+    private static boolean isNonFPNumber(Class<?> type) {
+        type = TypeUtils.getUnboxedType(type);
+
+        // noinspection SimplifiableIfStatement
+        if (type == null) {
+            return false;
+        }
+
+        return type == int.class || type == long.class || type == byte.class || type == short.class
+                || type == char.class;
     }
 }
 

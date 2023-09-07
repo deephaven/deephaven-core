@@ -255,6 +255,9 @@ project(':extensions-performance').projectDir = file('extensions/performance')
 include(':extensions-source-support')
 project(':extensions-source-support').projectDir = file('extensions/source-support')
 
+include(':extensions-protobuf')
+project(':extensions-protobuf').projectDir = file('extensions/protobuf')
+
 include(':plugin')
 
 include(':plugin-dagger')

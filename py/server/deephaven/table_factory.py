@@ -4,14 +4,17 @@
 
 """ This module provides various ways to make a Deephaven table. """
 
+import datetime
 from typing import Callable, List, Dict, Any, Union, Sequence
 
 import jpy
+import numpy as np
+import pandas as pd
 
-from deephaven import execution_context, DHError
+from deephaven import execution_context, DHError, time
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import InputColumn, Column
-from deephaven.dtypes import DType
+from deephaven.dtypes import DType, Duration, Instant
 from deephaven.execution_context import ExecutionContext
 from deephaven.jcompat import j_lambda
 from deephaven.jcompat import to_sequence
@@ -52,14 +55,18 @@ def empty_table(size: int) -> Table:
         raise DHError(e, "failed to create an empty table.") from e
 
 
-def time_table(period: Union[str, int], start_time: str = None, blink_table: bool = False) -> Table:
+def time_table(period: Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta],
+               start_time: Union[None, Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp] = None,
+               blink_table: bool = False) -> Table:
     """Creates a table that adds a new row on a regular interval.
 
     Args:
-        period (Union[str, int]): time interval between new row additions, can be expressed as an integer in
-            nanoseconds or a time interval string, e.g. "PT00:00:00.001" or "PT1s"
-        start_time (str, optional): start time for adding new rows, defaults to None which means use the current time
-            as the start time
+        period (Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
+            time interval between new row additions, can be expressed as an integer in nanoseconds,
+            a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time duration types.
+        start_time (Union[None, str, datetime.datetime, np.datetime64], optional):
+            start time for adding new rows, defaults to None which means use the current time
+            as the start time.
         blink_table (bool, optional): if the time table should be a blink table, defaults to False
 
     Returns:
@@ -70,11 +77,19 @@ def time_table(period: Union[str, int], start_time: str = None, blink_table: boo
     """
     try:
         builder = _JTableTools.timeTableBuilder()
+
+        if not isinstance(period, str) and not isinstance(period, int):
+            period = time.to_j_duration(period)
+
         builder.period(period)
+
         if start_time:
+            start_time = time.to_j_instant(start_time)
             builder.startTime(start_time)
+
         if blink_table:
             builder.blinkTable(blink_table)
+
         return Table(j_table=builder.build())
     except Exception as e:
         raise DHError(e, "failed to create a time table.") from e

@@ -220,9 +220,9 @@ TypeConverter TypeConverter::CreateNew(const std::vector<T> &values) {
     bool valid;
     const auto *contained_value = TryGetContainedValue(&value, &valid);
     if (valid) {
-      OkOrThrow(DEEPHAVEN_EXPR_MSG(builder.Append(*contained_value)));
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder.Append(*contained_value)));
     } else {
-      OkOrThrow(DEEPHAVEN_EXPR_MSG(builder.AppendNull()));
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder.AppendNull()));
     }
   }
   auto builder_res = builder.Finish();
@@ -248,9 +248,9 @@ inline TypeConverter TypeConverter::CreateNew(const std::vector<deephaven::dhcor
     bool valid;
     const auto *contained_value = TryGetContainedValue(&value, &valid);
     if (valid) {
-      OkOrThrow(DEEPHAVEN_EXPR_MSG(builder.Append(contained_value->Nanos())));
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder.Append(contained_value->Nanos())));
     } else {
-      OkOrThrow(DEEPHAVEN_EXPR_MSG(builder.AppendNull()));
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder.AppendNull()));
     }
   }
   auto builder_res = builder.Finish();

@@ -25,7 +25,7 @@ std::shared_ptr<arrow::flight::FlightStreamReader> FlightWrapper::GetFlightStrea
   arrow::flight::Ticket tkt;
   tkt.ticket = table.Impl()->Ticket().ticket();
 
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(impl_->Server()->FlightClient()->DoGet(options, tkt, &fsr)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(impl_->Server()->FlightClient()->DoGet(options, tkt, &fsr)));
   return fsr;
 }
 

@@ -10,7 +10,7 @@ namespace deephaven::dhcore::clienttable {
 std::shared_ptr<Schema> Schema::Create(std::vector<std::string> names, std::vector<ElementTypeId::Enum> types) {
   if (names.size() != types.size()) {
     auto message = Stringf("Sizes differ: %o vs %o", names.size(), types.size());
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
   std::map<std::string_view, size_t, std::less<>> index;
   for (size_t i = 0; i != names.size(); ++i) {
@@ -39,6 +39,6 @@ std::optional<size_t> Schema::GetColumnIndex(std::string_view name, bool strict)
     return {};
   }
   auto message = Stringf(R"(Column name "%o" not found)", name);
-  throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+  throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
 }
 }  // namespace deephaven::dhcore::clienttable
