@@ -299,8 +299,9 @@ def protobuf_spec(
             reproducibility across restarts where schema changes may occur, it is advisable for callers to set this.
             This will ensure the resulting table definition will not change across restarts. This gives the caller an
             explicit opportunity to update any downstream consumers when updating schema_version if necessary.
-        schema_message_name (Optional[str]): the schema message name, whose descriptor will be used to inform the
-            resulting table definition, or None to use the first message definition in the schema. The default is None.
+        schema_message_name (Optional[str]): the fully-qualified protobuf message name, for example
+            "com.example.MyMessage". This message's descriptor will be used as the basis for the resulting table's
+            definition. If None, the first message descriptor in the protobuf schema will be used. The default is None.
             It is advisable for callers to explicitly set this.
         include (Optional[List[str]]): the '/' separated paths to include. The final path may be a '*' to additionally
             match everything that starts with path. For example, include=["/foo/bar"] will include the field path

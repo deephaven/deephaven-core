@@ -88,9 +88,10 @@ public abstract class ProtobufConsumeOptions {
     public abstract OptionalInt schemaVersion();
 
     /**
-     * The schema {@link com.google.protobuf.Message} name, whose {@link Descriptor} will be used to inform the
-     * resulting {@link io.deephaven.engine.table.TableDefinition table definition}. When not set, the first message in
-     * the schema will be used.
+     * The fully-qualified protobuf {@link com.google.protobuf.Message} name, for example "com.example.MyMessage". This
+     * message's {@link Descriptor} will be used as the basis for the resulting table's
+     * {@link io.deephaven.engine.table.TableDefinition definition}. When not set, the first message descriptor in the
+     * protobuf schema will be used.
      *
      * <p>
      * It is advisable for callers to explicitly set this.
