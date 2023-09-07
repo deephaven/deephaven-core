@@ -3,6 +3,9 @@
  */
 package io.deephaven.server.runner;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import dev.dirs.ProjectDirectories;
 import io.deephaven.base.system.PrintStreamGlobals;
 import io.deephaven.configuration.CacheDir;
 import io.deephaven.configuration.ConfigDir;
@@ -62,17 +65,18 @@ public class MainHelper {
         }
     }
 
-    private static void bootstrapProjectDirectories() throws IOException {
+    private static ProjectDirectories defaultDirectories() {
         final String applicationName =
                 applicationProperty().or(MainHelper::applicationEnvironmentVariable).orElse("deephaven");
+        return ProjectDirectories.from("io", "Deephaven Data Labs", applicationName);
+    }
 
-        // Default directories based on the underlying OS conventions
-        final dev.dirs.ProjectDirectories defaultDirectories =
-                dev.dirs.ProjectDirectories.from("io", "Deephaven Data Labs", applicationName);
-
-        final Path cacheDir = CacheDir.getOrSet(defaultDirectories.cacheDir);
-        final Path configDir = ConfigDir.getOrSet(defaultDirectories.configDir);
-        final Path dataDir = DataDir.getOrSet(defaultDirectories.dataDir);
+    private static void bootstrapProjectDirectories() throws IOException {
+        final Supplier<ProjectDirectories> defaultDirectoriesSupplier =
+                Suppliers.memoize(MainHelper::defaultDirectories);
+        final Path cacheDir = CacheDir.getOrSet(() -> defaultDirectoriesSupplier.get().cacheDir);
+        final Path configDir = ConfigDir.getOrSet(() -> defaultDirectoriesSupplier.get().configDir);
+        final Path dataDir = DataDir.getOrSet(() -> defaultDirectoriesSupplier.get().dataDir);
 
         Files.createDirectories(cacheDir);
         Files.createDirectories(dataDir);
