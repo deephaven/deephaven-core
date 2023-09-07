@@ -3,21 +3,24 @@
 #
 
 """ The kafka.consumer module supports consuming a Kakfa topic as a Deephaven live table. """
-from typing import Dict, Tuple, List, Callable, Union
+import jpy
+from typing import Dict, Tuple, List, Callable, Union, Optional
 from warnings import warn
 
-import jpy
-
 from deephaven import dtypes
-from deephaven.jcompat import j_hashmap, j_properties
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import Column
 from deephaven.dherror import DHError
 from deephaven.dtypes import DType
+from deephaven.jcompat import j_hashmap, j_properties, j_array_list
 from deephaven.table import Table, PartitionedTable
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JKafkaTools_Consume = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
+_JProtobufConsumeOptions = jpy.get_type("io.deephaven.kafka.protobuf.ProtobufConsumeOptions")
+_JProtobufDescriptorParserOptions = jpy.get_type("io.deephaven.protobuf.ProtobufDescriptorParserOptions")
+_JFieldOptions = jpy.get_type("io.deephaven.protobuf.FieldOptions")
+_JFieldPath = jpy.get_type("io.deephaven.protobuf.FieldPath")
 _JPythonTools = jpy.get_type("io.deephaven.integrations.python.PythonTools")
 ALL_PARTITIONS = _JKafkaTools.ALL_PARTITIONS
 
@@ -279,6 +282,57 @@ def _consume(
             ))
     except Exception as e:
         raise DHError(e, "failed to consume a Kafka stream.") from e
+
+
+def protobuf_spec(
+        schema: str,
+        schema_version: Optional[int] = None,
+        schema_message_name: Optional[str] = None,
+        include: Optional[List[str]] = None,
+) -> KeyValueSpec:
+    """Creates a spec for how to use Kafka data when consuming a Kafka stream to a Deephaven table. This will fetch the
+    protobuf descriptor for the schema subject from the schema registry using version schema_version and create protobuf
+    message parsing functions according to parsing options. These functions will be adapted to handle schema changes.
+
+    Args:
+        schema (str): the schema subject name
+        schema_version (Optional[int]): the schema version, or None for latest, default is None. For purposes of
+            reproducibility across restarts where schema changes may occur, it is advisable for callers to set this.
+            This will ensure the resulting table definition will not change across restarts. This gives the caller an
+            explicit opportunity to update any downstream consumers when updating schema_version if necessary.
+        schema_message_name (Optional[str]): the fully-qualified protobuf message name, for example
+            "com.example.MyMessage". This message's descriptor will be used as the basis for the resulting table's
+            definition. If None, the first message descriptor in the protobuf schema will be used. The default is None.
+            It is advisable for callers to explicitly set this.
+        include (Optional[List[str]]): the '/' separated paths to include. The final path may be a '*' to additionally
+            match everything that starts with path. For example, include=["/foo/bar"] will include the field path
+            name paths [], ["foo"], and ["foo", "bar"]. include=["/foo/bar/*"] will additionally include any field path
+            name paths that start with ["foo", "bar"]:  ["foo", "bar", "baz"],  ["foo", "bar", "baz", "zap"], etc. When
+            multiple includes are specified, the fields will be included when any of the components matches. Default is
+            None, which includes all paths.
+
+    Returns:
+        a KeyValueSpec
+    """
+    parser_options_builder = _JProtobufDescriptorParserOptions.builder()
+    if include is not None:
+        parser_options_builder.fieldOptions(
+            _JFieldOptions.includeIf(
+                _JFieldPath.anyMatches(j_array_list(include))
+            )
+        )
+    pb_consume_builder = (
+        _JProtobufConsumeOptions.builder()
+        .schemaSubject(schema)
+        .parserOptions(parser_options_builder.build())
+    )
+    if schema_version:
+        pb_consume_builder.schemaVersion(schema_version)
+    if schema_message_name:
+        pb_consume_builder.schemaMessageName(schema_message_name)
+    return KeyValueSpec(
+        j_spec=_JKafkaTools_Consume.protobufSpec(pb_consume_builder.build())
+    )
 
 
 def avro_spec(
