@@ -1,10 +1,9 @@
 from time import sleep
 
 import deephaven.dtypes as dht
-from deephaven import empty_table, input_table, new_table, update_graph
+from deephaven import empty_table, input_table, new_table, update_graph, function_generated_table
 from deephaven.column import string_col, int_col
 from deephaven.execution_context import get_exec_ctx
-from deephaven.util import create_generated_table
 from tests.testbase import BaseTestCase
 
 
@@ -21,7 +20,7 @@ class TableTestCase(BaseTestCase):
         def table_generator_function():
             return empty_table(1).update("Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()")
 
-        result_table = create_generated_table(table_generator_function, refresh_interval_ms=2000)
+        result_table = function_generated_table(table_generator_function, refresh_interval_ms=2000)
 
         self.assertEqual(result_table.size, 1)
         initial_time = result_table.j_table.getColumnSource("Timestamp").get(0)
@@ -42,7 +41,7 @@ class TableTestCase(BaseTestCase):
         def table_generator_function():
             return append_only_input_table.last_by().update('ResultStr = MyStr')
 
-        result_table = create_generated_table(table_generator_function, source_tables=append_only_input_table)
+        result_table = function_generated_table(table_generator_function, source_tables=append_only_input_table)
 
         self.assertEqual(result_table.size, 0)
 
@@ -66,7 +65,7 @@ class TableTestCase(BaseTestCase):
                 int_col('ResultInt', [my_int]),
             ])
 
-        result_table = create_generated_table(table_generator_function,
+        result_table = function_generated_table(table_generator_function,
                                               source_tables=[append_only_input_table1, append_only_input_table2])
 
         self.assertEqual(result_table.size, 1)
