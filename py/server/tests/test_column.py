@@ -146,6 +146,10 @@ class ColumnTestCase(BaseTestCase):
         _ = datetime_col(name="Datetime", data=data)
         self.assertEqual(_.data_type, dtypes.Instant)
 
+        data = np.array(['1970-01-01T00:00:00.000 UTC', '2020-01-01T01:00:00.000 UTC'])
+        _ = datetime_col(name="Datetime", data=data)
+        self.assertEqual(_.data_type, dtypes.Instant)
+
 
 @dataclass
 class CustomClass:
