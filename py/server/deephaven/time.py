@@ -17,6 +17,7 @@ from deephaven import DHError
 from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
+_JPythonTimeComponents = jpy.get_type("io.deephaven.integrations.python.PythonTimeComponents")
 _JLocalDate = jpy.get_type("java.time.LocalDate")
 _JLocalTime = jpy.get_type("java.time.LocalTime")
 _JInstant = jpy.get_type("java.time.Instant")
@@ -24,8 +25,8 @@ _JZonedDateTime = jpy.get_type("java.time.ZonedDateTime")
 _JDuration = jpy.get_type("java.time.Duration")
 _JPeriod = jpy.get_type("java.time.Period")
 
-_nanos_per_second = 1000000000
-_nanos_per_micro = 1000
+_NANOS_PER_SECOND = 1000000000
+_NANOS_PER_MICRO = 1000
 
 
 # region Clock
@@ -277,9 +278,9 @@ def to_j_local_time(dt: Union[None, LocalTime, int, str, datetime.time, datetime
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseLocalTime(dt)
         elif isinstance(dt, pandas.Timestamp):
-            return _JLocalTime.of(dt.hour, dt.minute, dt.second, dt.microsecond * _nanos_per_micro + dt.nanosecond)
+            return _JLocalTime.of(dt.hour, dt.minute, dt.second, dt.microsecond * _NANOS_PER_MICRO + dt.nanosecond)
         elif isinstance(dt, datetime.time) or isinstance(dt, datetime.datetime):
-            return _JLocalTime.of(dt.hour, dt.minute, dt.second, dt.microsecond * _nanos_per_micro)
+            return _JLocalTime.of(dt.hour, dt.minute, dt.second, dt.microsecond * _NANOS_PER_MICRO)
         elif isinstance(dt, numpy.datetime64):
             # Conversion only supports micros resolution
             return to_j_local_time(dt.astype(datetime.time))
@@ -327,11 +328,11 @@ def to_j_instant(dt: Union[None, Instant, int, str, datetime.datetime, numpy.dat
         elif isinstance(dt, datetime.datetime):
             epoch_time = dt.timestamp()
             epoch_sec = int(epoch_time)
-            nanos = int((epoch_time - epoch_sec) * _nanos_per_second)
+            nanos = int((epoch_time - epoch_sec) * _NANOS_PER_SECOND)
             return _JInstant.ofEpochSecond(epoch_sec, nanos)
         elif isinstance(dt, numpy.datetime64):
             epoch_nanos = dt.astype('datetime64[ns]').astype(numpy.int64)
-            epoch_sec, nanos = divmod(epoch_nanos, _nanos_per_second)
+            epoch_sec, nanos = divmod(epoch_nanos, _NANOS_PER_SECOND)
             return _JInstant.ofEpochSecond(int(epoch_sec), int(nanos))
         elif isinstance(dt, pandas.Timestamp):
             return _JDateTimeUtils.epochNanosToInstant(dt.value)
@@ -439,10 +440,10 @@ def to_j_duration(dt: Union[None, Duration, int, str, datetime.timedelta, numpy.
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseDuration(dt)
         elif isinstance(dt, pandas.Timedelta):
-            nanos = int((dt / datetime.timedelta(microseconds=1)) * _nanos_per_micro) + dt.nanoseconds
+            nanos = int((dt / datetime.timedelta(microseconds=1)) * _NANOS_PER_MICRO) + dt.nanoseconds
             return _JDuration.ofNanos(nanos)
         elif isinstance(dt, datetime.timedelta):
-            nanos = int((dt / datetime.timedelta(microseconds=1)) * _nanos_per_micro)
+            nanos = int((dt / datetime.timedelta(microseconds=1)) * _NANOS_PER_MICRO)
             return _JDuration.ofNanos(nanos)
         elif isinstance(dt, numpy.timedelta64):
             nanos = int(dt.astype('timedelta64[ns]').astype(numpy.int64))
@@ -559,9 +560,11 @@ def to_date(dt: Union[None, LocalDate, ZonedDateTime]) -> Optional[datetime.date
         if dt is None:
             return None
         if isinstance(dt, LocalDate.j_type):
-            return datetime.date(dt.getYear(), dt.getMonthValue(), dt.getDayOfMonth())
+            year, month_value, day_of_month = _JPythonTimeComponents.getLocalDateComponents(dt)
+            return datetime.date(year, month_value, day_of_month)
         if isinstance(dt, ZonedDateTime.j_type):
-            return datetime.date(dt.getYear(), dt.getMonthValue(), dt.getDayOfMonth())
+            year, month_value, day_of_month = _JPythonTimeComponents.getLocalDateComponents(dt)
+            return datetime.date(year, month_value, day_of_month)
         else:
             raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.date")
     except TypeError as e:
@@ -588,9 +591,11 @@ def to_time(dt: Union[None, LocalTime, ZonedDateTime]) -> Optional[datetime.time
         if dt is None:
             return None
         elif isinstance(dt, LocalTime.j_type):
-            return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // _nanos_per_micro)
+            hour, minute, second, nano = _JPythonTimeComponents.getLocalTimeComponents(dt)
+            return datetime.time(hour, minute, second, nano // _NANOS_PER_MICRO)
         elif isinstance(dt, ZonedDateTime.j_type):
-            return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // _nanos_per_micro)
+            hour, minute, second, nano = _JPythonTimeComponents.getLocalTimeComponents(dt)
+            return datetime.time(hour, minute, second, nano // _NANOS_PER_MICRO)
         else:
             raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.time")
     except TypeError as e:
@@ -617,10 +622,12 @@ def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.da
         if dt is None:
             return None
         elif isinstance(dt, Instant.j_type):
-            ts = dt.getEpochSecond() + (dt.getNano() / _nanos_per_second)
+            epoch_second, nano = _JPythonTimeComponents.getInstantComponents(dt)
+            ts = epoch_second + (nano / _NANOS_PER_SECOND)
             return datetime.datetime.fromtimestamp(ts)
         elif isinstance(dt, ZonedDateTime.j_type):
-            ts = dt.toEpochSecond() + (dt.getNano() / _nanos_per_second)
+            epoch_second, nano = _JPythonTimeComponents.getInstantComponents(dt)
+            ts = epoch_second + (nano / _NANOS_PER_SECOND)
             return datetime.datetime.fromtimestamp(ts)
         else:
             raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
@@ -676,10 +683,12 @@ def to_np_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[numpy.
         if dt is None:
             return None
         elif isinstance(dt, Instant.j_type):
-            ts = dt.getEpochSecond() * _nanos_per_second + dt.getNano()
+            epoch_second, nano = _JPythonTimeComponents.getInstantComponents(dt)
+            ts = epoch_second * _NANOS_PER_SECOND + nano
             return numpy.datetime64(ts, 'ns')
         elif isinstance(dt, ZonedDateTime.j_type):
-            ts = dt.toEpochSecond() * _nanos_per_second + dt.getNano()
+            epoch_second, nano = _JPythonTimeComponents.getInstantComponents(dt)
+            ts = epoch_second * _NANOS_PER_SECOND + nano
             return numpy.datetime64(ts, 'ns')
         else:
             raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
@@ -706,11 +715,10 @@ def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
         if dt is None:
             return None
         elif isinstance(dt, Duration.j_type):
-            return datetime.timedelta(seconds=dt.getSeconds(), microseconds=dt.getNano() // _nanos_per_micro)
+            seconds, nano = _JPythonTimeComponents.getDurationComponents(dt)
+            return datetime.timedelta(seconds=seconds, microseconds=nano // _NANOS_PER_MICRO)
         elif isinstance(dt, Period.j_type):
-            y = dt.getYears()
-            m = dt.getMonths()
-            d = dt.getDays()
+            y, m, d = _JPythonTimeComponents.getPeriodComponents(dt)
 
             if y or m:
                 raise ValueError("Unsupported conversion: " + str(type(dt)) +
@@ -744,12 +752,11 @@ def to_pd_timedelta(dt: Union[None, Duration]) -> Optional[pandas.Timedelta]:
         if dt is None:
             return None
         elif isinstance(dt, Duration.j_type):
-            micros, nanos = divmod(dt.getNano(), _nanos_per_micro)
-            return pandas.Timedelta(seconds=dt.getSeconds(), microseconds=micros, nanoseconds=nanos)
+            seconds, nano = _JPythonTimeComponents.getDurationComponents(dt)
+            micros, nanos = divmod(nano, _NANOS_PER_MICRO)
+            return pandas.Timedelta(seconds=seconds, microseconds=micros, nanoseconds=nanos)
         elif isinstance(dt, Period.j_type):
-            y = dt.getYears()
-            m = dt.getMonths()
-            d = dt.getDays()
+            y, m, d = _JPythonTimeComponents.getPeriodComponents(dt)
 
             if y or m:
                 raise ValueError("Unsupported conversion: " + str(type(dt)) +
@@ -785,9 +792,7 @@ def to_np_timedelta64(dt: Union[None, Duration, Period]) -> Optional[numpy.timed
         elif isinstance(dt, Duration.j_type):
             return numpy.timedelta64(dt.toNanos(), 'ns')
         elif isinstance(dt, Period.j_type):
-            d = dt.getDays()
-            m = dt.getMonths()
-            y = dt.getYears()
+            y, m, d = _JPythonTimeComponents.getPeriodComponents(dt)
 
             count = (1 if d else 0) + (1 if m else 0) + (1 if y else 0)
 
