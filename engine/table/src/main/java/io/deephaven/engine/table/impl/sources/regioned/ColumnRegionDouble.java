@@ -98,6 +98,13 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
         }
 
         @Override
+        public void poison() {
+            for(int ii = 0; ii < getRegionCount(); ii++) {
+                getRegion(ii).poison();
+            }
+        }
+
+        @Override
         public double getDouble(final long elementIndex) {
             return lookupRegion(elementIndex).getDouble(elementIndex);
         }

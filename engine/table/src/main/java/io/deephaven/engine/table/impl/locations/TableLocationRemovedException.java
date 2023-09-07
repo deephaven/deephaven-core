@@ -6,20 +6,14 @@ import org.jetbrains.annotations.NotNull;
  * This exception is thrown when a {@link TableLocation} has been removed from a provider.
  */
 public class TableLocationRemovedException extends TableDataException {
-    private final TableKey tableKey;
-    private final TableLocationKey locationKey;
+    private final ImmutableTableLocationKey[] locationKeys;
 
-    public TableLocationRemovedException(@NotNull final TableLocation location, @NotNull final String message) {
+    public TableLocationRemovedException(@NotNull final String message, @NotNull final ImmutableTableLocationKey... locationKeys) {
         super(message);
-        this.tableKey = location.getTableKey();
-        this.locationKey = location.getKey();
+        this.locationKeys = locationKeys;
     }
 
-    public TableKey getTableKey() {
-        return tableKey;
-    }
-
-    public TableLocationKey getTableLocationKey() {
-        return locationKey;
+    public ImmutableTableLocationKey[] getLocationKeys() {
+        return locationKeys;
     }
 }

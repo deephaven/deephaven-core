@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
-import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.*;
 
 @Category(OutOfBandTest.class)
 public class SourcePartitionedTableTest extends RefreshingTableTestCase {
@@ -72,44 +72,56 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         super.tearDown();
     }
 
-    @Test
-    public void testAddAndRemoveLocations() {
-        final QueryTable p1 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
-                col("Sym", "aa", "bb", "aa", "bb"),
-                col("intCol", 10, 20, 40, 60),
-                col("doubleCol", 0.1, 0.2, 0.4, 0.6));
+    private QueryTable p1;
+    private QueryTable p2;
+    private QueryTable p3;
+    private QueryTable p4;
+
+    private DependentRegistrar registrar;
+    private TableBackedTableLocationProvider tlp;
+
+    private SourcePartitionedTable setUpData() {
+        p1 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "aa", "bb", "aa", "bb"),
+                intCol("intCol", 10, 20, 40, 60),
+                doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
         p1.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
 
-        final QueryTable p2 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
-                col("Sym", "cc", "dd", "cc", "dd"),
-                col("intCol", 100, 200, 400, 600),
-                col("doubleCol", 0.1, 0.2, 0.4, 0.6));
+        p2 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "cc", "dd", "cc", "dd"),
+                intCol("intCol", 100, 200, 400, 600),
+                doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
         p2.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
 
-        final QueryTable p3 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
-                col("Sym", "ee", "ff", "ee", "ff"),
-                col("intCol", 1000, 2000, 4000, 6000),
-                col("doubleCol", 0.1, 0.2, 0.4, 0.6));
+        p3 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "ee", "ff", "ee", "ff"),
+                intCol("intCol", 1000, 2000, 4000, 6000),
+                doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
         p3.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
 
-        final QueryTable p4 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
-                col("Sym", "gg", "hh", "gg", "hh"),
-                col("intCol", 10000, 20000, 40000, 60000),
-                col("doubleCol", 0.1, 0.2, 0.4, 0.6));
+        p4 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "gg", "hh", "gg", "hh"),
+                intCol("intCol", 10000, 20000, 40000, 60000),
+                doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
         p4.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
 
-        final DependentRegistrar registrar = new DependentRegistrar();
-        final TableBackedTableLocationProvider tlp = new TableBackedTableLocationProvider(
+        registrar = new DependentRegistrar();
+        tlp = new TableBackedTableLocationProvider(
                 registrar,
                 true,
                 p1, p2);
 
-        final SourcePartitionedTable spt = new SourcePartitionedTable(p1.getDefinition(),
+        return new SourcePartitionedTable(p1.getDefinition(),
                 t -> t,
                 tlp,
                 true,
                 true,
                 l -> true);
+    }
+
+    @Test
+    public void testAddAndRemoveLocations() {
+        final SourcePartitionedTable spt = setUpData();
 
         final Table merged = spt.merge();
         final Table aggs = merged.countBy("Count", "Sym");
@@ -171,5 +183,32 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
                         &&
                         errors.stream().anyMatch(e -> FindExceptionCause.findCause(e,
                                 ConstituentTableException.class) instanceof ConstituentTableException));
+    }
+
+    /**
+     * This test verifies that after a location is removed any attempt to read from it, current or previous
+     * valueswill fail.
+     */
+    public void testCantReadPrev() {
+        final SourcePartitionedTable spt = setUpData();
+
+        final Table merged = spt.merge();
+        final Table aggs = merged.sumBy("Sym");
+
+        Table expected = TableTools.merge(p1, p2).sumBy("Count", "Sym");
+        assertTableEquals(expected, aggs);
+
+        ImmutableTableLocationKey[] tlks = tlp.getTableLocationKeys()
+                .stream().sorted().toArray(ImmutableTableLocationKey[]::new);
+        tlp.removeTableLocationKey(tlks[0]);
+        tlp.refresh();
+
+        allowingError(() -> updateGraph.runWithinUnitTestCycle(() -> {
+            updateGraph.refreshSources();
+            registrar.run();
+        }), errors -> errors.size() == 1 &&
+                FindExceptionCause.findCause(errors.get(0),
+                        TableLocationRemovedException.class) instanceof TableLocationRemovedException);
+        getUpdateErrors().clear();
     }
 }

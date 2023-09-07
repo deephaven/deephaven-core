@@ -6,6 +6,7 @@ package io.deephaven.util;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 public class FindExceptionCause {
     /**
@@ -23,6 +24,22 @@ public class FindExceptionCause {
             cause = cause.getCause();
         }
         return original;
+    }
+
+    /**
+     * Given an exception and a list of expected exception types, traverse the cause tree and return the first exception
+     * that matches the list of expected cause types.
+     */
+    public static <E extends Exception> Optional<E> findCause(@NotNull final Exception original, @NotNull final Class<E> expectedType) {
+        Throwable cause = original.getCause();
+        while (cause != null) {
+            final Throwable checkCause = cause;
+            if (expectedType.isAssignableFrom(checkCause.getClass())) {
+                return Optional.of((E) cause);
+            }
+            cause = cause.getCause();
+        }
+        return Optional.empty();
     }
 
     /**

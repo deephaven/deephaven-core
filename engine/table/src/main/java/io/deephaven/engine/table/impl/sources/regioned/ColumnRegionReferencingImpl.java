@@ -23,6 +23,11 @@ public class ColumnRegionReferencingImpl<ATTR extends Any, REFERENCED_COLUMN_REG
         this.referencedColumnRegion = referencedColumnRegion;
     }
 
+    @Override
+    public void poison() {
+        referencedColumnRegion.poison();
+    }
+
     @NotNull
     @Override
     public REFERENCED_COLUMN_REGION getReferencedRegion() {

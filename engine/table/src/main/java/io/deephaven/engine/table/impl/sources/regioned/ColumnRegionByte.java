@@ -123,6 +123,13 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
 
         @Override
+        public void poison() {
+            for(int ii = 0; ii < getRegionCount(); ii++) {
+                getRegion(ii).poison();
+            }
+        }
+
+        @Override
         public byte getByte(final long elementIndex) {
             return lookupRegion(elementIndex).getByte(elementIndex);
         }

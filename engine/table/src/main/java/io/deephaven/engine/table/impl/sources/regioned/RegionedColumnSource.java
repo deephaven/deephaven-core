@@ -111,4 +111,7 @@ public interface RegionedColumnSource<DATA_TYPE>
      */
     int addRegion(@NotNull final ColumnDefinition<?> columnDefinition,
             @NotNull final ColumnLocation columnLocation);
+
+    // EXPERIMENT
+    void poisionRegion(int regionIndex);
 }

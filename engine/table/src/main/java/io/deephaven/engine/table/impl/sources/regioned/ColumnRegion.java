@@ -18,6 +18,13 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
         return 0;
     }
 
+    //TODO: EXPERIMENT:
+
+    /**
+     * Poison the region -- any further reads will fail.
+     */
+    void poison();
+
     abstract class Null<ATTR extends Any>
             extends GenericColumnRegionBase<ATTR>
             implements ColumnRegion<ATTR>, WithDefaultsForRepeatingValues<ATTR> {

@@ -125,7 +125,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     }
 
     @Override
-    public void removeLocationKey(@NotNull final ImmutableTableLocationKey locationKey) {
+    public boolean removeLocationKey(@NotNull final ImmutableTableLocationKey locationKey) {
         final IncludedTableLocationEntry includedLocation = includedTableLocations.remove(locationKey);
         final EmptyTableLocationEntry emptyLocation = emptyTableLocations.remove(locationKey);
 
@@ -134,18 +134,21 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 log.debug().append("EMPTY_LOCATION_REMOVED:").append(locationKey.toString()).endl();
             }
         } else if (includedLocation != null) {
-            throw new TableLocationRemovedException(includedLocation.location, getClass().getSimpleName() +
-                    " does not support removing locations");
+            includedLocation.poision();
+            return true;
         }
+
+        return false;
     }
 
     @Override
     public synchronized WritableRowSet refresh() {
         final RowSetBuilderSequential addedRowSetBuilder = RowSetFactory.builderSequential();
-        for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) { // Ordering matters, since we're
-                                                                                       // using a sequential builder.
+        // Ordering matters, since we're using a sequential builder.
+        for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) {
             entry.pollUpdates(addedRowSetBuilder);
         }
+
         Collection<EmptyTableLocationEntry> entriesToInclude = null;
         for (final Iterator<EmptyTableLocationEntry> iterator = emptyTableLocations.iterator(); iterator.hasNext();) {
             final EmptyTableLocationEntry nonexistentEntry = iterator.next();
@@ -325,9 +328,15 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
 
         private void pollUpdates(final RowSetBuilderSequential addedRowSetBuilder) {
             Assert.neqNull(subscriptionBuffer, "subscriptionBuffer"); // Effectively, this is asserting "isRefreshing".
-            if (!subscriptionBuffer.processPending()) {
-                return;
+            try {
+                if (!subscriptionBuffer.processPending()) {
+                    return;
+                }
+            } catch (Exception ex) {
+                poision();
+                throw ex;
             }
+
             final RowSet updateRowSet = location.getRowSet();
             try {
                 if (updateRowSet == null) {
@@ -381,6 +390,10 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 rowSetAtLastUpdate.close();
                 rowSetAtLastUpdate = updateRowSet;
             }
+        }
+
+        private void poision() {
+            columnLocationStates.forEach(cls -> cls.source.poisionRegion(regionIndex));
         }
 
         @Override

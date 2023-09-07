@@ -86,6 +86,7 @@ public class AppendOnlyFixedSizePageRegionByte<ATTR extends Any>
 
     @NotNull
     private ChunkHolderPageByte<ATTR> getPageContaining(final long rowKey) {
+        throwIfPoisioned();
         final long firstRowPosition = rowKey & mask();
         final int pageIndex = Math.toIntExact(firstRowPosition / pageSize);
         if (pageIndex >= MAX_ARRAY_SIZE) {

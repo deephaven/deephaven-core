@@ -29,6 +29,11 @@ public class TstColumnRegionLong {
     static class Identity implements ColumnRegionLong<Values>, Page.WithDefaults<Values> {
 
         @Override
+        public void poison() {
+            // NOTHNG TO DO
+        }
+
+        @Override
         public long mask() {
             return Long.MAX_VALUE;
         }

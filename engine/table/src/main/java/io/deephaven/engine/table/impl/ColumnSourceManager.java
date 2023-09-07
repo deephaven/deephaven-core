@@ -70,8 +70,9 @@ public interface ColumnSourceManager {
 
     /**
      * Remove a table location key from the sources.
-     * 
+     *
+     * @return true if the location key was actually removed
      * @param tableLocationKey the location key being removed
      */
-    void removeLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
+    boolean removeLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
 }

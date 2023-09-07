@@ -8,12 +8,9 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.locations.TableLocationKey;
+import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
-import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -140,7 +137,9 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                             new TableLocationSubscriptionBuffer(locationProvider);
                     final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                             locationBuffer.processPending();
-                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+
+                    // We do not need to consider removed locations here -- we are initializing, so we haven't
+                    // actually referenced any of them and don't care.
                     maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                     updateSourceRegistrar.addSource(locationChangePoller = new LocationChangePoller(locationBuffer));
                 } else {
@@ -160,12 +159,14 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk)));
     }
 
-    private void maybeRemoveLocations(@NotNull final Collection<ImmutableTableLocationKey> removedKeys) {
+    private ImmutableTableLocationKey[] maybeRemoveLocations(@NotNull final Collection<ImmutableTableLocationKey> removedKeys) {
         if (removedKeys.isEmpty()) {
-            return;
+            return new ImmutableTableLocationKey[0];
         }
 
-        filterLocationKeys(removedKeys).forEach(columnSourceManager::removeLocationKey);
+        return filterLocationKeys(removedKeys).stream()
+                .filter(columnSourceManager::removeLocationKey)
+                .toArray(ImmutableTableLocationKey[]::new);
     }
 
     private void initializeLocationSizes() {
@@ -214,18 +215,25 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         protected void instrumentedRefresh() {
             try {
                 final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
-                maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+                final ImmutableTableLocationKey[] removedKeys = maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+                if(removedKeys.length > 0) {
+                    throw new TableLocationRemovedException("Source table does not support removed locations", removedKeys);
+                }
+
                 maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
+
                 // NB: This class previously had functionality to notify "location listeners", but it was never used.
                 // Resurrect from git history if needed.
                 if (!locationSizesInitialized) {
                     // We don't want to start polling size changes until the initial RowSet has been computed.
                     return;
                 }
+
                 final RowSet added = refreshLocationSizes();
-                if (added.size() == 0) {
+                if (added.isEmpty()) {
                     return;
                 }
+
                 rowSet.insert(added);
                 notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
             } catch (Exception e) {

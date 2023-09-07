@@ -69,6 +69,7 @@ public class AppendOnlyFixedSizePageRegionShort<ATTR extends Any>
 
     @NotNull
     private ChunkHolderPageShort<ATTR> getPageContaining(final long rowKey) {
+        throwIfPoisioned();
         final long firstRowPosition = rowKey & mask();
         final int pageIndex = Math.toIntExact(firstRowPosition / pageSize);
         if (pageIndex >= MAX_ARRAY_SIZE) {
