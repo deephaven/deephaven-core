@@ -68,5 +68,9 @@ public interface ColumnSourceManager {
      */
     boolean isEmpty();
 
-    void removeLocationKey(ImmutableTableLocationKey tableLocationKey);
+    /**
+     * Remove a table location key from the sources.
+     * @param tableLocationKey the location key being removed
+     */
+    void removeLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
 }
