@@ -3,21 +3,21 @@
  */
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.impl.ColumnToCodecMappings;
-import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
-import io.deephaven.hash.KeyedObjectHashMap;
-import io.deephaven.hash.KeyedObjectKey;
-import io.deephaven.base.verify.Assert;
-import io.deephaven.io.logger.Logger;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.ColumnSourceManager;
+import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.engine.table.impl.locations.*;
+import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -121,6 +121,21 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 throw new TableDataException("Unexpected: TableDataService returned the same location twice: " +
                         tableLocation.toStringDetailed());
             }
+        }
+    }
+
+    @Override
+    public void removeLocationKey(@NotNull final ImmutableTableLocationKey locationKey) {
+        final IncludedTableLocationEntry includedLocation = includedTableLocations.remove(locationKey);
+        final EmptyTableLocationEntry emptyLocation = emptyTableLocations.remove(locationKey);
+
+        if (emptyLocation != null) {
+            if (log.isDebugEnabled()) {
+                log.debug().append("EMPTY_LOCATION_REMOVED:").append(locationKey.toString()).endl();
+            }
+        } else if (includedLocation != null) {
+            throw new TableLocationRemovedException(includedLocation.location, getClass().getSimpleName() +
+                    " does not support removing locations");
         }
     }
 

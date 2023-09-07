@@ -37,8 +37,8 @@ public interface TableLocationProvider extends NamedImplementation {
 
         /**
          * Notify the listener of a {@link TableLocationKey} that has been removed encountered while initiating or
-         * maintaining the location subscription. This should occur at most once per location, but the order of
-         * delivery is <i>not</i> guaranteed.
+         * maintaining the location subscription. This should occur at most once per location, but the order of delivery
+         * is <i>not</i> guaranteed.
          *
          * @param tableLocationKey The table location
          */

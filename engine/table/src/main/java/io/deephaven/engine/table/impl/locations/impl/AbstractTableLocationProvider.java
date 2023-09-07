@@ -227,7 +227,7 @@ public abstract class AbstractTableLocationProvider
         handleTableLocationKeyRemoved(locationKey.makeImmutable());
         // need to notify subscribers of removed location, and of "removed" size
         if (removedLocation instanceof AbstractTableLocation) {
-            final AbstractTableLocation abstractLocation = (AbstractTableLocation)removedLocation;
+            final AbstractTableLocation abstractLocation = (AbstractTableLocation) removedLocation;
             abstractLocation.handleUpdate(null, System.currentTimeMillis());
             abstractLocation.clearColumnLocations();
         }
@@ -235,6 +235,7 @@ public abstract class AbstractTableLocationProvider
 
     /**
      * Notify subscribers that {@code location} was removed.
+     * 
      * @param locationKey the TableLocation that was removed
      */
     protected void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey locationKey) {

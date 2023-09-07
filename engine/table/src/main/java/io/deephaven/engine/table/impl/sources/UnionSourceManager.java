@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -216,8 +215,7 @@ public class UnionSourceManager {
         protected void onFailureInternal(@NotNull final Throwable originalException,
                 @Nullable final Entry sourceEntry) {
             // We will just record the error here for now. If the table was removed, then we don't actually care about
-            // it
-            // but if the error is real, and the table is not removed, it will be propagated in processExisting()
+            // it but if the error is real, and the table is not removed, it will be propagated by processExisting()
             this.setNotificationStep(getUpdateGraph().clock().currentStep());
             this.error = originalException;
             mergedListener.notifyChanges();
@@ -248,6 +246,9 @@ public class UnionSourceManager {
             final TableUpdate downstream;
             try (final ChangeProcessingContext context = new ChangeProcessingContext(constituentChanges)) {
                 downstream = context.processChanges();
+            } catch (Throwable ex) {
+                propagateError(true, ex, entry);
+                return;
             }
             result.notifyListeners(downstream);
         }
@@ -384,7 +385,7 @@ public class UnionSourceManager {
             // @formatter:on
         }
 
-        private TableUpdate processChanges() {
+        private TableUpdate processChanges() throws Throwable {
             final int currConstituentCount = constituentRows.intSize();
             final int prevConstituentCount = constituentRows.intSizePrev();
             unionRedirection.updateCurrSize(currConstituentCount);
@@ -448,9 +449,8 @@ public class UnionSourceManager {
             }
 
             if (constituentExceptions != null) {
-                throw new UncheckedDeephavenException(
-                        MultiException.maybeWrapInMultiException("Constituent tables reported failures",
-                                constituentExceptions));
+                throw MultiException.maybeWrapInMultiException("Constituent tables reported failures",
+                        constituentExceptions);
             }
 
             Assert.eq(nextCurrentKey, "nextCurrentKey", NULL_ROW_KEY, "NULL_ROW_KEY");

@@ -248,10 +248,11 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         }
 
         private RowSet processRemovals(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
-            final Set<ImmutableTableLocationKey> relevantRemovedLocations = locationUpdate.getPendingRemovedLocationKeys()
-                    .stream()
-                    .filter(locationKeyMatcher)
-                    .collect(Collectors.toSet());
+            final Set<ImmutableTableLocationKey> relevantRemovedLocations =
+                    locationUpdate.getPendingRemovedLocationKeys()
+                            .stream()
+                            .filter(locationKeyMatcher)
+                            .collect(Collectors.toSet());
 
             if (relevantRemovedLocations.isEmpty()) {
                 return RowSetFactory.empty();

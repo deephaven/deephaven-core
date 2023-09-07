@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import org.jetbrains.annotations.NotNull;
@@ -66,4 +67,6 @@ public interface ColumnSourceManager {
      * @return True if there are no included locations
      */
     boolean isEmpty();
+
+    void removeLocationKey(ImmutableTableLocationKey tableLocationKey);
 }

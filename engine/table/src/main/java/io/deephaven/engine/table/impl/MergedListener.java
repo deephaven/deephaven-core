@@ -54,7 +54,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     private final String listenerDescription;
     protected final QueryTable result;
     @Nullable
-    private final PerformanceEntry entry;
+    protected final PerformanceEntry entry;
     private final String logPrefix;
 
     @SuppressWarnings("FieldMayBeFinal")
@@ -135,7 +135,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         getUpdateGraph().addNotification(new MergedNotification());
     }
 
-    private void propagateError(
+    protected void propagateError(
             final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
         forceReferenceCountToZero();
         recorders.forEach(ListenerRecorder::forceReferenceCountToZero);

@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
@@ -139,8 +140,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                             new TableLocationSubscriptionBuffer(locationProvider);
                     final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                             locationBuffer.processPending();
-                    throwIfLocationsRemoved(locationUpdate);
-
+                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
                     maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                     updateSourceRegistrar.addSource(locationChangePoller = new LocationChangePoller(locationBuffer));
                 } else {
@@ -158,6 +158,14 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
         filterLocationKeys(locationKeys)
                 .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk)));
+    }
+
+    private void maybeRemoveLocations(@NotNull final Collection<ImmutableTableLocationKey> removedKeys) {
+        if (removedKeys.isEmpty()) {
+            return;
+        }
+
+        filterLocationKeys(removedKeys).forEach(columnSourceManager::removeLocationKey);
     }
 
     private void initializeLocationSizes() {
@@ -195,7 +203,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     }
 
     private class LocationChangePoller extends InstrumentedUpdateSource {
-
         private final TableLocationSubscriptionBuffer locationBuffer;
 
         private LocationChangePoller(@NotNull final TableLocationSubscriptionBuffer locationBuffer) {
@@ -207,7 +214,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         protected void instrumentedRefresh() {
             try {
                 final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
-                throwIfLocationsRemoved(locationUpdate);
+                maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
                 maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                 // NB: This class previously had functionality to notify "location listeners", but it was never used.
                 // Resurrect from git history if needed.
@@ -228,12 +235,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 notifyListenersOnError(e, null);
             }
         }
-    }
 
-    private void throwIfLocationsRemoved(TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
-        if (!filterLocationKeys(locationUpdate.getPendingRemovedLocationKeys()).isEmpty()) {
-            throw new TableDataException(getClass().getSimpleName() + " does not support removing locations");
-        }
     }
 
     /**

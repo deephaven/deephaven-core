@@ -53,15 +53,12 @@ public final class DependentRegistrar implements UpdateSourceRegistrar, Runnable
                 synchronized (DependentRegistrar.this) {
                     final int sourcesSize = dependentSources.size();
                     /*
-                     * We're simulating a scenario wherein TableLocation.Listeners push new data into the SourceTable's
-                     * subscription buffers asynchronously w.r.t. the update graph cycle. For our actual (regioned)
-                     * table to match our expected (merged) table on a given cycle, our "pushes" must be completed
-                     * before the SourceTable's LocationChangePoller runs. The pushes are done by invoking our
-                     * TableBackedTableLocations' refresh methods as UpdateGraph sources, and those location
-                     * subscriptions are activated (and thus added to dependentSources) *after* the poller is
-                     * constructed and added (to dependentSources). As a result, we need to run the dependentSources in
-                     * reverse order to ensure that the first source always runs after all the others, so it can
-                     * successfully poll everything that should have been pushed for this cycle.
+                     * We're simulating a scenario wherein TableLocation.Listeners add and remove locations
+                     * asynchronously w.r.t. the update graph cycle. For our actual results (Regioned or Partitioned) to
+                     * match our expected value on a given cycle, our "pushes" must be completed before the dependent's
+                     * location processing event runs. As a result, we need to run the dependentSources in reverse order
+                     * to ensure that the first source always runs after all the others, so it can successfully poll
+                     * everything that should have been pushed for this cycle.
                      */
                     for (int si = sourcesSize - 1; si >= 0; --si) {
                         dependentSources.get(si).run();
