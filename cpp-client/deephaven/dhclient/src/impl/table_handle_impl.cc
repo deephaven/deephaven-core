@@ -28,7 +28,9 @@
 #include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/dhcore/utility/utility.h"
 
+using io::deephaven::proto::backplane::grpc::AddTableResponse;
 using io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
+using io::deephaven::proto::backplane::grpc::DeleteTableResponse;
 using io::deephaven::proto::backplane::grpc::ReleaseResponse;
 using io::deephaven::proto::backplane::grpc::SortDescriptor;
 using io::deephaven::proto::backplane::grpc::TableReference;
@@ -430,6 +432,22 @@ TableHandleImpl::WhereIn(const deephaven::client::impl::TableHandleImpl &filter_
   auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
   server->WhereInAsync(ticket_, filter_table.ticket_, std::move(columns), std::move(cb), result_ticket);
   return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
+}
+
+void TableHandleImpl::AddTable(const TableHandleImpl &table_to_add) {
+  // We're going to manually make this a synchronous call.
+  auto result = SFCallback<AddTableResponse>::CreateForFuture();
+  auto *server = managerImpl_->Server().get();
+  server->AddTable(ticket_, table_to_add.ticket_, std::move(result.first));
+  result.second.wait();
+}
+
+void TableHandleImpl::RemoveTable(const TableHandleImpl &table_to_add) {
+  // We're going to manually make this a synchronous call.
+  auto result = SFCallback<DeleteTableResponse>::CreateForFuture();
+  auto *server = managerImpl_->Server().get();
+  server->RemoveTable(ticket_, table_to_add.ticket_, std::move(result.first));
+  result.second.wait();
 }
 
 namespace {

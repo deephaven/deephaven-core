@@ -58,13 +58,16 @@ bool ClientImpl::RemoveOnCloseCallback(OnCloseCbId cb_id) {
 }
 
 void ClientImpl::Shutdown() {
-  manager_impl_->Shutdown();
+  // We run shutdown hooks before actually shutting down the table
+  // manager, which allows users to try server cleanup operations
+  // through the client before closing.
   std::unique_lock lock(on_close_.mux);
   auto map = std::move(on_close_.map);
   lock.unlock();
   for (const auto &entry : map) {
     entry.second();
   }
+  manager_impl_->Shutdown();
 }
 }  // namespace impl
 }  // namespace deephaven::client

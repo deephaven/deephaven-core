@@ -27,6 +27,7 @@ from .session import Session
 from .dherror import DHError
 from ._table_interface import SortDirection
 from .query import Query
+from .table import Table
 
 try:
     from pydeephaven_ticking.table_listener import TableListener, TableListenerHandle, TableUpdate, listen

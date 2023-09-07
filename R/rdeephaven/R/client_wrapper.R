@@ -3,6 +3,27 @@ Client <- R6Class("Client",
   cloneable = FALSE,
   public = list(
     .internal_rcpp_object = NULL,
+    initialize = function(...) {
+      args <- list(...)
+      if (length(args) == 1) {
+        first_arg <- args[[1]]
+        first_arg_class = first_class(first_arg)
+        if (first_arg_class != "character" && first_arg_class != "list") {
+          if (first_arg_class != "externalptr") {
+            stop(paste0(
+              "Client initialize first argument must be ",
+              "either a string or an Rcpp::XPtr object."))
+          }
+          return(self$initialize_for_xptr(first_arg))
+        }
+      }
+      return(do.call(self$initialize_for_target, args))
+    },
+    initialize_for_xptr = function(xptr) {
+      verify_type("xptr", xptr, "externalptr", "XPtr", TRUE)
+      self$.internal_rcpp_object = new(INTERNAL_Client, xptr)
+    },
+
     #' @description
     #' Connect to a running Deephaven server.
     #' @param target String denoting the address of the Deephaven server, formatted as `"ip:port"`.
@@ -29,7 +50,8 @@ Client <- R6Class("Client",
     #' grpc channel creation. Defaults to an empty list, which implies not using any channel options.
     #' @param extra_headers List of name-value pairs for additional headers and values
     #' to add to server requests. Defaults to an empty list, which implies not using any extra headers.
-    initialize = function(target,
+    initialize_for_target = function(
+                          target,
                           auth_type = "anonymous",
                           username = "",
                           password = "",
@@ -143,7 +165,7 @@ Client <- R6Class("Client",
         client_options = options
       )
     },
-    
+
     #' @description
     #' Create an empty table on the server with 'size' rows and no columns.
     #' @param size Non-negative integer specifying the number of rows for the new table.
@@ -152,7 +174,7 @@ Client <- R6Class("Client",
       verify_nonnegative_int("size", size, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$empty_table(size)))
     },
-    
+
     #' @description
     #' Create a ticking table on the server.
     #' @param period ISO-8601-formatted string specifying the update frequency of the new table.
@@ -164,7 +186,7 @@ Client <- R6Class("Client",
       verify_string("start_time", start_time, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$time_table(period, start_time)))
     },
-    
+
     #' @description
     #' Open a table named 'name' from the server if it exists.
     #' @param name String denoting the name of the table to open from the server.
@@ -176,7 +198,7 @@ Client <- R6Class("Client",
       }
       return(TableHandle$new(self$.internal_rcpp_object$open_table(name)))
     },
-    
+
     #' @description
     #' Import a new table to the Deephaven server. Note that this new table is not automatically bound to
     #' a variable name on the server. See `?TableHandle` for more information.
@@ -199,7 +221,11 @@ Client <- R6Class("Client",
         stop(paste0("'table_object' must be a single data frame, tibble, arrow table, or record batch reader. Got an object of class ", table_object_class[[1]], "."))
       }
     },
-    
+    ticket_to_table = function(ticket) {
+      verify_string("ticket", ticket, TRUE)
+      return(TableHandle$new(self$.internal_rcpp_object$make_table_handle_from_ticket(ticket)))
+    },
+
     #' @description
     #' Run a script on the server. The script must be in the language that the server console was started with.
     #' @param script String containing the code to be executed on the server.
@@ -207,7 +233,7 @@ Client <- R6Class("Client",
       verify_string("script", script, TRUE)
       self$.internal_rcpp_object$run_script(script)
     },
-    
+
     #' @description
     #' Close the client connection. After this method is called, any further server calls will
     #' be undefined and will likely result in an error.
