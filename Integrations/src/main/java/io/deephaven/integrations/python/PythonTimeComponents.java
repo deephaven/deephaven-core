@@ -23,20 +23,22 @@ public class PythonTimeComponents {
      * @return the components
      */
     @ScriptApi
-    public static int[] getComponents(LocalTime dt) {
+    public static int[] getLocalTimeComponents(LocalTime dt) {
         return new int[] {dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano()};
     }
 
     /**
-     * Extracts the components from a {@link ZonedDateTime}. Equivalent to {@code new int[] {dt.getHour(),
-     * dt.getMinute(), dt.getSecond(), dt.getNano()}}.
+     * Extracts the local time components from a {@link ZonedDateTime}. Equivalent to
+     * {@code getComponents(dt.toLocalTime())}.
      *
      * @param dt the zoned date time
      * @return the components
+     * @see ZonedDateTime#toLocalTime()
+     * @see #getLocalTimeComponents(LocalTime)
      */
     @ScriptApi
-    public static int[] getComponents(ZonedDateTime dt) {
-        return new int[] {dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano()};
+    public static int[] getLocalTimeComponents(ZonedDateTime dt) {
+        return getLocalTimeComponents(dt.toLocalTime());
     }
 
     /**
@@ -47,7 +49,7 @@ public class PythonTimeComponents {
      * @return the components
      */
     @ScriptApi
-    public static long[] getComponents(Instant dt) {
+    public static long[] getInstantComponents(Instant dt) {
         return new long[] {dt.getEpochSecond(), dt.getNano()};
     }
 
@@ -57,11 +59,12 @@ public class PythonTimeComponents {
      *
      * @param dt the zoned date time
      * @return the components
-     * @see #getComponents(Instant)
+     * @see #getInstantComponents(Instant)
      * @see ZonedDateTime#toInstant()
      */
     @ScriptApi
-    public static long[] getComponentsInstant(ZonedDateTime dt) {
+    public static long[] getInstantComponents(ZonedDateTime dt) {
+        // This would be a little bit less efficient, since dt.toInstant() allocates a new object
         // return getComponents(dt.toInstant());
         return new long[] {dt.toEpochSecond(), dt.getNano()};
     }
@@ -74,7 +77,7 @@ public class PythonTimeComponents {
      * @return the components
      */
     @ScriptApi
-    public static long[] getComponents(Duration dt) {
+    public static long[] getDurationComponents(Duration dt) {
         return new long[] {dt.getSeconds(), dt.getNano()};
     }
 
@@ -86,7 +89,7 @@ public class PythonTimeComponents {
      * @return the components
      */
     @ScriptApi
-    public static int[] getComponents(Period dt) {
+    public static int[] getPeriodComponents(Period dt) {
         return new int[] {dt.getYears(), dt.getMonths(), dt.getDays()};
     }
 
@@ -98,7 +101,7 @@ public class PythonTimeComponents {
      * @return the components
      */
     @ScriptApi
-    public static int[] getComponents(LocalDate dt) {
+    public static int[] getLocalDateComponents(LocalDate dt) {
         return new int[] {dt.getYear(), dt.getMonthValue(), dt.getDayOfMonth()};
     }
 
@@ -108,11 +111,11 @@ public class PythonTimeComponents {
      *
      * @param dt the zoned date time
      * @return the components
-     * @see #getComponents(LocalDate)
+     * @see #getLocalDateComponents(LocalDate)
      * @see ZonedDateTime#toLocalDate()
      */
     @ScriptApi
-    public static int[] getComponentsLocalDate(ZonedDateTime dt) {
-        return getComponents(dt.toLocalDate());
+    public static int[] getLocalDateComponents(ZonedDateTime dt) {
+        return getLocalDateComponents(dt.toLocalDate());
     }
 }
