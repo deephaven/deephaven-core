@@ -283,6 +283,7 @@ def _consume(
     except Exception as e:
         raise DHError(e, "failed to consume a Kafka stream.") from e
 
+
 def protobuf_spec(
         schema: str,
         schema_version: Optional[int] = None,
