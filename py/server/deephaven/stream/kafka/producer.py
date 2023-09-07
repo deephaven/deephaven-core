@@ -76,7 +76,7 @@ def produce(
                 "at least one argument for 'key_spec' or 'value_spec' must be different from KeyValueSpec.IGNORE"
             )
         if not publish_initial and not table.is_refreshing:
-            raise ValueError("publishInitial == False and table.is_refreshing == False")
+            raise ValueError("publish_initial == False and table.is_refreshing == False")
         options = (
             _JKafkaPublishOptions.builder()
             .table(table.j_table)
