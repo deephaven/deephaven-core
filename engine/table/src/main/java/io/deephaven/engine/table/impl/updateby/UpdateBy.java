@@ -2,7 +2,6 @@ package io.deephaven.engine.table.impl.updateby;
 
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TObjectIntHashMap;
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -15,7 +14,6 @@ import io.deephaven.chunk.ResettableWritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.*;
@@ -45,7 +43,7 @@ import java.io.IOException;
 import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
@@ -244,6 +242,7 @@ public abstract class UpdateBy {
     class PhasedUpdateProcessor implements LogOutputAppendable {
         final TableUpdate upstream;
         final boolean initialStep;
+        final CompletableFuture<Void> waitForResult;
         final UpdateByBucketHelper[] dirtyBuckets;
         final BitSet dirtyWindows;
         final BitSet[] dirtyWindowOperators;
@@ -255,7 +254,6 @@ public abstract class UpdateBy {
         final AtomicIntegerArray inputSourceReferenceCounts;
         final JobScheduler jobScheduler;
         final ExecutionContext executionContext;
-        final CompletableFuture<Void> waitForResult;
 
         /***
          * These rows will be changed because of shifts or removes and will need to be included in
@@ -271,6 +269,8 @@ public abstract class UpdateBy {
         PhasedUpdateProcessor(TableUpdate upstream, boolean initialStep) {
             this.upstream = upstream;
             this.initialStep = initialStep;
+
+            waitForResult = new CompletableFuture<>();
 
             // What items need to be computed this cycle?
             dirtyBuckets = buckets.stream().filter(UpdateByBucketHelper::isDirty).toArray(UpdateByBucketHelper[]::new);
@@ -308,7 +308,6 @@ public abstract class UpdateBy {
                 executionContext = ExecutionContext.newBuilder()
                         .captureUpdateGraph()
                         .markSystemic().build();
-                waitForResult = new CompletableFuture<>();
             } else {
                 // Determine which windows need to be computed.
                 for (int winIdx = 0; winIdx < windows.length; winIdx++) {
@@ -339,7 +338,6 @@ public abstract class UpdateBy {
                 executionContext = ExecutionContext.newBuilder()
                         .setUpdateGraph(result().getUpdateGraph())
                         .markSystemic().build();
-                waitForResult = null;
             }
         }
 
@@ -368,7 +366,7 @@ public abstract class UpdateBy {
          * Process the {@link TableUpdate update} provided in the constructor. This performs much work in parallel and
          * leverages {@link JobScheduler} extensively
          */
-        public void processUpdate() {
+        public Future<Void> processUpdate() {
             if (redirHelper.isRedirected()) {
                 // this call does all the work needed for redirected output sources, returns the set of rows we need
                 // to clear from our Object array output sources
@@ -421,29 +419,10 @@ public abstract class UpdateBy {
                                     () -> cleanUpAndNotify(
                                             () -> {
                                                 // signal to the main task that we have completed our work
-                                                if (waitForResult != null) {
-                                                    waitForResult.complete(null);
-                                                }
+                                                waitForResult.complete(null);
                                             }))));
 
-            if (waitForResult != null) {
-                try {
-                    // need to wait until this future is complete
-                    waitForResult.get();
-                } catch (InterruptedException e) {
-                    cleanUpAfterError();
-                    throw new CancellationException("interrupted while processing updateBy");
-                } catch (ExecutionException e) {
-                    cleanUpAfterError();
-                    if (e.getCause() instanceof RuntimeException) {
-                        throw (RuntimeException) e.getCause();
-                    } else {
-                        // rethrow the error
-                        throw new UncheckedDeephavenException("Failure while processing updateBy",
-                                e.getCause());
-                    }
-                }
-            }
+            return waitForResult;
         }
 
         /**
@@ -1000,15 +979,14 @@ public abstract class UpdateBy {
         }
 
         private void onError(@NotNull final Exception error) {
-            if (waitForResult != null) {
-                // Use the Future to signal that an exception has occurred. Cleanup will be done by the waiting thread.
-                waitForResult.completeExceptionally(error);
-            } else {
-                // This error was delivered as part of update processing, we need to ensure that cleanup happens and
-                // a notification is dispatched downstream.
-                cleanUpAfterError();
+            // Ensure that cleanup happens
+            cleanUpAfterError();
+            if (!initialStep) {
+                // Dispatch a notification downstream
                 deliverUpdateError(error, sourceListener().getEntry(), false);
             }
+            // Use the Future to signal that an exception has occurred
+            waitForResult.completeExceptionally(error);
         }
 
         /**
@@ -1081,7 +1059,9 @@ public abstract class UpdateBy {
      * The Listener that is called when all input tables (source and constituent) are satisfied. This listener will
      * initiate UpdateBy operator processing in parallel by bucket
      */
-    protected class UpdateByListener extends InstrumentedTableUpdateListenerAdapter {
+    class UpdateByListener extends InstrumentedTableUpdateListenerAdapter {
+
+        private volatile Future<Void> processingFuture;
 
         private UpdateByListener() {
             super(UpdateBy.this + "-SourceListener", UpdateBy.this.source, false);
@@ -1104,7 +1084,7 @@ public abstract class UpdateBy {
             }
 
             final PhasedUpdateProcessor sm = new PhasedUpdateProcessor(upstream.acquire(), false);
-            sm.processUpdate();
+            processingFuture = sm.processUpdate();
         }
 
         @Override
@@ -1116,9 +1096,30 @@ public abstract class UpdateBy {
         public boolean canExecute(final long step) {
             return upstreamSatisfied(step);
         }
+
+        @Override
+        public boolean satisfied(final long step) {
+            if (super.satisfied(step)) {
+                // Our parents are satisfied on this step, and our notification will never be enqueued, or has been run
+                final Future<Void> localProcessingFuture = processingFuture;
+                if (localProcessingFuture == null) {
+                    // No notification was enqueued, or we've already observed that processing was complete
+                    return true;
+                }
+                if (localProcessingFuture.isDone()) {
+                    // We've observed that processing is complete
+                    processingFuture = null;
+                    return true;
+                }
+                // Processing continues asynchronously
+                return false;
+            }
+            // Our parents aren't satisfied yet on this step, or our notification has been enqueued and not yet run
+            return false;
+        }
     }
 
-    public UpdateByListener newUpdateByListener() {
+    UpdateByListener newUpdateByListener() {
         return new UpdateByListener();
     }
 

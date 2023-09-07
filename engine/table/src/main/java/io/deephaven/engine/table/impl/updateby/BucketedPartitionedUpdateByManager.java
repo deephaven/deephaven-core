@@ -1,8 +1,10 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -16,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
@@ -55,7 +58,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
      * @param rowRedirection the row redirection for dense output sources
      * @param control the control object.
      */
-    protected BucketedPartitionedUpdateByManager(
+    BucketedPartitionedUpdateByManager(
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
             @NotNull final QueryTable source,
@@ -134,7 +137,20 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
 
         // do the actual computations
         final PhasedUpdateProcessor sm = new PhasedUpdateProcessor(fakeUpdate, true);
-        sm.processUpdate();
+
+        try {
+            // need to wait until this future is complete
+            sm.processUpdate().get();
+        } catch (InterruptedException e) {
+            throw new CancellationException("Interrupted while initializing bucketed updateBy");
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            } else {
+                // rethrow the error
+                throw new UncheckedDeephavenException("Failure while initializing bucketed updateBy", e.getCause());
+            }
+        }
     }
 
     @Override
