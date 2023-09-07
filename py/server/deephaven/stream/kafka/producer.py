@@ -11,6 +11,7 @@ from deephaven import DHError
 from deephaven.jcompat import j_hashmap, j_hashset, j_properties
 from deephaven._wrapper import JObjectWrapper
 from deephaven.table import Table
+from deephaven.update_graph import auto_locking_ctx
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JAvroSchema = jpy.get_type("org.apache.avro.Schema")
@@ -86,7 +87,8 @@ def produce(
             .build()
         )
 
-        runnable = _JKafkaTools.produceFromTable(options)
+        with auto_locking_ctx(table):
+            runnable = _JKafkaTools.produceFromTable(options)
 
         def cleanup():
             try:

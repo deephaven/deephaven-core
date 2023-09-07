@@ -146,13 +146,14 @@ class KafkaProducerTestCase(BaseTestCase):
         """
         Check a simple Kafka producer with publish_initial=False works without errors
         """
-        t = time_table("PT1s")
+        # Note: using long column since there is no simple / native kafka Instant serializer
+        t = time_table("PT1s").view(["TimestampNanos=epochNanos(Timestamp)"])
         cleanup = pk.produce(
             t,
             {'bootstrap.servers': 'redpanda:29092'},
-            'orders',
+            'my_timestamps',
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.simple_spec('Price'),
+            value_spec=pk.simple_spec('TimestampNanos'),
             publish_initial=False,
         )
 

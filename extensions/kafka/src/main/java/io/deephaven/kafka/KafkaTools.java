@@ -1305,6 +1305,7 @@ public class KafkaTools {
      *        {@code keySpec} and publish to Kafka from the result.
      * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
      *         reference to this return value to ensure liveliness.
+     * @see #produceFromTable(KafkaPublishOptions)
      */
     @SuppressWarnings("unused")
     public static Runnable produceFromTable(
@@ -1354,11 +1355,11 @@ public class KafkaTools {
      */
     public static Runnable produceFromTable(KafkaPublishOptions options) {
         final Table table = options.table();
-        if (table.isRefreshing()
-                && !table.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()
-                && !table.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
+        try {
+            QueryTable.checkInitiateOperation(table);
+        } catch (IllegalStateException e) {
             throw new KafkaPublisherException(
-                    "Calling thread must hold an exclusive or shared UpdateGraph lock to publish live sources");
+                    "Calling thread must hold an exclusive or shared UpdateGraph lock to publish live sources", e);
         }
         final Map<String, ?> config = asStringMap(options.config());
         final KeyOrValueSpec keySpec = options.keySpec();
