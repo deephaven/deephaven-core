@@ -152,6 +152,11 @@ public:
     TableHandleWrapper* AggBy(Rcpp::List aggregations, std::vector<std::string> groupByColumns) {
         std::vector<deephaven::client::Aggregate> converted_aggregations = convertRcppListToVectorOfTypeAggregate(aggregations);
         return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregations), groupByColumns));
+    };
+
+    TableHandleWrapper* AggAllBy(AggregateWrapper &aggregation, std::vector<std::string> groupByColumns) {
+        std::vector<deephaven::client::Aggregate> converted_aggregation = {aggregation.internal_aggregation};
+        return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregation), groupByColumns));
     }
 
     TableHandleWrapper* FirstBy(std::vector<std::string> columnSpecs) {
@@ -404,7 +409,6 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(periodISO, startTimeISO));
     };
 
-
     TableHandleWrapper* MakeTableHandleFromTicket(std::string ticket) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.MakeTableHandleFromTicket(ticket));
     }
@@ -527,6 +531,8 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("ungroup", &TableHandleWrapper::Ungroup)
 
     .method("agg_by", &TableHandleWrapper::AggBy)
+    .method("agg_all_by", &TableHandleWrapper::AggAllBy)
+
     .method("first_by", &TableHandleWrapper::FirstBy)
     .method("last_by", &TableHandleWrapper::LastBy)
     .method("head_by", &TableHandleWrapper::HeadBy)
