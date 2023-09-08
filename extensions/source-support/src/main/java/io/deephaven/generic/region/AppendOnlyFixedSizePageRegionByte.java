@@ -49,11 +49,6 @@ public class AppendOnlyFixedSizePageRegionByte<ATTR extends Any>
     }
 
     @Override
-    public final ChunkType getChunkType() {
-        return ChunkType.Byte;
-    }
-
-    @Override
     public byte getByte(final long rowKey) {
         final ChunkHolderPageByte<ATTR> page = getPageContaining(rowKey);
         try {
@@ -86,6 +81,7 @@ public class AppendOnlyFixedSizePageRegionByte<ATTR extends Any>
 
     @NotNull
     private ChunkHolderPageByte<ATTR> getPageContaining(final long rowKey) {
+        throwIfInvalidated();
         final long firstRowPosition = rowKey & mask();
         final int pageIndex = Math.toIntExact(firstRowPosition / pageSize);
         if (pageIndex >= MAX_ARRAY_SIZE) {

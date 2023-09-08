@@ -6,6 +6,7 @@ package io.deephaven.util;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 public class FindExceptionCause {
     /**
@@ -40,6 +41,28 @@ public class FindExceptionCause {
             cause = cause.getCause();
         }
         return original;
+    }
+
+    /**
+     * Given a {@link Throwable}, and an expected type, return an optional that is populated if the original was an
+     * instance of the expected type or was caused by the expected type.
+     *
+     * @param original The original throwable
+     * @param expectedType The expected type to find
+     * @return A completed {@link Optional} containing the found cause, or an empty {@link Optional}
+     */
+    public static <E extends Throwable> Optional<E> isOrCausedBy(
+            @NotNull final Throwable original,
+            @NotNull final Class<E> expectedType) {
+        Throwable cause = original;
+        while (cause != null) {
+            if (expectedType.isAssignableFrom(cause.getClass())) {
+                // noinspection unchecked
+                return Optional.of((E) cause);
+            }
+            cause = cause.getCause();
+        }
+        return Optional.empty();
     }
 
     /**
