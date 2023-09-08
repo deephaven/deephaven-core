@@ -1,96 +1,95 @@
-AggOp <- R6Class("AggOp",
+#' @export
+Aggregation <- R6Class("Aggregation",
   cloneable = FALSE,
   public = list(
     .internal_rcpp_object = NULL,
-    .internal_num_cols = NULL,
-    initialize = function(aggregation, ...) {
-      args <- list(...)
-      if (any(names(args) == "cols")) {
-        self$.internal_num_cols <- length(args$cols)
+    initialize = function(aggregation) {
+      if (class(aggregation) != "Rcpp_INTERNAL_Aggregate") {
+        stop("'aggregation' should be an internal Deephaven Aggregation. If you're seeing this,\n  you are trying to call the constructor of an Aggregation directly, which is not advised.\n  Please use one of the provided aggregation functions instead.")
       }
-      self$.internal_rcpp_object <- do.call(aggregation, args)
+      self$.internal_rcpp_object <- aggregation
     }
   )
 )
 
-### All of the functions below return an instance of an 'AggOp' object
+### All of the functions below return an instance of the above class
 
 #' @export
 agg_first <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_first, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_first(cols)))
 }
 
 #' @export
 agg_last <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_last, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_last(cols)))
 }
 
 #' @export
 agg_min <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_min, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_min(cols)))
 }
 
 #' @export
 agg_max <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_max, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_max(cols)))
 }
 
 #' @export
 agg_sum <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_sum, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_sum(cols)))
 }
 
 #' @export
 agg_abs_sum <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_abs_sum, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_abs_sum(cols)))
 }
 
 #' @export
 agg_avg <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_avg, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_avg(cols)))
 }
 
 #' @export
 agg_w_avg <- function(wcol, cols = character()) {
   verify_string("wcol", wcol, TRUE)
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_w_avg, wcol=wcol, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_w_avg(wcol, cols)))
 }
 
 #' @export
 agg_median <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_median, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_median(cols)))
 }
 
 #' @export
 agg_var <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_var, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_var(cols)))
 }
 
 #' @export
 agg_std <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_std, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_std(cols)))
 }
 
 #' @export
 agg_percentile <- function(percentile, cols = character()) {
   verify_in_unit_interval("percentile", percentile, TRUE)
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_percentile, percentile=percentile, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_percentile(percentile, cols)))
 }
 
 #' @export
 agg_count <- function(col) {
   verify_string("col", col, TRUE)
-  return(AggOp$new(INTERNAL_agg_count, col=col))
+  return(Aggregation$new(INTERNAL_agg_count(col)))
 }

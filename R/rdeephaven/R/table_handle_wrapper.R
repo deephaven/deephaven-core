@@ -103,28 +103,12 @@ TableHandle <- R6Class("TableHandle",
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$ungroup(by)))
     },
-    update_by = function(ops, by = character()) {
-      verify_type("ops", ops, "UpdateByOp", "Deephaven UpdateByOp", FALSE)
-      verify_string("by", by, FALSE)
-      ops <- c(ops)
-      unwrapped_ops <- lapply(ops, strip_r6_wrapping)
-      return(TableHandle$new(self$.internal_rcpp_object$update_by(unwrapped_ops, by)))
-    },
     agg_by = function(aggs, by = character()) {
-      verify_type("aggs", aggs, "AggOp", "Deephaven AggOp", FALSE)
+      verify_type("aggs", aggs, "Aggregation", "Deephaven Aggregation", FALSE)
       verify_string("by", by, FALSE)
       aggs <- c(aggs)
-      for (agg in aggs) {
-        if (!is.null(agg$.internal_num_cols) && agg$.internal_num_cols == 0) {
-          stop("Aggregations with no columns cannot be used in 'agg_by'. Please provide at least one column to the 'cols' argument of each aggregator.")
-        }
-      }
       unwrapped_aggs <- lapply(aggs, strip_r6_wrapping)
       return(TableHandle$new(self$.internal_rcpp_object$agg_by(unwrapped_aggs, by)))
-    },
-    agg_all_by = function(agg, by = character()) {
-      verify_type("agg", agg, "Aggregation", "Deephaven Aggregation", TRUE)
-      return(TableHandle$new(self$.internal_rcpp_object$agg_all_by(agg$.internal_rcpp_object, by)))
     },
     first_by = function(by = character()) {
       verify_string("by", by, FALSE)
