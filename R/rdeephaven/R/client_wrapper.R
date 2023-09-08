@@ -19,13 +19,17 @@ Client <- R6Class("Client",
       }
       return(do.call(self$initialize_for_target, args))
     },
+    
+    #' @description
+    #' Initialize a Client object using a pointer to an existing client connection.
+    #' @param xptr External pointer to an existing client connection.
     initialize_for_xptr = function(xptr) {
       verify_type("xptr", xptr, "externalptr", "XPtr", TRUE)
       self$.internal_rcpp_object = new(INTERNAL_Client, xptr)
     },
 
     #' @description
-    #' Connect to a running Deephaven server.
+    #' Initialize a Client object that connects to the Deephaven server
     #' @param target String denoting the address of the Deephaven server, formatted as `"ip:port"`.
     #' @param auth_type String denoting the authentication type. Can be `"anonymous"`, `"basic"`,
     #' or any custom-built authenticator supported by the server, such as `"io.deephaven.authentication.psk.PskAuthenticationHandler"`.
@@ -188,7 +192,7 @@ Client <- R6Class("Client",
     },
 
     #' @description
-    #' Open a table named 'name' from the server if it exists.
+    #' Open a table named `name` from the server if it exists.
     #' @param name String denoting the name of the table to open from the server.
     #' @return TableHandle reference to the requested table.
     open_table = function(name) {

@@ -1,4 +1,3 @@
-#' @export
 TableHandle <- R6Class("TableHandle",
   cloneable = FALSE,
   public = list(
@@ -19,8 +18,8 @@ TableHandle <- R6Class("TableHandle",
     },
     
     #' @description
-    #' Bind the table referenced by this TableHandle to a variable on the server,
-    #' enabling it to be accessed by that name from any Deephaven API.
+    #' Bind the table referenced by this TableHandle to a variable on the server
+    #' so that it can be referenced by that name.
     #' @param name Name for this table on the server.
     bind_to_variable = function(name) {
       verify_string("name", name, TRUE)
@@ -30,16 +29,16 @@ TableHandle <- R6Class("TableHandle",
     ### BASE R METHODS, ALSO IMPLEMENTED FUNCTIONALLY
 
     #' @description
-    #' Get the first n rows of the table referenced by this TableHandle.
+    #' Create a new table containing the first `n` rows of this table.
     #' @param n Positive integer specifying the number of rows to return.
-    #' @return A TableHandle referencing the new table consisting of the first n rows of the parent table.
+    #' @return A TableHandle referencing the new table.
     head = function(n) {
       verify_positive_int("n", n, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$head(n)))
     },
 
     #' @description
-    #' Get the last n rows of the table referenced by this TableHandle.
+    #' Create a new table containing the last `n` rows of this table.
     #' @param n Positive integer specifying the number of rows to return.
     #' @return A TableHandle referencing the new table consisting of the last n rows of the parent table.
     tail = function(n) {
@@ -70,9 +69,10 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Merge one or more TableHandles with this TableHandle. The tables must have the same schema, and can
+    #' Merge several tables into one table on the server. The tables must have the same schema as this table, and can
     #' be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
-    #' @return A TableHandle referencing the new table consisting of the rows of all the tables merged together.
+    #' @param ... Arbitrary number of TableHandles or vectors of TableHandles with a schema matching this table.
+    #' @return A TableHandle referencing the new table.
     merge = function(...) {
       table_list <- unlist(c(...))
       if (length(table_list) == 0) {
@@ -123,7 +123,7 @@ TableHandle <- R6Class("TableHandle",
     ### DEEPHAVEN TABLE OPERATIONS
 
     #' @description
-    #' Creates a new in-memory table that includes one column for each formula.
+    #' Create a new in-memory table that includes one column for each formula.
     #' If no formula is specified, all columns will be included.
     #' @param formulas String or list of strings denoting the column formulas.
     #' @return A TableHandle referencing the new table.
@@ -160,8 +160,9 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing only the columns specified in `cols`.
-    #' @param cols String or list of strings denoting the names of the columns to keep.
+    #' Create a new table that has the same number of rows as this table,
+    #' but omits the columns specified in `cols`.
+    #' @param cols String or list of strings denoting the names of the columns to drop.
     #' @return A TableHandle referencing the new table.
     drop_columns = function(cols = character()) {
       verify_string("cols", cols, FALSE)
@@ -215,13 +216,22 @@ TableHandle <- R6Class("TableHandle",
       unwrapped_aggs <- lapply(aggs, strip_r6_wrapping)
       return(TableHandle$new(self$.internal_rcpp_object$agg_by(unwrapped_aggs, by)))
     },
+    
+    #' @description
+    #' Create a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
+    #' aggregation(s) specified. See `?Aggregations` for more information.
+    #' This method applies the aggregation to all columns of the table, so it can only
+    #' accept one aggregation at a time.
+    #' @param agg Aggregation to perform on non-grouping columns.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     agg_all_by = function(agg, by = character()) {
       verify_type("agg", agg, "Aggregation", "Deephaven Aggregation", TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$agg_all_by(agg$.internal_rcpp_object, by)))
     },
 
     #' @description
-    #' Create a new table containing the first row of each distinct group.
+    #' Create a new table containing the first row of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     first_by = function(by = character()) {
@@ -230,7 +240,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the last row of each distinct group.
+    #' Create a new table containing the last row of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     last_by = function(by = character()) {
@@ -239,7 +249,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the first `num_rows` rows of each distinct group.
+    #' Create a new table containing the first `num_rows` rows of each group.
     #' @param num_rows Positive integer specifying the number of rows to return.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
@@ -250,7 +260,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the last `num_rows` rows of each distinct group.
+    #' Create a new table containing the last `num_rows` rows of each group.
     #' @param num_rows Positive integer specifying the number of rows to return.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
@@ -261,7 +271,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise minimum of each distinct group.
+    #' Create a new table containing the column-wise minimum of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     min_by = function(by = character()) {
@@ -270,7 +280,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise maximum of each distinct group.
+    #' Create a new table containing the column-wise maximum of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     max_by = function(by = character()) {
@@ -279,7 +289,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise sum of each distinct group.
+    #' Create a new table containing the column-wise sum of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     sum_by = function(by = character()) {
@@ -288,7 +298,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise absolute sum of each distinct group.
+    #' Create a new table containing the column-wise absolute sum of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     abs_sum_by = function(by = character()) {
@@ -297,7 +307,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise average of each distinct group.
+    #' Create a new table containing the column-wise average of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     avg_by = function(by = character()) {
@@ -306,7 +316,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise weighted average of each distinct group.
+    #' Create a new table containing the column-wise weighted average of each group.
     #' @param wcol String denoting the name of the column to use as weights.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
@@ -317,7 +327,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise median of each distinct group.
+    #' Create a new table containing the column-wise median of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     median_by = function(by = character()) {
@@ -326,7 +336,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise variance of each distinct group.
+    #' Create a new table containing the column-wise variance of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     var_by = function(by = character()) {
@@ -335,7 +345,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise standard deviation of each distinct group.
+    #' Create a new table containing the column-wise standard deviation of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     std_by = function(by = character()) {
@@ -344,7 +354,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise percentile of each distinct group.
+    #' Create a new table containing the column-wise percentile of each group.
     #' @param percentile Numeric scalar between 0 and 1 denoting the percentile to compute.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
@@ -355,8 +365,10 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the number of rows in each distinct group.
-    #' @param by String denoting the name of the new column to be created by counting entries in each group.
+    #' Create a new table containing the number of rows in each group.
+    #' @param col String denoting the name of the new column to hold the counts of each group.
+    #' Defaults to "n".
+    #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     count_by = function(col = "n", by = character()) {
       verify_string("col", col, TRUE)
@@ -456,9 +468,10 @@ dim.TableHandle <- function(x) {
 }
 
 #' @description
-#' Merge one or more TableHandles. The tables must have the same schema, and can
+#' Merge several tables into one table on the server. The tables must have the same schema, and can
 #' be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
-#' @return A TableHandle referencing the new table consisting of the rows of all the tables merged together.
+#' @param ... Arbitrary number of TableHandles or vectors of TableHandles with a uniform schema.
+#' @return A TableHandle referencing the new table.
 #' @export
 merge_tables <- function(...) {
   table_list <- unlist(c(...))
