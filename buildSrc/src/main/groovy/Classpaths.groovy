@@ -287,4 +287,29 @@ class Classpaths {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, GUAVA_GROUP, GUAVA_NAME, GUAVA_VERSION)
     }
+
+    static void inheritParquetHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, 'org.apache.parquet', 'parquet-hadoop', '1.13.0')
+    }
+
+    /** configName controls only the Configuration's classpath, all transitive dependencies are runtimeOnly */
+    static void inheritParquetHadoopConfiguration(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, 'org.apache.hadoop', 'hadoop-common', '3.3.3') {
+            it.because('Required for org.apache.hadoop.conf.Configuration')
+            it.setTransitive(false)
+        }
+
+        Configuration runtimeOnly = p.configurations.getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
+        addDependency(runtimeOnly, 'com.fasterxml.woodstox', 'woodstox-core', '6.4.0') {
+            it.because('hadoop-common required dependency for Configuration')
+        }
+        addDependency(runtimeOnly, 'org.apache.hadoop.thirdparty', 'hadoop-shaded-guava', '1.1.1') {
+            it.because('hadoop-common required dependency for Configuration')
+        }
+        addDependency(runtimeOnly, 'commons-collections', 'commons-collections', '3.2.2') {
+            it.because('hadoop-common required dependency for Configuration')
+        }
+    }
 }
