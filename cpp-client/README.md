@@ -137,8 +137,8 @@ Notes
       some of the dependent libraries are incompatible; in particular,
       protobuf generates different code and code compiled for a `Release`
       target using protobuf header files will not link against a `Debug`
-      version of protobuf.  To keep your life simpler, run a consistent set
-      for your code and all dependencies.
+      version of protobuf.  To keep things simple, we suggest that you run
+      a consistent setting for your code and all dependencies.
 
 # Updating proto generated C++ stubs (intended for developers)
    1. Ensure you have a local installation of the dependent libraries
