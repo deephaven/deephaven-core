@@ -396,11 +396,12 @@ public:
     TableHandleWrapper* UpdateBy(Rcpp::List updateByOps, std::vector<std::string> group_by_cols) {
         std::vector<deephaven::client::UpdateByOperation> converted_updateByOps = convertRcppListToVectorOfTypeUpdateByOperation(updateByOps);
         return new TableHandleWrapper(internal_tbl_hdl.UpdateBy(converted_updateByOps, group_by_cols));
-    }
+    };
 
-    TableHandleWrapper* AggBy(Rcpp::List agg_ops, std::vector<std::string> group_by_cols) {
-        std::vector<deephaven::client::Aggregate> converted_agg_ops = convertRcppListToVectorOfTypeAggregate(agg_ops);
-        return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_agg_ops), group_by_cols));
+    TableHandleWrapper* AggBy(Rcpp::List aggregations, std::vector<std::string> group_by_columns) {
+        std::vector<deephaven::client::Aggregate> converted_aggregations = convertRcppListToVectorOfTypeAggregate(aggregations);
+        return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregations), group_by_columns));
+    };
 
     TableHandleWrapper* AggAllBy(AggregateWrapper &aggregation, std::vector<std::string> group_by_cols) {
         std::vector<deephaven::client::Aggregate> converted_aggregation = {aggregation.internal_aggregation};
