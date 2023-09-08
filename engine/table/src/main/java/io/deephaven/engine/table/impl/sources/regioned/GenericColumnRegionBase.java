@@ -30,7 +30,7 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
 
     protected final void throwIfInvalidated() {
         if (invalidated) {
-            throw new InvalidatedRegionException("Regioned has been invalidated");
+            throw new InvalidatedRegionException("Column region has been invalidated due to data removal");
         }
     }
 }
