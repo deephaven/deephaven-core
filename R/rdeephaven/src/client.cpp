@@ -5,9 +5,10 @@
  */
 
 #include <iostream>
-#include <utility>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "deephaven/client/client.h"
@@ -23,7 +24,6 @@
 using deephaven::dhcore::utility::Base64Encode;
 
 // forward declaration of classes
-class AggregateWrapper;
 class TableHandleWrapper;
 class ClientOptionsWrapper;
 class ClientWrapper;
@@ -32,16 +32,15 @@ class ClientWrapper;
 std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate(Rcpp::List rcpp_list);
 std::vector<deephaven::client::TableHandle> convertRcppListToVectorOfTypeTableHandle(Rcpp::List rcpp_list);
 
-
 // ######################### DH WRAPPERS #########################
 
 class AggregateWrapper {
 public:
     AggregateWrapper();
     AggregateWrapper(deephaven::client::Aggregate aggregate) :
-            internal_aggregation(std::move(aggregate)) {}
+            internal_agg_op(std::move(aggregate)) {}
 private:
-    deephaven::client::Aggregate internal_aggregation;
+    deephaven::client::Aggregate internal_agg_op;
     friend TableHandleWrapper;
     friend std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate(Rcpp::List rcpp_list);
 };
@@ -53,178 +52,178 @@ std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate
     for(int i = 0; i < rcpp_list.size(); i++) {
         Rcpp::Environment rcpp_list_element = rcpp_list[i];
         Rcpp::XPtr<AggregateWrapper> xptr(rcpp_list_element.get(".pointer"));
-        deephaven::client::Aggregate internal_aggregation = xptr->internal_aggregation;
-        converted_list.push_back(internal_aggregation);
+        deephaven::client::Aggregate internal_agg_op = xptr->internal_agg_op;
+        converted_list.push_back(internal_agg_op);
     }
 
     return converted_list;
 }
 
-AggregateWrapper* INTERNAL_agg_min(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::Min(columnSpecs));
+AggregateWrapper* INTERNAL_agg_min(std::vector<std::string> cols) {
+    return new AggregateWrapper(deephaven::client::Aggregate::Min(cols));
 }
 
-AggregateWrapper* INTERNAL_agg_max(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::Max(columnSpecs));
+AggregateWrapper* INTERNAL_agg_max(std::vector<std::string> cols) {
+    return new AggregateWrapper(deephaven::client::Aggregate::Max(cols));
 }
 
-AggregateWrapper* INTERNAL_agg_first(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::First(columnSpecs));
+AggregateWrapper* INTERNAL_agg_first(std::vector<std::string> cols) {
+    return new AggregateWrapper(deephaven::client::Aggregate::First(cols));
 }
 
-AggregateWrapper* INTERNAL_agg_last(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::Last(columnSpecs));
+AggregateWrapper* INTERNAL_agg_last(std::vector<std::string> cols) {
+    return new AggregateWrapper(deephaven::client::Aggregate::Last(cols));
 }
 
-AggregateWrapper* INTERNAL_agg_sum(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::Sum(columnSpecs));
+AggregateWrapper* INTERNAL_agg_sum(std::vector<std::string> cols) {
+    return new AggregateWrapper(deephaven::client::Aggregate::Sum(cols));
 }
 
-AggregateWrapper* INTERNAL_agg_absSum(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::AbsSum(columnSpecs));
+AggregateWrapper* INTERNAL_agg_absSum(std::vector<std::string> cols) {
+    return new AggregateWrapper(deephaven::client::Aggregate::AbsSum(cols));
 }
 
-AggregateWrapper* INTERNAL_agg_avg(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::Avg(columnSpecs));
+AggregateWrapper* INTERNAL_agg_avg(std::vector<std::string> cols) {
+    return new AggregateWrapper(deephaven::client::Aggregate::Avg(cols));
 }
 
-AggregateWrapper* INTERNAL_agg_wAvg(std::string weightColumn, std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::WAvg(weightColumn, columnSpecs));
+AggregateWrapper* INTERNAL_agg_wAvg(std::string weight_column, std::vector<std::string> cols) {
+    return new AggregateWrapper(deephaven::client::Aggregate::WAvg(weight_column, cols));
 }
 
-AggregateWrapper* INTERNAL_agg_median(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::Med(columnSpecs));
+AggregateWrapper* INTERNAL_agg_median(std::vector<std::string> cols) {
+    return new AggregateWrapper(deephaven::client::Aggregate::Med(cols));
 }
 
-AggregateWrapper* INTERNAL_agg_var(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::Var(columnSpecs));
+AggregateWrapper* INTERNAL_agg_var(std::vector<std::string> cols) {
+    return new AggregateWrapper(deephaven::client::Aggregate::Var(cols));
 }
 
-AggregateWrapper* INTERNAL_agg_std(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::Std(columnSpecs));
+AggregateWrapper* INTERNAL_agg_std(std::vector<std::string> cols) {
+    return new AggregateWrapper(deephaven::client::Aggregate::Std(cols));
 }
 
-AggregateWrapper* INTERNAL_agg_percentile(double percentile, std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::Pct(percentile, false, columnSpecs));
+AggregateWrapper* INTERNAL_agg_percentile(double percentile, std::vector<std::string> cols) {
+    return new AggregateWrapper(deephaven::client::Aggregate::Pct(percentile, false, cols));
 }
 
-AggregateWrapper* INTERNAL_agg_count(std::string columnSpec) {
-    return new AggregateWrapper(deephaven::client::Aggregate::Count(columnSpec));
+AggregateWrapper* INTERNAL_agg_count(std::string col) {
+    return new AggregateWrapper(deephaven::client::Aggregate::Count(col));
 }
 
 
 class TableHandleWrapper {
 public:
     TableHandleWrapper(deephaven::client::TableHandle ref_table) :
-            internal_tbl_hdl(std::move(ref_table)) {};
+        internal_tbl_hdl(std::move(ref_table)) {};
 
-    TableHandleWrapper* Select(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.Select(columnSpecs));
+    TableHandleWrapper* Select(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.Select(cols));
     };
 
-    TableHandleWrapper* View(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.View(columnSpecs));
+    TableHandleWrapper* View(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.View(cols));
     };
 
-    TableHandleWrapper* Update(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.Update(columnSpecs));
+    TableHandleWrapper* Update(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.Update(cols));
     };
 
-    TableHandleWrapper* UpdateView(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.UpdateView(columnSpecs));
+    TableHandleWrapper* UpdateView(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.UpdateView(cols));
     };
 
-    TableHandleWrapper* DropColumns(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.DropColumns(columnSpecs));
+    TableHandleWrapper* DropColumns(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.DropColumns(cols));
     };
 
     TableHandleWrapper* Where(std::string condition) {
         return new TableHandleWrapper(internal_tbl_hdl.Where(condition));
     };
 
-    TableHandleWrapper* GroupBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.By(columnSpecs));
+    TableHandleWrapper* GroupBy(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.By(cols));
     };
 
-    TableHandleWrapper* Ungroup(std::vector<std::string> groupByColumns) {
-        return new TableHandleWrapper(internal_tbl_hdl.Ungroup(false, groupByColumns));
+    TableHandleWrapper* Ungroup(std::vector<std::string> group_by_cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.Ungroup(false, group_by_cols));
     };
 
-    TableHandleWrapper* AggBy(Rcpp::List aggregations, std::vector<std::string> groupByColumns) {
+    TableHandleWrapper* AggBy(Rcpp::List aggregations, std::vector<std::string> group_by_columns) {
         std::vector<deephaven::client::Aggregate> converted_aggregations = convertRcppListToVectorOfTypeAggregate(aggregations);
-        return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregations), groupByColumns));
+        return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregations), group_by_columns));
     }
 
-    TableHandleWrapper* FirstBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.FirstBy(columnSpecs));
+    TableHandleWrapper* FirstBy(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.FirstBy(cols));
     };
 
-    TableHandleWrapper* LastBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.LastBy(columnSpecs));
+    TableHandleWrapper* LastBy(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.LastBy(cols));
     };
 
-    TableHandleWrapper* HeadBy(int64_t n, std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.HeadBy(n, columnSpecs));
+    TableHandleWrapper* HeadBy(int64_t n, std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.HeadBy(n, cols));
     };
 
-    TableHandleWrapper* TailBy(int64_t n, std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.TailBy(n, columnSpecs));
+    TableHandleWrapper* TailBy(int64_t n, std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.TailBy(n, cols));
     };
 
-    TableHandleWrapper* MinBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.MinBy(columnSpecs));
+    TableHandleWrapper* MinBy(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.MinBy(cols));
     };
 
-    TableHandleWrapper* MaxBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.MaxBy(columnSpecs));
+    TableHandleWrapper* MaxBy(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.MaxBy(cols));
     };
 
-    TableHandleWrapper* SumBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.SumBy(columnSpecs));
+    TableHandleWrapper* SumBy(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.SumBy(cols));
     };
 
-    TableHandleWrapper* AbsSumBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.AbsSumBy(columnSpecs));
+    TableHandleWrapper* AbsSumBy(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.AbsSumBy(cols));
     };
 
-    TableHandleWrapper* AvgBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.AvgBy(columnSpecs));
+    TableHandleWrapper* AvgBy(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.AvgBy(cols));
     };
 
-    TableHandleWrapper* WAvgBy(std::string weightColumn, std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.WAvgBy(weightColumn, columnSpecs));
+    TableHandleWrapper* WAvgBy(std::string weight_column, std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.WAvgBy(weight_column, cols));
     };
 
-    TableHandleWrapper* MedianBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.MedianBy(columnSpecs));
+    TableHandleWrapper* MedianBy(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.MedianBy(cols));
     };
 
-    TableHandleWrapper* VarBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.VarBy(columnSpecs));
+    TableHandleWrapper* VarBy(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.VarBy(cols));
     };
 
-    TableHandleWrapper* StdBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.StdBy(columnSpecs));
+    TableHandleWrapper* StdBy(std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.StdBy(cols));
     };
 
-    TableHandleWrapper* PercentileBy(double percentile, std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.PercentileBy(percentile, columnSpecs));
+    TableHandleWrapper* PercentileBy(double percentile, std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.PercentileBy(percentile, cols));
     };
 
-    TableHandleWrapper* CountBy(std::string countByColumn, std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.CountBy(countByColumn, columnSpecs));
+    TableHandleWrapper* CountBy(std::string count_by_col, std::vector<std::string> cols) {
+        return new TableHandleWrapper(internal_tbl_hdl.CountBy(count_by_col, cols));
     };
 
-    TableHandleWrapper* CrossJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
-        return new TableHandleWrapper(internal_tbl_hdl.CrossJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
+    TableHandleWrapper* CrossJoin(const TableHandleWrapper &right_side, std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add) {
+        return new TableHandleWrapper(internal_tbl_hdl.CrossJoin(right_side.internal_tbl_hdl, columns_to_match, columns_to_add));
     };
 
-    TableHandleWrapper* NaturalJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
-        return new TableHandleWrapper(internal_tbl_hdl.NaturalJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
+    TableHandleWrapper* NaturalJoin(const TableHandleWrapper &right_side, std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add) {
+        return new TableHandleWrapper(internal_tbl_hdl.NaturalJoin(right_side.internal_tbl_hdl, columns_to_match, columns_to_add));
     };
 
-    TableHandleWrapper* ExactJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
-        return new TableHandleWrapper(internal_tbl_hdl.ExactJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
+    TableHandleWrapper* ExactJoin(const TableHandleWrapper &right_side, std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add) {
+        return new TableHandleWrapper(internal_tbl_hdl.ExactJoin(right_side.internal_tbl_hdl, columns_to_match, columns_to_add));
     };
 
     TableHandleWrapper* Head(int64_t n) {
@@ -240,23 +239,23 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.Merge(converted_sources));
     };
 
-    TableHandleWrapper* Sort(std::vector<std::string> columnSpecs, std::vector<bool> descending, std::vector<bool> absSort) {
+    TableHandleWrapper* Sort(std::vector<std::string> cols, std::vector<bool> descending, std::vector<bool> abs_sort) {
         std::vector<deephaven::client::SortPair> sort_pairs;
-        sort_pairs.reserve(columnSpecs.size());
+        sort_pairs.reserve(cols.size());
 
         if (descending.size() == 1) {
-            descending = std::vector<bool>(columnSpecs.size(), descending[0]);
+            descending = std::vector<bool>(cols.size(), descending[0]);
         }
 
-        if (absSort.size() == 1) {
-            absSort = std::vector<bool>(columnSpecs.size(), absSort[0]);
+        if (abs_sort.size() == 1) {
+            abs_sort = std::vector<bool>(cols.size(), abs_sort[0]);
         }
 
-        for(int i = 0; i < columnSpecs.size(); i++) {
+        for(int i = 0; i < cols.size(); i++) {
             if (!descending[i]) {
-                sort_pairs.push_back(deephaven::client::SortPair::Ascending(columnSpecs[i], absSort[i]));
+                sort_pairs.push_back(deephaven::client::SortPair::Ascending(cols[i], abs_sort[i]));
             } else {
-                sort_pairs.push_back(deephaven::client::SortPair::Descending(columnSpecs[i], absSort[i]));
+                sort_pairs.push_back(deephaven::client::SortPair::Descending(cols[i], abs_sort[i]));
             }
         }
 
@@ -275,8 +274,8 @@ public:
         return internal_tbl_hdl.Schema()->NumCols();
     }
 
-    void BindToVariable(std::string tableName) {
-        internal_tbl_hdl.BindToVariable(tableName);
+    void BindToVariable(std::string table_name) {
+        internal_tbl_hdl.BindToVariable(table_name);
     }
 
     /**
@@ -288,7 +287,7 @@ public:
         std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.GetFlightStreamReader();
 
         std::vector<std::shared_ptr<arrow::RecordBatch>> empty_record_batches;
-        deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)));
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr->ReadAll(&empty_record_batches)));
 
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(empty_record_batches).ValueOrDie();
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
@@ -322,7 +321,7 @@ class ClientOptionsWrapper {
 public:
 
     ClientOptionsWrapper() :
-            internal_options(std::make_shared<deephaven::client::ClientOptions>()) {}
+        internal_options(std::make_shared<deephaven::client::ClientOptions>()) {}
 
     void SetDefaultAuthentication() {
         internal_options->SetDefaultAuthentication();
@@ -337,16 +336,16 @@ public:
         internal_options->SetCustomAuthentication(authentication_type, authentication_token);
     }
 
-    void SetSessionType(const std::string &sessionType) {
-        internal_options->SetSessionType(sessionType);
+    void SetSessionType(const std::string &session_type) {
+        internal_options->SetSessionType(session_type);
     }
 
-    void SetUseTls(bool useTls) {
-        internal_options->SetUseTls(useTls);
+    void SetUseTls(bool use_tls) {
+        internal_options->SetUseTls(use_tls);
     }
 
-    void SetTlsRootCerts(std::string tlsRootCerts) {
-        internal_options->SetTlsRootCerts(tlsRootCerts);
+    void SetTlsRootCerts(std::string tls_root_certs) {
+        internal_options->SetTlsRootCerts(tls_root_certs);
     }
 
     void AddIntOption(std::string opt, int val) {
@@ -371,35 +370,57 @@ class ClientWrapper {
 public:
 
     ClientWrapper(std::string target, const ClientOptionsWrapper &client_options) :
-            internal_client(deephaven::client::Client::Connect(target, *client_options.internal_options)) {}
+        internal_client(
+            Rcpp::XPtr<deephaven::client::Client>(
+                new deephaven::client::Client(
+                    std::move(
+                        deephaven::client::Client::Connect(target, *client_options.internal_options)
+                    )
+                )
+            )
+        ) {}
 
-    TableHandleWrapper* OpenTable(std::string tableName) {
-        return new TableHandleWrapper(internal_tbl_hdl_mngr.FetchTable(tableName));
+    // We need the ability to create a ClientWrapper from the enterprise
+    // client, when the underlying C++ object is already created.
+    ClientWrapper(SEXP sexp) :
+        internal_client(Rcpp::XPtr<ClientWrapper>(sexp)) {}
+
+    SEXP InternalClient() {
+      return internal_client;
+    }
+
+    TableHandleWrapper* OpenTable(std::string table_name) {
+        return new TableHandleWrapper(internal_tbl_hdl_mngr.FetchTable(table_name));
     }
 
     TableHandleWrapper* EmptyTable(int64_t size) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.EmptyTable(size));
     }
 
-    TableHandleWrapper* TimeTable(std::string periodISO, std::string startTimeISO) {
-        if((startTimeISO == "now") || (startTimeISO == "")) {
-            return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(periodISO));
+    TableHandleWrapper* TimeTable(std::string period_ISO, std::string start_time_ISO) {
+        if ((start_time_ISO == "now") || (start_time_ISO == "")) {
+            return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(period_ISO));
         }
-        return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(periodISO, startTimeISO));
+        return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(period_ISO, start_time_ISO));
     };
+
+
+    TableHandleWrapper* MakeTableHandleFromTicket(std::string ticket) {
+        return new TableHandleWrapper(internal_tbl_hdl_mngr.MakeTableHandleFromTicket(ticket));
+    }
 
     void RunScript(std::string code) {
         internal_tbl_hdl_mngr.RunScript(code);
     }
 
     /**
-     * Checks for the existence of a table named tableName on the server.
-     * @param tableName Name of the table to search for.
-     * @return Boolean indicating whether tableName exists on the server or not.
+     * Checks for the existence of a table named table_name on the server.
+     * @param table_name Name of the table to search for.
+     * @return Boolean indicating whether table_name exists on the server or not.
     */
-    bool CheckForTable(std::string tableName) {
+    bool CheckForTable(std::string table_name) {
         // we have to first fetchTable to check existence, fetchTable does not fail on its own, but .observe() will fail if table doesn't exist
-        deephaven::client::TableHandle table_handle = internal_tbl_hdl_mngr.FetchTable(tableName);
+        deephaven::client::TableHandle table_handle = internal_tbl_hdl_mngr.FetchTable(table_name);
         try {
             table_handle.Observe();
         } catch(...) {
@@ -438,31 +459,33 @@ public:
         auto ticket = internal_tbl_hdl_mngr.NewTicket();
         auto fd = deephaven::client::utility::ConvertTicketToFlightDescriptor(ticket);
 
-        deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.FlightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(wrapper.FlightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
         while(true) {
             std::shared_ptr<arrow::RecordBatch> this_batch;
-            deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(record_batch_reader->ReadNext(&this_batch)));
+            deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(record_batch_reader->ReadNext(&this_batch)));
             if (this_batch == nullptr) {
                 break;
             }
-            deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*this_batch)));
+            deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->WriteRecordBatch(*this_batch)));
         }
-        deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
-        deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->DoneWriting()));
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->Close()));
 
         auto new_tbl_hdl = internal_tbl_hdl_mngr.MakeTableHandleFromTicket(ticket);
         return new TableHandleWrapper(new_tbl_hdl);
     }
 
     void Close() {
-        internal_client.Close();
+        internal_client->Close();
     }
 
 private:
-    deephaven::client::Client internal_client;
-    const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client.GetManager();
+    // We let R manage the lifetime of internal_client underlying C++ object,
+    // according to its tracking of references.
+    // We hold one here, but there may be other references in the case of the enterprise client.
+    Rcpp::XPtr<deephaven::client::Client> internal_client;
+    const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client->GetManager();
 };
-
 
 // ######################### RCPP GLUE #########################
 
@@ -553,14 +576,16 @@ RCPP_MODULE(DeephavenInternalModule) {
 
     class_<ClientWrapper>("INTERNAL_Client")
     .constructor<std::string, const ClientOptionsWrapper&>()
+    .constructor<SEXP>()
+    .method("internal_client", &ClientWrapper::InternalClient)
     .method("open_table", &ClientWrapper::OpenTable)
     .method("empty_table", &ClientWrapper::EmptyTable)
     .method("time_table", &ClientWrapper::TimeTable)
     .method("check_for_table", &ClientWrapper::CheckForTable)
+    .method("make_table_handle_from_ticket", &ClientWrapper::MakeTableHandleFromTicket)
     .method("run_script", &ClientWrapper::RunScript)
     .method("new_arrow_array_stream_ptr", &ClientWrapper::NewArrowArrayStreamPtr)
     .method("new_table_from_arrow_array_stream_ptr", &ClientWrapper::NewTableFromArrowArrayStreamPtr)
     .method("close", &ClientWrapper::Close)
     ;
-
 }

@@ -1,0 +1,14 @@
+/*
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+ */
+syntax = "proto3";
+
+package io.deephaven.kafka.protobuf.gen;
+
+option java_multiple_files = false;
+option optimize_for = SPEED;
+
+message Rename {
+  string name_old = 1;
+  string name = 2;
+}

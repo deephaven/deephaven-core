@@ -260,7 +260,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         if (o == null) {
             return null;
         }
-        final Object javaObject = module.unwrap_to_java_type(o);
+        final Object javaObject = module.javaify(o);
         if (javaObject != null) {
             return javaObject;
         }
@@ -309,7 +309,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     public Object unwrapObject(Object object) {
         if (object instanceof PyObject) {
             final PyObject pyObject = (PyObject) object;
-            final Object unwrapped = module.unwrap_to_java_type(pyObject);
+            final Object unwrapped = module.javaify(pyObject);
             if (unwrapped != null) {
                 return unwrapped;
             }
@@ -321,7 +321,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     interface PythonScriptSessionModule extends Closeable {
         PyObject create_change_list(PyObject from, PyObject to);
 
-        Object unwrap_to_java_type(PyObject object);
+        Object javaify(PyObject object);
 
         void close();
     }

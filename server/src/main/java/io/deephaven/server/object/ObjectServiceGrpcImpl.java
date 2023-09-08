@@ -6,7 +6,6 @@ package io.deephaven.server.object;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.plugin.type.ObjectCommunicationException;
 import io.deephaven.plugin.type.ObjectType;
@@ -60,13 +59,13 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     }
 
     private enum EnqueuedState {
-        WAITING, RUNNING, CLOSED;
+        WAITING, RUNNING, CLOSED
     }
-    private final class SendMessageObserver extends SingletonLivenessManager implements StreamObserver<StreamRequest> {
-        private ExportObject<Object> object;
+    private final class SendMessageObserver implements StreamObserver<StreamRequest> {
         private final SessionState session;
         private final StreamObserver<StreamResponse> responseObserver;
 
+        private boolean seenConnect = false;
         private ObjectType.MessageStream messageStream;
 
         private final Queue<EnqueuedStreamOperation> operations = new ConcurrentLinkedQueue<>();
@@ -76,11 +75,10 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             private final StreamOperation wrapped;
             private final List<ExportObject<?>> requirements;
 
-            EnqueuedStreamOperation(ExportObject<Object> object, Collection<? extends ExportObject<?>> dependencies,
+            EnqueuedStreamOperation(Collection<? extends ExportObject<?>> dependencies,
                     StreamOperation wrapped) {
                 this.wrapped = wrapped;
-                this.requirements = new ArrayList<>(dependencies);
-                this.requirements.add(object);
+                this.requirements = List.copyOf(dependencies);
             }
 
             public void run() {
@@ -117,10 +115,11 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         public void onNext(final StreamRequest request) {
             GrpcErrorHelper.checkHasOneOf(request, "message");
             if (request.hasConnect()) {
-                if (this.object != null) {
+                if (seenConnect) {
                     throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                             "Already sent a connect request, cannot send another");
                 }
+                seenConnect = true;
 
                 TypedTicket typedTicket = request.getConnect().getSourceId();
 
@@ -135,9 +134,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 final SessionState.ExportObject<Object> object = ticketRouter.resolve(
                         session, typedTicket.getTicket(), "sourceId");
 
-                this.object = object;
-                manage(this.object);
-                runOrEnqueue(() -> {
+                runOrEnqueue(Collections.singleton(object), () -> {
                     final Object o = object.get();
                     final ObjectType objectType = getObjectTypeInstance(type, o);
 
@@ -145,7 +142,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     messageStream = objectType.clientConnection(o, clientConnection);
                 });
             } else if (request.hasData()) {
-                if (object == null) {
+                if (!seenConnect) {
                     throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                             "Data message sent before Connect message");
                 }
@@ -166,25 +163,12 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
          * current thread, with the distinction that submitted work will continue off-thread and will signal when it is
          * finished.
          *
-         * @param operation the lambda to execute when it is our turn to run
-         */
-
-        private void runOrEnqueue(StreamOperation operation) {
-            runOrEnqueue(Collections.emptyList(), operation);
-        }
-
-        /**
-         * Helper to serialize incoming ObjectType messages. These methods are intended to roughly behave like
-         * SerializingExecutor(directExecutor()) in that only one can be running at a time, and will be started on the
-         * current thread, with the distinction that submitted work will continue off-thread and will signal when it is
-         * finished.
-         *
          * @param dependencies other ExportObjects that must be resolve to perform the operation
          * @param operation the lambda to execute when it is our turn to run
          */
         private void runOrEnqueue(Collection<? extends ExportObject<?>> dependencies, StreamOperation operation) {
             // gRPC guarantees we can't race enqueuing
-            operations.add(new EnqueuedStreamOperation(object, dependencies, operation));
+            operations.add(new EnqueuedStreamOperation(dependencies, operation));
             doWork();
         }
 
@@ -221,9 +205,6 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
             // Don't attempt to run additional work
             operations.clear();
-
-            // Release the object itself
-            release();
         }
 
         private void closeMessageStream() {
@@ -237,7 +218,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         @Override
         public void onCompleted() {
             // Don't finalize until we've processed earlier messages
-            runOrEnqueue(() -> {
+            runOrEnqueue(Collections.emptyList(), () -> {
                 runState.set(EnqueuedState.CLOSED);
                 // Respond by closing the stream - note that closing here allows the server plugin to respond to earlier
                 // messages without error, but those responses will be ignored by the client.
@@ -247,9 +228,6 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 if (messageStream != null) {
                     closeMessageStream();
                 }
-
-                // Release the exported object that this stream is communicating with
-                release();
             });
         }
     }
