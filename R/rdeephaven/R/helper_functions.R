@@ -20,7 +20,7 @@ verify_type <- function(arg_name, candidate, required_type, message_type_name, i
     } else {
       stop(paste0("'", arg_name, "' must be a single ", message_type_name, ". Got an object of class ", first_class(candidate), "."))
     }
-  } else if (is_scalar && (length(candidate) != 1)) {
+  } else if (is_scalar && (length(c(candidate)) != 1)) {
     stop(paste0("'", arg_name, "' must be a single ", message_type_name, ". Got a vector of length ", length(candidate), "."))
   }
 }
