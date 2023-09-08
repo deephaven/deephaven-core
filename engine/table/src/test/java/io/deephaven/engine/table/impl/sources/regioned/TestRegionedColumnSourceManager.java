@@ -224,6 +224,14 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         });
     }
 
+    private void expectPoison() {
+        checking(new Expectations(){{
+            exactly(1).of(partitioningColumnSource).poisonRegion(3);
+            exactly(1).of(groupingColumnSource).poisonRegion(3);
+            exactly(1).of(normalColumnSource).poisonRegion(3);
+        }});
+    }
+
     private void expectGroupingColumnInitialGrouping() {
         groupingColumnGroupingProvider = null;
         checking(new Expectations() {
@@ -517,6 +525,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with a size decrease
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
+        expectPoison();
         try {
             checkIndexes(SUT.refresh());
             fail("Expected exception");
@@ -528,6 +537,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with a location truncated
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
+        expectPoison();
         try {
             checkIndexes(SUT.refresh());
             fail("Expected exception");
@@ -539,6 +549,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with an overflow
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, REGION_CAPACITY_IN_ELEMENTS + 1);
+        expectPoison();
         try {
             checkIndexes(SUT.refresh());
             fail("Expected exception");
@@ -550,6 +561,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with an exception
         subscriptionBuffers[3].handleException(new TableDataException("TEST"));
+        expectPoison();
         try {
             checkIndexes(SUT.refresh());
             fail("Expected exception");

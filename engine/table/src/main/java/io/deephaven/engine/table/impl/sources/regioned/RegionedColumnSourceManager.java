@@ -332,63 +332,63 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 if (!subscriptionBuffer.processPending()) {
                     return;
                 }
+
+                final RowSet updateRowSet = location.getRowSet();
+                try {
+                    if (updateRowSet == null) {
+                        // This should be impossible - the subscription buffer transforms a transition to null into a
+                        // pending exception
+                        throw new TableDataException(
+                                "Location " + location + " is no longer available, data has been removed");
+                    }
+                    if (!rowSetAtLastUpdate.subsetOf(updateRowSet)) { // Bad change
+                        // noinspection ThrowableNotThrown
+                        Assert.statementNeverExecuted(
+                                "Row keys removed at location " + location + ": "
+                                        + rowSetAtLastUpdate.minus(updateRowSet));
+                    }
+                    if (rowSetAtLastUpdate.size() == updateRowSet.size()) {
+                        // Nothing to do
+                        return;
+                    }
+                    if (updateRowSet.lastRowKey() > RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK) {
+                        throw new TableDataException(String.format(
+                                "Location %s has updated last key %#016X, larger than maximum supported key %#016X",
+                                location, updateRowSet.lastRowKey(),
+                                RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK));
+                    }
+
+                    if (log.isDebugEnabled()) {
+                        log.debug().append("LOCATION_SIZE_CHANGE:").append(location.toString())
+                                .append(",FROM:").append(rowSetAtLastUpdate.size())
+                                .append(",TO:").append(updateRowSet.size()).endl();
+                    }
+                    try (final RowSet addedRowSet = updateRowSet.minus(rowSetAtLastUpdate)) {
+                        final long regionFirstKey = RegionedColumnSource.getFirstRowKey(regionIndex);
+                        addedRowSet.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedRowSetBuilder
+                                .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
+                        RowSet addRowSetInTable = null;
+                        try {
+                            for (final ColumnLocationState state : columnLocationStates) {
+                                if (state.needToUpdateGrouping()) {
+                                    state.updateGrouping(
+                                            addRowSetInTable == null ? addRowSetInTable = updateRowSet.shift(regionFirstKey)
+                                                    : addRowSetInTable);
+                                }
+                            }
+                        } finally {
+                            if (addRowSetInTable != null) {
+                                addRowSetInTable.close();
+                            }
+                        }
+                    }
+                } finally {
+                    rowSetAtLastUpdate.close();
+                    rowSetAtLastUpdate = updateRowSet;
+                }
             } catch (Exception ex) {
                 poison();
                 throw ex;
-            }
-
-            final RowSet updateRowSet = location.getRowSet();
-            try {
-                if (updateRowSet == null) {
-                    // This should be impossible - the subscription buffer transforms a transition to null into a
-                    // pending exception
-                    throw new TableDataException(
-                            "Location " + location + " is no longer available, data has been removed");
-                }
-                if (!rowSetAtLastUpdate.subsetOf(updateRowSet)) { // Bad change
-                    // noinspection ThrowableNotThrown
-                    Assert.statementNeverExecuted(
-                            "Row keys removed at location " + location + ": "
-                                    + rowSetAtLastUpdate.minus(updateRowSet));
-                }
-                if (rowSetAtLastUpdate.size() == updateRowSet.size()) {
-                    // Nothing to do
-                    return;
-                }
-                if (updateRowSet.lastRowKey() > RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK) {
-                    throw new TableDataException(String.format(
-                            "Location %s has updated last key %#016X, larger than maximum supported key %#016X",
-                            location, updateRowSet.lastRowKey(),
-                            RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK));
-                }
-
-                if (log.isDebugEnabled()) {
-                    log.debug().append("LOCATION_SIZE_CHANGE:").append(location.toString())
-                            .append(",FROM:").append(rowSetAtLastUpdate.size())
-                            .append(",TO:").append(updateRowSet.size()).endl();
-                }
-                try (final RowSet addedRowSet = updateRowSet.minus(rowSetAtLastUpdate)) {
-                    final long regionFirstKey = RegionedColumnSource.getFirstRowKey(regionIndex);
-                    addedRowSet.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedRowSetBuilder
-                            .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
-                    RowSet addRowSetInTable = null;
-                    try {
-                        for (final ColumnLocationState state : columnLocationStates) {
-                            if (state.needToUpdateGrouping()) {
-                                state.updateGrouping(
-                                        addRowSetInTable == null ? addRowSetInTable = updateRowSet.shift(regionFirstKey)
-                                                : addRowSetInTable);
-                            }
-                        }
-                    } finally {
-                        if (addRowSetInTable != null) {
-                            addRowSetInTable.close();
-                        }
-                    }
-                }
-            } finally {
-                rowSetAtLastUpdate.close();
-                rowSetAtLastUpdate = updateRowSet;
             }
         }
 
