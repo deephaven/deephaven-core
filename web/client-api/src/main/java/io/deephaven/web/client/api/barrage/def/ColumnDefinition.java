@@ -119,7 +119,7 @@ public class ColumnDefinition {
     }
 
     public boolean isVisible() {
-        return !isStyleColumn() && !isFormatColumn() && !isDataBarFormatColumn && !isRollupConstituentNodeColumn()
+        return !isStyleColumn() && !isFormatColumn() && !isRollupConstituentNodeColumn()
                 && !isHierarchicalRowDepthColumn() && !isHierarchicalRowExpandedColumn();
     }
 
@@ -181,7 +181,7 @@ public class ColumnDefinition {
                 continue;
             }
             ColumnDefinition column = byNameMap.get(colName);
-            dataBarFormatIndices.put(colName, column.getColumnIndex());
+            dataBarFormatIndices.put(colName.split("__")[1], column.getColumnIndex());
         }
 
         return makeColumn(index,
