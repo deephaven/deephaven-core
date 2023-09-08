@@ -551,7 +551,6 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with an overflow
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, REGION_CAPACITY_IN_ELEMENTS + 1);
-        expectPoison();
         try {
             checkIndexes(SUT.refresh());
             fail("Expected exception");

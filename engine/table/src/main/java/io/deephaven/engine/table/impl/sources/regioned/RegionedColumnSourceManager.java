@@ -334,7 +334,6 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 }
             } catch (Exception ex) {
                 invalidate();
-                rowSetAtLastUpdate.close();
                 throw ex;
             }
 
