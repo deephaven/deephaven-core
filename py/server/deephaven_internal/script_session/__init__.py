@@ -5,7 +5,7 @@
 # Implementation utilities for io.deephaven.engine.util.PythonDeephavenSession
 from jpy import JType
 
-from deephaven._wrapper import JObjectWrapper
+from deephaven import _wrapper
 
 
 def create_change_list(from_snapshot, to_snapshot):
@@ -36,17 +36,12 @@ def make_change_item(name, existing_value, new_value):
     return name, existing_value, new_value
 
 
-def unwrap_to_java_type(object):
+def javaify(obj) -> JType:
     """
     Returns a JType object if the object is already a JType, or if the object can be unwrapped into a JType object;
-    otherwise, returns None.
+    otherwise, wraps the object in a LivenessArtifact to ensure it is freed in Python correctly.
 
     :param object: the object to be unwrapped
-    :return: the JType object, or None
+    :return: the JType object
     """
-    if isinstance(object, JType):
-        return object
-    if isinstance(object, JObjectWrapper):
-        return object.j_object
-     # add more here when/if necessary
-    return None
+    return _wrapper.javaify(obj)

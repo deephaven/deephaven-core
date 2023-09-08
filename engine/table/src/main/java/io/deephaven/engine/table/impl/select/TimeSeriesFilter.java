@@ -15,6 +15,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.ColumnSource;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -52,13 +53,17 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
     @Override
     public void init(TableDefinition tableDefinition) {}
 
+    @NotNull
     @Override
-    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(
+            @NotNull final RowSet selection,
+            @NotNull final RowSet fullSet,
+            @NotNull final Table table,
+            final boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
 
-        @SuppressWarnings("unchecked")
         ColumnSource<Instant> dateColumn = table.getColumnSource(columnName);
         if (!Instant.class.isAssignableFrom(dateColumn.getType())) {
             throw new RuntimeException(columnName + " is not an Instant column!");

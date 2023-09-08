@@ -130,7 +130,7 @@ public class ArrowWrapperTools {
     /**
      * Reads arrow data from a feather-formatted file and returns a query table
      */
-    public static QueryTable readFeather(final @NotNull String path) {
+    public static QueryTable readFeather(@NotNull final String path) {
         final ArrowTableContext arrowTableContext = new ArrowTableContext(path, rootAllocator);
         try (final Shareable context = arrowTableContext.newShareable();
                 final SeekableByteChannel channel = arrowTableContext.openChannel()) {

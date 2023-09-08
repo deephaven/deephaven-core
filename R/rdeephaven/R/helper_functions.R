@@ -2,6 +2,7 @@ first_class <- function(arg) {
   return(class(arg)[[1]])
 }
 
+# if required_type is a list, this will not behave correctly because of R's type coercion rules
 verify_type <- function(arg_name, candidate, required_type, message_type_name, is_scalar) {
   if (!is_scalar && (first_class(candidate) == "list")) {
     if (any(lapply(candidate, first_class) != required_type)) {
@@ -59,8 +60,12 @@ verify_numeric <- function(arg_name, candidate, is_scalar) {
   verify_type(arg_name, candidate, "numeric", "numeric", is_scalar)
 }
 
-verify_list <- function(arg_name, candidate, is_scalar) {
-  verify_type(arg_name, candidate, "list", "list", is_scalar)
+verify_named_list <- function(arg_name, candidate) {
+  if (first_class(candidate) != "list") {
+    stop(paste0("'", arg_name, "' must be a named list. Got an object of class ", first_class(candidate), "."))
+  } else if (length(names(candidate)) != length(candidate)) {
+    stop(paste0("'", arg_name, "' must be a named list. Got a list with ", length(candidate), " elements and ", length(names(candidate)), " names."))
+  }
 }
 
 verify_in_unit_interval <- function(arg_name, candidate, is_scalar) {
@@ -85,6 +90,6 @@ verify_positive_int <- function(arg_name, candidate, is_scalar) {
   verify_in_range(arg_name, candidate, message = "a positive integer", lb = 0, ub = NULL, lb_open = TRUE, ub_open = TRUE)
 }
 
-strip_s4_wrapping <- function(s4_object) {
-  return(s4_object@.internal_rcpp_object)
+strip_r6_wrapping <- function(r6_object) {
+  return(r6_object$.internal_rcpp_object)
 }

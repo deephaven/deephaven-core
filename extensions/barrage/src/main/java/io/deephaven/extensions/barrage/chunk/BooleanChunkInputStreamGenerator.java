@@ -49,7 +49,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
     }
 
     @Override
-    public DrainableColumn getInputStream(final StreamReaderOptions options, final @Nullable RowSet subset) {
+    public DrainableColumn getInputStream(final StreamReaderOptions options, @Nullable final RowSet subset) {
         return new BooleanChunkInputStream(options, subset);
     }
 

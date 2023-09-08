@@ -4,6 +4,7 @@
 package io.deephaven.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Descriptors.Descriptor;
 import gnu.trove.map.hash.TIntLongHashMap;
 import io.confluent.kafka.schemaregistry.SchemaProvider;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
@@ -47,12 +48,14 @@ import io.deephaven.kafka.IgnoreImpl.IgnoreConsume;
 import io.deephaven.kafka.IgnoreImpl.IgnoreProduce;
 import io.deephaven.kafka.JsonImpl.JsonConsume;
 import io.deephaven.kafka.JsonImpl.JsonProduce;
+import io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.PerPartition;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.Single;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
 import io.deephaven.kafka.KafkaTools.TableType.Blink;
 import io.deephaven.kafka.KafkaTools.TableType.Ring;
 import io.deephaven.kafka.KafkaTools.TableType.Visitor;
+import io.deephaven.kafka.ProtobufImpl.ProtobufConsumeImpl;
 import io.deephaven.kafka.RawImpl.RawConsume;
 import io.deephaven.kafka.RawImpl.RawProduce;
 import io.deephaven.kafka.SimpleImpl.SimpleConsume;
@@ -62,9 +65,11 @@ import io.deephaven.kafka.ingest.KafkaIngester;
 import io.deephaven.kafka.ingest.KafkaRecordConsumer;
 import io.deephaven.kafka.ingest.KafkaStreamPublisher;
 import io.deephaven.kafka.ingest.KeyOrValueProcessor;
+import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
 import io.deephaven.kafka.publish.KafkaPublisherException;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
 import io.deephaven.kafka.publish.PublishToKafka;
+import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
@@ -193,8 +198,18 @@ public class KafkaTools {
             final Map<String, String> fieldPathToColumnNameOut,
             final Schema schema,
             final Function<String, String> requestedFieldPathToColumnName) {
+        avroSchemaToColumnDefinitions(columnsOut, fieldPathToColumnNameOut, schema, requestedFieldPathToColumnName,
+                false);
+    }
+
+    public static void avroSchemaToColumnDefinitions(
+            final List<ColumnDefinition<?>> columnsOut,
+            final Map<String, String> fieldPathToColumnNameOut,
+            final Schema schema,
+            final Function<String, String> requestedFieldPathToColumnName,
+            final boolean useUTF8Strings) {
         AvroImpl.avroSchemaToColumnDefinitions(columnsOut, fieldPathToColumnNameOut, schema,
-                requestedFieldPathToColumnName);
+                requestedFieldPathToColumnName, useUTF8Strings);
     }
 
     /**
@@ -443,6 +458,26 @@ public class KafkaTools {
         /**
          * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
          * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
+         * property.
+         *
+         * @param schemaName The registered name for the schema on Schema Server
+         * @param schemaVersion The version to fetch
+         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use
+         *        for them; fields mapped to null are excluded.
+         * @param useUTF8Strings If true, String fields will be not be converted to Java Strings.
+         * @return A spec corresponding to the schema provided.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final String schemaName,
+                final String schemaVersion,
+                final Function<String, String> fieldNameToColumnName,
+                final boolean useUTF8Strings) {
+            return new AvroConsume(schemaName, schemaVersion, fieldNameToColumnName, useUTF8Strings);
+        }
+
+        /**
+         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
          * property. The version fetched would be latest.
          *
          * @param schemaName The registered name for the schema on Schema Server
@@ -481,6 +516,33 @@ public class KafkaTools {
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final String schemaName) {
             return new AvroConsume(schemaName, AVRO_LATEST_VERSION, DIRECT_MAPPING);
+        }
+
+        /**
+         * The kafka protobuf specs. This will fetch the {@link com.google.protobuf.Descriptors.Descriptor protobuf
+         * descriptor} for the {@link ProtobufConsumeOptions#schemaSubject() schema subject} from the schema registry
+         * using version {@link ProtobufConsumeOptions#schemaVersion() schema version} and create
+         * {@link com.google.protobuf.Message message} parsing functions according to
+         * {@link io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)}.
+         * These functions will be adapted to handle schema changes.
+         *
+         * <p>
+         * For purposes of reproducibility across restarts where schema changes may occur, it is advisable for callers
+         * to set a specific {@link ProtobufConsumeOptions#schemaVersion() schema version}. This will ensure the
+         * resulting {@link io.deephaven.engine.table.TableDefinition table definition} will not change across restarts.
+         * This gives the caller an explicit opportunity to update any downstream consumers when updating
+         * {@link ProtobufConsumeOptions#schemaVersion() schema version} if necessary.
+         *
+         * @param options the options
+         * @return the key or value spec
+         * @see io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)
+         *      parsing
+         * @see <a href=
+         *      "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-protobuf.html">kafka
+         *      protobuf serdes</a>
+         */
+        public static KeyOrValueSpec protobufSpec(ProtobufConsumeOptions options) {
+            return new ProtobufConsumeImpl(options);
         }
 
         /**
@@ -541,7 +603,7 @@ public class KafkaTools {
             return IGNORE;
         }
 
-        private static boolean isIgnore(KeyOrValueSpec keyOrValueSpec) {
+        static boolean isIgnore(KeyOrValueSpec keyOrValueSpec) {
             return keyOrValueSpec == IGNORE;
         }
 
@@ -1274,6 +1336,7 @@ public class KafkaTools {
      *        {@code keySpec} and publish to Kafka from the result.
      * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
      *         reference to this return value to ensure liveliness.
+     * @see #produceFromTable(KafkaPublishOptions)
      */
     @SuppressWarnings("unused")
     public static Runnable produceFromTable(
@@ -1283,24 +1346,62 @@ public class KafkaTools {
             @NotNull final Produce.KeyOrValueSpec keySpec,
             @NotNull final Produce.KeyOrValueSpec valueSpec,
             final boolean lastByKeyColumns) {
-        if (table.isRefreshing()
-                && !table.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()
-                && !table.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
-            throw new KafkaPublisherException(
-                    "Calling thread must hold an exclusive or shared UpdateGraph lock to publish live sources");
-        }
-        if (Produce.isIgnore(keySpec) && Produce.isIgnore(valueSpec)) {
-            throw new IllegalArgumentException(
-                    "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
-        }
+        return produceFromTable(KafkaPublishOptions.builder()
+                .table(table)
+                .topic(topic)
+                .config(kafkaProperties)
+                .keySpec(keySpec)
+                .valueSpec(valueSpec)
+                .lastBy(lastByKeyColumns && !Produce.isIgnore(keySpec))
+                .publishInitial(true)
+                .build());
+    }
 
-        final Map<String, ?> config = asStringMap(kafkaProperties);
+    /**
+     * Produce a Kafka stream from a Deephaven table.
+     *
+     * <p>
+     * Note that {@code table} must only change in ways that are meaningful when turned into a stream of events over
+     * Kafka.
+     * <p>
+     * Two primary use cases are considered:
+     * <ol>
+     * <li><b>A stream of changes (puts and removes) to a key-value data set.</b> In order to handle this efficiently
+     * and allow for correct reconstruction of the state at a consumer, it is assumed that the input data is the result
+     * of a Deephaven aggregation, e.g. {@link Table#aggAllBy}, {@link Table#aggBy}, or {@link Table#lastBy}. This means
+     * that key columns (as specified by {@code keySpec}) must not be modified, and no rows should be shifted if there
+     * are any key columns. Note that specifying {@code lastByKeyColumns=true} can make it easy to satisfy this
+     * constraint if the input data is not already aggregated.</li>
+     * <li><b>A stream of independent log records.</b> In this case, the input table should either be a
+     * {@link Table#BLINK_TABLE_ATTRIBUTE blink table} or should only ever add rows (regardless of whether the
+     * {@link Table#ADD_ONLY_TABLE_ATTRIBUTE attribute} is specified).</li>
+     * </ol>
+     * <p>
+     * If other use cases are identified, a publication mode or extensible listener framework may be introduced at a
+     * later date.
+     *
+     * @param options the options
+     * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
+     *         reference to this return value to ensure liveliness.
+     */
+    public static Runnable produceFromTable(KafkaPublishOptions options) {
+        final Table table = options.table();
+        try {
+            QueryTable.checkInitiateOperation(table);
+        } catch (IllegalStateException e) {
+            throw new KafkaPublisherException(
+                    "Calling thread must hold an exclusive or shared UpdateGraph lock to publish live sources", e);
+        }
+        final Map<String, ?> config = asStringMap(options.config());
+        final KeyOrValueSpec keySpec = options.keySpec();
+        final KeyOrValueSpec valueSpec = options.valueSpec();
         final SchemaRegistryClient schemaRegistryClient = schemaRegistryClient(keySpec, valueSpec, config).orElse(null);
 
-        final Serializer<?> keySpecSerializer = keySpec.getSerializer(schemaRegistryClient, table.getDefinition());
+        final TableDefinition tableDefinition = table.getDefinition();
+        final Serializer<?> keySpecSerializer = keySpec.getSerializer(schemaRegistryClient, tableDefinition);
         keySpecSerializer.configure(config, true);
 
-        final Serializer<?> valueSpecSerializer = valueSpec.getSerializer(schemaRegistryClient, table.getDefinition());
+        final Serializer<?> valueSpecSerializer = valueSpec.getSerializer(schemaRegistryClient, tableDefinition);
         valueSpecSerializer.configure(config, false);
 
         final String[] keyColumns = keySpec.getColumnNames(table, schemaRegistryClient);
@@ -1308,22 +1409,23 @@ public class KafkaTools {
 
         final LivenessScope publisherScope = new LivenessScope(true);
         try (final SafeCloseable ignored = LivenessScopeStack.open(publisherScope, false)) {
-            final Table effectiveTable = (!Produce.isIgnore(keySpec) && lastByKeyColumns)
+            final Table effectiveTable = options.lastBy()
                     ? table.lastBy(keyColumns)
                     : table.coalesce();
             final KeyOrValueSerializer<?> keySerializer = keySpec.getKeyOrValueSerializer(effectiveTable, keyColumns);
             final KeyOrValueSerializer<?> valueSerializer =
                     valueSpec.getKeyOrValueSerializer(effectiveTable, valueColumns);
             final PublishToKafka producer = new PublishToKafka(
-                    kafkaProperties,
+                    options.config(),
                     effectiveTable,
-                    topic,
+                    options.topic(),
                     keyColumns,
                     keySpecSerializer,
                     keySerializer,
                     valueColumns,
                     valueSpecSerializer,
-                    valueSerializer);
+                    valueSerializer,
+                    options.publishInitial());
         }
         return publisherScope::release;
     }
