@@ -299,6 +299,8 @@ class Classpaths {
         addDependency(config, 'org.apache.hadoop', 'hadoop-common', '3.3.3') {
             it.because('Required for org.apache.hadoop.conf.Configuration')
             it.setTransitive(false)
+            // Do not take any extra dependencies of this project transitively. We can add any required additional
+            // dependencies separately, as done for woodstox, shaded-guava, etc. below.
         }
 
         Configuration runtimeOnly = p.configurations.getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
