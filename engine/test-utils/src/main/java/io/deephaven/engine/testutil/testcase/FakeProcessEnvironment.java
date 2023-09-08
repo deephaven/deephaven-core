@@ -113,7 +113,6 @@ public class FakeProcessEnvironment implements ProcessEnvironment {
 
         @Override
         public void addInterceptor(@NotNull final Interceptor interceptor) {
-            throw new UnsupportedOperationException();
         }
 
         @Override
