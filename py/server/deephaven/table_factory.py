@@ -356,7 +356,7 @@ def function_generated_table(table_generator: Callable[[], Table],
     function-generated tables can create tables that are produced by arbitrary Python logic (including using Pandas or
     numpy). They can also be used to retrieve data from external sources (such as files or websites).
 
-    The table definition must not change between invocations of the 'table_generator' function.
+    The table definition must not change between invocations of the 'table_generator' function, or an exception will be raised.
 
     Note: any tables used by the 'table_generator' function *MUST* be specified in the 'source_tables'. This
     ensures that the 'table_generator' is rerun only *after* any changes to the 'source_tables' have been processed.
