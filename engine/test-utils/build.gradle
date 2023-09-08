@@ -14,6 +14,7 @@ dependencies {
     implementation project(':base-test-utils')
     implementation project(':engine-rowset-test-utils')
     implementation project(':FishUtil')
+    implementation project(':extensions-source-support')
 
     implementation depCommonsLang3
     implementation depTrove3

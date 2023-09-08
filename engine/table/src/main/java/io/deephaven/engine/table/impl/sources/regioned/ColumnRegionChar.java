@@ -93,6 +93,13 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
 
         @Override
+        public void invalidate() {
+            for(int ii = 0; ii < getRegionCount(); ii++) {
+                getRegion(ii).invalidate();
+            }
+        }
+
+        @Override
         public char getChar(final long elementIndex) {
             return lookupRegion(elementIndex).getChar(elementIndex);
         }
