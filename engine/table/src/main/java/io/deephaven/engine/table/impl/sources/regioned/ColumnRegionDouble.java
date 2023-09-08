@@ -98,6 +98,13 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
         }
 
         @Override
+        public void invalidate() {
+            for(int ii = 0; ii < getRegionCount(); ii++) {
+                getRegion(ii).invalidate();
+            }
+        }
+
+        @Override
         public double getDouble(final long elementIndex) {
             return lookupRegion(elementIndex).getDouble(elementIndex);
         }
