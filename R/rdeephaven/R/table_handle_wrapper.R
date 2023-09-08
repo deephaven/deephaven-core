@@ -114,8 +114,17 @@ TableHandle <- R6Class("TableHandle",
       verify_type("aggs", aggs, "AggOp", "Deephaven AggOp", FALSE)
       verify_string("by", by, FALSE)
       aggs <- c(aggs)
+      for (agg in aggs) {
+        if (!is.null(agg$.internal_num_cols) && agg$.internal_num_cols == 0) {
+          stop("Aggregations with no columns cannot be used in 'agg_by'. Please provide at least one column to the 'cols' argument of each aggregator.")
+        }
+      }
       unwrapped_aggs <- lapply(aggs, strip_r6_wrapping)
       return(TableHandle$new(self$.internal_rcpp_object$agg_by(unwrapped_aggs, by)))
+    },
+    agg_all_by = function(agg, by = character()) {
+      verify_type("agg", agg, "Aggregation", "Deephaven Aggregation", TRUE)
+      return(TableHandle$new(self$.internal_rcpp_object$agg_all_by(agg$.internal_rcpp_object, by)))
     },
     first_by = function(by = character()) {
       verify_string("by", by, FALSE)
