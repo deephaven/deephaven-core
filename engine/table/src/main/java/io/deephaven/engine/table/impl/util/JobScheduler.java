@@ -183,7 +183,7 @@ public interface JobScheduler {
                 try {
                     onError.accept(localException);
                 } catch (Exception e) {
-                    e.initCause(localException);
+                    e.addSuppressed(localException);
                     onUnexpectedJobError(e);
                 }
                 return;
@@ -194,7 +194,7 @@ public interface JobScheduler {
                 try {
                     onError.accept(e);
                 } catch (Exception e2) {
-                    e2.initCause(e);
+                    e2.addSuppressed(e);
                     onUnexpectedJobError(e2);
                 }
             }

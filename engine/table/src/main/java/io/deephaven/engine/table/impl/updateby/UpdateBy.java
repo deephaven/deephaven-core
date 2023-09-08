@@ -1099,22 +1099,22 @@ public abstract class UpdateBy {
 
         @Override
         public boolean satisfied(final long step) {
-            if (super.satisfied(step)) {
-                // Our parents are satisfied on this step, and our notification will never be enqueued, or has been run
-                final Future<Void> localProcessingFuture = processingFuture;
-                if (localProcessingFuture == null) {
-                    // No notification was enqueued, or we've already observed that processing was complete
-                    return true;
-                }
-                if (localProcessingFuture.isDone()) {
-                    // We've observed that processing is complete
-                    processingFuture = null;
-                    return true;
-                }
-                // Processing continues asynchronously
+            if (!super.satisfied(step)) {
+                // Our parents aren't satisfied yet on this step, or our notification has been enqueued and not yet run
                 return false;
             }
-            // Our parents aren't satisfied yet on this step, or our notification has been enqueued and not yet run
+            // Our parents are satisfied on this step, and our notification will never be enqueued, or has been run
+            final Future<Void> localProcessingFuture = processingFuture;
+            if (localProcessingFuture == null) {
+                // No notification was enqueued, or we've already observed that processing was complete
+                return true;
+            }
+            if (localProcessingFuture.isDone()) {
+                // We've observed that processing is complete
+                processingFuture = null;
+                return true;
+            }
+            // Processing continues asynchronously
             return false;
         }
     }
