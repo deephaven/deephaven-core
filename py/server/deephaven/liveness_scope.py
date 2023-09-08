@@ -24,6 +24,7 @@ class LivenessScope(JObjectWrapper):
     j_object_type = _JLivenessScope
 
     def __init__(self, j_scope: jpy.JType):
+        super().__init__(j_scope)
         self.j_scope = j_scope
 
     def __enter__(self):

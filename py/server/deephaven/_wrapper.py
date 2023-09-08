@@ -22,6 +22,11 @@ _di_wrapper_classes: Set[JObjectWrapper] = set()
 _has_all_wrappers_imported = False
 
 JLivePyObjectWrapper = jpy.get_type('io.deephaven.server.plugin.python.LivePyObjectWrapper')
+JLivenessScope = jpy.get_type("io.deephaven.engine.liveness.LivenessScope")
+JLivenessReferent = jpy.get_type('io.deephaven.engine.liveness.LivenessReferent')
+
+
+_interpreter_liveness_scope = JLivenessScope()
 
 
 def _recursive_import(package_path: str) -> None:
@@ -52,6 +57,17 @@ class JObjectWrapper(ABC):
 
         if _is_direct_initialisable(cls):
             _di_wrapper_classes.add(cls)
+
+    def __init__(self, j_object: jpy.JType):
+        self._j_obj = j_object
+        if JLivenessReferent.jclass.isInstance(self._j_obj):
+            print('retaining ', self._j_obj)
+            _interpreter_liveness_scope.tryManage(self._j_obj)
+
+    def __del__(self):
+        if JLivenessReferent.jclass.isInstance(self._j_obj):
+            print("releasing ", self._j_obj)
+            _interpreter_liveness_scope.tryUnmanage(self._j_obj)
 
     @property
     @abstractmethod
