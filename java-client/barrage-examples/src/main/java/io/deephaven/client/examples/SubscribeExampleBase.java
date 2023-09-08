@@ -72,7 +72,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
             System.out.println("Table info: rows = " + subscriptionTable.size() + ", cols = " +
                     DataAccessHelpers.getColumns(subscriptionTable).length);
             TableTools.show(subscriptionTable);
-            System.out.println("");
+            System.out.println();
 
             subscriptionTable.addUpdateListener(listener = new InstrumentedTableUpdateListener("example-listener") {
                 @ReferentialIntegrity
