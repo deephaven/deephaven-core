@@ -23,6 +23,10 @@ import static org.junit.Assert.assertArrayEquals;
 public abstract class TstColumnRegionByte {
 
     static class Identity implements ColumnRegionByte<Values>, Page.WithDefaults<Values> {
+        @Override
+        public void invalidate() {
+            // NOTHNG TO DO
+        }
 
         @Override
         public long mask() {

@@ -55,6 +55,7 @@ public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
     }
 
     private ObjectChunk<DICT_TYPE, ATTR> getDictionaryChunk() {
+        throwIfInvalidated();
         return dictionaryChunkSupplier.get().asObjectChunk();
     }
 

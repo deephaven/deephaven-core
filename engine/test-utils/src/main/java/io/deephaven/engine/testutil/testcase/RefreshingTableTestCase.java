@@ -13,7 +13,6 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.engine.testutil.*;
@@ -22,7 +21,6 @@ import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;

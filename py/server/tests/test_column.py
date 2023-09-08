@@ -6,6 +6,9 @@ import time
 import unittest
 from dataclasses import dataclass
 
+import numpy as np
+import pandas as pd
+
 from deephaven import DHError, dtypes, new_table, time as dhtime
 from deephaven import empty_table
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
@@ -133,7 +136,25 @@ class ColumnTestCase(BaseTestCase):
         inst = dhtime.to_j_instant(round(time.time()))
         dt = datetime.datetime.now()
         _ = datetime_col(name="Datetime", data=[inst, dt, None])
+        self.assertEqual(_.data_type, dtypes.Instant)
 
+        ts = pd.Timestamp(dt)
+        np_dt = np.datetime64(dt)
+        data = [ts, np_dt, dt]
+        # test if we can convert to numpy datetime64 array
+        np.array([pd.Timestamp(dt).to_numpy() for dt in data], dtype=np.datetime64)
+        _ = datetime_col(name="Datetime", data=data)
+        self.assertEqual(_.data_type, dtypes.Instant)
+
+        data = np.array(['1970-01-01T00:00:00.000-07:00', '2020-01-01T01:00:00.000+07:00'])
+        np.array([pd.Timestamp(str(dt)).to_numpy() for dt in data], dtype=np.datetime64)
+        _ = datetime_col(name="Datetime", data=data)
+        self.assertEqual(_.data_type, dtypes.Instant)
+
+        data = np.array([1, -1])
+        data = data.astype(np.int64)
+        _ = datetime_col(name="Datetime", data=data)
+        self.assertEqual(_.data_type, dtypes.Instant)
 
 @dataclass
 class CustomClass:

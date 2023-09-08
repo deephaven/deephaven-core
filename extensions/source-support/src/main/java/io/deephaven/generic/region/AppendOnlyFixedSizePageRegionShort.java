@@ -44,11 +44,6 @@ public class AppendOnlyFixedSizePageRegionShort<ATTR extends Any>
     }
 
     @Override
-    public final ChunkType getChunkType() {
-        return ChunkType.Short;
-    }
-
-    @Override
     public short getShort(final long rowKey) {
         final ChunkHolderPageShort<ATTR> page = getPageContaining(rowKey);
         try {
@@ -69,6 +64,7 @@ public class AppendOnlyFixedSizePageRegionShort<ATTR extends Any>
 
     @NotNull
     private ChunkHolderPageShort<ATTR> getPageContaining(final long rowKey) {
+        throwIfInvalidated();
         final long firstRowPosition = rowKey & mask();
         final int pageIndex = Math.toIntExact(firstRowPosition / pageSize);
         if (pageIndex >= MAX_ARRAY_SIZE) {
