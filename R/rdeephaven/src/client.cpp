@@ -154,9 +154,9 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregations), group_by_columns));
     };
 
-    TableHandleWrapper* AggAllBy(AggregateWrapper &aggregation, std::vector<std::string> groupByColumns) {
-        std::vector<deephaven::client::Aggregate> converted_aggregation = {aggregation.internal_aggregation};
-        return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregation), groupByColumns));
+    TableHandleWrapper* AggAllBy(AggregateWrapper &aggregation, std::vector<std::string> group_by_columns) {
+        std::vector<deephaven::client::Aggregate> converted_aggregation = {aggregation.internal_agg_op};
+        return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregation), group_by_columns));
     };
 
     TableHandleWrapper* FirstBy(std::vector<std::string> cols) {
