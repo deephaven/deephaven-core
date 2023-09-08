@@ -215,8 +215,13 @@ def datetime_col(name: str, data: Sequence) -> InputColumn:
         except Exception as e:
             ...
 
-    if isinstance(data, np.ndarray) and data.dtype.kind == 'M':
-        longs = jpy.array('long', data.astype('datetime64[ns]').astype('int64'))
+    if isinstance(data, np.ndarray) and data.dtype.kind in ('M', 'i', 'U'):
+        if data.dtype.kind == 'M':
+            longs = jpy.array('long', data.astype('datetime64[ns]').astype('int64'))
+        elif data.dtype.kind == 'i':
+            longs = jpy.array('long', data.astype('int64'))
+        else:  # data.dtype.kind == 'U'
+            longs = jpy.array('long', [pd.Timestamp(str(dt)).to_numpy().astype('int64') for dt in data])
         data = _JPrimitiveArrayConversionUtility.translateArrayLongToInstant(longs)
 
     if not isinstance(data, dtypes.instant_array.j_type):
