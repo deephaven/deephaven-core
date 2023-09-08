@@ -6,7 +6,6 @@ plugins {
 description 'Parquet Base: Libraries for working with Parquet files'
 
 dependencies {
-    // TODO(deephaven-core#3148): LZ4_RAW parquet support
     Classpaths.inheritParquetHadoop(project)
 
     implementation project(':extensions-parquet-compression')
