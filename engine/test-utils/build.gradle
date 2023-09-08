@@ -13,6 +13,7 @@ dependencies {
     implementation project(':engine-tuple')
     implementation project(':base-test-utils')
     implementation project(':engine-rowset-test-utils')
+    implementation project(':FishUtil')
 
     implementation depCommonsLang3
     implementation depTrove3
