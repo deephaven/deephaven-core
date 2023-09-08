@@ -51,9 +51,10 @@ public class FindExceptionCause {
      * @param expectedType The expected type to find
      * @return A completed {@link Optional} containing the found cause, or an empty {@link Optional}
      */
-    public static <E extends Throwable> Optional<E> isOrCausedBy(@NotNull final Throwable original, @NotNull final Class<E> expectedType) {
-        if(expectedType.isAssignableFrom(original.getClass())) {
-            return Optional.of((E)original);
+    public static <E extends Throwable> Optional<E> isOrCausedBy(@NotNull final Throwable original,
+            @NotNull final Class<E> expectedType) {
+        if (expectedType.isAssignableFrom(original.getClass())) {
+            return Optional.of((E) original);
         }
 
         Throwable cause = original.getCause();

@@ -239,7 +239,7 @@ public abstract class AbstractTableLocationProvider
     public void removeTableLocationKey(@NotNull final TableLocationKey locationKey) {
         final Object removedLocation = tableLocations.remove(locationKey);
 
-        if(removedLocation != null) {
+        if (removedLocation != null) {
             handleTableLocationKeyRemoved(locationKey.makeImmutable());
             if (removedLocation instanceof AbstractTableLocation) {
                 final AbstractTableLocation abstractLocation = (AbstractTableLocation) removedLocation;

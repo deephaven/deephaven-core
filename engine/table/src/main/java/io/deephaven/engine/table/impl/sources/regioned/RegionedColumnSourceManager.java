@@ -372,7 +372,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                             for (final ColumnLocationState state : columnLocationStates) {
                                 if (state.needToUpdateGrouping()) {
                                     state.updateGrouping(
-                                            addRowSetInTable == null ? addRowSetInTable = updateRowSet.shift(regionFirstKey)
+                                            addRowSetInTable == null
+                                                    ? addRowSetInTable = updateRowSet.shift(regionFirstKey)
                                                     : addRowSetInTable);
                                 }
                             }

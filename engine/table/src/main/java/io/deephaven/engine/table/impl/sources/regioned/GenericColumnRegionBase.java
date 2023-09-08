@@ -29,7 +29,7 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
     }
 
     protected final void throwIfPoisoned() {
-        if(poisoned) {
+        if (poisoned) {
             throw new PoisonedRegionException("Regioned is poisoned");
         }
     }

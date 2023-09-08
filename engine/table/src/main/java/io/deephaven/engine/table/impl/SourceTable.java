@@ -159,7 +159,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk)));
     }
 
-    private ImmutableTableLocationKey[] maybeRemoveLocations(@NotNull final Collection<ImmutableTableLocationKey> removedKeys) {
+    private ImmutableTableLocationKey[] maybeRemoveLocations(
+            @NotNull final Collection<ImmutableTableLocationKey> removedKeys) {
         if (removedKeys.isEmpty()) {
             return new ImmutableTableLocationKey[0];
         }
@@ -217,12 +218,14 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
 
                 // Process Adds before removes to be safe in the event that we got an addition and a removal
-                // of the same location in the same cycle for some reason.  This way we won't accidentally
+                // of the same location in the same cycle for some reason. This way we won't accidentally
                 // add a known removed location and blow up later when we didn't need to.
                 maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
-                final ImmutableTableLocationKey[] removedKeys = maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
-                if(removedKeys.length > 0) {
-                    throw new TableLocationRemovedException("Source table does not support removed locations", removedKeys);
+                final ImmutableTableLocationKey[] removedKeys =
+                        maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+                if (removedKeys.length > 0) {
+                    throw new TableLocationRemovedException("Source table does not support removed locations",
+                            removedKeys);
                 }
 
                 // NB: This class previously had functionality to notify "location listeners", but it was never used.

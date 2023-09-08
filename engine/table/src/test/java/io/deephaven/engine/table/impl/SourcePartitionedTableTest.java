@@ -245,7 +245,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         final Table partitionTable = spt.table();
 
         assertEquals(2, partitionTable.size());
-        try(final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+        try (final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
             assertTableEquals(tableIt.next(), p1);
             assertTableEquals(tableIt.next(), p2);
         }
@@ -264,7 +264,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         getUpdateErrors().clear();
 
         assertEquals(1, partitionTable.size());
-        try(final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+        try (final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
             assertTableEquals(tableIt.next(), p2);
         }
 
@@ -276,7 +276,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         });
 
         assertEquals(2, partitionTable.size());
-        try(final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+        try (final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
             assertTableEquals(tableIt.next(), p2);
             assertTableEquals(tableIt.next(), p3);
         }
@@ -295,7 +295,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         getUpdateErrors().clear();
 
         assertEquals(2, partitionTable.size());
-        try(final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+        try (final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
             assertTableEquals(tableIt.next(), p3);
             assertTableEquals(tableIt.next(), p4);
         }
@@ -305,14 +305,14 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         // cause one error to come from the copied table, and one from the merged() table. We just need to validate
         // that the exceptions we see are a ConstituentTableException and an ISE
         allowingError(() -> updateGraph.delegate.runWithinUnitTestCycle(
-                        () -> p3.notifyListenersOnError(new IllegalStateException("This is a test error"), null)),
+                () -> p3.notifyListenersOnError(new IllegalStateException("This is a test error"), null)),
                 errors -> errors.size() == 1 &&
                         FindExceptionCause.isOrCausedBy(errors.get(0), IllegalStateException.class).isPresent());
     }
 
     /**
-     * This test verifies that after a location is removed any attempt to read from it, current or previous
-     * values will fail.
+     * This test verifies that after a location is removed any attempt to read from it, current or previous values will
+     * fail.
      */
     public void testCantReadPrev() {
         final SourcePartitionedTable spt = setUpData();
@@ -331,11 +331,10 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         allowingError(() -> updateGraph.runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
             registrar.run();
-        }), errors ->
+        }), errors -> errors.stream().anyMatch(e -> FindExceptionCause.isOrCausedBy(e,
+                PoisonedRegionException.class).isPresent()) &&
                 errors.stream().anyMatch(e -> FindExceptionCause.isOrCausedBy(e,
-                            PoisonedRegionException.class).isPresent()) &&
-                errors.stream().anyMatch(e -> FindExceptionCause.isOrCausedBy(e,
-                            TableLocationRemovedException.class).isPresent()));
+                        TableLocationRemovedException.class).isPresent()));
         getUpdateErrors().clear();
     }
 }
