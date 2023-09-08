@@ -112,8 +112,7 @@ public class FakeProcessEnvironment implements ProcessEnvironment {
         }
 
         @Override
-        public void addInterceptor(@NotNull final Interceptor interceptor) {
-        }
+        public void addInterceptor(@NotNull final Interceptor interceptor) {}
 
         @Override
         public void uncaughtException(@NotNull final Thread t, @NotNull final Throwable e) {
