@@ -112,8 +112,8 @@ public interface RegionedColumnSource<DATA_TYPE>
             @NotNull final ColumnLocation columnLocation);
 
     /**
-     * Invalidate the specified region. An invalidated region will throw an exception on any read attempt if it
-     * cannot be completed consistently and correctly.
+     * Invalidate the specified region. An invalidated region will throw an exception on any read attempt if it cannot
+     * be completed consistently and correctly.
      *
      * @param regionIndex the region to invalidate
      */

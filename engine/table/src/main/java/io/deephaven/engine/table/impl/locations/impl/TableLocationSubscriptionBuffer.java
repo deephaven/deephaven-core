@@ -129,7 +129,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     public void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey tableLocationKey) {
         synchronized (updateLock) {
             // If we remove something that was pending to be added, just discard both.
-            if(pendingLocationKeys.remove(tableLocationKey)) {
+            if (pendingLocationKeys.remove(tableLocationKey)) {
                 return;
             }
 

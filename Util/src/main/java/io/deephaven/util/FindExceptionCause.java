@@ -57,7 +57,7 @@ public class FindExceptionCause {
         Throwable cause = original;
         while (cause != null) {
             if (expectedType.isAssignableFrom(cause.getClass())) {
-                //noinspection unchecked
+                // noinspection unchecked
                 return Optional.of((E) cause);
             }
             cause = cause.getCause();
