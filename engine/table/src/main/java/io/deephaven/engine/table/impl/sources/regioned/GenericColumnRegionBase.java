@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.PoisonedRegionException;
 
 /**
  * Base {@link ColumnRegion} implementation.
@@ -12,7 +12,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 public abstract class GenericColumnRegionBase<ATTR extends Any> implements ColumnRegion<ATTR> {
 
     private final long pageMask;
-    private volatile boolean poisioned = false;
+    private volatile boolean poisoned = false;
 
     public GenericColumnRegionBase(final long pageMask) {
         this.pageMask = pageMask;
@@ -25,12 +25,12 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
 
     @Override
     public void poison() {
-        this.poisioned = true;
+        this.poisoned = true;
     }
 
-    protected final void throwIfPoisioned() {
-        if(poisioned) {
-            throw new TableDataException("Regioned is poisoned");
+    protected final void throwIfPoisoned() {
+        if(poisoned) {
+            throw new PoisonedRegionException("Regioned is poisoned");
         }
     }
 }

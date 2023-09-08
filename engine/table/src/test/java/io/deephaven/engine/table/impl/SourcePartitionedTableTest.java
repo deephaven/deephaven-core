@@ -3,10 +3,11 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
+import io.deephaven.engine.table.impl.locations.PoisonedRegionException;
 import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
-import io.deephaven.engine.table.impl.sources.ConstituentTableException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.locations.DependentRegistrar;
 import io.deephaven.engine.testutil.locations.TableBackedTableLocationProvider;
@@ -20,6 +21,7 @@ import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.FindExceptionCause;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.function.ThrowingRunnable;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
@@ -164,6 +166,10 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
             sources.remove(updateSource);
             delegate.removeSource(updateSource);
         }
+
+        public <T extends Exception> void runWithinUnitTestCycle(@NotNull final ThrowingRunnable<T> runnable) throws T {
+            delegate.runWithinUnitTestCycle(runnable);
+        }
     }
 
     @Override
@@ -236,11 +242,13 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
     public void testAddAndRemoveLocations() {
         final SourcePartitionedTable spt = setUpData();
 
-        final Table merged = spt.merge();
-        final Table aggs = merged.countBy("Count", "Sym");
+        final Table partitionTable = spt.table();
 
-        Table expected = TableTools.merge(p1, p2).countBy("Count", "Sym");
-        assertTableEquals(expected, aggs);
+        assertEquals(2, partitionTable.size());
+        try(final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+            assertTableEquals(tableIt.next(), p1);
+            assertTableEquals(tableIt.next(), p2);
+        }
 
         ImmutableTableLocationKey[] tlks = tlp.getTableLocationKeys()
                 .stream().sorted().toArray(ImmutableTableLocationKey[]::new);
@@ -251,12 +259,14 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
             updateGraph.refreshSources();
             registrar.run();
         }), errors -> errors.size() == 1 &&
-                FindExceptionCause.findCause(errors.get(0),
-                        TableLocationRemovedException.class) instanceof TableLocationRemovedException);
+                FindExceptionCause.isOrCausedBy(errors.get(0),
+                        TableLocationRemovedException.class).isPresent());
         getUpdateErrors().clear();
 
-        expected = p2.countBy("Count", "Sym");
-        assertTableEquals(expected, aggs);
+        assertEquals(1, partitionTable.size());
+        try(final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+            assertTableEquals(tableIt.next(), p2);
+        }
 
         tlp.addPending(p3);
         tlp.refresh();
@@ -265,8 +275,11 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
             registrar.run();
         });
 
-        expected = TableTools.merge(p2, p3).countBy("Count", "Sym");
-        assertTableEquals(expected, aggs);
+        assertEquals(2, partitionTable.size());
+        try(final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+            assertTableEquals(tableIt.next(), p2);
+            assertTableEquals(tableIt.next(), p3);
+        }
 
         tlks = tlp.getTableLocationKeys().stream().sorted().toArray(ImmutableTableLocationKey[]::new);
         tlp.addPending(p4);
@@ -277,12 +290,15 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
             updateGraph.refreshSources();
             registrar.run();
         }), errors -> errors.size() == 1 &&
-                FindExceptionCause.findCause(errors.get(0),
-                        TableLocationRemovedException.class) instanceof TableLocationRemovedException);
+                FindExceptionCause.isOrCausedBy(errors.get(0),
+                        TableLocationRemovedException.class).isPresent());
         getUpdateErrors().clear();
 
-        expected = TableTools.merge(p3, p4).countBy("Count", "Sym");
-        assertTableEquals(expected, aggs);
+        assertEquals(2, partitionTable.size());
+        try(final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+            assertTableEquals(tableIt.next(), p3);
+            assertTableEquals(tableIt.next(), p4);
+        }
 
         // Prove that we propagate normal errors. This is a little tricky, we can't test for errors.size == 1 because
         // The TableBackedTableLocation has a copy() of the p3 table which is itself a leaf. Erroring P3 will
@@ -290,17 +306,13 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         // that the exceptions we see are a ConstituentTableException and an ISE
         allowingError(() -> updateGraph.delegate.runWithinUnitTestCycle(
                         () -> p3.notifyListenersOnError(new IllegalStateException("This is a test error"), null)),
-                errors -> errors.stream()
-                        .anyMatch(e -> FindExceptionCause.findCause(e,
-                                IllegalStateException.class) instanceof IllegalStateException)
-                        &&
-                        errors.stream().anyMatch(e -> FindExceptionCause.findCause(e,
-                                ConstituentTableException.class) instanceof ConstituentTableException));
+                errors -> errors.size() == 1 &&
+                        FindExceptionCause.isOrCausedBy(errors.get(0), IllegalStateException.class).isPresent());
     }
 
     /**
      * This test verifies that after a location is removed any attempt to read from it, current or previous
-     * valueswill fail.
+     * values will fail.
      */
     public void testCantReadPrev() {
         final SourcePartitionedTable spt = setUpData();
@@ -308,7 +320,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         final Table merged = spt.merge();
         final Table aggs = merged.sumBy("Sym");
 
-        Table expected = TableTools.merge(p1, p2).sumBy("Count", "Sym");
+        Table expected = TableTools.merge(p1, p2).sumBy("Sym");
         assertTableEquals(expected, aggs);
 
         ImmutableTableLocationKey[] tlks = tlp.getTableLocationKeys()
@@ -319,9 +331,11 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         allowingError(() -> updateGraph.runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
             registrar.run();
-        }), errors -> errors.size() == 1 &&
-                FindExceptionCause.findCause(errors.get(0),
-                        TableLocationRemovedException.class) instanceof TableLocationRemovedException);
+        }), errors ->
+                errors.stream().anyMatch(e -> FindExceptionCause.isOrCausedBy(e,
+                            PoisonedRegionException.class).isPresent()) &&
+                errors.stream().anyMatch(e -> FindExceptionCause.isOrCausedBy(e,
+                            TableLocationRemovedException.class).isPresent()));
         getUpdateErrors().clear();
     }
 }

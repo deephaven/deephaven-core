@@ -69,7 +69,7 @@ public class AppendOnlyFixedSizePageRegionFloat<ATTR extends Any>
 
     @NotNull
     private ChunkHolderPageFloat<ATTR> getPageContaining(final long rowKey) {
-        throwIfPoisioned();
+        throwIfPoisoned();
         final long firstRowPosition = rowKey & mask();
         final int pageIndex = Math.toIntExact(firstRowPosition / pageSize);
         if (pageIndex >= MAX_ARRAY_SIZE) {

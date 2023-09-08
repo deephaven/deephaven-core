@@ -18,10 +18,8 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
         return 0;
     }
 
-    //TODO: EXPERIMENT:
-
     /**
-     * Poison the region -- any further reads will fail.
+     * Poison the region -- any further reads that cannot be completed consistently and correctly will fail.
      */
     void poison();
 

@@ -134,7 +134,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 log.debug().append("EMPTY_LOCATION_REMOVED:").append(locationKey.toString()).endl();
             }
         } else if (includedLocation != null) {
-            includedLocation.poision();
+            includedLocation.poison();
             return true;
         }
 
@@ -333,7 +333,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                     return;
                 }
             } catch (Exception ex) {
-                poision();
+                poison();
                 throw ex;
             }
 
@@ -392,8 +392,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             }
         }
 
-        private void poision() {
-            columnLocationStates.forEach(cls -> cls.source.poisionRegion(regionIndex));
+        private void poison() {
+            columnLocationStates.forEach(cls -> cls.source.poisonRegion(regionIndex));
         }
 
         @Override

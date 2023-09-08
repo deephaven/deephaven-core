@@ -69,7 +69,7 @@ public class AppendOnlyFixedSizePageRegionDouble<ATTR extends Any>
 
     @NotNull
     private ChunkHolderPageDouble<ATTR> getPageContaining(final long rowKey) {
-        throwIfPoisioned();
+        throwIfPoisoned();
         final long firstRowPosition = rowKey & mask();
         final int pageIndex = Math.toIntExact(firstRowPosition / pageSize);
         if (pageIndex >= MAX_ARRAY_SIZE) {
