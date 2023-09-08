@@ -93,4 +93,25 @@ public class DeferredViewTableTest {
 
         Assert.eqTrue(deferredTable.isRefreshing(), "deferredTable.isRefreshing()");
     }
+
+    @Test
+    public void testUpdateColumnToDifferentType() {
+        final TableDefinition resultDef = TableDefinition.of(
+                ColumnDefinition.ofLong("X"));
+        final Table sourceTable = TableTools.emptyTable(10).update("X = ii");
+
+        final SelectColumn[] viewColumns = SelectColumn.from(
+                Selectable.parse("X = (int)X"));
+
+        final DeferredViewTable deferredTable = new DeferredViewTable(
+                resultDef,
+                "test",
+                new DeferredViewTable.SimpleTableReference(sourceTable),
+                CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+                viewColumns,
+                WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+
+        final Class<?> resultType = deferredTable.coalesce().getDefinition().getColumn("X").getDataType();
+        Assert.eq(resultType, "resultType", int.class, "int.class");
+    }
 }

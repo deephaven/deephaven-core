@@ -30,6 +30,16 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
     }
 
     @Override
+    public void invalidate() {
+        super.invalidate();
+        synchronized (this) {
+            if (resultRegion != null) {
+                resultRegion.invalidate();
+            }
+        }
+    }
+
+    @Override
     public final REGION_TYPE getResultRegion() {
         if (resultRegion == null) {
             synchronized (this) {
