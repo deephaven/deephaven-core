@@ -25,6 +25,7 @@ public interface ThreadInitializationFactory {
                 } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException
                         | InstantiationException | IllegalAccessException e) {
 
+                    // TODO (https://github.com/deephaven/deephaven-core/issues/4040):
                     // Currently the default property file is shared between both the java client and the server. This
                     // means that client-side usage will attempt to load the thread.initialization property intended for
                     // the server which is not available on the class path.
