@@ -24,7 +24,7 @@ public class TstColumnRegionChar {
     static class Identity implements ColumnRegionChar<Values>, Page.WithDefaults<Values> {
 
         @Override
-        public void poison() {
+        public void invalidate() {
             // NOTHNG TO DO
         }
 

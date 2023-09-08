@@ -29,7 +29,7 @@ public class TstColumnRegionDouble {
     static class Identity implements ColumnRegionDouble<Values>, Page.WithDefaults<Values> {
 
         @Override
-        public void poison() {
+        public void invalidate() {
             // NOTHNG TO DO
         }
 

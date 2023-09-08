@@ -112,10 +112,10 @@ public interface RegionedColumnSource<DATA_TYPE>
             @NotNull final ColumnLocation columnLocation);
 
     /**
-     * Poison the specified region. A poisoned region will throw an exception on any read attempt if it cannot be
-     * completed consistently and correctly.
+     * Invalidate the specified region. An invalidated region will throw an exception on any read attempt if it
+     * cannot be completed consistently and correctly.
      *
-     * @param regionIndex the region to poison
+     * @param regionIndex the region to invalidate
      */
-    void poisonRegion(int regionIndex);
+    void invalidateRegion(int regionIndex);
 }

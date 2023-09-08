@@ -35,21 +35,21 @@ public abstract class ParquetColumnRegionBase<ATTR extends Any>
     @Override
     public final Chunk<? extends ATTR> getChunk(@NotNull final GetContext context,
             @NotNull final RowSequence rowSequence) {
-        throwIfPoisoned();
+        throwIfInvalidated();
         return columnChunkPageStore.getChunk(context, rowSequence);
     }
 
     @Override
     public final Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, final long firstKey,
             final long lastKey) {
-        throwIfPoisoned();
+        throwIfInvalidated();
         return columnChunkPageStore.getChunk(context, firstKey, lastKey);
     }
 
     @Override
     public final void fillChunk(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super ATTR> destination, @NotNull final RowSequence rowSequence) {
-        throwIfPoisoned();
+        throwIfInvalidated();
         columnChunkPageStore.fillChunk(context, destination, rowSequence);
     }
 
@@ -58,13 +58,13 @@ public abstract class ParquetColumnRegionBase<ATTR extends Any>
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super ATTR> destination,
             @NotNull final RowSequence.Iterator rowSequenceIterator) {
-        throwIfPoisoned();
+        throwIfInvalidated();
         columnChunkPageStore.fillChunkAppend(context, destination, rowSequenceIterator);
     }
 
     @Override
     public final ChunkPage<ATTR> getChunkPageContaining(final long elementIndex) {
-        throwIfPoisoned();
+        throwIfInvalidated();
         return columnChunkPageStore.getPageContaining(elementIndex);
     }
 
@@ -77,13 +77,13 @@ public abstract class ParquetColumnRegionBase<ATTR extends Any>
 
     @Override
     public final FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        throwIfPoisoned();
+        throwIfInvalidated();
         return columnChunkPageStore.makeFillContext(chunkCapacity, sharedContext);
     }
 
     @Override
     public final GetContext makeGetContext(final int chunkCapacity, final SharedContext sharedContext) {
-        throwIfPoisoned();
+        throwIfInvalidated();
         return columnChunkPageStore.makeGetContext(chunkCapacity, sharedContext);
     }
 }

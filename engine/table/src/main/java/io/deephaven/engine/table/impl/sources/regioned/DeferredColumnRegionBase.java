@@ -30,11 +30,11 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
     }
 
     @Override
-    public void poison() {
-        super.poison();
+    public void invalidate() {
+        super.invalidate();
         synchronized (this) {
             if (resultRegion != null) {
-                resultRegion.poison();
+                resultRegion.invalidate();
             }
         }
     }

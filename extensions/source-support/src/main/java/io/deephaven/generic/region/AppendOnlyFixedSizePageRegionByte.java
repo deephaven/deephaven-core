@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSequenceFactory;
 
 import io.deephaven.base.MathUtil;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.PageStore;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -48,11 +49,6 @@ public class AppendOnlyFixedSizePageRegionByte<ATTR extends Any>
     }
 
     @Override
-    public final ChunkType getChunkType() {
-        return ChunkType.Byte;
-    }
-
-    @Override
     public byte getByte(final long rowKey) {
         final ChunkHolderPageByte<ATTR> page = getPageContaining(rowKey);
         try {
@@ -85,7 +81,7 @@ public class AppendOnlyFixedSizePageRegionByte<ATTR extends Any>
 
     @NotNull
     private ChunkHolderPageByte<ATTR> getPageContaining(final long rowKey) {
-        throwIfPoisoned();
+        throwIfInvalidated();
         final long firstRowPosition = rowKey & mask();
         final int pageIndex = Math.toIntExact(firstRowPosition / pageSize);
         if (pageIndex >= MAX_ARRAY_SIZE) {

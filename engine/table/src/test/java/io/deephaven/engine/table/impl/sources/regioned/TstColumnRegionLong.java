@@ -29,7 +29,7 @@ public class TstColumnRegionLong {
     static class Identity implements ColumnRegionLong<Values>, Page.WithDefaults<Values> {
 
         @Override
-        public void poison() {
+        public void invalidate() {
             // NOTHNG TO DO
         }
 

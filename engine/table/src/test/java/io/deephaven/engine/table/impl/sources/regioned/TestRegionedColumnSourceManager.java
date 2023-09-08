@@ -227,9 +227,9 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     private void expectPoison() {
         checking(new Expectations() {
             {
-                exactly(1).of(partitioningColumnSource).poisonRegion(3);
-                exactly(1).of(groupingColumnSource).poisonRegion(3);
-                exactly(1).of(normalColumnSource).poisonRegion(3);
+                exactly(1).of(partitioningColumnSource).invalidateRegion(3);
+                exactly(1).of(groupingColumnSource).invalidateRegion(3);
+                exactly(1).of(normalColumnSource).invalidateRegion(3);
             }
         });
     }

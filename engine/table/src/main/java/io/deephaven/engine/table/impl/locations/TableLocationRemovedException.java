@@ -9,7 +9,8 @@ import org.jetbrains.annotations.NotNull;
 public class TableLocationRemovedException extends TableDataException {
     private final ImmutableTableLocationKey[] locationKeys;
 
-    public TableLocationRemovedException(@NotNull final String message,
+    public TableLocationRemovedException(
+            @NotNull final String message,
             @NotNull final ImmutableTableLocationKey... locationKeys) {
         super(message);
         this.locationKeys = locationKeys;

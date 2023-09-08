@@ -29,7 +29,7 @@ public class TstColumnRegionShort {
     static class Identity implements ColumnRegionShort<Values>, Page.WithDefaults<Values> {
 
         @Override
-        public void poison() {
+        public void invalidate() {
             // NOTHNG TO DO
         }
 

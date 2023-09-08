@@ -6,7 +6,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
-import io.deephaven.engine.table.impl.locations.PoisonedRegionException;
+import io.deephaven.engine.table.impl.locations.InvalidatedRegionException;
 import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.locations.DependentRegistrar;
@@ -332,7 +332,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
             updateGraph.refreshSources();
             registrar.run();
         }), errors -> errors.stream().anyMatch(e -> FindExceptionCause.isOrCausedBy(e,
-                PoisonedRegionException.class).isPresent()) &&
+                InvalidatedRegionException.class).isPresent()) &&
                 errors.stream().anyMatch(e -> FindExceptionCause.isOrCausedBy(e,
                         TableLocationRemovedException.class).isPresent()));
         getUpdateErrors().clear();

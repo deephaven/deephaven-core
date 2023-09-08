@@ -19,9 +19,9 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
     }
 
     /**
-     * Poison the region -- any further reads that cannot be completed consistently and correctly will fail.
+     * Invalidate the region -- any further reads that cannot be completed consistently and correctly will fail.
      */
-    void poison();
+    void invalidate();
 
     abstract class Null<ATTR extends Any>
             extends GenericColumnRegionBase<ATTR>

@@ -123,9 +123,9 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
 
         @Override
-        public void poison() {
+        public void invalidate() {
             for(int ii = 0; ii < getRegionCount(); ii++) {
-                getRegion(ii).poison();
+                getRegion(ii).invalidate();
             }
         }
 

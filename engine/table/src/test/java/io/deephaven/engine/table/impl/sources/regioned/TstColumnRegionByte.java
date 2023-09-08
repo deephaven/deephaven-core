@@ -24,7 +24,7 @@ public abstract class TstColumnRegionByte {
 
     static class Identity implements ColumnRegionByte<Values>, Page.WithDefaults<Values> {
         @Override
-        public void poison() {
+        public void invalidate() {
             // NOTHNG TO DO
         }
 

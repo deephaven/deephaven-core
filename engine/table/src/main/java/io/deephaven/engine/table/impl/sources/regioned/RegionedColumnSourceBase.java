@@ -38,8 +38,8 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
     }
 
     @Override
-    public void poisonRegion(final int regionIndex) {
-        getRegion(regionIndex).poison();
+    public void invalidateRegion(final int regionIndex) {
+        getRegion(regionIndex).invalidate();
     }
 
     @Override

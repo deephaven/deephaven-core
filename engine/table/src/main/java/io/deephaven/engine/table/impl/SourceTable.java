@@ -138,8 +138,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                             locationBuffer.processPending();
 
-                    // We do not need to consider removed locations here -- we are initializing, so we haven't
-                    // actually referenced any of them and don't care.
+                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
                     maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                     updateSourceRegistrar.addSource(locationChangePoller = new LocationChangePoller(locationBuffer));
                 } else {
@@ -162,7 +161,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     private ImmutableTableLocationKey[] maybeRemoveLocations(
             @NotNull final Collection<ImmutableTableLocationKey> removedKeys) {
         if (removedKeys.isEmpty()) {
-            return new ImmutableTableLocationKey[0];
+            return ImmutableTableLocationKey.ZERO_LENGTH_IMMUTABLE_TABLE_LOCATION_KEY_ARRAY;
         }
 
         return filterLocationKeys(removedKeys).stream()
@@ -216,17 +215,13 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         protected void instrumentedRefresh() {
             try {
                 final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
-
-                // Process Adds before removes to be safe in the event that we got an addition and a removal
-                // of the same location in the same cycle for some reason. This way we won't accidentally
-                // add a known removed location and blow up later when we didn't need to.
-                maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                 final ImmutableTableLocationKey[] removedKeys =
                         maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
                 if (removedKeys.length > 0) {
                     throw new TableLocationRemovedException("Source table does not support removed locations",
                             removedKeys);
                 }
+                maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
 
                 // NB: This class previously had functionality to notify "location listeners", but it was never used.
                 // Resurrect from git history if needed.

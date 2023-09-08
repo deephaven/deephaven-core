@@ -29,7 +29,7 @@ public class TstColumnRegionFloat {
     static class Identity implements ColumnRegionFloat<Values>, Page.WithDefaults<Values> {
 
         @Override
-        public void poison() {
+        public void invalidate() {
             // NOTHNG TO DO
         }
 

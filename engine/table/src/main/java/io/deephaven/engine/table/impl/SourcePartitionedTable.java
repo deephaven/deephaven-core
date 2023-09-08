@@ -93,7 +93,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         @SuppressWarnings("FieldCanBeLocal") // We need to hold onto this reference for reachability purposes.
         private final Runnable processNewLocationsUpdateRoot;
 
-        final private UpdateCommitter<UnderlyingTableMaintainer> removedLocationsComitter;
+        private final UpdateCommitter<UnderlyingTableMaintainer> removedLocationsComitter;
         private List<Table> removedConstituents = null;
 
         private UnderlyingTableMaintainer(
@@ -293,6 +293,11 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                         removedConstituents.add(constituent);
                     }
                 }
+            }
+
+            if (removedConstituents.isEmpty()) {
+                removedConstituents = null;
+                return RowSetFactory.empty();
             }
             this.removedLocationsComitter.maybeActivate();
 

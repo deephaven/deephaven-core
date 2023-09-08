@@ -24,8 +24,8 @@ public class ColumnRegionReferencingImpl<ATTR extends Any, REFERENCED_COLUMN_REG
     }
 
     @Override
-    public void poison() {
-        referencedColumnRegion.poison();
+    public void invalidate() {
+        referencedColumnRegion.invalidate();
     }
 
     @NotNull

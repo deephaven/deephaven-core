@@ -226,9 +226,9 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        public void poison() {
+        public void invalidate() {
             for(int ii = 0; ii < getRegionCount(); ii++) {
-                getRegion(ii).poison();
+                getRegion(ii).invalidate();
             }
         }
 
@@ -314,8 +314,8 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        public void poison() {
-            wrapped.poison();
+        public void invalidate() {
+            wrapped.invalidate();
         }
 
         @Override
