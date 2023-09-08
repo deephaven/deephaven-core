@@ -358,32 +358,34 @@ def function_generated_table(table_generator: Callable[[], Table],
 
     The table definition must not change between invocations of the 'table_generator' function.
 
-    Note that any tables used by the 'table_generator' function *MUST* be specified in the 'source_tables'.
+    Note: any tables used by the 'table_generator' function *MUST* be specified in the 'source_tables'.
 
     Args:
         table_generator (Callable[[], Table]): The table generator function. This function must return a Table.
         source_tables (Union[Table, List[Table]]): Source tables used by the 'table_generator' function. The
             'table_generator' is rerun when any of these tables tick.
         refresh_interval_ms (int): Interval (in milliseconds) at which the 'table_generator' function is rerun.
-        exec_ctx (ExecutionContext) -> Table): Optionally, a custom execution context. If 'None', the current
+        exec_ctx (ExecutionContext) -> Table): A custom execution context. If 'None', the current
             execution context is used. If there is no current execution context, a ValueError is raised.
 
     Returns:
-        A Table that is automatically regenerated when any of the source_tables tick. This table will be regenerated
-        *after* any changes to the source_tables have been processed.
+        a new table
+        
+    Raises:
+        DHError
     """
 
     if refresh_interval_ms is None and source_tables is None:
-        raise DHError("Either refresh_interval_ms or source_tables must be defined!")
+        raise DHError("Either refresh_interval_ms or source_tables must be provided!")
 
     if refresh_interval_ms is not None and source_tables is not None:
-        raise DHError("Only one of refresh_interval_ms and source_tables must be defined!")
+        raise DHError("Only one of refresh_interval_ms and source_tables must be provided!")
 
     # If no execution context is provided, assume we want to use the current one.
     if exec_ctx is None:
         exec_ctx = execution_context.get_exec_ctx()
         if exec_ctx is None:
-            raise ValueError("No execution context is available and exec_ctx was not set! ")
+            raise ValueError("No execution context is available and exec_ctx was not provided! ")
 
 
     def table_generator_function():
