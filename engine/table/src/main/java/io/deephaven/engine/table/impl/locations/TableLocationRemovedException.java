@@ -1,9 +1,10 @@
 package io.deephaven.engine.table.impl.locations;
 
+import io.deephaven.engine.table.Table;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * This exception is thrown when a {@link TableLocation} has been removed from a provider.
+ * This exception is thrown when a {@link TableLocation} that was in use by a {@link Table} is removed.
  */
 public class TableLocationRemovedException extends TableDataException {
     private final ImmutableTableLocationKey[] locationKeys;

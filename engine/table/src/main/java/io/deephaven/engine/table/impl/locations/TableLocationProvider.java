@@ -36,11 +36,9 @@ public interface TableLocationProvider extends NamedImplementation {
         void handleTableLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
 
         /**
-         * Notify the listener of a {@link TableLocationKey} that has been removed encountered while initiating or
-         * maintaining the location subscription. This should occur at most once per location, but the order of delivery
-         * is <i>not</i> guaranteed.
+         * Notify the listener of a {@link TableLocationKey} that has been removed.
          *
-         * @param tableLocationKey The table location
+         * @param tableLocationKey The table location key that was removed
          */
         void handleTableLocationKeyRemoved(@NotNull ImmutableTableLocationKey tableLocationKey);
     }

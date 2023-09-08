@@ -247,7 +247,7 @@ public class UnionSourceManager {
             try (final ChangeProcessingContext context = new ChangeProcessingContext(constituentChanges)) {
                 downstream = context.processChanges();
             } catch (Throwable ex) {
-                propagateError(true, ex, entry);
+                propagateError(false, ex, entry);
                 return;
             }
             result.notifyListeners(downstream);

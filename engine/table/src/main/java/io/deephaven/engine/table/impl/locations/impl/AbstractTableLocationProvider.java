@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.locations.impl;
 
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -212,29 +213,44 @@ public abstract class AbstractTableLocationProvider
     }
 
     /**
-     * Remove the given table location.
+     * Remove a {@link TableLocationKey} and its corresponding {@link TableLocation} (if it was created). All
+     * subscribers to this TableLocationProvider will be
+     * {@link TableLocationProvider.Listener#handleTableLocationKeyRemoved(ImmutableTableLocationKey) notified}. If the
+     * TableLocation was created, all of its subscribers will additionally be
+     * {@link TableLocation.Listener#handleUpdate() notified} that it no longer exists. This TableLocationProvider will
+     * continue to update other locations and will no longer provide or request information about the removed location.
      *
-     * @apiNote Use with caution: When this is called all subscribers to the specified location will be notified,
-     *          causing them to stop updating. Tables backed by those notifications will end up 'failed'. This location
-     *          provider will continue to update other locations and will no longer provide or request information about
-     *          the deleted location.
+     * <p>
+     * In practice, there are three downstream patterns in use.
+     * <ol>
+     * <li>Intermediate TableLocationProviders, which will simply pass the removal on</li>
+     * <li>{@link io.deephaven.engine.table.impl.SourceTable SourceTables}, which will propagate a failure notification
+     * to all downstream listeners, and become {@link Table#isFailed() failed}.</li>
+     * <li>{@link io.deephaven.engine.table.impl.SourcePartitionedTable SourcePartitionedTables}, which will notify
+     * their downstream consumers of the removed constituent.</li>
+     * </ol>
      *
-     * @param locationKey the TableLocation to remove
+     * @apiNote <em>Use with caution!</em> Implementations that call this method must provide certain guarantees: Reads
+     *          should only succeed against removed locations if they will return complete, correct, consistent data.
+     *          Otherwise, they should fail with a meaningful error message.
+     *
+     * @param locationKey The {@link TableLocationKey} to remove
      */
     public void removeTableLocationKey(@NotNull final TableLocationKey locationKey) {
         final Object removedLocation = tableLocations.remove(locationKey);
 
-        handleTableLocationKeyRemoved(locationKey.makeImmutable());
-        // need to notify subscribers of removed location, and of "removed" size
-        if (removedLocation instanceof AbstractTableLocation) {
-            final AbstractTableLocation abstractLocation = (AbstractTableLocation) removedLocation;
-            abstractLocation.handleUpdate(null, System.currentTimeMillis());
-            abstractLocation.clearColumnLocations();
+        if(removedLocation != null) {
+            handleTableLocationKeyRemoved(locationKey.makeImmutable());
+            if (removedLocation instanceof AbstractTableLocation) {
+                final AbstractTableLocation abstractLocation = (AbstractTableLocation) removedLocation;
+                abstractLocation.handleUpdate(null, System.currentTimeMillis());
+                abstractLocation.clearColumnLocations();
+            }
         }
     }
 
     /**
-     * Notify subscribers that {@code location} was removed.
+     * Notify subscribers that {@code locationKey} was removed.
      * 
      * @param locationKey the TableLocation that was removed
      */

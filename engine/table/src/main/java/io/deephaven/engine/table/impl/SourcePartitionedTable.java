@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
@@ -92,7 +93,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         @SuppressWarnings("FieldCanBeLocal") // We need to hold onto this reference for reachability purposes.
         private final Runnable processNewLocationsUpdateRoot;
 
-        private UpdateCommitter<UnderlyingTableMaintainer> removedLocationsComitter = null;
+        final private UpdateCommitter<UnderlyingTableMaintainer> removedLocationsComitter;
         private List<Table> removedConstituents = null;
 
         private UnderlyingTableMaintainer(
@@ -144,12 +145,23 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 };
                 result.addParentReference(processNewLocationsUpdateRoot);
                 refreshCombiner.addSource(processNewLocationsUpdateRoot);
+
+                this.removedLocationsComitter = new UpdateCommitter<>(
+                        this,
+                        result.getUpdateGraph(),
+                        ignored -> {
+                            Assert.neqNull(removedConstituents, "removedConstituents");
+                            removedConstituents.forEach(result::unmanage);
+                            removedConstituents = null;
+                        });
+
                 processPendingLocations(false);
             } else {
                 subscriptionBuffer = null;
                 pendingLocationStates = null;
                 readyLocationStates = null;
                 processNewLocationsUpdateRoot = null;
+                removedLocationsComitter = null;
                 tableLocationProvider.refresh();
                 try (final RowSet added = sortAndAddLocations(tableLocationProvider.getTableLocationKeys().stream()
                         .filter(locationKeyMatcher)
@@ -260,15 +272,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
             // At the end of the cycle we need to make sure we unmanage any removed constituents.
             this.removedConstituents = new ArrayList<>(relevantRemovedLocations.size());
-            this.removedLocationsComitter = new UpdateCommitter<>(
-                    this,
-                    result.getUpdateGraph(),
-                    ignored -> {
-                        removedConstituents.forEach(result::unmanage);
-                        removedConstituents = null;
-                    });
-            this.removedLocationsComitter.maybeActivate();
-
             final RowSetBuilderSequential deleteBuilder = RowSetFactory.builderSequential();
 
             // We don't have a map of location key to row key, so we have to iterate them. If we decide this is too
@@ -291,6 +294,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     }
                 }
             }
+            this.removedLocationsComitter.maybeActivate();
 
             final WritableRowSet deletedRows = deleteBuilder.build();
             resultTableLocationKeys.setNull(deletedRows);
