@@ -83,11 +83,12 @@ public interface SelectColumn extends Selectable {
     /**
      * Initialize any internal column definitions from the provided initial.
      *
-     * @param columnDefinitionMap the starting set of column definitions
+     * @param columnDefinitionMap the starting set of column definitions; valid for this call only
      *
      * @return a list of columns on which the result of this is dependent
      * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
      *          {@link QueryCompiler} usage needs to be resolved within initDef. Implementations must be idempotent.
+     *          Implementations that want to hold on to the {@code columnDefinitionMap} must make a defensive copy.
      */
     List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap);
 
