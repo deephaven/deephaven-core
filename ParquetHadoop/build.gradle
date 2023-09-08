@@ -45,9 +45,6 @@ dependencies {
      *    [...]
      *
      * Similarly for hadoop-shaded-guava.
-     *
-     * lz4-pure-java - note that we can't _easily_ use aircompressor here, as the service loader sees
-     * the copy in hadoop-common. TODO use config instead of service loader
      */
     runtimeOnly('com.fasterxml.woodstox:woodstox-core:6.4.0') {
         because 'hadoop-common required dependency for Configuration'
