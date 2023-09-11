@@ -3,6 +3,8 @@
  */
 package io.deephaven.functions;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -79,18 +81,21 @@ class BooleanFunctions {
         }
 
         @Override
+        @NotNull
         public ToBooleanFunction<Object> negate() {
             return ofFalse();
         }
 
         @Override
-        public ToBooleanFunction<Object> and(Predicate<? super Object> other) {
+        @NotNull
+        public ToBooleanFunction<Object> and(@NotNull Predicate<? super Object> other) {
             // always other
             return of(other);
         }
 
         @Override
-        public ToBooleanFunction<Object> or(Predicate<? super Object> other) {
+        @NotNull
+        public ToBooleanFunction<Object> or(@NotNull Predicate<? super Object> other) {
             // always true
             return this;
         }
@@ -105,18 +110,21 @@ class BooleanFunctions {
         }
 
         @Override
+        @NotNull
         public ToBooleanFunction<Object> negate() {
             return ofTrue();
         }
 
         @Override
-        public ToBooleanFunction<Object> and(Predicate<? super Object> other) {
+        @NotNull
+        public ToBooleanFunction<Object> and(@NotNull Predicate<? super Object> other) {
             // always false
             return this;
         }
 
         @Override
-        public ToBooleanFunction<Object> or(Predicate<? super Object> other) {
+        @NotNull
+        public ToBooleanFunction<Object> or(@NotNull Predicate<? super Object> other) {
             // always other
             return of(other);
         }
@@ -146,6 +154,7 @@ class BooleanFunctions {
         }
 
         @Override
+        @NotNull
         public ToBooleanFunction<T> negate() {
             return new BooleanMap<>(f, g.negate());
         }
@@ -164,6 +173,7 @@ class BooleanFunctions {
         }
 
         @Override
+        @NotNull
         public ToBooleanFunction<T> negate() {
             return of(function);
         }
@@ -187,12 +197,14 @@ class BooleanFunctions {
         }
 
         @Override
+        @NotNull
         public ToBooleanFunction<T> negate() {
             return new BooleanOr<>(functions.stream().map(Predicate::negate).collect(Collectors.toList()));
         }
 
         @Override
-        public ToBooleanFunction<T> and(Predicate<? super T> other) {
+        @NotNull
+        public ToBooleanFunction<T> and(@NotNull Predicate<? super T> other) {
             // noinspection Convert2Diamond
             return new BooleanAnd<T>(Stream.concat(functions.stream(), Stream.of(other)).collect(Collectors.toList()));
         }
@@ -216,12 +228,14 @@ class BooleanFunctions {
         }
 
         @Override
+        @NotNull
         public ToBooleanFunction<T> negate() {
             return new BooleanAnd<>(functions.stream().map(Predicate::negate).collect(Collectors.toList()));
         }
 
         @Override
-        public ToBooleanFunction<T> or(Predicate<? super T> other) {
+        @NotNull
+        public ToBooleanFunction<T> or(@NotNull Predicate<? super T> other) {
             // noinspection Convert2Diamond
             return new BooleanOr<T>(Stream.concat(functions.stream(), Stream.of(other)).collect(Collectors.toList()));
         }

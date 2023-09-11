@@ -5,6 +5,7 @@ package io.deephaven.functions;
 
 import io.deephaven.qst.type.BooleanType;
 import io.deephaven.qst.type.Type;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;
@@ -116,17 +117,20 @@ public interface ToBooleanFunction<T> extends ToPrimitiveFunction<T>, Predicate<
     }
 
     @Override
+    @NotNull
     default ToBooleanFunction<T> negate() {
         return not(this);
     }
 
     @Override
-    default ToBooleanFunction<T> and(Predicate<? super T> other) {
+    @NotNull
+    default ToBooleanFunction<T> and(@NotNull Predicate<? super T> other) {
         return ToBooleanFunction.and(List.of(this, other));
     }
 
     @Override
-    default ToBooleanFunction<T> or(Predicate<? super T> other) {
+    @NotNull
+    default ToBooleanFunction<T> or(@NotNull Predicate<? super T> other) {
         return ToBooleanFunction.or(List.of(this, other));
     }
 }
