@@ -1,9 +1,9 @@
 # only python 3.8 needs this, but it must be the first expression in the file, so we can't predicate it
 from __future__ import annotations
 from enum import Enum
-from typing import Any, Union
+from typing import Any, Union, List
 from jedi import Interpreter, Script
-from jedi.api.classes import Name, Completion, Signature
+from jedi.api.classes import Completion, Signature
 
 
 class Mode(Enum):
@@ -127,7 +127,7 @@ class Completer:
 
     def do_completion(
         self, uri: str, version: int, line: int, col: int
-    ) -> list[list[Any]]:
+    ) -> List[List[Any]]:
         """ Gets completion items at the position
 
         Modeled after Jedi language server
@@ -145,9 +145,9 @@ class Completer:
 
         # for now, a simple sorting based on number of preceding _
         # we may want to apply additional sorting to each list before combining
-        results: list = []
-        results_: list = []
-        results__: list = []
+        results: List = []
+        results_: List = []
+        results__: List = []
         for completion in completions:
             # keep checking the latest version as we run, so updated doc can cancel us
             if not self._versions[uri] == version:
@@ -164,11 +164,11 @@ class Completer:
         return results + results_ + results__
 
     @staticmethod
-    def to_completion_result(completion: Completion, col: int) -> list[Any]:
+    def to_completion_result(completion: Completion, col: int) -> List[Any]:
         name: str = completion.name
         prefix_length: int = completion.get_completion_prefix_length()
         start: int = col - prefix_length
-        signatures: list[Signature] = completion.get_signatures()
+        signatures: List[Signature] = completion.get_signatures()
         detail: str = signatures[0].to_string() if len(signatures) > 0 else completion.description
 
         return [
@@ -181,7 +181,7 @@ class Completer:
 
     def do_signature_help(
             self, uri: str, version: int, line: int, col: int
-    ) -> list[list[Any]]:
+    ) -> List[List[Any]]:
         """ Gets signature help at the position
 
         Modeled after Jedi language server

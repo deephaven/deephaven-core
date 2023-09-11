@@ -3,7 +3,28 @@ Client <- R6Class("Client",
   cloneable = FALSE,
   public = list(
     .internal_rcpp_object = NULL,
-    initialize = function(target,
+    initialize = function(...) {
+      args <- list(...)
+      if (length(args) == 1) {
+        first_arg <- args[[1]]
+        first_arg_class = first_class(first_arg)
+        if (first_arg_class != "character" && first_arg_class != "list") {
+          if (first_arg_class != "externalptr") {
+            stop(paste0(
+              "Client initialize first argument must be ",
+              "either a string or an Rcpp::XPtr object."))
+          }
+          return(self$initialize_for_xptr(first_arg))
+        }
+      }
+      return(do.call(self$initialize_for_target, args))
+    },
+    initialize_for_xptr = function(xptr) {
+      verify_type("xptr", xptr, "externalptr", "XPtr", TRUE)
+      self$.internal_rcpp_object = new(INTERNAL_Client, xptr)
+    },
+    initialize_for_target = function(
+                          target,
                           auth_type = "anonymous",
                           username = "",
                           password = "",
@@ -39,6 +60,13 @@ Client <- R6Class("Client",
           stop("Basic authentication was requested, but 'auth_token' was provided, as well as least one of 'username' and 'password'. Please provide either 'username' and 'password', or 'auth_token'.")
         } else {
           stop("Basic authentication was requested, but 'auth_token' was not provided, and at most one of 'username' or 'password' was provided. Please provide either 'username' and 'password', or 'auth_token'.")
+        }
+      } else if (auth_type == "psk") {
+        if (auth_token != "") {
+          verify_string("auth_token", auth_token, TRUE)
+          options$set_custom_authentication("io.deephaven.authentication.psk.PskAuthenticationHandler", auth_token)
+        } else {
+          stop("Pre-shared key authentication was requested, but no 'auth_token' was provided.")
         }
       } else {
         if (auth_token != "") {
@@ -141,6 +169,10 @@ Client <- R6Class("Client",
       } else {
         stop(paste0("'table_object' must be a single data frame, tibble, arrow table, or record batch reader. Got an object of class ", table_object_class[[1]], "."))
       }
+    },
+    ticket_to_table = function(ticket) {
+      verify_string("ticket", ticket, TRUE)
+      return(TableHandle$new(self$.internal_rcpp_object$make_table_handle_from_ticket(ticket)))
     },
     run_script = function(script) {
       verify_string("script", script, TRUE)

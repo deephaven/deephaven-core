@@ -11,10 +11,12 @@ from deephaven import DHError
 from deephaven.jcompat import j_hashmap, j_hashset, j_properties
 from deephaven._wrapper import JObjectWrapper
 from deephaven.table import Table
+from deephaven.update_graph import auto_locking_ctx
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JAvroSchema = jpy.get_type("org.apache.avro.Schema")
 _JKafkaTools_Produce = jpy.get_type("io.deephaven.kafka.KafkaTools$Produce")
+_JKafkaPublishOptions = jpy.get_type("io.deephaven.kafka.KafkaPublishOptions")
 
 
 class KeyValueSpec(JObjectWrapper):
@@ -38,6 +40,7 @@ def produce(
     key_spec: KeyValueSpec,
     value_spec: KeyValueSpec,
     last_by_key_columns: bool = False,
+    publish_initial: bool = True,
 ) -> Callable[[], None]:
     """Produce to Kafka from a Deephaven table.
 
@@ -56,6 +59,8 @@ def produce(
         last_by_key_columns (bool): whether to publish only the last record for each unique key, Ignored if key_spec is
             KeyValueSpec.IGNORE. Otherwise, if last_by_key_columns is true this method will internally perform a last_by
             aggregation on table grouped by the input columns of key_spec and publish to Kafka from the result.
+        publish_initial (bool): whether the initial data in table should be published. When False, table.is_refreshing
+            must be True. By default, is True.
 
     Returns:
         a callback that, when invoked, stops publishing and cleans up subscriptions and resources.
@@ -70,16 +75,22 @@ def produce(
             raise ValueError(
                 "at least one argument for 'key_spec' or 'value_spec' must be different from KeyValueSpec.IGNORE"
             )
-
-        kafka_config = j_properties(kafka_config)
-        runnable = _JKafkaTools.produceFromTable(
-            table.j_table,
-            kafka_config,
-            topic,
-            key_spec.j_object,
-            value_spec.j_object,
-            last_by_key_columns,
+        if not publish_initial and not table.is_refreshing:
+            raise ValueError("publish_initial == False and table.is_refreshing == False")
+        options = (
+            _JKafkaPublishOptions.builder()
+            .table(table.j_table)
+            .topic(topic)
+            .config(j_properties(kafka_config))
+            .keySpec(key_spec.j_object)
+            .valueSpec(value_spec.j_object)
+            .lastBy(last_by_key_columns and key_spec is not KeyValueSpec.IGNORE)
+            .publishInitial(publish_initial)
+            .build()
         )
+
+        with auto_locking_ctx(table):
+            runnable = _JKafkaTools.produceFromTable(options)
 
         def cleanup():
             try:

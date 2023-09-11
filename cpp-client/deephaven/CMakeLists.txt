@@ -15,10 +15,18 @@ include(GNUInstallDirs)
 
 add_compile_options(-Wall -Werror -Wno-deprecated-declarations)
 
+# To enable address sanitizer, add `-DSANITIZE_ADDRESS=ON` to
+# the list of options you pass for running cmake.
+option(SANITIZE_ADDRESS "Enable address sanitizer" "OFF")
+if(${SANITIZE_ADDRESS} STREQUAL "ON")
+  add_compile_options("-fsanitize=address")
+  link_libraries("-fsanitize=address")
+endif()
+
 add_subdirectory(dhclient)
 add_subdirectory(dhcore)
-add_subdirectory(tests EXCLUDE_FROM_ALL)
-add_subdirectory(examples EXCLUDE_FROM_ALL)
+add_subdirectory(tests)
+add_subdirectory(examples)
 
 install(DIRECTORY dhclient/include/public/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}

@@ -19,6 +19,10 @@ public class LanguageParserDummyClass {
         this.value = value;
     }
 
+    public LanguageParserDummyClass(Number value) {
+        this.value = value.intValue();
+    }
+
     public static long arrayAndVectorFunction(int[] arr) {
         return arr.length;
     }
@@ -75,6 +79,22 @@ public class LanguageParserDummyClass {
         return 0;
     }
 
+    static public <T> T typedRef() {
+        return null;
+    }
+
+    static public <T> T typedRefWithCapture(T obj) {
+        return null;
+    }
+
+    static public <T extends CharSequence> T typedRefBounded() {
+        return null;
+    }
+
+    public static Integer boxedIntResult() {
+        return 0;
+    }
+
     public final InnerClass innerClassInstance = new InnerClass();
     public final InnerClass2 innerClass2Instance = new InnerClass2();
 
@@ -108,6 +128,10 @@ public class LanguageParserDummyClass {
         public class InnerInnerClass {
             public final String innerInnerInstanceVar = "anInnerInnerClass.instanceVar";
         }
+
+        public String innerClassMethod() {
+            return null;
+        }
     }
 
     public class InnerClass2 implements SubclassOfLanguageParserDummyClass {
@@ -119,5 +143,46 @@ public class LanguageParserDummyClass {
         public static final String staticVar = "StaticNestedClass.staticVar";
         public static final StaticNestedClass staticInstanceOfStaticClass = new StaticNestedClass();
         public final String instanceVar = "aStaticNestedClass.instanceVar";
+
+        public static String staticMethod() {
+            return "staticMethod";
+        }
+
+        public String instanceMethod() {
+            return "instanceMethod";
+        }
+
+        public static class StaticDoubleNestedClass {
+        }
+    }
+
+    public static class StaticNestedGenericClass<T> {
+
+        public final T var = null;
+
+        public <U> DoubleNestedGenericClass<U> getInnerInstance() {
+            return new DoubleNestedGenericClass<>();
+        }
+
+        public T getVar() {
+            return null;
+        }
+
+        public T[] getArr() {
+            return null;
+        }
+
+        public class DoubleNestedGenericClass<U> {
+            public final T varOfOuterType = null;
+            public final U varOfInnerType = null;
+
+            public T getVarOfOuterType() {
+                return null;
+            }
+
+            public U getVarOfInnerType() {
+                return null;
+            }
+        }
     }
 }

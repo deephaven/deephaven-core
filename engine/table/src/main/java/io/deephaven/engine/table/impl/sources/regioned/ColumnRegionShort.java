@@ -98,6 +98,13 @@ public interface ColumnRegionShort<ATTR extends Any> extends ColumnRegion<ATTR> 
         }
 
         @Override
+        public void invalidate() {
+            for(int ii = 0; ii < getRegionCount(); ii++) {
+                getRegion(ii).invalidate();
+            }
+        }
+
+        @Override
         public short getShort(final long elementIndex) {
             return lookupRegion(elementIndex).getShort(elementIndex);
         }

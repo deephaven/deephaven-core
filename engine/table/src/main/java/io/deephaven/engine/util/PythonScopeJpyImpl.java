@@ -119,7 +119,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         } else if (pyObject.isDict()) {
             return pyObject.asDict();
         } else if (pyObject.isCallable()) {
-            return new PyCallableWrapper(pyObject);
+            return new PyCallableWrapperJpyImpl(pyObject);
         } else if (pyObject.isConvertible()) {
             return pyObject.getObjectValue();
         } else {

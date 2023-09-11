@@ -10,13 +10,16 @@ add_executable(tests
     basic_test.cc
     buffer_column_source_test.cc
     cython_support_test.cc
-    head_and_tail_test.cc
+    date_time_test.cc
     filter_test.cc
+    head_and_tail_test.cc
+    input_table_test.cc
     join_test.cc
     lastby_test.cc
     main.cc
     merge_tables_test.cc
     new_table_test.cc
+    on_close_cb_test.cc
     script_test.cc
     select_test.cc
     sort_test.cc
@@ -31,7 +34,7 @@ add_executable(tests
     view_test.cc
 
     third_party/catch.hpp
-    )
+)
 
 target_compile_options(tests PRIVATE -Wall -Werror)
 target_include_directories(tests PUBLIC "..")

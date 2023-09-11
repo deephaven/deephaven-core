@@ -169,6 +169,8 @@ public:
   [[nodiscard]]
   std::shared_ptr<TableHandleImpl> Update(std::vector<std::string> column_specs);
   [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> LazyUpdate(std::vector<std::string> column_specs);
+  [[nodiscard]]
   std::shared_ptr<TableHandleImpl> View(std::vector<std::string> column_specs);
   [[nodiscard]]
   std::shared_ptr<TableHandleImpl> DropColumns(std::vector<std::string> column_specs);
@@ -245,13 +247,30 @@ public:
       std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add);
 
   [[nodiscard]]
-  std::shared_ptr<TableHandleImpl> AsOfJoin(AsOfJoinTablesRequest::MatchRule match_rule,
-      const TableHandleImpl &right_side, std::vector<std::string> columns_to_match,
-      std::vector<std::string> columns_to_add);
+  std::shared_ptr<TableHandleImpl> Aj(const TableHandleImpl &right_side,
+      std::vector<std::string> on, std::vector<std::string> joins);
+
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> Raj(const TableHandleImpl &right_side,
+      std::vector<std::string> on, std::vector<std::string> joins);
+
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> LeftOuterJoin(const TableHandleImpl &right_side,
+      std::vector<std::string> on, std::vector<std::string> joins);
 
   [[nodiscard]]
   std::shared_ptr<TableHandleImpl> UpdateBy(std::vector<std::shared_ptr<UpdateByOperationImpl>> ops,
       std::vector<std::string> by);
+
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> SelectDistinct(std::vector<std::string> columns);
+
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> WhereIn(const TableHandleImpl &filter_table,
+      std::vector<std::string> columns);
+
+  void AddTable(const TableHandleImpl &table_to_add);
+  void RemoveTable(const TableHandleImpl &table_to_remove);
 
   [[nodiscard]]
   std::vector<std::shared_ptr<ColumnImpl>> GetColumnImpls();

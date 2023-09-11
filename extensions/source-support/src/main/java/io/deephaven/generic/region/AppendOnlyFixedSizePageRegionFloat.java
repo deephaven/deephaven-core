@@ -44,11 +44,6 @@ public class AppendOnlyFixedSizePageRegionFloat<ATTR extends Any>
     }
 
     @Override
-    public final ChunkType getChunkType() {
-        return ChunkType.Float;
-    }
-
-    @Override
     public float getFloat(final long rowKey) {
         final ChunkHolderPageFloat<ATTR> page = getPageContaining(rowKey);
         try {
@@ -69,6 +64,7 @@ public class AppendOnlyFixedSizePageRegionFloat<ATTR extends Any>
 
     @NotNull
     private ChunkHolderPageFloat<ATTR> getPageContaining(final long rowKey) {
+        throwIfInvalidated();
         final long firstRowPosition = rowKey & mask();
         final int pageIndex = Math.toIntExact(firstRowPosition / pageSize);
         if (pageIndex >= MAX_ARRAY_SIZE) {

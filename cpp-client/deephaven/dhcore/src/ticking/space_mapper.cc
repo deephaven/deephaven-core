@@ -41,7 +41,7 @@ uint64_t SpaceMapper::AddRange(uint64_t begin_key, uint64_t end_key) {
   if (set_.cardinality() != initial_size + size) {
     auto message = Stringf("Some elements of [%o,%o) were already in the set", begin_key,
         end_key);
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
   return ZeroBasedRank(begin_key);
 }
@@ -79,7 +79,7 @@ std::shared_ptr<RowSequence> SpaceMapper::ConvertKeysToIndices(const RowSequence
     auto beginp = set_.begin();
     if (!beginp.move(begin_key)) {
       auto message = Stringf("begin key %o is not in the src map", begin_key);
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
     auto next_rank = ZeroBasedRank(begin_key);
     // Confirm we have entries for everything in the range.
@@ -87,7 +87,7 @@ std::shared_ptr<RowSequence> SpaceMapper::ConvertKeysToIndices(const RowSequence
     for (auto current_key = begin_key; current_key != end_key; ++current_key) {
       if (current_key != *currentp) {
         auto message = Stringf("Current key %o is in not the src map", current_key);
-        throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+        throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
       }
       ++currentp;
     }
