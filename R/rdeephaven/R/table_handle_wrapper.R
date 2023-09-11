@@ -51,7 +51,7 @@ TableHandle <- R6Class("TableHandle",
 
     as_record_batch_reader = function() {
       ptr <- self$.internal_rcpp_object$get_arrow_array_stream_ptr()
-      rbsr <- RecordBatchStreamReader$import_from_c(ptr)
+      rbsr <- arrow::RecordBatchStreamReader$import_from_c(ptr)
       return(rbsr)
     },
     as_arrow_table = function() {
