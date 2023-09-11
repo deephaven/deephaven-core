@@ -5,8 +5,10 @@ package io.deephaven.functions;
 
 import io.deephaven.qst.type.BooleanType;
 import io.deephaven.qst.type.Type;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -60,7 +62,9 @@ public interface ToBooleanFunction<T> extends ToPrimitiveFunction<T>, Predicate<
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> ToBooleanFunction<T> map(Function<T, R> f, Predicate<R> g) {
+    static <T, R> ToBooleanFunction<T> map(
+            Function<? super T, ? extends R> f,
+            Predicate<? super R> g) {
         return BooleanFunctions.map(f, g);
     }
 
@@ -72,7 +76,7 @@ public interface ToBooleanFunction<T> extends ToPrimitiveFunction<T>, Predicate<
      * @return the or-function
      * @param <T> the input type
      */
-    static <T> ToBooleanFunction<T> or(Collection<Predicate<T>> functions) {
+    static <T> ToBooleanFunction<T> or(Collection<Predicate<? super T>> functions) {
         return BooleanFunctions.or(functions);
     }
 
@@ -84,18 +88,18 @@ public interface ToBooleanFunction<T> extends ToPrimitiveFunction<T>, Predicate<
      * @return the and-function
      * @param <T> the input type
      */
-    static <T> ToBooleanFunction<T> and(Collection<Predicate<T>> functions) {
+    static <T> ToBooleanFunction<T> and(Collection<Predicate<? super T>> functions) {
         return BooleanFunctions.and(functions);
     }
 
     /**
-     * Creates a function that is the opposite of {@code f}. Equivalent to {@code x -> !x}.
+     * Creates a function that is the opposite of {@code f}. Equivalent to {@code x -> !f.test(x)}.
      *
      * @param f the function
      * @return the not-function
      * @param <T> the input type
      */
-    static <T> ToBooleanFunction<T> not(ToBooleanFunction<T> f) {
+    static <T> ToBooleanFunction<T> not(Predicate<? super T> f) {
         return BooleanFunctions.not(f);
     }
 
@@ -110,5 +114,23 @@ public interface ToBooleanFunction<T> extends ToPrimitiveFunction<T>, Predicate<
     @Override
     default <R> R walk(Visitor<T, R> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    @NotNull
+    default ToBooleanFunction<T> negate() {
+        return not(this);
+    }
+
+    @Override
+    @NotNull
+    default ToBooleanFunction<T> and(@NotNull Predicate<? super T> other) {
+        return ToBooleanFunction.and(List.of(this, other));
+    }
+
+    @Override
+    @NotNull
+    default ToBooleanFunction<T> or(@NotNull Predicate<? super T> other) {
+        return ToBooleanFunction.or(List.of(this, other));
     }
 }

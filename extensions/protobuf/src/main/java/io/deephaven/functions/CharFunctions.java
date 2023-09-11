@@ -8,11 +8,17 @@ import java.util.function.Function;
 
 class CharFunctions {
     static <T> ToCharFunction<T> cast() {
-        // noinspection unchecked
-        return (ToCharFunction<T>) PrimitiveChar.INSTANCE;
+        return cast(PrimitiveChar.INSTANCE);
     }
 
-    static <T, R> ToCharFunction<T> map(Function<T, R> f, ToCharFunction<R> g) {
+    static <T> ToCharFunction<T> cast(ToCharFunction<? super T> f) {
+        // noinspection unchecked
+        return (ToCharFunction<T>) f;
+    }
+
+    static <T, R> ToCharFunction<T> map(
+            Function<? super T, ? extends R> f,
+            ToCharFunction<? super R> g) {
         return new CharMap<>(f, g);
     }
 
@@ -26,10 +32,10 @@ class CharFunctions {
     }
 
     private static class CharMap<T, R> implements ToCharFunction<T> {
-        private final Function<T, R> f;
-        private final ToCharFunction<R> g;
+        private final Function<? super T, ? extends R> f;
+        private final ToCharFunction<? super R> g;
 
-        public CharMap(Function<T, R> f, ToCharFunction<R> g) {
+        public CharMap(Function<? super T, ? extends R> f, ToCharFunction<? super R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

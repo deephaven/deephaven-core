@@ -37,7 +37,9 @@ public interface ToCharFunction<T> extends ToPrimitiveFunction<T> {
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> ToCharFunction<T> map(Function<T, R> f, ToCharFunction<R> g) {
+    static <T, R> ToCharFunction<T> map(
+            Function<? super T, ? extends R> f,
+            ToCharFunction<? super R> g) {
         return CharFunctions.map(f, g);
     }
 
