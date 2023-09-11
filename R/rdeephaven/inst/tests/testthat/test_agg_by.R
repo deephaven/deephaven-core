@@ -961,10 +961,13 @@ test_that("agg_by behaves nicely when given bad input", {
   data <- setup()
   
   expect_error(data$th1$agg_by(agg_first()),
-    "Aggregations with no columns cannot be used in 'agg_by'. Please provide at least one column to the 'cols' argument of each aggregator.")
+    "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_first' at index 1 with an empty 'cols' argument.")
   
   expect_error(data$th1$agg_by(c(agg_first("int_col"), agg_last())),
-    "Aggregations with no columns cannot be used in 'agg_by'. Please provide at least one column to the 'cols' argument of each aggregator.")
+    "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_last' at index 2 with an empty 'cols' argument.")
+  
+  expect_error(data$th1$agg_by(c(agg_first("int_col"), agg_last("int_col"), agg_count(), agg_avg())),
+    "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_avg' at index 4 with an empty 'cols' argument.")
 
   data$client$close()
 })

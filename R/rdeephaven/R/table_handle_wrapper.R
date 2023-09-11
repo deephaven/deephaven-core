@@ -107,9 +107,9 @@ TableHandle <- R6Class("TableHandle",
       verify_type("aggs", aggs, "Aggregation", "Deephaven Aggregation", FALSE)
       verify_string("by", by, FALSE)
       aggs <- c(aggs)
-      for (agg in aggs) {
-        if (!is.null(agg$.internal_num_cols) && agg$.internal_num_cols == 0) {
-          stop("Aggregations with no columns cannot be used in 'agg_by'. Please provide at least one column to the 'cols' argument of each aggregator.")
+      for (i in 1:length(aggs)) {
+        if (!is.null(aggs[[i]]$.internal_num_cols) && aggs[[i]]$.internal_num_cols == 0) {
+          stop(paste0("Aggregations with no columns cannot be used in 'agg_by'. Got '", aggs[[i]]$.internal_agg_name, "' at index ", i, " with an empty 'cols' argument."))
         }
       }
       unwrapped_aggs <- lapply(aggs, strip_r6_wrapping)
