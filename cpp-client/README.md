@@ -41,6 +41,11 @@ C++ compiler and tool suite (cmake etc).
    Decide on a directory for the dependencies to live (eg, "$HOME/dhcpp").
    Create that directory and save the script there.
 
+   The two main build types of a standard cmake build are supported,
+   `Release` and `Debug`.  By default. `build-dependencies.sh`
+   creates a `Debug` build.  To create a `Release` build, set the
+   environment variable `BUILD_TYPE=Release` (1)
+
    Edit your local copy of the script if necessary to reflect your selection
    of build tools and build target;
    defaults point to Ubuntu system's g++, cmake, and a Debug build target for cmake.
@@ -120,6 +125,20 @@ C++ compiler and tool suite (cmake etc).
     make -j$NCPUS
     ./tests
     ```
+
+Notes
+  (1) The standard assumptions for `Debug` and `Release` apply here.
+      With a `Debug` build you get debug information which is useful during
+      development and testing of your own code that depends on the client
+      and indirectly on these libraries.  A `Release` build gives you
+      optimized libraries that are faster and smaller but with no
+      debugging information.  Note that while in general it is expected
+      to be able to freely mix some `Debug` and `Release` code,
+      some of the dependent libraries are incompatible; in particular,
+      protobuf generates different code and code compiled for a `Release`
+      target using protobuf header files will not link against a `Debug`
+      version of protobuf.  To keep things simple, we suggest that you run
+      a consistent setting for your code and all dependencies.
 
 # Updating proto generated C++ stubs (intended for developers)
    1. Ensure you have a local installation of the dependent libraries
