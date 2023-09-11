@@ -19,6 +19,7 @@ import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.process.ProcessEnvironment;
 import junit.framework.TestCase;
 
 import java.io.IOException;
@@ -35,6 +36,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     private static final boolean ENABLE_QUERY_COMPILER_LOGGING = Configuration.getInstance()
             .getBooleanForClassWithDefault(RefreshingTableTestCase.class, "QueryCompile.logEnabled", false);
 
+    private ProcessEnvironment oldProcessEnvironment;
     private boolean oldMemoize;
     private UpdateErrorReporter oldReporter;
     private boolean expectError = false;
@@ -52,6 +54,9 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     @Override
     public void setUp() throws Exception {
         super.setUp();
+
+        oldProcessEnvironment = ProcessEnvironment.tryGet();
+        ProcessEnvironment.set(FakeProcessEnvironment.INSTANCE, true);
 
         // initialize the unit test's execution context
         executionContext = TestExecutionContext.createForUnitTests().open();
@@ -85,6 +90,12 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         AsyncClientErrorNotifier.setReporter(oldReporter);
         QueryTable.setMemoizeResults(oldMemoize);
         updateGraph.resetForUnitTests(true);
+
+        if (oldProcessEnvironment == null) {
+            ProcessEnvironment.clear();
+        } else {
+            ProcessEnvironment.set(oldProcessEnvironment, true);
+        }
 
         super.tearDown();
     }
