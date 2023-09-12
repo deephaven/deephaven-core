@@ -26,11 +26,10 @@ public:
    * Default constructor. Creates a default ClientOptions object with default authentication and Python scripting.
    */
   ClientOptions();
-#if __GLIBCXX__ > 20190223
   /**
    * Copy constructor
    */
-  ClientOptions(const ClientOptions &other) noexcept;
+  ClientOptions(const ClientOptions &other);
   /**
    * Move constructor
    */
@@ -38,30 +37,11 @@ public:
   /**
    * Copy assigment operator.
    */
-  ClientOptions &operator=(const ClientOptions &other) noexcept;
-  /**
-   * Move assigment operator.
-   */
-  ClientOptions &operator=(ClientOptions &&other) noexcept;
-#else
-  // Earlier GLIBCXX versions lack the proper noexcept specifier in some of our contained types.
-  /**
-   * Copy constructor
-   */  
-  ClientOptions(const ClientOptions &other);
-  /**
-   * Move constructor
-   */
-  ClientOptions(ClientOptions &&other);
-  /**
-   * Copy assigment operator.
-   */
   ClientOptions &operator=(const ClientOptions &other);
   /**
    * Move assigment operator.
    */
-  ClientOptions &operator=(ClientOptions &&other);
-#endif
+  ClientOptions &operator=(ClientOptions &&other) noexcept;
   /**
    * Destructor
    */

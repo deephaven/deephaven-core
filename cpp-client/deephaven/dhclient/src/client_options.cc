@@ -13,17 +13,10 @@ ClientOptions::ClientOptions() {
   SetSessionType("python");
 }
 
-#if __GLIBCXX__ > 20190223
-ClientOptions::ClientOptions(const ClientOptions &other) noexcept = default;
-ClientOptions::ClientOptions(ClientOptions &&other) noexcept = default;
-ClientOptions &ClientOptions::operator=(const ClientOptions &other) noexcept = default;
-ClientOptions &ClientOptions::operator=(ClientOptions &&other) noexcept = default;
-#else
 ClientOptions::ClientOptions(const ClientOptions &other) = default;
-ClientOptions::ClientOptions(ClientOptions &&other) = default;
+ClientOptions::ClientOptions(ClientOptions &&other) noexcept = default;
 ClientOptions &ClientOptions::operator=(const ClientOptions &other) = default;
-ClientOptions &ClientOptions::operator=(ClientOptions &&other) = default;
-#endif
+ClientOptions &ClientOptions::operator=(ClientOptions &&other) noexcept = default;
 
 ClientOptions::~ClientOptions() = default;
 
