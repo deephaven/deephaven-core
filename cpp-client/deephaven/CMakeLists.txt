@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.14)
 
 if(TARGET client)
     # The library has already been built (i.e. through some

@@ -41,9 +41,9 @@ C++ compiler and tool suite (cmake etc).
    Decide on a directory for the dependencies to live (eg, "$HOME/dhcpp").
    Create that directory and save the script there.
 
-   The two main build types of a standard cmake build are supported,
-   `Release` and `Debug`.  By default. `build-dependencies.sh`
-   creates a `Debug` build.  To create a `Release` build, set the
+   The three main build types of a standard cmake build are supported,
+   `Release`, `Debug` and `RelWithDebInfo`.  By default. `build-dependencies.sh`
+   creates a `RelWithDebInfo` build.  To create a `Release` build, set the
    environment variable `BUILD_TYPE=Release` (1)
 
    Edit your local copy of the script if necessary to reflect your selection
@@ -102,7 +102,7 @@ C++ compiler and tool suite (cmake etc).
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
    cmake -DCMAKE_INSTALL_PREFIX=${DHCPP}/local \
-       -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=ON .. && \
+       -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_SHARED_LIBS=ON .. && \
      make -j$NCPUS install
    ```
 
@@ -125,6 +125,26 @@ C++ compiler and tool suite (cmake etc).
     make -j$NCPUS
     ./tests
     ```
+
+10. Building in different distributions or with older toolchains.
+    While we don't support other linux distributions or GCC versions earlier
+    than 11, this section provides some notes that may help you
+    in that situation.
+
+    * GCC 8 mixed with older versions of GNU as/binutils may fail to compile
+      `roaring.c` with an error similar to:
+      ```
+      /tmp/cczCvQKd.s: Assembler messages:
+      /tmp/cczCvQKd.s:45826: Error: no such instruction: `vpcompressb %zmm0,%zmm1{%k2}'
+      /tmp/cczCvQKd.s:46092: Error: no such instruction: `vpcompressb %zmm0,%zmm1{%k1}'
+      ```
+      In that case, add `-DCMAKE_C_FLAGS=-DCROARING_COMPILER_SUPPORTS_AVX512=0`
+      to the list of arguments to `cmake`.
+
+    * Some platforms combining old versions of GCC and cmake may fail
+      to set the cmake C++ standard to 17 without explicitly adding
+      `-DCMAKE_CXX_STANDARD=17` to the list of arguments to `cmake`.
+      Note the default mode for C++ is `-std=gnu++17` for GCC 11.
 
 Notes
   (1) The standard assumptions for `Debug` and `Release` apply here.
