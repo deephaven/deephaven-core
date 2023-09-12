@@ -175,14 +175,22 @@ public class DeephavenCompressorAdapterFactory {
         }
     }
 
-    private static class LZ4WithLZ4RawBackupCompressorAdapter extends CodecWrappingCompressorAdapter {
-        // We try decompressing with LZ4 and fall back to LZ4_RAW if we fail to decompress the first time.
-        boolean tryFallback;
+    /**
+     * Following adapter tries to decompress with LZ4 and falls back to LZ4_RAW on failure. This is done to decompress
+     * parquet files which are compressed with LZ4_RAW but provide LZ4 in the metadata.
+     */
+    private static class LZ4WithLZ4RawBackupCompressorAdapter implements CompressorAdapter {
+        boolean tryFallback; // Set to true only when decompressing for the first time
+        CompressorAdapter adapter; // The underlying adapter used, can be LZ4 or LZ4_RAW
 
-        private LZ4WithLZ4RawBackupCompressorAdapter(CompressionCodec compressionCodec,
-                CompressionCodecName compressionCodecName) {
-            super(compressionCodec, compressionCodecName);
+        private LZ4WithLZ4RawBackupCompressorAdapter() {
+            adapter = DeephavenCompressorAdapterFactory.getInstance().getLZ4Adapter();
             tryFallback = true;
+        }
+
+        @Override
+        public OutputStream compress(OutputStream os) throws IOException {
+            return adapter.compress(os);
         }
 
         @Override
@@ -190,26 +198,38 @@ public class DeephavenCompressorAdapterFactory {
                 final int uncompressedSize)
                 throws IOException {
             if (!tryFallback) {
-                return super.decompress(inputStream, compressedSize, uncompressedSize);
+                return adapter.decompress(inputStream, compressedSize, uncompressedSize);
             }
 
-            // Copy data in case we need to retry with LZ4_RAW
+            // Copy data in case we need to retry with LZ4_RAW. This is done only when decompressing for the first time.
             byte[] inputData = inputStream.readNBytes(compressedSize);
             final InputStream primaryStream = new ByteArrayInputStream(inputData);
             try {
-                return super.decompress(primaryStream, compressedSize, uncompressedSize);
+                return adapter.decompress(primaryStream, compressedSize, uncompressedSize);
             } catch (IOException e) {
-                // Retry decompressing with LZ4_RAW
-                CodecWrappingCompressorAdapter lz4RawAdapter =
-                        (CodecWrappingCompressorAdapter) DeephavenCompressorAdapterFactory.getInstance()
-                                .getByName("LZ4_RAW");
-                this.move(lz4RawAdapter);
+                adapter.close();
+                adapter = DeephavenCompressorAdapterFactory.getInstance().getByName("LZ4_RAW");
                 final InputStream backupStream = new ByteArrayInputStream(inputData);
-                return super.decompress(backupStream, compressedSize, uncompressedSize);
+                return adapter.decompress(backupStream, compressedSize, uncompressedSize);
             } finally {
                 // At this point we've either succeeded with LZ4 or LZ4_RAW or failed with both, so don't try again
                 tryFallback = false;
             }
+        }
+
+        @Override
+        public CompressionCodecName getCodecName() {
+            return adapter.getCodecName();
+        }
+
+        @Override
+        public void reset() {
+            adapter.reset();
+        }
+
+        @Override
+        public void close() {
+            adapter.close();
         }
     }
 
@@ -239,6 +259,9 @@ public class DeephavenCompressorAdapterFactory {
         if (codecName.equalsIgnoreCase("UNCOMPRESSED")) {
             return CompressorAdapter.PASSTHRU;
         }
+        if (codecName.equalsIgnoreCase("LZ4")) {
+            return new LZ4WithLZ4RawBackupCompressorAdapter();
+        }
         CompressionCodec codec = compressionCodecFactory.getCodecByName(codecName);
         if (codec == null) {
             if (codecName.equalsIgnoreCase("LZ4_RAW")) {
@@ -256,9 +279,14 @@ public class DeephavenCompressorAdapterFactory {
                     "Failed to find CompressionCodecName for codecName=%s, codec=%s, codec.getDefaultExtension()=%s",
                     codecName, codec, codec.getDefaultExtension()));
         }
-        if (ccn == CompressionCodecName.LZ4) {
-            return new LZ4WithLZ4RawBackupCompressorAdapter(codec, ccn);
-        }
         return new CodecWrappingCompressorAdapter(codec, ccn);
+    }
+
+    /**
+     * Following method is only called from {@link LZ4WithLZ4RawBackupCompressorAdapter} for creating a LZ4 only adapter
+     */
+    private CompressorAdapter getLZ4Adapter() {
+        return new CodecWrappingCompressorAdapter(compressionCodecFactory.getCodecByName("LZ4"),
+                CompressionCodecName.LZ4);
     }
 }
