@@ -342,6 +342,20 @@ public class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void test_lz4_compressed() {
+        // The following file is tagged as LZ4 compressed based on its metadata, but is actually compressed with LZ4_RAW
+        // We should be able to read it anyway with no exceptions.
+        try {
+            String path = TestParquetTools.class.getResource("/sample_lz4_compressed.parquet").getFile();
+            final Table fromDisk = ParquetTools.readTable(path).select();
+            final File dest = new File(rootFile, "random.parquet");
+            ParquetTools.writeTable(fromDisk, dest, ParquetTools.LZ4_RAW);
+        } catch (RuntimeException e) {
+            TestCase.fail("Failed to read LZ4 compressed parquet file");
+        }
+    }
+
+    @Test
     public void testParquetLz4RawCompressionCodec() {
         compressionCodecTestHelper(ParquetTools.LZ4_RAW);
     }
@@ -2274,6 +2288,5 @@ public class ParquetTableReadWriteTest {
             assertFalse(statistics.hasNonNullValue());
         }
     }
-
     // endregion Column Statistics Assertions
 }
