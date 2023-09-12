@@ -21,6 +21,7 @@ import org.apache.parquet.hadoop.codec.SnappyCodec;
 import org.apache.parquet.hadoop.codec.Lz4RawCodec;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -94,7 +95,7 @@ public class DeephavenCompressorAdapterFactory {
         private boolean innerCompressorPooled;
         private Compressor innerCompressor;
 
-        private CodecWrappingCompressorAdapter(CompressionCodec compressionCodec,
+        protected CodecWrappingCompressorAdapter(CompressionCodec compressionCodec,
                 CompressionCodecName compressionCodecName) {
             this.compressionCodec = Objects.requireNonNull(compressionCodec);
             this.compressionCodecName = Objects.requireNonNull(compressionCodecName);
@@ -166,6 +167,63 @@ public class DeephavenCompressorAdapterFactory {
         }
     }
 
+    private static class LZ4CodecWrappingCompressorAdapter extends CodecWrappingCompressorAdapter {
+
+        // Following is only used if we hit an exception while decompressing the file with LZ4 adapter
+        private CompressorAdapter lz4RawBackupCompressorAdapter = null;
+
+        private LZ4CodecWrappingCompressorAdapter(CompressionCodec compressionCodec,
+                CompressionCodecName compressionCodecName) {
+            super(compressionCodec, compressionCodecName);
+        }
+
+        @Override
+        public BytesInput decompress(final InputStream inputStream, final int compressedSize,
+                final int uncompressedSize)
+                throws IOException {
+            if (lz4RawBackupCompressorAdapter != null) {
+                return lz4RawBackupCompressorAdapter.decompress(inputStream, compressedSize, uncompressedSize);
+            }
+
+            // Copy data in case we need to retry with LZ4_RAW
+            // TODO Can we avoid this extra copy every time?
+            byte[] inputData = inputStream.readNBytes(compressedSize);
+            final InputStream primaryStream = new ByteArrayInputStream(inputData);
+            try {
+                return super.decompress(primaryStream, compressedSize, uncompressedSize);
+            } catch (IOException e) {
+                lz4RawBackupCompressorAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName("LZ4_RAW");
+                final InputStream backupStream = new ByteArrayInputStream(inputData);
+                return lz4RawBackupCompressorAdapter.decompress(backupStream, compressedSize, uncompressedSize);
+            }
+        }
+
+        @Override
+        public CompressionCodecName getCodecName() {
+            if (lz4RawBackupCompressorAdapter != null) {
+                return lz4RawBackupCompressorAdapter.getCodecName();
+            }
+            return super.getCodecName();
+        }
+
+        @Override
+        public void reset() {
+            super.reset();
+            if (lz4RawBackupCompressorAdapter != null) {
+                lz4RawBackupCompressorAdapter.reset();
+                lz4RawBackupCompressorAdapter = null;
+            }
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            if (lz4RawBackupCompressorAdapter != null) {
+                lz4RawBackupCompressorAdapter.close();
+            }
+        }
+    }
+
     private static Configuration configurationWithCodecClasses(
             Collection<Class<? extends CompressionCodec>> codecClasses) {
         Configuration conf = new Configuration();
@@ -208,6 +266,9 @@ public class DeephavenCompressorAdapterFactory {
             throw new IllegalArgumentException(String.format(
                     "Failed to find CompressionCodecName for codecName=%s, codec=%s, codec.getDefaultExtension()=%s",
                     codecName, codec, codec.getDefaultExtension()));
+        }
+        if (ccn == CompressionCodecName.LZ4) {
+            return new LZ4CodecWrappingCompressorAdapter(codec, ccn);
         }
         return new CodecWrappingCompressorAdapter(codec, ccn);
     }
