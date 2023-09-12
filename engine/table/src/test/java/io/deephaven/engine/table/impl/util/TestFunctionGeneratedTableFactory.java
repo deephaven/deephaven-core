@@ -29,7 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 
-public class TestFunctionBackedTableFactory extends RefreshingTableTestCase {
+public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
     public void testIterative() {
         Random random = new Random(0);
         ColumnInfo<?, ?>[] columnInfo;
