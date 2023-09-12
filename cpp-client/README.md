@@ -33,7 +33,7 @@ C++ compiler and tool suite (cmake etc).
    Get the `build-dependencies.sh` script from Deephaven's base images repository
    at the correct version.
    You can download it directly from the link
-   https://raw.githubusercontent.com/deephaven/deephaven-base-images/53081b141aebea4c43238ddae233be49db28cf7b/cpp-client/build-dependencies.sh
+   https://raw.githubusercontent.com/deephaven/deephaven-base-images/166befad816acbc9dff55d2d8354d60612cd9a8a/cpp-client/build-dependencies.sh
    (this script is also used from our automated tools, to generate a docker image to
    support tests runs; that's why it lives in a separate repo).
    The script downloads, builds and installs the dependent libraries
@@ -60,7 +60,7 @@ C++ compiler and tool suite (cmake etc).
    # If the directory already exists from a previous attempt, ensure is clean/empty
    mkdir -p $DHCPP
    cd $DHCPP
-   wget https://raw.githubusercontent.com/deephaven/deephaven-base-images/53081b141aebea4c43238ddae233be49db28cf7b/cpp-client/build-dependencies.sh
+   wget https://raw.githubusercontent.com/deephaven/deephaven-base-images/166befad816acbc9dff55d2d8354d60612cd9a8a/cpp-client/build-dependencies.sh
    chmod +x ./build-dependencies.sh
    # Maybe edit build-dependencies.sh to reflect choices of build tools and build target, if you
    # want anything different than defaults; defaults are tested to work,
