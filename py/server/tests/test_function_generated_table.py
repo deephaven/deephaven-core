@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import deephaven.dtypes as dht
 from deephaven import empty_table, input_table, new_table, update_graph, function_generated_table
 from deephaven.column import string_col, int_col
@@ -40,14 +42,18 @@ class TableTestCase(BaseTestCase):
         append_only_input_table = input_table(col_defs=col_defs)
 
         def table_generator_function():
+            print("Running table_generator_function() at time: " + str(datetime.now()))
             return append_only_input_table.last_by().update('ResultStr = MyStr')
 
         result_table = function_generated_table(table_generator_function, source_tables=append_only_input_table)
 
         self.assertEqual(result_table.size, 0)
 
+        print("Adding row at time: " + str(datetime.now()))
         append_only_input_table.add(new_table([string_col(name='MyStr', data=['test string'])]))
+        print("add() returned at time: " + str(datetime.now()))
         self.wait_ticking_table_update(result_table, row_count=1, timeout=30)
+        print("result_table has 1 row at time: " + str(datetime.now()))
 
         result_str = result_table.j_table.getColumnSource("ResultStr").get(0)
         self.assertEqual(result_str, 'test string')
