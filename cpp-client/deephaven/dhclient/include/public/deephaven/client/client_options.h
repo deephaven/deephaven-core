@@ -28,8 +28,8 @@ public:
   ClientOptions();
 #if __GLIBCXX__ > 20190223
   /**
- * Copy constructor
- */
+   * Copy constructor
+   */
   ClientOptions(const ClientOptions &other) noexcept;
   /**
    * Move constructor
@@ -46,8 +46,8 @@ public:
 #else
   // Earlier GLIBCXX versions lack the proper noexcept specifier in some of our contained types.
   /**
- * Copy constructor
- */  
+   * Copy constructor
+   */  
   ClientOptions(const ClientOptions &other);
   /**
    * Move constructor
