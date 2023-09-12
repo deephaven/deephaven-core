@@ -89,24 +89,16 @@ public class DeephavenCompressorAdapterFactory {
     }
 
     private static class CodecWrappingCompressorAdapter implements CompressorAdapter {
-        private CompressionCodec compressionCodec;
-        private CompressionCodecName compressionCodecName;
+        private final CompressionCodec compressionCodec;
+        private final CompressionCodecName compressionCodecName;
 
         private boolean innerCompressorPooled;
         private Compressor innerCompressor;
 
-        CodecWrappingCompressorAdapter(CompressionCodec compressionCodec,
+        private CodecWrappingCompressorAdapter(CompressionCodec compressionCodec,
                 CompressionCodecName compressionCodecName) {
             this.compressionCodec = Objects.requireNonNull(compressionCodec);
             this.compressionCodecName = Objects.requireNonNull(compressionCodecName);
-        }
-
-        void move(CodecWrappingCompressorAdapter adapter) {
-            this.close();
-            this.compressionCodec = adapter.compressionCodec;
-            adapter.compressionCodec = null;
-            this.compressionCodecName = adapter.compressionCodecName;
-            adapter.compressionCodecName = null;
         }
 
         @Override
@@ -176,12 +168,20 @@ public class DeephavenCompressorAdapterFactory {
     }
 
     /**
-     * Following adapter tries to decompress with LZ4 and falls back to LZ4_RAW on failure. This is done to decompress
-     * parquet files which are compressed with LZ4_RAW but provide LZ4 in the metadata.
+     * Following adapter attempts to decompress with LZ4 and falls back to LZ4_RAW on failure. This is the default
+     * adapter for decompressing LZ4 data. The fallback mechanism is particularly useful for decompressing parquet files
+     * that are compressed with LZ4_RAW but tagged as LZ4 in the metadata.
      */
     private static class LZ4WithLZ4RawBackupCompressorAdapter implements CompressorAdapter {
-        boolean tryFallback; // Set to true only when decompressing for the first time
-        CompressorAdapter adapter; // The underlying adapter used, can be LZ4 or LZ4_RAW
+        /**
+         * Set to true only when decompressing for the first time
+         */
+        boolean tryFallback;
+
+        /**
+         * The underlying adapter, can be LZ4 or LZ4_RAW
+         */
+        CompressorAdapter adapter;
 
         private LZ4WithLZ4RawBackupCompressorAdapter() {
             adapter = DeephavenCompressorAdapterFactory.getInstance().getLZ4Adapter();
@@ -283,7 +283,8 @@ public class DeephavenCompressorAdapterFactory {
     }
 
     /**
-     * Following method is only called from {@link LZ4WithLZ4RawBackupCompressorAdapter} for creating a LZ4 only adapter
+     * Following method is used for creating a LZ4 only adapter, in contrast with
+     * {@link LZ4WithLZ4RawBackupCompressorAdapter} which uses LZ4_RAW as a backup.
      */
     private CompressorAdapter getLZ4Adapter() {
         return new CodecWrappingCompressorAdapter(compressionCodecFactory.getCodecByName("LZ4"),
