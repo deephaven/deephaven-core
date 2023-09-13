@@ -291,8 +291,8 @@ class ParquetTestCase(BaseTestCase):
         # Write the pandas dataframe back to parquet (via pyarraow) and read it back using deephaven.parquet to compare
         # Pandas references LZ4_RAW as LZ4, so we need to convert the name
         dataframe.to_parquet('data_from_pandas.parquet',
-                             compression=None if compression_codec_name is 'UNCOMPRESSED' else
-                             "LZ4" if compression_codec_name is 'LZ4_RAW' or compression_codec_name is 'LZ4RAW'
+                             compression=None if compression_codec_name == 'UNCOMPRESSED' else
+                             "LZ4" if compression_codec_name == 'LZ4_RAW' or compression_codec_name == 'LZ4RAW'
                              else compression_codec_name)
         result_table = read('data_from_pandas.parquet')
         self.assert_table_equals(dh_table, result_table)
