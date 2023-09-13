@@ -332,6 +332,7 @@ public class ParquetTableWriter {
      * @param writeInstructions write instructions for the file
      * @param tableMeta metadata to include in the parquet metadata
      * @param tableInfoBuilder a builder for accumulating per-column information to construct the deephaven metadata
+     *
      * @return a new file writer
      */
     @NotNull
@@ -1157,7 +1158,6 @@ public class ParquetTableWriter {
             if (!hasMoreDataToBuffer()) {
                 return 0;
             }
-            // The call to transferAllToBuffer() should not be interleaved with transferOnePageToBuffer().
             assert (currentChunkIdx == 0 && bufferCount == 0);
             int chunkSize = chunk.size();
             while (currentChunkIdx < chunkSize) {
@@ -1209,6 +1209,7 @@ public class ParquetTableWriter {
             // noinspection unchecked
             chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
             currentChunkIdx = 0;
+            bufferCount = 0;
         }
 
         @Override
