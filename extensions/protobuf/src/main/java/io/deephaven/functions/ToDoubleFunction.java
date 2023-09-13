@@ -38,7 +38,9 @@ public interface ToDoubleFunction<T> extends ToPrimitiveFunction<T>, java.util.f
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> ToDoubleFunction<T> map(Function<T, R> f, java.util.function.ToDoubleFunction<R> g) {
+    static <T, R> ToDoubleFunction<T> map(
+            Function<? super T, ? extends R> f,
+            java.util.function.ToDoubleFunction<? super R> g) {
         return DoubleFunctions.map(f, g);
     }
 

@@ -9,11 +9,17 @@ import java.util.function.Function;
 class ShortFunctions {
 
     static <T> ToShortFunction<T> cast() {
-        // noinspection unchecked
-        return (ToShortFunction<T>) PrimitiveShort.INSTANCE;
+        return cast(PrimitiveShort.INSTANCE);
     }
 
-    static <T, R> ToShortFunction<T> map(Function<T, R> f, ToShortFunction<R> g) {
+    static <T> ToShortFunction<T> cast(ToShortFunction<? super T> f) {
+        // noinspection unchecked
+        return (ToShortFunction<T>) f;
+    }
+
+    static <T, R> ToShortFunction<T> map(
+            Function<? super T, ? extends R> f,
+            ToShortFunction<? super R> g) {
         return new ShortMap<>(f, g);
     }
 
@@ -27,10 +33,10 @@ class ShortFunctions {
     }
 
     private static class ShortMap<T, R> implements ToShortFunction<T> {
-        private final Function<T, R> f;
-        private final ToShortFunction<R> g;
+        private final Function<? super T, ? extends R> f;
+        private final ToShortFunction<? super R> g;
 
-        public ShortMap(Function<T, R> f, ToShortFunction<R> g) {
+        public ShortMap(Function<? super T, ? extends R> f, ToShortFunction<? super R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

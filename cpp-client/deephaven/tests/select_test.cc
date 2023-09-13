@@ -39,7 +39,7 @@ TEST_CASE("Support all types", "[select]") {
     byte_data.push_back(i * 11);
     short_data.push_back(i * 1000);
     int_data.push_back(i * 1'000'000);
-    long_data.push_back(i * 1'000'000'000);
+    long_data.push_back(static_cast<long>(i) * 1'000'000'000);
     float_data.push_back(i * 123.456F);
     doubleData.push_back(i * 987654.321);
     stringData.push_back(Stringf("test %o", i));

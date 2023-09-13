@@ -8,11 +8,17 @@ import java.util.function.Function;
 
 class ByteFunctions {
     static <T> ToByteFunction<T> cast() {
-        // noinspection unchecked
-        return (ToByteFunction<T>) PrimitiveByte.INSTANCE;
+        return cast(PrimitiveByte.INSTANCE);
     }
 
-    static <T, R> ToByteFunction<T> map(Function<T, R> f, ToByteFunction<R> g) {
+    static <T> ToByteFunction<T> cast(ToByteFunction<? super T> f) {
+        // noinspection unchecked
+        return (ToByteFunction<T>) f;
+    }
+
+    static <T, R> ToByteFunction<T> map(
+            Function<? super T, ? extends R> f,
+            ToByteFunction<? super R> g) {
         return new ByteMap<>(f, g);
     }
 
@@ -26,10 +32,10 @@ class ByteFunctions {
     }
 
     private static class ByteMap<T, R> implements ToByteFunction<T> {
-        private final Function<T, R> f;
-        private final ToByteFunction<R> g;
+        private final Function<? super T, ? extends R> f;
+        private final ToByteFunction<? super R> g;
 
-        public ByteMap(Function<T, R> f, ToByteFunction<R> g) {
+        public ByteMap(Function<? super T, ? extends R> f, ToByteFunction<? super R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }
