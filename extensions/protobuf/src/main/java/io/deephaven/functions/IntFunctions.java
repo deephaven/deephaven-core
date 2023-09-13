@@ -8,15 +8,23 @@ import java.util.function.Function;
 
 class IntFunctions {
     static <T> ToIntFunction<T> cast() {
+        return cast(PrimitiveInt.INSTANCE);
+    }
+
+    static <T> ToIntFunction<T> cast(ToIntFunction<? super T> f) {
         // noinspection unchecked
-        return (ToIntFunction<T>) PrimitiveInt.INSTANCE;
+        return (ToIntFunction<T>) f;
     }
 
-    static <T> ToIntFunction<T> of(java.util.function.ToIntFunction<T> f) {
-        return f instanceof ToIntFunction ? (ToIntFunction<T>) f : f::applyAsInt;
+    static <T> ToIntFunction<T> of(java.util.function.ToIntFunction<? super T> f) {
+        return f instanceof ToIntFunction
+                ? cast((ToIntFunction<? super T>) f)
+                : f::applyAsInt;
     }
 
-    static <T, R> ToIntFunction<T> map(Function<T, R> f, java.util.function.ToIntFunction<R> g) {
+    static <T, R> ToIntFunction<T> map(
+            Function<? super T, ? extends R> f,
+            java.util.function.ToIntFunction<? super R> g) {
         return new IntMap<>(f, g);
     }
 
@@ -30,10 +38,10 @@ class IntFunctions {
     }
 
     private static class IntMap<T, R> implements ToIntFunction<T> {
-        private final Function<T, R> f;
-        private final java.util.function.ToIntFunction<R> g;
+        private final Function<? super T, ? extends R> f;
+        private final java.util.function.ToIntFunction<? super R> g;
 
-        public IntMap(Function<T, R> f, java.util.function.ToIntFunction<R> g) {
+        public IntMap(Function<? super T, ? extends R> f, java.util.function.ToIntFunction<? super R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

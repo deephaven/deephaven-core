@@ -88,17 +88,9 @@ public:
    */
   explicit TableHandleManager(std::shared_ptr<impl::TableHandleManagerImpl> impl);
   /**
-   * Copy constructor
-   */
-  TableHandleManager(const TableHandleManager &other) noexcept;
-  /**
    * Move constructor
    */
   TableHandleManager(TableHandleManager &&other) noexcept;
-  /**
-   * Copy assigment operator.
-   */
-  TableHandleManager &operator=(const TableHandleManager &other) noexcept;
   /**
    * Move assigment operator.
    */

@@ -38,7 +38,9 @@ public interface ToShortFunction<T> extends ToPrimitiveFunction<T> {
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> ToShortFunction<T> map(Function<T, R> f, ToShortFunction<R> g) {
+    static <T, R> ToShortFunction<T> map(
+            Function<? super T, ? extends R> f,
+            ToShortFunction<? super R> g) {
         return ShortFunctions.map(f, g);
     }
 

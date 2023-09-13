@@ -11,6 +11,8 @@ dependencies {
 
     Classpaths.inheritImmutables(project)
 
+    compileOnly depAnnotations
+
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
 
