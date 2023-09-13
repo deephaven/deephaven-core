@@ -6,7 +6,7 @@ plugins {
 description 'Parquet Base: Libraries for working with Parquet files'
 
 dependencies {
-    api project(':ParquetHadoop')
+    Classpaths.inheritParquetHadoop(project)
 
     implementation project(':extensions-parquet-compression')
     implementation project(':Base')
