@@ -107,8 +107,18 @@ TableHandle <- R6Class("TableHandle",
       verify_type("aggs", aggs, "Aggregation", "Deephaven Aggregation", FALSE)
       verify_string("by", by, FALSE)
       aggs <- c(aggs)
+      for (i in 1:length(aggs)) {
+        if (!is.null(aggs[[i]]$.internal_num_cols) && aggs[[i]]$.internal_num_cols == 0) {
+          stop(paste0("Aggregations with no columns cannot be used in 'agg_by'. Got '", aggs[[i]]$.internal_agg_name, "' at index ", i, " with an empty 'cols' argument."))
+        }
+      }
       unwrapped_aggs <- lapply(aggs, strip_r6_wrapping)
       return(TableHandle$new(self$.internal_rcpp_object$agg_by(unwrapped_aggs, by)))
+    },
+    agg_all_by = function(agg, by = character()) {
+      verify_type("agg", agg, "Aggregation", "Deephaven Aggregation", TRUE)
+      verify_string("by", by, FALSE)
+      return(TableHandle$new(self$.internal_rcpp_object$agg_all_by(agg$.internal_rcpp_object, by)))
     },
     first_by = function(by = character()) {
       verify_string("by", by, FALSE)
@@ -170,7 +180,7 @@ TableHandle <- R6Class("TableHandle",
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$percentile_by(percentile, by)))
     },
-    count_by = function(col = "n", by = character()) {
+    count_by = function(col, by = character()) {
       verify_string("col", col, TRUE)
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$count_by(col, by)))
