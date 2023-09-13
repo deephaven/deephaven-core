@@ -10,42 +10,38 @@ import org.immutables.value.Value.Parameter;
 import java.nio.file.Path;
 
 /**
- * A js plugin package path.
+ * A package-based js plugin sourced from a {@value PACKAGE_JSON} file.
  */
 @Immutable
 @SimpleStyle
 public abstract class JsPluginPackagePath extends JsPluginBase {
     public static final String PACKAGE_JSON = "package.json";
 
+    /**
+     * Creates a package-based js plugin from {@code packageRoot}.
+     *
+     * @param packageRoot the package root directory path
+     * @return the package-based js plugin
+     */
     public static JsPluginPackagePath of(Path packageRoot) {
         return ImmutableJsPluginPackagePath.of(packageRoot);
     }
 
     /**
-     * The package root path.
+     * The package root directory path.
      * 
-     * @return the package root path
+     * @return the package root directory path
      */
     @Parameter
     public abstract Path path();
 
     /**
-     * The {@value PACKAGE_JSON} path. Equivalent to {@code path().resolve(PACKAGE_JSON)}.
+     * The {@value PACKAGE_JSON} file path. Equivalent to {@code path().resolve(PACKAGE_JSON)}.
      * 
-     * @return the package json path
+     * @return the package json file path
      */
     public final Path packageJson() {
         return path().resolve(PACKAGE_JSON);
-    }
-
-    /**
-     * The distribution path. Equivalent to {@code path().resolve(main).getParent()}.
-     *
-     * @param main the main file name
-     * @return the distribution path
-     */
-    public final Path distributionPath(String main) {
-        return path().resolve(main).getParent();
     }
 
     @Override

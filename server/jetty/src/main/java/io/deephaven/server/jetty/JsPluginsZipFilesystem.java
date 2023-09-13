@@ -3,7 +3,6 @@
  */
 package io.deephaven.server.jetty;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.deephaven.configuration.CacheDir;
 import io.deephaven.plugin.js.JsPluginManifestPath;
 import io.deephaven.plugin.js.JsPluginPackagePath;
@@ -20,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import static io.deephaven.server.jetty.Json.OBJECT_MAPPER;
 
 class JsPluginsZipFilesystem {
     private static final String ZIP_ROOT = "/";
@@ -57,17 +58,18 @@ class JsPluginsZipFilesystem {
     public synchronized void copyFrom(JsPluginPackagePath srcPackagePath, JsPluginManifestEntry srcEntry)
             throws IOException {
         checkExisting(srcEntry);
-        final Path srcDist = srcPackagePath.distributionPath(srcEntry.main());
         // TODO(deephaven-core#3005): js-plugins checksum-based caching
+        // Note: FileSystem#close is necessary to write out contents for ZipFileSystem
         try (final FileSystem fs = FileSystems.newFileSystem(filesystem, Map.of())) {
             final JsPluginManifestPath manifest = manifest(fs);
-            final Path destDist = manifest
-                    .packagePath(srcEntry.name())
-                    .distributionPath(srcEntry.main());
-            CopyHelper.copyRecursive(srcDist, destDist);
+            copyRecursive(srcPackagePath, manifest.packagePath(srcEntry.name()));
             entries.add(srcEntry);
             writeManifest(fs);
         }
+    }
+
+    private static void copyRecursive(JsPluginPackagePath src, JsPluginPackagePath dst) throws IOException {
+        CopyHelper.copyRecursive(src.path(), dst.path());
     }
 
     private void checkExisting(JsPluginManifestEntry info) {
@@ -81,7 +83,8 @@ class JsPluginsZipFilesystem {
         }
     }
 
-    private void init() throws IOException {
+    private synchronized void init() throws IOException {
+        // Note: FileSystem#close is necessary to write out contents for ZipFileSystem
         try (final FileSystem fs = FileSystems.newFileSystem(filesystem, Map.of("create", "true"))) {
             writeManifest(fs);
         }
@@ -92,7 +95,7 @@ class JsPluginsZipFilesystem {
         final Path manifestJsonTmp = manifestJson.resolveSibling(manifestJson.getFileName().toString() + ".tmp");
         // jackson impl does buffering internally
         try (final OutputStream out = Files.newOutputStream(manifestJsonTmp)) {
-            new ObjectMapper().writeValue(out, JsPluginManifest.of(entries));
+            OBJECT_MAPPER.writeValue(out, JsPluginManifest.of(entries));
             out.flush();
         }
         Files.move(manifestJsonTmp, manifestJson,

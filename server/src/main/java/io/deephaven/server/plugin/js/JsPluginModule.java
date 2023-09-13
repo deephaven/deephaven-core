@@ -35,8 +35,8 @@ public interface JsPluginModule {
 
     @Provides
     @ElementsIntoSet
-    static Set<Registration> providesResourceBaseRegistration(Configuration config) {
-        return jsPluginsResourceBase(config)
+    static Set<Registration> providesResourceBaseRegistration() {
+        return jsPluginsResourceBase()
                 .map(Registration.class::cast)
                 .map(Set::of)
                 .orElseGet(Set::of);
@@ -53,16 +53,16 @@ public interface JsPluginModule {
 
     @Provides
     @ElementsIntoSet
-    static Set<Registration> providesPackageRoots(Configuration config) {
-        return jsPluginsPackageRoots(config)
+    static Set<Registration> providesPackageRoots() {
+        return jsPluginsPackageRoots()
                 .stream()
                 .map(Registration.class::cast)
                 .collect(Collectors.toSet());
     }
 
     // deephaven.jsPlugins.resourceBase (manifest root)
-    private static Optional<JsPluginManifestPath> jsPluginsResourceBase(Configuration config) {
-        final String resourceBase = config.getStringWithDefault(JS_PLUGIN_RESOURCE_BASE, null);
+    private static Optional<JsPluginManifestPath> jsPluginsResourceBase() {
+        final String resourceBase = Configuration.getInstance().getStringWithDefault(JS_PLUGIN_RESOURCE_BASE, null);
         return Optional.ofNullable(resourceBase)
                 .map(Path::of)
                 .map(JsPluginManifestPath::of);
@@ -85,7 +85,8 @@ public interface JsPluginModule {
     }
 
     // deephaven.jsPlugins.<part> (package root)
-    private static Set<JsPluginPackagePath> jsPluginsPackageRoots(Configuration config) {
+    private static Set<JsPluginPackagePath> jsPluginsPackageRoots() {
+        final Configuration config = Configuration.getInstance();
         final Set<String> parts = partsThatStartWith(DEEPHAVEN_JS_PLUGINS_PREFIX, config);
         final Set<JsPluginPackagePath> packageRoots = new HashSet<>(parts.size());
         for (String part : parts) {

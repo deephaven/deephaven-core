@@ -46,7 +46,6 @@ public final class CustomComponentFactory extends ComponentFactoryBase<CustomCom
     public CustomComponent build(Configuration configuration, PrintStream out, PrintStream err) {
         final JettyConfig jettyConfig = JettyConfig.buildFromConfig(configuration).build();
         return DaggerCustomComponentFactory_CustomComponent.builder()
-                .withConfiguration(configuration)
                 .withOut(out)
                 .withErr(err)
                 .withJettyConfig(jettyConfig)

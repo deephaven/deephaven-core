@@ -94,7 +94,6 @@ public class EmbeddedServer {
         DaggerEmbeddedServer_PythonServerComponent
                 .builder()
                 .withJettyConfig(builder.build())
-                .withConfiguration(config)
                 .withOut(null)
                 .withErr(null)
                 .build()

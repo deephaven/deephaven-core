@@ -3,8 +3,6 @@
  */
 package io.deephaven.server.jetty;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.deephaven.plugin.js.JsPlugin;
 import io.deephaven.plugin.js.JsPlugin.Visitor;
 import io.deephaven.plugin.js.JsPluginManifestPath;
@@ -17,6 +15,8 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.util.Objects;
 import java.util.function.Consumer;
+
+import static io.deephaven.server.jetty.Json.OBJECT_MAPPER;
 
 class JsPlugins implements Consumer<JsPlugin> {
     static final String JS_PLUGINS = "js-plugins";
@@ -92,18 +92,16 @@ class JsPlugins implements Consumer<JsPlugin> {
     }
 
     private static JsPluginManifest manifest(JsPluginManifestPath manifest) throws IOException {
-        final ObjectMapper om = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);;
+        // jackson impl does buffering internally
         try (final InputStream in = Files.newInputStream(manifest.manifestJson())) {
-            return om.readValue(in, JsPluginManifest.class);
+            return OBJECT_MAPPER.readValue(in, JsPluginManifest.class);
         }
     }
 
     private static JsPluginManifestEntry entry(JsPluginPackagePath packagePath) throws IOException {
-        final ObjectMapper om = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // jackson impl does buffering internally
         try (final InputStream in = Files.newInputStream(packagePath.packageJson())) {
-            return om.readValue(in, JsPluginManifestEntry.class);
+            return OBJECT_MAPPER.readValue(in, JsPluginManifestEntry.class);
         }
     }
 }
