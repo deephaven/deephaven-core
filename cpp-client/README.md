@@ -11,7 +11,7 @@ C++ compiler and tool suite (cmake etc).
 3. Get build tools
    ```
    sudo apt update
-   sudo apt install curl git g++ cmake make build-essential zlib1g-dev libssl-dev pkg-config
+   sudo apt install curl git g++ cmake make build-essential zlib1g-dev libbz2-dev libssl-dev pkg-config
    ```
 
 4. Make a new directory for the Deephaven source code and assign that directory
