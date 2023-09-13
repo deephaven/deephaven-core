@@ -11,7 +11,7 @@ C++ compiler and tool suite (cmake etc).
 3. Get build tools
    ```
    sudo apt update
-   sudo apt install curl git g++ cmake make build-essential zlib1g-dev libssl-dev pkg-config
+   sudo apt install curl git g++ cmake make build-essential zlib1g-dev libbz2-dev libssl-dev pkg-config
    ```
 
 4. Make a new directory for the Deephaven source code and assign that directory
@@ -33,7 +33,7 @@ C++ compiler and tool suite (cmake etc).
    Get the `build-dependencies.sh` script from Deephaven's base images repository
    at the correct version.
    You can download it directly from the link
-   https://raw.githubusercontent.com/deephaven/deephaven-base-images/53081b141aebea4c43238ddae233be49db28cf7b/cpp-client/build-dependencies.sh
+   https://raw.githubusercontent.com/deephaven/deephaven-base-images/166befad816acbc9dff55d2d8354d60612cd9a8a/cpp-client/build-dependencies.sh
    (this script is also used from our automated tools, to generate a docker image to
    support tests runs; that's why it lives in a separate repo).
    The script downloads, builds and installs the dependent libraries
@@ -41,9 +41,9 @@ C++ compiler and tool suite (cmake etc).
    Decide on a directory for the dependencies to live (eg, "$HOME/dhcpp").
    Create that directory and save the script there.
 
-   The two main build types of a standard cmake build are supported,
-   `Release` and `Debug`.  By default. `build-dependencies.sh`
-   creates a `Debug` build.  To create a `Release` build, set the
+   The three main build types of a standard cmake build are supported,
+   `Release`, `Debug` and `RelWithDebInfo`.  By default. `build-dependencies.sh`
+   creates a `RelWithDebInfo` build.  To create a `Release` build, set the
    environment variable `BUILD_TYPE=Release` (1)
 
    Edit your local copy of the script if necessary to reflect your selection
@@ -60,7 +60,7 @@ C++ compiler and tool suite (cmake etc).
    # If the directory already exists from a previous attempt, ensure is clean/empty
    mkdir -p $DHCPP
    cd $DHCPP
-   wget https://raw.githubusercontent.com/deephaven/deephaven-base-images/53081b141aebea4c43238ddae233be49db28cf7b/cpp-client/build-dependencies.sh
+   wget https://raw.githubusercontent.com/deephaven/deephaven-base-images/166befad816acbc9dff55d2d8354d60612cd9a8a/cpp-client/build-dependencies.sh
    chmod +x ./build-dependencies.sh
    # Maybe edit build-dependencies.sh to reflect choices of build tools and build target, if you
    # want anything different than defaults; defaults are tested to work,
@@ -102,7 +102,7 @@ C++ compiler and tool suite (cmake etc).
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
    cmake -DCMAKE_INSTALL_PREFIX=${DHCPP}/local \
-       -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=ON .. && \
+       -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_SHARED_LIBS=ON .. && \
      make -j$NCPUS install
    ```
 
@@ -125,6 +125,26 @@ C++ compiler and tool suite (cmake etc).
     make -j$NCPUS
     ./tests
     ```
+
+10. Building in different distributions or with older toolchains.
+    While we don't support other linux distributions or GCC versions earlier
+    than 11, this section provides some notes that may help you
+    in that situation.
+
+    * GCC 8 mixed with older versions of GNU as/binutils may fail to compile
+      `roaring.c` with an error similar to:
+      ```
+      /tmp/cczCvQKd.s: Assembler messages:
+      /tmp/cczCvQKd.s:45826: Error: no such instruction: `vpcompressb %zmm0,%zmm1{%k2}'
+      /tmp/cczCvQKd.s:46092: Error: no such instruction: `vpcompressb %zmm0,%zmm1{%k1}'
+      ```
+      In that case, add `-DCMAKE_C_FLAGS=-DCROARING_COMPILER_SUPPORTS_AVX512=0`
+      to the list of arguments to `cmake`.
+
+    * Some platforms combining old versions of GCC and cmake may fail
+      to set the cmake C++ standard to 17 without explicitly adding
+      `-DCMAKE_CXX_STANDARD=17` to the list of arguments to `cmake`.
+      Note the default mode for C++ is `-std=gnu++17` for GCC 11.
 
 Notes
   (1) The standard assumptions for `Debug` and `Release` apply here.

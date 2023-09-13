@@ -61,9 +61,11 @@ bool DumpFormat(std::ostream &s, const char **fmt, bool placeholder_expected);
 std::ostream &Streamf(std::ostream &s, const char *fmt);
 
 template<typename HEAD, typename... REST>
-std::ostream &Streamf(std::ostream &s, const char *fmt, const HEAD &head, REST &&... rest) {
-  (void) deephaven::dhcore::utility::internal::DumpFormat(s, &fmt, true);
-  s << head;
+std::ostream &Streamf(std::ostream &s, const char *fmt, HEAD &&head, REST &&... rest) {
+  if (!deephaven::dhcore::utility::internal::DumpFormat(s, &fmt, true)) {
+    return s;
+  }
+  s << std::forward<HEAD>(head);
   return Streamf(s, fmt, std::forward<REST>(rest)...);
 }
 
