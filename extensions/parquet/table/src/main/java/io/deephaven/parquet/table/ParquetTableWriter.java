@@ -114,7 +114,7 @@ public class ParquetTableWriter {
          * paginated data, and should not be interleaved with calls to {@link TransferObject#transferAllToBuffer()}.
          *
          * @return The number of fetched data entries copied into the buffer. This can be different from the total
-         *         number of entries fetched in case of variable-width types (e.g. strings) where we enforce additional
+         *         number of entries fetched in case of variable-width types (e.g. strings) when used with additional
          *         page size limits while copying.
          */
         int transferOnePageToBuffer();
@@ -937,7 +937,7 @@ public class ParquetTableWriter {
             buffer.position(0);
             buffer.limit(chunk.size());
             hasMoreDataToBuffer = false;
-            return buffer.limit();
+            return chunk.size();
         }
 
         @Override
