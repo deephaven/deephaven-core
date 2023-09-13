@@ -96,24 +96,27 @@ public class ParquetTableWriter {
         void fetchData(RowSequence rs);
 
         /**
-         * Copy all the fetched data into an internal buffer, which can then be accessed using
+         * Transfer all the fetched data into an internal buffer, which can then be accessed using
          * {@link TransferObject#getBuffer()}. This method should only be called after
-         * {@link TransferObject#fetchData(RowSequence)}}. Note that this method can lead to Out-of-Memory error for
-         * types like strings if the fetched data is too big.
+         * {@link TransferObject#fetchData(RowSequence)}}. This method should be used when writing unpaginated data, and
+         * should not be interleaved with calls to {@link TransferObject#transferOnePageToBuffer()}. Note that this
+         * method can lead to out-of-memory error for variable-width types (e.g. strings) if the fetched data is too
+         * big.
          *
          * @return The number of fetched data entries copied into the buffer.
          */
-        int bufferAllFetchedData();
+        int transferAllToBuffer();
 
         /**
-         * Copy the fetched data into an internal buffer, which can then be accessed using
-         * {@link TransferObject#getBuffer()}. The method should only be called after
-         * {@link TransferObject#fetchData(RowSequence)}}
+         * Transfer one page size worth of fetched data into an internal buffer, which can then be accessed using
+         * {@link TransferObject#getBuffer()}. The target page size is passed in the constructor. The method should only
+         * be called after {@link TransferObject#fetchData(RowSequence)}}. This method should be used when writing
+         * paginated data, and should not be interleaved with calls to {@link TransferObject#transferAllToBuffer()}.
          *
          * @return The number of fetched data entries copied into the buffer. This can be different from the number of
          *         entries fetched for types like strings where we enforce additional page size limits while copying.
          */
-        int bufferFetchedData();
+        int transferOnePageToBuffer();
 
         /**
          * Check if there is any fetched data which can be copied into buffer
@@ -649,15 +652,15 @@ public class ParquetTableWriter {
                         lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                         repeatCount.limit(lenChunk.size());
                         // Write all the fetched vector data into a single Parquet page.
-                        // This can lead to Out-of-Memory errors for types like strings if the entries are very long.
-                        int numValuesBuffered = transferObject.bufferAllFetchedData();
+                        // This can lead to out-of-memory errors for variable-width types if the entries are very long.
+                        int numValuesBuffered = transferObject.transferAllToBuffer();
                         columnWriter.addVectorPage(transferObject.getBuffer(), repeatCount, numValuesBuffered,
                                 statistics);
                         repeatCount.clear();
                     } else {
                         // Split a single page into multiple if we are not able to fit all the entries in one page
                         do {
-                            int numValuesBuffered = transferObject.bufferFetchedData();
+                            int numValuesBuffered = transferObject.transferOnePageToBuffer();
                             columnWriter.addPage(transferObject.getBuffer(), numValuesBuffered, statistics);
                         } while (transferObject.hasMoreDataToBuffer());
                     }
@@ -846,23 +849,23 @@ public class ParquetTableWriter {
         if (int.class.equals(columnType)) {
             int[] array = new int[maxValuesPerPage];
             WritableIntChunk<Values> chunk = WritableIntChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, IntBuffer.wrap(array), maxValuesPerPage);
+            return new IntTransfer(columnSource, chunk, IntBuffer.wrap(array), maxValuesPerPage);
         } else if (long.class.equals(columnType)) {
             long[] array = new long[maxValuesPerPage];
             WritableLongChunk<Values> chunk = WritableLongChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, LongBuffer.wrap(array), maxValuesPerPage);
+            return new LongTransfer(columnSource, chunk, LongBuffer.wrap(array), maxValuesPerPage);
         } else if (double.class.equals(columnType)) {
             double[] array = new double[maxValuesPerPage];
             WritableDoubleChunk<Values> chunk = WritableDoubleChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, DoubleBuffer.wrap(array), maxValuesPerPage);
+            return new DoubleTransfer(columnSource, chunk, DoubleBuffer.wrap(array), maxValuesPerPage);
         } else if (float.class.equals(columnType)) {
             float[] array = new float[maxValuesPerPage];
             WritableFloatChunk<Values> chunk = WritableFloatChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, FloatBuffer.wrap(array), maxValuesPerPage);
+            return new FloatTransfer(columnSource, chunk, FloatBuffer.wrap(array), maxValuesPerPage);
         } else if (Boolean.class.equals(columnType)) {
             byte[] array = new byte[maxValuesPerPage];
             WritableByteChunk<Values> chunk = WritableByteChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, ByteBuffer.wrap(array), maxValuesPerPage);
+            return new BooleanTransfer(columnSource, chunk, ByteBuffer.wrap(array), maxValuesPerPage);
         } else if (short.class.equals(columnType)) {
             return new ShortTransfer(columnSource, maxValuesPerPage);
         } else if (char.class.equals(columnType)) {
@@ -896,7 +899,7 @@ public class ParquetTableWriter {
         return new CodecTransfer<>(columnSource, codec, maxValuesPerPage, instructions.getTargetPageSize());
     }
 
-    final static class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer>
+    static class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer>
             implements TransferObject<B> {
         private final C chunk;
         private final B buffer;
@@ -904,6 +907,9 @@ public class ParquetTableWriter {
         private final ChunkSource.FillContext context;
         private boolean hasMoreDataToBuffer;
 
+        /**
+         * {@code chunk} and {@code buffer} must be backed by the same array. Assumption verified in the child classes.
+         */
         PrimitiveTransfer(ColumnSource<?> columnSource, C chunk, B buffer, int targetSize) {
             this.columnSource = columnSource;
             this.chunk = chunk;
@@ -917,19 +923,20 @@ public class ParquetTableWriter {
         }
 
         @Override
-        public int bufferAllFetchedData() {
-            return bufferFetchedData();
+        public int transferAllToBuffer() {
+            return transferOnePageToBuffer();
         }
 
         @Override
-        public int bufferFetchedData() {
+        public int transferOnePageToBuffer() {
             if (!hasMoreDataToBuffer()) {
                 return 0;
             }
+            // Assuming that buffer and chunk are backed by the same array.
             buffer.position(0);
             buffer.limit(chunk.size());
             hasMoreDataToBuffer = false;
-            return chunk.size();
+            return buffer.limit();
         }
 
         @Override
@@ -946,6 +953,59 @@ public class ParquetTableWriter {
         @Override
         public void close() {
             context.close();
+        }
+    }
+
+    final static class IntTransfer extends PrimitiveTransfer<WritableIntChunk<Values>, IntBuffer> {
+        /**
+         * Check docs in {@link PrimitiveTransfer} for more details.
+         */
+        IntTransfer(ColumnSource<?> columnSource, WritableIntChunk<Values> chunk, IntBuffer buffer, int targetSize) {
+            super(columnSource, chunk, buffer, targetSize);
+            assert (Arrays.equals(chunk.array(), buffer.array()));
+        }
+    }
+
+    final static class LongTransfer extends PrimitiveTransfer<WritableLongChunk<Values>, LongBuffer> {
+        /**
+         * Check docs in {@link PrimitiveTransfer} for more details.
+         */
+        LongTransfer(ColumnSource<?> columnSource, WritableLongChunk<Values> chunk, LongBuffer buffer, int targetSize) {
+            super(columnSource, chunk, buffer, targetSize);
+            assert (Arrays.equals(chunk.array(), buffer.array()));
+        }
+    }
+
+    final static class DoubleTransfer extends PrimitiveTransfer<WritableDoubleChunk<Values>, DoubleBuffer> {
+        /**
+         * Check docs in {@link PrimitiveTransfer} for more details.
+         */
+        DoubleTransfer(ColumnSource<?> columnSource, WritableDoubleChunk<Values> chunk, DoubleBuffer buffer,
+                int targetSize) {
+            super(columnSource, chunk, buffer, targetSize);
+            assert (Arrays.equals(chunk.array(), buffer.array()));
+        }
+    }
+
+    final static class FloatTransfer extends PrimitiveTransfer<WritableFloatChunk<Values>, FloatBuffer> {
+        /**
+         * Check docs in {@link PrimitiveTransfer} for more details.
+         */
+        FloatTransfer(ColumnSource<?> columnSource, WritableFloatChunk<Values> chunk, FloatBuffer buffer,
+                int targetSize) {
+            super(columnSource, chunk, buffer, targetSize);
+            assert (Arrays.equals(chunk.array(), buffer.array()));
+        }
+    }
+
+    final static class BooleanTransfer extends PrimitiveTransfer<WritableByteChunk<Values>, ByteBuffer> {
+        /**
+         * Check docs in {@link PrimitiveTransfer} for more details.
+         */
+        BooleanTransfer(ColumnSource<?> columnSource, WritableByteChunk<Values> chunk, ByteBuffer buffer,
+                int targetSize) {
+            super(columnSource, chunk, buffer, targetSize);
+            assert (Arrays.equals(chunk.array(), buffer.array()));
         }
     }
 
@@ -972,16 +1032,18 @@ public class ParquetTableWriter {
         }
 
         @Override
-        final public int bufferAllFetchedData() {
-            return bufferFetchedData();
+        final public int transferAllToBuffer() {
+            return transferOnePageToBuffer();
         }
 
         @Override
-        final public int bufferFetchedData() {
+        final public int transferOnePageToBuffer() {
             if (!hasMoreDataToBuffer()) {
                 return 0;
             }
             buffer.clear();
+            // Assuming that all the fetched data will fit in one page. This is because page count is accurately
+            // calculated for non variable-width types. Check ParquetTableWriter.getTargetRowsPerPage for more details.
             copyAllFromChunkToBuffer();
             buffer.flip();
             int ret = chunk.size();
@@ -990,7 +1052,8 @@ public class ParquetTableWriter {
         }
 
         /**
-         * Helper method to copy all data from {@code this.chunk} to {@code this.buffer}.
+         * Helper method to copy all data from {@code this.chunk} to {@code this.buffer}. The buffer should be cleared
+         * before calling this method and is positioned for a {@link Buffer#flip()} after the call.
          */
         abstract void copyAllFromChunkToBuffer();
 
@@ -1058,10 +1121,15 @@ public class ParquetTableWriter {
         private final ChunkSource.GetContext context;
         private ObjectChunk<T, Values> chunk;
         private Binary[] buffer;
+        /**
+         * Number of objects buffered
+         */
+        private int bufferCount;
+
         private final ColumnSource<?> columnSource;
 
         /**
-         * The maximum size of data to be stored in a single page. This is not a strict limit though.
+         * The target size of data to be stored in a single page. This is not a strictly enforced "maximum" page size.
          */
         private final int targetPageSize;
 
@@ -1075,6 +1143,7 @@ public class ParquetTableWriter {
             this.buffer = new Binary[maxValuesPerPage];
             context = this.columnSource.makeGetContext(maxValuesPerPage);
             this.targetPageSize = targetPageSize;
+            bufferCount = 0;
         }
 
         @Override
@@ -1083,45 +1152,48 @@ public class ParquetTableWriter {
         }
 
         @Override
-        final public int bufferAllFetchedData() {
+        final public int transferAllToBuffer() {
             if (!hasMoreDataToBuffer()) {
                 return 0;
             }
-            while (currentChunkIdx < chunk.size()) {
-                final T value = chunk.get(currentChunkIdx);
-                buffer[currentChunkIdx++] = value == null ? null : encodeToBinary(value);
+            // The call to transferAllToBuffer() should not be interleaved with transferOnePageToBuffer().
+            assert (currentChunkIdx == 0 && bufferCount == 0);
+            int chunkSize = chunk.size();
+            while (currentChunkIdx < chunkSize) {
+                final T value = chunk.get(currentChunkIdx++);
+                buffer[bufferCount++] = value == null ? null : encodeToBinary(value);
             }
-            return chunk.size();
+            return bufferCount;
         }
 
         @Override
-        final public int bufferFetchedData() {
+        final public int transferOnePageToBuffer() {
             if (!hasMoreDataToBuffer()) {
                 return 0;
             }
-            if (currentChunkIdx != 0) {
+            if (bufferCount != 0) {
                 // Clear any old buffered data
-                Arrays.fill(buffer, null);
+                Arrays.fill(buffer, 0, bufferCount, null);
+                bufferCount = 0;
             }
             int size = 0;
-            int bufferIdx = 0; // Stores the number of chunks buffered in this iteration
             while (currentChunkIdx < chunk.size()) {
                 final T value = chunk.get(currentChunkIdx++);
                 if (value == null) {
-                    buffer[bufferIdx++] = null;
+                    buffer[bufferCount++] = null;
                     continue;
                 }
                 Binary binaryVal = encodeToBinary(value);
-                buffer[bufferIdx++] = binaryVal;
+                buffer[bufferCount++] = binaryVal;
                 size += binaryVal.length();
-                if (size > targetPageSize) {
+                if (size >= targetPageSize) {
                     break;
                 }
             }
             if (currentChunkIdx == chunk.size()) {
                 chunk = null;
             }
-            return bufferIdx;
+            return bufferCount;
         }
 
         abstract Binary encodeToBinary(T value);
@@ -1143,6 +1215,7 @@ public class ParquetTableWriter {
             context.close();
         }
     }
+
     final static class StringTransfer extends EncodedTransfer<String> {
         StringTransfer(ColumnSource<?> columnSource, int maxValuesPerPage, int targetPageSize) {
             super(columnSource, maxValuesPerPage, targetPageSize);
