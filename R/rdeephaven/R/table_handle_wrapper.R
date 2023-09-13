@@ -1,7 +1,15 @@
+#' @description
+#' A TableHandle holds a reference to a Deephaven Table on the server, and provides methods for operating on that table.
+#' Note that TableHandles should not be instantiated directly by user code, but rather by server calls accessible from
+#' the `Client` class. See `?Client` for more information.
 TableHandle <- R6Class("TableHandle",
   cloneable = FALSE,
   public = list(
     .internal_rcpp_object = NULL,
+
+    #' @description
+    #' Initializes a new TableHandle from an internal Deephaven TableHandle.
+    #' @param table_handle Internal Deephaven TableHandle.
     initialize = function(table_handle) {
       if (class(table_handle)[[1]] != "Rcpp_INTERNAL_TableHandle") {
         stop("'table_handle' should be an internal Deephaven TableHandle. If you're seeing this,
@@ -11,15 +19,14 @@ TableHandle <- R6Class("TableHandle",
     },
     
     #' @description
-    #' Determine whether the table referenced by this TableHandle is static or not.
+    #' Determines whether the table referenced by this TableHandle is static or not.
     #' @return TRUE if the table is static, or FALSE if the table is ticking.
     is_static = function() {
       return(self$.internal_rcpp_object$is_static())
     },
     
     #' @description
-    #' Bind the table referenced by this TableHandle to a variable on the server
-    #' so that it can be referenced by that name.
+    #' Binds the table referenced by this TableHandle to a variable on the server, so that it can be referenced by that name.
     #' @param name Name for this table on the server.
     bind_to_variable = function(name) {
       verify_string("name", name, TRUE)
@@ -29,7 +36,7 @@ TableHandle <- R6Class("TableHandle",
     ### BASE R METHODS, ALSO IMPLEMENTED FUNCTIONALLY
 
     #' @description
-    #' Create a new table containing the first `n` rows of this table.
+    #' Creates a new table containing the first `n` rows of this table.
     #' @param n Positive integer specifying the number of rows to return.
     #' @return A TableHandle referencing the new table.
     head = function(n) {
@@ -38,7 +45,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the last `n` rows of this table.
+    #' Creates a new table containing the last `n` rows of this table.
     #' @param n Positive integer specifying the number of rows to return.
     #' @return A TableHandle referencing the new table consisting of the last n rows of the parent table.
     tail = function(n) {
@@ -47,21 +54,21 @@ TableHandle <- R6Class("TableHandle",
     },
     
     #' @description
-    #' Get the number of rows in the table referenced by this TableHandle.
+    #' Gets the number of rows in the table referenced by this TableHandle.
     #' @return The number of rows in the table.
     nrow = function() {
       return(self$.internal_rcpp_object$num_rows())
     },
 
     #' @description
-    #' Get the number of columns in the table referenced by this TableHandle.
+    #' Gets the number of columns in the table referenced by this TableHandle.
     #' @return The number of columns in the table.
     ncol = function() {
       return(self$.internal_rcpp_object$num_cols())
     },
 
     #' @description
-    #' Get the dimensions of the table referenced by this TableHandle. Equivalent to c(nrow, ncol).
+    #' Gets the dimensions of the table referenced by this TableHandle. Equivalent to c(nrow, ncol).
     #' @return A vector of length 2, where the first element is the number of rows in the table and the second
     #' element is the number of columns in the table.
     dim = function() {
@@ -69,7 +76,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Merge several tables into one table on the server. The tables must have the same schema as this table, and can
+    #' Merges several tables into one table on the server. The tables must have the same schema as this table, and can
     #' be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
     #' @param ... Arbitrary number of TableHandles or vectors of TableHandles with a schema matching this table.
     #' @return A TableHandle referencing the new table.
@@ -86,7 +93,7 @@ TableHandle <- R6Class("TableHandle",
     ### CONVERSION METHODS, ALSO IMPLEMENTED FUNCTIONALLY
 
     #' @description
-    #' Convert the table referenced by this TableHandle to an Arrow RecordBatchStreamReader.
+    #' Converts the table referenced by this TableHandle to an Arrow RecordBatchStreamReader.
     #' @return An Arrow RecordBatchStreamReader constructed from the data of this TableHandle.
     as_record_batch_reader = function() {
       ptr <- self$.internal_rcpp_object$get_arrow_array_stream_ptr()
@@ -95,7 +102,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Convert the table referenced by this TableHandle to an Arrow Table.
+    #' Converts the table referenced by this TableHandle to an Arrow Table.
     #' @return An Arrow Table constructed from the data of this TableHandle.
     as_arrow_table = function() {
       rbsr <- self$as_record_batch_reader()
@@ -104,7 +111,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Convert the table referenced by this TableHandle to a dplyr tibble.
+    #' Converts the table referenced by this TableHandle to a dplyr tibble.
     #' @return A dplyr tibble constructed from the data of this TableHandle.
     as_tibble = function() {
       rbsr <- self$as_record_batch_reader()
@@ -113,7 +120,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Convert the table referenced by this TableHandle to an R data frame.
+    #' Converts the table referenced by this TableHandle to an R data frame.
     #' @return An R data frame constructed from the data of this TableHandle.
     as_data_frame = function() {
       arrow_tbl <- self$as_arrow_table()
@@ -123,7 +130,7 @@ TableHandle <- R6Class("TableHandle",
     ### DEEPHAVEN TABLE OPERATIONS
 
     #' @description
-    #' Create a new in-memory table that includes one column for each formula.
+    #' Creates a new in-memory table that includes one column for each formula.
     #' If no formula is specified, all columns will be included.
     #' @param formulas String or list of strings denoting the column formulas.
     #' @return A TableHandle referencing the new table.
@@ -133,7 +140,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new formula table that includes one column for each formula.
+    #' Creates a new formula table that includes one column for each formula.
     #' @param formulas String or list of strings denoting the column formulas.
     #' @return A TableHandle referencing the new table.
     view = function(formulas = character()) {
@@ -142,7 +149,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing a new, in-memory column for each formula.
+    #' Creates a new table containing a new, in-memory column for each formula.
     #' @param formulas String or list of strings denoting the column formulas.
     #' @return A TableHandle referencing the new table.
     update = function(formulas = character()) {
@@ -151,7 +158,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing a new formula column for each formula.
+    #' Creates a new table containing a new formula column for each formula.
     #' @param formulas String or list of strings denoting the column formulas.
     #' @return A TableHandle referencing the new table.
     update_view = function(formulas = character()) {
@@ -160,7 +167,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table that has the same number of rows as this table,
+    #' Creates a new table that has the same number of rows as this table,
     #' but omits the columns specified in `cols`.
     #' @param cols String or list of strings denoting the names of the columns to drop.
     #' @return A TableHandle referencing the new table.
@@ -170,7 +177,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing only the rows meeting the filter condition.
+    #' Creates a new table containing only the rows meeting the filter condition.
     #' @param filter String denoting the filter condition.
     #' @return A TableHandle referencing the new table.
     where = function(filter) {
@@ -179,7 +186,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing grouping columns and grouped data, with column content is grouped into arrays.
+    #' Creates a new table containing grouping columns and grouped data, with column content is grouped into arrays.
     #' If no group-by column is given, the content of each column is grouped into its own array.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
@@ -189,7 +196,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table in which array columns from the source table are unwrapped into separate rows.
+    #' Creates a new table in which array columns from the source table are unwrapped into separate rows.
     #' The ungroup columns should be of array types.
     #' @param by String or list of strings denoting the names of the columns to ungroup.
     #' @return A TableHandle referencing the new table.
@@ -199,7 +206,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
+    #' Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
     #' aggregation(s) specified. See `?Aggregations` for more information.
     #' @param aggs Aggregation or list of Aggregations to perform on non-grouping columns.
     #' @param by String or list of strings denoting the names of the columns to group by.
@@ -218,7 +225,7 @@ TableHandle <- R6Class("TableHandle",
     },
     
     #' @description
-    #' Create a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
+    #' Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
     #' aggregation(s) specified. See `?Aggregations` for more information.
     #' This method applies the aggregation to all columns of the table, so it can only
     #' accept one aggregation at a time.
@@ -231,7 +238,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the first row of each group.
+    #' Creates a new table containing the first row of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     first_by = function(by = character()) {
@@ -240,7 +247,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the last row of each group.
+    #' Creates a new table containing the last row of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     last_by = function(by = character()) {
@@ -249,7 +256,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the first `num_rows` rows of each group.
+    #' Creates a new table containing the first `num_rows` rows of each group.
     #' @param num_rows Positive integer specifying the number of rows to return.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
@@ -260,7 +267,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the last `num_rows` rows of each group.
+    #' Creates a new table containing the last `num_rows` rows of each group.
     #' @param num_rows Positive integer specifying the number of rows to return.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
@@ -271,7 +278,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise minimum of each group.
+    #' Creates a new table containing the column-wise minimum of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     min_by = function(by = character()) {
@@ -280,7 +287,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise maximum of each group.
+    #' Creates a new table containing the column-wise maximum of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     max_by = function(by = character()) {
@@ -289,7 +296,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise sum of each group.
+    #' Creates a new table containing the column-wise sum of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     sum_by = function(by = character()) {
@@ -298,7 +305,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise absolute sum of each group.
+    #' Creates a new table containing the column-wise absolute sum of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     abs_sum_by = function(by = character()) {
@@ -307,7 +314,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise average of each group.
+    #' Creates a new table containing the column-wise average of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     avg_by = function(by = character()) {
@@ -316,7 +323,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise weighted average of each group.
+    #' Creates a new table containing the column-wise weighted average of each group.
     #' @param wcol String denoting the name of the column to use as weights.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
@@ -327,7 +334,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise median of each group.
+    #' Creates a new table containing the column-wise median of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     median_by = function(by = character()) {
@@ -336,7 +343,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise variance of each group.
+    #' Creates a new table containing the column-wise variance of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     var_by = function(by = character()) {
@@ -345,7 +352,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise standard deviation of each group.
+    #' Creates a new table containing the column-wise standard deviation of each group.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     std_by = function(by = character()) {
@@ -354,7 +361,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the column-wise percentile of each group.
+    #' Creates a new table containing the column-wise percentile of each group.
     #' @param percentile Numeric scalar between 0 and 1 denoting the percentile to compute.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
@@ -365,7 +372,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing the number of rows in each group.
+    #' Creates a new table containing the number of rows in each group.
     #' @param col String denoting the name of the new column to hold the counts of each group.
     #' Defaults to "n".
     #' @param by String or list of strings denoting the names of the columns to group by.
@@ -387,7 +394,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing all the rows and columns of this table, plus additional columns containing data
+    #' Creates a new table containing all the rows and columns of this table, plus additional columns containing data
     #' from the right table. For columns appended to the left table (joins), row values equal the row values from the
     #' right table where the key values in the left and right tables are equal.
     #' If there is no matching key in the right table, appended row values are NULL.
@@ -404,7 +411,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing all the rows and columns of this table, plus additional columns containing data
+    #' Creates a new table containing all the rows and columns of this table, plus additional columns containing data
     #' from the right table. For columns appended to the left table (joins), row values equal the row values from the
     #' right table where the key values in the left and right tables are equal.
     #' @param table TableHandle referencing the table to join with.
@@ -420,7 +427,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Create a new table containing all the rows and columns of this table, sorted by the specified columns.
+    #' Creates a new table containing all the rows and columns of this table, sorted by the specified columns.
     #' @param order_by String or list of strings denoting the names of the columns to sort by.
     #' @param descending Boolean or list of booleans denoting whether to sort in descending order.
     #' If a list is supplied, it must be the same length as `order_by`.
@@ -468,7 +475,7 @@ dim.TableHandle <- function(x) {
 }
 
 #' @description
-#' Merge several tables into one table on the server. The tables must have the same schema, and can
+#' Merges several tables into one table on the server. The tables must have the same schema, and can
 #' be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
 #' @param ... Arbitrary number of TableHandles or vectors of TableHandles with a uniform schema.
 #' @return A TableHandle referencing the new table.

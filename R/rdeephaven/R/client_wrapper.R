@@ -1,8 +1,18 @@
+#' @description
+#' A Client is the entry point for interacting with the Deephaven server. It is used to create new tables,
+#' import data to and from the server, and run scripts on the server.
 #' @export
 Client <- R6Class("Client",
   cloneable = FALSE,
   public = list(
     .internal_rcpp_object = NULL,
+
+    #' @description
+    #' Initializes a Client object that connects to the Deephaven server.
+    #' This method can accept either a string or an Rcpp::XPtr object, and will call
+    #' `initialize_for_target` or `initialize_for_xptr` accordingly.
+    #' @param ... String denoting the address of a running Deephaven server, formatted as `"ip:port"`,
+    #' or an Rcpp::XPtr object that points to an existing client connection.
     initialize = function(...) {
       args <- list(...)
       if (length(args) == 1) {
@@ -29,8 +39,8 @@ Client <- R6Class("Client",
     },
 
     #' @description
-    #' Initialize a Client object that connects to the Deephaven server
-    #' @param target String denoting the address of the Deephaven server, formatted as `"ip:port"`.
+    #' Initializes a Client object that connects to a Deephaven server
+    #' @param target String denoting the address of a Deephaven server, formatted as `"ip:port"`.
     #' @param auth_type String denoting the authentication type. Can be `"anonymous"`, `"basic"`,
     #' or any custom-built authenticator supported by the server, such as `"io.deephaven.authentication.psk.PskAuthenticationHandler"`.
     #' Default is `anonymous`.
@@ -171,7 +181,7 @@ Client <- R6Class("Client",
     },
 
     #' @description
-    #' Create an empty table on the server with 'size' rows and no columns.
+    #' Creates an empty table on the server with 'size' rows and no columns.
     #' @param size Non-negative integer specifying the number of rows for the new table.
     #' @return TableHandle reference to the new table.
     empty_table = function(size) {
@@ -180,7 +190,7 @@ Client <- R6Class("Client",
     },
 
     #' @description
-    #' Create a ticking table on the server.
+    #' Creates a ticking table on the server.
     #' @param period ISO-8601-formatted string specifying the update frequency of the new table.
     #' @param start_time Optional ISO-8601-formatted string specifying the start time of the table.
     #' Defaults to now.
@@ -192,7 +202,7 @@ Client <- R6Class("Client",
     },
 
     #' @description
-    #' Open a table named `name` from the server if it exists.
+    #' Opens a table named `name` from the server if it exists.
     #' @param name String denoting the name of the table to open from the server.
     #' @return TableHandle reference to the requested table.
     open_table = function(name) {
@@ -204,7 +214,7 @@ Client <- R6Class("Client",
     },
 
     #' @description
-    #' Import a new table to the Deephaven server. Note that this new table is not automatically bound to
+    #' Imports a new table to the Deephaven server. Note that this new table is not automatically bound to
     #' a variable name on the server. See `?TableHandle` for more information.
     #' @param table_object R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow RecordBatchReader
     #' containing the data to import to the server.
@@ -225,13 +235,18 @@ Client <- R6Class("Client",
         stop(paste0("'table_object' must be a single data frame, tibble, arrow table, or record batch reader. Got an object of class ", table_object_class[[1]], "."))
       }
     },
+
+    #' @description
+    #' Uses an existing ticket to create a new table on the server.
+    #' @param ticket String denoting the ticket to use to create the new table.
+    #' @return TableHandle reference to the new table.
     ticket_to_table = function(ticket) {
       verify_string("ticket", ticket, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$make_table_handle_from_ticket(ticket)))
     },
 
     #' @description
-    #' Run a script on the server. The script must be in the language that the server console was started with.
+    #' Runs a script on the server. The script must be in the language that the server console was started with.
     #' @param script String containing the code to be executed on the server.
     run_script = function(script) {
       verify_string("script", script, TRUE)
@@ -239,7 +254,7 @@ Client <- R6Class("Client",
     },
 
     #' @description
-    #' Close the client connection. After this method is called, any further server calls will
+    #' Closes the client connection. After this method is called, any further server calls will
     #' be undefined and will likely result in an error.
     close = function() {
       self$.internal_rcpp_object$close()

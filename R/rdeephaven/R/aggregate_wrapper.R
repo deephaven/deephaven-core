@@ -1,3 +1,6 @@
+#' @description
+#' An Aggregation represents an aggregation operation that can be passed to `agg_by()` or `agg_all_by()`.
+#' Note that Aggregations should not be instantiated directly by user code, but rather by provided agg_* functions.
 Aggregation <- R6Class("Aggregation",
   cloneable = FALSE,
   public = list(
@@ -16,10 +19,9 @@ Aggregation <- R6Class("Aggregation",
 ### All of the functions below return an instance of the above class
 
 #' @description
-#' Create a First aggregation that computes the group-wise first value
-#' of each column in `cols`, for each aggregation group.
+#' Creates a First aggregation that computes the first value of each column in `cols` for each aggregation group.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
-#' Default is to use all non-grouping columns, which is only valid in the `agg_all_by()` operation.
+#' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
 #' @export
 agg_first <- function(cols = character()) {
@@ -28,10 +30,9 @@ agg_first <- function(cols = character()) {
 }
 
 #' @description
-#' Create a Last aggregation that computes the group-wise last value
-#' of each column in `cols`, for each aggregation group.
+#' Creates a Last aggregation that computes the last value of each column in `cols` for each aggregation group.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
-#' Default is to use all non-grouping columns, which is only valid in the `agg_all_by()` operation.
+#' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
 #' @export
 agg_last <- function(cols = character()) {
@@ -40,10 +41,9 @@ agg_last <- function(cols = character()) {
 }
 
 #' @description
-#' Create a Minimum aggregation that computes the group-wise minimum
-#' of each column in `cols`, for each aggregation group.
+#' Creates a Minimum aggregation that computes the minimum of each column in `cols` for each aggregation group.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
-#' Default is to use all non-grouping columns, which is only valid in the `agg_all_by()` operation.
+#' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
 #' @export
 agg_min <- function(cols = character()) {
@@ -52,10 +52,9 @@ agg_min <- function(cols = character()) {
 }
 
 #' @description
-#' Create a Maximum aggregation that computes the group-wise maximum
-#' of each column in `cols`, for each aggregation group.
+#' Creates a Maximum aggregation that computes the maximum of each column in `cols` for each aggregation group.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
-#' Default is to use all non-grouping columns, which is only valid in the `agg_all_by()` operation.
+#' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
 #' @export
 agg_max <- function(cols = character()) {
@@ -64,10 +63,9 @@ agg_max <- function(cols = character()) {
 }
 
 #' @description
-#' Create a Sum aggregation that computes the group-wise sum
-#' of each column in `cols`, for each aggregation group.
+#' Creates a Sum aggregation that computes the sum of each column in `cols` for each aggregation group.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
-#' Default is to use all non-grouping columns, which is only valid in the `agg_all_by()` operation.
+#' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
 #' @export
 agg_sum <- function(cols = character()) {
@@ -76,10 +74,9 @@ agg_sum <- function(cols = character()) {
 }
 
 #' @description
-#' Create a Absolute Sum aggregation that computes the group-wise absolute sum
-#' of each column in `cols`, for each aggregation group.
+#' Creates an Absolute Sum aggregation that computes the sum of each column in `cols` for each aggregation group.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
-#' Default is to use all non-grouping columns, which is only valid in the `agg_all_by()` operation.
+#' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
 #' @export
 agg_abs_sum <- function(cols = character()) {
@@ -88,10 +85,9 @@ agg_abs_sum <- function(cols = character()) {
 }
 
 #' @description
-#' Create a Average aggregation that computes the group-wise average
-#' of each column in `cols`, for each aggregation group.
+#' Creates an Average aggregation that computes the average of each column in `cols` for each aggregation group.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
-#' Default is to use all non-grouping columns, which is only valid in the `agg_all_by()` operation.
+#' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
 #' @export
 agg_avg <- function(cols = character()) {
@@ -100,11 +96,10 @@ agg_avg <- function(cols = character()) {
 }
 
 #' @description
-#' Create a Weighted Average aggregation that computes the group-wise weighted average
-#' of each column in `cols`, for each aggregation group.
+#' Creates a Weighted Average aggregation that computes the weighted average of each column in `cols` for each aggregation group.
 #' @param wcol String denoting the column to use for weights. This must be a numeric column.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
-#' Default is to use all non-grouping columns, which is only valid in the `agg_all_by()` operation.
+#' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
 #' @export
 agg_w_avg <- function(wcol, cols = character()) {
@@ -114,10 +109,9 @@ agg_w_avg <- function(wcol, cols = character()) {
 }
 
 #' @description
-#' Create a Median aggregation that computes the group-wise median
-#' of each column in `cols`, for each aggregation group.
+#' Creates a Median aggregation that computes the median of each column in `cols` for each aggregation group.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
-#' Default is to use all non-grouping columns, which is only valid in the `agg_all_by()` operation.
+#' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
 #' @export
 agg_median <- function(cols = character()) {
@@ -126,10 +120,9 @@ agg_median <- function(cols = character()) {
 }
 
 #' @description
-#' Create a Variance aggregation that computes the group-wise variance
-#' of each column in `cols`, for each aggregation group.
+#' Creates a Variance aggregation that computes the variance of each column in `cols` for each aggregation group.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
-#' Default is to use all non-grouping columns, which is only valid in the `agg_all_by()` operation.
+#' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
 #' @export
 agg_var <- function(cols = character()) {
@@ -138,10 +131,9 @@ agg_var <- function(cols = character()) {
 }
 
 #' @description
-#' Create a Standard Deviation aggregation that computes the group-wise standard deviation
-#' of each column in `cols`, for each aggregation group.
+#' Creates a Standard Deviation aggregation that computes the standard deviation of each column in `cols`, for each aggregation group.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
-#' Default is to use all non-grouping columns, which is only valid in the `agg_all_by()` operation.
+#' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
 #' @export
 agg_std <- function(cols = character()) {
@@ -150,11 +142,10 @@ agg_std <- function(cols = character()) {
 }
 
 #' @description
-#' Create a Percentile aggregation that computes the group-wise percentile
-#' of each column in `cols`, for each aggregation group.
+#' Creates a Percentile aggregation that computes the given percentile of each column in `cols` for each aggregation group.
 #' @param percentile Numeric scalar between 0 and 1 denoting the percentile to compute.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
-#' Default is to use all non-grouping columns, which is only valid in the `agg_all_by()` operation.
+#' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
 #' @export
 agg_percentile <- function(percentile, cols = character()) {
@@ -164,7 +155,7 @@ agg_percentile <- function(percentile, cols = character()) {
 }
 
 #' @description
-#' Create a Count aggregation that counts the number of rows in each aggregation group.
+#' Creates a Count aggregation that counts the number of rows in each aggregation group.
 #' Note that this operation is not supported in `agg_all_by()`.
 #' @param col String denoting the name of the new column to hold the counts of each aggregation group.
 #' Defaults to "n".
