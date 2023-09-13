@@ -117,6 +117,7 @@ TableHandle <- R6Class("TableHandle",
     },
     agg_all_by = function(agg, by = character()) {
       verify_type("agg", agg, "Aggregation", "Deephaven Aggregation", TRUE)
+      verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$agg_all_by(agg$.internal_rcpp_object, by)))
     },
     first_by = function(by = character()) {
@@ -179,7 +180,7 @@ TableHandle <- R6Class("TableHandle",
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$percentile_by(percentile, by)))
     },
-    count_by = function(col = "n", by = character()) {
+    count_by = function(col, by = character()) {
       verify_string("col", col, TRUE)
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$count_by(col, by)))

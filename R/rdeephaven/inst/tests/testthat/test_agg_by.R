@@ -966,7 +966,7 @@ test_that("agg_by behaves nicely when given bad input", {
   expect_error(data$th1$agg_by(c(agg_first("int_col"), agg_last())),
     "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_last' at index 2 with an empty 'cols' argument.")
   
-  expect_error(data$th1$agg_by(c(agg_first("int_col"), agg_last("int_col"), agg_count(), agg_avg())),
+  expect_error(data$th1$agg_by(c(agg_first("int_col"), agg_last("int_col"), agg_count("n"), agg_avg())),
     "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_avg' at index 4 with an empty 'cols' argument.")
 
   data$client$close()

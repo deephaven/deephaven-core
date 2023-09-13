@@ -79,7 +79,7 @@ agg_percentile <- function(percentile, cols = character()) {
   return(Aggregation$new(INTERNAL_agg_percentile, "agg_percentile", percentile=percentile, cols=cols))
 }
 
-agg_count <- function(col = "n") {
+agg_count <- function(col) {
   verify_string("col", col, TRUE)
   return(Aggregation$new(INTERNAL_agg_count, "agg_count", col=col))
 }
