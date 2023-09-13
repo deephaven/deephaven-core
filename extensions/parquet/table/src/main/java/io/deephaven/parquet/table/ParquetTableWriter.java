@@ -113,8 +113,9 @@ public class ParquetTableWriter {
          * be called after {@link TransferObject#fetchData(RowSequence)}}. This method should be used when writing
          * paginated data, and should not be interleaved with calls to {@link TransferObject#transferAllToBuffer()}.
          *
-         * @return The number of fetched data entries copied into the buffer. This can be different from the number of
-         *         entries fetched for types like strings where we enforce additional page size limits while copying.
+         * @return The number of fetched data entries copied into the buffer. This can be different from the total
+         *         number of entries fetched in case of variable-width types (e.g. strings) where we enforce additional
+         *         page size limits while copying.
          */
         int transferOnePageToBuffer();
 
