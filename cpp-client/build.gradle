@@ -90,7 +90,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
                       cd /cpp-client/deephaven/build; \\
                       . /cpp-client/deps/env.sh; \\
                       cmake -DCMAKE_INSTALL_PREFIX=/cpp-client/install \\
-                        -DCMAKE_BUILD_TYPE=Debug \\
+                        -DCMAKE_BUILD_TYPE=Release \\
                         -DBUILD_SHARED_LIBS=ON \\
                         .. ; \\
                       make -j\$NCPUS install

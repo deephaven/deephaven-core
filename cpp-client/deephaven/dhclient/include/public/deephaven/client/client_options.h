@@ -27,9 +27,9 @@ public:
    */
   ClientOptions();
   /**
- * Copy constructor
- */
-  ClientOptions(const ClientOptions &other) noexcept;
+   * Copy constructor
+   */
+  ClientOptions(const ClientOptions &other);
   /**
    * Move constructor
    */
@@ -37,7 +37,7 @@ public:
   /**
    * Copy assigment operator.
    */
-  ClientOptions &operator=(const ClientOptions &other) noexcept;
+  ClientOptions &operator=(const ClientOptions &other);
   /**
    * Move assigment operator.
    */

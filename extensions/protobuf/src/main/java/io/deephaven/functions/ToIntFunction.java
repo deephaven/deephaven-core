@@ -38,7 +38,9 @@ public interface ToIntFunction<T> extends ToPrimitiveFunction<T>, java.util.func
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> ToIntFunction<T> map(Function<T, R> f, java.util.function.ToIntFunction<R> g) {
+    static <T, R> ToIntFunction<T> map(
+            Function<? super T, ? extends R> f,
+            java.util.function.ToIntFunction<? super R> g) {
         return IntFunctions.map(f, g);
     }
 
