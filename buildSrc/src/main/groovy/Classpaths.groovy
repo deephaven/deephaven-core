@@ -297,10 +297,11 @@ class Classpaths {
     static void inheritParquetHadoopConfiguration(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, 'org.apache.hadoop', 'hadoop-common', '3.3.3') {
-            it.because('Required for org.apache.hadoop.conf.Configuration')
             it.setTransitive(false)
-            // Do not take any extra dependencies of this project transitively. We can add any required additional
-            // dependencies separately, as done for woodstox, shaded-guava, etc. below.
+            // Do not take any extra dependencies of this project transitively. We just want a few classes for
+            // configuration and compression codecs. For any additional required dependencies, add them separately, as
+            // done for woodstox, shaded-guava, etc. below. Or we can replace setTransitive(false) here with more
+            // exclusions (we want to avoid pulling in netty, loggers, jetty-util, guice and asm).
         }
 
         Configuration runtimeOnly = p.configurations.getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
