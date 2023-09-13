@@ -105,15 +105,15 @@ class AvroImpl {
         }
 
         @Override
-        Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
-                Map<String, ?> configs) {
+        public Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+                                               Map<String, ?> configs) {
             return new KafkaAvroDeserializer(Objects.requireNonNull(schemaRegistryClient));
         }
 
         @Override
-        KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
-                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
-                List<ColumnDefinition<?>> columnDefinitionsOut) {
+        public KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
+                                                  SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                                                  List<ColumnDefinition<?>> columnDefinitionsOut) {
             KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.fieldPathToColumnName = new HashMap<>();
             final Schema localSchema = schema != null
@@ -126,7 +126,7 @@ class AvroImpl {
         }
 
         @Override
-        KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
+        public KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
             return GenericRecordChunkAdapter.make(
                     tableDef,
                     ci -> StreamChunkUtils.chunkTypeForColumnIndex(tableDef, ci),

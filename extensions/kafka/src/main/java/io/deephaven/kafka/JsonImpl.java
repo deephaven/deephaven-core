@@ -64,15 +64,15 @@ class JsonImpl {
         }
 
         @Override
-        Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
-                Map<String, ?> configs) {
+        public Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+                                               Map<String, ?> configs) {
             return new StringDeserializer();
         }
 
         @Override
-        KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
-                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
-                List<ColumnDefinition<?>> columnDefinitionsOut) {
+        public KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
+                                                  SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                                                  List<ColumnDefinition<?>> columnDefinitionsOut) {
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.toObjectChunkMapper = jsonToObjectChunkMapper(objectMapper);
             columnDefinitionsOut.addAll(Arrays.asList(columnDefinitions));
@@ -98,7 +98,7 @@ class JsonImpl {
         }
 
         @Override
-        KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
+        public KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
             return JsonNodeChunkAdapter.make(
                     tableDef,
                     ci -> StreamChunkUtils.chunkTypeForColumnIndex(tableDef, ci),

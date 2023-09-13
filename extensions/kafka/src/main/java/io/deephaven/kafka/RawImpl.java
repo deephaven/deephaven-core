@@ -55,15 +55,15 @@ class RawImpl {
         }
 
         @Override
-        Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
-                Map<String, ?> configs) {
+        public Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+                                               Map<String, ?> configs) {
             return supplier.get();
         }
 
         @Override
-        KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
-                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
-                List<ColumnDefinition<?>> columnDefinitionsOut) {
+        public KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
+                                                  SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                                                  List<ColumnDefinition<?>> columnDefinitionsOut) {
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.simpleColumnIndex = nextColumnIndexMut.getAndIncrement();
             columnDefinitionsOut.add(cd);
@@ -71,7 +71,7 @@ class RawImpl {
         }
 
         @Override
-        KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
+        public KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
             return null;
         }
     }
