@@ -8,7 +8,7 @@ import io.deephaven.client.impl.ServerObject.Fetchable;
 /**
  * A {@value TYPE} object.
  *
- * @see <a href="https://github.com/deephaven/deephaven-core/issues/4487>deephaven-core#4487</a>
+ * @see <a href="https://github.com/deephaven/deephaven-core/issues/4487">deephaven-core#4487</a>
  */
 public final class HierarchicalTableObject extends ServerObjectBase
         implements ServerObject, Fetchable {
