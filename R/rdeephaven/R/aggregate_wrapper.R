@@ -6,7 +6,9 @@ Aggregation <- R6Class("Aggregation",
   public = list(
     .internal_rcpp_object = NULL,
     .internal_num_cols = NULL,
-    initialize = function(aggregation, ...) {
+    .internal_agg_name = NULL,
+    initialize = function(aggregation, agg_name, ...) {
+      self$.internal_agg_name <- agg_name
       args <- list(...)
       if (any(names(args) == "cols")) {
         self$.internal_num_cols <- length(args$cols)
@@ -26,7 +28,7 @@ Aggregation <- R6Class("Aggregation",
 #' @export
 agg_first <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(Aggregation$new(INTERNAL_agg_first, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_first, "agg_first", cols=cols))
 }
 
 #' @description
@@ -37,7 +39,7 @@ agg_first <- function(cols = character()) {
 #' @export
 agg_last <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(Aggregation$new(INTERNAL_agg_last, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_last, "agg_last", cols=cols))
 }
 
 #' @description
@@ -48,7 +50,7 @@ agg_last <- function(cols = character()) {
 #' @export
 agg_min <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(Aggregation$new(INTERNAL_agg_min, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_min, "agg_min", cols=cols))
 }
 
 #' @description
@@ -59,7 +61,7 @@ agg_min <- function(cols = character()) {
 #' @export
 agg_max <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(Aggregation$new(INTERNAL_agg_max, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_max, "agg_max", cols=cols))
 }
 
 #' @description
@@ -70,7 +72,7 @@ agg_max <- function(cols = character()) {
 #' @export
 agg_sum <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(Aggregation$new(INTERNAL_agg_sum, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_sum, "agg_sum", cols=cols))
 }
 
 #' @description
@@ -81,7 +83,7 @@ agg_sum <- function(cols = character()) {
 #' @export
 agg_abs_sum <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(Aggregation$new(INTERNAL_agg_abs_sum, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_abs_sum, "agg_abs_sum", cols=cols))
 }
 
 #' @description
@@ -92,7 +94,7 @@ agg_abs_sum <- function(cols = character()) {
 #' @export
 agg_avg <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(Aggregation$new(INTERNAL_agg_avg, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_avg, "agg_avg", cols=cols))
 }
 
 #' @description
@@ -105,7 +107,7 @@ agg_avg <- function(cols = character()) {
 agg_w_avg <- function(wcol, cols = character()) {
   verify_string("wcol", wcol, TRUE)
   verify_string("cols", cols, FALSE)
-  return(Aggregation$new(INTERNAL_agg_w_avg, wcol=wcol, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_w_avg, "agg_w_avg", wcol=wcol, cols=cols))
 }
 
 #' @description
@@ -116,7 +118,7 @@ agg_w_avg <- function(wcol, cols = character()) {
 #' @export
 agg_median <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(Aggregation$new(INTERNAL_agg_median, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_median, "agg_median", cols=cols))
 }
 
 #' @description
@@ -127,7 +129,7 @@ agg_median <- function(cols = character()) {
 #' @export
 agg_var <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(Aggregation$new(INTERNAL_agg_var, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_var, "agg_var", cols=cols))
 }
 
 #' @description
@@ -138,7 +140,7 @@ agg_var <- function(cols = character()) {
 #' @export
 agg_std <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(Aggregation$new(INTERNAL_agg_std, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_std, "agg_std", cols=cols))
 }
 
 #' @description
@@ -151,7 +153,7 @@ agg_std <- function(cols = character()) {
 agg_percentile <- function(percentile, cols = character()) {
   verify_in_unit_interval("percentile", percentile, TRUE)
   verify_string("cols", cols, FALSE)
-  return(Aggregation$new(INTERNAL_agg_percentile, percentile=percentile, cols=cols))
+  return(Aggregation$new(INTERNAL_agg_percentile, "agg_percentile", percentile=percentile, cols=cols))
 }
 
 #' @description
@@ -163,5 +165,5 @@ agg_percentile <- function(percentile, cols = character()) {
 #' @export
 agg_count <- function(col = "n") {
   verify_string("col", col, TRUE)
-  return(Aggregation$new(INTERNAL_agg_count, col=col))
+  return(Aggregation$new(INTERNAL_agg_count, "agg_count", col=col))
 }

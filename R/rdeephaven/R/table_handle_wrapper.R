@@ -17,14 +17,14 @@ TableHandle <- R6Class("TableHandle",
       }
       self$.internal_rcpp_object <- table_handle
     },
-    
+
     #' @description
     #' Determines whether the table referenced by this TableHandle is static or not.
     #' @return TRUE if the table is static, or FALSE if the table is ticking.
     is_static = function() {
       return(self$.internal_rcpp_object$is_static())
     },
-    
+
     #' @description
     #' Binds the table referenced by this TableHandle to a variable on the server, so that it can be referenced by that name.
     #' @param name Name for this table on the server.
@@ -52,7 +52,7 @@ TableHandle <- R6Class("TableHandle",
       verify_positive_int("n", n, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$tail(n)))
     },
-    
+
     #' @description
     #' Gets the number of rows in the table referenced by this TableHandle.
     #' @return The number of rows in the table.
@@ -215,15 +215,15 @@ TableHandle <- R6Class("TableHandle",
       verify_type("aggs", aggs, "Aggregation", "Deephaven Aggregation", FALSE)
       verify_string("by", by, FALSE)
       aggs <- c(aggs)
-      for (agg in aggs) {
-        if (!is.null(agg$.internal_num_cols) && agg$.internal_num_cols == 0) {
-          stop("Aggregations with no columns cannot be used in 'agg_by'. Please provide at least one column to the 'cols' argument of each aggregator.")
+      for (i in 1:length(aggs)) {
+        if (!is.null(aggs[[i]]$.internal_num_cols) && aggs[[i]]$.internal_num_cols == 0) {
+          stop(paste0("Aggregations with no columns cannot be used in 'agg_by'. Got '", aggs[[i]]$.internal_agg_name, "' at index ", i, " with an empty 'cols' argument."))
         }
       }
       unwrapped_aggs <- lapply(aggs, strip_r6_wrapping)
       return(TableHandle$new(self$.internal_rcpp_object$agg_by(unwrapped_aggs, by)))
     },
-    
+
     #' @description
     #' Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
     #' aggregation(s) specified. See `?Aggregations` for more information.
@@ -377,7 +377,7 @@ TableHandle <- R6Class("TableHandle",
     #' Defaults to "n".
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
-    count_by = function(col = "n", by = character()) {
+    count_by = function(col, by = character()) {
       verify_string("col", col, TRUE)
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$count_by(col, by)))
