@@ -1155,10 +1155,8 @@ public class ParquetTableWriter {
 
         @Override
         final public int transferAllToBuffer() {
-            if (!hasMoreDataToBuffer()) {
-                return 0;
-            }
-            assert (currentChunkIdx == 0 && bufferCount == 0);
+            // Assuming this method is called after fetchData() and that the buffer is empty.
+            assert (chunk != null && currentChunkIdx == 0 && bufferCount == 0);
             int chunkSize = chunk.size();
             while (currentChunkIdx < chunkSize) {
                 final T value = chunk.get(currentChunkIdx++);
