@@ -446,7 +446,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private int maximumDictionarySize = defaultMaximumDictionarySize;
         private boolean isLegacyParquet;
         @VisibleForTesting
-        int targetPageSize = defaultTargetPageSize;
+        protected int targetPageSize = defaultTargetPageSize;
         private boolean isRefreshing = DEFAULT_IS_REFRESHING;
 
         public Builder() {}

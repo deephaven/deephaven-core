@@ -101,8 +101,8 @@ public class ParquetTableWriter {
          * {@link TransferObject#getBuffer()}. This method should only be called after
          * {@link TransferObject#fetchData(RowSequence)}}. This method should be used when writing unpaginated data, and
          * should not be interleaved with calls to {@link TransferObject#transferOnePageToBuffer()}. Note that this
-         * method can lead to out-of-memory error for variable-width types (e.g. strings) if the fetched data is too
-         * long.
+         * method can lead to out-of-memory error for variable-width types (e.g. strings) if the fetched data is too big
+         * to fit in the available heap.
          *
          * @return The number of fetched data entries copied into the buffer.
          */
@@ -654,8 +654,10 @@ public class ParquetTableWriter {
                                 .asIntChunk();
                         lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                         repeatCount.limit(lenChunk.size());
-                        // Write all the fetched vector data into a single Parquet page.
-                        // This can lead to out-of-memory errors for variable-width types if the entries are very long.
+                        // TODO(deephaven-core:DH-4495): Add support for paginating vector data
+                        // We do not paginate vector data, because our parquet reading code expects all elements from a
+                        // single array or a vector to be on the same page (refer classes ToVectorPage and ToArrayPage
+                        // for more details).
                         int numValuesBuffered = transferObject.transferAllToBuffer();
                         columnWriter.addVectorPage(transferObject.getBuffer(), repeatCount, numValuesBuffered,
                                 statistics);
