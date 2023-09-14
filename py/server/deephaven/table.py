@@ -507,7 +507,6 @@ class Table(JObjectWrapper):
     j_object_type = _J_Table
 
     def __init__(self, j_table: jpy.JType):
-        super().__init__(j_table)
         self.j_table = jpy.cast(j_table, self.j_object_type)
         if self.j_table is None:
             raise DHError("j_table type is not io.deephaven.engine.table.Table")

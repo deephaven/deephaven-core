@@ -66,7 +66,6 @@ class TableUpdate(JObjectWrapper):
     j_object_type = _JTableUpdate
 
     def __init__(self, table: Table, j_table_update: jpy.JType):
-        super().__init__(j_table_update)
         self.table = table
         self.j_table_update = j_table_update
 
@@ -335,9 +334,9 @@ def listen(t: Table, listener: Union[Callable, TableListener], description: str 
     return table_listener_handle
 
 
-class TableListenerHandle:#(JObjectWrapper):
+class TableListenerHandle(JObjectWrapper):
     """A handle to manage a table listener's lifecycle."""
-    # j_object_type = _JPythonReplayListenerAdapter
+    j_object_type = _JPythonReplayListenerAdapter
 
     def __init__(self, t: Table, listener: Union[Callable, TableListener], description: str = None):
         """Creates a new table listener handle.
@@ -370,7 +369,6 @@ class TableListenerHandle:#(JObjectWrapper):
         else:
             raise ValueError("listener is neither callable nor TableListener object")
         self.listener = _JPythonReplayListenerAdapter(description, t.j_table, False, listener_wrapped)
-        # super().__init__(self.listener)
 
         self.started = False
 
@@ -411,6 +409,6 @@ class TableListenerHandle:#(JObjectWrapper):
         self.t.j_table.removeUpdateListener(self.listener)
         self.started = False
 
-    # @property
-    # def j_object(self) -> jpy.JType:
-    #     return self.listener
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.listener

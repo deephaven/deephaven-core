@@ -4,7 +4,6 @@
 
 """This module gives the users a finer degree of control over when to clean up unreferenced nodes in the query update
 graph instead of solely relying on garbage collection."""
-import contextlib
 
 import jpy
 
@@ -50,7 +49,7 @@ class LivenessScopeFrame:
     def __exit__(self, exc_type, exc_val, exc_tb):
         _pop(self.scope.j_scope)
         if self.close_after_pop:
-            self.scope.close()
+            self.scope.release()
 
 
 class LivenessScope(JObjectWrapper):
@@ -62,10 +61,11 @@ class LivenessScope(JObjectWrapper):
     j_object_type = _JLivenessScope
 
     def __init__(self, j_scope: jpy.JType):
-        super().__init__(j_scope)
         self.j_scope = j_scope
 
     def __enter__(self):
+        warn('Instead of passing liveness_scope() to with, call open() on it first',
+             DeprecationWarning, stacklevel=2)
         _push(self.j_scope)
         return self
 
@@ -91,11 +91,12 @@ class LivenessScope(JObjectWrapper):
         Raises:
             DHError
         """
-        warn('This function is deprecated, prefer release()', DeprecationWarning, stacklevel=2)
+        warn('This function is deprecated, prefer release(). Use cases that rely on this are likely to now fail.',
+             DeprecationWarning, stacklevel=2)
         _pop(self.j_scope)
         self.release()
 
-    def open(self, close_after_block: bool = False) -> LivenessScopeFrame:
+    def open(self, close_after_block: bool = True) -> LivenessScopeFrame:
         """Uses this scope for the duration of the `with` block. The scope will not be
         closed when the block ends."""
         return LivenessScopeFrame(self, close_after_block)
@@ -117,19 +118,40 @@ class LivenessScope(JObjectWrapper):
         try:
             _JLivenessScopeStack.pop(self.j_scope)
             _JLivenessScopeStack.peek().manage(_unwrap_to_liveness_referent(referent))
-            _JLivenessScopeStack.push(self.j_scope)
         except Exception as e:
             raise DHError(e, message="failed to preserve a wrapped object in this LivenessScope.")
+        finally:
+            _JLivenessScopeStack.push(self.j_scope)
 
     def manage(self, referent: Union[JObjectWrapper, jpy.JType]):
-        """Explicitly manage the given java object in this scope. Must only be passed a Java LivenessReferent, or
-        a Python wrapper around a LivenessReferent"""
+        """
+        Explicitly manage the given java object in this scope. Must only be passed a Java LivenessReferent, or
+        a Python wrapper around a LivenessReferent
+        """
         self.j_scope.manage(_unwrap_to_liveness_referent(referent))
 
     def unmanage(self, referent: Union[JObjectWrapper, jpy.JType]):
-        """Explicitly unmanage the given java object from this scope. Must only be passed a Java LivenessReferent, or
-        a Python wrapper around a LivenessReferent"""
+        """
+        Explicitly unmanage the given java object from this scope. Must only be passed a Java LivenessReferent, or
+        a Python wrapper around a LivenessReferent
+        """
         self.j_scope.unmanage(_unwrap_to_liveness_referent(referent))
+
+
+def is_liveness_referent(referent: Union[JObjectWrapper, jpy.JType]) -> bool:
+    """
+    Returns True if the provided object is a LivenessReferent, and so can be managed by a LivenessScope.
+    Args:
+        referent: the object that maybe a LivenessReferent
+
+    Returns:
+        True if the object is a LivenessReferent, False otherwise.
+    """
+    if isinstance(referent, jpy.JType) and _JLivenessReferent.jclass.isInstance(referent):
+        return True
+    if isinstance(referent, JObjectWrapper):
+        return is_liveness_referent(referent.j_object)
+    return False
 
 
 def liveness_scope() -> LivenessScope:

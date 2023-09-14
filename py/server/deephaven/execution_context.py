@@ -42,7 +42,6 @@ class ExecutionContext(JObjectWrapper, ContextDecorator):
         return UpdateGraph(j_update_graph=self.j_exec_ctx.getUpdateGraph())
 
     def __init__(self, j_exec_ctx):
-        super().__init__(j_exec_ctx)
         self.j_exec_ctx = j_exec_ctx
 
     def __enter__(self):
