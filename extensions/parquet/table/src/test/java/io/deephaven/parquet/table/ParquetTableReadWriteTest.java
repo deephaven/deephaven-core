@@ -859,27 +859,50 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void overflowingStringsTest() {
+        // Test the behavior of writing parquet files if entries exceed the page size limit
         Collection<String> columns = new ArrayList<>(Arrays.asList(
                 "someStringColumn = `This is row ` + i%10"));
+        final long numRows = 21L;
+        ColumnChunkMetaData columnMetadata = overflowingStringsTestHelper(columns, numRows);
+        String metadataStr = columnMetadata.toString();
+        assertTrue(metadataStr.contains("someStringColumn") && metadataStr.contains("PLAIN")
+                && !metadataStr.contains("RLE_DICTIONARY"));
+
+        // We forced the page size to be 64. Binary.fromString("This is row 0").length() is 13. So we exceed page size
+        // on hitting 5 strings and we have 21 total rows.
+        // Therefore, we should have total 6 pages containing 4, 4, 4, 4, 4, 1 rows respectively.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 6);
+
+        columns = new ArrayList<>(Arrays.asList("someStringColumn =  ii % 2 == 0 ? Long.toString(ii) : " +
+                "`This is a very long string which should exceed the page size limit ` + ii"));
+        columnMetadata = overflowingStringsTestHelper(columns, numRows);
+        // We will have 21 pages each containing 1 row.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 21);
+
+        // Table with null rows
+        columns = new ArrayList<>(Arrays.asList("someStringColumn =  ii % 2 == 0 ? null : " +
+                "`This is a very long string which should exceed the page size limit ` + ii"));
+        columnMetadata = overflowingStringsTestHelper(columns, numRows);
+        // We will have 11 pages containing 3, 2,.., 2 rows.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 10);
+
+    }
+
+    private static ColumnChunkMetaData overflowingStringsTestHelper(final Collection<String> columns,
+            final long numRows) {
         final ParquetInstructions writeInstructions = new ParquetInstructionsTestBuilder()
                 .forceSetTargetPageSize(64) // Force a small page size to cause splitting across pages
                 .setMaximumDictionarySize(50) // Force "someStringColumn" to use non-dictionary encoding
                 .build();
-        final int numRows = 21;
-        final Table stringTable = TableTools.emptyTable(numRows).select(Selectable.from(columns));
+        Table stringTable = TableTools.emptyTable(numRows).select(Selectable.from(columns));
         final File dest = new File(rootFile + File.separator + "overflowingStringsTest.parquet");
         ParquetTools.writeTable(stringTable, dest, writeInstructions);
         Table fromDisk = ParquetTools.readTable(dest).select();
         assertTableEquals(stringTable, fromDisk);
 
-        final ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
-        final ColumnChunkMetaData columnMetadata = metadata.getBlocks().get(0).getColumns().get(0);
-        final String metadataStr = columnMetadata.toString();
-        assertTrue(metadataStr.contains("someStringColumn") && metadataStr.contains("PLAIN")
-                && !metadataStr.contains("RLE_DICTIONARY"));
-        // We forced the page size to be 64. Binary.fromString("This is row 0").length() is 13. So we exceed page size
-        // on hitting 5 strings. Therefore, we should have total 5 pages containing 5, 5, 5, 5, 1 rows respectively.
-        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 5);
+        ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+        ColumnChunkMetaData columnMetadata = metadata.getBlocks().get(0).getColumns().get(0);
+        return columnMetadata;
     }
 
     @Test

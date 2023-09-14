@@ -48,6 +48,7 @@ import org.apache.parquet.column.statistics.IntStatistics;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -101,7 +102,7 @@ public class ParquetTableWriter {
          * {@link TransferObject#fetchData(RowSequence)}}. This method should be used when writing unpaginated data, and
          * should not be interleaved with calls to {@link TransferObject#transferOnePageToBuffer()}. Note that this
          * method can lead to out-of-memory error for variable-width types (e.g. strings) if the fetched data is too
-         * big.
+         * long.
          *
          * @return The number of fetched data entries copied into the buffer.
          */
@@ -901,7 +902,7 @@ public class ParquetTableWriter {
         return new CodecTransfer<>(columnSource, codec, maxValuesPerPage, instructions.getTargetPageSize());
     }
 
-    static class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer>
+    private static class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer>
             implements TransferObject<B> {
         private final C chunk;
         private final B buffer;
@@ -958,56 +959,56 @@ public class ParquetTableWriter {
         }
     }
 
-    final static class IntTransfer extends PrimitiveTransfer<WritableIntChunk<Values>, IntBuffer> {
+    private static final class IntTransfer extends PrimitiveTransfer<WritableIntChunk<Values>, IntBuffer> {
         /**
          * Check docs in {@link PrimitiveTransfer} for more details.
          */
         IntTransfer(ColumnSource<?> columnSource, WritableIntChunk<Values> chunk, IntBuffer buffer, int targetSize) {
             super(columnSource, chunk, buffer, targetSize);
-            assert (Arrays.equals(chunk.array(), buffer.array()));
+            Assert.eq(chunk.array(), "chunk.array()", buffer.array(), "buffer.array()");
         }
     }
 
-    final static class LongTransfer extends PrimitiveTransfer<WritableLongChunk<Values>, LongBuffer> {
+    private static final class LongTransfer extends PrimitiveTransfer<WritableLongChunk<Values>, LongBuffer> {
         /**
          * Check docs in {@link PrimitiveTransfer} for more details.
          */
         LongTransfer(ColumnSource<?> columnSource, WritableLongChunk<Values> chunk, LongBuffer buffer, int targetSize) {
             super(columnSource, chunk, buffer, targetSize);
-            assert (Arrays.equals(chunk.array(), buffer.array()));
+            Assert.eq(chunk.array(), "chunk.array()", buffer.array(), "buffer.array()");
         }
     }
 
-    final static class DoubleTransfer extends PrimitiveTransfer<WritableDoubleChunk<Values>, DoubleBuffer> {
+    private static final class DoubleTransfer extends PrimitiveTransfer<WritableDoubleChunk<Values>, DoubleBuffer> {
         /**
          * Check docs in {@link PrimitiveTransfer} for more details.
          */
         DoubleTransfer(ColumnSource<?> columnSource, WritableDoubleChunk<Values> chunk, DoubleBuffer buffer,
                 int targetSize) {
             super(columnSource, chunk, buffer, targetSize);
-            assert (Arrays.equals(chunk.array(), buffer.array()));
+            Assert.eq(chunk.array(), "chunk.array()", buffer.array(), "buffer.array()");
         }
     }
 
-    final static class FloatTransfer extends PrimitiveTransfer<WritableFloatChunk<Values>, FloatBuffer> {
+    private static final class FloatTransfer extends PrimitiveTransfer<WritableFloatChunk<Values>, FloatBuffer> {
         /**
          * Check docs in {@link PrimitiveTransfer} for more details.
          */
         FloatTransfer(ColumnSource<?> columnSource, WritableFloatChunk<Values> chunk, FloatBuffer buffer,
                 int targetSize) {
             super(columnSource, chunk, buffer, targetSize);
-            assert (Arrays.equals(chunk.array(), buffer.array()));
+            Assert.eq(chunk.array(), "chunk.array()", buffer.array(), "buffer.array()");
         }
     }
 
-    final static class BooleanTransfer extends PrimitiveTransfer<WritableByteChunk<Values>, ByteBuffer> {
+    private static final class BooleanTransfer extends PrimitiveTransfer<WritableByteChunk<Values>, ByteBuffer> {
         /**
          * Check docs in {@link PrimitiveTransfer} for more details.
          */
         BooleanTransfer(ColumnSource<?> columnSource, WritableByteChunk<Values> chunk, ByteBuffer buffer,
                 int targetSize) {
             super(columnSource, chunk, buffer, targetSize);
-            assert (Arrays.equals(chunk.array(), buffer.array()));
+            Assert.eq(chunk.array(), "chunk.array()", buffer.array(), "buffer.array()");
         }
     }
 
@@ -1015,7 +1016,7 @@ public class ParquetTableWriter {
      * Used as a base class of transfer objects for types like shorts which are castable to Ints without losing any
      * precision and are therefore stored using IntBuffer.
      */
-    abstract static class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>>
+    private abstract static class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>>
             implements TransferObject<IntBuffer> {
         protected T chunk;
         protected final IntBuffer buffer;
@@ -1076,7 +1077,7 @@ public class ParquetTableWriter {
         }
     }
 
-    final static class ShortTransfer extends IntCastablePrimitiveTransfer<ShortChunk<Values>> {
+    private static final class ShortTransfer extends IntCastablePrimitiveTransfer<ShortChunk<Values>> {
         ShortTransfer(ColumnSource<?> columnSource, int targetSize) {
             super(columnSource, targetSize);
         }
@@ -1089,7 +1090,7 @@ public class ParquetTableWriter {
         }
     }
 
-    final static class CharTransfer extends IntCastablePrimitiveTransfer<CharChunk<Values>> {
+    private static final class CharTransfer extends IntCastablePrimitiveTransfer<CharChunk<Values>> {
         CharTransfer(ColumnSource<?> columnSource, int targetSize) {
             super(columnSource, targetSize);
         }
@@ -1102,7 +1103,7 @@ public class ParquetTableWriter {
         }
     }
 
-    final static class ByteTransfer extends IntCastablePrimitiveTransfer<ByteChunk<Values>> {
+    private static final class ByteTransfer extends IntCastablePrimitiveTransfer<ByteChunk<Values>> {
         ByteTransfer(ColumnSource<?> columnSource, int targetSize) {
             super(columnSource, targetSize);
         }
@@ -1119,14 +1120,14 @@ public class ParquetTableWriter {
      * Used as a base class of transfer objects for types like strings or big integers that need specialized encoding,
      * and thus we need to enforce page size limits while writing.
      */
-    abstract static class EncodedTransfer<T> implements TransferObject<Binary[]> {
+    private abstract static class EncodedTransfer<T> implements TransferObject<Binary[]> {
         private final ChunkSource.GetContext context;
         private ObjectChunk<T, Values> chunk;
         private Binary[] buffer;
         /**
          * Number of objects buffered
          */
-        private int bufferCount;
+        private int bufferedDataCount;
 
         private final ColumnSource<?> columnSource;
 
@@ -1140,12 +1141,19 @@ public class ParquetTableWriter {
          */
         private int currentChunkIdx;
 
+        /**
+         * Encoded value which takes us beyond the page size limit. We cache it to avoid re-encoding.
+         */
+        @Nullable
+        private Binary cachedEncodedValue;
+
         EncodedTransfer(ColumnSource<?> columnSource, int maxValuesPerPage, int targetPageSize) {
             this.columnSource = columnSource;
             this.buffer = new Binary[maxValuesPerPage];
             context = this.columnSource.makeGetContext(maxValuesPerPage);
             this.targetPageSize = targetPageSize;
-            bufferCount = 0;
+            bufferedDataCount = 0;
+            cachedEncodedValue = null;
         }
 
         @Override
@@ -1156,13 +1164,16 @@ public class ParquetTableWriter {
         @Override
         final public int transferAllToBuffer() {
             // Assuming this method is called after fetchData() and that the buffer is empty.
-            assert (chunk != null && currentChunkIdx == 0 && bufferCount == 0);
+            Assert.neqNull(chunk, "chunk");
+            Assert.eqZero(currentChunkIdx, "currentChunkIdx");
+            Assert.eqZero(bufferedDataCount, "bufferedDataCount");
             int chunkSize = chunk.size();
             while (currentChunkIdx < chunkSize) {
                 final T value = chunk.get(currentChunkIdx++);
-                buffer[bufferCount++] = value == null ? null : encodeToBinary(value);
+                buffer[bufferedDataCount++] = value == null ? null : encodeToBinary(value);
             }
-            return bufferCount;
+            chunk = null;
+            return bufferedDataCount;
         }
 
         @Override
@@ -1170,29 +1181,41 @@ public class ParquetTableWriter {
             if (!hasMoreDataToBuffer()) {
                 return 0;
             }
-            if (bufferCount != 0) {
+            if (bufferedDataCount != 0) {
                 // Clear any old buffered data
-                Arrays.fill(buffer, 0, bufferCount, null);
-                bufferCount = 0;
+                Arrays.fill(buffer, 0, bufferedDataCount, null);
+                bufferedDataCount = 0;
             }
-            int size = 0;
-            while (currentChunkIdx < chunk.size()) {
-                final T value = chunk.get(currentChunkIdx++);
+            int bufferedDataSize = 0;
+            int chunkSize = chunk.size();
+            while (currentChunkIdx < chunkSize) {
+                final T value = chunk.get(currentChunkIdx);
                 if (value == null) {
-                    buffer[bufferCount++] = null;
+                    currentChunkIdx++;
+                    buffer[bufferedDataCount++] = null;
                     continue;
                 }
-                Binary binaryVal = encodeToBinary(value);
-                buffer[bufferCount++] = binaryVal;
-                size += binaryVal.length();
-                if (size >= targetPageSize) {
+                Binary binaryEncodedValue;
+                if (cachedEncodedValue == null) {
+                    binaryEncodedValue = encodeToBinary(value);
+                } else {
+                    binaryEncodedValue = cachedEncodedValue;
+                    cachedEncodedValue = null;
+                }
+
+                // Always buffer the first element, even if it exceeds the target page size.
+                if (bufferedDataSize != 0 && bufferedDataSize + binaryEncodedValue.length() > targetPageSize) {
+                    cachedEncodedValue = binaryEncodedValue;
                     break;
                 }
+                currentChunkIdx++;
+                buffer[bufferedDataCount++] = binaryEncodedValue;
+                bufferedDataSize += binaryEncodedValue.length();
             }
             if (currentChunkIdx == chunk.size()) {
                 chunk = null;
             }
-            return bufferCount;
+            return bufferedDataCount;
         }
 
         abstract Binary encodeToBinary(T value);
@@ -1207,7 +1230,7 @@ public class ParquetTableWriter {
             // noinspection unchecked
             chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
             currentChunkIdx = 0;
-            bufferCount = 0;
+            bufferedDataCount = 0;
         }
 
         @Override
@@ -1216,7 +1239,7 @@ public class ParquetTableWriter {
         }
     }
 
-    final static class StringTransfer extends EncodedTransfer<String> {
+    private static final class StringTransfer extends EncodedTransfer<String> {
         StringTransfer(ColumnSource<?> columnSource, int maxValuesPerPage, int targetPageSize) {
             super(columnSource, maxValuesPerPage, targetPageSize);
         }
@@ -1227,7 +1250,7 @@ public class ParquetTableWriter {
         }
     }
 
-    final static class CodecTransfer<T> extends EncodedTransfer<T> {
+    private static final class CodecTransfer<T> extends EncodedTransfer<T> {
         private final ObjectCodec<? super T> codec;
 
         CodecTransfer(ColumnSource<?> columnSource, ObjectCodec<? super T> codec, int maxValuesPerPage,
