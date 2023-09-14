@@ -76,7 +76,7 @@ agg_sum <- function(cols = character()) {
 }
 
 #' @description
-#' Creates an Absolute Sum aggregation that computes the sum of each column in `cols` for each aggregation group.
+#' Creates an Absolute Sum aggregation that computes the absolute sum of each column in `cols` for each aggregation group.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
@@ -160,10 +160,9 @@ agg_percentile <- function(percentile, cols = character()) {
 #' Creates a Count aggregation that counts the number of rows in each aggregation group.
 #' Note that this operation is not supported in `agg_all_by()`.
 #' @param col String denoting the name of the new column to hold the counts of each aggregation group.
-#' Defaults to "n".
 #' @return Aggregation function to be used in `agg_by()`.
 #' @export
-agg_count <- function(col = "n") {
+agg_count <- function(col) {
   verify_string("col", col, TRUE)
   return(Aggregation$new(INTERNAL_agg_count, "agg_count", col=col))
 }

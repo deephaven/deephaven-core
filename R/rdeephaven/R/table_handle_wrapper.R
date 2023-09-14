@@ -374,7 +374,6 @@ TableHandle <- R6Class("TableHandle",
     #' @description
     #' Creates a new table containing the number of rows in each group.
     #' @param col String denoting the name of the new column to hold the counts of each group.
-    #' Defaults to "n".
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     count_by = function(col, by = character()) {
