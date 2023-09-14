@@ -6,6 +6,7 @@ package io.deephaven.parquet.table;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.function.ByteConsumer;
@@ -87,6 +88,9 @@ public class ParquetTableReadWriteTest {
         }
         // noinspection ResultOfMethodCallIgnored
         rootFile.mkdirs();
+
+        // Allow a small page size for testing
+        Configuration.getInstance().setProperty("Parquet.minTargetPageSize", "64");
     }
 
     @After
@@ -849,14 +853,6 @@ public class ParquetTableReadWriteTest {
         assertTrue(thirdColumnMetadata.contains("someIntColumn") && !thirdColumnMetadata.contains("RLE_DICTIONARY"));
     }
 
-    static class ParquetInstructionsTestBuilder extends ParquetInstructions.Builder {
-        ParquetInstructions.Builder forceSetTargetPageSize(final int targetPageSize) {
-            // Bypasses the minimum targetPageSize requirements for testing
-            this.targetPageSize = targetPageSize;
-            return this;
-        }
-    }
-
     @Test
     public void overflowingStringsTest() {
         // Test the behavior of writing parquet files if entries exceed the page size limit
@@ -890,8 +886,8 @@ public class ParquetTableReadWriteTest {
 
     private static ColumnChunkMetaData overflowingStringsTestHelper(final Collection<String> columns,
             final long numRows) {
-        final ParquetInstructions writeInstructions = new ParquetInstructionsTestBuilder()
-                .forceSetTargetPageSize(64) // Force a small page size to cause splitting across pages
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setTargetPageSize(64) // Force a small page size to cause splitting across pages
                 .setMaximumDictionarySize(50) // Force "someStringColumn" to use non-dictionary encoding
                 .build();
         Table stringTable = TableTools.emptyTable(numRows).select(Selectable.from(columns));
@@ -907,8 +903,9 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void overflowingCodecsTest() {
-        final ParquetInstructions writeInstructions = new ParquetInstructionsTestBuilder()
-                .forceSetTargetPageSize(64) // Force a small page size to cause splitting across pages
+        final int pageSize = 64;
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setTargetPageSize(pageSize) // Force a small page size to cause splitting across pages
                 .addColumnCodec("VariableWidthByteArrayColumn", SimpleByteArrayCodec.class.getName())
                 .build();
 
