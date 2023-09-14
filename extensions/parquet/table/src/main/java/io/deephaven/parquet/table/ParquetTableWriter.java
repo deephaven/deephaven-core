@@ -85,50 +85,6 @@ public class ParquetTableWriter {
     }
 
     /**
-     * Classes that implement this interface are responsible for converting data from individual DH columns into buffers
-     * to be written out to the Parquet file.
-     *
-     * @param <B>
-     */
-    interface TransferObject<B> extends SafeCloseable {
-        /**
-         * Fetch all data corresponding to the provided row sequence.
-         */
-        void fetchData(RowSequence rs);
-
-        /**
-         * Transfer all the fetched data into an internal buffer, which can then be accessed using
-         * {@link TransferObject#getBuffer()}. This method should only be called after
-         * {@link TransferObject#fetchData(RowSequence)}}. This method should be used when writing unpaginated data, and
-         * should not be interleaved with calls to {@link TransferObject#transferOnePageToBuffer()}. Note that this
-         * method can lead to out-of-memory error for variable-width types (e.g. strings) if the fetched data is too big
-         * to fit in the available heap.
-         *
-         * @return The number of fetched data entries copied into the buffer.
-         */
-        int transferAllToBuffer();
-
-        /**
-         * Transfer one page size worth of fetched data into an internal buffer, which can then be accessed using
-         * {@link TransferObject#getBuffer()}. The target page size is passed in the constructor. The method should only
-         * be called after {@link TransferObject#fetchData(RowSequence)}}. This method should be used when writing
-         * paginated data, and should not be interleaved with calls to {@link TransferObject#transferAllToBuffer()}.
-         *
-         * @return The number of fetched data entries copied into the buffer. This can be different from the total
-         *         number of entries fetched in case of variable-width types (e.g. strings) when used with additional
-         *         page size limits while copying.
-         */
-        int transferOnePageToBuffer();
-
-        /**
-         * Check if there is any fetched data which can be copied into buffer
-         */
-        boolean hasMoreDataToBuffer();
-
-        B getBuffer();
-    }
-
-    /**
      * Helper struct used to pass information about where to write the grouping files for each grouping column
      */
     public static class GroupingColumnWritingInfo {
@@ -904,6 +860,50 @@ public class ParquetTableWriter {
         return new CodecTransfer<>(columnSource, codec, maxValuesPerPage, instructions.getTargetPageSize());
     }
 
+    /**
+     * Classes that implement this interface are responsible for converting data from individual DH columns into buffers
+     * to be written out to the Parquet file.
+     *
+     * @param <B>
+     */
+    interface TransferObject<B> extends SafeCloseable {
+        /**
+         * Fetch all data corresponding to the provided row sequence.
+         */
+        void fetchData(RowSequence rs);
+
+        /**
+         * Transfer all the fetched data into an internal buffer, which can then be accessed using
+         * {@link TransferObject#getBuffer()}. This method should only be called after
+         * {@link TransferObject#fetchData(RowSequence)}}. This method should be used when writing unpaginated data, and
+         * should not be interleaved with calls to {@link TransferObject#transferOnePageToBuffer()}. Note that this
+         * method can lead to out-of-memory error for variable-width types (e.g. strings) if the fetched data is too big
+         * to fit in the available heap.
+         *
+         * @return The number of fetched data entries copied into the buffer.
+         */
+        int transferAllToBuffer();
+
+        /**
+         * Transfer one page size worth of fetched data into an internal buffer, which can then be accessed using
+         * {@link TransferObject#getBuffer()}. The target page size is passed in the constructor. The method should only
+         * be called after {@link TransferObject#fetchData(RowSequence)}}. This method should be used when writing
+         * paginated data, and should not be interleaved with calls to {@link TransferObject#transferAllToBuffer()}.
+         *
+         * @return The number of fetched data entries copied into the buffer. This can be different from the total
+         *         number of entries fetched in case of variable-width types (e.g. strings) when used with additional
+         *         page size limits while copying.
+         */
+        int transferOnePageToBuffer();
+
+        /**
+         * Check if there is any fetched data which can be copied into buffer
+         */
+        boolean hasMoreDataToBuffer();
+
+        B getBuffer();
+    }
+
     private static class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer>
             implements TransferObject<B> {
         private final C chunk;
@@ -923,8 +923,9 @@ public class ParquetTableWriter {
         }
 
         @Override
-        public boolean hasMoreDataToBuffer() {
-            return hasMoreDataToBuffer;
+        public void fetchData(RowSequence rs) {
+            columnSource.fillChunk(context, chunk, rs);
+            hasMoreDataToBuffer = true;
         }
 
         @Override
@@ -945,14 +946,13 @@ public class ParquetTableWriter {
         }
 
         @Override
-        public B getBuffer() {
-            return buffer;
+        public boolean hasMoreDataToBuffer() {
+            return hasMoreDataToBuffer;
         }
 
         @Override
-        public void fetchData(RowSequence rs) {
-            columnSource.fillChunk(context, chunk, rs);
-            hasMoreDataToBuffer = true;
+        public B getBuffer() {
+            return buffer;
         }
 
         @Override
@@ -1032,8 +1032,9 @@ public class ParquetTableWriter {
         }
 
         @Override
-        final public boolean hasMoreDataToBuffer() {
-            return (chunk != null);
+        final public void fetchData(RowSequence rs) {
+            // noinspection unchecked
+            chunk = (T) columnSource.getChunk(context, rs);
         }
 
         @Override
@@ -1063,14 +1064,13 @@ public class ParquetTableWriter {
         abstract void copyAllFromChunkToBuffer();
 
         @Override
-        final public IntBuffer getBuffer() {
-            return buffer;
+        final public boolean hasMoreDataToBuffer() {
+            return (chunk != null);
         }
 
         @Override
-        final public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (T) columnSource.getChunk(context, rs);
+        final public IntBuffer getBuffer() {
+            return buffer;
         }
 
         @Override
@@ -1159,8 +1159,11 @@ public class ParquetTableWriter {
         }
 
         @Override
-        final public boolean hasMoreDataToBuffer() {
-            return ((chunk != null) && (currentChunkIdx < chunk.size()));
+        final public void fetchData(RowSequence rs) {
+            // noinspection unchecked
+            chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
+            currentChunkIdx = 0;
+            bufferedDataCount = 0;
         }
 
         @Override
@@ -1223,16 +1226,13 @@ public class ParquetTableWriter {
         abstract Binary encodeToBinary(T value);
 
         @Override
-        final public Binary[] getBuffer() {
-            return buffer;
+        final public boolean hasMoreDataToBuffer() {
+            return ((chunk != null) && (currentChunkIdx < chunk.size()));
         }
 
         @Override
-        final public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
-            currentChunkIdx = 0;
-            bufferedDataCount = 0;
+        final public Binary[] getBuffer() {
+            return buffer;
         }
 
         @Override
