@@ -117,8 +117,8 @@ on them anymore so we do notguarantee they are current for those platforms.
    ```
 
 8. Run one deephaven example which uses the installed client.
-   This is an smoke test that the basic functionality
-   if working end to end, and the build is properly configured.
+   This is a smoke test that the basic functionality
+   is working end to end, and the build is properly configured.
    Note this assumes deephaven server is running (see step 2),
    and the build created on step 7 is available in the same directory.
 
