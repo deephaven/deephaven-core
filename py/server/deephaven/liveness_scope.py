@@ -30,6 +30,13 @@ def _pop(scope: _JLivenessScope):
         raise DHError(e, message="failed to pop the LivenessScope from the stack.")
 
 
+def _unwrap_to_liveness_referent(referent: Union[JObjectWrapper, jpy.JType]) -> jpy.JType:
+    if isinstance(referent, jpy.JType) and _JLivenessReferent.jclass.isInstance(referent):
+        return referent
+    if isinstance(referent, JObjectWrapper):
+        _unwrap_to_liveness_referent(referent.j_object)
+    raise DHError("Provided referent isn't a LivenessReferent or a JObjectWrapper around one")
+
 class LivenessScopeFrame:
     """Helper class to support pushing a liveness scope without forcing it to be closed when finished."""
     def __init__(self, scope: "deephaven.liveness_scope.LivenessScope", close_after_block: bool):
@@ -97,35 +104,32 @@ class LivenessScope(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_scope
 
-    def preserve(self, wrapper: JObjectWrapper) -> None:
+    def preserve(self, referent: Union[JObjectWrapper, jpy.JType]) -> None:
         """Preserves a query graph node (usually a Table) to keep it live for the outer scope.
 
         Args:
-            wrapper (JObjectWrapper): a wrapped Java object such as a Table
+            referent (Union[JObjectWrapper, jpy.JType]): an object to preserve in the next outer liveness scope
 
         Raises:
             DHError
         """
+        referent = _unwrap_to_liveness_referent(referent)
         try:
             _JLivenessScopeStack.pop(self.j_scope)
-            _JLivenessScopeStack.peek().manage(wrapper.j_object)
+            _JLivenessScopeStack.peek().manage(_unwrap_to_liveness_referent(referent))
             _JLivenessScopeStack.push(self.j_scope)
         except Exception as e:
             raise DHError(e, message="failed to preserve a wrapped object in this LivenessScope.")
 
     def manage(self, referent: Union[JObjectWrapper, jpy.JType]):
-        """Explicitly manage the given java object in this scope"""
-        if isinstance(referent, jpy.JType) and JLivenessReferent.jclass.isInstance(referent):
-            self.j_scope.manage(referent)
-        if isinstance(referent, JObjectWrapper):
-            self.manage(referent.j_object)
+        """Explicitly manage the given java object in this scope. Must only be passed a Java LivenessReferent, or
+        a Python wrapper around a LivenessReferent"""
+        self.j_scope.manage(_unwrap_to_liveness_referent(referent))
 
     def unmanage(self, referent: Union[JObjectWrapper, jpy.JType]):
-        """Explicitly unmanage the given java object from this scope"""
-        if isinstance(referent, jpy.JType) and JLivenessReferent.jclass.isInstance(referent):
-            self.j_scope.unmanage(referent)
-        if isinstance(referent, JObjectWrapper):
-            self.unmanage(referent.j_object)
+        """Explicitly unmanage the given java object from this scope. Must only be passed a Java LivenessReferent, or
+        a Python wrapper around a LivenessReferent"""
+        self.j_scope.unmanage(_unwrap_to_liveness_referent(referent))
 
 
 def liveness_scope() -> LivenessScope:
