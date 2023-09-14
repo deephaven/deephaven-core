@@ -27,9 +27,17 @@ public:
    */
   ClientOptions();
   /**
+   * Copy constructor
+   */
+  ClientOptions(const ClientOptions &other);
+  /**
    * Move constructor
    */
   ClientOptions(ClientOptions &&other) noexcept;
+  /**
+   * Copy assigment operator.
+   */
+  ClientOptions &operator=(const ClientOptions &other);
   /**
    * Move assigment operator.
    */

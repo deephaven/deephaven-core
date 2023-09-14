@@ -13,6 +13,7 @@ import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
@@ -201,12 +202,28 @@ public class UnionSourceManager {
     private final class ConstituentListenerRecorder extends LinkedListenerRecorder {
 
         private final ModifiedColumnSet.Transformer modifiedColumnsTransformer;
+        private Throwable error;
 
         ConstituentListenerRecorder(@NotNull final Table constituent) {
             super("PartitionedTable.merge() Constituent", constituent, mergedListener);
             modifiedColumnsTransformer =
                     ((QueryTable) constituent).newModifiedColumnSetTransformer(resultTable, columnNames);
             setMergedListener(mergedListener);
+        }
+
+        @Override
+        protected void onFailureInternal(@NotNull final Throwable originalException,
+                @Nullable final Entry sourceEntry) {
+            // We will just record the error here for now. If the table was removed, then we don't actually care about
+            // it but if the error is real, and the table is not removed, it will be propagated by processExisting()
+            this.setNotificationStep(getUpdateGraph().clock().currentStep());
+            this.error = originalException;
+            mergedListener.notifyChanges();
+        }
+
+        @Override
+        public boolean recordedVariablesAreValid() {
+            return error == null && super.recordedVariablesAreValid();
         }
 
         @Override
@@ -229,6 +246,9 @@ public class UnionSourceManager {
             final TableUpdate downstream;
             try (final ChangeProcessingContext context = new ChangeProcessingContext(constituentChanges)) {
                 downstream = context.processChanges();
+            } catch (Throwable ex) {
+                propagateError(false, ex, entry);
+                return;
             }
             result.notifyListeners(downstream);
         }
@@ -365,7 +385,7 @@ public class UnionSourceManager {
             // @formatter:on
         }
 
-        private TableUpdate processChanges() {
+        private TableUpdate processChanges() throws Throwable {
             final int currConstituentCount = constituentRows.intSize();
             final int prevConstituentCount = constituentRows.intSizePrev();
             unionRedirection.updateCurrSize(currConstituentCount);
@@ -377,6 +397,8 @@ public class UnionSourceManager {
             advanceAdded();
             advanceModified();
             advanceListener();
+
+            List<ConstituentTableException> constituentExceptions = null;
 
             while (nextCurrentSlot < currConstituentCount || nextPreviousSlot < prevConstituentCount) {
                 // Removed constituent processing
@@ -402,7 +424,11 @@ public class UnionSourceManager {
                         processRemove(nextModifiedPreviousValue);
                         processAdd(nextCurrentValue);
                     } else {
-                        processExisting(nextCurrentValue);
+                        try {
+                            processExisting(nextCurrentValue);
+                        } catch (ConstituentTableException ex) {
+                            constituentExceptions = collectConstituentException(constituentExceptions, ex);
+                        }
                     }
                     advanceCurrent();
                     advanceModified();
@@ -411,11 +437,20 @@ public class UnionSourceManager {
                 }
                 // Existing constituent processing
                 else {
-                    processExisting(nextCurrentValue);
+                    try {
+                        processExisting(nextCurrentValue);
+                    } catch (ConstituentTableException ex) {
+                        constituentExceptions = collectConstituentException(constituentExceptions, ex);
+                    }
                     advanceCurrent();
                     ++nextCurrentSlot;
                     ++nextPreviousSlot;
                 }
+            }
+
+            if (constituentExceptions != null) {
+                throw MultiException.maybeWrapInMultiException("Constituent tables reported failures",
+                        constituentExceptions);
             }
 
             Assert.eq(nextCurrentKey, "nextCurrentKey", NULL_ROW_KEY, "NULL_ROW_KEY");
@@ -440,6 +475,17 @@ public class UnionSourceManager {
                     downstreamModified,
                     downstreamShiftBuilder.build(),
                     modifiedColumnSet);
+        }
+
+        private List<ConstituentTableException> collectConstituentException(
+                @Nullable List<ConstituentTableException> exceptions,
+                @NotNull final ConstituentTableException exception) {
+            if (exceptions == null) {
+                exceptions = new ArrayList<>();
+            }
+
+            exceptions.add(exception);
+            return exceptions;
         }
 
         private void processRemove(@NotNull final Table removedConstituent) {
@@ -491,6 +537,15 @@ public class UnionSourceManager {
             if (constituent.isRefreshing()) {
                 assert nextListener != null;
                 Assert.eq(nextListener.getParent(), "listener parent", constituent, "existing constituent");
+
+                // Make sure we propagate any actual error on to the listeners, and advance the listener so we can
+                // continue to process the rest of the tables
+                if (nextListener.error != null) {
+                    final String referentDescription = nextListener.getParent().getDescription();
+                    advanceListener();
+                    throw new ConstituentTableException(referentDescription, nextListener.error);
+                }
+
                 changes = nextListener.getUpdate();
                 mcsTransformer = nextListener.modifiedColumnsTransformer;
                 advanceListener();

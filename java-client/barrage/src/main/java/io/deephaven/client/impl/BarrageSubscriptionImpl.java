@@ -148,14 +148,15 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         @Override
         public void onError(final Throwable t) {
-            log.error().append(BarrageSubscriptionImpl.this)
-                    .append(": Error detected in subscription: ")
-                    .append(t).endl();
-
             final Listener listener = resultTable;
             if (!connected || listener == null) {
                 return;
             }
+
+            log.error().append(BarrageSubscriptionImpl.this)
+                    .append(": Error detected in subscription: ")
+                    .append(t).endl();
+
             listener.handleBarrageError(t);
             handleDisconnect();
         }
