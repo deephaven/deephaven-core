@@ -22,7 +22,7 @@ PROTOBUF_LIB = `[ -f \${DHCPP}/local/lib/libprotobufd.so ] && echo -lprotobufd |
 
 DEPENDENCY_LIBS = \
         $(PROTOBUF_LIB) \
-        -larrow_flight -larrow -larrow_bundled_dependencies \
+        -larrow \
         `PKG_CONFIG_PATH=\${DHCPP}/local/lib/pkgconfig pkg-config --libs grpc++`
 
 # tells the compiler where to look for additional include directories

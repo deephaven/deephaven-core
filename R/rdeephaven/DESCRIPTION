@@ -13,7 +13,7 @@ Description: The `rdeephaven` package provides an R API for communicating with t
              and bind it to a server-side variable so you can access it from any Deephaven client. Finally, you can run Python or Groovy
              scripts on the Deephaven server, so long as your server is equipped with that capability.
 License: Apache License (== 2.0)
-Depends: R (>= 4.1.2), Rcpp (>= 1.0.10), arrow (>= 12.0.0), R6 (>= 2.5.0), dplyr (>= 1.1.0)
+Depends: R (>= 3.5.3), Rcpp (>= 1.0.10), arrow (>= 12.0.0), R6 (>= 2.5.0), dplyr (>= 1.1.0)
 Imports: Rcpp (>= 1.0.10), R6 (>= 2.5.0), dplyr (>= 1.1.0)
 LinkingTo: Rcpp
 Suggests: testthat (>= 3.0.0)
