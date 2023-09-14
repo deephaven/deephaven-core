@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <cstddef>
 #include <string>
 #include <utility>
 #include <vector>
@@ -256,7 +257,7 @@ public:
             abs_sort = std::vector<bool>(cols.size(), abs_sort[0]);
         }
 
-        for(int i = 0; i < cols.size(); i++) {
+        for(std::size_t i = 0; i < cols.size(); i++) {
             if (!descending[i]) {
                 sort_pairs.push_back(deephaven::client::SortPair::Ascending(cols[i], abs_sort[i]));
             } else {
