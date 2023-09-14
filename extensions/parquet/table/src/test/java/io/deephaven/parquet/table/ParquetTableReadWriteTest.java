@@ -343,16 +343,27 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void test_lz4_compressed() {
-        // The following file is tagged as LZ4 compressed based on its metadata, but is actually compressed with LZ4_RAW
-        // We should be able to read it anyway with no exceptions.
+        // Write and read a LZ4 compressed file
+        File dest = new File(rootFile + File.separator + "Table.parquet");
+        final Table table = getTableFlat(100, false, false);
+        ParquetTools.writeTable(table, dest, ParquetTools.LZ4);
+        Table fromDisk = ParquetTools.readTable(dest).select();
+        TstUtils.assertTableEquals(fromDisk, table);
+
         try {
+            // The following file is tagged as LZ4 compressed based on its metadata, but is actually compressed with
+            // LZ4_RAW. We should be able to read it anyway with no exceptions.
             String path = TestParquetTools.class.getResource("/sample_lz4_compressed.parquet").getFile();
-            final Table fromDisk = ParquetTools.readTable(path).select();
-            final File dest = new File(rootFile, "random.parquet");
-            ParquetTools.writeTable(fromDisk, dest, ParquetTools.LZ4_RAW);
+            fromDisk = ParquetTools.readTable(path).select();
+            File randomDest = new File(rootFile, "random.parquet");
+            ParquetTools.writeTable(fromDisk, randomDest, ParquetTools.LZ4_RAW);
         } catch (RuntimeException e) {
-            TestCase.fail("Failed to read LZ4 compressed parquet file");
+            TestCase.fail("Failed to read parquet file sample_lz4_compressed.parquet");
         }
+
+        // Read the LZ4 compressed file again, to make sure we use a new adapter
+        fromDisk = ParquetTools.readTable(dest).select();
+        TstUtils.assertTableEquals(fromDisk, table);
     }
 
     @Test
