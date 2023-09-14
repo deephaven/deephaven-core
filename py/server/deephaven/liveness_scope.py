@@ -4,6 +4,7 @@
 
 """This module gives the users a finer degree of control over when to clean up unreferenced nodes in the query update
 graph instead of solely relying on garbage collection."""
+import contextlib
 
 import jpy
 
@@ -35,21 +36,6 @@ def _unwrap_to_liveness_referent(referent: Union[JObjectWrapper, jpy.JType]) -> 
     if isinstance(referent, JObjectWrapper):
         _unwrap_to_liveness_referent(referent.j_object)
     raise DHError("Provided referent isn't a LivenessReferent or a JObjectWrapper around one")
-
-class LivenessScopeFrame:
-    """Helper class to support pushing a liveness scope without forcing it to be closed when finished."""
-    def __init__(self, scope: "deephaven.liveness_scope.LivenessScope", close_after_block: bool):
-        self.close_after_pop = close_after_block
-        self.scope = scope
-
-    def __enter__(self):
-        _push(self.scope.j_scope)
-        return self.scope
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        _pop(self.scope.j_scope)
-        if self.close_after_pop:
-            self.scope.release()
 
 
 class LivenessScope(JObjectWrapper):
@@ -96,10 +82,26 @@ class LivenessScope(JObjectWrapper):
         _pop(self.j_scope)
         self.release()
 
-    def open(self, close_after_block: bool = True) -> LivenessScopeFrame:
-        """Uses this scope for the duration of the `with` block. The scope will not be
-        closed when the block ends."""
-        return LivenessScopeFrame(self, close_after_block)
+    @contextlib.contextmanager
+    def open(self, release_after_block: bool = True) -> None:
+        """
+        Uses this scope for the duration of the `with` block. The scope defaults to being closed
+        when the block ends, disable by passing release_after_block=False
+
+        Args:
+            release_after_block: True to release the scope when the block ends, False to leave the
+            scope open for reuse.
+
+        Returns: None, to allow changes in the future.
+
+        """
+        _push(self.j_scope)
+        try:
+            yield None
+        finally:
+            _pop(self.j_scope)
+            if release_after_block:
+                self.release()
 
     @property
     def j_object(self) -> jpy.JType:
@@ -123,19 +125,45 @@ class LivenessScope(JObjectWrapper):
         finally:
             _JLivenessScopeStack.push(self.j_scope)
 
-    def manage(self, referent: Union[JObjectWrapper, jpy.JType]):
+    def manage(self, referent: Union[JObjectWrapper, jpy.JType]) -> None:
         """
         Explicitly manage the given java object in this scope. Must only be passed a Java LivenessReferent, or
         a Python wrapper around a LivenessReferent
-        """
-        self.j_scope.manage(_unwrap_to_liveness_referent(referent))
 
-    def unmanage(self, referent: Union[JObjectWrapper, jpy.JType]):
+        Args:
+            referent: the object to manage by this scope
+
+        Returns: None
+
+        Raises:
+            DHError if the referent isn't a LivenessReferent, or if it is no longer live
+
+        """
+        referent = _unwrap_to_liveness_referent(referent)
+        try:
+            self.j_scope.manage(referent)
+        except Exception as e:
+            raise DHError(e, message="failed to manage object")
+
+    def unmanage(self, referent: Union[JObjectWrapper, jpy.JType]) -> None:
         """
         Explicitly unmanage the given java object from this scope. Must only be passed a Java LivenessReferent, or
         a Python wrapper around a LivenessReferent
+
+        Args:
+            referent:
+
+        Returns: None
+
+        Raises:
+            DHError if the referent isn't a LivenessReferent, or if it is no longer live
+
         """
-        self.j_scope.unmanage(_unwrap_to_liveness_referent(referent))
+        referent = _unwrap_to_liveness_referent(referent)
+        try:
+            self.j_scope.unmanage(referent)
+        except Exception as e:
+            raise DHError(e, message="failed to unmanage object")
 
 
 def is_liveness_referent(referent: Union[JObjectWrapper, jpy.JType]) -> bool:
