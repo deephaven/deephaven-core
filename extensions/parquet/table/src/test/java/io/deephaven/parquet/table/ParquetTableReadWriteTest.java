@@ -88,9 +88,6 @@ public class ParquetTableReadWriteTest {
         }
         // noinspection ResultOfMethodCallIgnored
         rootFile.mkdirs();
-
-        // Allow a small page size for testing
-        Configuration.getInstance().setProperty("Parquet.minTargetPageSize", "64");
     }
 
     @After
@@ -856,38 +853,40 @@ public class ParquetTableReadWriteTest {
     @Test
     public void overflowingStringsTest() {
         // Test the behavior of writing parquet files if entries exceed the page size limit
+        final int pageSize = 2 << 10;
+        final char[] data = new char[pageSize / 4];
+        String someString = new String(data);
         Collection<String> columns = new ArrayList<>(Arrays.asList(
-                "someStringColumn = `This is row ` + i%10"));
-        final long numRows = 21L;
-        ColumnChunkMetaData columnMetadata = overflowingStringsTestHelper(columns, numRows);
+                "someStringColumn = `" + someString + "` + i%10"));
+        final long numRows = 10;
+        ColumnChunkMetaData columnMetadata = overflowingStringsTestHelper(columns, numRows, pageSize);
         String metadataStr = columnMetadata.toString();
         assertTrue(metadataStr.contains("someStringColumn") && metadataStr.contains("PLAIN")
                 && !metadataStr.contains("RLE_DICTIONARY"));
 
-        // We forced the page size to be 64. Binary.fromString("This is row 0").length() is 13. So we exceed page size
-        // on hitting 5 strings and we have 21 total rows.
-        // Therefore, we should have total 6 pages containing 4, 4, 4, 4, 4, 1 rows respectively.
-        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 6);
+        // We exceed page size on hitting 4 rows, and we have 10 total rows.
+        // Therefore, we should have total 4 pages containing 3, 3, 3, 1 rows respectively.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 4);
 
-        columns = new ArrayList<>(Arrays.asList("someStringColumn =  ii % 2 == 0 ? Long.toString(ii) : " +
-                "`This is a very long string which should exceed the page size limit ` + ii"));
-        columnMetadata = overflowingStringsTestHelper(columns, numRows);
-        // We will have 21 pages each containing 1 row.
-        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 21);
-
-        // Table with null rows
-        columns = new ArrayList<>(Arrays.asList("someStringColumn =  ii % 2 == 0 ? null : " +
-                "`This is a very long string which should exceed the page size limit ` + ii"));
-        columnMetadata = overflowingStringsTestHelper(columns, numRows);
-        // We will have 11 pages containing 3, 2,.., 2 rows.
+        final char[] veryLongData = new char[pageSize];
+        someString = new String(veryLongData);
+        columns = new ArrayList<>(
+                Arrays.asList("someStringColumn =  ii % 2 == 0 ? Long.toString(ii) : `" + someString + "` + ii"));
+        columnMetadata = overflowingStringsTestHelper(columns, numRows, pageSize);
+        // We will have 10 pages each containing 1 row.
         assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 10);
 
+        // Table with null rows
+        columns = new ArrayList<>(Arrays.asList("someStringColumn =  ii % 2 == 0 ? null : `" + someString + "` + ii"));
+        columnMetadata = overflowingStringsTestHelper(columns, numRows, pageSize);
+        // We will have 5 pages containing 3, 2, 2, 2, 1 rows.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 5);
     }
 
     private static ColumnChunkMetaData overflowingStringsTestHelper(final Collection<String> columns,
-            final long numRows) {
+            final long numRows, final int pageSize) {
         final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
-                .setTargetPageSize(64) // Force a small page size to cause splitting across pages
+                .setTargetPageSize(pageSize) // Force a small page size to cause splitting across pages
                 .setMaximumDictionarySize(50) // Force "someStringColumn" to use non-dictionary encoding
                 .build();
         Table stringTable = TableTools.emptyTable(numRows).select(Selectable.from(columns));
@@ -903,7 +902,7 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void overflowingCodecsTest() {
-        final int pageSize = 64;
+        final int pageSize = 2 << 10;
         final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
                 .setTargetPageSize(pageSize) // Force a small page size to cause splitting across pages
                 .addColumnCodec("VariableWidthByteArrayColumn", SimpleByteArrayCodec.class.getName())
@@ -912,10 +911,9 @@ public class ParquetTableReadWriteTest {
         final ColumnDefinition<byte[]> columnDefinition =
                 ColumnDefinition.fromGenericType("VariableWidthByteArrayColumn", byte[].class, byte.class);
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinition);
-        final byte[] byteArray = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
+        final byte[] byteArray = new byte[pageSize / 2];
         final Table table = TableTools.newTable(tableDefinition,
-                TableTools.col("VariableWidthByteArrayColumn", byteArray, byteArray, byteArray, byteArray, byteArray,
-                        byteArray));
+                TableTools.col("VariableWidthByteArrayColumn", byteArray, byteArray, byteArray));
 
         final File dest = new File(rootFile + File.separator + "overflowingCodecsTest.parquet");
         ParquetTools.writeTable(table, dest, writeInstructions);
@@ -929,8 +927,8 @@ public class ParquetTableReadWriteTest {
         final ColumnChunkMetaData columnMetadata = metadata.getBlocks().get(0).getColumns().get(0);
         final String columnMetadataStr = columnMetadata.toString();
         assertTrue(columnMetadataStr.contains("VariableWidthByteArrayColumn") && columnMetadataStr.contains("PLAIN"));
-        // We forced the page size to be 64. Size of byteArray is 13. So we exceed page size on hitting 5 byteArrays.
-        // Therefore, we should have total 2 pages containing 5, 1 rows respectively.
+        // Each byte array is of half the page size. So we exceed page size on hitting 3 byteArrays.
+        // Therefore, we should have total 2 pages containing 2, 1 rows respectively.
         assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 2);
     }
 
