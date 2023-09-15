@@ -10,13 +10,6 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * A server object is a client-owned reference to a server-side object.
- *
- * @see TableObject
- * @see PartitionedTableObject
- * @see HierarchicalTableObject
- * @see FigureObject
- * @see CustomObject
- * @see UnknownObject
  */
 public interface ServerObject extends HasExportId, Closeable {
 
@@ -35,22 +28,6 @@ public interface ServerObject extends HasExportId, Closeable {
      */
     @Override
     void close();
-
-    <R> R walk(Visitor<R> visitor);
-
-    interface Visitor<R> {
-        R visit(TableObject table);
-
-        R visit(PartitionedTableObject partitionedTable);
-
-        R visit(HierarchicalTableObject hierarchicalTable);
-
-        R visit(FigureObject figure);
-
-        R visit(CustomObject custom);
-
-        R visit(UnknownObject unknown);
-    }
 
     /**
      * A server object that supports a bidirectional message stream.

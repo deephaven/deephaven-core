@@ -19,16 +19,21 @@ public final class TableObject extends ServerObjectBase implements ServerObject 
         checkType(TYPE, exportId);
     }
 
+    /**
+     * Creates a table handle.
+     *
+     * <p>
+     * Note: the table handle lifecycle is managed separately from {@code this}; the caller is still responsible for
+     * {@link #close() closing} {@code this}.
+     *
+     * @return the table handle.
+     * @see Session#execute(TableSpec)
+     */
     public TableHandle executeTable() throws TableHandleException, InterruptedException {
         return session.execute(tableSpec());
     }
 
     public TicketTable tableSpec() {
         return TableSpec.ticket(exportId().ticket());
-    }
-
-    @Override
-    public <R> R walk(Visitor<R> visitor) {
-        return visitor.visit(this);
     }
 }

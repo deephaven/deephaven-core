@@ -64,15 +64,10 @@ public final class ExportId implements HasExportId {
         if (type == null) {
             return new UnknownObject(session, this);
         }
+        // noinspection SwitchStatementWithTooFewBranches
         switch (type) {
             case TableObject.TYPE:
                 return new TableObject(session, this);
-            case PartitionedTableObject.TYPE:
-                return new PartitionedTableObject(session, this);
-            case HierarchicalTableObject.TYPE:
-                return new HierarchicalTableObject(session, this);
-            case FigureObject.TYPE:
-                return new FigureObject(session, this);
             default:
                 return new CustomObject(session, this);
         }

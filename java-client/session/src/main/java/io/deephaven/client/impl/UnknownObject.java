@@ -16,9 +16,4 @@ public final class UnknownObject extends ServerObjectBase implements ServerObjec
             throw new IllegalArgumentException("Expected type to not be present, is present");
         }
     }
-
-    @Override
-    public <R> R walk(Visitor<R> visitor) {
-        return visitor.visit(this);
-    }
 }

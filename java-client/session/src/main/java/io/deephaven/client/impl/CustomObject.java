@@ -9,6 +9,10 @@ import io.deephaven.client.impl.ServerObject.Fetchable;
 /**
  * A custom server object that may be {@link Fetchable} or {@link Bidirectional}. The client is responsible for
  * implementing the necessarily retrieval logic according to the specific {@link #type()}.
+ *
+ * @see <a href="https://github.com/deephaven/deephaven-core/issues/4486">deephaven-core#4486</a>
+ * @see <a href="https://github.com/deephaven/deephaven-core/issues/4487">deephaven-core#4487</a>
+ * @see <a href="https://github.com/deephaven/deephaven-core/issues/4488">deephaven-core#4488</a>
  */
 public final class CustomObject extends ServerObjectBase
         implements ServerObject, Fetchable, Bidirectional {
@@ -21,16 +25,11 @@ public final class CustomObject extends ServerObjectBase
     }
 
     /**
-     * The plugin type.
+     * The object type.
      *
-     * @return the plugin type
+     * @return the object type
      */
     public String type() {
         return exportId().type().orElseThrow(IllegalStateException::new);
-    }
-
-    @Override
-    public <R> R walk(Visitor<R> visitor) {
-        return visitor.visit(this);
     }
 }
