@@ -241,8 +241,9 @@ public class ParquetFileReader {
                     TimestampType timestamp = logicalType.getTIMESTAMP();
                     if (!timestamp.isAdjustedToUTC) {
                         // TODO(deephaven-core#976): Unable to read non UTC adjusted timestamps
-                        throw new ParquetFileReaderException(
-                                "Only UTC timestamp is supported, found time column with isAdjustedToUTC=false");
+                        throw new ParquetFileReaderException(String.format(
+                                "Only UTC timestamp is supported, found time column `%s` with isAdjustedToUTC=false",
+                                schemaElement.getName()));
                     }
                 }
                 ((Types.Builder) childBuilder).as(getLogicalTypeAnnotation(logicalType));
