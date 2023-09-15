@@ -8,7 +8,7 @@ Client <- R6Class("Client",
     .internal_rcpp_object = NULL,
 
     #' @description
-    #' Initializes a Client object that connects to the Deephaven server.
+    #' Initializes a Client object connected to a Deephaven server.
     #' This method can accept either a string or an Rcpp::XPtr object, and will call
     #' `initialize_for_target` or `initialize_for_xptr` accordingly.
     #' @param ... String denoting the address of a running Deephaven server, formatted as `"ip:port"`,
