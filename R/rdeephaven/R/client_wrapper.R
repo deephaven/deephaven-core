@@ -8,11 +8,10 @@ Client <- R6Class("Client",
     .internal_rcpp_object = NULL,
 
     #' @description
-    #' Initializes a Client object connected to a Deephaven server.
-    #' This method can accept either a string or an Rcpp::XPtr object, and will call
-    #' `initialize_for_target` or `initialize_for_xptr` accordingly.
-    #' @param ... String denoting the address of a running Deephaven server, formatted as `"ip:port"`,
-    #' or an Rcpp::XPtr object that points to an existing client connection.
+    #' Calls `initialize_for_xptr` if the first argument is an external pointer, and `initialize_for_target` if the
+    #' first argument is a string. In the latter case, the remaining keyword arguments are passed to `initialize_for_target`.
+    #' @param ... Either an external pointer to an existing client connection, or a string denoting the address
+    #' of a running Deephaven server followed by keyword arguments to `initialize_from_target`.
     initialize = function(...) {
       args <- list(...)
       if (length(args) == 1) {
@@ -202,9 +201,9 @@ Client <- R6Class("Client",
     },
 
     #' @description
-    #' Opens a table named `name` from the server if it exists.
-    #' @param name String denoting the name of the table to open from the server.
-    #' @return TableHandle reference to the requested table.
+    #' Retrieves a reference to a named table on the server using its name.
+    #' @param name String denoting the name of the table to retrieve.
+    #' @return TableHandle reference to the named table.
     open_table = function(name) {
       verify_string("name", name, TRUE)
       if (!private$check_for_table(name)) {
@@ -237,9 +236,9 @@ Client <- R6Class("Client",
     },
 
     #' @description
-    #' Uses an existing ticket to create a new table on the server.
-    #' @param ticket String denoting the ticket to use to create the new table.
-    #' @return TableHandle reference to the new table.
+    #' Retrieves a reference to a named table in the server using its Arrow Flight ticket.
+    #' @param ticket String denoting the Arrow Flight ticket.
+    #' @return TableHandle reference to the table.
     ticket_to_table = function(ticket) {
       verify_string("ticket", ticket, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$make_table_handle_from_ticket(ticket)))
