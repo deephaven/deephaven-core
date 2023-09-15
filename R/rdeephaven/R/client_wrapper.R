@@ -39,7 +39,7 @@ Client <- R6Class("Client",
     },
 
     #' @description
-    #' Initializes a Client object that connects to a Deephaven server
+    #' Initializes a Client object and connects to a Deephaven server.
     #' @param target String denoting the address of a Deephaven server, formatted as `"ip:port"`.
     #' @param auth_type String denoting the authentication type. Can be `"anonymous"`, `"basic"`,
     #' or any custom-built authenticator supported by the server, such as `"io.deephaven.authentication.psk.PskAuthenticationHandler"`.
