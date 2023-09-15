@@ -36,6 +36,6 @@ TEST_CASE("EpochMillisToStr", "[utility]") {
 TEST_CASE("ObjectId", "[utility]") {
   uintptr_t p = 0xdeadbeef;
   auto id = ObjectId("hello", (void *) p);
-  CHECK(id == "hello[0xdeadbeef]");
+  CHECK(id == "hello(0xdeadbeef)");
 }
 }  // namespace deephaven::client::tests

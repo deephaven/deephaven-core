@@ -26,7 +26,7 @@ public:
 
     typedef typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t chunkType_t;
     auto *typed_chunk_data = deephaven::dhcore::utility::VerboseCast<const chunkType_t *>(
-        DEEPHAVEN_EXPR_MSG(&chunk_data.Unwrap()));
+        DEEPHAVEN_LOCATION_EXPR(&chunk_data.Unwrap()));
     auto transient_data = dest_data->transient();
     for (auto v : *typed_chunk_data) {
       transient_data.push_back(v);
@@ -81,7 +81,7 @@ public:
 
   void InPlaceAppend(std::unique_ptr<AbstractFlexVectorBase> other) final {
     auto *other_vec = deephaven::dhcore::utility::VerboseCast<NumericAbstractFlexVector *>(
-        DEEPHAVEN_EXPR_MSG(other.get()));
+        DEEPHAVEN_LOCATION_EXPR(other.get()));
     auto temp = std::move(vec_) + std::move(other_vec->vec_);
     vec_ = std::move(temp);
   }
@@ -124,7 +124,7 @@ public:
 
   void InPlaceAppend(std::unique_ptr<AbstractFlexVectorBase> other) final {
     auto *other_vec = deephaven::dhcore::utility::VerboseCast<GenericAbstractFlexVector *>(
-        DEEPHAVEN_EXPR_MSG(other.get()));
+        DEEPHAVEN_LOCATION_EXPR(other.get()));
     auto temp_data = std::move(data_) + std::move(other_vec->data_);
     data_ = std::move(temp_data);
 

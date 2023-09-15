@@ -38,6 +38,11 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
     }
 
     @Override
+    public void invalidateRegion(final int regionIndex) {
+        getRegion(regionIndex).invalidate();
+    }
+
+    @Override
     public final Parameters parameters() {
         return PARAMETERS;
     }

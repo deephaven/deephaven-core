@@ -52,7 +52,9 @@ public:
   std::shared_ptr<TableHandleImpl> TimeTable(DurationSpecifier period, TimePointSpecifier start_time,
       bool blink_table);
   void RunScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback);
-
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> InputTable(const TableHandleImpl &initial_table,
+      std::vector<std::string> columns);
   /**
    * See the documentation for Server::NewTicket().
    */

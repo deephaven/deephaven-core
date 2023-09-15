@@ -4,11 +4,13 @@
 
 import unittest
 
-from deephaven import DHError, time
+import jpy
+
+from deephaven import DHError
 from deephaven.calendar import calendar_names, default_calendar_name, BusinessCalendar, DayOfWeek
-from deephaven.config import get_server_timezone
 from tests.testbase import BaseTestCase
 
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 class CalendarTestCase(BaseTestCase):
     def setUp(self) -> None:
@@ -49,7 +51,7 @@ class CalendarTestCase(BaseTestCase):
         self.assertIsNotNone(default_calendar.previous_day(current_date))
         self.assertIsNotNone(default_calendar.next_day(current_date))
         self.assertIsNotNone(default_calendar.day_of_week(current_date).name)
-        self.assertEqual(default_calendar.time_zone, time.time_zone("America/New_York"))
+        self.assertEqual(default_calendar.time_zone, _JDateTimeUtils.timeZone("America/New_York"))
 
         self.assertEqual(self.test_calendar.previous_day(self.b_day), self.prev_b_day)
         self.assertEqual(self.test_calendar.next_day(self.b_day), self.next_b_day)
@@ -66,10 +68,10 @@ class CalendarTestCase(BaseTestCase):
         b_periods = self.test_calendar.business_schedule(self.b_day1).business_periods
         self.assertEqual(len(b_periods), 1)
         p = b_periods[0]
-        s = time.format_datetime(p.start_time, time.time_zone('America/New_York'))
-        self.assertEqual(p.start_time, time.parse_instant(s))
-        s = time.format_datetime(p.end_time, time.time_zone('America/New_York'))
-        self.assertEqual(p.end_time, time.parse_instant(s))
+        s = _JDateTimeUtils.formatDateTime(p.start_time, _JDateTimeUtils.timeZone('America/New_York'))
+        self.assertEqual(p.start_time, _JDateTimeUtils.parseInstant(s))
+        s = _JDateTimeUtils.formatDateTime(p.end_time, _JDateTimeUtils.timeZone('America/New_York'))
+        self.assertEqual(p.end_time, _JDateTimeUtils.parseInstant(s))
         self.assertEqual(p.length, 6.5 * 60 * 60 * 10 ** 9)
 
     def test_business_schedule_business_day(self):
@@ -85,14 +87,14 @@ class CalendarTestCase(BaseTestCase):
 
         self.assertTrue(b_schedule.is_business_time(b_period.start_time))
         self.assertTrue(b_schedule.is_business_time(b_period.end_time))
-        non_b_time = time.minus_period(b_schedule.start_of_day, 1)
+        non_b_time = _JDateTimeUtils.minus(b_schedule.start_of_day, 1)
         self.assertFalse(b_schedule.is_business_time(non_b_time))
-        non_b_time = time.plus_period(b_schedule.end_of_day, 1)
+        non_b_time = _JDateTimeUtils.plus(b_schedule.end_of_day, 1)
         self.assertFalse(b_schedule.is_business_time(non_b_time))
 
-        b_time = time.plus_period(b_schedule.start_of_day, 10 * 10 ** 9)
+        b_time = _JDateTimeUtils.plus(b_schedule.start_of_day, 10 * 10 ** 9)
         self.assertEqual(10 * 10 ** 9, b_schedule.business_time_elapsed(b_time))
-        b_time = time.plus_period(b_schedule.end_of_day, 10 * 10 ** 9)
+        b_time = _JDateTimeUtils.plus(b_schedule.end_of_day, 10 * 10 ** 9)
         self.assertEqual(b_period.length, b_schedule.business_time_elapsed(b_time))
 
     def test_business_calendar(self):

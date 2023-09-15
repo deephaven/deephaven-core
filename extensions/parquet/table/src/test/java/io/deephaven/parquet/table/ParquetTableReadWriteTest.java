@@ -32,15 +32,17 @@ import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.codec.SimpleByteArrayCodec;
+import junit.framework.TestCase;
+import org.apache.parquet.column.Encoding;
+import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.vector.*;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.*;
 import org.apache.parquet.column.statistics.Statistics;
-import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
-import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.io.api.Binary;
 import org.junit.After;
 import org.junit.Before;
@@ -56,6 +58,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Collection;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
@@ -837,6 +840,115 @@ public class ParquetTableReadWriteTest {
         } catch (RuntimeException expected) {
             assertTrue(expected.getCause() instanceof InvalidFileHandleException);
         }
+    }
+
+    @Test
+    public void dictionaryEncodingTest() {
+        Collection<String> columns = new ArrayList<>(Arrays.asList(
+                "shortStringColumn = `Row ` + i",
+                "longStringColumn = `This is row ` + i",
+                "someIntColumn = i"));
+        final int numRows = 10;
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setMaximumDictionarySize(100) // Force "longStringColumn" to use non-dictionary encoding
+                .build();
+        final Table stringTable = TableTools.emptyTable(numRows).select(Selectable.from(columns));
+        final File dest = new File(rootFile + File.separator + "dictEncoding.parquet");
+        ParquetTools.writeTable(stringTable, dest, writeInstructions);
+        Table fromDisk = ParquetTools.readTable(dest);
+        assertTableEquals(stringTable, fromDisk);
+
+        // Verify that string columns are properly dictionary encoded
+        final ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+        final String firstColumnMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
+        assertTrue(firstColumnMetadata.contains("shortStringColumn") && firstColumnMetadata.contains("RLE_DICTIONARY"));
+        final String secondColumnMetadata = metadata.getBlocks().get(0).getColumns().get(1).toString();
+        assertTrue(
+                secondColumnMetadata.contains("longStringColumn") && !secondColumnMetadata.contains("RLE_DICTIONARY"));
+        final String thirdColumnMetadata = metadata.getBlocks().get(0).getColumns().get(2).toString();
+        assertTrue(thirdColumnMetadata.contains("someIntColumn") && !thirdColumnMetadata.contains("RLE_DICTIONARY"));
+    }
+
+    @Test
+    public void overflowingStringsTest() {
+        // Test the behavior of writing parquet files if entries exceed the page size limit
+        final int pageSize = 2 << 10;
+        final char[] data = new char[pageSize / 4];
+        String someString = new String(data);
+        Collection<String> columns = new ArrayList<>(Arrays.asList(
+                "someStringColumn = `" + someString + "` + i%10"));
+        final long numRows = 10;
+        ColumnChunkMetaData columnMetadata = overflowingStringsTestHelper(columns, numRows, pageSize);
+        String metadataStr = columnMetadata.toString();
+        assertTrue(metadataStr.contains("someStringColumn") && metadataStr.contains("PLAIN")
+                && !metadataStr.contains("RLE_DICTIONARY"));
+
+        // We exceed page size on hitting 4 rows, and we have 10 total rows.
+        // Therefore, we should have total 4 pages containing 3, 3, 3, 1 rows respectively.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 4);
+
+        final char[] veryLongData = new char[pageSize];
+        someString = new String(veryLongData);
+        columns = new ArrayList<>(
+                Arrays.asList("someStringColumn =  ii % 2 == 0 ? Long.toString(ii) : `" + someString + "` + ii"));
+        columnMetadata = overflowingStringsTestHelper(columns, numRows, pageSize);
+        // We will have 10 pages each containing 1 row.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 10);
+
+        // Table with null rows
+        columns = new ArrayList<>(Arrays.asList("someStringColumn =  ii % 2 == 0 ? null : `" + someString + "` + ii"));
+        columnMetadata = overflowingStringsTestHelper(columns, numRows, pageSize);
+        // We will have 5 pages containing 3, 2, 2, 2, 1 rows.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 5);
+    }
+
+    private static ColumnChunkMetaData overflowingStringsTestHelper(final Collection<String> columns,
+            final long numRows, final int pageSize) {
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setTargetPageSize(pageSize) // Force a small page size to cause splitting across pages
+                .setMaximumDictionarySize(50) // Force "someStringColumn" to use non-dictionary encoding
+                .build();
+        Table stringTable = TableTools.emptyTable(numRows).select(Selectable.from(columns));
+        final File dest = new File(rootFile + File.separator + "overflowingStringsTest.parquet");
+        ParquetTools.writeTable(stringTable, dest, writeInstructions);
+        Table fromDisk = ParquetTools.readTable(dest).select();
+        assertTableEquals(stringTable, fromDisk);
+
+        ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+        ColumnChunkMetaData columnMetadata = metadata.getBlocks().get(0).getColumns().get(0);
+        return columnMetadata;
+    }
+
+    @Test
+    public void overflowingCodecsTest() {
+        final int pageSize = 2 << 10;
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setTargetPageSize(pageSize) // Force a small page size to cause splitting across pages
+                .addColumnCodec("VariableWidthByteArrayColumn", SimpleByteArrayCodec.class.getName())
+                .build();
+
+        final ColumnDefinition<byte[]> columnDefinition =
+                ColumnDefinition.fromGenericType("VariableWidthByteArrayColumn", byte[].class, byte.class);
+        final TableDefinition tableDefinition = TableDefinition.of(columnDefinition);
+        final byte[] byteArray = new byte[pageSize / 2];
+        final Table table = TableTools.newTable(tableDefinition,
+                TableTools.col("VariableWidthByteArrayColumn", byteArray, byteArray, byteArray));
+
+        final File dest = new File(rootFile + File.separator + "overflowingCodecsTest.parquet");
+        ParquetTools.writeTable(table, dest, writeInstructions);
+        Table fromDisk = ParquetTools.readTable(dest).select();
+        assertTableEquals(table, fromDisk);
+
+        final ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+        final String metadataStr = metadata.getFileMetaData().getKeyValueMetaData().get("deephaven");
+        assertTrue(
+                metadataStr.contains("VariableWidthByteArrayColumn") && metadataStr.contains("SimpleByteArrayCodec"));
+        final ColumnChunkMetaData columnMetadata = metadata.getBlocks().get(0).getColumns().get(0);
+        final String columnMetadataStr = columnMetadata.toString();
+        assertTrue(columnMetadataStr.contains("VariableWidthByteArrayColumn") && columnMetadataStr.contains("PLAIN"));
+        // Each byte array is of half the page size. So we exceed page size on hitting 3 byteArrays.
+        // Therefore, we should have total 2 pages containing 2, 1 rows respectively.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 2);
     }
 
     @Test

@@ -28,7 +28,9 @@
 #include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/dhcore/utility/utility.h"
 
+using io::deephaven::proto::backplane::grpc::AddTableResponse;
 using io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
+using io::deephaven::proto::backplane::grpc::DeleteTableResponse;
 using io::deephaven::proto::backplane::grpc::ReleaseResponse;
 using io::deephaven::proto::backplane::grpc::SortDescriptor;
 using io::deephaven::proto::backplane::grpc::TableReference;
@@ -109,6 +111,14 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::Update(std::vector<std::string
   auto result_ticket = server->NewTicket();
   auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
   server->UpdateAsync(ticket_, std::move(column_specs), std::move(cb), result_ticket);
+  return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
+}
+
+std::shared_ptr<TableHandleImpl> TableHandleImpl::LazyUpdate(std::vector<std::string> column_specs) {
+  auto *server = managerImpl_->Server().get();
+  auto result_ticket = server->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
+  server->LazyUpdateAsync(ticket_, std::move(column_specs), std::move(cb), result_ticket);
   return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
 }
 
@@ -361,14 +371,33 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::ExactJoin(const TableHandleImp
   return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
 }
 
-std::shared_ptr<TableHandleImpl> TableHandleImpl::AsOfJoin(AsOfJoinTablesRequest::MatchRule match_rule,
-    const TableHandleImpl &right_side, std::vector<std::string> columns_to_match,
-    std::vector<std::string> columns_to_add) {
+std::shared_ptr<TableHandleImpl> TableHandleImpl::Aj(const TableHandleImpl &right_side,
+    std::vector<std::string> on, std::vector<std::string> joins) {
   auto *server = managerImpl_->Server().get();
   auto result_ticket = server->NewTicket();
   auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
-  server->AsOfJoinAsync(match_rule, ticket_, right_side.Ticket(), std::move(columns_to_match),
-      std::move(columns_to_add), std::move(cb), result_ticket);
+  server->AjAsync(ticket_, right_side.ticket_, std::move(on), std::move(joins),
+      std::move(cb), result_ticket);
+  return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
+}
+
+std::shared_ptr<TableHandleImpl> TableHandleImpl::Raj(const TableHandleImpl &right_side,
+    std::vector<std::string> on, std::vector<std::string> joins) {
+  auto *server = managerImpl_->Server().get();
+  auto result_ticket = server->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
+  server->RajAsync(ticket_, right_side.ticket_, std::move(on), std::move(joins),
+      std::move(cb), result_ticket);
+  return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
+}
+
+std::shared_ptr<TableHandleImpl> TableHandleImpl::LeftOuterJoin(const TableHandleImpl &right_side,
+    std::vector<std::string> on, std::vector<std::string> joins) {
+  auto *server = managerImpl_->Server().get();
+  auto result_ticket = server->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
+  server->LeftOuterJoinAsync(ticket_, right_side.ticket_, std::move(on), std::move(joins),
+      std::move(cb), result_ticket);
   return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
 }
 
@@ -384,6 +413,41 @@ TableHandleImpl::UpdateBy(std::vector<std::shared_ptr<UpdateByOperationImpl>> op
   auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
   server->UpdateByAsync(ticket_, std::move(protos), std::move(by), std::move(cb), result_ticket);
   return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
+}
+
+std::shared_ptr<TableHandleImpl>
+TableHandleImpl::SelectDistinct(std::vector<std::string> columns) {
+  auto *server = managerImpl_->Server().get();
+  auto result_ticket = server->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
+  server->SelectDistinctAsync(ticket_, std::move(columns), std::move(cb), result_ticket);
+  return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
+}
+
+std::shared_ptr<TableHandleImpl>
+TableHandleImpl::WhereIn(const deephaven::client::impl::TableHandleImpl &filter_table,
+    std::vector<std::string> columns) {
+  auto *server = managerImpl_->Server().get();
+  auto result_ticket = server->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
+  server->WhereInAsync(ticket_, filter_table.ticket_, std::move(columns), std::move(cb), result_ticket);
+  return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
+}
+
+void TableHandleImpl::AddTable(const TableHandleImpl &table_to_add) {
+  // We're going to manually make this a synchronous call.
+  auto result = SFCallback<AddTableResponse>::CreateForFuture();
+  auto *server = managerImpl_->Server().get();
+  server->AddTable(ticket_, table_to_add.ticket_, std::move(result.first));
+  result.second.wait();
+}
+
+void TableHandleImpl::RemoveTable(const TableHandleImpl &table_to_add) {
+  // We're going to manually make this a synchronous call.
+  auto result = SFCallback<DeleteTableResponse>::CreateForFuture();
+  auto *server = managerImpl_->Server().get();
+  server->RemoveTable(ticket_, table_to_add.ticket_, std::move(result.first));
+  result.second.wait();
 }
 
 namespace {
@@ -486,7 +550,7 @@ void TableHandleImpl::LookupHelper(const std::string &column_name,
   auto message = Stringf("Column lookup for %o: Expected Arrow type: one of {%o}. Actual type %o",
       column_name, separatedList(valid_types.begin(), valid_types.end(), ", ", render),
       static_cast<int>(actual_type));
-  throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+  throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
 }
 
 void TableHandleImpl::BindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback) {
@@ -504,7 +568,7 @@ void TableHandleImpl::BindToVariableAsync(std::string variable, std::shared_ptr<
     std::shared_ptr<SFCallback<>> outerCb_;
   };
   if (!managerImpl_->ConsoleId().has_value()) {
-    auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(
+    auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION_STR(
         "Client was created without specifying a script language")));
     callback->OnFailure(std::move(eptr));
     return;
@@ -546,14 +610,14 @@ ExportedTableCreationCallback::~ExportedTableCreationCallback() = default;
 void ExportedTableCreationCallback::OnSuccess(ExportedTableCreationResponse item) {
   if (!item.result_id().has_ticket()) {
     const char *message = "ExportedTableCreationResponse did not contain a ticket";
-    auto ep = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(message)));
+    auto ep = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION_STR(message)));
     OnFailure(std::move(ep));
     return;
   }
 
   if (item.result_id().ticket().ticket() != expectedTicket_.ticket()) {
     const char *message = "Result ticket was not equal to expected ticket";
-    auto ep = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(message)));
+    auto ep = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION_STR(message)));
     OnFailure(std::move(ep));
     return;
   }
@@ -675,17 +739,17 @@ public:
     auto fd = ConvertTicketToFlightDescriptor(ticket_.ticket());
     std::unique_ptr<arrow::flight::SchemaResult> schema_result;
     auto gs_result = server_->FlightClient()->GetSchema(options, fd, &schema_result);
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(gs_result));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(gs_result));
 
     std::shared_ptr<arrow::Schema> arrow_schema;
     auto schema_res = schema_result->GetSchema(nullptr, &arrow_schema);
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(schema_res));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(schema_res));
 
     auto names = MakeReservedVector<std::string>(arrow_schema->fields().size());
     auto types = MakeReservedVector<ElementTypeId::Enum>(arrow_schema->fields().size());
     for (const auto &f : arrow_schema->fields()) {
       ArrowToElementTypeId v;
-      OkOrThrow(DEEPHAVEN_EXPR_MSG(f->type()->Accept(&v)));
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(f->type()->Accept(&v)));
       names.push_back(f->name());
       types.push_back(v.typeId_);
     }

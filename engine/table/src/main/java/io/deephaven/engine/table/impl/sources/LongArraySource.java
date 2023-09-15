@@ -596,31 +596,20 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             final long[] inUse = prevInUse[blockNo];
             if (inUse != null) {
                 // region conditionalCopy
+                final int chunkOffset = destOffset.intValue();
                 long[] baseInput = (long[]) getBlock(blockNo);
                 long[] overInput = (long[]) getPrevBlock(blockNo);
-                effectiveContext.copyKernel.conditionalCopy(destination, baseInput, overInput,
-                        inUse, srcOffset, destOffset.intValue(), length);
-
-                int bitsSet = 0;
-                final int bitsetLen = (length + 63) >> 6;
-                final int bitsetOffset = srcOffset >> 6;
-                for (int i = 0; i < bitsetLen; ++i) {
-                    bitsSet += Long.bitCount(inUse[i + bitsetOffset]);
-                }
-                final int totalBits = bitsetLen << 6;
-                final boolean flipBase = bitsSet > totalBits / 2;
-
-                // mem-copy from baseline
-                for (int ii = 0; ii < length; ++ii) {
-                    chunk.set(destOffset.intValue() + ii, converter.apply((flipBase ? overInput : baseInput)[srcOffset + ii]));
-                }
 
                 final int srcEndOffset = srcOffset + length;
-                for (int ii = CopyKernel.Utils.nextSetBit(inUse, srcOffset, srcEndOffset, flipBase);
-                     ii < srcEndOffset;
-                     ii = CopyKernel.Utils.nextSetBit(inUse, ii + 1, srcEndOffset, flipBase)) {
-                    chunk.set(destOffset.intValue() + ii - srcOffset,
-                            converter.apply(flipBase ? baseInput[ii] : overInput[ii]));
+                int nextBit = CopyKernel.Utils.nextSetBit(inUse, srcOffset, srcEndOffset, false);
+
+                for (int ii = 0; ii < length; ++ii) {
+                    if (ii != nextBit - srcOffset) {
+                        chunk.set(ii + chunkOffset, converter.apply(baseInput[ii + srcOffset]));
+                    } else {
+                        nextBit = CopyKernel.Utils.nextSetBit(inUse, nextBit + 1, srcEndOffset, false);
+                        chunk.set(ii + chunkOffset, converter.apply(overInput[ii + srcOffset]));
+                    }
                 }
                 // endregion conditionalCopy
             } else {

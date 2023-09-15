@@ -14,6 +14,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.parquet.table.util.CachedChannelProvider;
 import io.deephaven.parquet.table.util.CachedChannelProviderTracker;
 import io.deephaven.vector.*;
 import io.deephaven.stringset.StringSet;
@@ -37,8 +38,7 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFac
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ParquetFileReader;
-import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
-import io.deephaven.parquet.table.util.CachedChannelProvider;
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;

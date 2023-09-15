@@ -3,7 +3,6 @@
  */
 package io.deephaven.parquet.table;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -11,7 +10,7 @@ import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.parquet.base.ParquetFileReader;
-import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
 import io.deephaven.util.codec.UTF8StringAsByteArrayCodec;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -110,7 +109,7 @@ public class ParquetSchemaReader {
         }
         try {
             return Optional.of(TableInfo.deserializeFromJSON(tableInfoRaw));
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new TableDataException("Failed to parse " + ParquetTableWriter.METADATA_KEY + " metadata", e);
         }
     }
