@@ -2,11 +2,11 @@
 
 set -euxo pipefail
 
-: ${DHCPP_LOCAL:=$HOME/dhcpp/local}
+: ${DHCPP_LOCAL:=$HOME/dhcpp}
 : ${CPP_PROTO_BUILD_DIR:=build}
 
 mkdir -p "${CPP_PROTO_BUILD_DIR}"
-$DHCPP_LOCAL/protobuf/bin/protoc \
+$DHCPP_LOCAL/bin/protoc \
     $(find . -name '*.proto') \
     --cpp_out=${CPP_PROTO_BUILD_DIR} \
     --grpc_out=${CPP_PROTO_BUILD_DIR} \

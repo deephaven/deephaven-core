@@ -37,7 +37,7 @@ on them anymore so we do notguarantee they are current for those platforms.
    Get the `build-dependencies.sh` script from Deephaven's base images repository
    at the correct version.
    You can download it directly from the link
-   https://raw.githubusercontent.com/deephaven/deephaven-base-images/72427ce29901bf0419dd05db8e4abf31b57253d9/cpp-client/build-dependencies.sh
+   https://raw.githubusercontent.com/deephaven/deephaven-base-images/4eab90690888fbd5abfcbaf5dbacc750e90d9c2f/cpp-client/build-dependencies.sh
    (this script is also used from our automated tools, to generate a docker image to
    support tests runs; that's why it lives in a separate repo).
    The script downloads, builds and installs the dependent libraries
@@ -64,7 +64,7 @@ on them anymore so we do notguarantee they are current for those platforms.
    # If the directory already exists from a previous attempt, ensure is clean/empty
    mkdir -p $DHCPP
    cd $DHCPP
-   wget https://raw.githubusercontent.com/deephaven/deephaven-base-images/72427ce29901bf0419dd05db8e4abf31b57253d9/cpp-client/build-dependencies.sh
+   wget https://raw.githubusercontent.com/deephaven/deephaven-base-images/4eab90690888fbd5abfcbaf5dbacc750e90d9c2f/cpp-client/build-dependencies.sh
    chmod +x ./build-dependencies.sh
    # Maybe edit build-dependencies.sh to reflect choices of build tools and build target, if you
    # want anything different than defaults; defaults are tested to work,
@@ -108,12 +108,25 @@ on them anymore so we do notguarantee they are current for those platforms.
    cmake \
        -DCMAKE_INSTALL_LIBDIR=lib \
        -DCMAKE_CXX_STANDARD=17 \
-       -DCMAKE_INSTALL_PREFIX=${DHCPP}/local \
+       -DCMAKE_INSTALL_PREFIX=${DHCPP} \
        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
        -DBUILD_SHARED_LIBS=ON \
        .. \
      && \
        make -j$NCPUS install
+   ```
+
+   If you need `make` to generate detailed output of the commands it is running
+   (which may be helpful for debugging the paths being used etc),
+   you can set the environment variable `VERBOSE=1`.
+   This is true in general of cmake-generated Makefiles.
+   It is useful to keep the output of make for later reference
+   in case you need to be sure of the exact compiler flags
+   that were used to compile the library and its objects.
+   You can tweak the last command above as
+
+   ```
+   VERBOSE=1 make -j$NCPUS install 2>&1 | tee make-install.log
    ```
 
 8. Run one Deephaven example which uses the installed client.
