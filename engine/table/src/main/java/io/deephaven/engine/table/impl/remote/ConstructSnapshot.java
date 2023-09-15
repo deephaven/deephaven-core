@@ -380,7 +380,7 @@ public class ConstructSnapshot {
          * Acquire a shared update graph lock if necessary.
          */
         private void maybeAcquireLock() {
-            if (locked(updateGraph)) {
+            if (updateGraph.currentThreadProcessesUpdates() || locked(updateGraph)) {
                 return;
             }
             updateGraph.sharedLock().lock();
@@ -1205,6 +1205,9 @@ public class ConstructSnapshot {
             return LogicalClock.NULL_CLOCK_VALUE;
         }
 
+        final boolean onUpdateThread = updateGraph.currentThreadProcessesUpdates();
+        final boolean alreadyLocked = StateImpl.locked(updateGraph);
+
         boolean snapshotSuccessful = false;
         boolean functionSuccessful = false;
         Exception caughtException = null;
@@ -1213,7 +1216,7 @@ public class ConstructSnapshot {
         int numConcurrentAttempts = 0;
 
         final LivenessManager initialLivenessManager = LivenessScopeStack.peek();
-        while (numConcurrentAttempts < MAX_CONCURRENT_ATTEMPTS && !StateImpl.locked(updateGraph)) {
+        while (numConcurrentAttempts < MAX_CONCURRENT_ATTEMPTS && !alreadyLocked && !onUpdateThread) {
             ++numConcurrentAttempts;
             final long beforeClockValue = updateGraph.clock().currentValue();
             final long attemptStart = System.currentTimeMillis();
@@ -1228,10 +1231,6 @@ public class ConstructSnapshot {
             if (LogicalClock.getState(beforeClockValue) == LogicalClock.State.Idle && usePrev) {
                 // noinspection ThrowableNotThrown
                 Assert.statementNeverExecuted("Previous values requested while not updating: " + beforeClockValue);
-            }
-            if (updateGraph.currentThreadProcessesUpdates() && usePrev) {
-                // noinspection ThrowableNotThrown
-                Assert.statementNeverExecuted("Previous values requested from a run thread: " + beforeClockValue);
             }
 
             final long attemptDurationMillis;
@@ -1305,7 +1304,6 @@ public class ConstructSnapshot {
                 break;
             } else {
                 try {
-                    // noinspection BusyWait
                     Thread.sleep(delay);
                     delay *= 2;
                 } catch (InterruptedException interruptIsCancel) {
@@ -1317,11 +1315,11 @@ public class ConstructSnapshot {
         if (snapshotSuccessful) {
             state.maybeReleaseLock();
             if (!functionSuccessful) {
+                final String message = "Failed to execute function concurrently despite consistent state";
                 if (caughtException != null) {
-                    throw new UncheckedDeephavenException("Failure to execute snapshot function with unchanged clock",
-                            caughtException);
+                    throw new UncheckedDeephavenException(message, caughtException);
                 } else {
-                    throw new UncheckedDeephavenException("Failure to execute snapshot function with unchanged clock");
+                    throw new UncheckedDeephavenException(message);
                 }
             }
         } else {
@@ -1339,9 +1337,10 @@ public class ConstructSnapshot {
 
                 final Boolean previousValuesRequested = control.usePreviousValues(beforeClockValue);
                 if (!Boolean.FALSE.equals(previousValuesRequested)) {
-                    Assert.statementNeverExecuted(
-                            "Previous values requested or inconsistent while blocking run processing: beforeClockValue="
-                                    + beforeClockValue + ", previousValuesRequested=" + previousValuesRequested);
+                    Assert.statementNeverExecuted(String.format(
+                            "Previous values requested or inconsistent %s: beforeClockValue=%d, previousValuesRequested=%s",
+                            onUpdateThread ? "from update-processing thread" : "while locked",
+                            beforeClockValue, previousValuesRequested));
                 }
 
                 final long attemptStart = System.currentTimeMillis();
@@ -1354,8 +1353,9 @@ public class ConstructSnapshot {
 
                 final boolean consistent = control.snapshotCompletedConsistently(afterClockValue, false);
                 if (!consistent) {
-                    Assert.statementNeverExecuted(
-                            "Consistent snapshot not generated despite blocking run processing!");
+                    Assert.statementNeverExecuted(String.format(
+                            "Consistent execution not achieved %s",
+                            onUpdateThread ? "from update-processing thread" : "while locked"));
                 }
 
                 if (log.isDebugEnabled()) {
