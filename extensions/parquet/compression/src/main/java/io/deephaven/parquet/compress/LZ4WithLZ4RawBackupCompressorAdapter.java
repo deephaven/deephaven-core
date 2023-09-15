@@ -41,7 +41,7 @@ class LZ4WithLZ4RawBackupCompressorAdapter extends DeephavenCompressorAdapterFac
             return super.decompress(inputStream, compressedSize, uncompressedSize);
         }
         if (mode == DecompressionMode.LZ4_RAW) {
-            assert lz4RawAdapter != null;
+            // LZ4_RAW adapter should have been initialized if we hit this case.
             return lz4RawAdapter.decompress(inputStream, compressedSize, uncompressedSize);
         }
         // Buffer input data in case we need to retry with LZ4_RAW.
