@@ -3127,61 +3127,6 @@ public class DateTimeUtils {
         }
 
         try {
-
-            final Matcher tdMatcher = TIME_DURATION_PATTERN.matcher(s);
-            if (tdMatcher.matches()) {
-
-                final String sign1Str = tdMatcher.group("sign1");
-                final String sign2Str = tdMatcher.group("sign2");
-                final String hourStr = tdMatcher.group("hour");
-                final String minuteStr = tdMatcher.group("minute");
-                final String secondStr = tdMatcher.group("second");
-                final String nanosStr = tdMatcher.group("nanos");
-
-                long sign1 = 0;
-
-                if (sign1Str == null || sign1Str.equals("") || sign1Str.equals("+")) {
-                    sign1 = 1;
-                } else if (sign1Str.equals("-")) {
-                    sign1 = -1;
-                } else {
-                    throw new RuntimeException("Unsupported sign: '" + sign1 + "'");
-                }
-
-                long sign2 = 0;
-
-                if (sign2Str == null || sign2Str.equals("") || sign2Str.equals("+")) {
-                    sign2 = 1;
-                } else if (sign2Str.equals("-")) {
-                    sign2 = -1;
-                } else {
-                    throw new RuntimeException("Unsupported sign: '" + sign2 + "'");
-                }
-
-                if (hourStr == null) {
-                    throw new RuntimeException("Missing hour value");
-                }
-
-                long rst = Long.parseLong(hourStr) * HOUR;
-
-                if (minuteStr == null) {
-                    throw new RuntimeException("Missing minute value");
-                }
-
-                rst += Long.parseLong(minuteStr) * MINUTE;
-
-                if (secondStr != null) {
-                    rst += Long.parseLong(secondStr.substring(1)) * SECOND;
-                }
-
-                if (nanosStr != null) {
-                    final String sn = nanosStr.substring(1) + "0".repeat(10 - nanosStr.length());
-                    rst += Long.parseLong(sn);
-                }
-
-                return sign1 * sign2 * rst;
-            }
-
             return parseDuration(s).toNanos();
         } catch (Exception e) {
             throw new DateTimeParseException("Cannot parse time: " + s, e);
@@ -3328,6 +3273,61 @@ public class DateTimeUtils {
         }
 
         try {
+
+            final Matcher tdMatcher = TIME_DURATION_PATTERN.matcher(s);
+            if (tdMatcher.matches()) {
+
+                final String sign1Str = tdMatcher.group("sign1");
+                final String sign2Str = tdMatcher.group("sign2");
+                final String hourStr = tdMatcher.group("hour");
+                final String minuteStr = tdMatcher.group("minute");
+                final String secondStr = tdMatcher.group("second");
+                final String nanosStr = tdMatcher.group("nanos");
+
+                long sign1 = 0;
+
+                if (sign1Str == null || sign1Str.equals("") || sign1Str.equals("+")) {
+                    sign1 = 1;
+                } else if (sign1Str.equals("-")) {
+                    sign1 = -1;
+                } else {
+                    throw new RuntimeException("Unsupported sign: '" + sign1 + "'");
+                }
+
+                long sign2 = 0;
+
+                if (sign2Str == null || sign2Str.equals("") || sign2Str.equals("+")) {
+                    sign2 = 1;
+                } else if (sign2Str.equals("-")) {
+                    sign2 = -1;
+                } else {
+                    throw new RuntimeException("Unsupported sign: '" + sign2 + "'");
+                }
+
+                if (hourStr == null) {
+                    throw new RuntimeException("Missing hour value");
+                }
+
+                long rst = Long.parseLong(hourStr) * HOUR;
+
+                if (minuteStr == null) {
+                    throw new RuntimeException("Missing minute value");
+                }
+
+                rst += Long.parseLong(minuteStr) * MINUTE;
+
+                if (secondStr != null) {
+                    rst += Long.parseLong(secondStr.substring(1)) * SECOND;
+                }
+
+                if (nanosStr != null) {
+                    final String sn = nanosStr.substring(1) + "0".repeat(10 - nanosStr.length());
+                    rst += Long.parseLong(sn);
+                }
+
+                return Duration.ofNanos(sign1 * sign2 * rst);
+            }
+
             return Duration.parse(s);
         } catch (Exception ex) {
             throw new DateTimeParseException("Cannot parse duration: " + s, ex);

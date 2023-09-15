@@ -890,7 +890,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         }
 
         try {
-            // noinspection ConstantConditions
             DateTimeUtils.parsePeriod("JUNK");
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
@@ -946,6 +945,25 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             TestCase.assertEquals(Duration.parse(p), DateTimeUtils.parseDuration(p));
         }
 
+        final String[][] timeFormats = {
+                {"PT12:00", "PT12h"},
+                {"PT12:00:00", "PT12h"},
+                {"PT12:00:00.123", "PT12h0.123s"},
+                {"PT12:00:00.1234", "PT12h0.1234s"},
+                {"PT12:00:00.123456789", "PT12h0.123456789s"},
+                {"PT2:00", "PT2h"},
+                {"PT2:00:00", "PT2h"},
+                {"PT2:00:00", "PT2h"},
+                {"PT2:00:00.123", "PT2h0.123s"},
+                {"PT2:00:00.1234", "PT2h0.1234s"},
+                {"PT2:00:00.123456789", "PT2h0.123456789s"},
+                {"PT15:25:49.064106107", "PT15h25m49.064106107s"},
+        };
+
+        for (String[] tf : timeFormats) {
+            TestCase.assertEquals(Duration.parse(tf[1]), DateTimeUtils.parseDuration(tf[0]));
+        }
+
         try {
             // noinspection ConstantConditions
             DateTimeUtils.parseDuration(null);
@@ -972,6 +990,26 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         for (String p : periods) {
             TestCase.assertEquals(Duration.parse(p), DateTimeUtils.parseDurationQuiet(p));
+        }
+
+
+        final String[][] timeFormats = {
+                {"PT12:00", "PT12h"},
+                {"PT12:00:00", "PT12h"},
+                {"PT12:00:00.123", "PT12h0.123s"},
+                {"PT12:00:00.1234", "PT12h0.1234s"},
+                {"PT12:00:00.123456789", "PT12h0.123456789s"},
+                {"PT2:00", "PT2h"},
+                {"PT2:00:00", "PT2h"},
+                {"PT2:00:00", "PT2h"},
+                {"PT2:00:00.123", "PT2h0.123s"},
+                {"PT2:00:00.1234", "PT2h0.1234s"},
+                {"PT2:00:00.123456789", "PT2h0.123456789s"},
+                {"PT15:25:49.064106107", "PT15h25m49.064106107s"},
+        };
+
+        for (String[] tf : timeFormats) {
+            TestCase.assertEquals(Duration.parse(tf[1]), DateTimeUtils.parseDurationQuiet(tf[0]));
         }
 
         TestCase.assertNull(DateTimeUtils.parseDurationQuiet(null));

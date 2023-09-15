@@ -144,8 +144,6 @@ include(':Stats')
 
 include(':Container')
 
-include(':ParquetHadoop')
-
 include(':codegen')
 
 include(':cpp-client')
@@ -254,6 +252,9 @@ project(':extensions-performance').projectDir = file('extensions/performance')
 
 include(':extensions-source-support')
 project(':extensions-source-support').projectDir = file('extensions/source-support')
+
+include(':extensions-protobuf')
+project(':extensions-protobuf').projectDir = file('extensions/protobuf')
 
 include(':plugin')
 

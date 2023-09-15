@@ -5,6 +5,8 @@
 
 #include <stdexcept>
 
+#include <grpc/support/log.h>
+
 #include <arrow/array.h>
 #include <arrow/scalar.h>
 #include "deephaven/client/columns.h"
@@ -48,7 +50,13 @@ Client Client::Connect(const std::string &target, const ClientOptions &options) 
   auto server = Server::CreateFromTarget(target, options);
   auto executor = Executor::Create("Client executor for " + server->me());
   auto flight_executor = Executor::Create("Flight executor for " + server->me());
+  void *const server_for_logging = server.get();
   auto impl = ClientImpl::Create(std::move(server), executor, flight_executor, options.sessionType_);
+  gpr_log(GPR_INFO,
+      "Client target=%s created ClientImpl(%p), Server(%p).",
+      target.c_str(),
+      static_cast<void*>(impl.get()),
+      server_for_logging);
   return Client(std::move(impl));
 }
 
@@ -56,17 +64,22 @@ Client::Client() = default;
 
 Client::Client(std::shared_ptr<impl::ClientImpl> impl) : impl_(std::move(impl)) {
 }
+
 Client::Client(Client &&other) noexcept = default;
 Client &Client::operator=(Client &&other) noexcept = default;
 
 // There is only one Client associated with the server connection. Clients can only be moved, not
 // copied. When the Client owning the state is destructed, we tear down the state via close().
 Client::~Client() {
+  gpr_log(GPR_INFO, "Destructing Client ClientImpl(%p).",
+      static_cast<void*>(impl_.get()));
   Close();
 }
 
 // Tear down Client state.
 void Client::Close() {
+  gpr_log(GPR_INFO, "Closing Client ClientImpl(%p), before close use_count=%ld.",
+      static_cast<void*>(impl_.get()), impl_.use_count());
   // Move to local variable to be defensive.
   auto temp = std::move(impl_);
   if (temp != nullptr) {
@@ -111,6 +124,14 @@ TableHandle TableHandleManager::TimeTable(DurationSpecifier period, TimePointSpe
   return TableHandle(std::move(impl));
 }
 
+TableHandle TableHandleManager::InputTable(const TableHandle &initial_table,
+    std::vector<std::string> key_columns) const {
+  auto th_impl = impl_->InputTable(*initial_table.Impl(), std::move(key_columns));
+  // Populate the InputTable with the contents of 'initial_table'
+  th_impl->AddTable(*initial_table.Impl());
+  return TableHandle(std::move(th_impl));
+}
+
 std::string TableHandleManager::NewTicket() const {
   return impl_->NewTicket();
 }
@@ -152,6 +173,13 @@ Aggregate createAggForMatchPairs(ComboAggregateRequest::AggType aggregate_type, 
   return Aggregate(std::move(impl));
 }
 }  // namespace
+
+Aggregate::Aggregate() = default;
+Aggregate::Aggregate(const Aggregate &other) noexcept = default;
+Aggregate::Aggregate(Aggregate &&other) noexcept = default;
+Aggregate &Aggregate::operator=(const Aggregate &other) noexcept = default;
+Aggregate &Aggregate::operator=(Aggregate &&other) noexcept = default;
+Aggregate::~Aggregate() = default;
 
 Aggregate::Aggregate(std::shared_ptr<impl::AggregateImpl> impl) : impl_(std::move(impl)) {
 }
@@ -547,6 +575,14 @@ TableHandle TableHandle::WhereIn(const TableHandle &filter_table,
     std::vector<std::string> columns) const {
   auto th_impl = impl_->WhereIn(*filter_table.impl_, std::move(columns));
   return TableHandle(std::move(th_impl));
+}
+
+void TableHandle::AddTable(const deephaven::client::TableHandle &table_to_add) {
+  impl_->AddTable(*table_to_add.impl_);
+}
+
+void TableHandle::RemoveTable(const deephaven::client::TableHandle &table_to_remove) {
+  impl_->RemoveTable(*table_to_remove.impl_);
 }
 
 void TableHandle::BindToVariable(std::string variable) const {

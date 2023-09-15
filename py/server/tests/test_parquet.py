@@ -286,7 +286,7 @@ class ParquetTestCase(BaseTestCase):
 
         # Write the pandas dataframe back to parquet (via pyarraow) and read it back using deephaven.parquet to compare
         dataframe.to_parquet('data_from_pandas.parquet',
-                             compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
+                             compression=None if compression_codec_name == 'UNCOMPRESSED' else compression_codec_name)
         result_table = read('data_from_pandas.parquet')
         self.assert_table_equals(dh_table, result_table)
 

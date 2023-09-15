@@ -5,7 +5,7 @@
 import os
 import unittest
 
-from deephaven import kafka_producer as pk, new_table
+from deephaven import kafka_producer as pk, new_table, time_table
 from deephaven.column import string_col, int_col, double_col
 from deephaven.stream import kafka
 from deephaven.stream.kafka.producer import KeyValueSpec
@@ -138,6 +138,24 @@ class KafkaProducerTestCase(BaseTestCase):
         topics = kafka.topics(kafka_config)
         self.assertTrue(len(topics) > 0)
         self.assertIn(topic, topics)
+
+        self.assertIsNotNone(cleanup)
+        cleanup()
+
+    def test_not_publish_initial(self):
+        """
+        Check a simple Kafka producer with publish_initial=False works without errors
+        """
+        # Note: using long column since there is no simple / native kafka Instant serializer
+        t = time_table("PT1s").view(["TimestampNanos=epochNanos(Timestamp)"])
+        cleanup = pk.produce(
+            t,
+            {'bootstrap.servers': 'redpanda:29092'},
+            'my_timestamps',
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=pk.simple_spec('TimestampNanos'),
+            publish_initial=False,
+        )
 
         self.assertIsNotNone(cleanup)
         cleanup()
