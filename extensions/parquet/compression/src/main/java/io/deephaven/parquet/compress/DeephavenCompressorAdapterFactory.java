@@ -183,7 +183,9 @@ public class DeephavenCompressorAdapterFactory {
     }
 
     /**
-     * Returns a compressor with the given codec name.
+     * Returns a compressor with the given codec name. The returned adapter can internally stateful in some cases and
+     * therefore a single instance should not be re-used across files (check
+     * {@link LZ4WithLZ4RawBackupCompressorAdapter} for more details).
      *
      * @param codecName the name of the codec to search for.
      * @return a compressor instance with a name matching the given codec.
