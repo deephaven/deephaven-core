@@ -872,7 +872,7 @@ public class ParquetTableReadWriteTest {
     @Test
     public void overflowingStringsTest() {
         // Test the behavior of writing parquet files if entries exceed the page size limit
-        final int pageSize = 2 << 10;
+        final int pageSize = ParquetInstructions.getMinTargetPageSize();
         final char[] data = new char[pageSize / 4];
         String someString = new String(data);
         Collection<String> columns = new ArrayList<>(Arrays.asList(
@@ -921,7 +921,7 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void overflowingCodecsTest() {
-        final int pageSize = 2 << 10;
+        final int pageSize = ParquetInstructions.getMinTargetPageSize();
         final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
                 .setTargetPageSize(pageSize) // Force a small page size to cause splitting across pages
                 .addColumnCodec("VariableWidthByteArrayColumn", SimpleByteArrayCodec.class.getName())

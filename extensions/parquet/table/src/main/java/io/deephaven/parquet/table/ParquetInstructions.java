@@ -91,6 +91,16 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     private static final boolean DEFAULT_IS_REFRESHING = false;
 
     /**
+     * Get the current minimum allowed target page size in bytes.
+     *
+     * @return the current minimum allowed target page size in bytes.
+     */
+    @VisibleForTesting
+    public static int getMinTargetPageSize() {
+        return MIN_TARGET_PAGE_SIZE;
+    }
+
+    /**
      * Set the default target page size (in bytes) used to section rows of data into pages during column writing. This
      * number should be no smaller than {@link #MIN_TARGET_PAGE_SIZE}.
      *
