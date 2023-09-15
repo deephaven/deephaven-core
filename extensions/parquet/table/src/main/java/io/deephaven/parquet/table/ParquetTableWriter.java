@@ -692,23 +692,24 @@ public class ParquetTableWriter {
                             } else {
                                 if (keyCount == encodedKeys.length) {
                                     // Copy into an array of double the size with upper limit at maxKeys
-                                    if (keyCount == maxKeys) {
-                                        throw new DictionarySizeExceededException(String.format(
-                                                "Dictionary maximum keys exceeded for %s", columnDefinition.getName()));
-                                    }
                                     encodedKeys = Arrays.copyOf(encodedKeys, (int) Math.min(keyCount * 2L, maxKeys));
                                 }
                                 final Binary encodedKey = Binary.fromString(key);
-                                dictSize += encodedKey.length();
-                                if (dictSize > maxDictSize) {
+                                encodedKeys[keyCount] = encodedKey;
+                                statistics.updateStats(encodedKey);
+                                dictionaryPos = keyCount;
+                                dictSize += encodedKeys[keyCount].length();
+                                keyCount++;
+                                if ((keyCount >= maxKeys) || (dictSize >= maxDictSize)) {
+                                    // Reset the stats because we will re-encode these in PLAIN encoding.
+                                    columnWriter.resetStats();
+                                    // We discard all the dictionary data accumulated so far and fall back to PLAIN
+                                    // encoding. We could have added a dictionary page first with data collected so far
+                                    // and then stored the remaining data via PLAIN encoding (TODO deephaven-core#946).
                                     throw new DictionarySizeExceededException(
                                             String.format("Dictionary maximum size exceeded for %s",
                                                     columnDefinition.getName()));
                                 }
-                                encodedKeys[keyCount] = encodedKey;
-                                statistics.updateStats(encodedKey);
-                                dictionaryPos = keyCount;
-                                keyCount++;
                             }
                             keyToPos.put(key, dictionaryPos);
                         }
@@ -722,9 +723,6 @@ public class ParquetTableWriter {
             if (keyCount == 0 && hasNulls) {
                 // Reset the stats because we will re-encode these in PLAIN encoding.
                 columnWriter.resetStats();
-                // We discard all the dictionary data accumulated so far and fall back to PLAIN encoding. We could have
-                // added a dictionary page first with data collected so far and then encoded the remaining data using
-                // PLAIN encoding (TODO deephaven-core#946).
                 return false;
             }
 
