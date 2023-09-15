@@ -2,7 +2,11 @@
 
 set -euxo pipefail
 
-: ${DHCPP:=$HOME/dhcpp}
+if [ -z "$PROTOC_BIN" ] && [ -z "$DHCPP" ]; then
+    echo "$0: At least one of the environment variables 'PROTOC_BIN' and 'DHCPP' must be defined, aborting." 1>&2
+    exit 1
+fi
+
 : ${PROTOC_BIN:=$DHCPP/bin}
 : ${CPP_PROTO_BUILD_DIR:=build}
 
