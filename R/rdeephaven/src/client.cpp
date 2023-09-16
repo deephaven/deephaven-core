@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <cstddef>
 #include <string>
 #include <utility>
 #include <vector>
@@ -152,7 +153,12 @@ public:
     TableHandleWrapper* AggBy(Rcpp::List aggregations, std::vector<std::string> group_by_columns) {
         std::vector<deephaven::client::Aggregate> converted_aggregations = convertRcppListToVectorOfTypeAggregate(aggregations);
         return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregations), group_by_columns));
-    }
+    };
+
+    TableHandleWrapper* AggAllBy(AggregateWrapper &aggregation, std::vector<std::string> group_by_columns) {
+        std::vector<deephaven::client::Aggregate> converted_aggregation = {aggregation.internal_agg_op};
+        return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregation), group_by_columns));
+    };
 
     TableHandleWrapper* FirstBy(std::vector<std::string> cols) {
         return new TableHandleWrapper(internal_tbl_hdl.FirstBy(cols));
@@ -251,7 +257,7 @@ public:
             abs_sort = std::vector<bool>(cols.size(), abs_sort[0]);
         }
 
-        for(int i = 0; i < cols.size(); i++) {
+        for(std::size_t i = 0; i < cols.size(); i++) {
             if (!descending[i]) {
                 sort_pairs.push_back(deephaven::client::SortPair::Ascending(cols[i], abs_sort[i]));
             } else {
@@ -404,7 +410,6 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(period_ISO, start_time_ISO));
     };
 
-
     TableHandleWrapper* MakeTableHandleFromTicket(std::string ticket) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.MakeTableHandleFromTicket(ticket));
     }
@@ -527,6 +532,8 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("ungroup", &TableHandleWrapper::Ungroup)
 
     .method("agg_by", &TableHandleWrapper::AggBy)
+    .method("agg_all_by", &TableHandleWrapper::AggAllBy)
+
     .method("first_by", &TableHandleWrapper::FirstBy)
     .method("last_by", &TableHandleWrapper::LastBy)
     .method("head_by", &TableHandleWrapper::HeadBy)

@@ -55,6 +55,8 @@ setup <- function() {
   ))
 }
 
+##### TESTING GOOD INPUTS #####
+
 test_that("agg_first behaves as expected", {
   data <- setup()
 
@@ -105,6 +107,21 @@ test_that("agg_first behaves as expected", {
     agg_by(agg_first(c("Number1", "Number2")), c("X", "Y"))$
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
+  
+  new_tb7 <- data$df5 %>%
+    group_by(X) %>%
+    summarise(across(everything(), first))
+  new_th7 <- data$th5$
+    agg_all_by(agg_first(), "X")
+  expect_equal(as.data.frame(new_th7), as.data.frame(new_tb7))
+  
+  new_th8 <- rbind(data$df5, data$df6, data$df6, data$df5) %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), first))
+  new_tb8 <- merge_tables(data$th5, data$th6, data$th6, data$th5)$
+    agg_all_by(agg_first(), c("X", "Y"))$
+    sort(c("X", "Y"))
+  expect_equal(as.data.frame(new_th8), as.data.frame(new_tb8))
 
   data$client$close()
 })
@@ -159,6 +176,21 @@ test_that("agg_last behaves as expected", {
     agg_by(agg_last(c("Number1", "Number2")), c("X", "Y"))$
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
+  
+  new_tb7 <- data$df5 %>%
+    group_by(X) %>%
+    summarise(across(everything(), last))
+  new_th7 <- data$th5$
+    agg_all_by(agg_last(), "X")
+  expect_equal(as.data.frame(new_th7), as.data.frame(new_tb7))
+  
+  new_th8 <- rbind(data$df5, data$df6, data$df6, data$df5) %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), last))
+  new_tb8 <- merge_tables(data$th5, data$th6, data$th6, data$th5)$
+    agg_all_by(agg_last(), c("X", "Y"))$
+    sort(c("X", "Y"))
+  expect_equal(as.data.frame(new_th8), as.data.frame(new_tb8))
 
   data$client$close()
 })
@@ -213,6 +245,21 @@ test_that("agg_min behaves as expected", {
     agg_by(agg_min(c("Number1", "Number2")), c("X", "Y"))$
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
+  
+  new_tb7 <- data$df5 %>%
+    group_by(X) %>%
+    summarise(across(everything(), min))
+  new_th7 <- data$th5$
+    agg_all_by(agg_min(), "X")
+  expect_equal(as.data.frame(new_th7), as.data.frame(new_tb7))
+  
+  new_th8 <- rbind(data$df5, data$df6, data$df6, data$df5) %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), min))
+  new_tb8 <- merge_tables(data$th5, data$th6, data$th6, data$th5)$
+    agg_all_by(agg_min(), c("X", "Y"))$
+    sort(c("X", "Y"))
+  expect_equal(as.data.frame(new_th8), as.data.frame(new_tb8))
 
   data$client$close()
 })
@@ -267,6 +314,21 @@ test_that("agg_max behaves as expected", {
     agg_by(agg_max(c("Number1", "Number2")), c("X", "Y"))$
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
+  
+  new_tb7 <- data$df5 %>%
+    group_by(X) %>%
+    summarise(across(everything(), max))
+  new_th7 <- data$th5$
+    agg_all_by(agg_max(), "X")
+  expect_equal(as.data.frame(new_th7), as.data.frame(new_tb7))
+  
+  new_th8 <- rbind(data$df5, data$df6, data$df6, data$df5) %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), max))
+  new_tb8 <- merge_tables(data$th5, data$th6, data$th6, data$th5)$
+    agg_all_by(agg_max(), c("X", "Y"))$
+    sort(c("X", "Y"))
+  expect_equal(as.data.frame(new_th8), as.data.frame(new_tb8))
 
   data$client$close()
 })
@@ -321,6 +383,23 @@ test_that("agg_sum behaves as expected", {
     agg_by(agg_sum(c("Number1", "Number2")), c("X", "Y"))$
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
+  
+  new_tb7 <- data$df5 %>%
+    select(-Y) %>%
+    group_by(X) %>%
+    summarise(across(everything(), sum))
+  new_th7 <- data$th5$
+    drop_columns("Y")$
+    agg_all_by(agg_sum(), "X")
+  expect_equal(as.data.frame(new_th7), as.data.frame(new_tb7))
+  
+  new_th8 <- rbind(data$df5, data$df6, data$df6, data$df5) %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), sum))
+  new_tb8 <- merge_tables(data$th5, data$th6, data$th6, data$th5)$
+    agg_all_by(agg_sum(), c("X", "Y"))$
+    sort(c("X", "Y"))
+  expect_equal(as.data.frame(new_th8), as.data.frame(new_tb8))
 
   data$client$close()
 })
@@ -375,6 +454,23 @@ test_that("agg_abs_sum behaves as expected", {
     agg_by(agg_abs_sum(c("Number1", "Number2")), c("X", "Y"))$
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
+  
+  new_tb7 <- data$df5 %>%
+    select(-Y) %>%
+    group_by(X) %>%
+    summarise(across(everything(), ~ sum(abs(.x))))
+  new_th7 <- data$th5$
+    drop_columns("Y")$
+    agg_all_by(agg_abs_sum(), "X")
+  expect_equal(as.data.frame(new_th7), as.data.frame(new_tb7))
+  
+  new_th8 <- rbind(data$df5, data$df6, data$df6, data$df5) %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), ~ sum(abs(.x))))
+  new_tb8 <- merge_tables(data$th5, data$th6, data$th6, data$th5)$
+    agg_all_by(agg_abs_sum(), c("X", "Y"))$
+    sort(c("X", "Y"))
+  expect_equal(as.data.frame(new_th8), as.data.frame(new_tb8))
 
   data$client$close()
 })
@@ -429,6 +525,23 @@ test_that("agg_avg behaves as expected", {
     agg_by(agg_avg(c("Number1", "Number2")), c("X", "Y"))$
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
+  
+  new_tb7 <- data$df5 %>%
+    select(-Y) %>%
+    group_by(X) %>%
+    summarise(across(everything(), mean))
+  new_th7 <- data$th5$
+    drop_columns("Y")$
+    agg_all_by(agg_avg(), "X")
+  expect_equal(as.data.frame(new_th7), as.data.frame(new_tb7))
+  
+  new_th8 <- rbind(data$df5, data$df6, data$df6, data$df5) %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), mean))
+  new_tb8 <- merge_tables(data$th5, data$th6, data$th6, data$th5)$
+    agg_all_by(agg_avg(), c("X", "Y"))$
+    sort(c("X", "Y"))
+  expect_equal(as.data.frame(new_th8), as.data.frame(new_tb8))
 
   data$client$close()
 })
@@ -493,6 +606,25 @@ test_that("agg_w_avg behaves as expected", {
     agg_by(agg_w_avg("weights", c("Number1", "Number2")), c("X", "Y"))$
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
+  
+  new_tb7 <- data$df5 %>%
+    select(-Y) %>%
+    group_by(X) %>%
+    summarise(across(everything(), ~ weighted.mean(.x, Number2))) %>%
+    select(-Number2)
+  new_th7 <- data$th5$
+    drop_columns("Y")$
+    agg_all_by(agg_w_avg("Number2"), "X")
+  expect_equal(as.data.frame(new_th7), as.data.frame(new_tb7))
+  
+  new_th8 <- rbind(data$df5, data$df6, data$df6, data$df5) %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), ~ weighted.mean(.x, Number2))) %>%
+    select(-Number2)
+  new_tb8 <- merge_tables(data$th5, data$th6, data$th6, data$th5)$
+    agg_all_by(agg_w_avg("Number2"), c("X", "Y"))$
+    sort(c("X", "Y"))
+  expect_equal(as.data.frame(new_th8), as.data.frame(new_tb8))
 
   data$client$close()
 })
@@ -547,6 +679,23 @@ test_that("agg_median behaves as expected", {
     agg_by(agg_median(c("Number1", "Number2")), c("X", "Y"))$
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
+  
+  new_tb7 <- data$df5 %>%
+    select(-Y) %>%
+    group_by(X) %>%
+    summarise(across(everything(), median))
+  new_th7 <- data$th5$
+    drop_columns("Y")$
+    agg_all_by(agg_median(), "X")
+  expect_equal(as.data.frame(new_th7), as.data.frame(new_tb7))
+  
+  new_th8 <- rbind(data$df5, data$df6, data$df6, data$df5) %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), median))
+  new_tb8 <- merge_tables(data$th5, data$th6, data$th6, data$th5)$
+    agg_all_by(agg_median(), c("X", "Y"))$
+    sort(c("X", "Y"))
+  expect_equal(as.data.frame(new_th8), as.data.frame(new_tb8))
 
   data$client$close()
 })
@@ -601,6 +750,23 @@ test_that("agg_var behaves as expected", {
     agg_by(agg_var(c("Number1", "Number2")), c("X", "Y"))$
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
+  
+  new_tb7 <- data$df5 %>%
+    select(-Y) %>%
+    group_by(X) %>%
+    summarise(across(everything(), var))
+  new_th7 <- data$th5$
+    drop_columns("Y")$
+    agg_all_by(agg_var(), "X")
+  expect_equal(as.data.frame(new_th7), as.data.frame(new_tb7))
+  
+  new_th8 <- rbind(data$df5, data$df6, data$df6, data$df5) %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), var))
+  new_tb8 <- merge_tables(data$th5, data$th6, data$th6, data$th5)$
+    agg_all_by(agg_var(), c("X", "Y"))$
+    sort(c("X", "Y"))
+  expect_equal(as.data.frame(new_th8), as.data.frame(new_tb8))
 
   data$client$close()
 })
@@ -655,6 +821,23 @@ test_that("agg_std behaves as expected", {
     agg_by(agg_std(c("Number1", "Number2")), c("X", "Y"))$
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
+  
+  new_tb7 <- data$df5 %>%
+    select(-Y) %>%
+    group_by(X) %>%
+    summarise(across(everything(), sd))
+  new_th7 <- data$th5$
+    drop_columns("Y")$
+    agg_all_by(agg_std(), "X")
+  expect_equal(as.data.frame(new_th7), as.data.frame(new_tb7))
+  
+  new_th8 <- rbind(data$df5, data$df6, data$df6, data$df5) %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), sd))
+  new_tb8 <- merge_tables(data$th5, data$th6, data$th6, data$th5)$
+    agg_all_by(agg_std(), c("X", "Y"))$
+    sort(c("X", "Y"))
+  expect_equal(as.data.frame(new_th8), as.data.frame(new_tb8))
 
   data$client$close()
 })
@@ -690,6 +873,26 @@ test_that("agg_percentile behaves as expected", {
     agg_by(agg_percentile(0.3, c("Number1", "Number2")), c("X", "Y"))$
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th3), new_df3)
+  
+  new_df4 <- data.frame(
+    X = c("A", "B", "C"),
+    Number1 = c(50, -44, -70),
+    Number2 = c(-50, 76, 130)
+  )
+  new_th4 <- data$th5$
+    drop_columns("Y")$
+    agg_all_by(agg_percentile(0.4), "X")
+  expect_equal(as.data.frame(new_th4), new_df4)
+  
+  new_df5 <- data.frame(
+    X = c("A", "B", "A", "C", "B", "B", "C", "B", "A", "C"),
+    Y = c("M", "N", "O", "N", "P", "O", "M", "M", "P", "P"),
+    Number1 = c(50, -44, 1, 11, -66, 99, -70, 86, -45, 0),
+    Number2 = c(-55, 76, 12, 4, 137, 45, 214, -6, 34, -76)
+  )
+  new_th5 <- merge_tables(data$th5, data$th6, data$th6, data$th5)$
+    agg_all_by(agg_percentile(0.4), c("X", "Y"))
+  expect_equal(as.data.frame(new_th4), new_df4)
 
   data$client$close()
 })
@@ -738,6 +941,33 @@ test_that("agg_count behaves as expected", {
     agg_by(agg_count("n"), c("X", "Y"))$
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
+  
+  new_th7 <- data$th5$
+    agg_all_by(agg_count("n"), "X")$
+    sort("X")
+  expect_equal(as.data.frame(new_th7), as.data.frame(new_tb5))
+  
+  new_th8 <- data$th6$
+    agg_all_by(agg_count("n"), c("X", "Y"))$
+    sort(c("X", "Y"))
+  expect_equal(as.data.frame(new_th8), as.data.frame(new_tb6))
+
+  data$client$close()
+})
+
+##### TESTING BAD INPUTS #####
+
+test_that("agg_by behaves nicely when given bad input", {
+  data <- setup()
+  
+  expect_error(data$th1$agg_by(agg_first()),
+    "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_first' at index 1 with an empty 'cols' argument.")
+  
+  expect_error(data$th1$agg_by(c(agg_first("int_col"), agg_last())),
+    "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_last' at index 2 with an empty 'cols' argument.")
+  
+  expect_error(data$th1$agg_by(c(agg_first("int_col"), agg_last("int_col"), agg_count("n"), agg_avg())),
+    "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_avg' at index 4 with an empty 'cols' argument.")
 
   data$client$close()
 })

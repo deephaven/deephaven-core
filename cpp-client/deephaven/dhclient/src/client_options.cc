@@ -13,10 +13,11 @@ ClientOptions::ClientOptions() {
   SetSessionType("python");
 }
 
-ClientOptions::ClientOptions(const ClientOptions &other) noexcept = default;
+ClientOptions::ClientOptions(const ClientOptions &other) = default;
 ClientOptions::ClientOptions(ClientOptions &&other) noexcept = default;
-ClientOptions &ClientOptions::operator=(const ClientOptions &other) noexcept = default;
+ClientOptions &ClientOptions::operator=(const ClientOptions &other) = default;
 ClientOptions &ClientOptions::operator=(ClientOptions &&other) noexcept = default;
+
 ClientOptions::~ClientOptions() = default;
 
 ClientOptions &ClientOptions::SetDefaultAuthentication() {

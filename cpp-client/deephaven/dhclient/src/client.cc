@@ -104,9 +104,7 @@ bool Client::RemoveOnCloseCallback(OnCloseCbId cb_id) {
 
 TableHandleManager::TableHandleManager() = default;
 TableHandleManager::TableHandleManager(std::shared_ptr<impl::TableHandleManagerImpl> impl) : impl_(std::move(impl)) {}
-TableHandleManager::TableHandleManager(const TableHandleManager &other) noexcept = default;
 TableHandleManager::TableHandleManager(TableHandleManager &&other) noexcept = default;
-TableHandleManager &TableHandleManager::operator=(const TableHandleManager &other) noexcept = default;
 TableHandleManager &TableHandleManager::operator=(TableHandleManager &&other) noexcept = default;
 TableHandleManager::~TableHandleManager() = default;
 
