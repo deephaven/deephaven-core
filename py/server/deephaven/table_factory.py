@@ -360,6 +360,11 @@ def function_generated_table(table_generator: Callable[[], Table],
 
     Note: any tables used by the 'table_generator' function *MUST* be specified in the 'source_tables'. This
     ensures that the 'table_generator' is rerun only *after* any changes to the 'source_tables' have been processed.
+    Additionally, while the 'table_generator' may access data in the 'source_tables', it should not perform further table
+    operations on them -- since the operations may be memoized, it is possible that a table operation will return a
+    table created by a previous invocation of the 'table_generator'. Since that result will not have been included in
+    the 'source_tables', it is not guaranteed to have been processed by the UpdateGraphProcessor, allowing the
+    'table_generator' to unexpectedly run against the memoized, not-yet-updated table.
 
     Args:
         table_generator (Callable[[], Table]): The table generator function. This function must return a Table.

@@ -1,10 +1,10 @@
-from datetime import datetime
 from typing import Any
 
 import deephaven.dtypes as dht
 from deephaven import empty_table, input_table, new_table, update_graph, function_generated_table
 from deephaven.column import string_col, int_col
 from deephaven.execution_context import get_exec_ctx
+from deephaven.liveness_scope import liveness_scope
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -44,20 +44,18 @@ class TableTestCase(BaseTestCase):
             "MyStr": dht.string
         }
         append_only_input_table = input_table(col_defs=col_defs)
+        input_table_lastby = append_only_input_table.last_by()
 
         def table_generator_function():
-            print("Running table_generator_function() at time: " + str(datetime.now()))
-            return append_only_input_table.last_by().update('ResultStr = MyStr')
+            with liveness_scope():
+                return input_table_lastby.update('ResultStr = MyStr')
 
-        result_table = function_generated_table(table_generator_function, source_tables=append_only_input_table)
+        result_table = function_generated_table(table_generator_function, source_tables=input_table_lastby)
 
         self.assertEqual(result_table.size, 0)
 
-        print("Adding row at time: " + str(datetime.now()))
         append_only_input_table.add(new_table([string_col(name='MyStr', data=['test string'])]))
-        print("add() returned at time: " + str(datetime.now()))
         self.wait_ticking_table_update(result_table, row_count=1, timeout=30)
-        print("result_table has 1 row at time: " + str(datetime.now()))
 
         first_row_key = get_row_key(0, result_table)
         result_str = result_table.j_table.getColumnSource("ResultStr").get(first_row_key)
@@ -71,16 +69,17 @@ class TableTestCase(BaseTestCase):
         append_only_input_table2 = input_table(col_defs={"MyInt": dht.int32})
 
         def table_generator_function():
-            t1 = append_only_input_table1.last_by()
-            t2 = append_only_input_table2.last_by()
+            with liveness_scope():
+                t1 = append_only_input_table1.last_by()
+                t2 = append_only_input_table2.last_by()
 
-            my_str = t1.j_table.getColumnSource('MyStr').get(get_row_key(0, t1))
-            my_int = t2.j_table.getColumnSource('MyInt').getInt(get_row_key(0, t2))
+                my_str = None if t1.size == 0 else t1.j_table.getColumnSource('MyStr').get(get_row_key(0, t1))
+                my_int = None if t2.size == 0 else t2.j_table.getColumnSource('MyInt').getInt(get_row_key(0, t2))
 
-            return new_table([
-                string_col('ResultStr', [my_str]),
-                int_col('ResultInt', [my_int]),
-            ])
+                return new_table([
+                    string_col('ResultStr', [my_str]),
+                    int_col('ResultInt', [my_int]),
+                ])
 
         result_table = function_generated_table(table_generator_function,
                                                 source_tables=[append_only_input_table1, append_only_input_table2])

@@ -54,7 +54,13 @@ public class FunctionGeneratedTableFactory {
 
     /**
      * Create a table that refreshes based on the value of your function, automatically called when any of the
-     * sourceTables tick.
+     * {@code sourceTables} tick. <br />
+     * Note that the {@code tableGenerator} may access data in the {@code sourceTables} but should not perform further
+     * table operations on them -- since the operations may be memoized, it is possible that a table operation will
+     * return a table created by a previous invocation of the {@code tableGenerator}. Since that result will not have
+     * been included in the {@code sourceTables}, it is not guaranteed to have been processed by the
+     * {@code UpdateGraphProcessor}, allowing the {@code tableGenerator} to unexpectedly run against the memoized,
+     * not-yet-updated table.
      *
      * @param tableGenerator a function returning a table to copy into the output table
      * @param sourceTables The query engine does not know the details of your function inputs. If you are dependent on a
