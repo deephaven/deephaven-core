@@ -48,6 +48,7 @@ import org.apache.parquet.column.statistics.IntStatistics;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -81,22 +82,6 @@ public class ParquetTableWriter {
 
     enum CacheTags {
         DECIMAL_ARGS
-    }
-
-    /**
-     * Classes that implement this interface are responsible for converting data from individual DH columns into buffers
-     * to be written out to the Parquet file.
-     *
-     * @param <B>
-     */
-    interface TransferObject<B> extends SafeCloseable {
-        void propagateChunkData();
-
-        B getBuffer();
-
-        int rowCount();
-
-        void fetchData(RowSequence rs);
     }
 
     /**
@@ -618,8 +603,6 @@ public class ParquetTableWriter {
                     final RowSequence rs =
                             valueRowSetIterator.getNextRowSequenceWithLength(valuePageSizeGetter.getAsInt());
                     transferObject.fetchData(rs);
-                    transferObject.propagateChunkData();
-                    final Object bufferToWrite = transferObject.getBuffer();
                     if (vectorHelper != null) {
                         final IntChunk<? extends Values> lenChunk = vectorHelper.lengthSource.getChunk(
                                 lengthSourceContext,
@@ -627,10 +610,20 @@ public class ParquetTableWriter {
                                 .asIntChunk();
                         lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                         repeatCount.limit(lenChunk.size());
-                        columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount(), statistics);
+                        // TODO(deephaven-core:DH-4495): Add support for paginating vector data
+                        // We do not paginate vector data, because our parquet reading code expects all elements from a
+                        // single array or a vector to be on the same page (refer classes ToVectorPage and ToArrayPage
+                        // for more details).
+                        int numValuesBuffered = transferObject.transferAllToBuffer();
+                        columnWriter.addVectorPage(transferObject.getBuffer(), repeatCount, numValuesBuffered,
+                                statistics);
                         repeatCount.clear();
                     } else {
-                        columnWriter.addPage(bufferToWrite, transferObject.rowCount(), statistics);
+                        // Split a single page into multiple if we are not able to fit all the entries in one page
+                        do {
+                            int numValuesBuffered = transferObject.transferOnePageToBuffer();
+                            columnWriter.addPage(transferObject.getBuffer(), numValuesBuffered, statistics);
+                        } while (transferObject.hasMoreDataToBuffer());
                     }
                 }
             }
@@ -692,24 +685,23 @@ public class ParquetTableWriter {
                             } else {
                                 if (keyCount == encodedKeys.length) {
                                     // Copy into an array of double the size with upper limit at maxKeys
+                                    if (keyCount == maxKeys) {
+                                        throw new DictionarySizeExceededException(String.format(
+                                                "Dictionary maximum keys exceeded for %s", columnDefinition.getName()));
+                                    }
                                     encodedKeys = Arrays.copyOf(encodedKeys, (int) Math.min(keyCount * 2L, maxKeys));
                                 }
                                 final Binary encodedKey = Binary.fromString(key);
-                                encodedKeys[keyCount] = encodedKey;
-                                statistics.updateStats(encodedKey);
-                                dictionaryPos = keyCount;
-                                dictSize += encodedKeys[keyCount].length();
-                                keyCount++;
-                                if ((keyCount >= maxKeys) || (dictSize >= maxDictSize)) {
-                                    // Reset the stats because we will re-encode these in PLAIN encoding.
-                                    columnWriter.resetStats();
-                                    // We discard all the dictionary data accumulated so far and fall back to PLAIN
-                                    // encoding. We could have added a dictionary page first with data collected so far
-                                    // and then stored the remaining data via PLAIN encoding (TODO deephaven-core#946).
+                                dictSize += encodedKey.length();
+                                if (dictSize > maxDictSize) {
                                     throw new DictionarySizeExceededException(
                                             String.format("Dictionary maximum size exceeded for %s",
                                                     columnDefinition.getName()));
                                 }
+                                encodedKeys[keyCount] = encodedKey;
+                                statistics.updateStats(encodedKey);
+                                dictionaryPos = keyCount;
+                                keyCount++;
                             }
                             keyToPos.put(key, dictionaryPos);
                         }
@@ -768,6 +760,9 @@ public class ParquetTableWriter {
         } catch (final DictionarySizeExceededException ignored) {
             // Reset the stats because we will re-encode these in PLAIN encoding.
             columnWriter.resetStats();
+            // We discard all the dictionary data accumulated so far and fall back to PLAIN encoding. We could have
+            // added a dictionary page first with data collected so far and then encoded the remaining data using PLAIN
+            // encoding (TODO deephaven-core#946).
             return false;
         }
     }
@@ -790,7 +785,9 @@ public class ParquetTableWriter {
         }
 
         if (columnType == String.class) {
-            return targetPageSize / Integer.BYTES;
+            // We don't know the length of strings until we read the actual data. Therefore, we take a relaxed estimate
+            // here and final calculation is done when writing the data.
+            return targetPageSize;
         }
 
         try {
@@ -813,23 +810,23 @@ public class ParquetTableWriter {
         if (int.class.equals(columnType)) {
             int[] array = new int[maxValuesPerPage];
             WritableIntChunk<Values> chunk = WritableIntChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, IntBuffer.wrap(array), maxValuesPerPage);
+            return new IntTransfer(columnSource, chunk, IntBuffer.wrap(array), maxValuesPerPage);
         } else if (long.class.equals(columnType)) {
             long[] array = new long[maxValuesPerPage];
             WritableLongChunk<Values> chunk = WritableLongChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, LongBuffer.wrap(array), maxValuesPerPage);
+            return new LongTransfer(columnSource, chunk, LongBuffer.wrap(array), maxValuesPerPage);
         } else if (double.class.equals(columnType)) {
             double[] array = new double[maxValuesPerPage];
             WritableDoubleChunk<Values> chunk = WritableDoubleChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, DoubleBuffer.wrap(array), maxValuesPerPage);
+            return new DoubleTransfer(columnSource, chunk, DoubleBuffer.wrap(array), maxValuesPerPage);
         } else if (float.class.equals(columnType)) {
             float[] array = new float[maxValuesPerPage];
             WritableFloatChunk<Values> chunk = WritableFloatChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, FloatBuffer.wrap(array), maxValuesPerPage);
+            return new FloatTransfer(columnSource, chunk, FloatBuffer.wrap(array), maxValuesPerPage);
         } else if (Boolean.class.equals(columnType)) {
             byte[] array = new byte[maxValuesPerPage];
             WritableByteChunk<Values> chunk = WritableByteChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, ByteBuffer.wrap(array), maxValuesPerPage);
+            return new BooleanTransfer(columnSource, chunk, ByteBuffer.wrap(array), maxValuesPerPage);
         } else if (short.class.equals(columnType)) {
             return new ShortTransfer(columnSource, maxValuesPerPage);
         } else if (char.class.equals(columnType)) {
@@ -837,7 +834,7 @@ public class ParquetTableWriter {
         } else if (byte.class.equals(columnType)) {
             return new ByteTransfer(columnSource, maxValuesPerPage);
         } else if (String.class.equals(columnType)) {
-            return new StringTransfer(columnSource, maxValuesPerPage);
+            return new StringTransfer(columnSource, maxValuesPerPage, instructions.getTargetPageSize());
         }
 
         // If there's an explicit codec, we should disregard the defaults for these CodecLookup#lookup() will properly
@@ -850,24 +847,74 @@ public class ParquetTableWriter {
                         computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
                 final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
                         precisionAndScale.precision, precisionAndScale.scale, -1);
-                return new CodecTransfer<>(bigDecimalColumnSource, codec, maxValuesPerPage);
+                return new CodecTransfer<>(bigDecimalColumnSource, codec, maxValuesPerPage,
+                        instructions.getTargetPageSize());
             } else if (BigInteger.class.equals(columnType)) {
                 // noinspection unchecked
                 return new CodecTransfer<>((ColumnSource<BigInteger>) columnSource, new BigIntegerParquetBytesCodec(-1),
-                        maxValuesPerPage);
+                        maxValuesPerPage, instructions.getTargetPageSize());
             }
         }
 
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
-        return new CodecTransfer<>(columnSource, codec, maxValuesPerPage);
+        return new CodecTransfer<>(columnSource, codec, maxValuesPerPage, instructions.getTargetPageSize());
     }
 
-    static class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer> implements TransferObject<B> {
+    /**
+     * Classes that implement this interface are responsible for converting data from individual DH columns into buffers
+     * to be written out to the Parquet file.
+     *
+     * @param <B>
+     */
+    interface TransferObject<B> extends SafeCloseable {
+        /**
+         * Fetch all data corresponding to the provided row sequence.
+         */
+        void fetchData(RowSequence rs);
+
+        /**
+         * Transfer all the fetched data into an internal buffer, which can then be accessed using
+         * {@link TransferObject#getBuffer()}. This method should only be called after
+         * {@link TransferObject#fetchData(RowSequence)}}. This method should be used when writing unpaginated data, and
+         * should not be interleaved with calls to {@link TransferObject#transferOnePageToBuffer()}. Note that this
+         * method can lead to out-of-memory error for variable-width types (e.g. strings) if the fetched data is too big
+         * to fit in the available heap.
+         *
+         * @return The number of fetched data entries copied into the buffer.
+         */
+        int transferAllToBuffer();
+
+        /**
+         * Transfer one page size worth of fetched data into an internal buffer, which can then be accessed using
+         * {@link TransferObject#getBuffer()}. The target page size is passed in the constructor. The method should only
+         * be called after {@link TransferObject#fetchData(RowSequence)}}. This method should be used when writing
+         * paginated data, and should not be interleaved with calls to {@link TransferObject#transferAllToBuffer()}.
+         *
+         * @return The number of fetched data entries copied into the buffer. This can be different from the total
+         *         number of entries fetched in case of variable-width types (e.g. strings) when used with additional
+         *         page size limits while copying.
+         */
+        int transferOnePageToBuffer();
+
+        /**
+         * Check if there is any fetched data which can be copied into buffer
+         */
+        boolean hasMoreDataToBuffer();
+
+        B getBuffer();
+    }
+
+    private static class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer>
+            implements TransferObject<B> {
         private final C chunk;
         private final B buffer;
         private final ColumnSource<?> columnSource;
         private final ChunkSource.FillContext context;
+        private boolean hasMoreDataToBuffer;
 
+        /**
+         * {@code chunk} and {@code buffer} must be backed by the same array. Assumption verified in the child classes.
+         */
         PrimitiveTransfer(ColumnSource<?> columnSource, C chunk, B buffer, int targetSize) {
             this.columnSource = columnSource;
             this.chunk = chunk;
@@ -876,9 +923,31 @@ public class ParquetTableWriter {
         }
 
         @Override
-        public void propagateChunkData() {
+        public void fetchData(RowSequence rs) {
+            columnSource.fillChunk(context, chunk, rs);
+            hasMoreDataToBuffer = true;
+        }
+
+        @Override
+        public int transferAllToBuffer() {
+            return transferOnePageToBuffer();
+        }
+
+        @Override
+        public int transferOnePageToBuffer() {
+            if (!hasMoreDataToBuffer()) {
+                return 0;
+            }
+            // Assuming that buffer and chunk are backed by the same array.
             buffer.position(0);
             buffer.limit(chunk.size());
+            hasMoreDataToBuffer = false;
+            return chunk.size();
+        }
+
+        @Override
+        public boolean hasMoreDataToBuffer() {
+            return hasMoreDataToBuffer;
         }
 
         @Override
@@ -887,241 +956,314 @@ public class ParquetTableWriter {
         }
 
         @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            columnSource.fillChunk(context, chunk, rs);
-        }
-
-        @Override
         public void close() {
             context.close();
         }
     }
 
-    static class ShortTransfer implements TransferObject<IntBuffer> {
+    private static final class IntTransfer extends PrimitiveTransfer<WritableIntChunk<Values>, IntBuffer> {
+        /**
+         * Check docs in {@link PrimitiveTransfer} for more details.
+         */
+        IntTransfer(ColumnSource<?> columnSource, WritableIntChunk<Values> chunk, IntBuffer buffer, int targetSize) {
+            super(columnSource, chunk, buffer, targetSize);
+            Assert.eq(chunk.array(), "chunk.array()", buffer.array(), "buffer.array()");
+        }
+    }
 
-        private ShortChunk<Values> chunk;
-        private final IntBuffer buffer;
+    private static final class LongTransfer extends PrimitiveTransfer<WritableLongChunk<Values>, LongBuffer> {
+        /**
+         * Check docs in {@link PrimitiveTransfer} for more details.
+         */
+        LongTransfer(ColumnSource<?> columnSource, WritableLongChunk<Values> chunk, LongBuffer buffer, int targetSize) {
+            super(columnSource, chunk, buffer, targetSize);
+            Assert.eq(chunk.array(), "chunk.array()", buffer.array(), "buffer.array()");
+        }
+    }
+
+    private static final class DoubleTransfer extends PrimitiveTransfer<WritableDoubleChunk<Values>, DoubleBuffer> {
+        /**
+         * Check docs in {@link PrimitiveTransfer} for more details.
+         */
+        DoubleTransfer(ColumnSource<?> columnSource, WritableDoubleChunk<Values> chunk, DoubleBuffer buffer,
+                int targetSize) {
+            super(columnSource, chunk, buffer, targetSize);
+            Assert.eq(chunk.array(), "chunk.array()", buffer.array(), "buffer.array()");
+        }
+    }
+
+    private static final class FloatTransfer extends PrimitiveTransfer<WritableFloatChunk<Values>, FloatBuffer> {
+        /**
+         * Check docs in {@link PrimitiveTransfer} for more details.
+         */
+        FloatTransfer(ColumnSource<?> columnSource, WritableFloatChunk<Values> chunk, FloatBuffer buffer,
+                int targetSize) {
+            super(columnSource, chunk, buffer, targetSize);
+            Assert.eq(chunk.array(), "chunk.array()", buffer.array(), "buffer.array()");
+        }
+    }
+
+    private static final class BooleanTransfer extends PrimitiveTransfer<WritableByteChunk<Values>, ByteBuffer> {
+        /**
+         * Check docs in {@link PrimitiveTransfer} for more details.
+         */
+        BooleanTransfer(ColumnSource<?> columnSource, WritableByteChunk<Values> chunk, ByteBuffer buffer,
+                int targetSize) {
+            super(columnSource, chunk, buffer, targetSize);
+            Assert.eq(chunk.array(), "chunk.array()", buffer.array(), "buffer.array()");
+        }
+    }
+
+    /**
+     * Used as a base class of transfer objects for types like shorts which are castable to Ints without losing any
+     * precision and are therefore stored using IntBuffer.
+     */
+    private abstract static class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>>
+            implements TransferObject<IntBuffer> {
+        protected T chunk;
+        protected final IntBuffer buffer;
         private final ColumnSource<?> columnSource;
         private final ChunkSource.GetContext context;
 
-        ShortTransfer(ColumnSource<?> columnSource, int targetSize) {
-
+        IntCastablePrimitiveTransfer(ColumnSource<?> columnSource, int targetSize) {
             this.columnSource = columnSource;
             this.buffer = IntBuffer.allocate(targetSize);
             context = columnSource.makeGetContext(targetSize);
         }
 
-
         @Override
-        public void propagateChunkData() {
-            buffer.clear();
-            for (int i = 0; i < chunk.size(); i++) {
-                buffer.put(chunk.get(i));
-            }
-            buffer.flip();
+        final public void fetchData(RowSequence rs) {
+            // noinspection unchecked
+            chunk = (T) columnSource.getChunk(context, rs);
         }
 
         @Override
-        public IntBuffer getBuffer() {
+        final public int transferAllToBuffer() {
+            return transferOnePageToBuffer();
+        }
+
+        @Override
+        final public int transferOnePageToBuffer() {
+            if (!hasMoreDataToBuffer()) {
+                return 0;
+            }
+            buffer.clear();
+            // Assuming that all the fetched data will fit in one page. This is because page count is accurately
+            // calculated for non variable-width types. Check ParquetTableWriter.getTargetRowsPerPage for more details.
+            copyAllFromChunkToBuffer();
+            buffer.flip();
+            int ret = chunk.size();
+            chunk = null;
+            return ret;
+        }
+
+        /**
+         * Helper method to copy all data from {@code this.chunk} to {@code this.buffer}. The buffer should be cleared
+         * before calling this method and is positioned for a {@link Buffer#flip()} after the call.
+         */
+        abstract void copyAllFromChunkToBuffer();
+
+        @Override
+        final public boolean hasMoreDataToBuffer() {
+            return (chunk != null);
+        }
+
+        @Override
+        final public IntBuffer getBuffer() {
             return buffer;
         }
 
         @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (ShortChunk<Values>) columnSource.getChunk(context, rs);
-        }
-
-        @Override
-        public void close() {
+        final public void close() {
             context.close();
         }
     }
 
-    static class CharTransfer implements TransferObject<IntBuffer> {
+    private static final class ShortTransfer extends IntCastablePrimitiveTransfer<ShortChunk<Values>> {
+        ShortTransfer(ColumnSource<?> columnSource, int targetSize) {
+            super(columnSource, targetSize);
+        }
 
-        private final ColumnSource<?> columnSource;
-        private final ChunkSource.GetContext context;
-        private CharChunk<Values> chunk;
-        private final IntBuffer buffer;
+        @Override
+        void copyAllFromChunkToBuffer() {
+            for (int chunkIdx = 0; chunkIdx < chunk.size(); chunkIdx++) {
+                buffer.put(chunk.get(chunkIdx));
+            }
+        }
+    }
 
+    private static final class CharTransfer extends IntCastablePrimitiveTransfer<CharChunk<Values>> {
         CharTransfer(ColumnSource<?> columnSource, int targetSize) {
-            this.columnSource = columnSource;
-            this.buffer = IntBuffer.allocate(targetSize);
-            context = this.columnSource.makeGetContext(targetSize);
+            super(columnSource, targetSize);
         }
 
         @Override
-        public void propagateChunkData() {
-            buffer.clear();
-            for (int i = 0; i < chunk.size(); i++) {
-                buffer.put(chunk.get(i));
+        void copyAllFromChunkToBuffer() {
+            for (int chunkIdx = 0; chunkIdx < chunk.size(); chunkIdx++) {
+                buffer.put(chunk.get(chunkIdx));
             }
-            buffer.flip();
-        }
-
-        @Override
-        public IntBuffer getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (CharChunk<Values>) columnSource.getChunk(context, rs);
-        }
-
-        @Override
-        public void close() {
-            context.close();
         }
     }
 
-    static class ByteTransfer implements TransferObject<IntBuffer> {
-
-        private ByteChunk<Values> chunk;
-        private final IntBuffer buffer;
-        private final ColumnSource<?> columnSource;
-        private final ChunkSource.GetContext context;
-
+    private static final class ByteTransfer extends IntCastablePrimitiveTransfer<ByteChunk<Values>> {
         ByteTransfer(ColumnSource<?> columnSource, int targetSize) {
-            this.columnSource = columnSource;
-            this.buffer = IntBuffer.allocate(targetSize);
-            context = this.columnSource.makeGetContext(targetSize);
+            super(columnSource, targetSize);
         }
 
         @Override
-        public void propagateChunkData() {
-            buffer.clear();
-            for (int i = 0; i < chunk.size(); i++) {
-                buffer.put(chunk.get(i));
+        void copyAllFromChunkToBuffer() {
+            for (int chunkIdx = 0; chunkIdx < chunk.size(); chunkIdx++) {
+                buffer.put(chunk.get(chunkIdx));
             }
-            buffer.flip();
-        }
-
-        @Override
-        public IntBuffer getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (ByteChunk<Values>) columnSource.getChunk(context, rs);
-        }
-
-        @Override
-        public void close() {
-            context.close();
         }
     }
 
-    static class StringTransfer implements TransferObject<Binary[]> {
-
+    /**
+     * Used as a base class of transfer objects for types like strings or big integers that need specialized encoding,
+     * and thus we need to enforce page size limits while writing.
+     */
+    private abstract static class EncodedTransfer<T> implements TransferObject<Binary[]> {
         private final ChunkSource.GetContext context;
-        private ObjectChunk<String, Values> chunk;
-        private final Binary[] buffer;
+        private ObjectChunk<T, Values> chunk;
+        private Binary[] buffer;
+        /**
+         * Number of objects buffered
+         */
+        private int bufferedDataCount;
+
         private final ColumnSource<?> columnSource;
 
-        StringTransfer(ColumnSource<?> columnSource, int targetSize) {
+        /**
+         * The target size of data to be stored in a single page. This is not a strictly enforced "maximum" page size.
+         */
+        private final int targetPageSize;
+
+        /**
+         * Index of next object from the chunk to be buffered
+         */
+        private int currentChunkIdx;
+
+        /**
+         * Encoded value which takes us beyond the page size limit. We cache it to avoid re-encoding.
+         */
+        @Nullable
+        private Binary cachedEncodedValue;
+
+        EncodedTransfer(ColumnSource<?> columnSource, int maxValuesPerPage, int targetPageSize) {
             this.columnSource = columnSource;
-            this.buffer = new Binary[targetSize];
-            context = this.columnSource.makeGetContext(targetSize);
+            this.buffer = new Binary[maxValuesPerPage];
+            context = this.columnSource.makeGetContext(maxValuesPerPage);
+            this.targetPageSize = targetPageSize;
+            bufferedDataCount = 0;
+            cachedEncodedValue = null;
         }
 
         @Override
-        public void propagateChunkData() {
-            for (int i = 0; i < chunk.size(); i++) {
-                String value = chunk.get(i);
-                buffer[i] = value == null ? null : Binary.fromString(value);
+        final public void fetchData(RowSequence rs) {
+            // noinspection unchecked
+            chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
+            currentChunkIdx = 0;
+            bufferedDataCount = 0;
+        }
+
+        @Override
+        final public int transferAllToBuffer() {
+            // Assuming this method is called after fetchData() and that the buffer is empty.
+            Assert.neqNull(chunk, "chunk");
+            Assert.eqZero(currentChunkIdx, "currentChunkIdx");
+            Assert.eqZero(bufferedDataCount, "bufferedDataCount");
+            int chunkSize = chunk.size();
+            while (currentChunkIdx < chunkSize) {
+                final T value = chunk.get(currentChunkIdx++);
+                buffer[bufferedDataCount++] = value == null ? null : encodeToBinary(value);
             }
+            chunk = null;
+            return bufferedDataCount;
         }
 
         @Override
-        public Binary[] getBuffer() {
+        final public int transferOnePageToBuffer() {
+            if (!hasMoreDataToBuffer()) {
+                return 0;
+            }
+            if (bufferedDataCount != 0) {
+                // Clear any old buffered data
+                Arrays.fill(buffer, 0, bufferedDataCount, null);
+                bufferedDataCount = 0;
+            }
+            int bufferedDataSize = 0;
+            int chunkSize = chunk.size();
+            while (currentChunkIdx < chunkSize) {
+                final T value = chunk.get(currentChunkIdx);
+                if (value == null) {
+                    currentChunkIdx++;
+                    buffer[bufferedDataCount++] = null;
+                    continue;
+                }
+                Binary binaryEncodedValue;
+                if (cachedEncodedValue == null) {
+                    binaryEncodedValue = encodeToBinary(value);
+                } else {
+                    binaryEncodedValue = cachedEncodedValue;
+                    cachedEncodedValue = null;
+                }
+
+                // Always buffer the first element, even if it exceeds the target page size.
+                if (bufferedDataSize != 0 && bufferedDataSize + binaryEncodedValue.length() > targetPageSize) {
+                    cachedEncodedValue = binaryEncodedValue;
+                    break;
+                }
+                currentChunkIdx++;
+                buffer[bufferedDataCount++] = binaryEncodedValue;
+                bufferedDataSize += binaryEncodedValue.length();
+            }
+            if (currentChunkIdx == chunk.size()) {
+                chunk = null;
+            }
+            return bufferedDataCount;
+        }
+
+        abstract Binary encodeToBinary(T value);
+
+        @Override
+        final public boolean hasMoreDataToBuffer() {
+            return ((chunk != null) && (currentChunkIdx < chunk.size()));
+        }
+
+        @Override
+        final public Binary[] getBuffer() {
             return buffer;
         }
 
         @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (ObjectChunk<String, Values>) columnSource.getChunk(context, rs);
-        }
-
-        @Override
-        public void close() {
+        final public void close() {
             context.close();
         }
     }
 
-    static class CodecTransfer<T> implements TransferObject<Binary[]> {
+    private static final class StringTransfer extends EncodedTransfer<String> {
+        StringTransfer(ColumnSource<?> columnSource, int maxValuesPerPage, int targetPageSize) {
+            super(columnSource, maxValuesPerPage, targetPageSize);
+        }
 
-        private final ChunkSource.GetContext context;
+        @Override
+        Binary encodeToBinary(String value) {
+            return Binary.fromString(value);
+        }
+    }
+
+    private static final class CodecTransfer<T> extends EncodedTransfer<T> {
         private final ObjectCodec<? super T> codec;
-        private ObjectChunk<T, Values> chunk;
-        private final Binary[] buffer;
-        private final ColumnSource<T> columnSource;
 
-        CodecTransfer(ColumnSource<T> columnSource, ObjectCodec<? super T> codec, int targetSize) {
-            this.columnSource = columnSource;
-            this.buffer = new Binary[targetSize];
-            context = this.columnSource.makeGetContext(targetSize);
+        CodecTransfer(ColumnSource<?> columnSource, ObjectCodec<? super T> codec, int maxValuesPerPage,
+                int targetPageSize) {
+            super(columnSource, maxValuesPerPage, targetPageSize);
             this.codec = codec;
         }
 
         @Override
-        public void propagateChunkData() {
-            for (int i = 0; i < chunk.size(); i++) {
-                T value = chunk.get(i);
-                buffer[i] = value == null ? null : Binary.fromConstantByteArray(codec.encode(value));
-            }
-        }
-
-        @Override
-        public Binary[] getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
-        }
-
-        @Override
-        public void close() {
-            context.close();
+        Binary encodeToBinary(T value) {
+            return Binary.fromConstantByteArray(codec.encode(value));
         }
     }
 

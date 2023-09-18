@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <cstddef>
 #include <string>
 #include <utility>
 #include <vector>
@@ -403,10 +404,10 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregations), group_by_columns));
     };
 
-    TableHandleWrapper* AggAllBy(AggregateWrapper &aggregation, std::vector<std::string> group_by_cols) {
-        std::vector<deephaven::client::Aggregate> converted_aggregation = {aggregation.internal_aggregation};
-        return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregation), group_by_cols));
-    }
+    TableHandleWrapper* AggAllBy(AggregateWrapper &aggregation, std::vector<std::string> group_by_columns) {
+        std::vector<deephaven::client::Aggregate> converted_aggregation = {aggregation.internal_agg_op};
+        return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregation), group_by_columns));
+    };
 
     TableHandleWrapper* FirstBy(std::vector<std::string> cols) {
         return new TableHandleWrapper(internal_tbl_hdl.FirstBy(cols));
@@ -505,7 +506,7 @@ public:
             abs_sort = std::vector<bool>(cols.size(), abs_sort[0]);
         }
 
-        for(int i = 0; i < cols.size(); i++) {
+        for(std::size_t i = 0; i < cols.size(); i++) {
             if (!descending[i]) {
                 sort_pairs.push_back(deephaven::client::SortPair::Ascending(cols[i], abs_sort[i]));
             } else {

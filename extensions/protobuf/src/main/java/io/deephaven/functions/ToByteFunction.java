@@ -38,7 +38,9 @@ public interface ToByteFunction<T> extends ToPrimitiveFunction<T> {
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> ToByteFunction<T> map(Function<T, R> f, ToByteFunction<R> g) {
+    static <T, R> ToByteFunction<T> map(
+            Function<? super T, ? extends R> f,
+            ToByteFunction<? super R> g) {
         return ByteFunctions.map(f, g);
     }
 

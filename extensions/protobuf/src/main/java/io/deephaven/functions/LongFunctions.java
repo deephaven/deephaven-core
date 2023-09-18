@@ -9,15 +9,23 @@ import java.util.function.Function;
 class LongFunctions {
 
     static <T> ToLongFunction<T> cast() {
+        return cast(PrimitiveLong.INSTANCE);
+    }
+
+    static <T> ToLongFunction<T> cast(ToLongFunction<? super T> f) {
         // noinspection unchecked
-        return (ToLongFunction<T>) PrimitiveLong.INSTANCE;
+        return (ToLongFunction<T>) f;
     }
 
-    static <T> ToLongFunction<T> of(java.util.function.ToLongFunction<T> f) {
-        return f instanceof ToLongFunction ? (ToLongFunction<T>) f : f::applyAsLong;
+    static <T> ToLongFunction<T> of(java.util.function.ToLongFunction<? super T> f) {
+        return f instanceof ToLongFunction
+                ? cast((ToLongFunction<? super T>) f)
+                : f::applyAsLong;
     }
 
-    static <T, R> ToLongFunction<T> map(Function<T, R> f, java.util.function.ToLongFunction<R> g) {
+    static <T, R> ToLongFunction<T> map(
+            Function<? super T, ? extends R> f,
+            java.util.function.ToLongFunction<? super R> g) {
         return new LongMap<>(f, g);
     }
 
@@ -31,10 +39,10 @@ class LongFunctions {
     }
 
     private static class LongMap<T, R> implements ToLongFunction<T> {
-        private final Function<T, R> f;
-        private final java.util.function.ToLongFunction<R> g;
+        private final Function<? super T, ? extends R> f;
+        private final java.util.function.ToLongFunction<? super R> g;
 
-        public LongMap(Function<T, R> f, java.util.function.ToLongFunction<R> g) {
+        public LongMap(Function<? super T, ? extends R> f, java.util.function.ToLongFunction<? super R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

@@ -36,7 +36,7 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFac
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ParquetFileReader;
-import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.parquet.base.util.CachedChannelProvider;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
