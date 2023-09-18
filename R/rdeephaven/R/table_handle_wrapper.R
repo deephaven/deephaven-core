@@ -205,6 +205,14 @@ TableHandle <- R6Class("TableHandle",
       return(TableHandle$new(self$.internal_rcpp_object$ungroup(by)))
     },
 
+    #' @description
+    #' Creates a table with additional columns calculated from window-based aggregations of columns in this table.
+    #' The aggregations are defined by the provided operations, which support incremental aggregations over the
+    #' corresponding rows in the table. The aggregations will apply position or time-based windowing and compute the
+    #' results over the entire table or each row group as identified by the provided key columns.
+    #' @param ops UpdateByOp or list of UpdateByOps to perform on non-grouping columns.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     update_by = function(ops, by = character()) {
       verify_type("ops", ops, "UpdateByOp", "Deephaven UpdateByOp", FALSE)
       verify_string("by", by, FALSE)
@@ -216,7 +224,7 @@ TableHandle <- R6Class("TableHandle",
     #' @description
     #' Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
     #' aggregation(s) specified. See `?Aggregations` for more information.
-    #' @param aggs Aggregation or list of Aggregations to perform on non-grouping columns.
+    #' @param aggs AggOp or list of AggOps to perform on non-grouping columns.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     agg_by = function(aggs, by = character()) {

@@ -1,3 +1,8 @@
+#' @description
+#' An OperationControl defines the control parameters of some UpdateByOps used in an update_by table operation.
+#' The UpdateByOps can use OperationControl to handle erroneous data are `ema_tick`, `ema_time`, `emmax_tick`,
+#' `emmax_time`, `emmin_tick`, `emmin_time`, and `ems_time`.
+#' Note that OperationControl should not be instantiated directly by user code, but rather `by op_control()`.
 OperationControl <- R6Class("OperationControl",
   cloneable = FALSE,
   public = list(
@@ -11,6 +16,22 @@ OperationControl <- R6Class("OperationControl",
   )
 )
 
+#' @description
+#' Creates an OperationControl that controls behavior on special values in `udb_em*` operations. The arguments `on_null`
+#' and `on_nan` can take the following values:
+#'   'poison': Allow bad data to poison the result. This is only valid for use with NaN.
+#'   'reset': Reset the state for the bucket to None when invalid data is encountered.
+#'   'skip': Skip and do not process the invalid data without changing state.
+#'   'throw': Throw an exception and abort processing when bad data is encountered.
+#' @param on_null Defines how an UpdateByOp handles null values it encounters. 'skip' is the default.
+#' @param on_nan Defines how an UpdateByOp handles NaN values it encounters. 'skip' is the default.
+#' @param big_value_context Defines how an UpdateByOp handles exceptionally large values it encounters.
+#' The default value is 'decimal128'. The following values are available:
+#'   'decimal128': IEEE 754R Decimal128 format. 34 digits and rounding is half-even.
+#'   'decimal32': IEEE 754R Decimal32 format. 7 digits and rounding is half-even.
+#'   'decimal64': IEEE 754R Decimal64 format. 16 digits and rounding is half-even.
+#'   'unlimited': Unlimited precision arithmetic. Rounding is half-up.
+#' @return OperationControl to be used in `udb_em*`.
 #' @export
 op_control <- function(on_null="skip", on_nan="skip", big_value_context="decimal128") {
 

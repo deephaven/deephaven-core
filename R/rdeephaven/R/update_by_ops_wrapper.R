@@ -1,3 +1,6 @@
+#' @description
+#' An UpdateByOp represents a window-based operator that can be passed to `update_by()`.
+#' Note that UpdateByOps should not be instantiated directly by user code, but rather by provided udb_* functions.
 UpdateByOp <- R6Class("UpdateByOp",
   cloneable = FALSE,
   public = list(
@@ -13,6 +16,11 @@ UpdateByOp <- R6Class("UpdateByOp",
 
 ### All of the functions below return an instance of an 'UpdateByOp' object
 
+#' @description
+#' Creates a cumulative sum UpdateByOp that computes the cumulative sum of each column in `cols` for each aggregation group.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the cumulative sum for all non-grouping columns.
+#' @return UpdateByOp to be used in `update_by()`.
 #' @export
 udb_cum_sum <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
