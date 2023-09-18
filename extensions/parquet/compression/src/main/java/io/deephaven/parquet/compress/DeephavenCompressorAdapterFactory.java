@@ -18,6 +18,7 @@ import org.apache.hadoop.io.compress.Compressor;
 import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.hadoop.codec.SnappyCodec;
+import org.apache.parquet.hadoop.codec.Lz4RawCodec;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.IOException;
@@ -61,6 +62,10 @@ public class DeephavenCompressorAdapterFactory {
                 // does use platform-specific implementations, but has native implementations for the
                 // platforms we support today.
                 SnappyCodec.class, CompressionCodecName.SNAPPY,
+
+                // Use the Parquet LZ4_RAW codec, which internally uses aircompressor
+                Lz4RawCodec.class, CompressionCodecName.LZ4_RAW,
+
                 // The rest of these are aircompressor codecs which have fast / pure java implementations
                 JdkGzipCodec.class, CompressionCodecName.GZIP,
                 LzoCodec.class, CompressionCodecName.LZO,
@@ -82,14 +87,14 @@ public class DeephavenCompressorAdapterFactory {
         return new DeephavenCompressorAdapterFactory(factory, Collections.unmodifiableMap(codecToNames));
     }
 
-    private static class CodecWrappingCompressorAdapter implements CompressorAdapter {
+    static class CodecWrappingCompressorAdapter implements CompressorAdapter {
         private final CompressionCodec compressionCodec;
         private final CompressionCodecName compressionCodecName;
 
         private boolean innerCompressorPooled;
         private Compressor innerCompressor;
 
-        private CodecWrappingCompressorAdapter(CompressionCodec compressionCodec,
+        CodecWrappingCompressorAdapter(CompressionCodec compressionCodec,
                 CompressionCodecName compressionCodecName) {
             this.compressionCodec = Objects.requireNonNull(compressionCodec);
             this.compressionCodecName = Objects.requireNonNull(compressionCodecName);
@@ -178,25 +183,36 @@ public class DeephavenCompressorAdapterFactory {
     }
 
     /**
-     * Returns a compressor with the given codec name.
+     * Returns a compressor with the given codec name. The returned adapter can internally stateful in some cases and
+     * therefore a single instance should not be re-used across files (check
+     * {@link LZ4WithLZ4RawBackupCompressorAdapter} for more details).
      *
      * @param codecName the name of the codec to search for.
      * @return a compressor instance with a name matching the given codec.
      */
-    public CompressorAdapter getByName(String codecName) {
+    public CompressorAdapter getByName(final String codecName) {
         if (codecName.equalsIgnoreCase("UNCOMPRESSED")) {
             return CompressorAdapter.PASSTHRU;
         }
-        final CompressionCodec codec = compressionCodecFactory.getCodecByName(codecName);
+        CompressionCodec codec = compressionCodecFactory.getCodecByName(codecName);
         if (codec == null) {
-            throw new IllegalArgumentException(
-                    String.format("Failed to find CompressionCodec for codecName=%s", codecName));
+            if (codecName.equalsIgnoreCase("LZ4_RAW")) {
+                // Hacky work-around since codec factory refers to LZ4_RAW as LZ4RAW
+                codec = compressionCodecFactory.getCodecByName("LZ4RAW");
+            }
+            if (codec == null) {
+                throw new IllegalArgumentException(
+                        String.format("Failed to find CompressionCodec for codecName=%s", codecName));
+            }
         }
         final CompressionCodecName ccn = codecClassnameToCodecName.get(codec.getClass().getName());
         if (ccn == null) {
             throw new IllegalArgumentException(String.format(
                     "Failed to find CompressionCodecName for codecName=%s, codec=%s, codec.getDefaultExtension()=%s",
                     codecName, codec, codec.getDefaultExtension()));
+        }
+        if (ccn == CompressionCodecName.LZ4) {
+            return new LZ4WithLZ4RawBackupCompressorAdapter(codec, ccn);
         }
         return new CodecWrappingCompressorAdapter(codec, ccn);
     }
