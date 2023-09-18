@@ -151,7 +151,7 @@ class LivenessScope(JObjectWrapper):
         a Python wrapper around a LivenessReferent
 
         Args:
-            referent:
+            referent: the object to unmanage from this scope
 
         Returns: None
 
