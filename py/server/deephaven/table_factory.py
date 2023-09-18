@@ -358,8 +358,13 @@ def function_generated_table(table_generator: Callable[[], Table],
 
     The table definition must not change between invocations of the 'table_generator' function, or an exception will be raised.
 
-    Note: any tables used by the 'table_generator' function *MUST* be specified in the 'source_tables'. This
-    ensures that the 'table_generator' is rerun only *after* any changes to the 'source_tables' have been processed.
+   Note that the 'table_generator' may access data in the sourceTables but should not perform further table operations
+   on them without careful handling. Table operations may be memoized, and it is possible that a table operation will
+   return a table created by a previous invocation of the same operation. Since that result will not have been included
+   in the 'source_table', it's not automatically treated as a dependency for purposes of determining when it's safe to
+   invoke 'table_generator', allowing races to exist between accessing the operation result and that result's own update
+   processing. It's best to include all dependencies directly in 'source_table', or only compute on-demand inputs under
+   a LivenessScope.
 
     Args:
         table_generator (Callable[[], Table]): The table generator function. This function must return a Table.
