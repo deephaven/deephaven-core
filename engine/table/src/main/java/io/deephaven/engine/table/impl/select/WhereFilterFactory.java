@@ -13,7 +13,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
-import io.deephaven.engine.util.ColumnFormatting;
+import io.deephaven.qst.table.ColumnFormatting;
 import io.deephaven.api.expression.ExpressionParser;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.gui.table.QuickFilterMode;

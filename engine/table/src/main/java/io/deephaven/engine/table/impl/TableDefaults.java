@@ -12,13 +12,11 @@ import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
-import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.WouldMatchPairFactory;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.api.util.ConcurrentMethod;
-import io.deephaven.engine.util.ColumnFormatting;
+import io.deephaven.qst.table.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.util.annotations.FinalDefault;
 

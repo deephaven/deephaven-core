@@ -738,12 +738,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                         "aggAllBy has no columns to aggregate: spec=" + spec + ", groupByColumns="
                                 + toString(groupByList));
             }
-            final QueryTable tableToUse = (QueryTable) AggAllByUseTable.of(this, spec);
             final List<? extends Aggregation> aggs = List.of(agg.get());
             final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(aggs, false, null, groupByList);
-            return tableToUse.memoizeResult(aggKey, () -> {
+            return memoizeResult(aggKey, () -> {
                 final QueryTable result =
-                        tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), false, null, groupByList);
+                        aggNoMemo(AggregationProcessor.forAggregation(aggs), false, null, groupByList);
                 spec.walk(new AggAllByCopyAttributes(this, result));
                 return result;
             });
@@ -825,8 +824,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         Require.gtZero(nRows, "nRows");
 
-        Set<String> groupByColsSet = new HashSet<>(Arrays.asList(groupByColumns)); // TODO: WTF?
-        List<String> colNames = getDefinition().getColumnNames();
+        final Set<String> groupByColsSet = new HashSet<>(Arrays.asList(groupByColumns));
+        final List<String> colNames = getDefinition().getColumnNames();
 
         // Iterate through the columns and build updateView() arguments that will trim the columns to nRows rows
         String[] updates = new String[colNames.size() - groupByColumns.length];
@@ -835,31 +834,37 @@ public class QueryTable extends BaseTable<QueryTable> {
             String colName = colNames.get(i);
             if (!groupByColsSet.contains(colName)) {
                 final Class<?> dataType = getDefinition().getColumn(colName).getDataType();
-                casting[j] = colName + " = " + getCastFormula(dataType) + colName;
+                casting[j] = String.format("%s = %s%s", colName, getCastFormula(dataType), colName);
                 if (head)
                     updates[j++] =
                             // Get the first nRows rows:
                             // colName = isNull(colName) ? null
                             // : colName.size() > nRows ? colName.subVector(0, nRows)
                             // : colName
-                            colName + '=' + "isNull(" + colName + ") ? null" +
-                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subVector(0, " + nRows
-                                    + ')' +
-                                    ':' + colName;
+                            String.format(
+                                    "%s=isNull(%s) ? null" +
+                                            ":%s.size() > %d ? %s.subVector(0, %d)" +
+                                            ":%s",
+                                    colName, colName, colName, nRows, colName, nRows, colName);
                 else
                     updates[j++] =
                             // Get the last nRows rows:
                             // colName = isNull(colName) ? null
                             // : colName.size() > nRows ? colName.subVector(colName.size() - nRows, colName.size())
                             // : colName
-                            colName + '=' + "isNull(" + colName + ") ? null" +
-                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subVector(" + colName
-                                    + ".size() - " + nRows + ", " + colName + ".size())" +
-                                    ':' + colName;
+                            String.format(
+                                    "%s=isNull(%s) ? null" +
+                                            ":%s.size() > %d ? %s.subVector(%s.size() - %d, %s.size())" +
+                                            ":%s",
+                                    colName, colName, colName, nRows, colName, colName, nRows, colName, colName);
             }
         }
 
-        return groupBy(groupByColumns).updateView(updates).ungroup().updateView(casting);
+        final List<Aggregation> aggs = colNames.stream()
+                .filter(cn -> !groupByColsSet.contains(cn))
+                .map(Aggregation::AggGroup)
+                .collect(Collectors.toList());
+        return aggBy(aggs, groupByColumns).updateView(updates).ungroup().updateView(casting);
     }
 
     @NotNull

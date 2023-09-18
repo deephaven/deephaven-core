@@ -35,7 +35,7 @@ public abstract class AggregateAllTable extends ByTableBase implements SinglePar
     public static Optional<Aggregation> singleAggregation(
             AggSpec spec, Collection<? extends ColumnName> groupByColumns,
             Collection<? extends ColumnName> tableColumns) {
-        Set<ColumnName> exclusions = AggregateAllExclusions.of(spec, groupByColumns);
+        Set<ColumnName> exclusions = AggregateAllExclusions.of(spec, groupByColumns, tableColumns);
         List<ColumnName> columnsToAgg = new ArrayList<>(tableColumns.size());
         for (ColumnName column : tableColumns) {
             if (exclusions.contains(column)) {
