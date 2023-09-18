@@ -1,10 +1,12 @@
 # Building the C++ client from a base Ubuntu 20.04 or 22.04 image
 
 These instructions show how to install and run the Deephaven C++ client, its dependencies,
-and its unit tests. We have tested these instructions in Ubuntu 20.04 and 22.04 with the default
-C++ compiler and tool suite (cmake etc).
+and its unit tests. We have tested these instructions in Ubuntu 22.04 with the default
+C++ compiler and tool suite (cmake etc).  We have used the instructions in the past to build
+for older Ubuntu versions (20.04) and for some Fedora versions, but we don't regularly test
+on them anymore so we do notguarantee they are current for those platforms.
 
-1. Start with an Ubuntu 20.04 or 22.04 install
+1. Start with an Ubuntu 22.04 install
 
 2. Get Deephaven running by following the instructions here: https://deephaven.io/core/docs/how-to-guides/launch-build/
 
@@ -13,6 +15,8 @@ C++ compiler and tool suite (cmake etc).
    sudo apt update
    sudo apt install curl git g++ cmake make build-essential zlib1g-dev libbz2-dev libssl-dev pkg-config
    ```
+
+   See the notes at the end of this document if you need the equivalent packages for Fedora.
 
 4. Make a new directory for the Deephaven source code and assign that directory
    to a temporary shell variable. This will make subsequent build steps easier.
@@ -33,7 +37,7 @@ C++ compiler and tool suite (cmake etc).
    Get the `build-dependencies.sh` script from Deephaven's base images repository
    at the correct version.
    You can download it directly from the link
-   https://raw.githubusercontent.com/deephaven/deephaven-base-images/166befad816acbc9dff55d2d8354d60612cd9a8a/cpp-client/build-dependencies.sh
+   https://raw.githubusercontent.com/deephaven/deephaven-base-images/4eab90690888fbd5abfcbaf5dbacc750e90d9c2f/cpp-client/build-dependencies.sh
    (this script is also used from our automated tools, to generate a docker image to
    support tests runs; that's why it lives in a separate repo).
    The script downloads, builds and installs the dependent libraries
@@ -60,7 +64,7 @@ C++ compiler and tool suite (cmake etc).
    # If the directory already exists from a previous attempt, ensure is clean/empty
    mkdir -p $DHCPP
    cd $DHCPP
-   wget https://raw.githubusercontent.com/deephaven/deephaven-base-images/166befad816acbc9dff55d2d8354d60612cd9a8a/cpp-client/build-dependencies.sh
+   wget https://raw.githubusercontent.com/deephaven/deephaven-base-images/4eab90690888fbd5abfcbaf5dbacc750e90d9c2f/cpp-client/build-dependencies.sh
    chmod +x ./build-dependencies.sh
    # Maybe edit build-dependencies.sh to reflect choices of build tools and build target, if you
    # want anything different than defaults; defaults are tested to work,
@@ -101,18 +105,38 @@ C++ compiler and tool suite (cmake etc).
    source $DHCPP/env.sh
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
-   cmake -DCMAKE_INSTALL_PREFIX=${DHCPP}/local \
-       -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_SHARED_LIBS=ON .. && \
-     make -j$NCPUS install
+   cmake \
+       -DCMAKE_INSTALL_LIBDIR=lib \
+       -DCMAKE_CXX_STANDARD=17 \
+       -DCMAKE_INSTALL_PREFIX=${DHCPP} \
+       -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+       -DBUILD_SHARED_LIBS=ON \
+       .. \
+     && \
+       make -j$NCPUS install
    ```
 
-8. Build and run the deephaven example which uses the installed client.
-   Note this assumes deephaven server is running (see step 2),
+   If you need `make` to generate detailed output of the commands it is running
+   (which may be helpful for debugging the paths being used etc),
+   you can set the environment variable `VERBOSE=1`.
+   This is true in general of cmake-generated Makefiles.
+   It is useful to keep the output of make for later reference
+   in case you need to be sure of the exact compiler flags
+   that were used to compile the library and its objects.
+   You can tweak the last command above as
+
+   ```
+   VERBOSE=1 make -j$NCPUS install 2>&1 | tee make-install.log
+   ```
+
+8. Run one Deephaven example which uses the installed client.
+   This is a smoke test that the basic functionality
+   is working end to end, and the build is properly configured.
+   Note this assumes Deephaven server is running (see step 2),
    and the build created on step 7 is available in the same directory.
 
    ```
    cd $DHSRC/deephaven-core/cpp-client/deephaven/build/examples
-   make -j$NCPUS
    cd hello_world
    ./hello_world
    ```
@@ -159,6 +183,12 @@ Notes
       target using protobuf header files will not link against a `Debug`
       version of protobuf.  To keep things simple, we suggest that you run
       a consistent setting for your code and all dependencies.
+  (2) In Fedora, the packages needed for building:
+
+      ```
+      dnf -y groupinstall 'Development Tools'
+      dnf -y install curl cmake gcc-c++ openssl-devel libcurl-devel
+      ```
 
 # Updating proto generated C++ stubs (intended for developers)
    1. Ensure you have a local installation of the dependent libraries

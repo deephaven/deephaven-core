@@ -8,13 +8,13 @@ import io.deephaven.base.SleepUtil;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.FailureListener;
+import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.util.config.MutableInputTable;
-import io.deephaven.engine.table.impl.FailureListener;
-import io.deephaven.engine.table.impl.TableUpdateValidator;
-import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.function.ThrowingRunnable;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -23,12 +23,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.showWithRowSet;
 import static io.deephaven.engine.util.TableTools.stringCol;
-import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 
 public class TestKeyedArrayBackedMutableTable {
 
@@ -53,23 +54,23 @@ public class TestKeyedArrayBackedMutableTable {
 
         final Table input2 = TableTools.newTable(stringCol("Name", "Randy"), stringCol("Employer", "USGS"));
 
-        handleDelayedRefresh(kabut, () -> mutableInputTable.add(input2));
+        handleDelayedRefresh(() -> mutableInputTable.add(input2), kabut);
         assertTableEquals(TableTools.merge(input, input2), kabut);
 
         final Table input3 = TableTools.newTable(stringCol("Name", "Randy"), stringCol("Employer", "Tegridy"));
-        handleDelayedRefresh(kabut, () -> mutableInputTable.add(input3));
+        handleDelayedRefresh(() -> mutableInputTable.add(input3), kabut);
         assertTableEquals(TableTools.merge(input, input3), kabut);
 
 
         final Table input4 = TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Cogswell"));
-        handleDelayedRefresh(kabut, () -> mutableInputTable.add(input4));
+        handleDelayedRefresh(() -> mutableInputTable.add(input4), kabut);
         showWithRowSet(kabut);
 
         assertTableEquals(TableTools.merge(input, input3, input4).lastBy("Name"), kabut);
 
         final Table input5 =
                 TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Spacely Sprockets"));
-        handleDelayedRefresh(kabut, () -> mutableInputTable.add(input5));
+        handleDelayedRefresh(() -> mutableInputTable.add(input5), kabut);
         showWithRowSet(kabut);
 
         assertTableEquals(TableTools.merge(input, input3, input4, input5).lastBy("Name"), kabut);
@@ -77,7 +78,7 @@ public class TestKeyedArrayBackedMutableTable {
         final long sizeBeforeDelete = kabut.size();
         System.out.println("KABUT.rowSet before delete: " + kabut.getRowSet());
         final Table delete1 = TableTools.newTable(stringCol("Name", "Earl"));
-        handleDelayedRefresh(kabut, () -> mutableInputTable.delete(delete1));
+        handleDelayedRefresh(() -> mutableInputTable.delete(delete1), kabut);
         System.out.println("KABUT.rowSet after delete: " + kabut.getRowSet());
         final long sizeAfterDelete = kabut.size();
         TestCase.assertEquals(sizeBeforeDelete - 1, sizeAfterDelete);
@@ -113,7 +114,7 @@ public class TestKeyedArrayBackedMutableTable {
         final Table input2 =
                 TableTools.newTable(stringCol("Name", "Randy", "George"), stringCol("Employer", "USGS", "Cogswell"));
 
-        handleDelayedRefresh(aoabmt, () -> mutableInputTable.add(input2));
+        handleDelayedRefresh(() -> mutableInputTable.add(input2), aoabmt);
         assertTableEquals(TableTools.merge(input, input2), aoabmt);
     }
 
@@ -137,7 +138,7 @@ public class TestKeyedArrayBackedMutableTable {
 
         final Table delete = TableTools.newTable(stringCol("Name", "Fred"));
 
-        handleDelayedRefresh(kabut, () -> mutableInputTable.delete(delete));
+        handleDelayedRefresh(() -> mutableInputTable.delete(delete), kabut);
         assertTableEquals(input.where("Name != `Fred`"), kabut);
     }
 
@@ -203,13 +204,13 @@ public class TestKeyedArrayBackedMutableTable {
         final Table input2 =
                 TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Spacely Sprockets"));
 
-        handleDelayedRefresh(kabut, () -> mutableInputTable.add(input2));
+        handleDelayedRefresh(() -> mutableInputTable.add(input2), kabut);
         assertTableEquals(input2, kabut);
 
-        handleDelayedRefresh(kabut, () -> mutableInputTable.delete(input2.view("Name")));
+        handleDelayedRefresh(() -> mutableInputTable.delete(input2.view("Name")), kabut);
         assertTableEquals(input, kabut);
 
-        handleDelayedRefresh(kabut, () -> mutableInputTable.add(input2));
+        handleDelayedRefresh(() -> mutableInputTable.add(input2), kabut);
         assertTableEquals(input2, kabut);
     }
 
@@ -295,12 +296,12 @@ public class TestKeyedArrayBackedMutableTable {
         }
     }
 
-    private void handleDelayedRefresh(final BaseArrayBackedMutableTable table,
-            final ThrowingRunnable<IOException> action) throws Exception {
+    public static void handleDelayedRefresh(final ThrowingRunnable<IOException> action,
+            final BaseArrayBackedMutableTable... tables) throws Exception {
         final Thread refreshThread;
-        final CountDownLatch gate = new CountDownLatch(1);
+        final CountDownLatch gate = new CountDownLatch(tables.length);
 
-        table.setOnPendingChange(gate::countDown);
+        Arrays.stream(tables).forEach(t -> t.setOnPendingChange(gate::countDown));
         try {
             final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             refreshThread = new Thread(() -> {
@@ -313,14 +314,14 @@ public class TestKeyedArrayBackedMutableTable {
                         // If this unexpected interruption happens, the test thread may hang in action.run()
                         // indefinitely. Best to hope it's already queued the pending action and proceed with run.
                     }
-                    table.run();
+                    Arrays.stream(tables).forEach(BaseArrayBackedMutableTable::run);
                 });
             });
 
             refreshThread.start();
             action.run();
         } finally {
-            table.setOnPendingChange(null);
+            Arrays.stream(tables).forEach(t -> t.setOnPendingChange(null));
         }
         try {
             refreshThread.join();
