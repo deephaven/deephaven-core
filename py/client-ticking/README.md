@@ -51,7 +51,7 @@ cd ${DHROOT}/py/client-ticking
 ```
 # Ensure the DHCPP environment variable is set per the instructions above
 rm -rf build  # Ensure we clean the remnants of any pre-existing build.
-CFLAGS="-I${DHCPP}/local/include" LDFLAGS="-L${DHCPP}/local/lib" python setup.py build_ext -i
+CFLAGS="-I${DHCPP}/include" LDFLAGS="-L${DHCPP}/lib" python setup.py build_ext -i
 ```
 
 ### Install pydeephaven-ticking

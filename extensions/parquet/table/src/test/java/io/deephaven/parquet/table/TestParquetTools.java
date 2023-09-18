@@ -430,9 +430,8 @@ public class TestParquetTools {
         final Table gzip = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/gzip.parquet").getFile());
         assertTableEquals(uncompressed, gzip);
 
-        // TODO(deephaven-core#3585): LZ4_RAW parquet support
-        // final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/lz4.parquet").getFile());
-        // assertTableEquals(uncompressed, lz4);
+        final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/lz4.parquet").getFile());
+        assertTableEquals(uncompressed, lz4);
 
         final Table snappy = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/snappy.parquet").getFile());
         assertTableEquals(uncompressed, snappy);
@@ -449,9 +448,8 @@ public class TestParquetTools {
         final Table gzip = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/gzip.parquet").getFile());
         assertTableEquals(uncompressed, gzip);
 
-        // TODO(deephaven-core#3585): LZ4_RAW parquet support
-        // final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/lz4.parquet").getFile());
-        // assertTableEquals(uncompressed, lz4);
+        final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/lz4.parquet").getFile());
+        assertTableEquals(uncompressed, lz4);
 
         final Table snappy = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/snappy.parquet").getFile());
         assertTableEquals(uncompressed, snappy);
@@ -468,9 +466,8 @@ public class TestParquetTools {
         final Table gzip = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/gzip.parquet").getFile());
         assertTableEquals(uncompressed, gzip);
 
-        // TODO(deephaven-core#3585): LZ4_RAW parquet support
-        // final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/lz4.parquet").getFile());
-        // assertTableEquals(uncompressed, lz4);
+        final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/lz4.parquet").getFile());
+        assertTableEquals(uncompressed, lz4);
 
         final Table snappy = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/snappy.parquet").getFile());
         assertTableEquals(uncompressed, snappy);
