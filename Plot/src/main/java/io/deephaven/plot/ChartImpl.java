@@ -33,7 +33,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     private final BaseFigureImpl figure;
     @SuppressWarnings("unchecked")
     private final List<AxisImpl>[] axis =
-            new List[] {new ArrayList<Axis>(), new ArrayList<Axis>(), new ArrayList<Axis>()};
+            new List[] {new ArrayList<Axis>(), new ArrayList<Axis>()};
     private final List<AxesImpl> axes = new ArrayList<>();
     private ChartType chartType;
     private Font titleFont;
