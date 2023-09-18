@@ -181,22 +181,28 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public CompletableFuture<FetchedObject> fetchObject(HasTypedTicket typedTicket) {
-        if (!typedTicket.typedTicket().type().isPresent()) {
+        final TypedTicket tt = typedTicket.typedTicket();
+        if (!tt.type().isPresent()) {
             throw new IllegalArgumentException("Type must be present to fetch an object");
         }
         final FetchObjectRequest request = FetchObjectRequest.newBuilder()
-                .setSourceId(typedTicket.typedTicket().proto())
+                .setSourceId(tt.proto())
                 .build();
         return UnaryGrpcFuture.of(request, channel().object()::fetchObject,
                 response -> {
                     final String responseType = response.getType();
+                    if (!tt.type().get().equals(responseType)) {
+                        throw new RuntimeException(
+                                String.format("The server returned an unexpected response type, expected=%s, actual=%s",
+                                        tt.type().get(), responseType));
+                    }
                     final ByteString data = response.getData();
                     final List<ServerObject> exports = response.getTypedExportIdsList().stream()
                             .map(TypedTicket::of)
                             .map(TypedTicket::toExportId)
                             .map(this::toServerObject)
                             .collect(Collectors.toList());
-                    return new FetchedObject(responseType, data, exports);
+                    return new FetchedObject(tt, data, exports);
                 });
     }
 

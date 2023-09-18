@@ -10,6 +10,7 @@ import io.deephaven.proto.backplane.grpc.TypedTicket.Builder;
 import io.deephaven.proto.util.ExportTicketHelper;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -46,6 +47,11 @@ public final class TypedTicket implements HasTypedTicket {
     @Override
     public TicketId ticketId() {
         return new TicketId(ticket);
+    }
+
+    @Override
+    public String toString() {
+        return (type == null ? "?:" : type + ":") + new String(ticket, StandardCharsets.UTF_8);
     }
 
     ExportId toExportId() {

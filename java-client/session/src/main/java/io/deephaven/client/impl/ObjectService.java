@@ -39,7 +39,8 @@ public interface ObjectService {
     /**
      * Opens a bidirectional message stream for a {@code typedTicket}. References sent to the server are generic
      * {@link HasTypedTicket typed tickets}, while the references received from the server are {@link ServerObject
-     * server objects}.
+     * server objects}. The caller is responsible for {@link ServerObject#release() releasing} or
+     * {@link ServerObject#close() closing} the server objects.
      *
      * <p>
      * This provides a generic stream feature for Deephaven instances to use to add arbitrary functionality. This API

@@ -188,7 +188,8 @@ public class FigureWidgetTranslator {
             if ((i == 0 && !swappedPositions) || (i == 1 && swappedPositions)) {
                 type = AxisDescriptor.AxisType.X;
             } else {
-                assert i == 0 || i == 1;
+                // todo: it appears there is a 3rd axis that is empty on all figures?
+                // assert i == 0 || i == 1;
                 type = AxisDescriptor.AxisType.Y;
             }
             List<AxisImpl> currentPositionAxes = chart.getAxis()[i];

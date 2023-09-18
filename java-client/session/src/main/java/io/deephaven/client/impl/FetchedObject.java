@@ -18,26 +18,39 @@ import java.util.stream.Collectors;
  *
  * @see Session#fetchObject(HasTypedTicket)
  */
-public final class FetchedObject implements Closeable {
-    private final String type;
+public final class FetchedObject implements HasTypedTicket, Closeable {
+    private final TypedTicket typedTicket;
     private final ByteString bytes;
     private final List<ServerObject> exports;
 
     /**
      * Constructs a new instance. Callers should not modify {@code exports} after construction.
      *
-     * @param type the type
+     * @param typedTicket the typed ticket
      * @param bytes the bytes
      * @param exports the exports
      */
-    FetchedObject(String type, ByteString bytes, List<ServerObject> exports) {
-        this.type = Objects.requireNonNull(type);
+    FetchedObject(TypedTicket typedTicket, ByteString bytes, List<ServerObject> exports) {
+        this.typedTicket = Objects.requireNonNull(typedTicket);
         this.bytes = Objects.requireNonNull(bytes);
         this.exports = Collections.unmodifiableList(exports);
+        if (!typedTicket.type().isPresent()) {
+            throw new IllegalArgumentException("Must only construct fetched object with known type");
+        }
     }
 
     public String type() {
-        return type;
+        return typedTicket.type().orElseThrow(IllegalStateException::new);
+    }
+
+    @Override
+    public TicketId ticketId() {
+        return typedTicket.ticketId();
+    }
+
+    @Override
+    public TypedTicket typedTicket() {
+        return typedTicket;
     }
 
     public byte[] toByteArray() {
@@ -75,7 +88,7 @@ public final class FetchedObject implements Closeable {
     @Override
     public String toString() {
         return "FetchedObject{" +
-                "type='" + type + '\'' +
+                "typedTicket='" + typedTicket + '\'' +
                 ", bytes=" + bytes +
                 ", exports=" + exports +
                 '}';
