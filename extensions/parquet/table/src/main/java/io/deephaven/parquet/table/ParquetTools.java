@@ -845,8 +845,8 @@ public class ParquetTools {
             ParquetInstructions.builder().setCompressionCodecName("UNCOMPRESSED").build();
 
     /**
-     * Deprecated: Use LZ4_RAW instead, as explained
-     * <a href="https://github.com/apache/parquet-format/blob/master/Compression.md">here</a>
+     * @deprecated Use LZ4_RAW instead, as explained
+     *             <a href="https://github.com/apache/parquet-format/blob/master/Compression.md">here</a>
      */
     @Deprecated
     public static final ParquetInstructions LZ4 = ParquetInstructions.builder().setCompressionCodecName("LZ4").build();
@@ -864,8 +864,8 @@ public class ParquetTools {
     public static final ParquetInstructions LEGACY = ParquetInstructions.builder().setIsLegacyParquet(true).build();
 
     /**
-     * Deprecated: Do not use this method directly, instead pass the above codecs as arguments to
-     * {@link #writeTable(Table, File, ParquetInstructions)} method
+     * @deprecated Do not use this method, instead pass the above codecs as arguments to
+     *             {@link #writeTable(Table, File, ParquetInstructions)} method
      */
     @Deprecated
     public static void setDefaultCompressionCodecName(final String compressionCodecName) {
