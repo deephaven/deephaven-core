@@ -35,9 +35,11 @@ class BaseTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         self._liveness_scope = liveness_scope()
+        self.opened_scope = liveness_scope().open()
 
     def tearDown(self) -> None:
-        self._liveness_scope.close()
+        with self.opened_scope:
+            ...
 
     def wait_ticking_table_update(self, table: Table, row_count: int, timeout: int):
         """Waits for a ticking table to grow to the specified size or times out.

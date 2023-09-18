@@ -34,7 +34,7 @@ def _unwrap_to_liveness_referent(referent: Union[JObjectWrapper, jpy.JType]) -> 
     if isinstance(referent, jpy.JType) and _JLivenessReferent.jclass.isInstance(referent):
         return referent
     if isinstance(referent, JObjectWrapper):
-        _unwrap_to_liveness_referent(referent.j_object)
+        return _unwrap_to_liveness_referent(referent.j_object)
     raise DHError("Provided referent isn't a LivenessReferent or a JObjectWrapper around one")
 
 
@@ -83,7 +83,7 @@ class LivenessScope(JObjectWrapper):
         self.release()
 
     @contextlib.contextmanager
-    def open(self, release_after_block: bool = True) -> None:
+    def open(self, release_after_block: bool = True) -> "LivenessScope":
         """
         Uses this scope for the duration of the `with` block. The scope defaults to being closed
         when the block ends, disable by passing release_after_block=False
@@ -97,7 +97,7 @@ class LivenessScope(JObjectWrapper):
         """
         _push(self.j_scope)
         try:
-            yield None
+            yield self
         finally:
             _pop(self.j_scope)
             if release_after_block:
@@ -118,11 +118,18 @@ class LivenessScope(JObjectWrapper):
         """
         referent = _unwrap_to_liveness_referent(referent)
         try:
+            # Ensure we are the current scope, throw DHError if we aren't
             _JLivenessScopeStack.pop(self.j_scope)
+        except Exception as e:
+            raise DHError(e, message="failed to pop the current scope - is preserve() being called on the right scope?")
+
+        try:
+            # Manage the object in the next outer scope on this thread.
             _JLivenessScopeStack.peek().manage(_unwrap_to_liveness_referent(referent))
         except Exception as e:
             raise DHError(e, message="failed to preserve a wrapped object in this LivenessScope.")
         finally:
+            # Success or failure, restore the scope that was successfully popped
             _JLivenessScopeStack.push(self.j_scope)
 
     def manage(self, referent: Union[JObjectWrapper, jpy.JType]) -> None:
