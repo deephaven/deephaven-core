@@ -126,7 +126,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
 
             @Override
             public FieldVector visit(ArrayType<?, ?> arrayType) {
-                if(arrayType.componentType().equals(Type.find(byte.class))) {
+                if (arrayType.componentType().equals(Type.find(byte.class))) {
                     return visitByteVectorArray(generic.cast(arrayType));
                 } else {
                     throw new UnsupportedOperationException();
@@ -270,7 +270,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
     FieldVector visitByteVectorArray(GenericArray<?> byteVectorArray) {
         Field field = FieldAdapter.byteVectorField(name);
         VarBinaryVector vector = new VarBinaryVector(field, allocator);
-        VectorHelper.fill(vector, (List<byte[]>)byteVectorArray.values());
+        VectorHelper.fill(vector, (List<byte[]>) byteVectorArray.values());
         return vector;
     }
 

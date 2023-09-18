@@ -129,7 +129,7 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
 
             @Override
             public Field visit(ArrayType<?, ?> arrayType) {
-                if(arrayType.componentType().equals(Type.find(byte.class))) {
+                if (arrayType.componentType().equals(Type.find(byte.class))) {
                     return byteVectorField(name);
                 } else {
                     throw new UnsupportedOperationException();
