@@ -1,7 +1,12 @@
+#' @title The Deephaven R Client
 #' @description
-#' A Client is the entry point for interacting with the Deephaven server. It is used to create new tables,
-#' import data to and export data from the server, and run queries on the server.
-#' @export
+#' A Client is the entry point for interacting with the Deephaven server.
+#' It is used to create new tables, import data to and export data from the server,
+#' and run queries on the server.
+#'
+#' @usage NULL
+#' @format NULL
+#' @docType class
 Client <- R6Class("Client",
   cloneable = FALSE,
   public = list(

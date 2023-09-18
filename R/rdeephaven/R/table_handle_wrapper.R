@@ -1,7 +1,12 @@
+#' @title Deephaven Tables
 #' @description
 #' A TableHandle holds a reference to a Deephaven Table on the server, and provides methods for operating on that table.
 #' Note that TableHandles should not be instantiated directly by user code, but rather by server calls accessible from
 #' the `Client` class. See `?Client` for more information.
+#'
+#' @usage NULL
+#' @format NULL
+#' @docType class
 TableHandle <- R6Class("TableHandle",
   cloneable = FALSE,
   public = list(
