@@ -6,6 +6,8 @@ package io.deephaven.server.object;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.plugin.type.ObjectCommunicationException;
 import io.deephaven.plugin.type.ObjectType;
@@ -17,6 +19,7 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.session.TicketRouter;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.function.ThrowingRunnable;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
@@ -147,12 +150,18 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                             "Data message sent before Connect message");
                 }
                 Data data = request.getData();
-                List<SessionState.ExportObject<Object>> referenceObjects = data.getExportedReferencesList().stream()
-                        .map(typedTicket -> ticketRouter.resolve(session, typedTicket.getTicket(), "ticket"))
-                        .collect(Collectors.toList());
+                LivenessScope exportScope = new LivenessScope();
+                List<SessionState.ExportObject<Object>> referenceObjects;
+                try (SafeCloseable ignored = LivenessScopeStack.open(exportScope, false)) {
+                    referenceObjects = data.getExportedReferencesList().stream()
+                            .map(typedTicket -> ticketRouter.resolve(session, typedTicket.getTicket(), "ticket"))
+                            .collect(Collectors.toList());
+                }
+
                 runOrEnqueue(referenceObjects, () -> {
                     Object[] objs = referenceObjects.stream().map(ExportObject::get).toArray();
                     messageStream.onData(data.getPayload().asReadOnlyByteBuffer(), objs);
+                    exportScope.release();
                 });
             }
         }
