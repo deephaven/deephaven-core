@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Check gitignore rules
         run: .github/scripts/check-gitignore-rules.sh
