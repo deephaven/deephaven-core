@@ -53,8 +53,17 @@ public class FunctionGeneratedTableFactory {
     }
 
     /**
-     * Create a table that refreshes based on the value of your function, automatically called when any of the
-     * sourceTables tick.
+     * Create a table that refreshes based on the value of your function, automatically called in a
+     * dependency-respecting way when at least one of the {@code sourceTables} tick.
+     * <p>
+     * <em>Note</em> that the {@code tableGenerator} may access data in the {@code sourceTables} but should not perform
+     * further table operations on them without careful handling. Table operations may be memoized, and it is possible
+     * that a table operation will return a table created by a previous invocation of the same operation. Since that
+     * result will not have been included in the {@code sourceTables}, it's not automatically treated as a dependency
+     * for purposes of determining when it's safe to invoke {@code tableGenerator}, allowing races to exist between
+     * accessing the operation result and that result's own update processing. It's best to include all dependencies
+     * directly in {@code sourceTables}, or only compute on-demand inputs under a
+     * {@link io.deephaven.engine.liveness.LivenessScope}.
      *
      * @param tableGenerator a function returning a table to copy into the output table
      * @param sourceTables The query engine does not know the details of your function inputs. If you are dependent on a

@@ -239,10 +239,10 @@ class ParquetTestCase(BaseTestCase):
         dh_table = self.get_table_data()
         self.round_trip_with_compression("UNCOMPRESSED", dh_table)
         self.round_trip_with_compression("SNAPPY", dh_table)
-        # LZO is not fully supported in python/c++
-        # self.round_trip_with_compression("LZO", dh_table)
-        # TODO(deephaven-core#3148): LZ4_RAW parquet support
-        # self.round_trip_with_compression("LZ4", dh_table)
+        self.round_trip_with_compression("LZO", dh_table)
+        self.round_trip_with_compression("LZ4", dh_table)
+        self.round_trip_with_compression("LZ4_RAW", dh_table)
+        self.round_trip_with_compression("LZ4RAW", dh_table)
         self.round_trip_with_compression("GZIP", dh_table)
         self.round_trip_with_compression("ZSTD", dh_table)
 
@@ -261,6 +261,10 @@ class ParquetTestCase(BaseTestCase):
         # Read the parquet file using deephaven.parquet and compare
         result_table = read('data_from_dh.parquet')
         self.assert_table_equals(dh_table, result_table)
+
+        # LZO is not fully supported in pyarrow, so we can't do the rest of the tests
+        if compression_codec_name is 'LZO':
+            return
 
         # Read the parquet file as a pandas dataframe, convert it to deephaven table and compare
         if pandas.__version__.split('.')[0] == "1":
@@ -285,8 +289,11 @@ class ParquetTestCase(BaseTestCase):
         self.assert_table_equals(dh_table, result_table)
 
         # Write the pandas dataframe back to parquet (via pyarraow) and read it back using deephaven.parquet to compare
+        # Pandas references LZ4_RAW as LZ4, so we need to convert the name
         dataframe.to_parquet('data_from_pandas.parquet',
-                             compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
+                             compression=None if compression_codec_name == 'UNCOMPRESSED' else
+                             "LZ4" if compression_codec_name == 'LZ4_RAW' or compression_codec_name == 'LZ4RAW'
+                             else compression_codec_name)
         result_table = read('data_from_pandas.parquet')
         self.assert_table_equals(dh_table, result_table)
 

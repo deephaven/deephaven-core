@@ -7,7 +7,7 @@ CXX_STD = CXX17
 # and its dependent libraries was built, as per the instructions in
 # https://github.com/deephaven/deephaven-core/blob/main/cpp-client/README.md
 #
-DEPENDENCY_DIRS = -L$(DHCPP)/local/lib
+DEPENDENCY_DIRS = -L$(DHCPP)/lib
 
 
 #
@@ -18,16 +18,16 @@ DEPENDENCY_DIRS = -L$(DHCPP)/local/lib
 # The line below tries to automatically guess whether to use
 # `-lprotbufd` or `-lprotobuf` depending on which file is available.
 #
-PROTOBUF_LIB = `[ -f \${DHCPP}/local/lib/libprotobufd.so ] && echo -lprotobufd || echo -lprotobuf`
+PROTOBUF_LIB = `[ -f \${DHCPP}/lib/libprotobufd.so ] && echo -lprotobufd || echo -lprotobuf`
 
 DEPENDENCY_LIBS = \
         $(PROTOBUF_LIB) \
-        -larrow_flight -larrow -larrow_bundled_dependencies \
-        `PKG_CONFIG_PATH=\${DHCPP}/local/lib/pkgconfig pkg-config --libs grpc++`
+        -larrow \
+        `PKG_CONFIG_PATH=\${DHCPP}/lib/pkgconfig pkg-config --libs grpc++`
 
 # tells the compiler where to look for additional include directories
 PKG_CXXFLAGS = \
-	-I$(DHCPP)/local/include \
+	-I$(DHCPP)/include \
 	-I/usr/share/R/include \
 	-I/usr/local/lib/R/site-library/Rcpp/include
 
@@ -47,9 +47,8 @@ PKG_CXXFLAGS = \
 PKG_LIBS = \
         $(EXTRA_LD_FLAGS) \
 	-L/usr/lib/R/lib -lR \
-        -L$(DHCPP)/local/lib \
-	-ldhclient -ldhcore \
 	$(DEPENDENCY_DIRS) \
+	-ldhclient -ldhcore \
 	$(DEPENDENCY_LIBS) \
 
 # all src directory c++ source files

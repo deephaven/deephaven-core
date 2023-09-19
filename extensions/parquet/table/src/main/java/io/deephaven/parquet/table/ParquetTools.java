@@ -36,7 +36,7 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFac
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ParquetFileReader;
-import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.parquet.base.util.CachedChannelProvider;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -841,14 +841,33 @@ public class ParquetTools {
                         s -> s.replace(" ", "_"), takenNames)));
     }
 
+    public static final ParquetInstructions UNCOMPRESSED =
+            ParquetInstructions.builder().setCompressionCodecName("UNCOMPRESSED").build();
+
+    /**
+     * @deprecated Use LZ4_RAW instead, as explained
+     *             <a href="https://github.com/apache/parquet-format/blob/master/Compression.md">here</a>
+     */
+    @Deprecated
     public static final ParquetInstructions LZ4 = ParquetInstructions.builder().setCompressionCodecName("LZ4").build();
+    public static final ParquetInstructions LZ4_RAW =
+            ParquetInstructions.builder().setCompressionCodecName("LZ4_RAW").build();
     public static final ParquetInstructions LZO = ParquetInstructions.builder().setCompressionCodecName("LZO").build();
     public static final ParquetInstructions GZIP =
             ParquetInstructions.builder().setCompressionCodecName("GZIP").build();
     public static final ParquetInstructions ZSTD =
             ParquetInstructions.builder().setCompressionCodecName("ZSTD").build();
+    public static final ParquetInstructions SNAPPY =
+            ParquetInstructions.builder().setCompressionCodecName("SNAPPY").build();
+    public static final ParquetInstructions BROTLI =
+            ParquetInstructions.builder().setCompressionCodecName("BROTLI").build();
     public static final ParquetInstructions LEGACY = ParquetInstructions.builder().setIsLegacyParquet(true).build();
 
+    /**
+     * @deprecated Do not use this method, instead pass the above codecs as arguments to
+     *             {@link #writeTable(Table, File, ParquetInstructions)} method
+     */
+    @Deprecated
     public static void setDefaultCompressionCodecName(final String compressionCodecName) {
         ParquetInstructions.setDefaultCompressionCodecName(compressionCodecName);
     }

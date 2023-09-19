@@ -4,6 +4,7 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -29,9 +30,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     /**
      * Set the default for {@link #getCompressionCodecName()}.
      *
+     * @deprecated Use {@link Builder#setCompressionCodecName(String)} instead.
      * @param name The new default
-     * @see Builder#setCompressionCodecName(String)
      */
+    @Deprecated
     public static void setDefaultCompressionCodecName(final String name) {
         defaultCompressionCodecName = name;
     }
@@ -81,20 +83,24 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         return defaultMaximumDictionarySize;
     }
 
-    private static final int MIN_DEFAULT_PAGE_SIZE = 64 << 10;
-    private static volatile int defaultTargetPageSize = 1 << 20;
+    private static final int MIN_TARGET_PAGE_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("Parquet.minTargetPageSize", 2 << 10);
+    private static final int DEFAULT_TARGET_PAGE_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("Parquet.defaultTargetPageSize", 8 << 10);
+    private static volatile int defaultTargetPageSize = DEFAULT_TARGET_PAGE_SIZE;
+
     private static final boolean DEFAULT_IS_REFRESHING = false;
 
     /**
      * Set the default target page size (in bytes) used to section rows of data into pages during column writing. This
-     * number should be no smaller than {@value #MIN_DEFAULT_PAGE_SIZE}.
+     * number should be no smaller than {@link #MIN_TARGET_PAGE_SIZE}.
      *
      * @param newDefaultSizeBytes the new default target page size.
      */
     public static void setDefaultTargetPageSize(final int newDefaultSizeBytes) {
-        if (newDefaultSizeBytes < MIN_DEFAULT_PAGE_SIZE) {
+        if (newDefaultSizeBytes < MIN_TARGET_PAGE_SIZE) {
             throw new IllegalArgumentException(
-                    "Default target page size should be larger than " + MIN_DEFAULT_PAGE_SIZE + " bytes");
+                    "Default target page size should be larger than " + MIN_TARGET_PAGE_SIZE + " bytes");
         }
         defaultTargetPageSize = newDefaultSizeBytes;
     }
@@ -606,8 +612,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         public Builder setTargetPageSize(final int targetPageSize) {
-            if (targetPageSize < MIN_DEFAULT_PAGE_SIZE) {
-                throw new IllegalArgumentException("Target page size should be >= " + MIN_DEFAULT_PAGE_SIZE);
+            if (targetPageSize < MIN_TARGET_PAGE_SIZE) {
+                throw new IllegalArgumentException("Target page size should be >= " + MIN_TARGET_PAGE_SIZE);
             }
             this.targetPageSize = targetPageSize;
             return this;

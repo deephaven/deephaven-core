@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -11,7 +10,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.QueryTableTest;
 import io.deephaven.engine.testutil.ColumnInfo;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.testutil.generator.IntGenerator;
@@ -19,17 +17,14 @@ import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.qst.type.Type;
-import io.deephaven.util.function.ThrowingRunnable;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 
+import static io.deephaven.engine.table.impl.util.TestKeyedArrayBackedMutableTable.handleDelayedRefresh;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 
-public class TestFunctionBackedTableFactory extends RefreshingTableTestCase {
+public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
     public void testIterative() {
         Random random = new Random(0);
         ColumnInfo<?, ?>[] columnInfo;
@@ -97,43 +92,5 @@ public class TestFunctionBackedTableFactory extends RefreshingTableTestCase {
         assertTableEquals(newTable(
                 stringCol("StringCol", "MyString"),
                 intCol("IntCol", 12345)), functionBacked);
-    }
-
-    /**
-     * See {@link io.deephaven.engine.table.impl.util.TestKeyedArrayBackedMutableTable#handleDelayedRefresh}
-     */
-    public static void handleDelayedRefresh(final ThrowingRunnable<IOException> action,
-            final BaseArrayBackedMutableTable... tables) throws Exception {
-        final Thread refreshThread;
-        final CountDownLatch gate = new CountDownLatch(tables.length);
-
-        Arrays.stream(tables).forEach(t -> t.setOnPendingChange(gate::countDown));
-        try {
-            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-            refreshThread = new Thread(() -> {
-                // If this unexpected interruption happens, the test thread may hang in action.run()
-                // indefinitely. Best to hope it's already queued the pending action and proceed with run.
-                updateGraph.runWithinUnitTestCycle(() -> {
-                    try {
-                        gate.await();
-                    } catch (InterruptedException ignored) {
-                        // If this unexpected interruption happens, the test thread may hang in action.run()
-                        // indefinitely. Best to hope it's already queued the pending action and proceed with run.
-                    }
-                    Arrays.stream(tables).forEach(BaseArrayBackedMutableTable::run);
-                });
-            });
-
-            refreshThread.start();
-            action.run();
-        } finally {
-            Arrays.stream(tables).forEach(t -> t.setOnPendingChange(null));
-        }
-        try {
-            refreshThread.join();
-        } catch (InterruptedException e) {
-            throw new UncheckedDeephavenException(
-                    "Interrupted unexpectedly while waiting for run cycle to complete", e);
-        }
     }
 }
