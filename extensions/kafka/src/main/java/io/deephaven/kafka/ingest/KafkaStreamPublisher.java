@@ -203,7 +203,8 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                     : null;
 
             for (ConsumerRecord<?, ?> record : records) {
-                if (--remaining == 0) {
+                // Note we only flush if we are about to overflow the chunks.
+                if (--remaining < 0) {
                     if (keyChunk != null) {
                         flushKeyChunk(keyChunk, chunks);
                     }
@@ -217,8 +218,9 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                     chunks = getChunksToFill();
                     checkChunkSizes(chunks);
 
-                    remaining = chunks[0].capacity() - chunks[0].size();
-                    Assert.gtZero(remaining, "remaining");
+                    // Note that remaining should account for the row we are about to write.
+                    remaining = chunks[0].capacity() - chunks[0].size() - 1;
+                    Assert.geqZero(remaining, "remaining");
 
                     if (kafkaPartitionColumnIndex >= 0) {
                         partitionChunk = chunks[kafkaPartitionColumnIndex].asWritableIntChunk();
