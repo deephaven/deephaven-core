@@ -210,6 +210,7 @@ TableHandle <- R6Class("TableHandle",
     #' The aggregations are defined by the provided operations, which support incremental aggregations over the
     #' corresponding rows in the table. The aggregations will apply position or time-based windowing and compute the
     #' results over the entire table or each row group as identified by the provided key columns.
+    #' See `?UpdateBy` for more information.
     #' @param ops UpdateByOp or list of UpdateByOps to perform on non-grouping columns.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
