@@ -12,10 +12,10 @@ class AggAllByExcludeFormattingColumns implements AggSpec.Visitor {
     }
 
     /**
-     * {@code true} if we should drop formatting columns from the output, {@code false} otherwise,decided based on
+     * {@code true} if we should drop formatting columns from the output, {@code false} otherwise, decided based on
      * aggregation operation. For example, {@link AggSpecDistinct} should keep formatting columns but {@link AggSpecSum}
      * should drop them because it doesn't make sense to apply formatting to sum but does make sense to apply the same
-     * formatting to distinct values.
+     * formatting to distinct values of the same column.
      */
     private boolean out;
 
