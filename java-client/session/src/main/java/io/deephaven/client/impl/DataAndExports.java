@@ -5,8 +5,8 @@ package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteString;
 import io.deephaven.client.impl.ObjectService.MessageStream;
-import io.deephaven.client.impl.ServerObject.Bidirectional;
-import io.deephaven.client.impl.ServerObject.Fetchable;
+import io.deephaven.client.impl.ObjectService.Bidirectional;
+import io.deephaven.client.impl.ObjectService.Fetchable;
 import io.deephaven.proto.backplane.grpc.Data;
 import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
 

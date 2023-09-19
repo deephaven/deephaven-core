@@ -3,8 +3,8 @@
  */
 package io.deephaven.client.impl;
 
-import io.deephaven.client.impl.ServerObject.Bidirectional;
-import io.deephaven.client.impl.ServerObject.Fetchable;
+import io.deephaven.client.impl.ObjectService.Bidirectional;
+import io.deephaven.client.impl.ObjectService.Fetchable;
 
 import java.util.Collections;
 import java.util.Set;

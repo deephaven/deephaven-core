@@ -4,6 +4,7 @@
 package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteString;
+import io.deephaven.client.impl.ObjectService.Bidirectional;
 import io.deephaven.client.impl.ObjectService.MessageStream;
 import io.deephaven.proto.backplane.grpc.Data;
 
@@ -13,7 +14,7 @@ import java.util.Objects;
 
 /**
  * Data and typed tickets to be sent from the client to the server as part of a
- * {@link io.deephaven.client.impl.ServerObject.Bidirectional#messageStream(MessageStream) bidirection message stream}.
+ * {@link Bidirectional#messageStream(MessageStream) bidirection message stream}.
  */
 public final class DataAndTypedTickets {
     private final ByteBuffer data;

@@ -5,7 +5,7 @@ package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.DataAndExports;
 import io.deephaven.client.impl.ServerObject;
-import io.deephaven.client.impl.ServerObject.Fetchable;
+import io.deephaven.client.impl.ObjectService.Fetchable;
 import io.deephaven.client.impl.Session;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;

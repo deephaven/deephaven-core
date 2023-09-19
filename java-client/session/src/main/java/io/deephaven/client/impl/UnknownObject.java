@@ -3,10 +3,12 @@
  */
 package io.deephaven.client.impl;
 
+import io.deephaven.client.impl.ObjectService.Bidirectional;
+import io.deephaven.client.impl.ObjectService.Fetchable;
+
 /**
- * A server object that is <b>not</b> {@link io.deephaven.client.impl.ServerObject.Fetchable} nor
- * {@link io.deephaven.client.impl.ServerObject.Bidirectional}; the server does not have a registration for the
- * underlying object.
+ * A server object that is <b>not</b> {@link Fetchable} nor {@link Bidirectional}; the server does not have a
+ * registration for the underlying object.
  */
 public final class UnknownObject extends ServerObjectBase implements ServerObject {
 

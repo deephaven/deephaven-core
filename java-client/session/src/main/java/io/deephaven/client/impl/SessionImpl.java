@@ -3,8 +3,6 @@
  */
 package io.deephaven.client.impl;
 
-import io.deephaven.client.impl.ServerObject.Bidirectional;
-import io.deephaven.client.impl.ServerObject.Fetchable;
 import io.deephaven.client.impl.script.Changes;
 import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.proto.backplane.grpc.AddTableRequest;
