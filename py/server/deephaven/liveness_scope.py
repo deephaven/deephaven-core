@@ -90,7 +90,7 @@ class LivenessScope(JObjectWrapper):
 
         Args:
             release_after_block: True to release the scope when the block ends, False to leave the
-            scope open for reuse.
+            scope open, allowing it to be reused and keeping collected referents live.
 
         Returns: None, to allow changes in the future.
 
