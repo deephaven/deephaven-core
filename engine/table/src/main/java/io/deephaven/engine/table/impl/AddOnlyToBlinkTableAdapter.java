@@ -32,7 +32,7 @@ public final class AddOnlyToBlinkTableAdapter {
      * @return A blink table based on the input table
      */
     public static Table toBlink(@NotNull final Table table) {
-        if(!table.isRefreshing()) {
+        if (!table.isRefreshing()) {
             throw new IllegalArgumentException("Input table is not refreshing");
         }
 

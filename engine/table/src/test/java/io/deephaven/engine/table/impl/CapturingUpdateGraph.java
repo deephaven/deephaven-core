@@ -147,7 +147,7 @@ final class CapturingUpdateGraph implements UpdateGraph {
     }
 
     public <T extends Exception> void runWithinUnitTestCycle(@NotNull final ThrowingRunnable<T> runnable,
-                                                             boolean satisfied) throws T {
+            boolean satisfied) throws T {
         delegate.runWithinUnitTestCycle(runnable, satisfied);
     }
 }
