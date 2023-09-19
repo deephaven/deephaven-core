@@ -6,6 +6,9 @@ package io.deephaven.client.impl;
 import io.deephaven.client.impl.ServerObject.Bidirectional;
 import io.deephaven.client.impl.ServerObject.Fetchable;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * A custom server object that may be {@link Fetchable} or {@link Bidirectional}. The client is responsible for
  * implementing the necessarily retrieval logic according to the specific {@link #type()}.
@@ -17,18 +20,21 @@ import io.deephaven.client.impl.ServerObject.Fetchable;
 public final class CustomObject extends ServerObjectBase
         implements ServerObject, Fetchable, Bidirectional {
 
+    private static final Set<String> KNOWN_TYPES = Collections.singleton(TableObject.TYPE);
+
     CustomObject(Session session, ExportId exportId) {
         super(session, exportId);
         if (!exportId.type().isPresent()) {
             throw new IllegalArgumentException("Expected type to be present, is not");
         }
+        final String type = exportId.type().get();
+        if (KNOWN_TYPES.contains(type)) {
+            throw new IllegalArgumentException(
+                    String.format("Can't construct a CustomObject with a well-known type '%s'", type));
+        }
     }
 
-    /**
-     * The object type.
-     *
-     * @return the object type
-     */
+    @Override
     public String type() {
         return exportId().type().orElseThrow(IllegalStateException::new);
     }

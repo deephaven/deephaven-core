@@ -3,18 +3,16 @@
  */
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.ServerObject.Fetchable;
-import io.deephaven.client.impl.FetchedObject;
+import io.deephaven.client.impl.DataAndExports;
 import io.deephaven.client.impl.ServerObject;
+import io.deephaven.client.impl.ServerObject.Fetchable;
 import io.deephaven.client.impl.Session;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
@@ -37,29 +35,30 @@ class FetchObject extends SingleSessionExampleBase {
 
     @Override
     protected void execute(Session session) throws Exception {
-        try (final FetchedObject obj = session.fetchObject(type, ticket).get()) {
-            show(0, obj);
+        try (
+                final Fetchable fetchable = session.fetchable(ticket.ticketId().toTypedTicket(type)).get();
+                final DataAndExports dataAndExports = fetchable.fetch().get()) {
+            show(0, type, dataAndExports);
         }
     }
 
-    private void show(int depth, FetchedObject fetchedObj)
+    private void show(int depth, String type, DataAndExports dataAndExports)
             throws IOException, ExecutionException, InterruptedException {
         final String prefix = " ".repeat(depth);
-        final String type = fetchedObj.type();
         System.err.println(prefix + "type: " + type);
-        System.err.println(prefix + "size: " + fetchedObj.size());
-        for (ServerObject export : fetchedObj.exports()) {
+        System.err.println(prefix + "size: " + dataAndExports.data().remaining());
+        for (ServerObject export : dataAndExports.exports()) {
             System.err.println(prefix + "exportId: " + export);
         }
+        final byte[] data = new byte[dataAndExports.data().remaining()];
+        dataAndExports.data().slice().get(data);
         if (file != null) {
-            try (final OutputStream out = new BufferedOutputStream(Files.newOutputStream(file))) {
-                fetchedObj.writeTo(out);
-            }
+            Files.write(file, data);
         } else {
-            fetchedObj.writeTo(System.out);
+            System.out.write(data);
         }
         if (recursive) {
-            for (ServerObject serverObject : fetchedObj.exports()) {
+            for (ServerObject serverObject : dataAndExports.exports()) {
                 show(depth + 1, serverObject);
             }
         }
@@ -68,8 +67,9 @@ class FetchObject extends SingleSessionExampleBase {
     private void show(int depth, ServerObject obj)
             throws IOException, ExecutionException, InterruptedException {
         if (obj instanceof Fetchable) {
-            try (final FetchedObject fetched = ((Fetchable) obj).fetch().get()) {
-                show(depth, fetched);
+            final Fetchable fetchable = (Fetchable) obj;
+            try (final DataAndExports fetched = fetchable.fetch().get()) {
+                show(depth, fetchable.type(), fetched);
             }
         } else {
             final String prefix = " ".repeat(depth);

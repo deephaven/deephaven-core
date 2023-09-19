@@ -3,14 +3,16 @@ package io.deephaven.client;
 import com.google.auto.service.AutoService;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.deephaven.client.impl.CustomObject;
-import io.deephaven.client.impl.FetchedObject;
+import io.deephaven.client.impl.DataAndExports;
+import io.deephaven.client.impl.DataAndTypedTickets;
 import io.deephaven.client.impl.HasTypedTicket;
 import io.deephaven.client.impl.ObjectService.MessageStream;
 import io.deephaven.client.impl.ServerObject;
+import io.deephaven.client.impl.ServerObject.Bidirectional;
+import io.deephaven.client.impl.ServerObject.Fetchable;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.client.impl.TableObject;
-import io.deephaven.client.impl.TicketId;
 import io.deephaven.client.impl.TypedTicket;
 import io.deephaven.client.impl.UnknownObject;
 import io.deephaven.engine.table.Table;
@@ -103,10 +105,10 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
 
     static class MyObjects {
         private final Table table;
-        private final Object customObject;
+        private final Figure customObject;
         private final Object unknownObject;
 
-        public MyObjects(Table table, Object customObject) {
+        public MyObjects(Table table, Figure customObject) {
             this.table = Objects.requireNonNull(table);
             this.customObject = Objects.requireNonNull(customObject);
             this.unknownObject = new Object();
@@ -114,111 +116,139 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
     }
 
     @Test
-    public void myObjectsTest() throws ExecutionException, InterruptedException, TimeoutException,
+    public void fetchable() throws ExecutionException, InterruptedException, TimeoutException,
             InvalidProtocolBufferException, TableHandleException {
         final ScriptSession scriptSession = testComponent().scriptSessionProvider().get();
         scriptSession.setVariable("my_objects", myObjects());
-        final TicketId ticket = new TicketId("s/my_objects".getBytes(StandardCharsets.UTF_8));
-        final TableHandle handle1;
-        final TableHandle handle2;
-        try (final FetchedObject myObjects = session
-                .fetchObject(MyObjectsObjectType.NAME, ticket)
-                .get(5, TimeUnit.SECONDS)) {
-
-            assertThat(myObjects.size()).isZero();
-            assertThat(myObjects.exports()).hasSize(3);
-            assertThat(myObjects.exports().get(0)).isInstanceOf(TableObject.class);
-            assertThat(myObjects.exports().get(1)).isInstanceOf(CustomObject.class);
-            assertThat(myObjects.exports().get(2)).isInstanceOf(UnknownObject.class);
-
-            final TableObject tableObject = (TableObject) myObjects.exports().get(0);
-            final CustomObject customObject = (CustomObject) myObjects.exports().get(1);
-            final UnknownObject unknownObject = (UnknownObject) myObjects.exports().get(2);
-
-            handle1 = tableObject.executeTable();
-            try (final FetchedObject figureObject = customObject.fetch().get(5, TimeUnit.SECONDS)) {
-                handle2 = handleFromFigure(figureObject);
-            }
+        final TypedTicket tt =
+                new TypedTicket(MyObjectsObjectType.NAME, "s/my_objects".getBytes(StandardCharsets.UTF_8));
+        try (
+                final Fetchable fetchable = session.fetchable(tt).get(5, TimeUnit.SECONDS);
+                final DataAndExports dataAndExports = fetchable.fetch().get(5, TimeUnit.SECONDS)) {
+            checkMyObject(dataAndExports);
         }
-        handle2.close();
-        handle1.close();
     }
 
     @Test
-    public void messageStreamTest() throws InterruptedException {
+    public void fetch() throws ExecutionException, InterruptedException, TimeoutException,
+            InvalidProtocolBufferException, TableHandleException {
+        final ScriptSession scriptSession = testComponent().scriptSessionProvider().get();
+        scriptSession.setVariable("my_objects", myObjects());
+        final TypedTicket tt =
+                new TypedTicket(MyObjectsObjectType.NAME, "s/my_objects".getBytes(StandardCharsets.UTF_8));
+        try (final DataAndExports dataAndExports = session.fetch(tt).get(5, TimeUnit.SECONDS)) {
+            checkMyObject(dataAndExports);
+        }
+    }
+
+    @Test
+    public void bidirectional() throws InterruptedException, ExecutionException, TimeoutException {
         final ScriptSession scriptSession = testComponent().scriptSessionProvider().get();
         scriptSession.setVariable("my_echo", EchoObjectType.INSTANCE);
         scriptSession.setVariable("my_objects", myObjects());
         final TypedTicket echo = new TypedTicket(EchoObjectType.NAME, "s/my_echo".getBytes(StandardCharsets.UTF_8));
         final TypedTicket myObjects =
                 new TypedTicket(MyObjectsObjectType.NAME, "s/my_objects".getBytes(StandardCharsets.UTF_8));
-        final int times = 10;
-        final BlockingQueue<Data> queue = new ArrayBlockingQueue<>(times);
-        final CountDownLatch onClose = new CountDownLatch(1);
-        // This is a simple protocol for testing purposes only. Essentially, the server will echo anything back to the
-        // client. We are testing in such a way that the i'th response is expected to contain i bytes and i (my objects)
-        // refs.
-        final MessageStream<ServerObject> fromServer = new MessageStream<>() {
-            @Override
-            public void onData(ByteBuffer payload, List<? extends ServerObject> references) {
-                queue.add(new Data(payload, references));
-            }
+        try (
+                final Bidirectional echoRef = session.bidirectional(echo).get(5, TimeUnit.SECONDS);
+                final ServerObject myObjectsRef = session.export(myObjects).get(5, TimeUnit.SECONDS)) {
+            final EchoHandler echoHandler = new EchoHandler();
+            final MessageStream<DataAndTypedTickets> toServer = echoRef.messageStream(echoHandler);
+            checkEcho(echoHandler, toServer, myObjectsRef, 10);
+        }
+    }
 
-            @Override
-            public void onClose() {
-                onClose.countDown();
-            }
-        };
-        final MessageStream<HasTypedTicket> toServer = session.messageStream(echo, fromServer);
+    @Test
+    public void messageStream() throws InterruptedException {
+        final ScriptSession scriptSession = testComponent().scriptSessionProvider().get();
+        scriptSession.setVariable("my_echo", EchoObjectType.INSTANCE);
+        scriptSession.setVariable("my_objects", myObjects());
+        final TypedTicket echo = new TypedTicket(EchoObjectType.NAME, "s/my_echo".getBytes(StandardCharsets.UTF_8));
+        final TypedTicket myObjects =
+                new TypedTicket(MyObjectsObjectType.NAME, "s/my_objects".getBytes(StandardCharsets.UTF_8));
+        final EchoHandler echoHandler = new EchoHandler();
+        final MessageStream<DataAndTypedTickets> toServer = session.messageStream(echo, echoHandler);
+        checkEcho(echoHandler, toServer, myObjects, 10);
+    }
 
+    private static void checkEcho(EchoHandler handler, MessageStream<DataAndTypedTickets> toServer, HasTypedTicket tt,
+            int times) throws InterruptedException {
         // Ensure we get a message back right away.
-        check(queue.poll(5, TimeUnit.SECONDS), 0);
+        check(handler.queue.poll(5, TimeUnit.SECONDS), 0);
 
         // We'll send all of our messages first
         for (int i = 1; i < times; ++i) {
             final List<? extends HasTypedTicket> refs =
-                    Stream.generate(() -> myObjects).limit(i).collect(Collectors.toList());
-            toServer.onData(ByteBuffer.allocate(i), refs);
+                    Stream.generate(() -> tt).limit(i).collect(Collectors.toList());
+            toServer.onData(new DataAndTypedTickets(ByteBuffer.allocate(i), refs));
         }
 
         // Then check we got the correct messages back
         for (int i = 1; i < times; ++i) {
-            check(queue.poll(5, TimeUnit.SECONDS), i);
+            check(handler.queue.poll(5, TimeUnit.SECONDS), i);
         }
 
         toServer.onClose();
-        assertThat(onClose.await(5, TimeUnit.SECONDS)).isTrue();
+        assertThat(handler.onClose.await(5, TimeUnit.SECONDS)).isTrue();
     }
 
-    private static class Data {
-        private final ByteBuffer payload;
-        private final List<? extends ServerObject> refs;
+    private static class EchoHandler implements MessageStream<DataAndExports> {
+        final BlockingQueue<DataAndExports> queue = new ArrayBlockingQueue<>(32);
+        final CountDownLatch onClose = new CountDownLatch(1);
 
-        public Data(ByteBuffer payload, List<? extends ServerObject> refs) {
-            this.payload = payload;
-            this.refs = refs;
+        @Override
+        public void onData(DataAndExports dataAndExports) {
+            queue.add(dataAndExports);
+        }
+
+        @Override
+        public void onClose() {
+            onClose.countDown();
         }
     }
 
-    private static void check(Data data, int index) {
+    private static void checkMyObject(DataAndExports myObjects) throws TableHandleException, InterruptedException,
+            InvalidProtocolBufferException, ExecutionException, TimeoutException {
+        final TableHandle handle2;
+        final TableHandle handle1;
+        assertThat(myObjects.data().remaining()).isZero();
+        assertThat(myObjects.exports()).hasSize(3);
+        assertThat(myObjects.exports().get(0)).isInstanceOf(TableObject.class);
+        assertThat(myObjects.exports().get(1)).isInstanceOf(CustomObject.class);
+        assertThat(myObjects.exports().get(2)).isInstanceOf(UnknownObject.class);
+
+        final TableObject tableObject = (TableObject) myObjects.exports().get(0);
+        final CustomObject customObject = (CustomObject) myObjects.exports().get(1);
+        final UnknownObject unknownObject = (UnknownObject) myObjects.exports().get(2);
+
+        assertThat(customObject.type()).isEqualTo(FigureWidgetTypePlugin.NAME);
+        handle1 = tableObject.executeTable();
+        try (final DataAndExports figureObject = customObject.fetch().get(5, TimeUnit.SECONDS)) {
+            handle2 = handleFromFigure(figureObject);
+        }
+        handle2.close();
+        handle1.close();
+    }
+
+    private static void check(DataAndExports data, int index) {
         assertThat(data).isNotNull();
-        assertThat(data.payload.remaining()).isEqualTo(index);
-        assertThat(data.refs.size()).isEqualTo(index);
-        for (ServerObject ref : data.refs) {
-            assertThat(ref).isInstanceOf(CustomObject.class);
-            assertThat(((CustomObject) ref).type()).isEqualTo(MyObjectsObjectType.NAME);
-            ref.close();
+        try (final DataAndExports _close = data) {
+            assertThat(data.data().remaining()).isEqualTo(index);
+            assertThat(data.exports().size()).isEqualTo(index);
+            for (ServerObject ref : data.exports()) {
+                assertThat(ref).isInstanceOf(CustomObject.class);
+                assertThat(((CustomObject) ref).type()).isEqualTo(MyObjectsObjectType.NAME);
+            }
         }
     }
 
-    private static TableHandle handleFromFigure(FetchedObject figureObject)
+    private static TableHandle handleFromFigure(DataAndExports figureData)
             throws InvalidProtocolBufferException, TableHandleException, InterruptedException {
-        assertThat(figureObject.type()).isEqualTo(FigureWidgetTypePlugin.NAME);
-        assertThat(figureObject.exports()).hasSize(1);
-        assertThat(figureObject.exports().get(0)).isInstanceOf(TableObject.class);
+        assertThat(figureData.exports()).hasSize(1);
+        assertThat(figureData.exports().get(0)).isInstanceOf(TableObject.class);
         // Note: don't really care about the contents of FigureDescriptor - just making sure it parses successfully
-        FigureDescriptor.parseFrom(figureObject.toByteArray());
-        final TableObject tableObject = (TableObject) figureObject.exports().get(0);
+        FigureDescriptor.parseFrom(figureData.data());
+        final TableObject tableObject = (TableObject) figureData.exports().get(0);
         return tableObject.executeTable();
     }
 }

@@ -3,40 +3,55 @@
  */
 package io.deephaven.client.impl;
 
-import java.nio.ByteBuffer;
-import java.util.List;
+import io.deephaven.client.impl.ServerObject.Bidirectional;
+import io.deephaven.client.impl.ServerObject.Fetchable;
+
 import java.util.concurrent.CompletableFuture;
 
 public interface ObjectService {
-    /**
-     * Fetch the object.
-     *
-     * @param type the type, must be non-null
-     * @param ticket the ticket
-     * @return the future
-     */
-    CompletableFuture<FetchedObject> fetchObject(String type, HasTicketId ticket);
-
-    /**
-     * Fetch the object represented by the {@code typedTicket}. The type must be present.
-     *
-     * @param typedTicket the typed ticket
-     * @return the future
-     */
-    CompletableFuture<FetchedObject> fetchObject(HasTypedTicket typedTicket);
 
     /**
      * The sending and receiving interface for {@link #messageStream(HasTypedTicket, MessageStream)}.
      *
-     * @param <Ref> the reference type
+     * @param <Message> the message type
      */
-    interface MessageStream<Ref> {
-        void onData(ByteBuffer payload, List<? extends Ref> references);
+    interface MessageStream<Message> {
+        void onData(Message message);
 
         void onClose();
     }
 
     /**
+     * Exports {@code typedTicket} to a client-managed fetchable server object.
+     *
+     * @param typedTicket the typed ticket
+     * @return the future
+     * @see Session#export(HasTypedTicket)
+     */
+    CompletableFuture<? extends Fetchable> fetchable(HasTypedTicket typedTicket);
+
+    /**
+     * Exports {@code typedTicket} to a client-managed bidirectional server object.
+     *
+     * @param typedTicket the typed ticket
+     * @return the future
+     * @see Session#export(HasTypedTicket)
+     */
+    CompletableFuture<? extends Bidirectional> bidirectional(HasTypedTicket typedTicket);
+
+    /**
+     * The low-level interface for fetching data. See {@link #fetchable(HasTypedTicket)} for a higher-level interface.
+     *
+     * @param typedTicket the typed ticket
+     * @return the future
+     */
+    CompletableFuture<DataAndExports> fetch(HasTypedTicket typedTicket);
+
+    /**
+     * The low-level interface for creating a bidirection message stream. See {@link #bidirectional(HasTypedTicket)} for
+     * a higher-level interface.
+     *
+     * <p>
      * Opens a bidirectional message stream for a {@code typedTicket}. References sent to the server are generic
      * {@link HasTypedTicket typed tickets}, while the references received from the server are {@link ServerObject
      * server objects}. The caller is responsible for {@link ServerObject#release() releasing} or
@@ -58,5 +73,5 @@ public interface ObjectService {
      * @param stream the stream where the client will receive messages
      * @return the stream where the client will send messages
      */
-    MessageStream<HasTypedTicket> messageStream(HasTypedTicket typedTicket, MessageStream<ServerObject> stream);
+    MessageStream<DataAndTypedTickets> messageStream(HasTypedTicket typedTicket, MessageStream<DataAndExports> stream);
 }

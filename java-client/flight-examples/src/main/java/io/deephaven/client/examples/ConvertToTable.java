@@ -3,7 +3,7 @@
  */
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.FetchedObject;
+import io.deephaven.client.impl.DataAndExports;
 import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.HasTicketId;
 import io.deephaven.client.impl.ServerObject;
@@ -46,7 +46,7 @@ class ConvertToTable extends FlightExampleBase {
     }
 
     private TableObject fetchTableExport(FlightSession flight) throws InterruptedException, ExecutionException {
-        final FetchedObject fetchedObject = flight.session().fetchObject(type, ticket).get();
+        final DataAndExports fetchedObject = flight.session().fetch(ticket.ticketId().toTypedTicket(type)).get();
         if (fetchedObject.exports().size() != 1) {
             throw new IllegalStateException("Expected fetched object to have exactly one export");
         }
@@ -54,7 +54,7 @@ class ConvertToTable extends FlightExampleBase {
         if (!(serverObject instanceof TableObject)) {
             throw new IllegalStateException("Expected fetched object to export a Table");
         }
-        if (fetchedObject.size() != 0) {
+        if (fetchedObject.data().remaining() != 0) {
             throw new IllegalStateException("Expected fetched object to not have any bytes");
         }
         return (TableObject) serverObject;

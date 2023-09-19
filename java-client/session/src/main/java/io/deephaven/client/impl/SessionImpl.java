@@ -3,7 +3,8 @@
  */
 package io.deephaven.client.impl;
 
-import com.google.protobuf.ByteString;
+import io.deephaven.client.impl.ServerObject.Bidirectional;
+import io.deephaven.client.impl.ServerObject.Fetchable;
 import io.deephaven.client.impl.script.Changes;
 import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.proto.backplane.grpc.AddTableRequest;
@@ -13,8 +14,8 @@ import io.deephaven.proto.backplane.grpc.ConfigValue;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse;
 import io.deephaven.proto.backplane.grpc.ConnectRequest;
-import io.deephaven.proto.backplane.grpc.Data;
 import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
+import io.deephaven.proto.backplane.grpc.ExportRequest;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
@@ -35,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.lang.model.SourceVersion;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +50,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 /**
  * A {@link Session} implementation that uses {@link io.deephaven.proto.backplane.grpc.BatchTableRequest batch requests}
@@ -172,56 +172,82 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    public CompletableFuture<FetchedObject> fetchObject(String type, HasTicketId ticketId) {
-        if (type == null) {
-            throw new IllegalArgumentException("Type must be present to fetch an object");
-        }
-        return fetchObject(ticketId.ticketId().toTypedTicket(type));
-    }
-
-    @Override
-    public CompletableFuture<FetchedObject> fetchObject(HasTypedTicket typedTicket) {
+    public CompletableFuture<DataAndExports> fetch(HasTypedTicket typedTicket) {
         final TypedTicket tt = typedTicket.typedTicket();
         if (!tt.type().isPresent()) {
             throw new IllegalArgumentException("Type must be present to fetch an object");
         }
-        final FetchObjectRequest request = FetchObjectRequest.newBuilder()
+        final FetchObjectRequest fetchRequest = FetchObjectRequest.newBuilder()
                 .setSourceId(tt.proto())
                 .build();
-        return UnaryGrpcFuture.of(request, channel().object()::fetchObject,
+        return UnaryGrpcFuture.of(fetchRequest, channel().object()::fetchObject,
                 response -> {
                     final String responseType = response.getType();
                     if (!tt.type().get().equals(responseType)) {
                         throw new RuntimeException(
-                                String.format("The server returned an unexpected response type, expected=%s, actual=%s",
+                                String.format(
+                                        "The server returned an unexpected response type, expected=%s, actual=%s",
                                         tt.type().get(), responseType));
                     }
-                    final ByteString data = response.getData();
-                    final List<ServerObject> exports = response.getTypedExportIdsList().stream()
-                            .map(TypedTicket::of)
-                            .map(TypedTicket::toExportId)
-                            .map(this::toServerObject)
-                            .collect(Collectors.toList());
-                    return new FetchedObject(tt, data, exports);
+                    return DataAndExports.of(this, response);
                 });
     }
 
-    private ServerObject toServerObject(ExportId exportId) {
-        return exportId.toServerObject(this);
-    }
-
     @Override
-    public MessageStream<HasTypedTicket> messageStream(HasTypedTicket typedTicket,
-            MessageStream<ServerObject> clientStream) {
+    public MessageStream<DataAndTypedTickets> messageStream(HasTypedTicket typedTicket,
+            MessageStream<DataAndExports> stream) {
         final StreamRequest connectRequest = StreamRequest.newBuilder()
                 .setConnect(ConnectRequest.newBuilder()
                         .setSourceId(typedTicket.typedTicket().proto())
                         .build())
                 .build();
         final StreamObserver<StreamRequest> serverObserver =
-                channel().object().messageStream(new MessageStreamObserver(clientStream));
+                channel().object().messageStream(new MessageStreamObserver(stream));
         serverObserver.onNext(connectRequest);
         return new MessageStreamImpl(serverObserver);
+    }
+
+    @Override
+    public CompletableFuture<? extends ServerObject> export(HasTypedTicket typedTicket) {
+        return export(typedTicket, this::toServerObject);
+    }
+
+    @Override
+    public CompletableFuture<? extends Fetchable> fetchable(HasTypedTicket typedTicket) {
+        return export(typedTicket, this::toFetchableObject);
+    }
+
+    @Override
+    public CompletableFuture<? extends Bidirectional> bidirectional(HasTypedTicket typedTicket) {
+        return export(typedTicket, this::toBidirectionalObject);
+    }
+
+    private <T extends ServerObject> CompletableFuture<T> export(HasTypedTicket typedTicket, Function<ExportId, T> f) {
+        final TypedTicket tt = typedTicket.typedTicket();
+        final ExportId exportId = newExportId(tt.type().orElse(null));
+        // Doesn't need to be closed unless it makes it back to the user
+        // noinspection resource
+        final T serverObject = f.apply(exportId);
+        final ExportRequest exportRequest = ExportRequest.newBuilder()
+                .setSourceId(tt.ticketId().proto())
+                .setResultId(exportId.ticketId().proto())
+                .build();
+        return UnaryGrpcFuture.ignoreResponse(exportRequest, channel().session()::exportFromTicket)
+                .thenApply(x -> serverObject);
+    }
+
+    private ServerObject toServerObject(ExportId exportId) {
+        return exportId.toServerObject(this);
+    }
+
+    private Fetchable toFetchableObject(ExportId exportId) {
+        // all fetchable objects are custom objects atm
+        return new CustomObject(this, exportId);
+    }
+
+    private Bidirectional toBidirectionalObject(ExportId exportId) {
+        // all bidirectional objects are custom objects atm
+        return new CustomObject(this, exportId);
     }
 
     @Override
@@ -270,7 +296,11 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public ExportId newExportId() {
-        return new ExportId("Table", exportTicketCreator.createExportId());
+        return newExportId(TableObject.TYPE);
+    }
+
+    private ExportId newExportId(String type) {
+        return new ExportId(type, exportTicketCreator.createExportId());
     }
 
     @Override
@@ -465,20 +495,24 @@ public final class SessionImpl extends SessionBase {
     }
 
     private class MessageStreamObserver implements StreamObserver<StreamResponse> {
-        private final MessageStream<ServerObject> clientStream;
+        private final MessageStream<DataAndExports> clientStream;
 
-        public MessageStreamObserver(MessageStream<ServerObject> clientStream) {
+        public MessageStreamObserver(MessageStream<DataAndExports> clientStream) {
             this.clientStream = Objects.requireNonNull(clientStream);
         }
 
         @Override
         public void onNext(StreamResponse value) {
-            final List<ServerObject> exportIds = value.getData().getExportedReferencesList().stream()
-                    .map(TypedTicket::of)
-                    .map(TypedTicket::toExportId)
-                    .map(SessionImpl.this::toServerObject)
-                    .collect(Collectors.toList());
-            clientStream.onData(value.getData().getPayload().asReadOnlyByteBuffer(), exportIds);
+            // noinspection SwitchStatementWithTooFewBranches
+            switch (value.getMessageCase()) {
+                case DATA:
+                    clientStream.onData(DataAndExports.of(SessionImpl.this, value.getData()));
+                    break;
+                default:
+                    throw new IllegalStateException(
+                            String.format("Unexpected stream response message type, %s", value.getMessageCase()));
+            }
+
         }
 
         @Override
@@ -492,7 +526,7 @@ public final class SessionImpl extends SessionBase {
         }
     }
 
-    private static class MessageStreamImpl implements MessageStream<HasTypedTicket> {
+    private static class MessageStreamImpl implements MessageStream<DataAndTypedTickets> {
         private final StreamObserver<StreamRequest> serverObserver;
 
         public MessageStreamImpl(StreamObserver<StreamRequest> serverObserver) {
@@ -500,17 +534,8 @@ public final class SessionImpl extends SessionBase {
         }
 
         @Override
-        public void onData(ByteBuffer payload, List<? extends HasTypedTicket> references) {
-            final StreamRequest request = StreamRequest.newBuilder()
-                    .setData(Data.newBuilder()
-                            .setPayload(ByteString.copyFrom(payload))
-                            .addAllExportedReferences(() -> references.stream()
-                                    .map(HasTypedTicket::typedTicket)
-                                    .map(TypedTicket::proto)
-                                    .iterator())
-                            .build())
-                    .build();
-            serverObserver.onNext(request);
+        public void onData(DataAndTypedTickets message) {
+            serverObserver.onNext(StreamRequest.newBuilder().setData(message.proto()).build());
         }
 
         @Override

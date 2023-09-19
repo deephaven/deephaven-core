@@ -7,7 +7,6 @@ import io.deephaven.client.impl.ObjectService.MessageStream;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 abstract class ServerObjectBase implements ServerObject {
 
@@ -19,18 +18,18 @@ abstract class ServerObjectBase implements ServerObject {
     }
 
     final Session session;
-    private final ExportId exportId;
+    final ExportId exportId;
 
     ServerObjectBase(Session session, ExportId exportId) {
         this.session = Objects.requireNonNull(session);
         this.exportId = Objects.requireNonNull(exportId);
     }
 
-    public CompletableFuture<FetchedObject> fetch() {
-        return session.fetchObject(this);
+    public CompletableFuture<DataAndExports> fetch() {
+        return session.fetch(this);
     }
 
-    public MessageStream<HasTypedTicket> messageStream(MessageStream<ServerObject> stream) {
+    public MessageStream<DataAndTypedTickets> messageStream(MessageStream<DataAndExports> stream) {
         return session.messageStream(this, stream);
     }
 
@@ -55,7 +54,7 @@ abstract class ServerObjectBase implements ServerObject {
     }
 
     @Override
-    public CompletableFuture<Void> release() {
+    public final CompletableFuture<Void> release() {
         return session.release(exportId);
     }
 
@@ -65,7 +64,7 @@ abstract class ServerObjectBase implements ServerObject {
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return exportId.toString();
     }
 }
