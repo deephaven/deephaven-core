@@ -16,7 +16,6 @@ import io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse;
 import io.deephaven.proto.backplane.grpc.ConnectRequest;
 import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
 import io.deephaven.proto.backplane.grpc.ExportRequest;
-import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
@@ -177,28 +176,41 @@ public final class SessionImpl extends SessionBase {
         if (!tt.type().isPresent()) {
             throw new IllegalArgumentException("Type must be present to fetch an object");
         }
-        final FetchObjectRequest fetchRequest = FetchObjectRequest.newBuilder()
-                .setSourceId(tt.proto())
+        final StreamRequest connectRequest = StreamRequest.newBuilder()
+                .setConnect(ConnectRequest.newBuilder().setSourceId(tt.proto()))
                 .build();
-        return UnaryGrpcFuture.of(fetchRequest, channel().object()::fetchObject,
-                response -> {
-                    final String responseType = response.getType();
-                    if (!tt.type().get().equals(responseType)) {
-                        throw new RuntimeException(
-                                String.format(
-                                        "The server returned an unexpected response type, expected=%s, actual=%s",
-                                        tt.type().get(), responseType));
-                    }
-                    return DataAndExports.of(this, response);
-                });
+        return UnaryGrpcFuture.of(connectRequest, this::messageStreamConnectOnly, this::toDataAndExports);
+    }
+
+    private void messageStreamConnectOnly(
+            io.deephaven.proto.backplane.grpc.StreamRequest request,
+            io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.StreamResponse> responseObserver) {
+        final StreamObserver<StreamRequest> observer = channel().object().messageStream(responseObserver);
+        observer.onNext(request);
+        observer.onCompleted();
+    }
+
+    private DataAndExports toDataAndExports(StreamResponse value) {
+        // noinspection SwitchStatementWithTooFewBranches
+        switch (value.getMessageCase()) {
+            case DATA:
+                return DataAndExports.of(this, value.getData());
+            default:
+                throw new IllegalStateException(
+                        String.format("Unexpected stream response message type, %s", value.getMessageCase()));
+        }
     }
 
     @Override
     public MessageStream<DataAndTypedTickets> messageStream(HasTypedTicket typedTicket,
             MessageStream<DataAndExports> stream) {
+        final TypedTicket tt = typedTicket.typedTicket();
+        if (!tt.type().isPresent()) {
+            throw new IllegalArgumentException("Type must be present to open messageStream with an object");
+        }
         final StreamRequest connectRequest = StreamRequest.newBuilder()
                 .setConnect(ConnectRequest.newBuilder()
-                        .setSourceId(typedTicket.typedTicket().proto())
+                        .setSourceId(tt.proto())
                         .build())
                 .build();
         final StreamObserver<StreamRequest> serverObserver =
@@ -503,16 +515,7 @@ public final class SessionImpl extends SessionBase {
 
         @Override
         public void onNext(StreamResponse value) {
-            // noinspection SwitchStatementWithTooFewBranches
-            switch (value.getMessageCase()) {
-                case DATA:
-                    clientStream.onData(DataAndExports.of(SessionImpl.this, value.getData()));
-                    break;
-                default:
-                    throw new IllegalStateException(
-                            String.format("Unexpected stream response message type, %s", value.getMessageCase()));
-            }
-
+            clientStream.onData(toDataAndExports(value));
         }
 
         @Override
