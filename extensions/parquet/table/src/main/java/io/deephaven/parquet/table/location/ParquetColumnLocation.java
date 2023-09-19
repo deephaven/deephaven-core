@@ -45,6 +45,7 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
@@ -153,22 +154,18 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         if (!hasGroupingTable) {
             return null;
         }
-
-        final Function<String, String> defaultGroupingFilenameByColumnName =
-                ParquetTools.defaultGroupingFileName(tl().getParquetFile().getAbsolutePath());
+        final File parquetFile = tl().getParquetFile();
         try {
-            final GroupingColumnInfo groupingColumnInfo =
-                    tl().getGroupingColumns().get(parquetColumnName);
+            final GroupingColumnInfo groupingColumnInfo = tl().getGroupingColumns().get(parquetColumnName);
             final ParquetFileReader parquetFileReader;
-            final String groupingFileName = groupingColumnInfo == null
-                    ? defaultGroupingFilenameByColumnName.apply(parquetColumnName)
-                    : tl().getParquetFile().toPath().getParent()
-                            .resolve(groupingColumnInfo.groupingTablePath()).toString();
+            // TODO Think if I need to do something here
+            final String groupingFilePath = groupingColumnInfo == null
+                    ? ParquetTools.getRelativeGroupingFilePath(parquetFile, parquetColumnName)
+                    : parquetFile.toPath().getParent().resolve(groupingColumnInfo.groupingTablePath()).toString();
             try {
-                parquetFileReader =
-                        new ParquetFileReader(groupingFileName, tl().getChannelProvider());
-            } catch (Exception e) {
-                log.warn().append("Failed to read expected grouping file ").append(groupingFileName)
+                parquetFileReader = new ParquetFileReader(groupingFilePath, tl().getChannelProvider());
+            } catch (IOException e) {
+                log.warn().append("Failed to read expected grouping file ").append(groupingFilePath)
                         .append(" for table location ").append(tl()).append(", column ")
                         .append(getName())
                         .endl();
@@ -187,7 +184,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             final ColumnChunkReader endPosReader =
                     rowGroupReader.getColumnChunk(Collections.singletonList(END_POS));
             if (groupingKeyReader == null || beginPosReader == null || endPosReader == null) {
-                log.warn().append("Grouping file ").append(groupingFileName)
+                log.warn().append("Grouping file ").append(groupingFilePath)
                         .append(" is missing one or more expected columns for table location ")
                         .append(tl()).append(", column ").append(getName());
                 return null;

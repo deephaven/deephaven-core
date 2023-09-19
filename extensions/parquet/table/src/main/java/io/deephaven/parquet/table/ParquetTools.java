@@ -237,7 +237,23 @@ public class ParquetTools {
         return s;
     }
 
-    public static Function<String, String> defaultGroupingFileName(@NotNull final String path) {
+    /**
+     * Generates grouping file path from the table destination file path. For example, table A with destination
+     * {@code tableDest} as {@code "dir/A.parquet"} and grouping column {@code columnName} as {@code "g"} have grouping
+     * file at {@code "dir/.dh_metadata/indexes/g/index_g_A.parquet"}. TODO Rewrite this comment based on finalized
+     * version TODO Add a test for this method
+     */
+    public static String getRelativeGroupingFilePath(@NotNull final File tableDest, @NotNull final String columnName) {
+        return String.format(".dh_metadata/indexes/%s/index_%s_%s", columnName, columnName, tableDest.getName());
+    }
+
+    /**
+     * The legacy approach to create grouping file paths from destination file paths. For example, table A with grouping
+     * column g will have grouping files tableA_g_grouping.parquet in same directory as the table.
+     */
+    // TODO Remove this
+    @Deprecated
+    public static Function<String, String> legacyGroupingFilePath(@NotNull final String path) {
         final String prefix = minusParquetSuffix(path);
         return columnName -> prefix + "_" + columnName + "_grouping.parquet";
     }
@@ -297,7 +313,7 @@ public class ParquetTools {
     /**
      * Make any missing ancestor directories of {@code destination}.
      *
-     * @param destination The destination file
+     * @param destination The destination parquet file
      * @return The first created directory, or null if no directories were made.
      */
     private static File prepareDestinationFileLocation(@NotNull File destination) {
@@ -346,7 +362,7 @@ public class ParquetTools {
     }
 
     /**
-     * Helper function for building grouping column info for writing and deleting any backup grouping column files
+     * Helper function for building grouping column info for writing. Also, deletes any backup grouping column files.
      *
      * @param groupingColumnNames Names of grouping columns
      * @param parquetColumnNames Names of grouping columns for the parquet file
@@ -362,8 +378,9 @@ public class ParquetTools {
         for (int gci = 0; gci < groupingColumnNames.length; gci++) {
             final String groupingColumnName = groupingColumnNames[gci];
             final String parquetColumnName = parquetColumnNames[gci];
-            final String groupingFilePath = defaultGroupingFileName(destFile.getPath()).apply(parquetColumnName);
-            final File groupingFile = new File(groupingFilePath);
+            final String groupingFilePath = getRelativeGroupingFilePath(destFile, parquetColumnName);
+            final File groupingFile = new File(destFile.getParent(), groupingFilePath);
+            prepareDestinationFileLocation(groupingFile);
             deleteBackupFile(groupingFile);
             final File shadowGroupingFile = getShadowFile(groupingFile);
             gcwim.put(groupingColumnName, new ParquetTableWriter.GroupingColumnWritingInfo(parquetColumnName,
@@ -397,21 +414,19 @@ public class ParquetTools {
         }
         Arrays.stream(destinations).forEach(ParquetTools::deleteBackupFile);
 
-        // Write tables at temporary shadow file paths in the same directory to prevent overwriting any existing files
+        // Write tables and grouping files at temporary shadow file paths in the same directory to prevent overwriting
+        // any existing files
         final File[] shadowDestFiles =
-                Arrays.stream(destinations)
-                        .map(ParquetTools::getShadowFile)
-                        .toArray(File[]::new);
+                Arrays.stream(destinations).map(ParquetTools::getShadowFile).toArray(File[]::new);
         final File[] firstCreatedDirs =
-                Arrays.stream(shadowDestFiles)
-                        .map(ParquetTools::prepareDestinationFileLocation)
-                        .toArray(File[]::new);
+                Arrays.stream(shadowDestFiles).map(ParquetTools::prepareDestinationFileLocation).toArray(File[]::new);
 
         // List of shadow files, to clean up in case of exceptions
         final List<File> shadowFiles = new ArrayList<>();
         // List of all destination files (including grouping files), to roll back in case of exceptions
         final List<File> destFiles = new ArrayList<>();
         try {
+            // Grouping info for each table
             final List<Map<String, ParquetTableWriter.GroupingColumnWritingInfo>> groupingColumnWritingInfoMaps;
             if (groupingColumns.length == 0) {
                 // Write the tables without any grouping info
@@ -423,16 +438,17 @@ public class ParquetTools {
                             Collections.emptyMap(), (Map<String, ParquetTableWriter.GroupingColumnWritingInfo>) null);
                 }
             } else {
-                // Create grouping info for each table and write the table and grouping files to shadow path
+                // Create grouping info for each table, and write the table and grouping files to shadow path
                 groupingColumnWritingInfoMaps = new ArrayList<>(sources.length);
 
-                // Shared parquet column names across all tables
+                // Same parquet column names across all tables
                 final String[] parquetColumnNames = Arrays.stream(groupingColumns)
                         .map(writeInstructions::getParquetColumnNameFromColumnNameOrDefault)
                         .toArray(String[]::new);
 
                 for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
                     final File tableDestination = destinations[tableIdx];
+                    // Prepare info structs for writing each grouping column
                     final Map<String, ParquetTableWriter.GroupingColumnWritingInfo> groupingColumnWritingInfoMap =
                             groupingColumnInfoBuilderHelper(groupingColumns, parquetColumnNames, tableDestination);
                     groupingColumnWritingInfoMaps.add(groupingColumnWritingInfoMap);
