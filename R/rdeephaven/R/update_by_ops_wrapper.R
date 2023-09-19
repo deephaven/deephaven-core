@@ -17,7 +17,7 @@ UpdateByOp <- R6Class("UpdateByOp",
 ### All of the functions below return an instance of an 'UpdateByOp' object
 
 #' @description
-#' Creates a cumulative sum UpdateByOp that computes the cumulative sum of each column in `cols` for each aggregation group.
+#' Creates a Cumulative Sum UpdateByOp that computes the cumulative sum of each column in `cols` for each aggregation group.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the cumulative sum for all non-grouping columns.
 #' @return UpdateByOp to be used in `update_by()`.
@@ -27,30 +27,63 @@ udb_cum_sum <- function(cols = character()) {
   return(UpdateByOp$new(INTERNAL_cum_sum(cols)))
 }
 
+#' @description
+#' Creates a Cumulative Product UpdateByOp that computes the cumulative product of each column in `cols` for each aggregation group.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the cumulative product for all non-grouping columns.
+#' @return UpdateByOp to be used in `update_by()`.
 #' @export
 udb_cum_prod <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
   return(UpdateByOp$new(INTERNAL_cum_prod(cols)))
 }
 
+#' @description
+#' Creates a Cumulative Minimum UpdateByOp that computes the cumulative minimum of each column in `cols` for each aggregation group.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the cumulative minimum for all non-grouping columns.
+#' @return UpdateByOp to be used in `update_by()`.
 #' @export
 udb_cum_min <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
   return(UpdateByOp$new(INTERNAL_cum_min(cols)))
 }
 
+#' @description
+#' Creates a Cumulative Maximum UpdateByOp that computes the cumulative maximum of each column in `cols` for each aggregation group.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the cumulative maximum for all non-grouping columns.
+#' @return UpdateByOp to be used in `update_by()`.
 #' @export
 udb_cum_max <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
   return(UpdateByOp$new(INTERNAL_cum_max(cols)))
 }
 
+#' @description
+#' Creates a Forward Fill UpdateByOp that replaces null values in `cols` with the last known non-null values.
+#' This operation is forward only.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to perform a forward fill on all non-grouping columns.
+#' @return UpdateByOp to be used in `update_by()`.
 #' @export
 udb_forward_fill <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
   return(UpdateByOp$new(INTERNAL_forward_fill(cols)))
 }
 
+#' @description
+#' Creates a Delta UpdateByOp for each column in `cols`. The Delta operation computes the difference between the
+#' current value and the previous value. When the current value is null, this operation will output null.
+#' When the current value is valid, the output will depend on the `delta_control` provided.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to apply the delta operation to all non-grouping columns.
+#' @param delta_control Defines how the delta operation handles null values. Can be one of the following:
+#'   'null_dominates': A valid value following a null value returns null.
+#'   'value_dominates': A valid value following a null value returns the valid value.
+#'   'zero_dominates': A valid value following a null value returns zero.
+#' Defaults to `null_dominates`.
+#' @return UpdateByOp to be used in `update_by()`.
 #' @export
 udb_delta <- function(cols = character(), delta_control = "null_dominates") {
   verify_string("cols", cols, FALSE)
