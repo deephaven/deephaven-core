@@ -3,7 +3,7 @@
  */
 package io.deephaven.client.impl;
 
-public interface HasExportId extends HasTicketId, HasTypedTicket, HasPathId {
+public interface HasExportId extends HasTypedTicket, HasPathId {
 
     /**
      * Get the export ID.

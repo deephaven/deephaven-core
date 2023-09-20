@@ -32,7 +32,7 @@ public interface Session
     // ----------------------------------------------------------
 
     /**
-     * Advanced usage, creates a new table export ID for {@code this} session, but must be managed by the caller.Useful
+     * Advanced usage, creates a new table export ID for {@code this} session, but must be managed by the caller. Useful
      * for more advanced integrations, particularly around doPut. Callers are responsible for {@link #release(ExportId)
      * releasing} the export ID if necessary.
      *
