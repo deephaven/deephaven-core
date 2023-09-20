@@ -217,7 +217,7 @@ def ems_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str
 
     The formula used is
         a = e^(-dt / decay_time)
-        eems_next = a * ems_last + value
+        ems_next = a * ems_last + value
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
@@ -253,7 +253,7 @@ def emmin_tick(decay_ticks: float, cols: Union[str, List[str]],
 
     The formula used is
         a = e^(-1 / decay_ticks)
-        em_val_next = min(a * em_val_last, value)
+        emmin_next = min(a * emmin_last, value)
 
     Args:
         decay_ticks (float): the decay rate in ticks
@@ -286,7 +286,7 @@ def emmin_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
 
     The formula used is
         a = e^(-dt / decay_time)
-        em_val_next = min(a * em_val_last, value)
+        emmin_next = min(a * emmin_last, value)
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
@@ -322,7 +322,7 @@ def emmax_tick(decay_ticks: float, cols: Union[str, List[str]],
 
     The formula used is
         a = e^(-1 / decay_ticks)
-        em_val_next = max(a * em_val_last, value)
+        emmax_next = max(a * emmax_last, value)
 
     Args:
         decay_ticks (float): the decay rate in ticks
@@ -355,7 +355,7 @@ def emmax_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
 
     The formula used is
         a = e^(-dt / decay_time)
-        em_val_next = max(a * em_val_last, value)
+        emmax_next = max(a * emmax_last, value)
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
@@ -390,9 +390,9 @@ def emstd_tick(decay_ticks: float, cols: Union[str, List[str]],
 
     The formula used is
         a = e^(-1 / decay_ticks)
-        variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
-        ema = a * prevEma + x
-        std = sqrt(variance)
+        ema_next = a * ema_last + (1 - a) * value
+        em_variance_next = a * (em_variance_last + (1 − a) * (value − ema_last)^2)
+        emstd_next = sqrt(em_variance_next)
 
     Args:
         decay_ticks (float): the decay rate in ticks
@@ -424,10 +424,10 @@ def emstd_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
     time as the decay unit.
 
     The formula used is
-        a = e^(-dt / timeDecay)
-        variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
-        ema = a * prevEma + x
-        std = sqrt(variance)
+        a = e^(-dt / decay_time)
+        ema_next = a * ema_last + (1 - a) * value
+        em_variance_next = a * (em_variance_last + (1 − a) * (value − ema_last)^2)
+        emstd_next = sqrt(em_variance_next)
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
