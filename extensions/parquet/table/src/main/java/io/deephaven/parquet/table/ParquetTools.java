@@ -14,6 +14,8 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.parquet.table.util.CachedChannelProvider;
+import io.deephaven.parquet.table.util.CachedChannelProviderTracker;
 import io.deephaven.vector.*;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
@@ -37,7 +39,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ParquetFileReader;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
-import io.deephaven.parquet.base.util.CachedChannelProvider;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -450,6 +451,8 @@ public class ParquetTools {
             // Write to shadow files was successful
             for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
                 destFiles.add(destinations[tableIdx]);
+                // Invalidate old file handles to prevent reading from files which have been overwritten
+                CachedChannelProviderTracker.getInstance().invalidateChannels(destinations[tableIdx]);
                 installShadowFile(destinations[tableIdx], shadowDestFiles[tableIdx]);
                 if (groupingColumnWritingInfoMaps != null) {
                     final Map<String, ParquetTableWriter.GroupingColumnWritingInfo> gcwim =
@@ -458,6 +461,7 @@ public class ParquetTools {
                         final File groupingDestFile = gfwi.metadataFilePath;
                         final File shadowGroupingFile = gfwi.destFile;
                         destFiles.add(groupingDestFile);
+                        CachedChannelProviderTracker.getInstance().invalidateChannels(groupingDestFile);
                         installShadowFile(groupingDestFile, shadowGroupingFile);
                     }
                 }
@@ -798,7 +802,8 @@ public class ParquetTools {
         return new ParquetFileReader(
                 parquetFile.getAbsolutePath(),
                 new CachedChannelProvider(
-                        new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()), 1 << 7));
+                        TrackedSeekableChannelsProvider.getInstance(TrackedFileHandleFactory.getInstance()),
+                        1 << 7));
     }
 
     @VisibleForTesting

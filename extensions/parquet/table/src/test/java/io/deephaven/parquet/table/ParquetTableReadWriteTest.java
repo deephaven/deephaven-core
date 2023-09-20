@@ -6,7 +6,6 @@ package io.deephaven.parquet.table;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.function.ByteConsumer;
@@ -23,6 +22,7 @@ import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
+import io.deephaven.engine.util.file.InvalidFileHandleException;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.stringset.ArrayStringSet;
@@ -853,6 +853,25 @@ public class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void multiHandleTest() {
+        final Table table1 = TableTools.emptyTable(5).update("A=(int)i");
+        final File destFile = new File(rootFile, "table1.parquet");
+        ParquetTools.writeTable(table1, destFile);
+        Table fromDisk1 = ParquetTools.readTable(destFile);
+
+        // Overwrite the same file. This should invalidate the old handles and CachedChannelProviders
+        final Table table2 = TableTools.emptyTable(5).update("B=(int)i*5");
+        ParquetTools.writeTable(table2, destFile);
+
+        try {
+            TstUtils.assertTableEquals(fromDisk1, table1);
+            TestCase.fail();
+        } catch (RuntimeException expected) {
+            assertTrue(expected.getCause() instanceof InvalidFileHandleException);
+        }
+    }
+
+    @Test
     public void dictionaryEncodingTest() {
         Collection<String> columns = new ArrayList<>(Arrays.asList(
                 "shortStringColumn = `Row ` + i",
@@ -882,7 +901,7 @@ public class ParquetTableReadWriteTest {
     @Test
     public void overflowingStringsTest() {
         // Test the behavior of writing parquet files if entries exceed the page size limit
-        final int pageSize = 2 << 10;
+        final int pageSize = ParquetInstructions.getMinTargetPageSize();
         final char[] data = new char[pageSize / 4];
         String someString = new String(data);
         Collection<String> columns = new ArrayList<>(Arrays.asList(
@@ -931,7 +950,7 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void overflowingCodecsTest() {
-        final int pageSize = 2 << 10;
+        final int pageSize = ParquetInstructions.getMinTargetPageSize();
         final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
                 .setTargetPageSize(pageSize) // Force a small page size to cause splitting across pages
                 .addColumnCodec("VariableWidthByteArrayColumn", SimpleByteArrayCodec.class.getName())

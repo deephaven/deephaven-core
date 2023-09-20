@@ -27,6 +27,7 @@ import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.util.BigDecimalUtils;
+import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.parquet.base.ColumnWriter;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.RowGroupWriter;
@@ -133,10 +134,10 @@ public class ParquetTableWriter {
             final Map<String, GroupingColumnWritingInfo> groupingColumnsWritingInfoMap)
             throws SchemaMappingException, IOException {
         final TableInfo.Builder tableInfoBuilder = TableInfo.builder();
-        List<File> cleanupFiles = null;
+        List<File> groupingFiles = null;
         try {
             if (groupingColumnsWritingInfoMap != null) {
-                cleanupFiles = new ArrayList<>(groupingColumnsWritingInfoMap.size());
+                groupingFiles = new ArrayList<>(groupingColumnsWritingInfoMap.size());
                 final Path destDirPath = Paths.get(destPathName).getParent();
                 for (Map.Entry<String, GroupingColumnWritingInfo> entry : groupingColumnsWritingInfoMap.entrySet()) {
                     final String groupingColumnName = entry.getKey();
@@ -144,7 +145,7 @@ public class ParquetTableWriter {
                     final String parquetColumnName = entry.getValue().parquetColumnName;
                     final File metadataFilePath = entry.getValue().metadataFilePath;
                     final File groupingDestFile = entry.getValue().destFile;
-                    cleanupFiles.add(groupingDestFile);
+                    groupingFiles.add(groupingDestFile);
                     tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(parquetColumnName,
                             destDirPath.relativize(metadataFilePath.toPath()).toString()));
                     write(auxiliaryTable, auxiliaryTable.getDefinition(), writeInstructions,
@@ -153,11 +154,11 @@ public class ParquetTableWriter {
             }
             write(t, definition, writeInstructions, destPathName, incomingMeta, tableInfoBuilder);
         } catch (Exception e) {
-            if (cleanupFiles != null) {
-                for (final File cleanupFile : cleanupFiles) {
+            if (groupingFiles != null) {
+                for (final File groupingFile : groupingFiles) {
                     try {
                         // noinspection ResultOfMethodCallIgnored
-                        cleanupFile.delete();
+                        groupingFile.delete();
                     } catch (Exception ignored) {
                     }
                 }
@@ -343,7 +344,8 @@ public class ParquetTableWriter {
 
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
-        return new ParquetFileWriter(path, TrackedSeekableChannelsProvider.getInstance(),
+        return new ParquetFileWriter(path,
+                TrackedSeekableChannelsProvider.getInstance(TrackedFileHandleFactory.getInstance()),
                 writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData);

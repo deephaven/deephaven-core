@@ -23,11 +23,11 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
 
     private static volatile SeekableChannelsProvider instance;
 
-    public static SeekableChannelsProvider getInstance() {
+    public static SeekableChannelsProvider getInstance(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
         if (instance == null) {
             synchronized (TrackedSeekableChannelsProvider.class) {
                 if (instance == null) {
-                    return instance = new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance());
+                    return instance = new TrackedSeekableChannelsProvider(fileHandleFactory);
                 }
             }
         }
@@ -36,7 +36,7 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
 
     private final TrackedFileHandleFactory fileHandleFactory;
 
-    public TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
+    private TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
         this.fileHandleFactory = fileHandleFactory;
     }
 

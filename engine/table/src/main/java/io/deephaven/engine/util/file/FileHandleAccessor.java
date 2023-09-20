@@ -17,6 +17,12 @@ public abstract class FileHandleAccessor {
     private final FileHandleFactory.FileToHandleFunction fileHandleCreator;
     protected final File file;
 
+    /**
+     * Invalid {@link FileHandleAccessor} objects will fail on refresh. Useful to prevent refreshing files which have
+     * been overwritten.
+     */
+    private boolean invalid;
+
     protected volatile FileHandle fileHandle;
 
     /**
@@ -41,13 +47,17 @@ public abstract class FileHandleAccessor {
     }
 
     /**
-     * Replace the file handle with a new one if the closed handle passed in is still current, and return the (possibly
-     * changed) current value.
+     * Replace the file handle with a new one if the closed handle passed in is still current and the handle is not
+     * marked to fail on refresh, and return the (possibly changed) current value.
      *
      * @param previousLocalHandle The closed handle that calling code would like to replace
      * @return The current file handle, possibly newly created
      */
     protected final FileHandle refreshFileHandle(final FileHandle previousLocalHandle) {
+        if (invalid) {
+            throw new InvalidFileHandleException(
+                    String.format("File handle to %s is no longer valid due to overwrite", file.getAbsolutePath()));
+        }
         if (previousLocalHandle == fileHandle) {
             synchronized (this) {
                 if (previousLocalHandle == fileHandle) {
@@ -61,5 +71,13 @@ public abstract class FileHandleAccessor {
     @Override
     public final String toString() {
         return file.toString();
+    }
+
+    public void invalidate() {
+        invalid = true;
+    }
+
+    public boolean invalid() {
+        return invalid;
     }
 }

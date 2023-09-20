@@ -1,17 +1,22 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.base.util;
+package io.deephaven.parquet.table.util;
 
 import io.deephaven.base.RAPriQueue;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.util.file.FileHandleAccessor;
+import io.deephaven.engine.util.file.InvalidFileHandleException;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -27,6 +32,17 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     private long logicalClock;
     private long pooledCount;
+
+    /**
+     * Invalidating a {@link CachedChannelProvider} will invalidate all the channels it has produced and force it to
+     * create invalid channels in the future. This prevents creating channels to files which have been overwritten.
+     */
+    private boolean invalid;
+
+    /**
+     * The path to the file that caused this provider to be invalidated.
+     */
+    private String invalidatingFilePath;
 
     enum ChannelType {
         Read, Write, WriteAppend
@@ -45,6 +61,14 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     private final RAPriQueue<PerPathPool> releasePriority =
             new RAPriQueue<>(8, PerPathPool.RAPQ_ADAPTER, PerPathPool.class);
 
+    /**
+     * Stores all channels (not just the pooled ones) created by this provider for all paths. Used for invalidating file
+     * handles associated with this provider.
+     */
+    private final Collection<WeakReference<SeekableByteChannel>> channelList = new ArrayList<>();
+
+    private static final int CHANNEL_LIST_CLEANUP_LIMIT = 100;
+
     public CachedChannelProvider(@NotNull final SeekableChannelsProvider wrappedProvider,
             final int maximumPooledCount) {
         this.wrappedProvider = wrappedProvider;
@@ -54,23 +78,67 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
         final String pathKey = path.toAbsolutePath().toString();
+        if (invalid) {
+            throw new InvalidFileHandleException(
+                    String.format("Cannot create channel for %s since underlying file at %s has been overwritten",
+                            pathKey, invalidatingFilePath));
+        }
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
         final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
-        return result == null
-                ? new CachedChannel(wrappedProvider.getReadChannel(path), ChannelType.Read, pathKey)
-                : result.position(0);
+        if (result != null) {
+            return result.position(0);
+        }
+        final SeekableByteChannel newReadChannel = wrappedProvider.getReadChannel(path);
+        channelCreatorHelper(path, newReadChannel);
+        return new CachedChannel(newReadChannel, ChannelType.Read, pathKey);
     }
 
     @Override
     public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) throws IOException {
         final String pathKey = path.toAbsolutePath().toString();
+        if (invalid) {
+            throw new InvalidFileHandleException(
+                    String.format("Cannot create channel for %s since underlying file at %s has been overwritten",
+                            pathKey, invalidatingFilePath));
+        }
         final ChannelType channelType = append ? ChannelType.WriteAppend : ChannelType.Write;
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(channelType);
         final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
-        return result == null
-                ? new CachedChannel(wrappedProvider.getWriteChannel(path, append), channelType, pathKey)
-                : result.position(append ? result.size() : 0); // The seek isn't really necessary for append; will be at
-                                                               // end no matter what.
+        if (result != null) {
+            // The seek isn't really necessary for append; will be at end no matter what.
+            return result.position(append ? result.size() : 0);
+        }
+        final SeekableByteChannel newWriteChannel = wrappedProvider.getWriteChannel(path, append);
+        channelCreatorHelper(path, newWriteChannel);
+        return new CachedChannel(newWriteChannel, channelType, pathKey);
+    }
+
+    private void channelCreatorHelper(@NotNull final Path path, @NotNull final SeekableByteChannel newChannel)
+            throws IOException {
+        CachedChannelProviderTracker.getInstance().registerCachedChannelProvider(this, path.toFile());
+        channelList.add(new WeakReference<>(newChannel));
+        if (channelList.size() >= CHANNEL_LIST_CLEANUP_LIMIT) {
+            channelList.removeIf(channelWeakRef -> channelWeakRef.get() == null);
+        }
+    }
+
+    public void invalidate(final String invalidatingFilePath) {
+        invalid = true;
+        this.invalidatingFilePath = invalidatingFilePath;
+        for (WeakReference<SeekableByteChannel> channelWeakRef : channelList) {
+            final SeekableByteChannel channel = channelWeakRef.get();
+            if (channel != null) {
+                // Assuming that these channels are instances of FileHandleAccessor. This will be the true if
+                // "wrappedProvider" is an instance of TrackedSeekableChannelsProvider.
+                assert channel instanceof FileHandleAccessor;
+                ((FileHandleAccessor) channel).invalidate();
+            }
+        }
+        channelList.clear();
+    }
+
+    public boolean invalid() {
+        return invalid;
     }
 
     @Nullable
@@ -128,7 +196,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     /**
      * {@link SeekableByteChannel Channel} wrapper for pooled usage.
      */
-    private class CachedChannel implements SeekableByteChannel {
+    class CachedChannel implements SeekableByteChannel {
 
         private final SeekableByteChannel wrappedChannel;
         private final ChannelType channelType;
@@ -202,6 +270,14 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         private void dispose() throws IOException {
             wrappedChannel.close();
         }
+
+        @VisibleForTesting
+        boolean invalid() {
+            if (wrappedChannel instanceof FileHandleAccessor) {
+                return ((FileHandleAccessor) wrappedChannel).invalid();
+            }
+            return false;
+        }
     }
 
     /**
@@ -209,7 +285,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
      */
     private static class PerPathPool {
 
-        private static final RAPriQueue.Adapter<PerPathPool> RAPQ_ADAPTER = new RAPriQueue.Adapter<PerPathPool>() {
+        private static final RAPriQueue.Adapter<PerPathPool> RAPQ_ADAPTER = new RAPriQueue.Adapter<>() {
 
             @Override
             public boolean less(@NotNull final PerPathPool ppp1, @NotNull final PerPathPool ppp2) {
@@ -232,7 +308,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         };
 
         private static final KeyedObjectKey<String, PerPathPool> KOHM_KEY =
-                new KeyedObjectKey.Basic<String, PerPathPool>() {
+                new KeyedObjectKey.Basic<>() {
 
                     @Override
                     public String getKey(@NotNull final PerPathPool ppp) {
