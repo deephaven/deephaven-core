@@ -172,7 +172,8 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
     }
 
     @Override
-    public synchronized long consumeRecords(long receiveTime, @NotNull final List<? extends ConsumerRecord<?, ?>> records) {
+    public synchronized long consumeRecords(long receiveTime,
+            @NotNull final List<? extends ConsumerRecord<?, ?>> records) {
         WritableChunk<Values>[] chunks = getChunksToFill();
         checkChunkSizes(chunks);
         int remaining = chunks[0].capacity() - chunks[0].size();

@@ -27,7 +27,7 @@ public interface ConsumerRecordToStreamPublisherAdapter extends StreamPublisher 
      * Consume a List of Kafka records, producing zero or more rows in the output.
      *
      * @param receiveTime the time, in nanoseconds since the epoch, the records were received in this process
-     * @param records  the records received from {@link org.apache.kafka.clients.consumer.KafkaConsumer#poll(Duration)}.
+     * @param records the records received from {@link org.apache.kafka.clients.consumer.KafkaConsumer#poll(Duration)}.
      * @return the number of bytes processed
      * @throws IOException if there was an error writing to the output table
      */

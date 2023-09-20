@@ -19,11 +19,11 @@ public interface KafkaRecordConsumer extends StreamFailureConsumer {
      * Consume a list of ConsumerRecords coming from Kafka.
      *
      * @param receiveTime the time, in nanoseconds since the epoch, the records were received in this process
-     * @param records  the records to consume
+     * @param records the records to consume
      * @return the total number of message bytes processed, according whether any key and/or value fields were
-     * processed, and the corresponding values for
-     * {@code org.apache.kafka.clients.consumer.ConsumerRecord.serializedKeySize}
-     * {@code org.apache.kafka.clients.consumer.ConsumerRecord.serializedValueSize}
+     *         processed, and the corresponding values for
+     *         {@code org.apache.kafka.clients.consumer.ConsumerRecord.serializedKeySize}
+     *         {@code org.apache.kafka.clients.consumer.ConsumerRecord.serializedValueSize}
      */
     long consume(long receiveTime, @NotNull List<? extends ConsumerRecord<?, ?>> records);
 }
