@@ -93,6 +93,15 @@ udb_delta <- function(cols = character(), delta_control = "null_dominates") {
   return(UpdateByOp$new(INTERNAL_delta(cols, delta_control)))
 }
 
+#' @description
+#' Creates an exponential moving average UpdateByOp for each column in `cols`, using ticks as the decay unit.
+#' The formula used is
+#'   `a = e^(-1 / decay_ticks)`
+#'   `ema_next = a * ema_last + (1 - a) * value`
+#' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the exponential moving average for all non-grouping columns.
+#' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_ema_tick <- function(decay_ticks, cols = character(), operation_control = op_control()) {
   verify_numeric("decay_ticks", decay_ticks, TRUE)
@@ -101,6 +110,16 @@ udb_ema_tick <- function(decay_ticks, cols = character(), operation_control = op
   return(UpdateByOp$new(INTERNAL_ema_tick(decay_ticks, cols, operation_control$.internal_rcpp_object)))
 }
 
+#' @description
+#' Creates an exponential moving average UpdateByOp for each column in `cols`, using time as the decay unit.
+#' The formula used is
+#'   `a = e^(-dt / decay_time)`
+#'   `ema_next = a * ema_last + (1 - a) * value`
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param decay_time ISO-8601-formatted string specifying the decay rate.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the exponential moving average for all non-grouping columns.
+#' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_ema_time <- function(ts_col, decay_time, cols = character(), operation_control = op_control()) {
   verify_string("ts_col", ts_col, TRUE)
@@ -110,6 +129,15 @@ udb_ema_time <- function(ts_col, decay_time, cols = character(), operation_contr
   return(UpdateByOp$new(INTERNAL_ema_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
+#' @description
+#' Creates an exponential moving sum UpdateByOp for each column in `cols`, using ticks as the decay unit.
+#' The formula used is
+#'   `a = e^(-1 / decay_ticks)`
+#'   `ems_next = a * ems_last + value`
+#' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the exponential moving sum for all non-grouping columns.
+#' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_ems_tick <- function(decay_ticks, cols = character(), operation_control = op_control()) {
   verify_numeric("decay_ticks", decay_ticks, TRUE)
@@ -118,6 +146,16 @@ udb_ems_tick <- function(decay_ticks, cols = character(), operation_control = op
   return(UpdateByOp$new(INTERNAL_ems_tick(decay_ticks, cols, operation_control$.internal_rcpp_object)))
 }
 
+#' @description
+#' Creates an exponential moving sum UpdateByOp for each column in `cols`, using time as the decay unit.
+#' The formula used is
+#'   `a = e^(-dt / decay_time)`
+#'   `ems_next = a * ems_last + value`
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param decay_time ISO-8601-formatted string specifying the decay rate.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the exponential moving sum for all non-grouping columns.
+#' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_ems_time <- function(ts_col, decay_time, cols = character(), operation_control = op_control()) {
   verify_string("ts_col", ts_col, TRUE)
@@ -127,6 +165,15 @@ udb_ems_time <- function(ts_col, decay_time, cols = character(), operation_contr
   return(UpdateByOp$new(INTERNAL_ems_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
+#' @description
+#' Creates an exponential moving minimum UpdateByOp for each column in `cols`, using ticks as the decay unit.
+#' The formula used is
+#'   `a = e^(-1 / decay_ticks)`
+#'   `emmin_next = min(a * emmin_last, value)`
+#' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the exponential moving minimum for all non-grouping columns.
+#' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_emmin_tick <- function(decay_ticks, cols = character(), operation_control = op_control()) {
   verify_numeric("decay_ticks", decay_ticks, TRUE)
@@ -135,6 +182,16 @@ udb_emmin_tick <- function(decay_ticks, cols = character(), operation_control = 
   return(UpdateByOp$new(INTERNAL_emmin_tick(decay_ticks, cols, operation_control$.internal_rcpp_object)))
 }
 
+#' @description
+#' Creates an exponential moving minimum UpdateByOp for each column in `cols`, using time as the decay unit.
+#' The formula used is
+#'   `a = e^(-dt / decay_time)`
+#'   `emmin_next = min(a * emmin_last, value)`
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param decay_time ISO-8601-formatted string specifying the decay rate.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the exponential moving minimum for all non-grouping columns.
+#' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_emmin_time <- function(ts_col, decay_time, cols = character(), operation_control = op_control()) {
   verify_string("ts_col", ts_col, TRUE)
@@ -144,6 +201,15 @@ udb_emmin_time <- function(ts_col, decay_time, cols = character(), operation_con
   return(UpdateByOp$new(INTERNAL_emmin_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
+#' @description
+#' Creates an exponential moving maximum UpdateByOp for each column in `cols`, using ticks as the decay unit.
+#' The formula used is
+#'   `a = e^(-1 / decay_ticks)`
+#'   `emmax_next = max(a * emmax_last, value)`
+#' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the exponential moving maximum for all non-grouping columns.
+#' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_emmax_tick <- function(decay_ticks, cols = character(), operation_control = op_control()) {
   verify_numeric("decay_ticks", decay_ticks, TRUE)
@@ -152,6 +218,16 @@ udb_emmax_tick <- function(decay_ticks, cols = character(), operation_control = 
   return(UpdateByOp$new(INTERNAL_emmax_tick(decay_ticks, cols, operation_control$.internal_rcpp_object)))
 }
 
+#' @description
+#' Creates an exponential moving maximum UpdateByOp for each column in `cols`, using time as the decay unit.
+#' The formula used is
+#'   `a = e^(-dt / decay_time)`
+#'   `emmax_next = max(a * emmax_last, value)`
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param decay_time ISO-8601-formatted string specifying the decay rate.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the exponential moving maximum for all non-grouping columns.
+#' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_emmax_time <- function(ts_col, decay_time, cols = character(), operation_control = op_control()) {
   verify_string("ts_col", ts_col, TRUE)
@@ -161,6 +237,17 @@ udb_emmax_time <- function(ts_col, decay_time, cols = character(), operation_con
   return(UpdateByOp$new(INTERNAL_emmax_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
+#' @description
+#' Creates an exponential moving standard deviation UpdateByOp for each column in `cols`, using ticks as the decay unit.
+#' The formula used is
+#'   `a = e^(-1 / decay_ticks)`
+#'   `ema_next = a * ema_last + (1 - a) * value`
+#'   `em_variance_next = a * (em_variance_last + (1 − a) * (value − ema_last)^2)`
+#'   `emstd_next = sqrt(em_variance_next)`
+#' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the exponential moving standard deviation for all non-grouping columns.
+#' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_emstd_tick <- function(decay_ticks, cols = character(), operation_control = op_control()) {
   verify_numeric("decay_ticks", decay_ticks, TRUE)
@@ -169,6 +256,18 @@ udb_emstd_tick <- function(decay_ticks, cols = character(), operation_control = 
   return(UpdateByOp$new(INTERNAL_emstd_tick(decay_ticks, cols, operation_control$.internal_rcpp_object)))
 }
 
+#' @description
+#' Creates an exponential moving standard deviation UpdateByOp for each column in `cols`, using time as the decay unit.
+#' The formula used is
+#'   `a = e^(-dt / decay_time)`
+#'   `ema_next = a * ema_last + (1 - a) * value`
+#'   `em_variance_next = a * (em_variance_last + (1 − a) * (value − ema_last)^2)`
+#'   `emstd_next = sqrt(em_variance_next)`
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param decay_time ISO-8601-formatted string specifying the decay rate.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the exponential moving standard deviation for all non-grouping columns.
+#' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_emstd_time <- function(ts_col, decay_time, cols = character(), operation_control = op_control()) {
   verify_string("ts_col", ts_col, TRUE)
