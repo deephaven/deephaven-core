@@ -63,7 +63,7 @@ class LivenessScope(JObjectWrapper):
         """Closes the LivenessScope and releases all the query graph resources.
 
         Raises:
-            DHError
+            DHError if this instance has been released too many times
         """
         try:
             self.j_scope.release()
@@ -75,7 +75,7 @@ class LivenessScope(JObjectWrapper):
         """Closes the LivenessScope and releases all the query graph resources.
 
         Raises:
-            DHError
+            DHError if this instance wasn't on the top of the stack, or this instance was released too many times
         """
         warn('This function is deprecated, prefer release(). Use cases that rely on this are likely to now fail.',
              DeprecationWarning, stacklevel=2)
@@ -89,11 +89,10 @@ class LivenessScope(JObjectWrapper):
         when the block ends, disable by passing release_after_block=False
 
         Args:
-            release_after_block: True to release the scope when the block ends, False to leave the
+            release_after_block (bool): True to release the scope when the block ends, False to leave the
             scope open, allowing it to be reused and keeping collected referents live.  Default is True.
 
         Returns: None, to allow changes in the future.
-
         """
         _push(self.j_scope)
         try:
@@ -114,7 +113,7 @@ class LivenessScope(JObjectWrapper):
             referent (Union[JObjectWrapper, jpy.JType]): an object to preserve in the next outer liveness scope
 
         Raises:
-            DHError
+            DHError if the object isn't a liveness node, or this instance isn't currently at the stop of the stack
         """
         referent = _unwrap_to_liveness_referent(referent)
         try:
@@ -138,7 +137,7 @@ class LivenessScope(JObjectWrapper):
         a Python wrapper around a LivenessReferent
 
         Args:
-            referent: the object to manage by this scope
+            referent (Union[JObjectWrapper, jpy.JType]): the object to manage by this scope
 
         Returns: None
 
@@ -158,7 +157,7 @@ class LivenessScope(JObjectWrapper):
         a Python wrapper around a LivenessReferent
 
         Args:
-            referent: the object to unmanage from this scope
+            referent (Union[JObjectWrapper, jpy.JType]): the object to unmanage from this scope
 
         Returns: None
 

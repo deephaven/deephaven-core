@@ -34,7 +34,6 @@ class BaseTestCase(unittest.TestCase):
         cls._execution_context.close()
 
     def setUp(self) -> None:
-        self._liveness_scope = liveness_scope()
         self.opened_scope = liveness_scope().open()
 
     def tearDown(self) -> None:
