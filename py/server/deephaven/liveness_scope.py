@@ -59,7 +59,7 @@ class LivenessScope(JObjectWrapper):
         _pop(self.j_scope)
         self.release()
 
-    def release(self):
+    def release(self) -> None:
         """Closes the LivenessScope and releases all the query graph resources.
 
         Raises:
