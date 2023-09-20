@@ -203,7 +203,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                     : null;
 
             for (ConsumerRecord<?, ?> record : records) {
-                if (--remaining == 0) {
+                if (remaining == 0) {
                     if (keyChunk != null) {
                         flushKeyChunk(keyChunk, chunks);
                     }
@@ -273,6 +273,8 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                         bytesProcessed += valueBytes;
                     }
                 }
+
+                --remaining;
             }
             if (keyChunk != null) {
                 flushKeyChunk(keyChunk, chunks);

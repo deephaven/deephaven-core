@@ -151,17 +151,21 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 }
                 Data data = request.getData();
                 LivenessScope exportScope = new LivenessScope();
+
                 List<SessionState.ExportObject<Object>> referenceObjects;
                 try (SafeCloseable ignored = LivenessScopeStack.open(exportScope, false)) {
                     referenceObjects = data.getExportedReferencesList().stream()
                             .map(typedTicket -> ticketRouter.resolve(session, typedTicket.getTicket(), "ticket"))
                             .collect(Collectors.toList());
                 }
-
                 runOrEnqueue(referenceObjects, () -> {
-                    Object[] objs = referenceObjects.stream().map(ExportObject::get).toArray();
+                    Object[] objs;
+                    try {
+                        objs = referenceObjects.stream().map(ExportObject::get).toArray();
+                    } finally {
+                        exportScope.release();
+                    }
                     messageStream.onData(data.getPayload().asReadOnlyByteBuffer(), objs);
-                    exportScope.release();
                 });
             }
         }
