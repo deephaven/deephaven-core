@@ -5,7 +5,6 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
-import io.deephaven.util.annotations.FinalDefault;
 import org.apache.parquet.column.statistics.Statistics;
 
 import java.io.IOException;
