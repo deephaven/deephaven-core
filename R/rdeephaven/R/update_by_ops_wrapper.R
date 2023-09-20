@@ -277,14 +277,34 @@ udb_emstd_time <- function(ts_col, decay_time, cols = character(), operation_con
   return(UpdateByOp$new(INTERNAL_emstd_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
+#' @description
+#' Creates a rolling sum UpdateByOp for each column in `cols`, using ticks as the windowing unit.
+#' Ticks are row counts, and you may specify the reverse and forward window in number of rows to include.
+#' The current row is considered to belong to the reverse window but not the forward window.
+#' Also, negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling sum for all non-grouping columns.
+#' @param rev_ticks Integer scalar denoting the look-behind window size in number of rows.
+#' @param fwd_ticks Integer scalar denoting the look-ahead window size in number of rows. Default is 0.
 #' @export
 udb_roll_sum_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
   verify_string("cols", cols, FALSE)
-  verify_numeric("rev_ticks", rev_ticks, TRUE)
-  verify_numeric("fwd_ticks", fwd_ticks, TRUE)
+  verify_any_int("rev_ticks", rev_ticks, TRUE)
+  verify_any_int("fwd_ticks", fwd_ticks, TRUE)
   return(UpdateByOp$new(INTERNAL_rolling_sum_tick(cols, rev_ticks, fwd_ticks)))
 }
 
+#' @description
+#' Creates a rolling sum UpdateByOp for each column in `cols`, using time as the windowing unit.
+#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' A row containing a null value in the timestamp column belongs to no window and will not be considered
+#' in the windows of other rows; its output will be null.
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling sum for all non-grouping columns.
+#' @param rev_time ISO-8601-formatted string specifying the look-behind window size.
+#' @param fwd_time ISO-8601-formatted string specifying the look-ahead window size. Default is 0 seconds.
 #' @export
 udb_roll_sum_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
@@ -294,14 +314,34 @@ udb_roll_sum_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   return(UpdateByOp$new(INTERNAL_rolling_sum_time(ts_col, cols, rev_time, fwd_time)))
 }
 
+#' @description
+#' Creates a rolling group UpdateByOp for each column in `cols`, using ticks as the windowing unit.
+#' Ticks are row counts, and you may specify the reverse and forward window in number of rows to include.
+#' The current row is considered to belong to the reverse window but not the forward window.
+#' Also, negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling group for all non-grouping columns.
+#' @param rev_ticks Integer scalar denoting the look-behind window size in number of rows.
+#' @param fwd_ticks Integer scalar denoting the look-ahead window size in number of rows. Default is 0.
 #' @export
 udb_roll_group_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
   verify_string("cols", cols, FALSE)
-  verify_numeric("rev_ticks", rev_ticks, TRUE)
-  verify_numeric("fwd_ticks", fwd_ticks, TRUE)
+  verify_any_int("rev_ticks", rev_ticks, TRUE)
+  verify_any_int("fwd_ticks", fwd_ticks, TRUE)
   return(UpdateByOp$new(INTERNAL_rolling_group_tick(cols, rev_ticks, fwd_ticks)))
 }
 
+#' @description
+#' Creates a rolling group UpdateByOp for each column in `cols`, using time as the windowing unit.
+#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' A row containing a null value in the timestamp column belongs to no window and will not be considered
+#' in the windows of other rows; its output will be null.
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling group for all non-grouping columns.
+#' @param rev_time ISO-8601-formatted string specifying the look-behind window size.
+#' @param fwd_time ISO-8601-formatted string specifying the look-ahead window size. Default is 0 seconds.
 #' @export
 udb_roll_group_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
@@ -311,14 +351,34 @@ udb_roll_group_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   return(UpdateByOp$new(INTERNAL_rolling_group_time(ts_col, cols, rev_time, fwd_time)))
 }
 
+#' @description
+#' Creates a rolling average UpdateByOp for each column in `cols`, using ticks as the windowing unit.
+#' Ticks are row counts, and you may specify the reverse and forward window in number of rows to include.
+#' The current row is considered to belong to the reverse window but not the forward window.
+#' Also, negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling average for all non-grouping columns.
+#' @param rev_ticks Integer scalar denoting the look-behind window size in number of rows.
+#' @param fwd_ticks Integer scalar denoting the look-ahead window size in number of rows. Default is 0.
 #' @export
 udb_roll_avg_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
   verify_string("cols", cols, FALSE)
-  verify_numeric("rev_ticks", rev_ticks, TRUE)
-  verify_numeric("fwd_ticks", fwd_ticks, TRUE)
+  verify_any_int("rev_ticks", rev_ticks, TRUE)
+  verify_any_int("fwd_ticks", fwd_ticks, TRUE)
   return(UpdateByOp$new(INTERNAL_rolling_avg_tick(cols, rev_ticks, fwd_ticks)))
 }
 
+#' @description
+#' Creates a rolling average UpdateByOp for each column in `cols`, using time as the windowing unit.
+#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' A row containing a null value in the timestamp column belongs to no window and will not be considered
+#' in the windows of other rows; its output will be null.
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling average for all non-grouping columns.
+#' @param rev_time ISO-8601-formatted string specifying the look-behind window size.
+#' @param fwd_time ISO-8601-formatted string specifying the look-ahead window size. Default is 0 seconds.
 #' @export
 udb_roll_avg_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
@@ -328,14 +388,34 @@ udb_roll_avg_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   return(UpdateByOp$new(INTERNAL_rolling_avg_time(ts_col, cols, rev_time, fwd_time)))
 }
 
+#' @description
+#' Creates a rolling minimum UpdateByOp for each column in `cols`, using ticks as the windowing unit.
+#' Ticks are row counts, and you may specify the reverse and forward window in number of rows to include.
+#' The current row is considered to belong to the reverse window but not the forward window.
+#' Also, negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling minimum for all non-grouping columns.
+#' @param rev_ticks Integer scalar denoting the look-behind window size in number of rows.
+#' @param fwd_ticks Integer scalar denoting the look-ahead window size in number of rows. Default is 0.
 #' @export
 udb_roll_min_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
   verify_string("cols", cols, FALSE)
-  verify_numeric("rev_ticks", rev_ticks, TRUE)
-  verify_numeric("fwd_ticks", fwd_ticks, TRUE)
+  verify_any_int("rev_ticks", rev_ticks, TRUE)
+  verify_any_int("fwd_ticks", fwd_ticks, TRUE)
   return(UpdateByOp$new(INTERNAL_rolling_min_tick(cols, rev_ticks, fwd_ticks)))
 }
 
+#' @description
+#' Creates a rolling minimum UpdateByOp for each column in `cols`, using time as the windowing unit.
+#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' A row containing a null value in the timestamp column belongs to no window and will not be considered
+#' in the windows of other rows; its output will be null.
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling minimum for all non-grouping columns.
+#' @param rev_time ISO-8601-formatted string specifying the look-behind window size.
+#' @param fwd_time ISO-8601-formatted string specifying the look-ahead window size. Default is 0 seconds.
 #' @export
 udb_roll_min_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
@@ -345,14 +425,34 @@ udb_roll_min_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   return(UpdateByOp$new(INTERNAL_rolling_min_time(ts_col, cols, rev_time, fwd_time)))
 }
 
+#' @description
+#' Creates a rolling maximum UpdateByOp for each column in `cols`, using ticks as the windowing unit.
+#' Ticks are row counts, and you may specify the reverse and forward window in number of rows to include.
+#' The current row is considered to belong to the reverse window but not the forward window.
+#' Also, negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling maximum for all non-grouping columns.
+#' @param rev_ticks Integer scalar denoting the look-behind window size in number of rows.
+#' @param fwd_ticks Integer scalar denoting the look-ahead window size in number of rows. Default is 0.
 #' @export
 udb_roll_max_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
   verify_string("cols", cols, FALSE)
-  verify_numeric("rev_ticks", rev_ticks, TRUE)
-  verify_numeric("fwd_ticks", fwd_ticks, TRUE)
+  verify_any_int("rev_ticks", rev_ticks, TRUE)
+  verify_any_int("fwd_ticks", fwd_ticks, TRUE)
   return(UpdateByOp$new(INTERNAL_rolling_max_tick(cols, rev_ticks, fwd_ticks)))
 }
 
+#' @description
+#' Creates a rolling maximum UpdateByOp for each column in `cols`, using time as the windowing unit.
+#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' A row containing a null value in the timestamp column belongs to no window and will not be considered
+#' in the windows of other rows; its output will be null.
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling maximum for all non-grouping columns.
+#' @param rev_time ISO-8601-formatted string specifying the look-behind window size.
+#' @param fwd_time ISO-8601-formatted string specifying the look-ahead window size. Default is 0 seconds.
 #' @export
 udb_roll_max_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
@@ -362,14 +462,34 @@ udb_roll_max_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   return(UpdateByOp$new(INTERNAL_rolling_max_time(ts_col, cols, rev_time, fwd_time)))
 }
 
+#' @description
+#' Creates a rolling product UpdateByOp for each column in `cols`, using ticks as the windowing unit.
+#' Ticks are row counts, and you may specify the reverse and forward window in number of rows to include.
+#' The current row is considered to belong to the reverse window but not the forward window.
+#' Also, negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling product for all non-grouping columns.
+#' @param rev_ticks Integer scalar denoting the look-behind window size in number of rows.
+#' @param fwd_ticks Integer scalar denoting the look-ahead window size in number of rows. Default is 0.
 #' @export
 udb_roll_prod_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
   verify_string("cols", cols, FALSE)
-  verify_numeric("rev_ticks", rev_ticks, TRUE)
-  verify_numeric("fwd_ticks", fwd_ticks, TRUE)
+  verify_any_int("rev_ticks", rev_ticks, TRUE)
+  verify_any_int("fwd_ticks", fwd_ticks, TRUE)
   return(UpdateByOp$new(INTERNAL_rolling_prod_tick(cols, rev_ticks, fwd_ticks)))
 }
 
+#' @description
+#' Creates a rolling product UpdateByOp for each column in `cols`, using time as the windowing unit.
+#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' A row containing a null value in the timestamp column belongs to no window and will not be considered
+#' in the windows of other rows; its output will be null.
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling product for all non-grouping columns.
+#' @param rev_time ISO-8601-formatted string specifying the look-behind window size.
+#' @param fwd_time ISO-8601-formatted string specifying the look-ahead window size. Default is 0 seconds.
 #' @export
 udb_roll_prod_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
@@ -379,14 +499,34 @@ udb_roll_prod_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   return(UpdateByOp$new(INTERNAL_rolling_prod_time(ts_col, cols, rev_time, fwd_time)))
 }
 
+#' @description
+#' Creates a rolling count UpdateByOp for each column in `cols`, using ticks as the windowing unit.
+#' Ticks are row counts, and you may specify the reverse and forward window in number of rows to include.
+#' The current row is considered to belong to the reverse window but not the forward window.
+#' Also, negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling count for all non-grouping columns.
+#' @param rev_ticks Integer scalar denoting the look-behind window size in number of rows.
+#' @param fwd_ticks Integer scalar denoting the look-ahead window size in number of rows. Default is 0.
 #' @export
 udb_roll_count_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
   verify_string("cols", cols, FALSE)
-  verify_numeric("rev_ticks", rev_ticks, TRUE)
-  verify_numeric("fwd_ticks", fwd_ticks, TRUE)
+  verify_any_int("rev_ticks", rev_ticks, TRUE)
+  verify_any_int("fwd_ticks", fwd_ticks, TRUE)
   return(UpdateByOp$new(INTERNAL_rolling_count_tick(cols, rev_ticks, fwd_ticks)))
 }
 
+#' @description
+#' Creates a rolling count UpdateByOp for each column in `cols`, using time as the windowing unit.
+#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' A row containing a null value in the timestamp column belongs to no window and will not be considered
+#' in the windows of other rows; its output will be null.
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling count for all non-grouping columns.
+#' @param rev_time ISO-8601-formatted string specifying the look-behind window size.
+#' @param fwd_time ISO-8601-formatted string specifying the look-ahead window size. Default is 0 seconds.
 #' @export
 udb_roll_count_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
@@ -396,14 +536,34 @@ udb_roll_count_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   return(UpdateByOp$new(INTERNAL_rolling_count_time(ts_col, cols, rev_time, fwd_time)))
 }
 
+#' @description
+#' Creates a rolling standard deviation UpdateByOp for each column in `cols`, using ticks as the windowing unit.
+#' Ticks are row counts, and you may specify the reverse and forward window in number of rows to include.
+#' The current row is considered to belong to the reverse window but not the forward window.
+#' Also, negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling standard deviation for all non-grouping columns.
+#' @param rev_ticks Integer scalar denoting the look-behind window size in number of rows.
+#' @param fwd_ticks Integer scalar denoting the look-ahead window size in number of rows. Default is 0.
 #' @export
 udb_roll_std_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
   verify_string("cols", cols, FALSE)
-  verify_numeric("rev_ticks", rev_ticks, TRUE)
-  verify_numeric("fwd_ticks", fwd_ticks, TRUE)
+  verify_any_int("rev_ticks", rev_ticks, TRUE)
+  verify_any_int("fwd_ticks", fwd_ticks, TRUE)
   return(UpdateByOp$new(INTERNAL_rolling_std_tick(cols, rev_ticks, fwd_ticks)))
 }
 
+#' @description
+#' Creates a rolling standard deviation UpdateByOp for each column in `cols`, using time as the windowing unit.
+#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' A row containing a null value in the timestamp column belongs to no window and will not be considered
+#' in the windows of other rows; its output will be null.
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling standard deviation for all non-grouping columns.
+#' @param rev_time ISO-8601-formatted string specifying the look-behind window size.
+#' @param fwd_time ISO-8601-formatted string specifying the look-ahead window size. Default is 0 seconds.
 #' @export
 udb_roll_std_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
@@ -413,15 +573,37 @@ udb_roll_std_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   return(UpdateByOp$new(INTERNAL_rolling_std_time(ts_col, cols, rev_time, fwd_time)))
 }
 
+#' @description
+#' Creates a rolling weighted average UpdateByOp for each column in `cols`, using ticks as the windowing unit.
+#' Ticks are row counts, and you may specify the reverse and forward window in number of rows to include.
+#' The current row is considered to belong to the reverse window but not the forward window.
+#' Also, negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' @param wcol String denoting the column to use for weights. This must be a numeric column.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling weighted average for all non-grouping columns.
+#' @param rev_ticks Integer scalar denoting the look-behind window size in number of rows.
+#' @param fwd_ticks Integer scalar denoting the look-ahead window size in number of rows. Default is 0.
 #' @export
 udb_roll_wavg_tick <- function(wcol, cols, rev_ticks, fwd_ticks = 0) {
   verify_string("wcol", wcol, TRUE)
   verify_string("cols", cols, FALSE)
-  verify_numeric("rev_ticks", rev_ticks, TRUE)
-  verify_numeric("fwd_ticks", fwd_ticks, TRUE)
+  verify_any_int("rev_ticks", rev_ticks, TRUE)
+  verify_any_int("fwd_ticks", fwd_ticks, TRUE)
   return(UpdateByOp$new(INTERNAL_rolling_wavg_tick(wcol, cols, rev_ticks, fwd_ticks)))
 }
 
+#' @description
+#' Creates a rolling weighted average UpdateByOp for each column in `cols`, using time as the windowing unit.
+#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
+#' A row containing a null value in the timestamp column belongs to no window and will not be considered
+#' in the windows of other rows; its output will be null.
+#' @param ts_col String denoting the column to use as the timestamp.
+#' @param wcol String denoting the column to use for weights. This must be a numeric column.
+#' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
+#' Default is to compute the rolling weighted average for all non-grouping columns.
+#' @param rev_time ISO-8601-formatted string specifying the look-behind window size.
+#' @param fwd_time ISO-8601-formatted string specifying the look-ahead window size. Default is 0 seconds.
 #' @export
 udb_roll_wavg_time <- function(ts_col, wcol, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
