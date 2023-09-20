@@ -61,7 +61,8 @@ public class JpyInit {
         try (
                 final PyModule deephavenJpyModule = PyModule.importModule("deephaven_internal.jvm");
                 final PyObject readyObj = deephavenJpyModule.callMethod("ready");
-                final PyObject checkObj = deephavenJpyModule.callMethod("check_py_env")) {
+                final PyObject checkObj = deephavenJpyModule.callMethod("check_py_env");
+                final PyObject initObj = deephavenJpyModule.callMethod("init_py")) {
             // empty
         }
     }
