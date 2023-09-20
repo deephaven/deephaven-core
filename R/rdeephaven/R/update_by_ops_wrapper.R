@@ -104,9 +104,9 @@ udb_delta <- function(cols = character(), delta_control = "null_dominates") {
 #' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_ema_tick <- function(decay_ticks, cols = character(), operation_control = op_control()) {
-  verify_numeric("decay_ticks", decay_ticks, TRUE)
+  verify_real("decay_ticks", decay_ticks, TRUE)
   verify_string("cols", cols, FALSE)
-  verify_type("operation_control", operation_control, "OperationControl", "Deephaven OperationControl", TRUE)
+  verify_type("operation_control", operation_control, TRUE, "OperationControl", "a Deephaven OperationControl")
   return(UpdateByOp$new(INTERNAL_ema_tick(decay_ticks, cols, operation_control$.internal_rcpp_object)))
 }
 
@@ -125,7 +125,7 @@ udb_ema_time <- function(ts_col, decay_time, cols = character(), operation_contr
   verify_string("ts_col", ts_col, TRUE)
   verify_string("decay_time", decay_time, TRUE)
   verify_string("cols", cols, FALSE)
-  verify_type("operation_control", operation_control, "OperationControl", "Deephaven OperationControl", TRUE)
+  verify_type("operation_control", operation_control, TRUE, "OperationControl", "a Deephaven OperationControl")
   return(UpdateByOp$new(INTERNAL_ema_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
@@ -140,9 +140,9 @@ udb_ema_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_ems_tick <- function(decay_ticks, cols = character(), operation_control = op_control()) {
-  verify_numeric("decay_ticks", decay_ticks, TRUE)
+  verify_real("decay_ticks", decay_ticks, TRUE)
   verify_string("cols", cols, FALSE)
-  verify_type("operation_control", operation_control, "OperationControl", "Deephaven OperationControl", TRUE)
+  verify_type("operation_control", operation_control, TRUE, "OperationControl", "a Deephaven OperationControl")
   return(UpdateByOp$new(INTERNAL_ems_tick(decay_ticks, cols, operation_control$.internal_rcpp_object)))
 }
 
@@ -161,7 +161,7 @@ udb_ems_time <- function(ts_col, decay_time, cols = character(), operation_contr
   verify_string("ts_col", ts_col, TRUE)
   verify_string("decay_time", decay_time, TRUE)
   verify_string("cols", cols, FALSE)
-  verify_type("operation_control", operation_control, "OperationControl", "Deephaven OperationControl", TRUE)
+  verify_type("operation_control", operation_control, TRUE, "OperationControl", "a Deephaven OperationControl")
   return(UpdateByOp$new(INTERNAL_ems_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
@@ -176,9 +176,9 @@ udb_ems_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_emmin_tick <- function(decay_ticks, cols = character(), operation_control = op_control()) {
-  verify_numeric("decay_ticks", decay_ticks, TRUE)
+  verify_real("decay_ticks", decay_ticks, TRUE)
   verify_string("cols", cols, FALSE)
-  verify_type("operation_control", operation_control, "OperationControl", "Deephaven OperationControl", TRUE)
+  verify_type("operation_control", operation_control, TRUE, "OperationControl", "a Deephaven OperationControl")
   return(UpdateByOp$new(INTERNAL_emmin_tick(decay_ticks, cols, operation_control$.internal_rcpp_object)))
 }
 
@@ -197,7 +197,7 @@ udb_emmin_time <- function(ts_col, decay_time, cols = character(), operation_con
   verify_string("ts_col", ts_col, TRUE)
   verify_string("decay_time", decay_time, TRUE)
   verify_string("cols", cols, FALSE)
-  verify_type("operation_control", operation_control, "OperationControl", "Deephaven OperationControl", TRUE)
+  verify_type("operation_control", operation_control, TRUE, "OperationControl", "a Deephaven OperationControl")
   return(UpdateByOp$new(INTERNAL_emmin_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
@@ -212,9 +212,9 @@ udb_emmin_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_emmax_tick <- function(decay_ticks, cols = character(), operation_control = op_control()) {
-  verify_numeric("decay_ticks", decay_ticks, TRUE)
+  verify_real("decay_ticks", decay_ticks, TRUE)
   verify_string("cols", cols, FALSE)
-  verify_type("operation_control", operation_control, "OperationControl", "Deephaven OperationControl", TRUE)
+  verify_type("operation_control", operation_control, TRUE, "OperationControl", "a Deephaven OperationControl")
   return(UpdateByOp$new(INTERNAL_emmax_tick(decay_ticks, cols, operation_control$.internal_rcpp_object)))
 }
 
@@ -233,7 +233,7 @@ udb_emmax_time <- function(ts_col, decay_time, cols = character(), operation_con
   verify_string("ts_col", ts_col, TRUE)
   verify_string("decay_time", decay_time, TRUE)
   verify_string("cols", cols, FALSE)
-  verify_type("operation_control", operation_control, "OperationControl", "Deephaven OperationControl", TRUE)
+  verify_type("operation_control", operation_control, TRUE, "OperationControl", "a Deephaven OperationControl")
   return(UpdateByOp$new(INTERNAL_emmax_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
@@ -250,9 +250,9 @@ udb_emmax_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' @param operation_control OperationControl that defines how special cases will behave. See `?OperationControl` for more information.
 #' @export
 udb_emstd_tick <- function(decay_ticks, cols = character(), operation_control = op_control()) {
-  verify_numeric("decay_ticks", decay_ticks, TRUE)
+  verify_real("decay_ticks", decay_ticks, TRUE)
   verify_string("cols", cols, FALSE)
-  verify_type("operation_control", operation_control, "OperationControl", "Deephaven OperationControl", TRUE)
+  verify_type("operation_control", operation_control, TRUE, "OperationControl", "a Deephaven OperationControl")
   return(UpdateByOp$new(INTERNAL_emstd_tick(decay_ticks, cols, operation_control$.internal_rcpp_object)))
 }
 
@@ -273,7 +273,7 @@ udb_emstd_time <- function(ts_col, decay_time, cols = character(), operation_con
   verify_string("ts_col", ts_col, TRUE)
   verify_string("decay_time", decay_time, TRUE)
   verify_string("cols", cols, FALSE)
-  verify_type("operation_control", operation_control, "OperationControl", "Deephaven OperationControl", TRUE)
+  verify_type("operation_control", operation_control, TRUE, "OperationControl", "a Deephaven OperationControl")
   return(UpdateByOp$new(INTERNAL_emstd_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 

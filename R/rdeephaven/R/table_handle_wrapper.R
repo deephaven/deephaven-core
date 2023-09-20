@@ -91,7 +91,7 @@ TableHandle <- R6Class("TableHandle",
       if (length(table_list) == 0) {
         return(self)
       }
-      verify_type("table_list", table_list, "TableHandle", "Deephaven TableHandle", FALSE)
+      verify_type("table_list", table_list, FALSE, "TableHandle", "a Deephaven TableHandle")
       unwrapped_table_list <- lapply(table_list, strip_r6_wrapping)
       return(TableHandle$new(self$.internal_rcpp_object$merge(unwrapped_table_list)))
     },
@@ -221,7 +221,7 @@ TableHandle <- R6Class("TableHandle",
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     update_by = function(ops, by = character()) {
-      verify_type("ops", ops, "UpdateByOp", "Deephaven UpdateByOp", FALSE)
+      verify_type("ops", ops, FALSE, "UpdateByOp", "a Deephaven UpdateByOp")
       verify_string("by", by, FALSE)
       ops <- c(ops)
       unwrapped_ops <- lapply(ops, strip_r6_wrapping)
@@ -235,7 +235,7 @@ TableHandle <- R6Class("TableHandle",
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     agg_by = function(aggs, by = character()) {
-      verify_type("aggs", aggs, "AggOp", "Deephaven AggOp", FALSE)
+      verify_type("aggs", aggs, FALSE, "AggOp", "a Deephaven AggOp")
       verify_string("by", by, FALSE)
       aggs <- c(aggs)
       for (i in 1:length(aggs)) {
@@ -256,7 +256,7 @@ TableHandle <- R6Class("TableHandle",
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     agg_all_by = function(agg, by = character()) {
-      verify_type("agg", agg, "Aggregation", "Deephaven Aggregation", TRUE)
+      verify_type("agg", agg, TRUE, "AggOp", "a Deephaven AggOp")
       return(TableHandle$new(self$.internal_rcpp_object$agg_all_by(agg$.internal_rcpp_object, by)))
     },
 
@@ -507,7 +507,7 @@ merge_tables <- function(...) {
   if (length(table_list) == 0) {
     return(NULL)
   }
-  verify_type("table_list", table_list, "TableHandle", "Deephaven TableHandle", FALSE)
+  verify_type("table_list", table_list, FALSE, "TableHandle", "Deephaven TableHandle")
   if (length(table_list) == 1) {
     return(table_list[[1]])
   }

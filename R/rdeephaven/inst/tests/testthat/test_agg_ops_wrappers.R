@@ -142,19 +142,19 @@ test_that("agg_median fails nicely when 'cols' is a bad type", {
 test_that("agg_percentile fails nicely when 'percentile' is bad", {
   expect_error(
     agg_percentile("string", "string"),
-    "'percentile' must be a single numeric. Got an object of class character."
+    "'percentile' must be a single real number between 0 and 1 inclusive. Got an object of class character."
   )
   expect_error(
     agg_percentile(TRUE, "string"),
-    "'percentile' must be a single numeric. Got an object of class logical."
+    "'percentile' must be a single real number between 0 and 1 inclusive. Got an object of class logical."
   )
   expect_error(
     agg_percentile(5, "string"),
-    "'percentile' must be between 0 and 1 inclusive. Got 'percentile' = 5."
+    "'percentile' must be a single real number between 0 and 1 inclusive. Got 'percentile' = 5."
   )
   expect_error(
     agg_percentile(c(5, 6, 7, 8), "string"),
-    "'percentile' must be a single numeric. Got a vector of length 4."
+    "'percentile' must be a single real number between 0 and 1 inclusive. Got a vector of length 4."
   )
 })
 

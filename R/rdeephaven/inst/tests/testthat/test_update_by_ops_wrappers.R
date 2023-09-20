@@ -87,15 +87,15 @@ test_that("udb_delta fails nicely when 'delta_control' is a bad type or value", 
 test_that("udb_ema_tick fails nicely when 'decay_ticks' is a bad type", {
   expect_error(
     udb_ema_tick("hello!", "column"),
-    "'decay_ticks' must be a single numeric. Got an object of class character."
+    "'decay_ticks' must be a single real number. Got an object of class character."
   )
   expect_error(
     udb_ema_tick(TRUE, "column"),
-    "'decay_ticks' must be a single numeric. Got an object of class logical."
+    "'decay_ticks' must be a single real number. Got an object of class logical."
   )
   expect_error(
     udb_ema_tick(c(1, 2, 3), "column"),
-    "'decay_ticks' must be a single numeric. Got a vector of length 3."
+    "'decay_ticks' must be a single real number. Got a vector of length 3."
   )
 })
 
@@ -184,15 +184,15 @@ test_that("udb_ema_time fails nicely when 'operation_control' is a bad type", {
 test_that("udb_ems_tick fails nicely when 'decay_ticks' is a bad type", {
   expect_error(
     udb_ems_tick("hello!", "column"),
-    "'decay_ticks' must be a single numeric. Got an object of class character."
+    "'decay_ticks' must be a single real number. Got an object of class character."
   )
   expect_error(
     udb_ems_tick(TRUE, "column"),
-    "'decay_ticks' must be a single numeric. Got an object of class logical."
+    "'decay_ticks' must be a single real number. Got an object of class logical."
   )
   expect_error(
     udb_ems_tick(c(1, 2, 3), "column"),
-    "'decay_ticks' must be a single numeric. Got a vector of length 3."
+    "'decay_ticks' must be a single real number. Got a vector of length 3."
   )
 })
 
@@ -281,15 +281,15 @@ test_that("udb_ems_time fails nicely when 'operation_control' is a bad type", {
 test_that("udb_emmin_tick fails nicely when 'decay_ticks' is a bad type", {
   expect_error(
     udb_emmin_tick("hello!", "column"),
-    "'decay_ticks' must be a single numeric. Got an object of class character."
+    "'decay_ticks' must be a single real number. Got an object of class character."
   )
   expect_error(
     udb_emmin_tick(TRUE, "column"),
-    "'decay_ticks' must be a single numeric. Got an object of class logical."
+    "'decay_ticks' must be a single real number. Got an object of class logical."
   )
   expect_error(
     udb_emmin_tick(c(1, 2, 3), "column"),
-    "'decay_ticks' must be a single numeric. Got a vector of length 3."
+    "'decay_ticks' must be a single real number. Got a vector of length 3."
   )
 })
 
@@ -378,15 +378,15 @@ test_that("udb_emmin_time fails nicely when 'operation_control' is a bad type", 
 test_that("udb_emmax_tick fails nicely when 'decay_ticks' is a bad type", {
   expect_error(
     udb_emmax_tick("hello!", "column"),
-    "'decay_ticks' must be a single numeric. Got an object of class character."
+    "'decay_ticks' must be a single real number. Got an object of class character."
   )
   expect_error(
     udb_emmax_tick(TRUE, "column"),
-    "'decay_ticks' must be a single numeric. Got an object of class logical."
+    "'decay_ticks' must be a single real number. Got an object of class logical."
   )
   expect_error(
     udb_emmax_tick(c(1, 2, 3), "column"),
-    "'decay_ticks' must be a single numeric. Got a vector of length 3."
+    "'decay_ticks' must be a single real number. Got a vector of length 3."
   )
 })
 
@@ -475,15 +475,15 @@ test_that("udb_emmax_time fails nicely when 'operation_control' is a bad type", 
 test_that("udb_emstd_tick fails nicely when 'decay_ticks' is a bad type", {
   expect_error(
     udb_emstd_tick("hello!", "column"),
-    "'decay_ticks' must be a single numeric. Got an object of class character."
+    "'decay_ticks' must be a single real number. Got an object of class character."
   )
   expect_error(
     udb_emstd_tick(TRUE, "column"),
-    "'decay_ticks' must be a single numeric. Got an object of class logical."
+    "'decay_ticks' must be a single real number. Got an object of class logical."
   )
   expect_error(
     udb_emstd_tick(c(1, 2, 3), "column"),
-    "'decay_ticks' must be a single numeric. Got a vector of length 3."
+    "'decay_ticks' must be a single real number. Got a vector of length 3."
   )
 })
 
@@ -583,30 +583,30 @@ test_that("udb_roll_sum_tick fails nicely when 'cols' is a bad type", {
 test_that("udb_roll_sum_tick fails nicely when 'rev_ticks' is a bad type", {
   expect_error(
     udb_roll_sum_tick("column", "string"),
-    "'rev_ticks' must be a single numeric. Got an object of class character."
+    "'rev_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_sum_tick("column", TRUE),
-    "'rev_ticks' must be a single numeric. Got an object of class logical."
+    "'rev_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_sum_tick("column", c(1, 2, 3)),
-    "'rev_ticks' must be a single numeric. Got a vector of length 3."
+    "'rev_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
 test_that("udb_roll_sum_tick fails nicely when 'fwd_ticks' is a bad type", {
   expect_error(
     udb_roll_sum_tick("column", 5, "string"),
-    "'fwd_ticks' must be a single numeric. Got an object of class character."
+    "'fwd_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_sum_tick("column", 5, TRUE),
-    "'fwd_ticks' must be a single numeric. Got an object of class logical."
+    "'fwd_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_sum_tick("column", 5, c(1, 2, 3)),
-    "'fwd_ticks' must be a single numeric. Got a vector of length 3."
+    "'fwd_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
@@ -680,30 +680,30 @@ test_that("udb_roll_group_tick fails nicely when 'cols' is a bad type", {
 test_that("udb_roll_group_tick fails nicely when 'rev_ticks' is a bad type", {
   expect_error(
     udb_roll_group_tick("column", "string"),
-    "'rev_ticks' must be a single numeric. Got an object of class character."
+    "'rev_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_group_tick("column", TRUE),
-    "'rev_ticks' must be a single numeric. Got an object of class logical."
+    "'rev_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_group_tick("column", c(1, 2, 3)),
-    "'rev_ticks' must be a single numeric. Got a vector of length 3."
+    "'rev_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
 test_that("udb_roll_group_tick fails nicely when 'fwd_ticks' is a bad type", {
   expect_error(
     udb_roll_group_tick("column", 5, "string"),
-    "'fwd_ticks' must be a single numeric. Got an object of class character."
+    "'fwd_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_group_tick("column", 5, TRUE),
-    "'fwd_ticks' must be a single numeric. Got an object of class logical."
+    "'fwd_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_group_tick("column", 5, c(1, 2, 3)),
-    "'fwd_ticks' must be a single numeric. Got a vector of length 3."
+    "'fwd_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
@@ -777,30 +777,30 @@ test_that("udb_roll_avg_tick fails nicely when 'cols' is a bad type", {
 test_that("udb_roll_avg_tick fails nicely when 'rev_ticks' is a bad type", {
   expect_error(
     udb_roll_avg_tick("column", "string"),
-    "'rev_ticks' must be a single numeric. Got an object of class character."
+    "'rev_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_avg_tick("column", TRUE),
-    "'rev_ticks' must be a single numeric. Got an object of class logical."
+    "'rev_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_avg_tick("column", c(1, 2, 3)),
-    "'rev_ticks' must be a single numeric. Got a vector of length 3."
+    "'rev_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
 test_that("udb_roll_avg_tick fails nicely when 'fwd_ticks' is a bad type", {
   expect_error(
     udb_roll_avg_tick("column", 5, "string"),
-    "'fwd_ticks' must be a single numeric. Got an object of class character."
+    "'fwd_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_avg_tick("column", 5, TRUE),
-    "'fwd_ticks' must be a single numeric. Got an object of class logical."
+    "'fwd_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_avg_tick("column", 5, c(1, 2, 3)),
-    "'fwd_ticks' must be a single numeric. Got a vector of length 3."
+    "'fwd_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
@@ -874,30 +874,30 @@ test_that("udb_roll_min_tick fails nicely when 'cols' is a bad type", {
 test_that("udb_roll_min_tick fails nicely when 'rev_ticks' is a bad type", {
   expect_error(
     udb_roll_min_tick("column", "string"),
-    "'rev_ticks' must be a single numeric. Got an object of class character."
+    "'rev_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_min_tick("column", TRUE),
-    "'rev_ticks' must be a single numeric. Got an object of class logical."
+    "'rev_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_min_tick("column", c(1, 2, 3)),
-    "'rev_ticks' must be a single numeric. Got a vector of length 3."
+    "'rev_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
 test_that("udb_roll_min_tick fails nicely when 'fwd_ticks' is a bad type", {
   expect_error(
     udb_roll_min_tick("column", 5, "string"),
-    "'fwd_ticks' must be a single numeric. Got an object of class character."
+    "'fwd_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_min_tick("column", 5, TRUE),
-    "'fwd_ticks' must be a single numeric. Got an object of class logical."
+    "'fwd_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_min_tick("column", 5, c(1, 2, 3)),
-    "'fwd_ticks' must be a single numeric. Got a vector of length 3."
+    "'fwd_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
@@ -971,30 +971,30 @@ test_that("udb_roll_max_tick fails nicely when 'cols' is a bad type", {
 test_that("udb_roll_max_tick fails nicely when 'rev_ticks' is a bad type", {
   expect_error(
     udb_roll_max_tick("column", "string"),
-    "'rev_ticks' must be a single numeric. Got an object of class character."
+    "'rev_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_max_tick("column", TRUE),
-    "'rev_ticks' must be a single numeric. Got an object of class logical."
+    "'rev_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_max_tick("column", c(1, 2, 3)),
-    "'rev_ticks' must be a single numeric. Got a vector of length 3."
+    "'rev_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
 test_that("udb_roll_max_tick fails nicely when 'fwd_ticks' is a bad type", {
   expect_error(
     udb_roll_max_tick("column", 5, "string"),
-    "'fwd_ticks' must be a single numeric. Got an object of class character."
+    "'fwd_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_max_tick("column", 5, TRUE),
-    "'fwd_ticks' must be a single numeric. Got an object of class logical."
+    "'fwd_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_max_tick("column", 5, c(1, 2, 3)),
-    "'fwd_ticks' must be a single numeric. Got a vector of length 3."
+    "'fwd_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
@@ -1068,30 +1068,30 @@ test_that("udb_roll_prod_tick fails nicely when 'cols' is a bad type", {
 test_that("udb_roll_prod_tick fails nicely when 'rev_ticks' is a bad type", {
   expect_error(
     udb_roll_prod_tick("column", "string"),
-    "'rev_ticks' must be a single numeric. Got an object of class character."
+    "'rev_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_prod_tick("column", TRUE),
-    "'rev_ticks' must be a single numeric. Got an object of class logical."
+    "'rev_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_prod_tick("column", c(1, 2, 3)),
-    "'rev_ticks' must be a single numeric. Got a vector of length 3."
+    "'rev_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
 test_that("udb_roll_prod_tick fails nicely when 'fwd_ticks' is a bad type", {
   expect_error(
     udb_roll_prod_tick("column", 5, "string"),
-    "'fwd_ticks' must be a single numeric. Got an object of class character."
+    "'fwd_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_prod_tick("column", 5, TRUE),
-    "'fwd_ticks' must be a single numeric. Got an object of class logical."
+    "'fwd_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_prod_tick("column", 5, c(1, 2, 3)),
-    "'fwd_ticks' must be a single numeric. Got a vector of length 3."
+    "'fwd_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
@@ -1165,30 +1165,30 @@ test_that("udb_roll_count_tick fails nicely when 'cols' is a bad type", {
 test_that("udb_roll_count_tick fails nicely when 'rev_ticks' is a bad type", {
   expect_error(
     udb_roll_count_tick("column", "string"),
-    "'rev_ticks' must be a single numeric. Got an object of class character."
+    "'rev_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_count_tick("column", TRUE),
-    "'rev_ticks' must be a single numeric. Got an object of class logical."
+    "'rev_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_count_tick("column", c(1, 2, 3)),
-    "'rev_ticks' must be a single numeric. Got a vector of length 3."
+    "'rev_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
 test_that("udb_roll_count_tick fails nicely when 'fwd_ticks' is a bad type", {
   expect_error(
     udb_roll_count_tick("column", 5, "string"),
-    "'fwd_ticks' must be a single numeric. Got an object of class character."
+    "'fwd_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_count_tick("column", 5, TRUE),
-    "'fwd_ticks' must be a single numeric. Got an object of class logical."
+    "'fwd_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_count_tick("column", 5, c(1, 2, 3)),
-    "'fwd_ticks' must be a single numeric. Got a vector of length 3."
+    "'fwd_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
@@ -1262,30 +1262,30 @@ test_that("udb_roll_std_tick fails nicely when 'cols' is a bad type", {
 test_that("udb_roll_std_tick fails nicely when 'rev_ticks' is a bad type", {
   expect_error(
     udb_roll_std_tick("column", "string"),
-    "'rev_ticks' must be a single numeric. Got an object of class character."
+    "'rev_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_std_tick("column", TRUE),
-    "'rev_ticks' must be a single numeric. Got an object of class logical."
+    "'rev_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_std_tick("column", c(1, 2, 3)),
-    "'rev_ticks' must be a single numeric. Got a vector of length 3."
+    "'rev_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
 test_that("udb_roll_std_tick fails nicely when 'fwd_ticks' is a bad type", {
   expect_error(
     udb_roll_std_tick("column", 5, "string"),
-    "'fwd_ticks' must be a single numeric. Got an object of class character."
+    "'fwd_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_std_tick("column", 5, TRUE),
-    "'fwd_ticks' must be a single numeric. Got an object of class logical."
+    "'fwd_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_std_tick("column", 5, c(1, 2, 3)),
-    "'fwd_ticks' must be a single numeric. Got a vector of length 3."
+    "'fwd_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
@@ -1374,30 +1374,30 @@ test_that("udb_roll_wavg_tick fails nicely when 'cols' is a bad type", {
 test_that("udb_roll_wavg_tick fails nicely when 'rev_ticks' is a bad type", {
   expect_error(
     udb_roll_wavg_tick("wcol", "column", "string"),
-    "'rev_ticks' must be a single numeric. Got an object of class character."
+    "'rev_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_wavg_tick("wcol", "column", TRUE),
-    "'rev_ticks' must be a single numeric. Got an object of class logical."
+    "'rev_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_wavg_tick("wcol", "column", c(1, 2, 3)),
-    "'rev_ticks' must be a single numeric. Got a vector of length 3."
+    "'rev_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
 test_that("udb_roll_wavg_tick fails nicely when 'fwd_ticks' is a bad type", {
   expect_error(
     udb_roll_wavg_tick("wcol", "column", 5, "string"),
-    "'fwd_ticks' must be a single numeric. Got an object of class character."
+    "'fwd_ticks' must be a single integer. Got an object of class character."
   )
   expect_error(
     udb_roll_wavg_tick("wcol", "column", 5, TRUE),
-    "'fwd_ticks' must be a single numeric. Got an object of class logical."
+    "'fwd_ticks' must be a single integer. Got an object of class logical."
   )
   expect_error(
     udb_roll_wavg_tick("wcol", "column", 5, c(1, 2, 3)),
-    "'fwd_ticks' must be a single numeric. Got a vector of length 3."
+    "'fwd_ticks' must be a single integer. Got a vector of length 3."
   )
 })
 
