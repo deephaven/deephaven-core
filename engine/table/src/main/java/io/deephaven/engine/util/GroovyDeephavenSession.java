@@ -8,25 +8,52 @@ import groovy.lang.Binding;
 import groovy.lang.Closure;
 import groovy.lang.GroovyShell;
 import groovy.lang.MissingPropertyException;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.updateby.BadDataBehavior;
+import io.deephaven.api.updateby.DeltaControl;
+import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
+import io.deephaven.base.string.cache.CompressedString;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.engine.table.DataColumn;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.PartitionedTableFactory;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableFactory;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
+import io.deephaven.engine.table.impl.util.TableLoggers;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.libs.GroovyStaticImports;
 import io.deephaven.plugin.type.ObjectTypeLookup;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.util.type.TypeUtils;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
+import org.codehaus.groovy.ast.ClassNode;
+import org.codehaus.groovy.classgen.GeneratorContext;
+import org.codehaus.groovy.control.CompilationFailedException;
 import org.codehaus.groovy.control.CompilationUnit;
+import org.codehaus.groovy.control.CompilePhase;
+import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.Phases;
+import org.codehaus.groovy.control.SourceUnit;
+import org.codehaus.groovy.control.customizers.CompilationCustomizer;
+import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.codehaus.groovy.tools.GroovyClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,15 +62,20 @@ import javax.tools.JavaFileObject;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -96,21 +128,27 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private final ScriptFinder scriptFinder;
 
+    private final ImportCustomizer imports = new ImportCustomizer();
+    private final CompilationUnit.ISourceUnitOperation specifyPackage = new CompilationUnit.ISourceUnitOperation() {
+        @Override
+        public void call(SourceUnit source) throws CompilationFailedException {
+            source.getAST().setPackageName(PACKAGE);
+        }
+
+//        @Override
+//        public void call(SourceUnit source, GeneratorContext context, ClassNode classNode) throws CompilationFailedException {
+//            ;
+//        }
+    };
+
+
     private final ArrayList<String> scriptImports = new ArrayList<>();
 
     private final Set<String> dynamicClasses = new HashSet<>();
-    private final GroovyShell groovyShell = new GroovyShell(STATIC_LOADER) {
-        protected synchronized String generateScriptName() {
-            return GroovyDeephavenSession.this.generateScriptName();
-        }
-    };
+    private final GroovyShell groovyShell;
 
     private int counter;
     private String script = "Script";
-
-    private String generateScriptName() {
-        return script + "_" + (++counter) + ".groovy";
-    }
 
     private String getNextScriptClassName() {
         return script + "_" + (counter + 1);
@@ -131,6 +169,57 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             throws IOException {
         super(updateGraph, objectTypeLookup, changeListener);
 
+        imports.addImports(
+                DataColumn.class.getName(),
+                Table.class.getName(),
+                TableFactory.class.getName(),
+                PartitionedTable.class.getName(),
+                PartitionedTableFactory.class.getName(),
+                Array.class.getName(),
+                TypeUtils.class.getName(),
+                ArrayTypeUtils.class.getName(),
+                DateTimeUtils.class.getName(),
+                CompressedString.class.getName(),
+                Instant.class.getName(),
+                LocalDate.class.getName(),
+                LocalTime.class.getName(),
+                ZoneId.class.getName(),
+                ZonedDateTime.class.getName(),
+                QueryScopeParam.class.getName(),
+                QueryScope.class.getName()
+                // classes
+        );
+        imports.addStaticImport(CompressedString.class.getName(), "compress");
+        imports.addStarImports(
+                "io.deephaven.api",
+                "io.deephaven.api.filter",
+                "java.util",
+                "java.lang"
+                // packages
+        );
+        imports.addStaticStars(
+                TableTools.class.getName(),
+                TableLoggers.class.getName(),
+                QueryConstants.class.getName(),
+                GroovyStaticImports.class.getName(),
+                DateTimeUtils.class.getName(),
+                QueryLanguageFunctionUtils.class.getName(),
+                Aggregation.class.getName(),
+                UpdateByOperation.class.getName(),
+                OperationControl.class.getName(),
+                DeltaControl.class.getName(),
+                BadDataBehavior.class.getName()
+                // class members
+        );
+
+        CompilerConfiguration config = new CompilerConfiguration();
+        config.getCompilationCustomizers().add(imports);
+        groovyShell = new GroovyShell(STATIC_LOADER, config) {
+            protected synchronized String generateScriptName() {
+                return GroovyDeephavenSession.this.generateScriptName();
+            }
+        };
+
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
         groovyShell.setVariable("__groovySession", this);
@@ -143,6 +232,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         for (final String path : runScripts.paths) {
             runScript(path);
         }
+    }
+
+    private String generateScriptName() {
+        return script + "_" + (++counter) + ".groovy";
     }
 
     @Override
@@ -210,6 +303,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String lastCommand = fc.second;
         final String commandPrefix = fc.first;
 
+        System.out.println(lastCommand);
+
         final String oldScriptName = script;
 
         try {
@@ -270,9 +365,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         return e;
     }
 
-    private static Class<?> loadClass(String className) throws ClassNotFoundException {
+    private Class<?> loadClass(String className) throws ClassNotFoundException {
         try {
-            return Class.forName(className, false, GroovyDeephavenSession.class.getClassLoader());
+            return Class.forName(className, false, this.groovyShell.getClassLoader());
         } catch (ClassNotFoundException e) {
             if (className.contains(".")) {
                 // handle inner class cases
@@ -288,7 +383,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
-    private static boolean classExists(String className) {
+    private boolean classExists(String className) {
         try {
             loadClass(className);
             return true;
@@ -297,7 +392,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
-    private static boolean functionExists(String className, String functionName) {
+    private boolean functionExists(String className, String functionName) {
         try {
             Method[] ms = loadClass(className).getMethods();
 
@@ -313,7 +408,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
-    private static boolean fieldExists(String className, String fieldName) {
+    private boolean fieldExists(String className, String fieldName) {
         try {
             Field[] fs = loadClass(className).getFields();
 
@@ -354,13 +449,14 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
      *         package.class.part.part[.*];"
      */
     @VisibleForTesting
-    public static String isValidImportString(Logger log, String importString) {
+    public String isValidImportString(String importString) {
         // look for (ignoring whitespace): optional "import" optional "static" everything_else optional ".*" optional
         // semicolon
         // "everything_else" should be a valid java identifier of the form package.class[.class|.method|.field]. This
         // will be checked later
         Matcher matcher = Pattern
-                .compile("^\\s*(import\\s+)\\s*(?<static>static\\s+)?\\s*(?<body>.*?)(?<wildcard>\\.\\*)?[\\s;]*$")
+                .compile("^\\s*(import\\s+)\\s*(?<static>static\\s+)?\\s*(?<body>.*?)(?<wildcard>\\.\\*)?(\\s+as\\s+(?<alias>.*?))?[\\s;]*$")
+                //                .compile("^\\s*(import\\s+)\\s*(?<static>static\\s+)?\\s*(?<body>[^\\s.;]*?)(?<wildcard>\\.\\*)?\\s*(?:as\\s+(?<alias>.*?))?[\\s;]*$")
                 .matcher(importString);
         if (!matcher.matches()) {
             return null;
@@ -444,9 +540,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     private void updateScriptImports(String importString) {
-        String fixedImportString = isValidImportString(log, importString);
+        String fixedImportString = isValidImportString(importString);
         if (fixedImportString != null) {
             scriptImports.add(importString);
+//            imports.addImports(importString);
         } else {
             throw new RuntimeException("Attempting to import a path that does not exist: " + importString);
         }
@@ -493,41 +590,47 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private Pair<String, String> fullCommand(String command) {
         // TODO (core#230): Remove large list of manual text-based imports
         // NOTE: Don't add to this list without a compelling reason!!! Use the user script import if possible.
-        final String commandPrefix = "package " + PACKAGE + ";\n" +
-                "import static io.deephaven.engine.util.TableTools.*;\n" +
-                "import static io.deephaven.engine.table.impl.util.TableLoggers.*;\n" +
-                "import io.deephaven.api.*;\n" +
-                "import io.deephaven.api.filter.*;\n" +
-                "import io.deephaven.engine.table.DataColumn;\n" +
-                "import io.deephaven.engine.table.Table;\n" +
-                "import io.deephaven.engine.table.TableFactory;\n" +
-                "import io.deephaven.engine.table.PartitionedTable;\n" +
-                "import io.deephaven.engine.table.PartitionedTableFactory;\n" +
-                "import java.lang.reflect.Array;\n" +
-                "import io.deephaven.util.type.TypeUtils;\n" +
-                "import io.deephaven.util.type.ArrayTypeUtils;\n" +
-                "import io.deephaven.time.DateTimeUtils;\n" +
-                "import io.deephaven.base.string.cache.CompressedString;\n" +
-                "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
-                "import java.time.Instant;\n" +
-                "import java.time.LocalDate;\n" +
-                "import java.time.LocalTime;\n" +
-                "import java.time.ZoneId;\n" +
-                "import java.time.ZonedDateTime;\n" +
-                "import io.deephaven.engine.context.QueryScopeParam;\n" +
-                "import io.deephaven.engine.context.QueryScope;\n" +
-                "import java.util.*;\n" +
-                "import java.lang.*;\n" +
-                "import static io.deephaven.util.QueryConstants.*;\n" +
-                "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
-                "import static io.deephaven.time.DateTimeUtils.*;\n" +
-                "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
-                "import static io.deephaven.api.agg.Aggregation.*;\n" +
-                "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +
-                "import io.deephaven.api.updateby.UpdateByControl;\n" +
-                "import io.deephaven.api.updateby.OperationControl;\n" +
-                "import io.deephaven.api.updateby.DeltaControl;\n" +
-                "import io.deephaven.api.updateby.BadDataBehavior;\n" +
+        final String commandPrefix = //"package " + PACKAGE + ";\n" +
+
+
+
+
+
+
+//                "import static io.deephaven.engine.util.TableTools.*;\n" +
+//                "import static io.deephaven.engine.table.impl.util.TableLoggers.*;\n" +
+//                "import io.deephaven.api.*;\n" +
+//                "import io.deephaven.api.filter.*;\n" +
+//                "import io.deephaven.engine.table.DataColumn;\n" +
+//                "import io.deephaven.engine.table.Table;\n" +
+//                "import io.deephaven.engine.table.TableFactory;\n" +
+//                "import io.deephaven.engine.table.PartitionedTable;\n" +
+//                "import io.deephaven.engine.table.PartitionedTableFactory;\n" +
+//                "import java.lang.reflect.Array;\n" +
+//                "import io.deephaven.util.type.TypeUtils;\n" +
+//                "import io.deephaven.util.type.ArrayTypeUtils;\n" +
+//                "import io.deephaven.time.DateTimeUtils;\n" +
+//                "import io.deephaven.base.string.cache.CompressedString;\n" +
+//                "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
+//                "import java.time.Instant;\n" +
+//                "import java.time.LocalDate;\n" +
+//                "import java.time.LocalTime;\n" +
+//                "import java.time.ZoneId;\n" +
+//                "import java.time.ZonedDateTime;\n" +
+//                "import io.deephaven.engine.context.QueryScopeParam;\n" +
+//                "import io.deephaven.engine.context.QueryScope;\n" +
+//                "import java.util.*;\n" +
+//                "import java.lang.*;\n" +
+//                "import static io.deephaven.util.QueryConstants.*;\n" +
+//                "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
+//                "import static io.deephaven.time.DateTimeUtils.*;\n" +
+//                "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
+//                "import static io.deephaven.api.agg.Aggregation.*;\n" +
+//                "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +
+//                "import io.deephaven.api.updateby.UpdateByControl;\n" +
+//                "import io.deephaven.api.updateby.OperationControl;\n" +
+//                "import io.deephaven.api.updateby.DeltaControl;\n" +
+//                "import io.deephaven.api.updateby.BadDataBehavior;\n" +
 
                 String.join("\n", scriptImports) + "\n";
         return new Pair<>(commandPrefix, commandPrefix + command
@@ -551,8 +654,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private void updateClassloader(String currentCommand) {
         final String name = getNextScriptClassName();
 
-        final CompilationUnit cu = new CompilationUnit(groovyShell.getClassLoader());
+        CompilerConfiguration config = new CompilerConfiguration(CompilerConfiguration.DEFAULT);
+        ImportCustomizer imports = new ImportCustomizer();
+//        imports.
+        config.getCompilationCustomizers().add(imports);
+        final CompilationUnit cu = new CompilationUnit(config, null, groovyShell.getClassLoader());
         cu.addSource(name, currentCommand);
+        cu.addPhaseOperation(specifyPackage, Phases.CONVERSION);
         try {
             cu.compile(Phases.CLASS_GENERATION);
         } catch (RuntimeException e) {

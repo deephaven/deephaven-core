@@ -192,9 +192,13 @@ public class ExportTicketHelper {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve ticket '" + logId + "': ticket was not provided");
         }
-        if (ticket.remaining() != 5 || ticket.get(pos) != TICKET_PREFIX) {
+        if (ticket.get(pos) != TICKET_PREFIX) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve ticket '" + logId + "': found 0x" + ByteHelper.byteBufToHex(ticket) + " (hex)");
+                    "Could not resolve export ticket '" + logId + "': found prefix 0x" + String.format("%02x", ticket.get(pos)) + " (hex), expected 0x65");
+        }
+        if (ticket.remaining() != 5) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve export ticket '" + logId + "': found 0x" + ByteHelper.byteBufToHex(ticket) + " (hex)");
         }
         return ticket.getInt(pos + 1);
     }
