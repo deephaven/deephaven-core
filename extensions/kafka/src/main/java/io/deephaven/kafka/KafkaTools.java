@@ -138,6 +138,12 @@ public class KafkaTools {
     public static final String OFFSET_COLUMN_NAME_DEFAULT = "KafkaOffset";
     public static final String TIMESTAMP_COLUMN_NAME_PROPERTY = "deephaven.timestamp.column.name";
     public static final String TIMESTAMP_COLUMN_NAME_DEFAULT = "KafkaTimestamp";
+    public static final String RECEIVETIME_COLUMN_NAME_PROPERTY = "deephaven.receivetime.column.name";
+    public static final String RECEIVETIME_COLUMN_NAME_DEFAULT = null;
+    public static final String KEY_BYTES_COLUMN_NAME_PROPERTY = "deephaven.keybytes.column.name";
+    public static final String KEY_BYTES_COLUMN_NAME_DEFAULT = null;
+    public static final String VALUE_BYTES_COLUMN_NAME_PROPERTY = "deephaven.valuebytes.column.name";
+    public static final String VALUE_BYTES_COLUMN_NAME_DEFAULT = null;
     public static final String KEY_COLUMN_NAME_PROPERTY = "deephaven.key.column.name";
     public static final String KEY_COLUMN_NAME_DEFAULT = "KafkaKey";
     public static final String VALUE_COLUMN_NAME_PROPERTY = "deephaven.value.column.name";
@@ -1532,7 +1538,22 @@ public class KafkaTools {
         Timestamp(
                 TIMESTAMP_COLUMN_NAME_PROPERTY,
                 TIMESTAMP_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofTime);
+                ColumnDefinition::ofTime),
+
+        ReceiveTime(
+                RECEIVETIME_COLUMN_NAME_PROPERTY,
+                RECEIVETIME_COLUMN_NAME_DEFAULT,
+                ColumnDefinition::ofTime),
+
+        KeyBytes(
+                KEY_BYTES_COLUMN_NAME_PROPERTY,
+                KEY_BYTES_COLUMN_NAME_DEFAULT,
+                ColumnDefinition::ofLong),
+
+        ValueBytes(
+                VALUE_BYTES_COLUMN_NAME_PROPERTY,
+                VALUE_BYTES_COLUMN_NAME_DEFAULT,
+                ColumnDefinition::ofLong);
         // @formatter:on
 
         private final String nameProperty;
@@ -1540,7 +1561,7 @@ public class KafkaTools {
         private final Function<String, ColumnDefinition<?>> definitionFactory;
 
         CommonColumn(@NotNull final String nameProperty,
-                @NotNull final String nameDefault,
+                @Nullable final String nameDefault,
                 @NotNull final Function<String, ColumnDefinition<?>> definitionFactory) {
             this.nameProperty = nameProperty;
             this.nameDefault = nameDefault;
@@ -1557,6 +1578,8 @@ public class KafkaTools {
                     result = definitionFactory.apply(partitionColumnName);
                 }
                 consumerProperties.remove(nameProperty);
+            } else if (nameDefault == null) {
+                result = null;
             } else {
                 result = definitionFactory.apply(nameDefault);
             }
@@ -1631,9 +1654,9 @@ public class KafkaTools {
         }
 
         @Override
-        public long consume(@NotNull final List<? extends ConsumerRecord<?, ?>> consumerRecords) {
+        public long consume(long receiveTime, @NotNull final List<? extends ConsumerRecord<?, ?>> consumerRecords) {
             try {
-                return adapter.consumeRecords(consumerRecords);
+                return adapter.consumeRecords(receiveTime, consumerRecords);
             } catch (Exception e) {
                 acceptFailure(e);
                 return 0;
