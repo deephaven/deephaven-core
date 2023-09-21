@@ -64,6 +64,11 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
     /**
      * Get the "raw" {@link Table partitioned table} underlying this PartitionedTable.
      *
+     * <p>
+     * The raw table can be converted back into a partitioned table using {@link PartitionedTableFactory#of(Table)} or
+     * {@link PartitionedTableFactory#of(Table, Collection, boolean, String, TableDefinition, boolean)}.
+     * </p>
+     *
      * @return The underlying {@link Table partitioned table}
      */
     @ConcurrentMethod
