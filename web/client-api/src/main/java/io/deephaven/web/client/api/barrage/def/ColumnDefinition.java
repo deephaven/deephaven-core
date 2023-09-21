@@ -119,8 +119,9 @@ public class ColumnDefinition {
     }
 
     public boolean isVisible() {
-        return !isStyleColumn() && !isFormatColumn() && !isRollupConstituentNodeColumn()
-                && !isHierarchicalRowDepthColumn() && !isHierarchicalRowExpandedColumn();
+        return !isStyleColumn() && !isDataBarFormatColumn &&
+                !isRollupConstituentNodeColumn() && !isHierarchicalRowDepthColumn()
+                && !isHierarchicalRowExpandedColumn();
     }
 
     public boolean isForRow() {

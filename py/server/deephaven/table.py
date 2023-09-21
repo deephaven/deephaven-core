@@ -2024,11 +2024,13 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to color format rows conditionally.") from e
 
-    def format_data_bar(self, col: str, value_col: str = None, min: Union[float, str] = NULL_DOUBLE, max: Union[float, str] = NULL_DOUBLE,
-                        axis: Union[DataBarAxisOption, str] = None, positive_color: Union['Color', List['Color']] = None,
-                        negative_color: Union['Color', List['Color']] = None, value_placement: Union[DataBarValuePlacementOption, str] = None,
-                        direction: Union[DataBarDirectionOption, str] = None, opacity: float = NULL_DOUBLE, marker_col: str = None,
-                        marker_color: 'Color' = None) -> Table:
+    def format_data_bar(self, col: str, value_col: str = None, min: Union[float, str] = NULL_DOUBLE,
+                        max: Union[float, str] = NULL_DOUBLE, axis: Union[DataBarAxisOption, str] = None,
+                        positive_color: Union['Color', List['Color']] = None,
+                        negative_color: Union['Color', List['Color']] = None,
+                        value_placement: Union[DataBarValuePlacementOption, str] = None,
+                        direction: Union[DataBarDirectionOption, str] = None, opacity: float = NULL_DOUBLE,
+                        marker_col: str = None, marker_color: 'Color' = None) -> Table:
         """ Applies data bar formatting to the specified column.
 
         Args:
@@ -2083,8 +2085,8 @@ class Table(JObjectWrapper):
                     value_placement_value = value_placement.value
 
             return Table(j_table=self.j_table.formatDataBar(col, value_col, min, max, axis_value, positive_color,
-                                                            negative_color, value_placement_value, direction_value, opacity,
-                                                            marker_col, marker_color))
+                                                            negative_color, value_placement_value, direction_value,
+                                                            opacity, marker_col, marker_color))
         except Exception as e:
             raise DHError(e, "failed to format data bar.") from e
 
@@ -2389,7 +2391,7 @@ class PartitionedTable(JObjectWrapper):
             unique_keys: False
             constituent_column: the name of the first column with a Table data type
             constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
-                column. Consequently the constituent column can't be empty
+                column. Consequently, the constituent column can't be empty
             constituent_changes_permitted: the value of table.is_refreshing
 
 
@@ -2398,7 +2400,7 @@ class PartitionedTable(JObjectWrapper):
             key_cols (Union[str, List[str]]): the key column name(s) of 'table'
             unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
             constituent_column (str): the constituent column name in 'table'
-            constituent_table_columns (list[Column]): the column definitions of the constituent table
+            constituent_table_columns (List[Column]): the column definitions of the constituent table
             constituent_changes_permitted (bool): whether the values of the constituent column can change
 
         Returns:
@@ -3678,12 +3680,14 @@ class MultiJoinInput(JObjectWrapper):
         match with other table keys plus additional columns containing data from the table. Rows containing unique keys
         will be added to the output table, otherwise the data from these columns will be added to the existing output
         rows.
+
         Args:
             table (Table): the right table to include in the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the this table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
+
         Raises:
             DHError
         """
@@ -3712,12 +3716,14 @@ class MultiJoinTable(JObjectWrapper):
     def __init__(self, input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
                  on: Union[str, Sequence[str]] = None):
         """Creates a new MultiJoinTable. The join can be specified in terms of either tables or MultiJoinInputs.
+
         Args:
             input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects
                 specifying the tables and columns to include in the join.
             on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality
                 expression that matches every input table, i.e. "col_a = col_b" to rename output column names. Note:
                 When MultiJoinInput objects are supplied, this parameter must be omitted.
+
         Raises:
             DHError
         """
@@ -3727,7 +3733,8 @@ class MultiJoinTable(JObjectWrapper):
                 with auto_locking_ctx(*tables):
                     j_tables = to_sequence(input)
                     self.j_multijointable = _JMultiJoinFactory.of(on, *j_tables)
-            elif isinstance(input, MultiJoinInput) or (isinstance(input, Sequence) and all(isinstance(ji, MultiJoinInput) for ji in input)):
+            elif isinstance(input, MultiJoinInput) or (
+                    isinstance(input, Sequence) and all(isinstance(ji, MultiJoinInput) for ji in input)):
                 if on is not None:
                     raise DHError(message="on parameter is not permitted when MultiJoinInput objects are provided.")
                 wrapped_input = to_sequence(input, wrapped=True)
@@ -3736,7 +3743,8 @@ class MultiJoinTable(JObjectWrapper):
                     input = to_sequence(input)
                     self.j_multijointable = _JMultiJoinFactory.of(*input)
             else:
-                raise DHError(message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs.")
+                raise DHError(
+                    message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs.")
 
         except Exception as e:
             raise DHError(e, "failed to build a MultiJoinTable object.") from e
