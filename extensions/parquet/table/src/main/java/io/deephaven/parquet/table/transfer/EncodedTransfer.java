@@ -9,7 +9,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
-import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,7 +19,7 @@ import java.util.Arrays;
  * Used as a base class of transfer objects for types like strings or big integers that need specialized encoding, and
  * thus we need to enforce page size limits while writing.
  */
-public abstract class EncodedTransfer<T> implements TransferObject<Binary[]> {
+abstract class EncodedTransfer<T> implements TransferObject<Binary[]> {
     private final ColumnSource<?> columnSource;
     private final ChunkSource.GetContext context;
     private final Binary[] buffer;
@@ -141,7 +140,4 @@ public abstract class EncodedTransfer<T> implements TransferObject<Binary[]> {
     final public void close() {
         context.close();
     }
-
-    @Override
-    public <T extends Comparable<T>> void updateStatistics(@NotNull final Statistics<T> stats) {}
 }

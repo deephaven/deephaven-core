@@ -619,7 +619,6 @@ public class ParquetTableWriter {
                     }
                 }
             }
-            transferObject.updateStatistics(statistics);
         }
     }
 

@@ -8,7 +8,7 @@ import io.deephaven.util.codec.ObjectCodec;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
-public class CodecTransfer<T> extends EncodedTransfer<T> {
+class CodecTransfer<T> extends EncodedTransfer<T> {
     private final ObjectCodec<? super T> codec;
 
     public CodecTransfer(

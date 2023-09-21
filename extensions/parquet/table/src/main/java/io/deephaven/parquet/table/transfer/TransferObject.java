@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.rowset.RowSequence;
@@ -9,7 +12,6 @@ import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.parquet.table.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.codec.ObjectCodec;
-import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
@@ -23,7 +25,7 @@ import java.util.Map;
  * @param <B>
  */
 public interface TransferObject<B> extends SafeCloseable {
-    public static <DATA_TYPE> TransferObject<?> create(
+    static <DATA_TYPE> TransferObject<?> create(
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final RowSet tableRowSet,
             @NotNull final ColumnSource<DATA_TYPE> columnSource,
@@ -32,15 +34,15 @@ public interface TransferObject<B> extends SafeCloseable {
             @NotNull final Class<DATA_TYPE> columnType,
             @NotNull final ParquetInstructions instructions) {
         if (int.class.equals(columnType)) {
-            return new IntTransfer(columnSource, maxValuesPerPage);
+            return IntTransfer.create(columnSource, maxValuesPerPage);
         } else if (long.class.equals(columnType)) {
-            return new LongTransfer(columnSource, maxValuesPerPage);
+            return LongTransfer.create(columnSource, maxValuesPerPage);
         } else if (double.class.equals(columnType)) {
-            return new DoubleTransfer(columnSource, maxValuesPerPage);
+            return DoubleTransfer.create(columnSource, maxValuesPerPage);
         } else if (float.class.equals(columnType)) {
-            return new FloatTransfer(columnSource, maxValuesPerPage);
+            return FloatTransfer.create(columnSource, maxValuesPerPage);
         } else if (Boolean.class.equals(columnType)) {
-            return new BooleanTransfer(columnSource, maxValuesPerPage);
+            return BooleanTransfer.create(columnSource, maxValuesPerPage);
         } else if (short.class.equals(columnType)) {
             return new ShortTransfer(columnSource, maxValuesPerPage);
         } else if (char.class.equals(columnType)) {
@@ -113,10 +115,4 @@ public interface TransferObject<B> extends SafeCloseable {
      * @return the buffer
      */
     B getBuffer();
-
-    /**
-     * After a sequence of calls to {@link #fetchData(RowSequence)} this may be called to append statistic information
-     * into the Parquet footer for readers.
-     */
-    <T extends Comparable<T>> void updateStatistics(@NotNull Statistics<T> stats);
 }
