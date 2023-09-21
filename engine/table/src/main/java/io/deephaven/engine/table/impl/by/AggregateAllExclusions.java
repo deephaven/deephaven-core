@@ -1,11 +1,12 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.qst.table;
+package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.spec.*;
 import io.deephaven.api.agg.spec.AggSpec.Visitor;
+import io.deephaven.engine.util.ColumnFormatting;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -16,7 +17,7 @@ import java.util.Set;
 /**
  * Computes the columns to exclude from aggregation output
  */
-final class AggregateAllExclusions implements Visitor {
+public final class AggregateAllExclusions implements Visitor {
 
     public static Set<ColumnName> of(
             AggSpec spec,

@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.Pair;
 import io.deephaven.api.expression.AbstractExpressionFactory;
 import io.deephaven.api.expression.ExpressionParser;
-import io.deephaven.qst.table.ColumnFormatting;
+import io.deephaven.engine.util.ColumnFormatting;
 
 import java.util.Arrays;
 import java.util.Collection;

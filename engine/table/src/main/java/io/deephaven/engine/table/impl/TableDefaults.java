@@ -16,7 +16,7 @@ import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.WouldMatchPairFactory;
 import io.deephaven.api.util.ConcurrentMethod;
-import io.deephaven.qst.table.ColumnFormatting;
+import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.util.annotations.FinalDefault;
 

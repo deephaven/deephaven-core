@@ -813,6 +813,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(2.0, cs.get(0));
 
         result = dataTable.formatColumns("Doubles=Decimal(`##0.00%`)").headBy(1);
+        assertEquals(3, result.numColumns()); // Additional column for formatting information of "Doubles"
         assertEquals(1, result.size());
         cs = result.getColumnSource("Doubles");
         assertEquals(3.1, cs.get(0));

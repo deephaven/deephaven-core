@@ -6,7 +6,6 @@ package io.deephaven.engine.util;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.qst.table.ColumnFormatting;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.type.EnumValue;
 import io.deephaven.util.type.TypeUtils;

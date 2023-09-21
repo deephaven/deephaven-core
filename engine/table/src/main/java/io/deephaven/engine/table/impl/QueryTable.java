@@ -58,7 +58,6 @@ import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.vector.Vector;
@@ -732,7 +731,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             }
             final List<ColumnName> groupByList = Arrays.asList(groupByColumns);
             final List<ColumnName> tableColumns = definition.getTypedColumnNames();
-            final Optional<Aggregation> agg = AggregateAllTable.singleAggregation(spec, groupByList, tableColumns);
+            final Optional<Aggregation> agg = singleAggregation(spec, groupByList, tableColumns);
             if (agg.isEmpty()) {
                 throw new IllegalArgumentException(
                         "aggAllBy has no columns to aggregate: spec=" + spec + ", groupByColumns="
@@ -747,6 +746,29 @@ public class QueryTable extends BaseTable<QueryTable> {
                 return result;
             });
         }
+    }
+
+    /**
+     * Computes the single-aggregation from the agg-all implied by the {@code spec} and {@code groupByColumns} by
+     * removing the {@code groupByColumns} and any extra columns implied by the {@code spec}.
+     *
+     * @param spec the spec
+     * @param groupByColumns the group by columns
+     * @param tableColumns the table columns
+     * @return the aggregation, if non-empty
+     */
+    static Optional<Aggregation> singleAggregation(
+            AggSpec spec, Collection<? extends ColumnName> groupByColumns,
+            Collection<? extends ColumnName> tableColumns) {
+        Set<ColumnName> exclusions = AggregateAllExclusions.of(spec, groupByColumns, tableColumns);
+        List<ColumnName> columnsToAgg = new ArrayList<>(tableColumns.size());
+        for (ColumnName column : tableColumns) {
+            if (exclusions.contains(column)) {
+                continue;
+            }
+            columnsToAgg.add(column);
+        }
+        return columnsToAgg.isEmpty() ? Optional.empty() : Optional.of(spec.aggregation(columnsToAgg));
     }
 
     @Override
@@ -834,7 +856,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             String colName = colNames.get(i);
             if (!groupByColsSet.contains(colName)) {
                 final Class<?> dataType = getDefinition().getColumn(colName).getDataType();
-                casting[j] = String.format("%s = %s%s", colName, getCastFormula(dataType), colName);
+                casting[j] = colName + " = " + getCastFormula(dataType) + colName;
                 if (head)
                     updates[j++] =
                             // Get the first nRows rows:
