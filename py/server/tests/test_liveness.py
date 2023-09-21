@@ -123,17 +123,62 @@ class LivenessTestCase(BaseTestCase):
             nested_must_keep = self.create_table()
             df = to_pandas(nested_must_keep)
             other_l_scope.preserve(nested_must_keep)
-        self.assertTrue(nested_must_keep.j_table.tryRetainReference())
-        # drop the extra reference obtained by the tryRetainReference() call in the above assert
-        nested_must_keep.j_table.dropReference()
+
+        self.assertFalse(to_discard.j_table.tryRetainReference())
         self.assertFalse(nested_to_discard.j_table.tryRetainReference())
 
-
+        self.assertTrue(nested_must_keep.j_table.tryRetainReference())
+        # drop extra reference
+        nested_must_keep.j_table.dropReference()
 
         self.assertTrue(must_keep.j_table.tryRetainReference())
+        # drop extra reference
+        must_keep.j_table.dropReference()
+
         self.assertFalse(to_discard.j_table.tryRetainReference())
-        self.assertFalse(nested_must_keep.j_table.tryRetainReference())
-        self.assertFalse(nested_to_discard.j_table.tryRetainReference())
+
+    def test_reopen_scope(self):
+        l_scope = liveness_scope()
+        with l_scope.open(False):
+            to_discard = self.create_table()
+            df = to_pandas(to_discard)
+            must_keep = self.create_table()
+            df = to_pandas(must_keep)
+            l_scope.preserve(must_keep)
+
+        self.assertTrue(to_discard.j_table.tryRetainReference())
+        # drop extra reference
+        to_discard.j_table.dropReference()
+
+        self.assertTrue(must_keep.j_table.tryRetainReference())
+        # drop extra reference
+        must_keep.j_table.dropReference()
+
+        # Reopen the scope and add to it again
+        with l_scope.open(False):
+            to_discard_2 = self.create_table()
+            df = to_pandas(to_discard_2)
+
+        self.assertTrue(to_discard.j_table.tryRetainReference())
+        # drop extra reference
+        to_discard.j_table.dropReference()
+
+        self.assertTrue(to_discard_2.j_table.tryRetainReference())
+        # drop extra reference
+        to_discard_2.j_table.dropReference()
+
+        self.assertTrue(must_keep.j_table.tryRetainReference())
+        # drop extra reference
+        must_keep.j_table.dropReference()
+
+        l_scope.release()
+
+        self.assertFalse(to_discard.j_table.tryRetainReference())
+        self.assertFalse(to_discard_2.j_table.tryRetainReference())
+
+        self.assertTrue(must_keep.j_table.tryRetainReference())
+        # drop extra reference
+        must_keep.j_table.dropReference()
 
 
 if __name__ == '__main__':
