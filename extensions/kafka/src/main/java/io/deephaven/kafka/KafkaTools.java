@@ -1663,7 +1663,7 @@ public class KafkaTools {
         }
 
         @Override
-        public long consume(long receiveTime, @NotNull final List<? extends ConsumerRecord<?, ?>> consumerRecords) {
+        public long consume(final long receiveTime, @NotNull final List<? extends ConsumerRecord<?, ?>> consumerRecords) {
             try {
                 return adapter.consumeRecords(receiveTime, consumerRecords);
             } catch (Exception e) {
