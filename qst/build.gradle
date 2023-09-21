@@ -9,8 +9,6 @@ dependencies {
     api project(':table-api')
     implementation project(':engine-query-constants')
 
-    compileOnly depAnnotations
-
     Classpaths.inheritImmutables(project)
 
     Classpaths.inheritJUnitPlatform(project)
