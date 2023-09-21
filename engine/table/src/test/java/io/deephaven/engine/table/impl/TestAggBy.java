@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
@@ -28,6 +29,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.vector.CharVector;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.IntVector;
+import junit.framework.TestCase;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -38,6 +40,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -801,6 +804,8 @@ public class TestAggBy extends RefreshingTableTestCase {
 
     @Test
     public void testAggAllByWithFormatColumn() {
+        String doubleColName = "Doubles";
+        String intColName = "Integers";
         QueryTable dataTable = TstUtils.testRefreshingTable(
                 doubleCol("Doubles", 3.1, 5.45, 4.2),
                 intCol("Integers", 1, 2, 3));
@@ -813,7 +818,14 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(2.0, cs.get(0));
 
         result = dataTable.formatColumns("Doubles=Decimal(`##0.00%`)").headBy(1);
-        assertEquals(3, result.numColumns()); // Additional column for formatting information of "Doubles"
+        Set<String> columnNames = result.getColumnSourceMap().keySet();
+        assertEquals(3, columnNames.size()); // Additional column for formatting information of "Doubles"
+        for (String colName : columnNames) {
+            if (!colName.equalsIgnoreCase(doubleColName) && !colName.equalsIgnoreCase(intColName) &&
+                    !ColumnFormatting.isFormattingColumn(colName)) {
+                TestCase.fail("Result table should have two original columns and one formatting column");
+            }
+        }
         assertEquals(1, result.size());
         cs = result.getColumnSource("Doubles");
         assertEquals(3.1, cs.get(0));
