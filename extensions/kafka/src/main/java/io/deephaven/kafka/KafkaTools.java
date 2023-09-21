@@ -122,11 +122,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.function.IntPredicate;
-import java.util.function.IntToLongFunction;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 import static io.deephaven.kafka.ingest.KafkaStreamPublisher.NULL_COLUMN_INDEX;
 
@@ -138,6 +134,12 @@ public class KafkaTools {
     public static final String OFFSET_COLUMN_NAME_DEFAULT = "KafkaOffset";
     public static final String TIMESTAMP_COLUMN_NAME_PROPERTY = "deephaven.timestamp.column.name";
     public static final String TIMESTAMP_COLUMN_NAME_DEFAULT = "KafkaTimestamp";
+    public static final String RECEIVE_TIME_COLUMN_NAME_PROPERTY = "deephaven.receivetime.column.name";
+    public static final String RECEIVE_TIME_COLUMN_NAME_DEFAULT = null;
+    public static final String KEY_BYTES_COLUMN_NAME_PROPERTY = "deephaven.keybytes.column.name";
+    public static final String KEY_BYTES_COLUMN_NAME_DEFAULT = null;
+    public static final String VALUE_BYTES_COLUMN_NAME_PROPERTY = "deephaven.valuebytes.column.name";
+    public static final String VALUE_BYTES_COLUMN_NAME_DEFAULT = null;
     public static final String KEY_COLUMN_NAME_PROPERTY = "deephaven.key.column.name";
     public static final String KEY_COLUMN_NAME_DEFAULT = "KafkaKey";
     public static final String VALUE_COLUMN_NAME_PROPERTY = "deephaven.value.column.name";
@@ -1195,19 +1197,7 @@ public class KafkaTools {
                         return;
                     }
                     columnDefinitions.add(commonColumnDefinition);
-                    switch (cc) {
-                        case KafkaPartition:
-                            publisherParametersBuilder.setKafkaPartitionColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        case Offset:
-                            publisherParametersBuilder.setOffsetColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        case Timestamp:
-                            publisherParametersBuilder.setTimestampColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        default:
-                            throw new UnsupportedOperationException("Unexpected common column " + cc);
-                    }
+                    cc.setColumnIndex.setColumnIndex(publisherParametersBuilder, nextColumnIndex.getAndIncrement());
                 });
 
         final KeyOrValueIngestData keyIngestData = keySpec.getIngestData(KeyOrValue.KEY,
@@ -1519,44 +1509,74 @@ public class KafkaTools {
         public Object extra;
     }
 
+    private interface SetColumnIndex {
+        void setColumnIndex(KafkaStreamPublisher.Parameters.Builder builder, int columnIndex);
+    }
+
     private enum CommonColumn {
         // @formatter:off
         KafkaPartition(
                 KAFKA_PARTITION_COLUMN_NAME_PROPERTY,
                 KAFKA_PARTITION_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofInt),
+                ColumnDefinition::ofInt,
+                KafkaStreamPublisher.Parameters.Builder::setKafkaPartitionColumnIndex),
         Offset(
                 OFFSET_COLUMN_NAME_PROPERTY,
                 OFFSET_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofLong),
+                ColumnDefinition::ofLong,
+                KafkaStreamPublisher.Parameters.Builder::setOffsetColumnIndex),
         Timestamp(
                 TIMESTAMP_COLUMN_NAME_PROPERTY,
                 TIMESTAMP_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofTime);
+                ColumnDefinition::ofTime,
+                KafkaStreamPublisher.Parameters.Builder::setTimestampColumnIndex),
+
+        ReceiveTime(
+                RECEIVE_TIME_COLUMN_NAME_PROPERTY,
+                RECEIVE_TIME_COLUMN_NAME_DEFAULT,
+                ColumnDefinition::ofTime,
+                KafkaStreamPublisher.Parameters.Builder::setReceiveTimeColumnIndex),
+
+        KeyBytes(
+                KEY_BYTES_COLUMN_NAME_PROPERTY,
+                KEY_BYTES_COLUMN_NAME_DEFAULT,
+                ColumnDefinition::ofInt,
+                KafkaStreamPublisher.Parameters.Builder::setKeyBytesColumnIndex),
+
+        ValueBytes(
+                VALUE_BYTES_COLUMN_NAME_PROPERTY,
+                VALUE_BYTES_COLUMN_NAME_DEFAULT,
+                ColumnDefinition::ofInt,
+                KafkaStreamPublisher.Parameters.Builder::setValueBytesColumnIndex);
         // @formatter:on
 
         private final String nameProperty;
         private final String nameDefault;
         private final Function<String, ColumnDefinition<?>> definitionFactory;
+        private final SetColumnIndex setColumnIndex;
 
         CommonColumn(@NotNull final String nameProperty,
-                @NotNull final String nameDefault,
-                @NotNull final Function<String, ColumnDefinition<?>> definitionFactory) {
+                @Nullable final String nameDefault,
+                @NotNull final Function<String, ColumnDefinition<?>> definitionFactory,
+                @NotNull final SetColumnIndex setColumnIndex) {
             this.nameProperty = nameProperty;
             this.nameDefault = nameDefault;
             this.definitionFactory = definitionFactory;
+            this.setColumnIndex = setColumnIndex;
         }
 
         private ColumnDefinition<?> getDefinition(@NotNull final Properties consumerProperties) {
             final ColumnDefinition<?> result;
             if (consumerProperties.containsKey(nameProperty)) {
-                final String partitionColumnName = consumerProperties.getProperty(nameProperty);
-                if (partitionColumnName == null || partitionColumnName.equals("")) {
+                final String commonColumnName = consumerProperties.getProperty(nameProperty);
+                if (commonColumnName == null || commonColumnName.equals("")) {
                     result = null;
                 } else {
-                    result = definitionFactory.apply(partitionColumnName);
+                    result = definitionFactory.apply(commonColumnName);
                 }
                 consumerProperties.remove(nameProperty);
+            } else if (nameDefault == null) {
+                result = null;
             } else {
                 result = definitionFactory.apply(nameDefault);
             }
@@ -1631,9 +1651,10 @@ public class KafkaTools {
         }
 
         @Override
-        public long consume(@NotNull final List<? extends ConsumerRecord<?, ?>> consumerRecords) {
+        public long consume(final long receiveTime,
+                @NotNull final List<? extends ConsumerRecord<?, ?>> consumerRecords) {
             try {
-                return adapter.consumeRecords(consumerRecords);
+                return adapter.consumeRecords(receiveTime, consumerRecords);
             } catch (Exception e) {
                 acceptFailure(e);
                 return 0;
