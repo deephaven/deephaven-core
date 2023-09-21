@@ -1557,12 +1557,12 @@ public class KafkaTools {
         KeyBytes(
                 KEY_BYTES_COLUMN_NAME_PROPERTY,
                 KEY_BYTES_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofLong),
+                ColumnDefinition::ofInt),
 
         ValueBytes(
                 VALUE_BYTES_COLUMN_NAME_PROPERTY,
                 VALUE_BYTES_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofLong);
+                ColumnDefinition::ofInt);
         // @formatter:on
 
         private final String nameProperty;
