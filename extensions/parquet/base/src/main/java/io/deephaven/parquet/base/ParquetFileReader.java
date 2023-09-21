@@ -236,8 +236,17 @@ public class ParquetFileReader {
             }
 
             if (schemaElement.isSetLogicalType()) {
-                ((Types.Builder) childBuilder)
-                        .as(getLogicalTypeAnnotation(schemaElement.logicalType));
+                LogicalType logicalType = schemaElement.logicalType;
+                if (logicalType.isSetTIMESTAMP()) {
+                    TimestampType timestamp = logicalType.getTIMESTAMP();
+                    if (!timestamp.isAdjustedToUTC) {
+                        // TODO(deephaven-core#976): Unable to read non UTC adjusted timestamps
+                        throw new ParquetFileReaderException(String.format(
+                                "Only UTC timestamp is supported, found time column `%s` with isAdjustedToUTC=false",
+                                schemaElement.getName()));
+                    }
+                }
+                ((Types.Builder) childBuilder).as(getLogicalTypeAnnotation(logicalType));
             }
 
             if (schemaElement.isSetConverted_type()) {
@@ -365,12 +374,16 @@ public class ParquetFileReader {
             case DATE:
                 return LogicalTypeAnnotation.dateType();
             case TIME_MILLIS:
+                // TODO(deephaven-core#976) Assuming that time is adjusted to UTC
                 return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIME_MICROS:
+                // TODO(deephaven-core#976) Assuming that time is adjusted to UTC
                 return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case TIMESTAMP_MILLIS:
+                // TODO(deephaven-core#976) Assuming that time is adjusted to UTC
                 return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIMESTAMP_MICROS:
+                // TODO(deephaven-core#976) Assuming that time is adjusted to UTC
                 return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case INTERVAL:
                 return LogicalTypeAnnotation.IntervalLogicalTypeAnnotation.getInstance();

@@ -574,7 +574,7 @@ def delta(cols: Union[str, List[str]], delta_control: DeltaControl = DeltaContro
     Args:
 
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by performs the cumulative sum operation on all the applicable
+            i.e. "new_col = col"; when empty, update_by performs the delta operation on all the applicable
             columns.
         delta_control (DeltaControl): defines how special cases should behave; when None, the default DeltaControl
             settings of VALUE_DOMINATES will be used
