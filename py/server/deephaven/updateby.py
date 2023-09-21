@@ -150,7 +150,7 @@ def ema_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str
         a = e^(-dt / decay_time)
         ema_next = a * ema_last + (1 - a) * value
 
-     Args:
+    Args:
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -219,7 +219,7 @@ def ems_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str
         a = e^(-dt / decay_time)
         ems_next = a * ems_last + value
 
-     Args:
+    Args:
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -288,7 +288,7 @@ def emmin_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
         a = e^(-dt / decay_time)
         emmin_next = min(a * emmin_last, value)
 
-     Args:
+    Args:
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -357,7 +357,7 @@ def emmax_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
         a = e^(-dt / decay_time)
         emmax_next = max(a * emmax_last, value)
 
-     Args:
+    Args:
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -429,7 +429,7 @@ def emstd_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
         em_variance_next = a * (em_variance_last + (1 − a) * (value − ema_last)^2)
         emstd_next = sqrt(em_variance_next)
 
-     Args:
+    Args:
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
