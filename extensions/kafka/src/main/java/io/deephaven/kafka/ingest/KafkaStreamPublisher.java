@@ -225,7 +225,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                     : null;
 
             WritableIntChunk<Values> valueBytesChunk = valueBytesColumnIndex >= 0
-                    ? chunks[keyBytesColumnIndex].asWritableIntChunk()
+                    ? chunks[valueBytesColumnIndex].asWritableIntChunk()
                     : null;
 
             for (ConsumerRecord<?, ?> record : records) {
