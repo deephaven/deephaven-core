@@ -17,17 +17,29 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-final class CapturingUpdateGraph implements UpdateGraph {
+/**
+ * An {@link UpdateGraph} implementation that wraps and delegates to an underlying source.  It captures all
+ * update sources so they can be refreshed manually
+ */
+public class CapturingUpdateGraph implements UpdateGraph {
 
-    final ControlledUpdateGraph delegate;
+    private final ControlledUpdateGraph delegate;
 
-    final ExecutionContext context;
+    private final ExecutionContext context;
 
     private final List<Runnable> sources = new ArrayList<>();
 
-    CapturingUpdateGraph(@NotNull final ControlledUpdateGraph delegate) {
+    public CapturingUpdateGraph(@NotNull final ControlledUpdateGraph delegate) {
         this.delegate = delegate;
         context = ExecutionContext.getContext().withUpdateGraph(this);
+    }
+
+    public ControlledUpdateGraph getDelegate() {
+        return delegate;
+    }
+
+    public ExecutionContext getContext() {
+        return context;
     }
 
     @Override

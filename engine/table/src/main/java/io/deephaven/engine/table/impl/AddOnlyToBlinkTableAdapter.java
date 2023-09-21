@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -15,7 +15,7 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
+import java.util.List;
 
 import static io.deephaven.engine.table.Table.BLINK_TABLE_ATTRIBUTE;
 
@@ -49,7 +49,7 @@ public final class AddOnlyToBlinkTableAdapter {
         }
 
         final MutableObject<QueryTable> resultHolder = new MutableObject<>();
-        final MutableObject<AppendToBlinkListener> listenerHolder = new MutableObject<>();
+        final MutableObject<AddOnlyToBlinkListener> listenerHolder = new MutableObject<>();
         final BaseTable<?> coalesced = (BaseTable<?>) table.coalesce();
         final SwapListener swapListener = coalesced.createSwapListenerIfRefreshing(SwapListener::new);
 
@@ -66,7 +66,7 @@ public final class AddOnlyToBlinkTableAdapter {
 
                     final ListenerRecorder recorder =
                             new ListenerRecorder("AddOnlyToBlinkListenerRecorder", table, null);
-                    final AppendToBlinkListener listener = new AppendToBlinkListener(recorder, result);
+                    final AddOnlyToBlinkListener listener = new AddOnlyToBlinkListener(recorder, result);
                     recorder.setMergedListener(listener);
                     result.addParentReference(listener);
                     swapListener.setListenerAndResult(recorder, result);
@@ -79,11 +79,11 @@ public final class AddOnlyToBlinkTableAdapter {
         return resultHolder.getValue();
     }
 
-    private static final class AppendToBlinkListener extends MergedListener implements Runnable {
+    private static final class AddOnlyToBlinkListener extends MergedListener implements Runnable {
 
         private final ListenerRecorder sourceRecorder;
 
-        private AppendToBlinkListener(
+        private AddOnlyToBlinkListener(
                 @NotNull final ListenerRecorder sourceRecorder,
                 @NotNull final QueryTable result) {
             super(List.of(sourceRecorder), List.of(), "AddOnlyToBlinkListener", result);
@@ -92,12 +92,6 @@ public final class AddOnlyToBlinkTableAdapter {
 
         @Override
         protected void process() {
-            if (sourceRecorder.recordedVariablesAreValid()) {
-                Assert.eqTrue(sourceRecorder.getModified().isEmpty() &&
-                        sourceRecorder.getRemoved().isEmpty() &&
-                        sourceRecorder.getShifted().empty(), "source update is append only");
-            }
-
             final TableUpdate downstream = new TableUpdateImpl(
                     sourceRecorder.recordedVariablesAreValid()
                             ? sourceRecorder.getAdded().copy()
