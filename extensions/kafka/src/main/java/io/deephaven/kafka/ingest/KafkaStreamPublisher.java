@@ -302,23 +302,23 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                 if (receiveTimeChunk != null) {
                     receiveTimeChunk.add(receiveTime);
                 }
+                final int keyBytes = record.serializedKeySize();
                 if (keyBytesChunk != null) {
-                    keyBytesChunk.add(record.serializedKeySize());
+                    keyBytesChunk.add(keyBytes >= 0 ? keyBytes : QueryConstants.NULL_INT);
                 }
+                final int valueBytes = record.serializedValueSize();
                 if (valueBytesChunk != null) {
-                    valueBytesChunk.add(record.serializedValueSize());
+                    valueBytesChunk.add(valueBytes >= 0 ? valueBytes : QueryConstants.NULL_INT);
                 }
 
                 if (keyChunk != null) {
                     keyChunk.add(keyToChunkObjectMapper.apply(record.key()));
-                    final int keyBytes = record.serializedKeySize();
                     if (keyBytes > 0) {
                         bytesProcessed += keyBytes;
                     }
                 }
                 if (valueChunk != null) {
                     valueChunk.add(valueToChunkObjectMapper.apply(record.value()));
-                    final int valueBytes = record.serializedValueSize();
                     if (valueBytes > 0) {
                         bytesProcessed += valueBytes;
                     }
