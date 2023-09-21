@@ -1211,6 +1211,15 @@ public class KafkaTools {
                         case Timestamp:
                             publisherParametersBuilder.setTimestampColumnIndex(nextColumnIndex.getAndIncrement());
                             break;
+                        case ReceiveTime:
+                            publisherParametersBuilder.setReceiveTimeColumnIndex(nextColumnIndex.getAndIncrement());
+                            break;
+                        case KeyBytes:
+                            publisherParametersBuilder.setKeyBytesColumnIndex(nextColumnIndex.getAndIncrement());
+                            break;
+                        case ValueBytes:
+                            publisherParametersBuilder.setValueBytesColumnIndex(nextColumnIndex.getAndIncrement());
+                            break;
                         default:
                             throw new UnsupportedOperationException("Unexpected common column " + cc);
                     }
