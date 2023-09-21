@@ -3,6 +3,7 @@ package io.deephaven.client;
 import com.google.auto.service.AutoService;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.deephaven.client.impl.CustomObject;
+import io.deephaven.client.impl.ScopeId;
 import io.deephaven.client.impl.ServerData;
 import io.deephaven.client.impl.ClientData;
 import io.deephaven.client.impl.HasTypedTicket;
@@ -21,6 +22,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.figure.FigureWidgetTypePlugin;
 import io.deephaven.plot.Figure;
 import io.deephaven.plot.FigureFactory;
+import io.deephaven.plugin.type.EchoObjectType;
 import io.deephaven.plugin.type.Exporter;
 import io.deephaven.plugin.type.ObjectCommunicationException;
 import io.deephaven.plugin.type.ObjectType;
@@ -70,30 +72,6 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
         }
     }
 
-    @AutoService(ObjectType.class)
-    public static class EchoObjectType extends ObjectTypeBase {
-        public static final String NAME = EchoObjectType.class.getSimpleName();
-        public static final Object INSTANCE = new Object();
-
-        @Override
-        public String name() {
-            return NAME;
-        }
-
-        @Override
-        public boolean isType(Object object) {
-            return object == INSTANCE;
-        }
-
-        @Override
-        public MessageStream compatibleClientConnection(Object object, MessageStream connection)
-                throws ObjectCommunicationException {
-            // The contract right now means we need to return a message right away.
-            connection.onData(ByteBuffer.allocate(0));
-            return connection;
-        }
-    }
-
     private static MyObjects myObjects() {
         return new MyObjects(TableTools.emptyTable(1).view("I=ii"), simpleXYTable());
     }
@@ -120,8 +98,7 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
             InvalidProtocolBufferException, TableHandleException {
         final ScriptSession scriptSession = testComponent().scriptSessionProvider().get();
         scriptSession.setVariable("my_objects", myObjects());
-        final TypedTicket tt =
-                new TypedTicket(MyObjectsObjectType.NAME, "s/my_objects".getBytes(StandardCharsets.UTF_8));
+        final TypedTicket tt = new TypedTicket(MyObjectsObjectType.NAME, new ScopeId("my_objects"));
         try (
                 final Fetchable fetchable = session.fetchable(tt).get(5, TimeUnit.SECONDS);
                 final ServerData dataAndExports = fetchable.fetch().get(5, TimeUnit.SECONDS)) {
@@ -134,8 +111,7 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
             InvalidProtocolBufferException, TableHandleException {
         final ScriptSession scriptSession = testComponent().scriptSessionProvider().get();
         scriptSession.setVariable("my_objects", myObjects());
-        final TypedTicket tt =
-                new TypedTicket(MyObjectsObjectType.NAME, "s/my_objects".getBytes(StandardCharsets.UTF_8));
+        final TypedTicket tt = new TypedTicket(MyObjectsObjectType.NAME, new ScopeId("my_objects"));
         try (final ServerData dataAndExports = session.fetch(tt).get(5, TimeUnit.SECONDS)) {
             checkMyObject(dataAndExports);
         }
@@ -146,9 +122,8 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
         final ScriptSession scriptSession = testComponent().scriptSessionProvider().get();
         scriptSession.setVariable("my_echo", EchoObjectType.INSTANCE);
         scriptSession.setVariable("my_objects", myObjects());
-        final TypedTicket echo = new TypedTicket(EchoObjectType.NAME, "s/my_echo".getBytes(StandardCharsets.UTF_8));
-        final TypedTicket myObjects =
-                new TypedTicket(MyObjectsObjectType.NAME, "s/my_objects".getBytes(StandardCharsets.UTF_8));
+        final TypedTicket echo = new TypedTicket(EchoObjectType.NAME, new ScopeId("my_echo"));
+        final TypedTicket myObjects = new TypedTicket(MyObjectsObjectType.NAME, new ScopeId("my_objects"));
         try (
                 final Bidirectional echoRef = session.bidirectional(echo).get(5, TimeUnit.SECONDS);
                 final ServerObject myObjectsRef = session.export(myObjects).get(5, TimeUnit.SECONDS)) {
@@ -163,9 +138,8 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
         final ScriptSession scriptSession = testComponent().scriptSessionProvider().get();
         scriptSession.setVariable("my_echo", EchoObjectType.INSTANCE);
         scriptSession.setVariable("my_objects", myObjects());
-        final TypedTicket echo = new TypedTicket(EchoObjectType.NAME, "s/my_echo".getBytes(StandardCharsets.UTF_8));
-        final TypedTicket myObjects =
-                new TypedTicket(MyObjectsObjectType.NAME, "s/my_objects".getBytes(StandardCharsets.UTF_8));
+        final TypedTicket echo = new TypedTicket(EchoObjectType.NAME, new ScopeId("my_echo"));
+        final TypedTicket myObjects = new TypedTicket(MyObjectsObjectType.NAME, new ScopeId("my_objects"));
         final EchoHandler echoHandler = new EchoHandler();
         final MessageStream<ClientData> toServer = session.connect(echo, echoHandler);
         checkEcho(echoHandler, toServer, myObjects, 10);

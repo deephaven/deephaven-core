@@ -8,6 +8,7 @@ import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.HasTicketId;
 import io.deephaven.client.impl.ServerObject;
 import io.deephaven.client.impl.TableObject;
+import io.deephaven.client.impl.TypedTicket;
 import org.apache.arrow.flight.FlightStream;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
@@ -46,7 +47,7 @@ class ConvertToTable extends FlightExampleBase {
     }
 
     private TableObject fetchTableExport(FlightSession flight) throws InterruptedException, ExecutionException {
-        final ServerData fetchedObject = flight.session().fetch(ticket.ticketId().toTypedTicket(type)).get();
+        final ServerData fetchedObject = flight.session().fetch(new TypedTicket(type, ticket)).get();
         if (fetchedObject.exports().size() != 1) {
             throw new IllegalStateException("Expected fetched object to have exactly one export");
         }

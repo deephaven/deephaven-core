@@ -4,24 +4,26 @@
 package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteStringAccess;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.TicketTable;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+
+;
 
 /**
  * An opaque holder that represents a generic flight ticket.
  */
 public final class TicketId implements HasTicketId {
 
+    static TicketId from(io.deephaven.proto.backplane.grpc.Ticket ticket) {
+        return new TicketId(ticket.getTicket().toByteArray());
+    }
+
     private final byte[] ticket;
 
     public TicketId(byte[] ticket) {
         this.ticket = Objects.requireNonNull(ticket);
-    }
-
-    TicketId(Ticket ticket) {
-        this(ticket.getTicket().toByteArray());
     }
 
     @Override
@@ -30,7 +32,7 @@ public final class TicketId implements HasTicketId {
     }
 
     public TypedTicket toTypedTicket(String type) {
-        return new TypedTicket(type, ticket);
+        return new TypedTicket(type, this);
     }
 
     public TicketTable table() {
@@ -41,7 +43,12 @@ public final class TicketId implements HasTicketId {
         return ticket;
     }
 
-    Ticket proto() {
-        return Ticket.newBuilder().setTicket(ByteStringAccess.wrap(ticket)).build();
+    io.deephaven.proto.backplane.grpc.Ticket proto() {
+        return io.deephaven.proto.backplane.grpc.Ticket.newBuilder().setTicket(ByteStringAccess.wrap(ticket)).build();
+    }
+
+    @Override
+    public String toString() {
+        return new String(ticket, StandardCharsets.UTF_8);
     }
 }

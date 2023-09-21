@@ -35,7 +35,7 @@ public final class ClientData {
 
     Data proto() {
         return Data.newBuilder()
-                .setPayload(ByteString.copyFrom(data()))
+                .setPayload(ByteString.copyFrom(data().slice()))
                 .addAllExportedReferences(() -> tickets()
                         .stream()
                         .map(HasTypedTicket::typedTicket)

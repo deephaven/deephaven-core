@@ -32,7 +32,7 @@ public final class ServerData implements Closeable {
             List<io.deephaven.proto.backplane.grpc.TypedTicket> exportTickets) {
         return exportTickets
                 .stream()
-                .map(TypedTicket::of)
+                .map(TypedTicket::from)
                 .map(TypedTicket::toExportId)
                 .map(exportId -> exportId.toServerObject(session))
                 .collect(Collectors.toList());

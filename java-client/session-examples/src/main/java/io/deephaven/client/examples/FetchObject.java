@@ -7,6 +7,7 @@ import io.deephaven.client.impl.ServerData;
 import io.deephaven.client.impl.ServerObject;
 import io.deephaven.client.impl.ObjectService.Fetchable;
 import io.deephaven.client.impl.Session;
+import io.deephaven.client.impl.TypedTicket;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -36,7 +37,7 @@ class FetchObject extends SingleSessionExampleBase {
     @Override
     protected void execute(Session session) throws Exception {
         try (
-                final Fetchable fetchable = session.fetchable(ticket.ticketId().toTypedTicket(type)).get();
+                final Fetchable fetchable = session.fetchable(new TypedTicket(type, ticket)).get();
                 final ServerData dataAndExports = fetchable.fetch().get()) {
             show(0, type, dataAndExports);
         }

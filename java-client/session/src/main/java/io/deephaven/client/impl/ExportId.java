@@ -39,7 +39,7 @@ public final class ExportId implements HasExportId {
 
     @Override
     public TypedTicket typedTicket() {
-        return new TypedTicket(type, ticket());
+        return new TypedTicket(type, this);
     }
 
     @Override

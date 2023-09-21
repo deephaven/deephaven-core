@@ -4,13 +4,10 @@
 package io.deephaven.client.impl;
 
 
-import com.google.protobuf.ByteStringAccess;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket.Builder;
 import io.deephaven.proto.util.ExportTicketHelper;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -19,20 +16,25 @@ import java.util.Optional;
  */
 public final class TypedTicket implements HasTypedTicket {
 
-    static TypedTicket of(io.deephaven.proto.backplane.grpc.TypedTicket proto) {
+    static TypedTicket from(io.deephaven.proto.backplane.grpc.TypedTicket proto) {
         final String type = proto.getType();
-        return new TypedTicket(type.isEmpty() ? null : type, proto.getTicket().getTicket().toByteArray());
+        final TicketId ticket = TicketId.from(proto.getTicket());
+        return new TypedTicket(type.isEmpty() ? null : type, ticket);
     }
 
     private final String type;
-    private final byte[] ticket;
+    private final TicketId ticket;
 
-    public TypedTicket(String type, byte[] ticket) {
+    public TypedTicket(String type, TicketId ticket) {
         if (type != null && type.isEmpty()) {
             throw new IllegalArgumentException("Must use null instead of empty string to represent no type");
         }
         this.type = type;
         this.ticket = Objects.requireNonNull(ticket);
+    }
+
+    public TypedTicket(String type, HasTicketId ticket) {
+        this(type, ticket.ticketId());
     }
 
     public Optional<String> type() {
@@ -46,22 +48,22 @@ public final class TypedTicket implements HasTypedTicket {
 
     @Override
     public TicketId ticketId() {
-        return new TicketId(ticket);
+        return ticket;
     }
 
     @Override
     public String toString() {
-        return (type == null ? "?:" : type + ":") + new String(ticket, StandardCharsets.UTF_8);
+        return (type == null ? "?:" : type + ":") + ticket;
     }
 
     ExportId toExportId() {
-        final int exportId = ExportTicketHelper.ticketToExportId(ByteBuffer.wrap(ticket), "exportId");
+        final int exportId = ExportTicketHelper.ticketToExportId(ByteBuffer.wrap(ticket.bytes()), "exportId");
         return new ExportId(type, exportId);
     }
 
     io.deephaven.proto.backplane.grpc.TypedTicket proto() {
         final Builder builder = io.deephaven.proto.backplane.grpc.TypedTicket.newBuilder()
-                .setTicket(Ticket.newBuilder().setTicket(ByteStringAccess.wrap(ticket)));
+                .setTicket(ticket.proto());
         if (type != null) {
             builder.setType(type);
         }
