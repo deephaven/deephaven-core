@@ -4,6 +4,7 @@
 package io.deephaven.kafka.ingest;
 
 import gnu.trove.map.hash.TIntObjectHashMap;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.hash.KeyedIntObjectHashMap;
@@ -11,7 +12,6 @@ import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.KafkaTools.ConsumerLoopCallback;
 import io.deephaven.kafka.KafkaTools.InitialOffsetLookup;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -355,7 +355,7 @@ public class KafkaIngester {
         try {
             ++pollCalls;
             records = kafkaConsumer.poll(timeout);
-            receiveTime = DateTimeUtils.currentClock().currentTimeNanos();
+            receiveTime = Clock.system().currentTimeNanos();
         } catch (WakeupException we) {
             // we interpret a wakeup as a signal to stop /this/ poll.
             return true;
