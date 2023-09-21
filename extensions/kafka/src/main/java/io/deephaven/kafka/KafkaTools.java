@@ -138,8 +138,8 @@ public class KafkaTools {
     public static final String OFFSET_COLUMN_NAME_DEFAULT = "KafkaOffset";
     public static final String TIMESTAMP_COLUMN_NAME_PROPERTY = "deephaven.timestamp.column.name";
     public static final String TIMESTAMP_COLUMN_NAME_DEFAULT = "KafkaTimestamp";
-    public static final String RECEIVETIME_COLUMN_NAME_PROPERTY = "deephaven.receivetime.column.name";
-    public static final String RECEIVETIME_COLUMN_NAME_DEFAULT = null;
+    public static final String RECEIVE_TIME_COLUMN_NAME_PROPERTY = "deephaven.receivetime.column.name";
+    public static final String RECEIVE_TIME_COLUMN_NAME_DEFAULT = null;
     public static final String KEY_BYTES_COLUMN_NAME_PROPERTY = "deephaven.keybytes.column.name";
     public static final String KEY_BYTES_COLUMN_NAME_DEFAULT = null;
     public static final String VALUE_BYTES_COLUMN_NAME_PROPERTY = "deephaven.valuebytes.column.name";
@@ -1550,8 +1550,8 @@ public class KafkaTools {
                 ColumnDefinition::ofTime),
 
         ReceiveTime(
-                RECEIVETIME_COLUMN_NAME_PROPERTY,
-                RECEIVETIME_COLUMN_NAME_DEFAULT,
+                RECEIVE_TIME_COLUMN_NAME_PROPERTY,
+                RECEIVE_TIME_COLUMN_NAME_DEFAULT,
                 ColumnDefinition::ofTime),
 
         KeyBytes(
@@ -1580,11 +1580,11 @@ public class KafkaTools {
         private ColumnDefinition<?> getDefinition(@NotNull final Properties consumerProperties) {
             final ColumnDefinition<?> result;
             if (consumerProperties.containsKey(nameProperty)) {
-                final String partitionColumnName = consumerProperties.getProperty(nameProperty);
-                if (partitionColumnName == null || partitionColumnName.equals("")) {
+                final String commonColumnName = consumerProperties.getProperty(nameProperty);
+                if (commonColumnName == null || commonColumnName.equals("")) {
                     result = null;
                 } else {
-                    result = definitionFactory.apply(partitionColumnName);
+                    result = definitionFactory.apply(commonColumnName);
                 }
                 consumerProperties.remove(nameProperty);
             } else if (nameDefault == null) {
@@ -1663,7 +1663,8 @@ public class KafkaTools {
         }
 
         @Override
-        public long consume(final long receiveTime, @NotNull final List<? extends ConsumerRecord<?, ?>> consumerRecords) {
+        public long consume(final long receiveTime,
+                @NotNull final List<? extends ConsumerRecord<?, ?>> consumerRecords) {
             try {
                 return adapter.consumeRecords(receiveTime, consumerRecords);
             } catch (Exception e) {
