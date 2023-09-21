@@ -10,9 +10,10 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.SafeCloseable;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.intCol;
@@ -22,21 +23,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestAddOnlyToBlinkTableAdapter {
 
+    @Rule
     public final EngineCleanup base = new EngineCleanup();
+
     private CapturingUpdateGraph updateGraph;
     private SafeCloseable contextCloseable;
 
-    @BeforeEach
+    @Before
     public void setup() throws Exception {
-        base.setUp();
         updateGraph = new CapturingUpdateGraph(ExecutionContext.getContext().getUpdateGraph().cast());
         contextCloseable = updateGraph.context.open();
     }
 
-    @AfterEach
+    @After
     public void tearDown() throws Exception {
         contextCloseable.close();
-        base.tearDown();
     }
 
     @Test

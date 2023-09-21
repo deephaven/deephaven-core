@@ -20,15 +20,17 @@ import java.util.Collections;
 import static io.deephaven.engine.table.Table.BLINK_TABLE_ATTRIBUTE;
 
 /**
- * This class provides a single method to adapt an {@link Table#ADD_ONLY_TABLE_ATTRIBUTE add only} table into a blink
- * table.
+ * This class provides a single method to adapt an {@link Table#ADD_ONLY_TABLE_ATTRIBUTE add-only} or
+ * {@link Table#APPEND_ONLY_TABLE_ATTRIBUTE append-only} table to a {@link Table#BLINK_TABLE_ATTRIBUTE blink} table.
  */
 public final class AddOnlyToBlinkTableAdapter {
+
     /**
-     * Convert an {@link Table#ADD_ONLY_TABLE_ATTRIBUTE add only} table to a blink table. The callee must guarantee that
-     * the passed in table is {@link Table#isRefreshing() refreshing} and add only.
+     * Convert an {@link Table#ADD_ONLY_TABLE_ATTRIBUTE add-only} or {@link Table#APPEND_ONLY_TABLE_ATTRIBUTE
+     * append-only} table to a {@link Table#BLINK_TABLE_ATTRIBUTE blink} table. The callee must guarantee that the
+     * passed in table is {@link Table#isRefreshing() refreshing} and only delivers additions in its updates.
      *
-     * @param table An add only table
+     * @param table An add-only or append-only table
      * @return A blink table based on the input table
      */
     public static Table toBlink(@NotNull final Table table) {
@@ -37,11 +39,13 @@ public final class AddOnlyToBlinkTableAdapter {
         }
 
         if (BlinkTableTools.isBlink(table)) {
+            LivenessScopeStack.peek().manage(table);
             return table;
         }
 
-        if (!Boolean.TRUE.equals(table.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE))) {
-            throw new IllegalArgumentException("Argument table is not Add Only");
+        if (!Boolean.TRUE.equals(table.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE))
+                && !Boolean.TRUE.equals(table.getAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE))) {
+            throw new IllegalArgumentException("Argument table is neither add-only nor append-only");
         }
 
         final MutableObject<QueryTable> resultHolder = new MutableObject<>();
@@ -49,6 +53,7 @@ public final class AddOnlyToBlinkTableAdapter {
         final BaseTable<?> coalesced = (BaseTable<?>) table.coalesce();
         final SwapListener swapListener = coalesced.createSwapListenerIfRefreshing(SwapListener::new);
 
+        //noinspection DataFlowIssue swapListener cannot be null here, since we know the table is refreshing
         ConstructSnapshot.callDataSnapshotFunction("addOnlyToBlink", swapListener.makeSnapshotControl(),
                 (final boolean usePrev, final long beforeClockValue) -> {
                     // Start with the same rows as the original table
@@ -60,7 +65,7 @@ public final class AddOnlyToBlinkTableAdapter {
                     result.setAttribute(BLINK_TABLE_ATTRIBUTE, true);
 
                     final ListenerRecorder recorder =
-                            new ListenerRecorder("AppendToBlinkListenerRecorder", table, result);
+                            new ListenerRecorder("AddOnlyToBlinkListenerRecorder", table, null);
                     final AppendToBlinkListener listener = new AppendToBlinkListener(recorder, result);
                     recorder.setMergedListener(listener);
                     result.addParentReference(listener);
@@ -75,12 +80,14 @@ public final class AddOnlyToBlinkTableAdapter {
     }
 
     private static final class AppendToBlinkListener extends MergedListener implements Runnable {
+
         private final ListenerRecorder sourceRecorder;
 
-        private AppendToBlinkListener(@NotNull final ListenerRecorder recorder,
+        private AppendToBlinkListener(
+                @NotNull final ListenerRecorder sourceRecorder,
                 @NotNull final QueryTable result) {
-            super(Collections.singleton(recorder), Collections.emptyList(), "AppendToBlinkListener", result);
-            this.sourceRecorder = recorder;
+            super(List.of(sourceRecorder), List.of(), "AddOnlyToBlinkListener", result);
+            this.sourceRecorder = sourceRecorder;
         }
 
         @Override
