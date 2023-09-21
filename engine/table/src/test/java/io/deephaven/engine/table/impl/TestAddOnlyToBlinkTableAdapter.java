@@ -32,7 +32,7 @@ public class TestAddOnlyToBlinkTableAdapter {
     @Before
     public void setup() throws Exception {
         updateGraph = new CapturingUpdateGraph(ExecutionContext.getContext().getUpdateGraph().cast());
-        contextCloseable = updateGraph.context.open();
+        contextCloseable = updateGraph.getContext().open();
     }
 
     @After

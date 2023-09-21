@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * An {@link UpdateGraph} implementation that wraps and delegates to an underlying source.  It captures all
- * update sources so they can be refreshed manually
+ * An {@link UpdateGraph} implementation that wraps and delegates to an underlying source. It captures all update
+ * sources so they can be refreshed manually
  */
 public class CapturingUpdateGraph implements UpdateGraph {
 

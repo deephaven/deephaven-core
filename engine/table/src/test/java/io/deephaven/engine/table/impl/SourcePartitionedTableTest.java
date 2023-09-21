@@ -38,7 +38,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         setExpectError(false);
 
         updateGraph = new CapturingUpdateGraph(ExecutionContext.getContext().getUpdateGraph().cast());
-        contextCloseable = updateGraph.context.open();
+        contextCloseable = updateGraph.getContext().open();
     }
 
     @Override
@@ -111,7 +111,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         tlp.removeTableLocationKey(tlks[0]);
         tlp.refresh();
 
-        allowingError(() -> updateGraph.delegate.runWithinUnitTestCycle(() -> {
+        allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
             registrar.run();
         }), errors -> errors.size() == 1 &&
@@ -126,7 +126,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
 
         tlp.addPending(p3);
         tlp.refresh();
-        updateGraph.delegate.runWithinUnitTestCycle(() -> {
+        updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
             registrar.run();
         });
@@ -142,7 +142,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         tlp.removeTableLocationKey(tlks[0]);
         tlp.refresh();
 
-        allowingError(() -> updateGraph.delegate.runWithinUnitTestCycle(() -> {
+        allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
             registrar.run();
         }), errors -> errors.size() == 1 &&
@@ -160,7 +160,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         // The TableBackedTableLocation has a copy() of the p3 table which is itself a leaf. Erroring P3 will
         // cause one error to come from the copied table, and one from the merged() table. We just need to validate
         // that the exceptions we see are a ConstituentTableException and an ISE
-        allowingError(() -> updateGraph.delegate.runWithinUnitTestCycle(
+        allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(
                 () -> p3.notifyListenersOnError(new IllegalStateException("This is a test error"), null)),
                 errors -> errors.size() == 1 &&
                         FindExceptionCause.isOrCausedBy(errors.get(0), IllegalStateException.class).isPresent());

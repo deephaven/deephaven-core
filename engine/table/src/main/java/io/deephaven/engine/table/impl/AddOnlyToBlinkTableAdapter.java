@@ -53,7 +53,7 @@ public final class AddOnlyToBlinkTableAdapter {
         final BaseTable<?> coalesced = (BaseTable<?>) table.coalesce();
         final SwapListener swapListener = coalesced.createSwapListenerIfRefreshing(SwapListener::new);
 
-        //noinspection DataFlowIssue swapListener cannot be null here, since we know the table is refreshing
+        // noinspection DataFlowIssue swapListener cannot be null here, since we know the table is refreshing
         ConstructSnapshot.callDataSnapshotFunction("addOnlyToBlink", swapListener.makeSnapshotControl(),
                 (final boolean usePrev, final long beforeClockValue) -> {
                     // Start with the same rows as the original table
