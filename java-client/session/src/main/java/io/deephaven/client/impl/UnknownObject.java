@@ -7,10 +7,11 @@ import io.deephaven.client.impl.ObjectService.Bidirectional;
 import io.deephaven.client.impl.ObjectService.Fetchable;
 
 /**
- * A server object that is <b>not</b> {@link Fetchable} nor {@link Bidirectional}; the server does not have a
- * registration for the underlying object.
+ * A server object that is <b>neither</b> {@link Fetchable} nor {@link Bidirectional}; the server does not have an
+ * object type plugin registered for the referenced object. See the server side class
+ * {@code io.deephaven.plugin.type.ObjectType} for more details.
  */
-public final class UnknownObject extends ServerObjectBase implements ServerObject {
+public final class UnknownObject extends ServerObjectBase {
 
     UnknownObject(Session session, ExportId exportId) {
         super(session, exportId);

@@ -19,12 +19,12 @@ public interface ObjectService {
         String type();
 
         /**
-         * Fetches {@code this}. The resulting object is managed separately than {@code this}.
+         * Fetches {@code this}. The resulting object is managed separately from {@code this}.
          *
          * @return the future
          * @see Session#fetch(HasTypedTicket) for the lower-level interface
          */
-        CompletableFuture<DataAndExports> fetch();
+        CompletableFuture<ServerData> fetch();
     }
 
     /**
@@ -39,8 +39,8 @@ public interface ObjectService {
         String type();
 
         /**
-         * Opens a bidirectional message stream for {@code this}. The returned {@link DataAndExports} messages are
-         * managed separately than {@code this}.
+         * Initiates a connection for a bidirectional message stream for {@code this}. The returned {@link ServerData}
+         * messages are managed separately from {@code this}.
          *
          * <p>
          * This provides a generic stream feature for Deephaven instances to use to add arbitrary functionality. This
@@ -54,15 +54,15 @@ public interface ObjectService {
          * small (and possibly not required, but convenient) departure from a offering a gRPC stream (a server-streaming
          * or bidi-streaming call need not send a message right away).
          *
-         * @param stream the stream where the client will receive messages
+         * @param receiveStream the stream where the client will receive messages
          * @return the stream where the client will send messages
-         * @see Session#messageStream(HasTypedTicket, MessageStream) for the lower-level interface
+         * @see Session#connect(HasTypedTicket, MessageStream) for the lower-level interface
          */
-        MessageStream<DataAndTypedTickets> messageStream(MessageStream<DataAndExports> stream);
+        MessageStream<ClientData> connect(MessageStream<ServerData> receiveStream);
     }
 
     /**
-     * The sending and receiving interface for {@link #messageStream(HasTypedTicket, MessageStream)}.
+     * The sending and receiving interface for {@link #connect(HasTypedTicket, MessageStream)}.
      *
      * @param <Message> the message type
      */
@@ -96,11 +96,11 @@ public interface ObjectService {
      * @param typedTicket the typed ticket
      * @return the future
      */
-    CompletableFuture<DataAndExports> fetch(HasTypedTicket typedTicket);
+    CompletableFuture<ServerData> fetch(HasTypedTicket typedTicket);
 
     /**
-     * The low-level interface for creating a bidirection message stream. See {@link #bidirectional(HasTypedTicket)} for
-     * a higher-level interface.
+     * The low-level interface for initiating a connection for a bidirectional message stream for {@code typedTicket}.
+     * See {@link #bidirectional(HasTypedTicket)} for a higher-level interface.
      *
      * <p>
      * Opens a bidirectional message stream for a {@code typedTicket}. References sent to the server are generic
@@ -121,8 +121,8 @@ public interface ObjectService {
      * bidi-streaming call need not send a message right away).
      *
      * @param typedTicket the typed ticket
-     * @param stream the stream where the client will receive messages
+     * @param receiveStream the stream where the client will receive messages
      * @return the stream where the client will send messages
      */
-    MessageStream<DataAndTypedTickets> messageStream(HasTypedTicket typedTicket, MessageStream<DataAndExports> stream);
+    MessageStream<ClientData> connect(HasTypedTicket typedTicket, MessageStream<ServerData> receiveStream);
 }

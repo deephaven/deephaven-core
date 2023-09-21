@@ -10,7 +10,7 @@ import io.deephaven.qst.table.TicketTable;
 /**
  * A {@value TYPE} object.
  */
-public final class TableObject extends ServerObjectBase implements ServerObject {
+public final class TableObject extends ServerObjectBase {
 
     public static final String TYPE = "Table";
 

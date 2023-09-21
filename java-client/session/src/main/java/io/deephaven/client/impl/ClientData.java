@@ -13,14 +13,14 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Data and typed tickets to be sent from the client to the server as part of a
- * {@link Bidirectional#messageStream(MessageStream) bidirection message stream}.
+ * Data sent from the client to the server as part of a {@link Bidirectional#connect(MessageStream) bidirection message
+ * stream}.
  */
-public final class DataAndTypedTickets {
+public final class ClientData {
     private final ByteBuffer data;
     private final List<? extends HasTypedTicket> tickets;
 
-    public DataAndTypedTickets(ByteBuffer data, List<? extends HasTypedTicket> tickets) {
+    public ClientData(ByteBuffer data, List<? extends HasTypedTicket> tickets) {
         this.data = Objects.requireNonNull(data);
         this.tickets = Objects.requireNonNull(tickets);
     }

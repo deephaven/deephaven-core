@@ -5,9 +5,11 @@ package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.ObjectService.Bidirectional;
 import io.deephaven.client.impl.ObjectService.Fetchable;
+import io.deephaven.client.impl.ObjectService.MessageStream;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A custom server object that may be {@link Fetchable} or {@link Bidirectional}. The client is responsible for
@@ -18,7 +20,7 @@ import java.util.Set;
  * @see <a href="https://github.com/deephaven/deephaven-core/issues/4488">deephaven-core#4488</a>
  */
 public final class CustomObject extends ServerObjectBase
-        implements ServerObject, Fetchable, Bidirectional {
+        implements Fetchable, Bidirectional {
 
     private static final Set<String> KNOWN_TYPES = Collections.singleton(TableObject.TYPE);
 
@@ -37,5 +39,15 @@ public final class CustomObject extends ServerObjectBase
     @Override
     public String type() {
         return exportId().type().orElseThrow(IllegalStateException::new);
+    }
+
+    @Override
+    public CompletableFuture<ServerData> fetch() {
+        return session.fetch(this);
+    }
+
+    @Override
+    public MessageStream<ClientData> connect(MessageStream<ServerData> receiveStream) {
+        return session.connect(this, receiveStream);
     }
 }

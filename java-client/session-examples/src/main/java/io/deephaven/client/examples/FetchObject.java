@@ -3,7 +3,7 @@
  */
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.DataAndExports;
+import io.deephaven.client.impl.ServerData;
 import io.deephaven.client.impl.ServerObject;
 import io.deephaven.client.impl.ObjectService.Fetchable;
 import io.deephaven.client.impl.Session;
@@ -37,12 +37,12 @@ class FetchObject extends SingleSessionExampleBase {
     protected void execute(Session session) throws Exception {
         try (
                 final Fetchable fetchable = session.fetchable(ticket.ticketId().toTypedTicket(type)).get();
-                final DataAndExports dataAndExports = fetchable.fetch().get()) {
+                final ServerData dataAndExports = fetchable.fetch().get()) {
             show(0, type, dataAndExports);
         }
     }
 
-    private void show(int depth, String type, DataAndExports dataAndExports)
+    private void show(int depth, String type, ServerData dataAndExports)
             throws IOException, ExecutionException, InterruptedException {
         final String prefix = " ".repeat(depth);
         System.err.println(prefix + "type: " + type);
@@ -68,7 +68,7 @@ class FetchObject extends SingleSessionExampleBase {
             throws IOException, ExecutionException, InterruptedException {
         if (obj instanceof Fetchable) {
             final Fetchable fetchable = (Fetchable) obj;
-            try (final DataAndExports fetched = fetchable.fetch().get()) {
+            try (final ServerData fetched = fetchable.fetch().get()) {
                 show(depth, fetchable.type(), fetched);
             }
         } else {

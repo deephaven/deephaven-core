@@ -169,7 +169,7 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    public CompletableFuture<DataAndExports> fetch(HasTypedTicket typedTicket) {
+    public CompletableFuture<ServerData> fetch(HasTypedTicket typedTicket) {
         final TypedTicket tt = typedTicket.typedTicket();
         if (!tt.type().isPresent()) {
             throw new IllegalArgumentException("Type must be present to fetch an object");
@@ -188,11 +188,11 @@ public final class SessionImpl extends SessionBase {
         observer.onCompleted();
     }
 
-    private DataAndExports toDataAndExports(StreamResponse value) {
+    private ServerData toDataAndExports(StreamResponse value) {
         // noinspection SwitchStatementWithTooFewBranches
         switch (value.getMessageCase()) {
             case DATA:
-                return DataAndExports.of(this, value.getData());
+                return ServerData.of(this, value.getData());
             default:
                 throw new IllegalStateException(
                         String.format("Unexpected stream response message type, %s", value.getMessageCase()));
@@ -200,8 +200,8 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    public MessageStream<DataAndTypedTickets> messageStream(HasTypedTicket typedTicket,
-            MessageStream<DataAndExports> stream) {
+    public MessageStream<ClientData> connect(HasTypedTicket typedTicket,
+            MessageStream<ServerData> receiveStream) {
         final TypedTicket tt = typedTicket.typedTicket();
         if (!tt.type().isPresent()) {
             throw new IllegalArgumentException("Type must be present to open messageStream with an object");
@@ -212,7 +212,7 @@ public final class SessionImpl extends SessionBase {
                         .build())
                 .build();
         final StreamObserver<StreamRequest> serverObserver =
-                channel().object().messageStream(new MessageStreamObserver(stream));
+                channel().object().messageStream(new MessageStreamObserver(receiveStream));
         serverObserver.onNext(connectRequest);
         return new MessageStreamImpl(serverObserver);
     }
@@ -505,9 +505,9 @@ public final class SessionImpl extends SessionBase {
     }
 
     private class MessageStreamObserver implements StreamObserver<StreamResponse> {
-        private final MessageStream<DataAndExports> clientStream;
+        private final MessageStream<ServerData> clientStream;
 
-        public MessageStreamObserver(MessageStream<DataAndExports> clientStream) {
+        public MessageStreamObserver(MessageStream<ServerData> clientStream) {
             this.clientStream = Objects.requireNonNull(clientStream);
         }
 
@@ -527,7 +527,7 @@ public final class SessionImpl extends SessionBase {
         }
     }
 
-    private static class MessageStreamImpl implements MessageStream<DataAndTypedTickets> {
+    private static class MessageStreamImpl implements MessageStream<ClientData> {
         private final StreamObserver<StreamRequest> serverObserver;
 
         public MessageStreamImpl(StreamObserver<StreamRequest> serverObserver) {
@@ -535,7 +535,7 @@ public final class SessionImpl extends SessionBase {
         }
 
         @Override
-        public void onData(DataAndTypedTickets message) {
+        public void onData(ClientData message) {
             serverObserver.onNext(StreamRequest.newBuilder().setData(message.proto()).build());
         }
 

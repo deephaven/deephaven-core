@@ -3,8 +3,6 @@
  */
 package io.deephaven.client.impl;
 
-import io.deephaven.client.impl.ObjectService.MessageStream;
-
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -23,14 +21,6 @@ abstract class ServerObjectBase implements ServerObject {
     ServerObjectBase(Session session, ExportId exportId) {
         this.session = Objects.requireNonNull(session);
         this.exportId = Objects.requireNonNull(exportId);
-    }
-
-    public CompletableFuture<DataAndExports> fetch() {
-        return session.fetch(this);
-    }
-
-    public MessageStream<DataAndTypedTickets> messageStream(MessageStream<DataAndExports> stream) {
-        return session.messageStream(this, stream);
     }
 
     @Override

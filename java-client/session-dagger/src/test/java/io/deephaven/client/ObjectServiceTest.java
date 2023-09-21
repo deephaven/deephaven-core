@@ -3,8 +3,8 @@ package io.deephaven.client;
 import com.google.auto.service.AutoService;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.deephaven.client.impl.CustomObject;
-import io.deephaven.client.impl.DataAndExports;
-import io.deephaven.client.impl.DataAndTypedTickets;
+import io.deephaven.client.impl.ServerData;
+import io.deephaven.client.impl.ClientData;
 import io.deephaven.client.impl.HasTypedTicket;
 import io.deephaven.client.impl.ObjectService.MessageStream;
 import io.deephaven.client.impl.ServerObject;
@@ -124,7 +124,7 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
                 new TypedTicket(MyObjectsObjectType.NAME, "s/my_objects".getBytes(StandardCharsets.UTF_8));
         try (
                 final Fetchable fetchable = session.fetchable(tt).get(5, TimeUnit.SECONDS);
-                final DataAndExports dataAndExports = fetchable.fetch().get(5, TimeUnit.SECONDS)) {
+                final ServerData dataAndExports = fetchable.fetch().get(5, TimeUnit.SECONDS)) {
             checkMyObject(dataAndExports);
         }
     }
@@ -136,7 +136,7 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
         scriptSession.setVariable("my_objects", myObjects());
         final TypedTicket tt =
                 new TypedTicket(MyObjectsObjectType.NAME, "s/my_objects".getBytes(StandardCharsets.UTF_8));
-        try (final DataAndExports dataAndExports = session.fetch(tt).get(5, TimeUnit.SECONDS)) {
+        try (final ServerData dataAndExports = session.fetch(tt).get(5, TimeUnit.SECONDS)) {
             checkMyObject(dataAndExports);
         }
     }
@@ -153,7 +153,7 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
                 final Bidirectional echoRef = session.bidirectional(echo).get(5, TimeUnit.SECONDS);
                 final ServerObject myObjectsRef = session.export(myObjects).get(5, TimeUnit.SECONDS)) {
             final EchoHandler echoHandler = new EchoHandler();
-            final MessageStream<DataAndTypedTickets> toServer = echoRef.messageStream(echoHandler);
+            final MessageStream<ClientData> toServer = echoRef.connect(echoHandler);
             checkEcho(echoHandler, toServer, myObjectsRef, 10);
         }
     }
@@ -167,11 +167,11 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
         final TypedTicket myObjects =
                 new TypedTicket(MyObjectsObjectType.NAME, "s/my_objects".getBytes(StandardCharsets.UTF_8));
         final EchoHandler echoHandler = new EchoHandler();
-        final MessageStream<DataAndTypedTickets> toServer = session.messageStream(echo, echoHandler);
+        final MessageStream<ClientData> toServer = session.connect(echo, echoHandler);
         checkEcho(echoHandler, toServer, myObjects, 10);
     }
 
-    private static void checkEcho(EchoHandler handler, MessageStream<DataAndTypedTickets> toServer, HasTypedTicket tt,
+    private static void checkEcho(EchoHandler handler, MessageStream<ClientData> toServer, HasTypedTicket tt,
             int times) throws InterruptedException {
         // Ensure we get a message back right away.
         check(handler.queue.poll(5, TimeUnit.SECONDS), 0);
@@ -180,7 +180,7 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
         for (int i = 1; i < times; ++i) {
             final List<? extends HasTypedTicket> refs =
                     Stream.generate(() -> tt).limit(i).collect(Collectors.toList());
-            toServer.onData(new DataAndTypedTickets(ByteBuffer.allocate(i), refs));
+            toServer.onData(new ClientData(ByteBuffer.allocate(i), refs));
         }
 
         // Then check we got the correct messages back
@@ -192,12 +192,12 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
         assertThat(handler.onClose.await(5, TimeUnit.SECONDS)).isTrue();
     }
 
-    private static class EchoHandler implements MessageStream<DataAndExports> {
-        final BlockingQueue<DataAndExports> queue = new ArrayBlockingQueue<>(32);
+    private static class EchoHandler implements MessageStream<ServerData> {
+        final BlockingQueue<ServerData> queue = new ArrayBlockingQueue<>(32);
         final CountDownLatch onClose = new CountDownLatch(1);
 
         @Override
-        public void onData(DataAndExports dataAndExports) {
+        public void onData(ServerData dataAndExports) {
             queue.add(dataAndExports);
         }
 
@@ -207,7 +207,7 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
         }
     }
 
-    private static void checkMyObject(DataAndExports myObjects) throws TableHandleException, InterruptedException,
+    private static void checkMyObject(ServerData myObjects) throws TableHandleException, InterruptedException,
             InvalidProtocolBufferException, ExecutionException, TimeoutException {
         final TableHandle handle2;
         final TableHandle handle1;
@@ -223,16 +223,16 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
 
         assertThat(customObject.type()).isEqualTo(FigureWidgetTypePlugin.NAME);
         handle1 = tableObject.executeTable();
-        try (final DataAndExports figureObject = customObject.fetch().get(5, TimeUnit.SECONDS)) {
+        try (final ServerData figureObject = customObject.fetch().get(5, TimeUnit.SECONDS)) {
             handle2 = handleFromFigure(figureObject);
         }
         handle2.close();
         handle1.close();
     }
 
-    private static void check(DataAndExports data, int index) {
+    private static void check(ServerData data, int index) {
         assertThat(data).isNotNull();
-        try (final DataAndExports _close = data) {
+        try (final ServerData _close = data) {
             assertThat(data.data().remaining()).isEqualTo(index);
             assertThat(data.exports().size()).isEqualTo(index);
             for (ServerObject ref : data.exports()) {
@@ -242,7 +242,7 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
         }
     }
 
-    private static TableHandle handleFromFigure(DataAndExports figureData)
+    private static TableHandle handleFromFigure(ServerData figureData)
             throws InvalidProtocolBufferException, TableHandleException, InterruptedException {
         assertThat(figureData.exports()).hasSize(1);
         assertThat(figureData.exports().get(0)).isInstanceOf(TableObject.class);

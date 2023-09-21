@@ -4,11 +4,10 @@
 package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteString;
-import io.deephaven.client.impl.ObjectService.MessageStream;
 import io.deephaven.client.impl.ObjectService.Bidirectional;
 import io.deephaven.client.impl.ObjectService.Fetchable;
+import io.deephaven.client.impl.ObjectService.MessageStream;
 import io.deephaven.proto.backplane.grpc.Data;
-import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
@@ -19,18 +18,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
- * Data and exports are sent from the server to the client as part of a {@link Fetchable#fetch() fetch} or
- * {@link Bidirectional#messageStream(MessageStream) bidirectional message stream}. The client is responsible for
- * managing the {@link #exports()}.
+ * Data sent from the server to the client as part of a {@link Fetchable#fetch() fetch} or
+ * {@link Bidirectional#connect(MessageStream) bidirectional message stream}. The client is responsible for
+ * {@link ServerObject#close() closing} the {@link #exports()} when no longer needed.
  */
-public final class DataAndExports implements Closeable {
+public final class ServerData implements Closeable {
 
-    static DataAndExports of(Session session, Data data) {
-        return new DataAndExports(data.getPayload(), toServerObjects(session, data.getExportedReferencesList()));
-    }
-
-    static DataAndExports of(Session session, FetchObjectResponse fetch) {
-        return new DataAndExports(fetch.getData(), toServerObjects(session, fetch.getTypedExportIdsList()));
+    static ServerData of(Session session, Data data) {
+        return new ServerData(data.getPayload(), toServerObjects(session, data.getExportedReferencesList()));
     }
 
     private static List<ServerObject> toServerObjects(Session session,
@@ -52,7 +47,7 @@ public final class DataAndExports implements Closeable {
      * @param data the bytes
      * @param exports the exports
      */
-    DataAndExports(ByteString data, List<ServerObject> exports) {
+    private ServerData(ByteString data, List<ServerObject> exports) {
         this.data = Objects.requireNonNull(data);
         this.exports = Collections.unmodifiableList(exports);
     }
