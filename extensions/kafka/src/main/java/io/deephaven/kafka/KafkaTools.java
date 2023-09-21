@@ -122,11 +122,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.function.IntPredicate;
-import java.util.function.IntToLongFunction;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 import static io.deephaven.kafka.ingest.KafkaStreamPublisher.NULL_COLUMN_INDEX;
 
@@ -1201,28 +1197,7 @@ public class KafkaTools {
                         return;
                     }
                     columnDefinitions.add(commonColumnDefinition);
-                    switch (cc) {
-                        case KafkaPartition:
-                            publisherParametersBuilder.setKafkaPartitionColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        case Offset:
-                            publisherParametersBuilder.setOffsetColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        case Timestamp:
-                            publisherParametersBuilder.setTimestampColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        case ReceiveTime:
-                            publisherParametersBuilder.setReceiveTimeColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        case KeyBytes:
-                            publisherParametersBuilder.setKeyBytesColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        case ValueBytes:
-                            publisherParametersBuilder.setValueBytesColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        default:
-                            throw new UnsupportedOperationException("Unexpected common column " + cc);
-                    }
+                    cc.setColumnIndex.setColumnIndex(publisherParametersBuilder, nextColumnIndex.getAndIncrement());
                 });
 
         final KeyOrValueIngestData keyIngestData = keySpec.getIngestData(KeyOrValue.KEY,
@@ -1534,47 +1509,60 @@ public class KafkaTools {
         public Object extra;
     }
 
+    private interface SetColumnIndex {
+        void setColumnIndex(KafkaStreamPublisher.Parameters.Builder builder, int columnIndex);
+    }
+
     private enum CommonColumn {
         // @formatter:off
         KafkaPartition(
                 KAFKA_PARTITION_COLUMN_NAME_PROPERTY,
                 KAFKA_PARTITION_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofInt),
+                ColumnDefinition::ofInt,
+                KafkaStreamPublisher.Parameters.Builder::setKafkaPartitionColumnIndex),
         Offset(
                 OFFSET_COLUMN_NAME_PROPERTY,
                 OFFSET_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofLong),
+                ColumnDefinition::ofLong,
+                KafkaStreamPublisher.Parameters.Builder::setOffsetColumnIndex),
         Timestamp(
                 TIMESTAMP_COLUMN_NAME_PROPERTY,
                 TIMESTAMP_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofTime),
+                ColumnDefinition::ofTime,
+                KafkaStreamPublisher.Parameters.Builder::setTimestampColumnIndex),
 
         ReceiveTime(
                 RECEIVE_TIME_COLUMN_NAME_PROPERTY,
                 RECEIVE_TIME_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofTime),
+                ColumnDefinition::ofTime,
+                KafkaStreamPublisher.Parameters.Builder::setReceiveTimeColumnIndex),
 
         KeyBytes(
                 KEY_BYTES_COLUMN_NAME_PROPERTY,
                 KEY_BYTES_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofInt),
+                ColumnDefinition::ofInt,
+                KafkaStreamPublisher.Parameters.Builder::setKeyBytesColumnIndex),
 
         ValueBytes(
                 VALUE_BYTES_COLUMN_NAME_PROPERTY,
                 VALUE_BYTES_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofInt);
+                ColumnDefinition::ofInt,
+                KafkaStreamPublisher.Parameters.Builder::setValueBytesColumnIndex);
         // @formatter:on
 
         private final String nameProperty;
         private final String nameDefault;
         private final Function<String, ColumnDefinition<?>> definitionFactory;
+        private final SetColumnIndex setColumnIndex;
 
         CommonColumn(@NotNull final String nameProperty,
                 @Nullable final String nameDefault,
-                @NotNull final Function<String, ColumnDefinition<?>> definitionFactory) {
+                @NotNull final Function<String, ColumnDefinition<?>> definitionFactory,
+                @NotNull final SetColumnIndex setColumnIndex) {
             this.nameProperty = nameProperty;
             this.nameDefault = nameDefault;
             this.definitionFactory = definitionFactory;
+            this.setColumnIndex = setColumnIndex;
         }
 
         private ColumnDefinition<?> getDefinition(@NotNull final Properties consumerProperties) {
