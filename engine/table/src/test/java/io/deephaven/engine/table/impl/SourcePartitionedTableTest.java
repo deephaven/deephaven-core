@@ -213,6 +213,11 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
             updateGraph.refreshSources();
             registrar.run();
         });
+
+        assertEquals(1, partitionTable.size());
+        try (final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+            assertTableEquals(tableIt.next(), p2);
+        }
     }
 
     /**
