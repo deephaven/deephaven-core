@@ -313,19 +313,19 @@ public class KafkaTools {
          */
         public static abstract class KeyOrValueSpec implements SchemaProviderProvider {
 
-            public abstract Deserializer<?> getDeserializer(
+            protected abstract Deserializer<?> getDeserializer(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs);
 
-            public abstract KeyOrValueIngestData getIngestData(
+            protected abstract KeyOrValueIngestData getIngestData(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs,
                     MutableInt nextColumnIndexMut,
                     List<ColumnDefinition<?>> columnDefinitionsOut);
 
-            public abstract KeyOrValueProcessor getProcessor(
+            protected abstract KeyOrValueProcessor getProcessor(
                     TableDefinition tableDef,
                     KeyOrValueIngestData data);
         }
