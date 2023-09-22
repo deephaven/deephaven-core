@@ -772,11 +772,11 @@ test_that("udb_emstd_time behaves as expected", {
     }
     time_diffs = as.numeric(ts[2:length(ts)] - ts[1:length(ts)-1])
     a = exp(-time_diffs/as.numeric(duration(decay_time)))
-    ema = c(x[1])
+    current_ema = x[1]
     emvar = c(0)
     for(i in seq(2,length(x))) {
-      ema[i] = a[i-1]*ema[i-1] + (1-a[i-1])*x[i]
-      emvar[i] = a[i-1]*(emvar[i-1] + (1-a[i-1])*((x[i] - ema[i-1])^2))
+      emvar[i] = a[i-1]*(emvar[i-1] + (1-a[i-1])*((x[i] - current_ema)^2))
+      current_ema = a[i-1]*current_ema + (1-a[i-1])*x[i]
     }
     emvar[1] = NA
     return(sqrt(emvar))
