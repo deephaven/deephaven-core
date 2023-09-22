@@ -65,14 +65,14 @@ class JsonImpl {
 
         @Override
         public Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
-                                               Map<String, ?> configs) {
+                Map<String, ?> configs) {
             return new StringDeserializer();
         }
 
         @Override
         public KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
-                                                  SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
-                                                  List<ColumnDefinition<?>> columnDefinitionsOut) {
+                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                List<ColumnDefinition<?>> columnDefinitionsOut) {
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.toObjectChunkMapper = jsonToObjectChunkMapper(objectMapper);
             columnDefinitionsOut.addAll(Arrays.asList(columnDefinitions));

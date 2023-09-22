@@ -111,13 +111,13 @@ class ProtobufImpl {
 
         @Override
         public Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
-                                               Map<String, ?> configs) {
+                Map<String, ?> configs) {
             return new KafkaProtobufDeserializer<>(Objects.requireNonNull(schemaRegistryClient));
         }
 
         @Override
         public KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
-                                                  Map<String, ?> configs, MutableInt nextColumnIndexMut, List<ColumnDefinition<?>> columnDefinitionsOut) {
+                Map<String, ?> configs, MutableInt nextColumnIndexMut, List<ColumnDefinition<?>> columnDefinitionsOut) {
             final Descriptor descriptor;
             try {
                 descriptor = getDescriptor(schemaRegistryClient);

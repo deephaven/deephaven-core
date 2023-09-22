@@ -56,14 +56,14 @@ class RawImpl {
 
         @Override
         public Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
-                                               Map<String, ?> configs) {
+                Map<String, ?> configs) {
             return supplier.get();
         }
 
         @Override
         public KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
-                                                  SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
-                                                  List<ColumnDefinition<?>> columnDefinitionsOut) {
+                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                List<ColumnDefinition<?>> columnDefinitionsOut) {
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.simpleColumnIndex = nextColumnIndexMut.getAndIncrement();
             columnDefinitionsOut.add(cd);
