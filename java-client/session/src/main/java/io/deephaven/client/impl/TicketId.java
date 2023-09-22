@@ -9,8 +9,6 @@ import io.deephaven.qst.table.TicketTable;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-;
-
 /**
  * An opaque holder that represents a generic flight ticket.
  */
