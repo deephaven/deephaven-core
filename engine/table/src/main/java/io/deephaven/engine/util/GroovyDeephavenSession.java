@@ -45,6 +45,7 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
 import org.codehaus.groovy.ast.ClassNode;
+import org.codehaus.groovy.ast.ModuleNode;
 import org.codehaus.groovy.classgen.GeneratorContext;
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.codehaus.groovy.control.CompilationUnit;
@@ -54,6 +55,7 @@ import org.codehaus.groovy.control.Phases;
 import org.codehaus.groovy.control.SourceUnit;
 import org.codehaus.groovy.control.customizers.CompilationCustomizer;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
+import org.codehaus.groovy.control.io.StringReaderSource;
 import org.codehaus.groovy.tools.GroovyClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -134,11 +136,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         public void call(SourceUnit source) throws CompilationFailedException {
             source.getAST().setPackageName(PACKAGE);
         }
-
-//        @Override
-//        public void call(SourceUnit source, GeneratorContext context, ClassNode classNode) throws CompilationFailedException {
-//            ;
-//        }
     };
 
 
@@ -186,8 +183,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 ZoneId.class.getName(),
                 ZonedDateTime.class.getName(),
                 QueryScopeParam.class.getName(),
-                QueryScope.class.getName()
+                QueryScope.class.getName(),
                 // classes
+                ExecutionContext.class.getName()
         );
         imports.addStaticImport(CompressedString.class.getName(), "compress");
         imports.addStarImports(
@@ -590,7 +588,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private Pair<String, String> fullCommand(String command) {
         // TODO (core#230): Remove large list of manual text-based imports
         // NOTE: Don't add to this list without a compelling reason!!! Use the user script import if possible.
-        final String commandPrefix = //"package " + PACKAGE + ";\n" +
+        final String commandPrefix = "package " + PACKAGE + ";\n" +
 
 
 
@@ -660,7 +658,15 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         config.getCompilationCustomizers().add(imports);
         final CompilationUnit cu = new CompilationUnit(config, null, groovyShell.getClassLoader());
         cu.addSource(name, currentCommand);
-        cu.addPhaseOperation(specifyPackage, Phases.CONVERSION);
+//        cu.addSource(new SourceUnit(name, currentCommand, cu.getConfiguration(), cu.getClassLoader(), cu.getErrorCollector()) {
+//            @Override
+//            public ModuleNode buildAST() {
+//                ModuleNode moduleNode = super.buildAST();
+//                moduleNode.setPackageName(PACKAGE);
+//                return moduleNode;
+//            }
+//        });
+//        cu.addPhaseOperation(specifyPackage, Phases.PARSING);
         try {
             cu.compile(Phases.CLASS_GENERATION);
         } catch (RuntimeException e) {
