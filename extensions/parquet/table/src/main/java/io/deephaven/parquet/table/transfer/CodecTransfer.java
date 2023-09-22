@@ -8,15 +8,12 @@ import io.deephaven.util.codec.ObjectCodec;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
-class CodecTransfer<T> extends EncodedTransfer<T> {
+final class CodecTransfer<T> extends EncodedTransfer<T> {
     private final ObjectCodec<? super T> codec;
 
-    public CodecTransfer(
-            @NotNull final ColumnSource<?> columnSource,
-            @NotNull final ObjectCodec<? super T> codec,
-            final int maxValuesPerPage,
+    CodecTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final ObjectCodec<? super T> codec,
             final int targetPageSize) {
-        super(columnSource, maxValuesPerPage, targetPageSize);
+        super(columnSource, targetPageSize);
         this.codec = codec;
     }
 

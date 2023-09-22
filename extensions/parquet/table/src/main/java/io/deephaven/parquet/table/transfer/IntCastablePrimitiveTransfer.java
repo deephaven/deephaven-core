@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table.transfer;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkBase;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -20,23 +21,17 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
     protected T chunk;
     protected final IntBuffer buffer;
     private final ColumnSource<?> columnSource;
+    private final RowSequence.Iterator tableRowSetIt;
     private final ChunkSource.GetContext context;
+    private final int maxValuesPerPage;
 
-    IntCastablePrimitiveTransfer(ColumnSource<?> columnSource, int targetSize) {
+    IntCastablePrimitiveTransfer(@NotNull final  ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
         this.columnSource = columnSource;
-        this.buffer = IntBuffer.allocate(targetSize);
-        context = columnSource.makeGetContext(targetSize);
-    }
-
-    @Override
-    final public void fetchData(@NotNull final RowSequence rs) {
-        // noinspection unchecked
-        chunk = (T) columnSource.getChunk(context, rs);
-    }
-
-    @Override
-    final public int transferAllToBuffer() {
-        return transferOnePageToBuffer();
+        this.tableRowSetIt = tableRowSet.getRowSequenceIterator();
+        this.maxValuesPerPage = targetPageSize / Integer.BYTES;
+        Assert.gtZero(maxValuesPerPage, "maxValuesPerPage");
+        this.buffer = IntBuffer.allocate(maxValuesPerPage);
+        context = columnSource.makeGetContext(maxValuesPerPage);
     }
 
     @Override
@@ -45,8 +40,10 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
             return 0;
         }
         buffer.clear();
-        // Assuming that all the fetched data will fit in one page. This is because page count is accurately
-        // calculated for non variable-width types. Check ParquetTableWriter.getTargetRowsPerPage for more details.
+        // Fetch one page worth of data from the column source
+        final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength((long) maxValuesPerPage);
+        // noinspection unchecked
+        chunk = (T) columnSource.getChunk(context, rs);
         copyAllFromChunkToBuffer();
         buffer.flip();
         int ret = chunk.size();
@@ -62,7 +59,7 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
 
     @Override
     final public boolean hasMoreDataToBuffer() {
-        return (chunk != null);
+        return tableRowSetIt.hasMore();
     }
 
     @Override
@@ -73,5 +70,6 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
     @Override
     final public void close() {
         context.close();
+        tableRowSetIt.close();
     }
 }

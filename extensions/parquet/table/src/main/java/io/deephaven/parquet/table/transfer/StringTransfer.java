@@ -7,12 +7,9 @@ import io.deephaven.engine.table.ColumnSource;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
-class StringTransfer extends EncodedTransfer<String> {
-    public StringTransfer(
-            @NotNull final ColumnSource<?> columnSource,
-            final int maxValuesPerPage,
-            final int targetPageSize) {
-        super(columnSource, maxValuesPerPage, targetPageSize);
+final class StringTransfer extends EncodedTransfer<String> {
+    StringTransfer(@NotNull final ColumnSource<?> columnSource, final int targetPageSize) {
+        super(columnSource, targetPageSize);
     }
 
     @Override

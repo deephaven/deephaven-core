@@ -12,10 +12,15 @@ import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.parquet.table.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.codec.ObjectCodec;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.IntBuffer;
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -30,31 +35,30 @@ public interface TransferObject<B> extends SafeCloseable {
             @NotNull final RowSet tableRowSet,
             @NotNull final ColumnSource<DATA_TYPE> columnSource,
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
-            final int maxValuesPerPage,
             @NotNull final Class<DATA_TYPE> columnType,
             @NotNull final ParquetInstructions instructions) {
         if (int.class.equals(columnType)) {
-            return IntTransfer.create(columnSource, maxValuesPerPage);
+            return IntTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (long.class.equals(columnType)) {
-            return LongTransfer.create(columnSource, maxValuesPerPage);
+            return LongTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (double.class.equals(columnType)) {
-            return DoubleTransfer.create(columnSource, maxValuesPerPage);
+            return DoubleTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (float.class.equals(columnType)) {
-            return FloatTransfer.create(columnSource, maxValuesPerPage);
+            return FloatTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (Boolean.class.equals(columnType)) {
-            return BooleanTransfer.create(columnSource, maxValuesPerPage);
+            return BooleanTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (short.class.equals(columnType)) {
-            return new ShortTransfer(columnSource, maxValuesPerPage);
+            return new ShortTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (char.class.equals(columnType)) {
-            return new CharTransfer(columnSource, maxValuesPerPage);
+            return new CharTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (byte.class.equals(columnType)) {
-            return new ByteTransfer(columnSource, maxValuesPerPage);
+            return new ByteTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (String.class.equals(columnType)) {
-            return new StringTransfer(columnSource, maxValuesPerPage, instructions.getTargetPageSize());
+            return new StringTransfer(columnSource, instructions.getTargetPageSize());
         }
 
         // If there's an explicit codec, we should disregard the defaults for these CodecLookup#lookup() will properly
-        // select the codec assigned by the instructions so we only need to check and redirect once.
+        // select the codec assigned by the instructions, so we only need to check and redirect once.
         if (!CodecLookup.explicitCodecPresent(instructions.getCodecName(columnDefinition.getName()))) {
             if (BigDecimal.class.equals(columnType)) {
                 // noinspection unchecked
@@ -63,40 +67,75 @@ public interface TransferObject<B> extends SafeCloseable {
                         computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
                 final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
                         precisionAndScale.precision, precisionAndScale.scale, -1);
-                return new CodecTransfer<>(bigDecimalColumnSource, codec, maxValuesPerPage,
-                        instructions.getTargetPageSize());
+                return new CodecTransfer<>(bigDecimalColumnSource, codec, instructions.getTargetPageSize());
             } else if (BigInteger.class.equals(columnType)) {
                 return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1),
-                        maxValuesPerPage, instructions.getTargetPageSize());
+                        instructions.getTargetPageSize());
             }
         }
 
+        @Nullable final Class<?> dataType = columnDefinition.getDataType();
+        @Nullable final Class<?> componentType = columnDefinition.getComponentType();
+        if (dataType.isArray()) {
+            if (int.class.equals(componentType)) {
+                return new IntArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            }
+//            else if (long.class.equals(componentType)) {
+//                return LongArrayTransfer.create(columnSource, instructions.getTargetPageSize());
+//            } else if (double.class.equals(componentType)) {
+//                return DoubleArrayTransfer.create(columnSource, instructions.getTargetPageSize());
+//            } else if (float.class.equals(componentType)) {
+//                return FloatArrayTransfer.create(columnSource, instructions.getTargetPageSize());
+//            } else if (Boolean.class.equals(componentType)) {
+//                return BooleanArrayTransfer.create(columnSource, instructions.getTargetPageSize());
+//            } else if (short.class.equals(componentType)) {
+//                return new ShortArrayTransfer(columnSource, instructions.getTargetPageSize());
+//            } else if (char.class.equals(componentType)) {
+//                return new CharArrayTransfer(columnSource, instructions.getTargetPageSize());
+//            } else if (byte.class.equals(componentType)) {
+//                return new ByteArrayTransfer(columnSource, instructions.getTargetPageSize());
+//            } else if (String.class.equals(componentType)) {
+//                return new StringArrayTransfer(columnSource, instructions.getTargetPageSize());
+//            }
+//            // else if (explicit codec provided)
+//            // else if (big decimal)
+//            // else if (big integer)
+        }
+//        if (Vector.class.isAssignableFrom(dataType)) {
+//            if (int.class.equals(componentType)) {
+//                return IntVectorTransfer.create(columnSource, instructions.getTargetPageSize());
+//            } else if (long.class.equals(componentType)) {
+//                return LongVectorTransfer.create(columnSource, instructions.getTargetPageSize());
+//            } else if (double.class.equals(componentType)) {
+//                return DoubleVectorTransfer.create(columnSource, instructions.getTargetPageSize());
+//            } else if (float.class.equals(componentType)) {
+//                return FloatVectorTransfer.create(columnSource, instructions.getTargetPageSize());
+//            } else if (Boolean.class.equals(componentType)) {
+//                return BooleanVectorTransfer.create(columnSource, instructions.getTargetPageSize());
+//            } else if (short.class.equals(componentType)) {
+//                return new ShortVectorTransfer(columnSource, instructions.getTargetPageSize());
+//            } else if (char.class.equals(componentType)) {
+//                return new CharVectorTransfer(columnSource, instructions.getTargetPageSize());
+//            } else if (byte.class.equals(componentType)) {
+//                return new ByteVectorTransfer(columnSource, instructions.getTargetPageSize());
+//            } else if (String.class.equals(componentType)) {
+//                return new StringVectorTransfer(columnSource, instructions.getTargetPageSize());
+//            }
+//            // else if (explicit codec provided)
+//            // else if (big decimal)
+//            // else if (big integer)
+//        }
+
+        // Following will properly select the specific codec if assigned for this column, else will get the default
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
-        return new CodecTransfer<>(columnSource, codec, maxValuesPerPage, instructions.getTargetPageSize());
+        return new CodecTransfer<>(columnSource, codec, instructions.getTargetPageSize());
     }
 
-    /**
-     * Fetch all data corresponding to the provided row sequence.
-     */
-    void fetchData(@NotNull RowSequence rs);
-
-    /**
-     * Transfer all the fetched data into an internal buffer, which can then be accessed using
-     * {@link TransferObject#getBuffer()}. This method should only be called after
-     * {@link TransferObject#fetchData(RowSequence)}}. This method should be used when writing unpaginated data, and
-     * should not be interleaved with calls to {@link TransferObject#transferOnePageToBuffer()}. Note that this
-     * method can lead to out-of-memory error for variable-width types (e.g. strings) if the fetched data is too big
-     * to fit in the available heap.
-     *
-     * @return The number of fetched data entries copied into the buffer.
-     */
-    int transferAllToBuffer();
+    // TODO Rewrite the comments for this file
 
     /**
      * Transfer one page size worth of fetched data into an internal buffer, which can then be accessed using
-     * {@link TransferObject#getBuffer()}. The target page size is passed in the constructor. The method should only
-     * be called after {@link TransferObject#fetchData(RowSequence)}}. This method should be used when writing
-     * paginated data, and should not be interleaved with calls to {@link TransferObject#transferAllToBuffer()}.
+     * {@link TransferObject#getBuffer()}. The target page size is passed in the constructor.
      *
      * @return The number of fetched data entries copied into the buffer. This can be different from the total
      * number of entries fetched in case of variable-width types (e.g. strings) when used with additional
@@ -115,4 +154,9 @@ public interface TransferObject<B> extends SafeCloseable {
      * @return the buffer
      */
     B getBuffer();
+
+    // TODO Add comments here
+    default IntBuffer getRepeatCount() {
+        throw new UnsupportedOperationException("Only supported for array and vector transfer objects");
+    }
 }

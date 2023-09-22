@@ -5,27 +5,32 @@ package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 
-class BooleanTransfer extends PrimitiveTransfer<WritableByteChunk<Values>, ByteBuffer> {
+final class BooleanTransfer extends PrimitiveTransfer<WritableByteChunk<Values>, ByteBuffer> {
 
-    public static BooleanTransfer create(@NotNull final ColumnSource<?> columnSource, int targetSize) {
-        final byte[] backingArray = new byte[targetSize];
+    static BooleanTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, int targetPageSize) {
+        final int maxValuesPerPage = targetPageSize << 3;            // = targetPageSize * 8 because 8 booleans per byte
+        final byte[] backingArray = new byte[maxValuesPerPage];
         return new BooleanTransfer(
                 columnSource,
+                tableRowSet,
                 WritableByteChunk.writableChunkWrap(backingArray),
                 ByteBuffer.wrap(backingArray),
-                targetSize);
+                maxValuesPerPage);
     }
 
     private BooleanTransfer(
             @NotNull final ColumnSource<?> columnSource,
+            @NotNull final RowSequence tableRowSet,
             @NotNull final WritableByteChunk<Values> chunk,
             @NotNull final ByteBuffer buffer,
-            int targetSize) {
-        super(columnSource, chunk, buffer, targetSize);
+            int maxValuesPerPage) {
+        super(columnSource, tableRowSet, chunk, buffer, maxValuesPerPage);
     }
 }

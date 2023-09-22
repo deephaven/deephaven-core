@@ -42,45 +42,46 @@ abstract class EncodedTransfer<T> implements TransferObject<Binary[]> {
     private int currentChunkIdx;
 
     /**
-     * Encoded value which takes us beyond the page size limit. We cache it to avoid re-encoding.
+     * Encoded value which took us beyond the page size limit. We cache it to avoid re-encoding.
      */
     @Nullable
     private Binary cachedEncodedValue;
 
-    public EncodedTransfer(
-            @NotNull final ColumnSource<?> columnSource,
-            final int maxValuesPerPage,
-            final int targetPageSize) {
+    EncodedTransfer(@NotNull final ColumnSource<?> columnSource, final int targetPageSize) {
         this.columnSource = columnSource;
-        this.buffer = new Binary[maxValuesPerPage];
-        context = this.columnSource.makeGetContext(maxValuesPerPage);
+        context = this.columnSource.makeGetContext(targetPageSize);
         this.targetPageSize = targetPageSize;
+        // We don't know the length of encoded objects until we read the actual data. Therefore, we take a relaxed
+        // estimate here and final calculation is done when encoding the data.
+        final int maxValuesPerPage = targetPageSize;
+        this.buffer = new Binary[maxValuesPerPage];
         bufferedDataCount = 0;
+        currentChunkIdx = 0;
         cachedEncodedValue = null;
     }
 
-    @Override
-    final public void fetchData(@NotNull final RowSequence rs) {
-        // noinspection unchecked
-        chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
-        currentChunkIdx = 0;
-        bufferedDataCount = 0;
-    }
+    // @Override
+    // final public void fetchData(@NotNull final RowSequence rs) {
+    // // noinspection unchecked
+    // chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
+    // currentChunkIdx = 0;
+    // bufferedDataCount = 0;
+    // }
 
-    @Override
-    final public int transferAllToBuffer() {
-        // Assuming this method is called after fetchData() and that the buffer is empty.
-        Assert.neqNull(chunk, "chunk");
-        Assert.eqZero(currentChunkIdx, "currentChunkIdx");
-        Assert.eqZero(bufferedDataCount, "bufferedDataCount");
-        int chunkSize = chunk.size();
-        while (currentChunkIdx < chunkSize) {
-            final T value = chunk.get(currentChunkIdx++);
-            buffer[bufferedDataCount++] = value == null ? null : encodeToBinary(value);
-        }
-        chunk = null;
-        return bufferedDataCount;
-    }
+    // @Override
+    // final public int transferAllToBuffer() {
+    // // Assuming this method is called after fetchData() and that the buffer is empty.
+    // Assert.neqNull(chunk, "chunk");
+    // Assert.eqZero(currentChunkIdx, "currentChunkIdx");
+    // Assert.eqZero(bufferedDataCount, "bufferedDataCount");
+    // int chunkSize = chunk.size();
+    // while (currentChunkIdx < chunkSize) {
+    // final T value = chunk.get(currentChunkIdx++);
+    // buffer[bufferedDataCount++] = value == null ? null : encodeToBinary(value);
+    // }
+    // chunk = null;
+    // return bufferedDataCount;
+    // }
 
     @Override
     final public int transferOnePageToBuffer() {
@@ -128,6 +129,7 @@ abstract class EncodedTransfer<T> implements TransferObject<Binary[]> {
 
     @Override
     final public boolean hasMoreDataToBuffer() {
+        // TODO We can remove the second condition here
         return ((chunk != null) && (currentChunkIdx < chunk.size()));
     }
 
