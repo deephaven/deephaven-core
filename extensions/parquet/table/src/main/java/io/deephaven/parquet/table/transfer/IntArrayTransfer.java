@@ -24,21 +24,7 @@ class IntArrayTransfer implements TransferObject<IntBuffer> {
     private final ChunkSource.GetContext context;
     private final int maxValuesPerPage;
     private final IntBuffer buffer;
-
-    /**
-     * Number of values buffered
-     */
-    private int bufferedValueCount;
-    // TODO Use IntBuffer.position() instead of this variable
-
-    /**
-     * The lengths of arrays stored in the buffer
-     */
     private IntBuffer arrayLengths;
-
-    /**
-     * Index of next object from the chunk to be buffered
-     */
     private int currentChunkIdx;
 
     IntArrayTransfer(@NotNull final  ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
@@ -47,11 +33,9 @@ class IntArrayTransfer implements TransferObject<IntBuffer> {
         this.maxValuesPerPage = targetPageSize / Integer.BYTES;
         Assert.gtZero(maxValuesPerPage, "maxValuesPerPage");
         this.context = columnSource.makeGetContext(maxValuesPerPage);
-//        this.buffer = new int[maxValuesPerPage];
-        buffer = IntBuffer.allocate(maxValuesPerPage);
-        this.bufferedValueCount = 0;
+        this.buffer = IntBuffer.allocate(maxValuesPerPage);
         this.arrayLengths = IntBuffer.allocate(maxValuesPerPage);
-        currentChunkIdx = 0;
+        this.currentChunkIdx = 0;
     }
 
     @Override
@@ -59,14 +43,13 @@ class IntArrayTransfer implements TransferObject<IntBuffer> {
         if (!hasMoreDataToBuffer()) {
             return 0;
         }
-        if (bufferedValueCount != 0) {
+        if (buffer.limit() != buffer.capacity()) {
             // Clear any old buffered data
-//            Arrays.fill(buffer, 0, bufferedValueCount, 0);
             buffer.clear();
             arrayLengths.clear();
-            bufferedValueCount = 0;
         }
 
+        boolean bufferFull = false;
         do {
             if (chunk == null) {
                 // Fetch a chunk of data from the table
@@ -77,34 +60,43 @@ class IntArrayTransfer implements TransferObject<IntBuffer> {
 
             final int chunkSize = chunk.size();
             while (currentChunkIdx < chunkSize) {
-                final int[] intArray = chunk.get(currentChunkIdx);
-                if (intArray == null) {
+                final int[] arrayData = chunk.get(currentChunkIdx);
+                if (arrayData == null) {
                     currentChunkIdx++;
                     // TODO Do we need to add anything to buffer?
                     arrayLengths.put(QueryConstants.NULL_INT);
                     continue;
                 }
-                int numValues = intArray.length;
+                int numValuesBuffered = buffer.position();
                 // Always copy the first vector
-                if (bufferedValueCount != 0 && bufferedValueCount + numValues > maxValuesPerPage) {
+                if (numValuesBuffered != 0 && numValuesBuffered + arrayData.length > maxValuesPerPage) {
+                    bufferFull = true;
                     break;
                 }
-                // TODO Copy the complete array from chunk to buffer with resizing the buffer if needed
-                buffer.put(0);
-                bufferedValueCount += numValues;
-                arrayLengths.put(numValues);
+                copyArrayDataIntoBuffer(arrayData);
+                arrayLengths.put(arrayData.length);
                 currentChunkIdx++;
             }
             if (currentChunkIdx == chunk.size()) {
                 chunk = null;
             }
-        } while(bufferedValueCount < maxValuesPerPage && tableRowSetIt.hasMore());
-        return bufferedValueCount;
+        } while(!bufferFull && tableRowSetIt.hasMore());
+        buffer.flip();
+        arrayLengths.flip();
+        return buffer.limit();
     }
+
+    /**
+     * Copy entire array into buffer because our reading code expects all elements from a single array or a vector
+     * to be on the same page (refer classes ToVectorPage and ToArrayPage for more details).
+     */
+     private void copyArrayDataIntoBuffer(int[] data) {
+        buffer.put(data);
+     }
 
     @Override
     final public boolean hasMoreDataToBuffer() {
-        // More data can be read either from the table or from the chunk
+        // More unread data present either the table or from the chunk
         return tableRowSetIt.hasMore() || chunk != null;
     }
 
