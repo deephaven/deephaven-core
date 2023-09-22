@@ -186,7 +186,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
 
         TableBackedTableLocationKey[] tlks = tlp.getTableLocationKeys().stream()
                 .sorted()
-                .map(k -> (TableBackedTableLocationKey)k)
+                .map(k -> (TableBackedTableLocationKey) k)
                 .toArray(TableBackedTableLocationKey[]::new);
 
         final RowSet rowSet = p1.getRowSet().copy();
@@ -199,7 +199,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
             // This should process the pending update from the refresh above.
             updateGraph.refreshSources();
             registrar.run();
-            }),
+        }),
                 errors -> errors.size() == 1 &&
                         FindExceptionCause.isOrCausedBy(errors.get(0), TableDataException.class).isPresent());
         getUpdateErrors().clear();
