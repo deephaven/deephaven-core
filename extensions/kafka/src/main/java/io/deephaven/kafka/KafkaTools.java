@@ -522,26 +522,15 @@ public class KafkaTools {
 
         /**
          * The kafka protobuf specs. This will fetch the {@link com.google.protobuf.Descriptors.Descriptor protobuf
-         * descriptor} for the {@link ProtobufConsumeOptions#schemaSubject() schema subject} from the schema registry
-         * using version {@link ProtobufConsumeOptions#schemaVersion() schema version} and create
+         * descriptor} based on the {@link ProtobufConsumeOptions#descriptorProvider()} and create the
          * {@link com.google.protobuf.Message message} parsing functions according to
          * {@link io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)}.
          * These functions will be adapted to handle schema changes.
-         *
-         * <p>
-         * For purposes of reproducibility across restarts where schema changes may occur, it is advisable for callers
-         * to set a specific {@link ProtobufConsumeOptions#schemaVersion() schema version}. This will ensure the
-         * resulting {@link io.deephaven.engine.table.TableDefinition table definition} will not change across restarts.
-         * This gives the caller an explicit opportunity to update any downstream consumers when updating
-         * {@link ProtobufConsumeOptions#schemaVersion() schema version} if necessary.
          *
          * @param options the options
          * @return the key or value spec
          * @see io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)
          *      parsing
-         * @see <a href=
-         *      "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-protobuf.html">kafka
-         *      protobuf serdes</a>
          */
         public static KeyOrValueSpec protobufSpec(ProtobufConsumeOptions options) {
             return new ProtobufConsumeImpl(options);

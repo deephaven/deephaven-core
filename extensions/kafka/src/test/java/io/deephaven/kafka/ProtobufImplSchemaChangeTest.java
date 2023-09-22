@@ -329,7 +329,7 @@ public class ProtobufImplSchemaChangeTest {
                 .fieldOptions(options(isTs, isTs, null, null))
                 .build();
         final ProtobufFunctions functions =
-                ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
+                ProtobufImpl.simple(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
         assertThat(functions.functions()).hasSize(1);
         final ToObjectFunction<Message, Instant> tsFunction = (ToObjectFunction<Message, Instant>) get(functions, "ts");
         final Timestamp ts = Timestamp.newBuilder().setSeconds(42).build();
@@ -350,7 +350,7 @@ public class ProtobufImplSchemaChangeTest {
                 .fieldOptions(options(startsWithTs, ToBooleanFunction.not(startsWithTs), null, null))
                 .build();
         final ProtobufFunctions functions =
-                ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
+                ProtobufImpl.simple(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
         assertThat(functions.functions()).hasSize(2);
         final ToLongFunction<Message> seconds = (ToLongFunction<Message>) get(functions, "ts", "seconds");
         final ToIntFunction<Message> nanos = (ToIntFunction<Message>) get(functions, "ts", "nanos");
@@ -374,7 +374,7 @@ public class ProtobufImplSchemaChangeTest {
                 .fieldOptions(options(isBs, null, isBs, null))
                 .build();
         final ProtobufFunctions functions =
-                ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
+                ProtobufImpl.simple(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
         assertThat(functions.functions()).hasSize(1);
         final ToObjectFunction<Message, byte[]> bsFunction = (ToObjectFunction<Message, byte[]>) get(functions, "bs");
         final ByteString bs = ByteString.copyFromUtf8("foo");
@@ -395,7 +395,7 @@ public class ProtobufImplSchemaChangeTest {
                 .fieldOptions(options(isBs, null, ToBooleanFunction.not(isBs), null))
                 .build();
         final ProtobufFunctions functions =
-                ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
+                ProtobufImpl.simple(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
         assertThat(functions.functions()).hasSize(1);
         final ToObjectFunction<Message, ByteString> bsFunction =
                 (ToObjectFunction<Message, ByteString>) get(functions, "bs");
@@ -417,7 +417,7 @@ public class ProtobufImplSchemaChangeTest {
                 .fieldOptions(options(isMp, null, null, isMp))
                 .build();
         final ProtobufFunctions functions =
-                ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
+                ProtobufImpl.simple(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
         assertThat(functions.functions()).hasSize(1);
         final ToObjectFunction<Message, Map<Object, Object>> mpFunction =
                 (ToObjectFunction<Message, Map<Object, Object>>) get(functions, "mp");
@@ -439,7 +439,7 @@ public class ProtobufImplSchemaChangeTest {
                 .fieldOptions(options(startsWithMp, null, null, ToBooleanFunction.not(startsWithMp)))
                 .build();
         final ProtobufFunctions functions =
-                ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
+                ProtobufImpl.simple(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
         assertThat(functions.functions()).hasSize(2);
         final ToObjectFunction<Message, int[]> keyFunction =
                 (ToObjectFunction<Message, int[]>) get(functions, "mp", "key");
@@ -488,7 +488,7 @@ public class ProtobufImplSchemaChangeTest {
     }
 
     private static ProtobufFunctions schemaChangeAwareFunctions(Descriptor descriptor) {
-        return ProtobufImpl.schemaChangeAwareFunctions(descriptor, ProtobufDescriptorParserOptions.defaults());
+        return ProtobufImpl.simple(descriptor, ProtobufDescriptorParserOptions.defaults());
     }
 
     private static TypedFunction<Message> get(ProtobufFunctions functions, String... namePath) {

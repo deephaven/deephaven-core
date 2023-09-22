@@ -5,14 +5,15 @@ package io.deephaven.kafka;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Message;
+import com.google.protobuf.Parser;
 import io.confluent.kafka.schemaregistry.SchemaProvider;
 import io.confluent.kafka.schemaregistry.client.SchemaMetadata;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
-import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -35,6 +36,9 @@ import io.deephaven.kafka.ingest.FieldCopier;
 import io.deephaven.kafka.ingest.FieldCopierAdapter;
 import io.deephaven.kafka.ingest.KeyOrValueProcessor;
 import io.deephaven.kafka.ingest.MultiFieldChunkAdapter;
+import io.deephaven.kafka.protobuf.DescriptorMessageClass;
+import io.deephaven.kafka.protobuf.DescriptorProvider;
+import io.deephaven.kafka.protobuf.DescriptorSchemaRegistry;
 import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
 import io.deephaven.kafka.protobuf.ProtobufConsumeOptions.FieldPathToColumnName;
 import io.deephaven.protobuf.FieldNumberPath;
@@ -67,6 +71,8 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -93,12 +99,18 @@ class ProtobufImpl {
         return new ParsedStates(descriptor, options).functionsForSchemaChanges();
     }
 
+    @VisibleForTesting
+    static ProtobufFunctions simple(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        return withMostAppropriateType(ProtobufDescriptorParser.parse(descriptor, options));
+    }
+
     static final class ProtobufConsumeImpl extends Consume.KeyOrValueSpec {
 
         private static final ToObjectFunction<Object, Message> PROTOBUF_MESSAGE_OBJ =
                 ToObjectFunction.identity(Type.ofCustom(Message.class));
 
         private final ProtobufConsumeOptions specs;
+        private Descriptor descriptor;
 
         ProtobufConsumeImpl(ProtobufConsumeOptions specs) {
             this.specs = Objects.requireNonNull(specs);
@@ -106,25 +118,70 @@ class ProtobufImpl {
 
         @Override
         public Optional<SchemaProvider> getSchemaProvider() {
-            return Optional.of(new ProtobufSchemaProvider());
+            return specs.descriptorProvider() instanceof DescriptorSchemaRegistry
+                    ? Optional.of(new ProtobufSchemaProvider())
+                    : Optional.empty();
         }
 
         @Override
-        protected Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+        protected Deserializer<? extends Message> getDeserializer(
+                KeyOrValue keyOrValue,
+                SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
-            return new KafkaProtobufDeserializer<>(Objects.requireNonNull(schemaRegistryClient));
+            final DescriptorProvider dp = specs.descriptorProvider();
+            if (dp instanceof DescriptorMessageClass) {
+                setDescriptor((DescriptorMessageClass<?>) dp);
+                return deserializer((DescriptorMessageClass<?>) dp);
+            }
+            if (dp instanceof DescriptorSchemaRegistry) {
+                setDescriptor(schemaRegistryClient, (DescriptorSchemaRegistry) dp);
+                return deserializer((DescriptorSchemaRegistry) dp);
+            }
+            throw new IllegalStateException("Unexpected descriptor provider: " + dp);
         }
 
-        @Override
-        protected KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
-                Map<String, ?> configs, MutableInt nextColumnIndexMut, List<ColumnDefinition<?>> columnDefinitionsOut) {
-            final Descriptor descriptor;
+        private void setDescriptor(DescriptorMessageClass<?> dmc) {
             try {
-                descriptor = getDescriptor(schemaRegistryClient);
+                descriptor = descriptor(dmc.clazz());
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                throw new UncheckedDeephavenException(e);
+            }
+        }
+
+        private void setDescriptor(SchemaRegistryClient schemaRegistryClient, DescriptorSchemaRegistry dsr) {
+            try {
+                descriptor = descriptor(schemaRegistryClient, dsr);
             } catch (RestClientException | IOException e) {
                 throw new UncheckedDeephavenException(e);
             }
-            final ProtobufFunctions functions = schemaChangeAwareFunctions(descriptor, specs.parserOptions());
+        }
+
+        private Deserializer<? extends Message> deserializer(DescriptorMessageClass<?> dmc) {
+            final Parser<? extends Message> parser;
+            try {
+                parser = parser(dmc.clazz());
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                throw new UncheckedDeephavenException(e);
+            }
+            return ProtobufDeserializers.of(specs.protocol(), parser);
+        }
+
+        private Deserializer<DynamicMessage> deserializer(@SuppressWarnings("unused") DescriptorSchemaRegistry dsr) {
+            // Note: taking in an unused DescriptorSchemaRegistry to re-enforce that this path should only be used in
+            // the case where we are getting a the descriptor from the schema registry.
+            return ProtobufDeserializers.of(specs.protocol(), descriptor);
+        }
+
+        @Override
+        protected KeyOrValueIngestData getIngestData(
+                KeyOrValue keyOrValue,
+                SchemaRegistryClient schemaRegistryClient,
+                Map<String, ?> configs,
+                MutableInt nextColumnIndexMut,
+                List<ColumnDefinition<?>> columnDefinitionsOut) {
+            // Given our deserializer setup above, we are guaranteeing that all returned messages will have the exact
+            // same descriptor. This simplifies the logic we need to construct appropriate ProtobufFunctions.
+            final ProtobufFunctions functions = simple(descriptor, specs.parserOptions());
             final List<FieldCopier> fieldCopiers = new ArrayList<>(functions.functions().size());
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.fieldPathToColumnName = new LinkedHashMap<>();
@@ -160,28 +217,7 @@ class ProtobufImpl {
                     MultiFieldChunkAdapter.chunkOffsets(tableDef, data.fieldPathToColumnName),
                     (List<FieldCopier>) data.extra, false);
         }
-
-        private Descriptor getDescriptor(SchemaRegistryClient schemaRegistryClient)
-                throws RestClientException, IOException {
-            final SchemaMetadata metadata = specs.schemaVersion().isPresent()
-                    ? schemaRegistryClient.getSchemaMetadata(specs.schemaSubject(), specs.schemaVersion().getAsInt())
-                    : schemaRegistryClient.getLatestSchemaMetadata(specs.schemaSubject());
-            if (!ProtobufSchema.TYPE.equals(metadata.getSchemaType())) {
-                throw new IllegalStateException(String.format("Expected schema type %s but was %s", ProtobufSchema.TYPE,
-                        metadata.getSchemaType()));
-            }
-            final ProtobufSchema protobufSchema = (ProtobufSchema) schemaRegistryClient
-                    .getSchemaBySubjectAndId(specs.schemaSubject(), metadata.getId());
-            // The potential need to set io.deephaven.kafka.protobuf.ProtobufConsumeOptions#schemaMessageName
-            // seems unfortunate; I'm surprised the information is not part of the kafka serdes protocol.
-            // Maybe it's so that a single schema can be used, and different topics with different root messages can
-            // all share that common schema?
-            return specs.schemaMessageName().isPresent()
-                    ? protobufSchema.toDescriptor(specs.schemaMessageName().get())
-                    : protobufSchema.toDescriptor();
-        }
     }
-
 
     private static ProtobufFunctions withMostAppropriateType(ProtobufFunctions functions) {
         final Builder builder = ProtobufFunctions.builder();
@@ -497,5 +533,38 @@ class ProtobufImpl {
             }
         }
         return Optional.empty();
+    }
+
+    private static Descriptor descriptor(Class<? extends Message> clazz)
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        final Method getDescriptor = clazz.getMethod("getDescriptor");
+        return (Descriptor) getDescriptor.invoke(null);
+    }
+
+    private static Descriptor descriptor(SchemaRegistryClient registry, DescriptorSchemaRegistry dsr)
+            throws RestClientException, IOException {
+        final SchemaMetadata metadata = dsr.version().isPresent()
+                ? registry.getSchemaMetadata(dsr.subject(), dsr.version().getAsInt())
+                : registry.getLatestSchemaMetadata(dsr.subject());
+        if (!ProtobufSchema.TYPE.equals(metadata.getSchemaType())) {
+            throw new IllegalStateException(String.format("Expected schema type %s but was %s", ProtobufSchema.TYPE,
+                    metadata.getSchemaType()));
+        }
+        final ProtobufSchema protobufSchema = (ProtobufSchema) registry
+                .getSchemaBySubjectAndId(dsr.subject(), metadata.getId());
+        // The potential need to set io.deephaven.kafka.protobuf.DescriptorSchemaRegistry#messageName
+        // seems unfortunate; I'm surprised the information is not part of the kafka serdes protocol.
+        // Maybe it's so that a single schema can be used, and different topics with different root messages can
+        // all share that common schema?
+        return dsr.messageName().isPresent()
+                ? protobufSchema.toDescriptor(dsr.messageName().get())
+                : protobufSchema.toDescriptor();
+    }
+
+    private static <T extends Message> Parser<T> parser(Class<T> clazz)
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        final Method parser = clazz.getMethod("parser");
+        // noinspection unchecked
+        return (Parser<T>) parser.invoke(null);
     }
 }

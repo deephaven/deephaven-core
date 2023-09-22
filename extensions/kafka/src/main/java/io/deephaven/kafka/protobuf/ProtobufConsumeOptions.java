@@ -68,37 +68,21 @@ public abstract class ProtobufConsumeOptions {
     }
 
     /**
-     * The schema subject to fetch from the schema registry.
+     * The protocol for decoding the payload. By default, is {@link Protocol#serdes()}.
      *
-     * @return the schema subject
+     * @return the payload protocol
      */
-    public abstract String schemaSubject();
+    @Default
+    public Protocol protocol() {
+        return Protocol.serdes();
+    }
 
     /**
-     * The schema version to fetch from the schema registry. When not set, the latest schema will be fetched.
+     * The descriptor provider.
      *
-     * <p>
-     * For purposes of reproducibility across restarts where schema changes may occur, it is advisable for callers to
-     * set this. This will ensure the resulting {@link io.deephaven.engine.table.TableDefinition table definition} will
-     * not change across restarts. This gives the caller an explicit opportunity to update any downstream consumers
-     * before bumping schema versions.
-     *
-     * @return the schema version, or none for latest
+     * @return the descriptor provider
      */
-    public abstract OptionalInt schemaVersion();
-
-    /**
-     * The fully-qualified protobuf {@link com.google.protobuf.Message} name, for example "com.example.MyMessage". This
-     * message's {@link Descriptor} will be used as the basis for the resulting table's
-     * {@link io.deephaven.engine.table.TableDefinition definition}. When not set, the first message descriptor in the
-     * protobuf schema will be used.
-     *
-     * <p>
-     * It is advisable for callers to explicitly set this.
-     *
-     * @return the schema message name
-     */
-    public abstract Optional<String> schemaMessageName();
+    public abstract DescriptorProvider descriptorProvider();
 
     /**
      * The descriptor parsing options. By default, is {@link ProtobufDescriptorParserOptions#defaults()}.
@@ -122,12 +106,9 @@ public abstract class ProtobufConsumeOptions {
     }
 
     public interface Builder {
+        Builder protocol(Protocol protocol);
 
-        Builder schemaSubject(String schemaSubject);
-
-        Builder schemaVersion(int schemaVersion);
-
-        Builder schemaMessageName(String schemaMessageName);
+        Builder descriptorProvider(DescriptorProvider descriptorProvider);
 
         Builder parserOptions(ProtobufDescriptorParserOptions options);
 
