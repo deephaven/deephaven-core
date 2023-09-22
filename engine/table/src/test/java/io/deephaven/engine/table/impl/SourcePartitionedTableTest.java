@@ -193,8 +193,8 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         removeRows(tlks[0].table(), rowSet);
         tlp.getTableLocation(tlks[0]).refresh();
 
-        // First Cause the location to fail. for example size -> 0 because "someone deleted my data"
-        // We expect an error here because the tble itself is going to fail.
+        // First cause the location to fail. for example size -> 0 because "someone deleted my data"
+        // We expect an error here because the table itself is going to fail.
         allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             // This should process the pending update from the refresh above.
             updateGraph.refreshSources();
