@@ -238,7 +238,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 rowSet.insert(added);
                 notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
             } catch (Exception e) {
-                getUpdateGraph().removeSource(this);
+                updateSourceRegistrar.removeSource(this);
 
                 // Notify listeners to the SourceTable when we had an issue refreshing available locations.
                 notifyListenersOnError(e, null);

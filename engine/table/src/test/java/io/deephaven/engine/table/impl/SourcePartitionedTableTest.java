@@ -3,11 +3,16 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.InvalidatedRegionException;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
 import io.deephaven.engine.testutil.locations.DependentRegistrar;
+import io.deephaven.engine.testutil.locations.TableBackedTableLocationKey;
 import io.deephaven.engine.testutil.locations.TableBackedTableLocationProvider;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
@@ -167,9 +172,54 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
     }
 
     /**
+     * This is a test for PR 4537, where SourceTable removes itself from the wrong refresh provider
+     */
+    public void testRemoveAndFail() {
+        final SourcePartitionedTable spt = setUpData();
+
+        final Table partitionTable = spt.table();
+        assertEquals(2, partitionTable.size());
+        try (final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+            assertTableEquals(tableIt.next(), p1);
+            assertTableEquals(tableIt.next(), p2);
+        }
+
+        TableBackedTableLocationKey[] tlks = tlp.getTableLocationKeys().stream()
+                .sorted()
+                .map(k -> (TableBackedTableLocationKey)k)
+                .toArray(TableBackedTableLocationKey[]::new);
+
+        final RowSet rowSet = p1.getRowSet().copy();
+        removeRows(tlks[0].table(), rowSet);
+        tlp.getTableLocation(tlks[0]).refresh();
+
+        // First Cause the location to fail. for example size -> 0 because "someone deleted my data"
+        // We expect an error here because the tble itself is going to fail.
+        allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
+            // This should process the pending update from the refresh above.
+            updateGraph.refreshSources();
+            registrar.run();
+            }),
+                errors -> errors.size() == 1 &&
+                        FindExceptionCause.isOrCausedBy(errors.get(0), TableDataException.class).isPresent());
+        getUpdateErrors().clear();
+
+        // Then delete it for real
+        tlp.removeTableLocationKey(tlks[0]);
+        tlp.refresh();
+
+        // We should NOT get an error here because the failed table should have removed itself from the registrar.
+        updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
+            updateGraph.refreshSources();
+            registrar.run();
+        });
+    }
+
+    /**
      * This test verifies that after a location is removed any attempt to read from it, current or previous values will
      * fail.
      */
+    @Test
     public void testCantReadPrev() {
         final SourcePartitionedTable spt = setUpData();
 
