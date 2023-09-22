@@ -8,6 +8,7 @@ import dagger.Binds;
 import dagger.Component;
 import dagger.Module;
 import dagger.multibindings.IntoSet;
+import io.deephaven.plugin.type.EchoObjectType;
 import io.deephaven.plugin.type.Exporter;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeBase;
@@ -188,7 +189,8 @@ public class PluginModuleTest {
                 AutoObjectType.class,
                 BoundRegistration.class,
                 BoundPlugin.class,
-                BoundObjectType.class));
+                BoundObjectType.class,
+                EchoObjectType.class));
     }
 
     @Test
