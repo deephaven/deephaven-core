@@ -1,6 +1,9 @@
-package io.deephaven.plugin.type;
+package io.deephaven.plugin;
 
 import com.google.auto.service.AutoService;
+import io.deephaven.plugin.type.ObjectCommunicationException;
+import io.deephaven.plugin.type.ObjectType;
+import io.deephaven.plugin.type.ObjectTypeBase;
 
 import java.nio.ByteBuffer;
 

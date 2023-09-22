@@ -4,5 +4,3 @@ plugins {
 }
 
 description = 'The Deephaven plugin interface'
-
-Classpaths.inheritAutoService(project)
