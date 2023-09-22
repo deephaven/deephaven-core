@@ -4,8 +4,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.InvalidatedRegionException;
@@ -174,6 +172,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
     /**
      * This is a test for PR 4537, where SourceTable removes itself from the wrong refresh provider
      */
+    @Test
     public void testRemoveAndFail() {
         final SourcePartitionedTable spt = setUpData();
 
