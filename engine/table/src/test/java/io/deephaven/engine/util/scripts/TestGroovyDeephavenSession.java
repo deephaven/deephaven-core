@@ -6,6 +6,7 @@ package io.deephaven.engine.util.scripts;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -14,6 +15,11 @@ import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.function.Basic;
+import io.deephaven.function.BinSearch;
+import io.deephaven.function.BinSearchAlgo;
+import io.deephaven.function.Numeric;
+import io.deephaven.function.Sort;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.utils.test.PropertySaver;
@@ -342,286 +348,241 @@ public class TestGroovyDeephavenSession {
 
     }
 
-//    @Test
-//    public void testRewriteStackTrace() throws IOException {
-//        final StreamLoggerImpl log = new StreamLoggerImpl();
-//        final PropertySaver propertySaver = new PropertySaver();
-//
-//        setupPersistence();
-//
-//        try {
-//            propertySaver.setProperty("IrisDB.permissionFilterProvider", "null");
-//            propertySaver.setProperty("IrisDbGroovySession.defaultScriptPath", "<devroot>/Controller/src/test/groovy");
-//            PermissionFilterProvider.FACTORY.reload();
-//
-//            final OnDiskQueryDatabase db = new OnDiskQueryDatabase(log, new File(DB_ROOT), new LocalTableDataService(new File(DB_ROOT)));
-//            db.setUserContext(null, new SimpleUserContext("nobody", "nobody"));
-//
-//            final ScriptPathLoader scriptPathLoader = new ConsoleScriptPathLoader();
-//
-//            final GroovyDeephavenSession irisDbGroovySession = new GroovyDeephavenSession(log, db, false);
-//            irisDbGroovySession.setScriptPathLoader(() -> scriptPathLoader, true);
-//
-//            try {
-//                irisDbGroovySession.evaluate("println \"Hello\";\nthrow new RuntimeException(\"Bad Line\");\nprintln \"Bye\";\n", "Script2");
-//            } catch (RuntimeException e) {
-//                assertEquals("Error encountered at line 2: throw new RuntimeException(\"Bad Line\");", e.getMessage());
-//                final Throwable cause = e.getCause();
-//                assertTrue(cause instanceof RuntimeException);
-//                //noinspection ConstantConditions
-//                if (cause != null) {
-//                    assertEquals("Bad Line", cause.getMessage());
-//                }
-//            }
-//
-//            try {
-//                irisDbGroovySession.evaluate("println \"Going to source\";\nsource(\"sourced.groovy\");\n", "Script3");
-//            } catch (RuntimeException e) {
-//                assertEquals("Error encountered at line 2: source(\"sourced.groovy\");", e.getMessage());
-//                final Throwable cause = e.getCause();
-//                assertTrue(cause instanceof RuntimeException);
-//                //noinspection ConstantConditions
-//                if (cause != null) {
-//                    assertEquals("Error encountered at line 5: throw new RuntimeException(\"Busted\")", cause.getMessage());
-//
-//                    final Throwable cause2 = cause.getCause();
-//                    assertTrue(cause2 instanceof RuntimeException);
-//                    //noinspection ConstantConditions
-//                    if (cause2 != null) {
-//                        assertEquals("Busted", cause2.getMessage());
-//                    }
-//                }
-//            }
-//
-//            try {
-//                irisDbGroovySession.evaluate("println \"Hello there\";\n\n// some more blank lines\n\n\n\n\n\n\n\nprintln \"Going to source\";\nsource(\"shortsourced.groovy\");\n", "Script4");
-//            } catch (RuntimeException e) {
-//                assertEquals("Error encountered at line 12: source(\"shortsourced.groovy\");", e.getMessage());
-//                final Throwable cause = e.getCause();
-//                assertTrue(cause instanceof RuntimeException);
-//                //noinspection ConstantConditions
-//                if (cause != null) {
-//                    assertEquals("Error encountered at line 1: throw new RuntimeException(\"Busted Short\")", cause.getMessage());
-//
-//                    final Throwable cause2 = cause.getCause();
-//                    assertTrue(cause2 instanceof RuntimeException);
-//                    //noinspection ConstantConditions
-//                    if (cause2 != null) {
-//                        assertEquals("Busted Short", cause2.getMessage());
-//                    }
-//                }
-//            }
-//        } finally {
-//            propertySaver.restore();
-//        }
-//    }
+    @Test
+    public void testRewriteStackTrace() {
+        try {
+            session.evaluateScript("println \"Hello\";\nthrow new RuntimeException(\"Bad Line\");\nprintln \"Bye\";\n", "Script2").throwIfError();
+            fail("failed to error out");
+        } catch (RuntimeException e) {
+            assertEquals("Error encountered at line 2: throw new RuntimeException(\"Bad Line\");", e.getMessage());
+            final Throwable cause = e.getCause();
+            assertTrue(cause instanceof RuntimeException);
+            //noinspection ConstantConditions
+            if (cause != null) {
+                assertEquals("Bad Line", cause.getMessage());
+            }
+        }
 
-//    @Test
-//    public void testPotentialAmbiguousMethodCalls() throws IOException {
-//        final StreamLoggerImpl log = new StreamLoggerImpl();
-//        final PropertySaver propertySaver = new PropertySaver();
-//
-//        setupPersistence();
-//
-//        try {
-//            propertySaver.setProperty("IrisDB.permissionFilterProvider", "null");
-//            propertySaver.setProperty("IrisDbGroovySession.defaultScriptPath", "<devroot>/Controller/test/groovy");
-//            PermissionFilterProvider.FACTORY.reload();
-//
-//            final OnDiskQueryDatabase db = new OnDiskQueryDatabase(log, new File(DB_ROOT), new LocalTableDataService(new File(DB_ROOT)));
-//            db.setUserContext(null, new SimpleUserContext("nobody", "nobody"));
-//
-//            final ScriptPathLoader scriptPathLoader = new ConsoleScriptPathLoader();
-//
-//            final GroovyDeephavenSession irisDbGroovySession = new GroovyDeephavenSession(log, db, false);
-//
-//            irisDbGroovySession.setScriptPathLoader(() -> scriptPathLoader, true);
-//
-//            int[] a = new int[]{5, 2, 3};
-//            int z = 1;
-//            int Y = 2;
-//            double d = 5d;
-//            String c = null;
-//            try {
-//                c = "primMin = min(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ");\n";
-//                irisDbGroovySession.evaluate(c);
-//                Integer primMin = (Integer) irisDbGroovySession.getVariable("primMin");
-//                assertEquals(IntegerNumericPrimitives.min(a), primMin.intValue());
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//
-//            try {
-//                c = "z = " + z + "; \n" + "d = " + d + "; \n" +
-//                        "wrapMin = min(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ", z);\n";
-//                irisDbGroovySession.evaluate(c);
-//                Integer wrapperMin = (Integer) irisDbGroovySession.getVariable("wrapMin");
-//                assertEquals(Math.min(IntegerNumericPrimitives.min(a), z), wrapperMin.intValue());
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//
-//            try {
-//                c = "z = " + z + "; \n" + "d = " + d + "; \n" +
-//                        "m2 = max(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ", z, d);\n";
-//                irisDbGroovySession.evaluate(c);
-//                Double wrapperMax = (Double) irisDbGroovySession.getVariable("m2");
-//                assertEquals(5.0d, wrapperMax, 0.0d);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//
-//            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=min(Y, z)\")\n";
-//            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-//                QueryScope.addParam("z", z);
-//                irisDbGroovySession.evaluate(c);
-//                final Table t = (Table) irisDbGroovySession.getVariable("t");
-//                final int var2 = t.getColumn("Z").getInt(0);
-//                assertEquals(ComparePrimitives.min(Y, z), var2);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//
-//            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=min(Y, 5d)\")\n";
-//            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-//                QueryScope.addParam("z", z);
-//                irisDbGroovySession.evaluate(c);
-//                final Table t = (Table) irisDbGroovySession.getVariable("t");
-//                final double var2 = t.getColumn("Z").getDouble(0);
-//                assertEquals(ComparePrimitives.min(Y, 5d), var2, 1e-10);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//
-//            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=min(Y, d)\")\n";
-//            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-//                QueryScope.addParam("z", z);
-//                QueryScope.addParam("d", d);
-//                irisDbGroovySession.evaluate(c);
-//                final Table t = (Table) irisDbGroovySession.getVariable("t");
-//                final double var2 = t.getColumn("Z").getDouble(0);
-//                assertEquals(ComparePrimitives.min(Y, d), var2, 1e-10);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//
-//            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=max(Y, z)\")\n";
-//            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-//                QueryScope.addParam("z", z);
-//                irisDbGroovySession.evaluate(c);
-//                final Table t = (Table) irisDbGroovySession.getVariable("t");
-//                final int var2 = t.getColumn("Z").getInt(0);
-//                assertEquals(IntegerNumericPrimitives.max(Y, z), var2);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//
-//
-//            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=max(Y, 5d)\")\n";
-//            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-//                QueryScope.addParam("z", z);
-//                irisDbGroovySession.evaluate(c);
-//                final Table t = (Table) irisDbGroovySession.getVariable("t");
-//                final double var2 = t.getColumn("Z").getDouble(0);
-//                assertEquals(ComparePrimitives.max(Y, 5d), var2, 1e-10);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//
-//            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=max(Y, d)\")\n";
-//            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-//                QueryScope.addParam("z", z);
-//                QueryScope.addParam("d", d);
-//                irisDbGroovySession.evaluate(c);
-//                final Table t = (Table) irisDbGroovySession.getVariable("t");
-//                final double var2 = t.getColumn("Z").getDouble(0);
-//                assertEquals(ComparePrimitives.max(Y, d), var2, 1e-10);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//
-//            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sort(Y, z)\")\n";
-//            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-//                QueryScope.addParam("z", z);
-//                irisDbGroovySession.evaluate(c);
-//                final Table t = (Table) irisDbGroovySession.getVariable("t");
-//                final int[] var2 = (int[]) t.getColumn("Z").get(0);
-//                assertArrayEquals(IntegerNumericPrimitives.sort(Y, z), var2);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//
-//            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sort(new Number[]{Y, d})\")\n";
-//            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-//                QueryScope.addParam("z", z);
-//                QueryScope.addParam("d", d);
-//                irisDbGroovySession.evaluate(c);
-//                final Table t = (Table) irisDbGroovySession.getVariable("t");
-//                final Number[] var2 = (Number[]) t.getColumn("Z").get(0);
-//                assertArrayEquals(ObjectPrimitives.sort(Y, d), var2);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//
-//            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sortDescending(Y, z)\")\n";
-//            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-//                QueryScope.addParam("z", z);
-//                irisDbGroovySession.evaluate(c);
-//                final Table t = (Table) irisDbGroovySession.getVariable("t");
-//                final int[] var2 = (int[]) t.getColumn("Z").get(0);
-//                assertArrayEquals(IntegerNumericPrimitives.sortDescending(Y, z), var2);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//
-//            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sortDescending(new Number[]{Y, d})\")\n";
-//            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-//                QueryScope.addParam("z", z);
-//                QueryScope.addParam("d", d);
-//                irisDbGroovySession.evaluate(c);
-//                final Table t = (Table) irisDbGroovySession.getVariable("t");
-//                final Number[] var2 = (Number[]) t.getColumn("Z").get(0);
-//                assertArrayEquals(ObjectPrimitives.sortDescending(Y, d), var2);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//
-//            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=ssVec(Y, z)\")\n";
-//            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-//                QueryScope.addParam("z", z);
-//                irisDbGroovySession.evaluate(c);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                fail("Fail for : \n" + c);
-//            }
-//        } finally {
-//            propertySaver.restore();
-//        }
-//    }
+        try {
+            session.evaluateScript("println \"Going to source\";\nimport io.deephaven.engine.util.scripts.Imported;\nImported.main()\n", "Script3").throwIfError();
+            fail("failed to error out");
+        } catch (RuntimeException e) {
+            assertEquals("Error encountered at line 3: Imported.main()", e.getMessage());
+            final Throwable cause = e.getCause();
+            assertEquals(RuntimeException.class, cause.getClass());
+            assertEquals("Busted", cause.getMessage());
+            assertNull(cause.getCause());
+        }
 
+        try {
+            session.evaluateScript("println \"Hello there\";\n\n// some more blank lines\n\n\n\n\n\n\n\nprintln \"Going to source\";\nimport io.deephaven.engine.util.scripts.ShortSource;\nShortSource.main();\n", "Script4").throwIfError();
+            fail("failed to error out");
+        } catch (RuntimeException e) {
+            // Check for the re-thrown exception pointing at our evaluated groovy command
+            assertEquals("Error encountered at line 13: ShortSource.main();", e.getMessage());
+
+            // Confirm that it wraps the thrown RuntimeException in the imported script
+            final Throwable cause = e.getCause();
+            assertEquals(RuntimeException.class, cause.getClass());
+            assertEquals("Busted Short", cause.getMessage());
+            assertNull(cause.getCause());
+        }
+    }
+
+    @Test
+    public void testPotentialAmbiguousMethodCalls() {
+            int[] a = new int[]{5, 2, 3};
+            int z = 1;
+            int Y = 2;
+            double d = 5d;
+            String c = null;
+            try {
+                c = "primMin = min(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ");\n";
+                session.evaluateScript(c).throwIfError();
+                Integer primMin = (Integer) session.getVariable("primMin");
+                assertEquals(Numeric.min(a), primMin.intValue());
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+
+            try {
+                c = "z = " + z + "; \n" + "d = " + d + "; \n" +
+                        "wrapMin = min(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ", z);\n";
+                session.evaluateScript(c).throwIfError();
+                Integer wrapperMin = (Integer) session.getVariable("wrapMin");
+                assertEquals(Math.min(Numeric.min(a), z), wrapperMin.intValue());
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+
+            try {
+                c = "z = " + z + "; \n" + "d = " + d + "; \n" +
+                        "m2 = max(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ", z, d);\n";
+                session.evaluateScript(c).throwIfError();
+                Double wrapperMax = (Double) session.getVariable("m2");
+                assertEquals(5.0d, wrapperMax, 0.0d);
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+
+            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=min(Y, z)\")\n";
+            try {
+//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
+                QueryScope.addParam("z", z);
+                session.evaluateScript(c).throwIfError();
+                final Table t = (Table) session.getVariable("t");
+                final int var2 = t.getColumnSource("Z").getInt(0);
+                assertEquals(Numeric.min(Y, z), var2);
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+
+            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=min(Y, 5d)\")\n";
+            try {
+//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
+                QueryScope.addParam("z", z);
+                session.evaluateScript(c).throwIfError();
+                final Table t = (Table) session.getVariable("t");
+                final double var2 = t.getColumnSource("Z").getDouble(0);
+                assertEquals(Numeric.min(Y, 5d), var2, 1e-10);
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+
+            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=min(Y, d)\")\n";
+            try {
+//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
+                QueryScope.addParam("z", z);
+                QueryScope.addParam("d", d);
+                session.evaluateScript(c).throwIfError();
+                final Table t = (Table) session.getVariable("t");
+                final double var2 = t.getColumnSource("Z").getDouble(0);
+                assertEquals(Numeric.min(Y, d), var2, 1e-10);
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+
+            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=max(Y, z)\")\n";
+            try {
+//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
+                QueryScope.addParam("z", z);
+                session.evaluateScript(c).throwIfError();
+                final Table t = (Table) session.getVariable("t");
+                final int var2 = t.getColumnSource("Z").getInt(0);
+                assertEquals(Numeric.max(Y, z), var2);
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+
+
+            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=max(Y, 5d)\")\n";
+            try {
+//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
+                QueryScope.addParam("z", z);
+                session.evaluateScript(c).throwIfError();
+                final Table t = (Table) session.getVariable("t");
+                final double var2 = t.getColumnSource("Z").getDouble(0);
+                assertEquals(Numeric.max(Y, 5d), var2, 1e-10);
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+
+            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=max(Y, d)\")\n";
+            try {
+//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
+                QueryScope.addParam("z", z);
+                QueryScope.addParam("d", d);
+                session.evaluateScript(c).throwIfError();
+                final Table t = (Table) session.getVariable("t");
+                final double var2 = t.getColumnSource("Z").getDouble(0);
+                assertEquals(Numeric.max(Y, d), var2, 1e-10);
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+
+            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sort(Y, z)\")\n";
+            try {
+//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
+                QueryScope.addParam("z", z);
+                session.evaluateScript(c).throwIfError();
+                final Table t = (Table) session.getVariable("t");
+                final int[] var2 = t.getColumnSource("Z", int[].class).get(0);
+                assertArrayEquals(Sort.sort(Y, z), var2);
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+
+            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sort(new Number[]{Y, d})\")\n";
+            try {
+//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
+                QueryScope.addParam("z", z);
+                QueryScope.addParam("d", d);
+                session.evaluateScript(c).throwIfError();
+                final Table t = (Table) session.getVariable("t");
+                final Number[] var2 = t.getColumnSource("Z", Number[].class).get(0);
+                //noinspection unchecked
+                assertArrayEquals(Sort.<Comparable>sortObj(Y, d), var2);
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+
+            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sortDescending(Y, z)\")\n";
+            try {
+//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
+                QueryScope.addParam("z", z);
+                session.evaluateScript(c).throwIfError();
+                final Table t = (Table) session.getVariable("t");
+                final int[] var2 = t.getColumnSource("Z", int[].class).get(0);
+                assertArrayEquals(Sort.sortDescending(Y, z), var2);
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+
+            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sortDescending(new Number[]{Y, d})\")\n";
+            try {
+//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
+                QueryScope.addParam("z", z);
+                QueryScope.addParam("d", d);
+                session.evaluateScript(c).throwIfError();
+                final Table t = (Table) session.getVariable("t");
+                final Number[] var2 = t.getColumnSource("Z", Number[].class).get(0);
+                //noinspection unchecked
+                assertArrayEquals(Sort.<Comparable>sortDescendingObj(Y, d), var2);
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+
+            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=ssVec(Y, z)\")\n";
+            try {
+//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
+                QueryScope.addParam("z", z);
+                session.evaluateScript(c).throwIfError();
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Fail for : \n" + c);
+            }
+    }
+
+
+    @Test
+    public void testMinInFormula() {
+        QueryScope.addParam("d", 5d);
+        session.evaluateScript("t = emptyTable(1).updateView(\"Y=1\", \"Z=min(Y,d)\")\n").throwIfError();
+        final Table t = (Table) session.getVariable("t");
+//        System.out.println(t.getColumnSource("Z").getType());
+    }
 }
 
