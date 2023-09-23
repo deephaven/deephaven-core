@@ -44,9 +44,6 @@ public interface Session
     /**
      * Releases an export ID.
      *
-     * <p>
-     * Note: this should <b>only</b> be called in combination with exports returned from {@link #newExportId()}.
-     *
      * @param exportId the export ID
      * @return the future
      */
