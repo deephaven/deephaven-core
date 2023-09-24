@@ -101,10 +101,11 @@ public interface TransferObject<B> extends SafeCloseable {
 //            // else if (big decimal)
 //            // else if (big integer)
         }
-//        if (Vector.class.isAssignableFrom(dataType)) {
-//            if (int.class.equals(componentType)) {
-//                return IntVectorTransfer.create(columnSource, instructions.getTargetPageSize());
-//            } else if (long.class.equals(componentType)) {
+        if (Vector.class.isAssignableFrom(dataType)) {
+            if (int.class.equals(componentType)) {
+                return new IntVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            }
+//            else if (long.class.equals(componentType)) {
 //                return LongVectorTransfer.create(columnSource, instructions.getTargetPageSize());
 //            } else if (double.class.equals(componentType)) {
 //                return DoubleVectorTransfer.create(columnSource, instructions.getTargetPageSize());
@@ -124,7 +125,7 @@ public interface TransferObject<B> extends SafeCloseable {
 //            // else if (explicit codec provided)
 //            // else if (big decimal)
 //            // else if (big integer)
-//        }
+        }
 
         // Following will properly select the specific codec if assigned for this column, else will get the default
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);

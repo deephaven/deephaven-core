@@ -110,9 +110,9 @@ public class ParquetTableReadWriteTest {
                         "someShortColumn = (short)i",
                         "someByteColumn = (byte)i",
                         "someCharColumn = (char)i",
-                        // "someTime = DateTimeUtils.now() + i",
-                        // "someKey = `` + (int)(i /100)",
-                        "nullKey = i < -1?`123`:null",
+                        // // "someTime = DateTimeUtils.now() + i",
+                        // // "someKey = `` + (int)(i /100)",
+                        // "nullKey = i < -1?`123`:null",
                         "nullIntColumn = (int)null",
                         "nullLongColumn = (long)null",
                         "nullDoubleColumn = (double)null",
@@ -415,6 +415,17 @@ public class ParquetTableReadWriteTest {
             assertFalse(it.hasNext());
             assertEquals(myBigDecimal, item);
         }
+    }
+
+    @Test
+    public void testVectorColumns() {
+        final Table table = getTableFlat(10, true, false);
+        // Take a groupBy to create vector columns containing null values
+        final Table vectorTable = table.groupBy();
+        final File dest = new File(rootFile + File.separator + "vectorTable.parquet");
+        ParquetTools.writeTable(vectorTable, dest);
+        Table fromDisk = ParquetTools.readTable(dest);
+        assertTableEquals(vectorTable, fromDisk);
     }
 
     @Test

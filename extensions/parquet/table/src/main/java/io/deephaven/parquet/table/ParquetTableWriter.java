@@ -65,15 +65,10 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  */
 public class ParquetTableWriter {
     private static final int INITIAL_DICTIONARY_SIZE = 1 << 8;
-
     public static final String METADATA_KEY = "deephaven";
-
-    private static final int LOCAL_CHUNK_SIZE = 1024;
-
     public static final String BEGIN_POS = "dh_begin_pos";
     public static final String END_POS = "dh_end_pos";
     public static final String GROUPING_KEY = "dh_key";
-
     public static final String PARQUET_FILE_EXTENSION = ".parquet";
 
     /**
@@ -630,40 +625,6 @@ public class ParquetTableWriter {
             return false;
         }
     }
-
-    // TODO Delete this when done
-    // /**
-    // * Get the number of rows that fit within the current targetPageSize for the specified type.
-    // *
-    // * @param columnType the column type
-    // * @return the number of rows that fit within the target page size.
-    // */
-    // private static int getTargetRowsPerPage(@NotNull final Class<?> columnType,
-    // final int targetPageSize)
-    // throws IllegalAccessException {
-    // if (columnType == Boolean.class) {
-    // return targetPageSize * 8;
-    // }
-    //
-    // if (columnType == short.class || columnType == char.class || columnType == byte.class) {
-    // return targetPageSize / Integer.BYTES;
-    // }
-    //
-    // if (columnType == String.class) {
-    // // We don't know the length of strings until we read the actual data. Therefore, we take a relaxed estimate
-    // // here and final calculation is done when writing the data.
-    // return targetPageSize;
-    // }
-    //
-    // try {
-    // final Field bytesCountField = TypeUtils.getBoxedType(columnType).getField("BYTES");
-    // return targetPageSize / ((Integer) bytesCountField.get(null));
-    // } catch (NoSuchFieldException e) {
-    // // We assume the baseline and go from there
-    // return targetPageSize / 8;
-    // }
-    // }
-
 
     private static Table groupingAsTable(Table tableToSave, String columnName) {
         final QueryTable coalesced = (QueryTable) tableToSave.coalesce();

@@ -48,7 +48,6 @@ class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer> imple
         // Fetch one page worth of data from the column source
         final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength((long) maxValuesPerPage);
         columnSource.fillChunk(context, chunk, rs);
-
         // Assuming that buffer and chunk are backed by the same array.
         buffer.position(0);
         buffer.limit(chunk.size());

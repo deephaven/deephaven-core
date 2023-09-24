@@ -5,20 +5,21 @@ package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.vector.IntVectorColumnWrapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
 
 // TODO Add comments
-final class IntArrayTransfer extends ArrayAndVectorTransfer<int[], IntBuffer> {
-    IntArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
+final class IntVectorTransfer extends ArrayAndVectorTransfer<IntVectorColumnWrapper, IntBuffer> {
+    IntVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize, IntBuffer.allocate(targetPageSize / Integer.BYTES));
     }
 
     @Override
-    EncodedData encodeDataForBuffering(@NotNull final int[] data) {
+    EncodedData encodeDataForBuffering(@NotNull final IntVectorColumnWrapper data) {
         // TODO Add comment
-        return new EncodedData(data, data.length);
+        return new EncodedData(data, data.intSize());
     }
 
     @Override
@@ -27,7 +28,7 @@ final class IntArrayTransfer extends ArrayAndVectorTransfer<int[], IntBuffer> {
     }
 
     @Override
-    void copyToBuffer(@NotNull final int[] data) {
-        buffer.put(data);
+    void copyToBuffer(@NotNull final IntVectorColumnWrapper data) {
+        data.iterator().forEachRemaining((int value) -> buffer.put(value));
     }
 }

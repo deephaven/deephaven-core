@@ -3,10 +3,8 @@
  */
 package io.deephaven.parquet.table.transfer;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import org.apache.parquet.io.api.Binary;
