@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table.transfer;
 
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.codec.ObjectCodec;
 import org.apache.parquet.io.api.Binary;
@@ -12,13 +13,14 @@ final class CodecTransfer<T> extends EncodedTransfer<T> {
     private final ObjectCodec<? super T> codec;
 
     CodecTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final ObjectCodec<? super T> codec,
-            final int targetPageSize) {
-        super(columnSource, targetPageSize);
+            @NotNull final RowSequence tableRowSet, final int targetPageSize) {
+        super(columnSource, tableRowSet, targetPageSize);
         this.codec = codec;
     }
 
     @Override
-    Binary encodeToBinary(T value) {
-        return Binary.fromConstantByteArray(codec.encode(value));
+    EncodedData encodeDataForBuffering(@NotNull T data) {
+        Binary encodedValue = Binary.fromConstantByteArray(codec.encode(data));
+        return new EncodedData(encodedValue, encodedValue.length());
     }
 }

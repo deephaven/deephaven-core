@@ -27,7 +27,11 @@ final class IntArrayTransfer extends ArrayAndVectorTransfer<int[], IntBuffer> {
     }
 
     @Override
-    void copyToBuffer(@NotNull final int[] data) {
+    boolean copyToBuffer(@NotNull final int[] data) {
+        if (data.length > buffer.remaining()) {
+            return false;
+        }
         buffer.put(data);
+        return true;
     }
 }

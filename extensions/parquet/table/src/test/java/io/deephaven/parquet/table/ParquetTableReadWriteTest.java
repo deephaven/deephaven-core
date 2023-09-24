@@ -98,10 +98,10 @@ public class ParquetTableReadWriteTest {
         ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList(
-                        // "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
-                        // "nonNullString = `` + (i % 60)",
-                        // "nullString = (String) null",
-                        // "nonNullPolyString = `` + (i % 600)",
+                        "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
+                        "nonNullString = `` + (i % 60)",
+                        "nullString = (String) null",
+                        "nonNullPolyString = `` + (i % 600)",
                         "someIntColumn = i",
                         "someLongColumn = ii",
                         "someDoubleColumn = i*1.1",
@@ -110,9 +110,9 @@ public class ParquetTableReadWriteTest {
                         "someShortColumn = (short)i",
                         "someByteColumn = (byte)i",
                         "someCharColumn = (char)i",
-                        // // "someTime = DateTimeUtils.now() + i",
-                        // // "someKey = `` + (int)(i /100)",
-                        // "nullKey = i < -1?`123`:null",
+                        "someTime = DateTimeUtils.now() + i",
+                        "someKey = `` + (int)(i /100)",
+                        "nullKey = i < -1?`123`:null",
                         "nullIntColumn = (int)null",
                         "nullLongColumn = (long)null",
                         "nullDoubleColumn = (double)null",
@@ -120,17 +120,16 @@ public class ParquetTableReadWriteTest {
                         "nullBoolColumn = (Boolean)null",
                         "nullShortColumn = (short)null",
                         "nullByteColumn = (byte)null",
-                        "nullCharColumn = (char)null"
-                // "nullTime = (Instant)null",
-                // "nullString = (String)null"
-                ));
-        // if (includeBigDecimal) {
-        // columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
-        // columns.add("biColumn = java.math.BigInteger.valueOf(ii)");
-        // }
-        // if (includeSerializable) {
-        // columns.add("someSerializable = new SomeSillyTest(i)");
-        // }
+                        "nullCharColumn = (char)null",
+                        "nullTime = (Instant)null",
+                        "nullString = (String)null"));
+        if (includeBigDecimal) {
+            columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
+            columns.add("biColumn = java.math.BigInteger.valueOf(ii)");
+        }
+        if (includeSerializable) {
+            columns.add("someSerializable = new SomeSillyTest(i)");
+        }
         return TableTools.emptyTable(size).select(
                 Selectable.from(columns));
     }
@@ -491,16 +490,15 @@ public class ParquetTableReadWriteTest {
      * @return
      */
     private Table maybeFixBigDecimal(Table toFix) {
-        return toFix;
-        // final BigDecimalUtils.PrecisionAndScale pas = BigDecimalUtils.computePrecisionAndScale(toFix, "bdColumn");
-        // final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale, -1);
-        //
-        // ExecutionContext.getContext()
-        // .getQueryScope()
-        // .putParam("__codec", codec);
-        // return toFix
-        // .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
-        // .dropColumns("bdColE");
+        final BigDecimalUtils.PrecisionAndScale pas = BigDecimalUtils.computePrecisionAndScale(toFix, "bdColumn");
+        final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale, -1);
+
+        ExecutionContext.getContext()
+                .getQueryScope()
+                .putParam("__codec", codec);
+        return toFix
+                .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
+                .dropColumns("bdColE");
     }
 
     // Following is used for testing both writing APIs for parquet tables

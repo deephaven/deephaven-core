@@ -28,7 +28,11 @@ final class IntVectorTransfer extends ArrayAndVectorTransfer<IntVectorColumnWrap
     }
 
     @Override
-    void copyToBuffer(@NotNull final IntVectorColumnWrapper data) {
+    boolean copyToBuffer(@NotNull final IntVectorColumnWrapper data) {
+        if (data.intSize() > buffer.remaining()) {
+            return false;
+        }
         data.iterator().forEachRemaining((int value) -> buffer.put(value));
+        return true;
     }
 }

@@ -3,17 +3,20 @@
  */
 package io.deephaven.parquet.table.transfer;
 
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
 final class StringTransfer extends EncodedTransfer<String> {
-    StringTransfer(@NotNull final ColumnSource<?> columnSource, final int targetPageSize) {
-        super(columnSource, targetPageSize);
+    StringTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+            final int targetPageSize) {
+        super(columnSource, tableRowSet, targetPageSize);
     }
 
     @Override
-    Binary encodeToBinary(String value) {
-        return Binary.fromString(value);
+    EncodedData encodeDataForBuffering(@NotNull String data) {
+        Binary encodedValue = Binary.fromString(data);
+        return new EncodedData(encodedValue, encodedValue.length());
     }
 }

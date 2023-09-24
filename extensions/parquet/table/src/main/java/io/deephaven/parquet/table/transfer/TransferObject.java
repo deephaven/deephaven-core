@@ -54,7 +54,7 @@ public interface TransferObject<B> extends SafeCloseable {
         } else if (byte.class.equals(columnType)) {
             return new ByteTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (String.class.equals(columnType)) {
-            return new StringTransfer(columnSource, instructions.getTargetPageSize());
+            return new StringTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
 
         // If there's an explicit codec, we should disregard the defaults for these CodecLookup#lookup() will properly
@@ -67,9 +67,9 @@ public interface TransferObject<B> extends SafeCloseable {
                         computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
                 final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
                         precisionAndScale.precision, precisionAndScale.scale, -1);
-                return new CodecTransfer<>(bigDecimalColumnSource, codec, instructions.getTargetPageSize());
+                return new CodecTransfer<>(bigDecimalColumnSource, codec, tableRowSet, instructions.getTargetPageSize());
             } else if (BigInteger.class.equals(columnType)) {
-                return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1),
+                return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
                         instructions.getTargetPageSize());
             }
         }
@@ -129,7 +129,7 @@ public interface TransferObject<B> extends SafeCloseable {
 
         // Following will properly select the specific codec if assigned for this column, else will get the default
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
-        return new CodecTransfer<>(columnSource, codec, instructions.getTargetPageSize());
+        return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
     }
 
     // TODO Rewrite the comments for this file

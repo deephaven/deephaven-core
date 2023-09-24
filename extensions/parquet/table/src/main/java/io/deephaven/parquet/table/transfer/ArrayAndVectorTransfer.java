@@ -14,20 +14,13 @@ import java.nio.IntBuffer;
 /**
  * TODO Add comments
  */
-abstract class ArrayAndVectorTransfer<T, B extends Buffer> extends VariableWidthTransfer<T, B> {
-    B buffer;
-    IntBuffer arrayLengths; // TODO Use better name
+abstract class ArrayAndVectorTransfer<T, B extends Buffer> extends VariableWidthTransfer<T, T, B> {
+    protected final IntBuffer arrayLengths; // TODO Use better name
 
     ArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int maxValuesPerPage, final int targetPageSize, @NotNull final B buffer) {
-        super(columnSource, tableRowSet, maxValuesPerPage, targetPageSize);
-        this.buffer = buffer;
+        super(columnSource, tableRowSet, maxValuesPerPage, targetPageSize, buffer);
         this.arrayLengths = IntBuffer.allocate(maxValuesPerPage);
-    }
-
-    @Override
-    public final B getBuffer() {
-        return buffer;
     }
 
     @Override
@@ -49,17 +42,27 @@ abstract class ArrayAndVectorTransfer<T, B extends Buffer> extends VariableWidth
     }
 
     @Override
-    void addNullToBuffer() {
+    final boolean addNullToBuffer() {
         // TODO Do we need to add anything to buffer?
+        if (!arrayLengths.hasRemaining()) {
+            return false;
+        }
         arrayLengths.put(QueryConstants.NULL_INT);
+        return true;
     }
 
     // TODO Use better names
-    void addEncodedDataToBuffer(@NotNull final VariableWidthTransfer<T, B>.EncodedData encodedData) {
-        copyToBuffer(encodedData.data);
+    final boolean addEncodedDataToBuffer(@NotNull final EncodedData encodedData) {
+        if (!arrayLengths.hasRemaining()) {
+            return false;
+        }
+        if (!copyToBuffer(encodedData.data)) {
+            return false;
+        }
         arrayLengths.put(encodedData.numBytes);
+        return true;
     }
 
-    abstract void copyToBuffer(@NotNull final T data);
+    abstract boolean copyToBuffer(@NotNull final T data);
 }
 

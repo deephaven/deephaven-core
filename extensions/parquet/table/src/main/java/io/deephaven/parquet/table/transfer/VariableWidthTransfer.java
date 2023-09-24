@@ -15,8 +15,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * TODO Add comments
  */
-abstract class VariableWidthTransfer<T, B> implements TransferObject<B> {
-    protected ObjectChunk<T, Values> chunk;
+abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
+    private ObjectChunk<T, Values> chunk;
+    protected final B buffer;
     private final ColumnSource<?> columnSource;
     private final RowSequence.Iterator tableRowSetIt;
     private final ChunkSource.GetContext context;
@@ -30,7 +31,7 @@ abstract class VariableWidthTransfer<T, B> implements TransferObject<B> {
     private EncodedData cachedValue;
 
     VariableWidthTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-            final int maxValuesPerPage, final int targetPageSize) {
+            final int maxValuesPerPage, final int targetPageSize, @NotNull final B buffer) {
         this.columnSource = columnSource;
         this.tableRowSetIt = tableRowSet.getRowSequenceIterator();
         this.targetPageSize = targetPageSize;
@@ -39,6 +40,12 @@ abstract class VariableWidthTransfer<T, B> implements TransferObject<B> {
         Assert.gtZero(maxValuesPerPage, "maxValuesPerPage");
         this.context = columnSource.makeGetContext(maxValuesPerPage);
         this.currentChunkIdx = 0;
+        this.buffer = buffer;
+    }
+
+    @Override
+    public final B getBuffer() {
+        return buffer;
     }
 
     final public boolean hasMoreDataToBuffer() {
@@ -48,17 +55,17 @@ abstract class VariableWidthTransfer<T, B> implements TransferObject<B> {
 
     // TODO Add comments
     class EncodedData {
-        T data;
+        E data;
         int numBytes;
 
-        EncodedData(@NotNull final T data, final int numBytes) {
+        EncodedData(@NotNull final E data, final int numBytes) {
             this.data = data;
             this.numBytes = numBytes;
         }
     }
 
     // TODO Add comments about what to be done before and after calling this method
-    void transferOnePageToBufferHelper() {
+    final void transferOnePageToBufferHelper() {
         if (!hasMoreDataToBuffer()) {
             return;
         }
@@ -69,13 +76,17 @@ abstract class VariableWidthTransfer<T, B> implements TransferObject<B> {
                 final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(maxValuesPerPage);
                 // noinspection unchecked
                 chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
+                currentChunkIdx = 0;
             }
             final int chunkSize = chunk.size();
             while (currentChunkIdx < chunkSize) {
                 final T data = chunk.get(currentChunkIdx);
                 if (data == null) {
+                    if (!addNullToBuffer()) {
+                        stop = true;
+                        break;
+                    }
                     currentChunkIdx++;
-                    addNullToBuffer();
                     continue;
                 }
                 EncodedData nextEntry;
@@ -87,12 +98,12 @@ abstract class VariableWidthTransfer<T, B> implements TransferObject<B> {
                 }
                 int numBytesBuffered = getNumBytesBuffered();
                 // Always copy the first entry
-                if (numBytesBuffered != 0 && numBytesBuffered + nextEntry.numBytes > targetPageSize) {
+                if ((numBytesBuffered != 0 && numBytesBuffered + nextEntry.numBytes > targetPageSize) ||
+                        !addEncodedDataToBuffer(nextEntry)) {
                     stop = true;
                     cachedValue = nextEntry;
                     break;
                 }
-                addEncodedDataToBuffer(nextEntry);
                 currentChunkIdx++;
             }
             if (currentChunkIdx == chunk.size()) {
@@ -101,13 +112,13 @@ abstract class VariableWidthTransfer<T, B> implements TransferObject<B> {
         } while (!stop && tableRowSetIt.hasMore());
     }
 
-    abstract void addNullToBuffer();
+    abstract boolean addNullToBuffer();
+
+    abstract boolean addEncodedDataToBuffer(@NotNull final EncodedData encodedData); // TODO Use better names
 
     abstract int getNumBytesBuffered();
 
     abstract EncodedData encodeDataForBuffering(@NotNull final T data);
-
-    abstract void addEncodedDataToBuffer(@NotNull final EncodedData encodedData);
 
     final public void close() {
         context.close();
