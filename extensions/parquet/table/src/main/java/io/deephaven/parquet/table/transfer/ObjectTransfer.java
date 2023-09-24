@@ -14,13 +14,13 @@ import java.util.Arrays;
  * Used as a base class of transfer objects for types like strings or big integers that need specialized encoding, and
  * thus we need to enforce page size limits while writing.
  */
-abstract class EncodedTransfer<T> extends VariableWidthTransfer<T, Binary, Binary[]> {
+abstract class ObjectTransfer<T> extends VariableWidthTransfer<T, Binary, Binary[]> {
     final private int bufferSize;
     private int bufferedDataCount;
     private int numBytesBuffered;
 
-    EncodedTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-            final int targetPageSize) {
+    ObjectTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+                   final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize, targetPageSize, new Binary[targetPageSize]);
         bufferSize = targetPageSize;
         bufferedDataCount = 0;

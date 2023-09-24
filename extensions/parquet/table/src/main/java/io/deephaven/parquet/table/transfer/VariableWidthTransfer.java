@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
  */
 abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
     private ObjectChunk<T, Values> chunk;
-    protected final B buffer;
+    protected B buffer; // Not final because we might need to resize it in case of overflow
     private final ColumnSource<?> columnSource;
     private final RowSequence.Iterator tableRowSetIt;
     private final ChunkSource.GetContext context;
@@ -56,11 +56,18 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
     // TODO Add comments
     class EncodedData {
         E data;
+        int numValues; // TODO Add comments
         int numBytes;
 
         EncodedData(@NotNull final E data, final int numBytes) {
             this.data = data;
             this.numBytes = numBytes;
+            this.numValues = 1;
+        }
+
+        EncodedData(@NotNull final E data, final int numValues, final int numBytes) {
+            this(data, numBytes);
+            this.numValues = numValues;
         }
     }
 
@@ -112,6 +119,7 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
         } while (!stop && tableRowSetIt.hasMore());
     }
 
+    // TODO Add comments explaining what each does
     abstract boolean addNullToBuffer();
 
     abstract boolean addEncodedDataToBuffer(@NotNull final EncodedData encodedData); // TODO Use better names

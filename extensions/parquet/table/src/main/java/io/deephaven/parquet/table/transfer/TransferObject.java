@@ -3,7 +3,6 @@
  */
 package io.deephaven.parquet.table.transfer;
 
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
@@ -12,7 +11,6 @@ import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.parquet.table.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.codec.ObjectCodec;
-import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,7 +18,6 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.IntBuffer;
-import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -104,8 +101,7 @@ public interface TransferObject<B> extends SafeCloseable {
         if (Vector.class.isAssignableFrom(dataType)) {
             if (int.class.equals(componentType)) {
                 return new IntVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-            }
-//            else if (long.class.equals(componentType)) {
+//            } else if (long.class.equals(componentType)) {
 //                return LongVectorTransfer.create(columnSource, instructions.getTargetPageSize());
 //            } else if (double.class.equals(componentType)) {
 //                return DoubleVectorTransfer.create(columnSource, instructions.getTargetPageSize());
@@ -119,9 +115,9 @@ public interface TransferObject<B> extends SafeCloseable {
 //                return new CharVectorTransfer(columnSource, instructions.getTargetPageSize());
 //            } else if (byte.class.equals(componentType)) {
 //                return new ByteVectorTransfer(columnSource, instructions.getTargetPageSize());
-//            } else if (String.class.equals(componentType)) {
-//                return new StringVectorTransfer(columnSource, instructions.getTargetPageSize());
-//            }
+            } else if (String.class.equals(componentType)) {
+                return new StringVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            }
 //            // else if (explicit codec provided)
 //            // else if (big decimal)
 //            // else if (big integer)

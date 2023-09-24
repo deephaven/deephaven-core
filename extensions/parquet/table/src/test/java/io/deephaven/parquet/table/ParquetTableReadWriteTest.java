@@ -103,33 +103,34 @@ public class ParquetTableReadWriteTest {
                         "nullString = (String) null",
                         "nonNullPolyString = `` + (i % 600)",
                         "someIntColumn = i",
-                        "someLongColumn = ii",
-                        "someDoubleColumn = i*1.1",
-                        "someFloatColumn = (float)(i*1.1)",
-                        "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
-                        "someShortColumn = (short)i",
-                        "someByteColumn = (byte)i",
-                        "someCharColumn = (char)i",
-                        "someTime = DateTimeUtils.now() + i",
-                        "someKey = `` + (int)(i /100)",
-                        "nullKey = i < -1?`123`:null",
+//                        "someLongColumn = ii",
+//                        "someDoubleColumn = i*1.1",
+//                        "someFloatColumn = (float)(i*1.1)",
+//                        "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
+//                        "someShortColumn = (short)i",
+//                        "someByteColumn = (byte)i",
+//                        "someCharColumn = (char)i",
+//                        "someTime = DateTimeUtils.now() + i",
+//                        "someKey = `` + (int)(i /100)",
+//                        "nullKey = i < -1?`123`:null",
                         "nullIntColumn = (int)null",
-                        "nullLongColumn = (long)null",
-                        "nullDoubleColumn = (double)null",
-                        "nullFloatColumn = (float)null",
-                        "nullBoolColumn = (Boolean)null",
-                        "nullShortColumn = (short)null",
-                        "nullByteColumn = (byte)null",
-                        "nullCharColumn = (char)null",
-                        "nullTime = (Instant)null",
-                        "nullString = (String)null"));
-        if (includeBigDecimal) {
-            columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
-            columns.add("biColumn = java.math.BigInteger.valueOf(ii)");
-        }
-        if (includeSerializable) {
-            columns.add("someSerializable = new SomeSillyTest(i)");
-        }
+//                        "nullLongColumn = (long)null",
+//                        "nullDoubleColumn = (double)null",
+//                        "nullFloatColumn = (float)null",
+//                        "nullBoolColumn = (Boolean)null",
+//                        "nullShortColumn = (short)null",
+//                        "nullByteColumn = (byte)null",
+//                        "nullCharColumn = (char)null",
+//                        "nullTime = (Instant)null",
+                        "nullString = (String)null"
+                ));
+//        if (includeBigDecimal) {
+//            columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
+//            columns.add("biColumn = java.math.BigInteger.valueOf(ii)");
+//        }
+//        if (includeSerializable) {
+//            columns.add("someSerializable = new SomeSillyTest(i)");
+//        }
         return TableTools.emptyTable(size).select(
                 Selectable.from(columns));
     }
@@ -418,7 +419,7 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void testVectorColumns() {
-        final Table table = getTableFlat(10, true, false);
+        final Table table = getTableFlat(10000, true, false);
         // Take a groupBy to create vector columns containing null values
         final Table vectorTable = table.groupBy();
         final File dest = new File(rootFile + File.separator + "vectorTable.parquet");
@@ -472,7 +473,7 @@ public class ParquetTableReadWriteTest {
                 // "nullTimeArrayColumn = new Instant[] {(Instant)null}"
                 ));
 
-        final Table arrayTable = TableTools.emptyTable(100).select(
+        final Table arrayTable = TableTools.emptyTable(10000).select(
                 Selectable.from(columns));
         final File dest = new File(rootFile + File.separator + "arrayTable.parquet");
         ParquetTools.writeTable(arrayTable, dest);

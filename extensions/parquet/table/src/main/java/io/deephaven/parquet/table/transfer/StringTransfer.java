@@ -8,7 +8,7 @@ import io.deephaven.engine.table.ColumnSource;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
-final class StringTransfer extends EncodedTransfer<String> {
+final class StringTransfer extends ObjectTransfer<String> {
     StringTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize);
