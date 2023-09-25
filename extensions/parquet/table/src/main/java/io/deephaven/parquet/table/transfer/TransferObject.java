@@ -76,7 +76,6 @@ public interface TransferObject<B> extends SafeCloseable {
         if (dataType.isArray()) {
             if (int.class.equals(componentType)) {
                 return new IntArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-            }
 //            else if (long.class.equals(componentType)) {
 //                return LongArrayTransfer.create(columnSource, instructions.getTargetPageSize());
 //            } else if (double.class.equals(componentType)) {
@@ -91,9 +90,9 @@ public interface TransferObject<B> extends SafeCloseable {
 //                return new CharArrayTransfer(columnSource, instructions.getTargetPageSize());
 //            } else if (byte.class.equals(componentType)) {
 //                return new ByteArrayTransfer(columnSource, instructions.getTargetPageSize());
-//            } else if (String.class.equals(componentType)) {
-//                return new StringArrayTransfer(columnSource, instructions.getTargetPageSize());
-//            }
+            } else if (String.class.equals(componentType)) {
+                return new StringArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            }
 //            // else if (explicit codec provided)
 //            // else if (big decimal)
 //            // else if (big integer)

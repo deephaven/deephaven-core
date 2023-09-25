@@ -7,8 +7,6 @@ import io.deephaven.engine.table.impl.vector.ObjectVectorColumnWrapper;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 final class StringVectorTransfer extends ObjectArrayAndVectorTransfer<ObjectVectorColumnWrapper<String>> {
 
     StringVectorTransfer(final @NotNull ColumnSource<?> columnSource, final @NotNull RowSequence tableRowSet,
