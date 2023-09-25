@@ -3,18 +3,17 @@
  */
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.ExportId;
-import io.deephaven.client.impl.FetchedObject;
-import io.deephaven.client.impl.HasTicketId;
+import io.deephaven.client.impl.ServerData;
+import io.deephaven.client.impl.ServerObject;
+import io.deephaven.client.impl.ObjectService.Fetchable;
 import io.deephaven.client.impl.Session;
+import io.deephaven.client.impl.TypedTicket;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
@@ -37,40 +36,45 @@ class FetchObject extends SingleSessionExampleBase {
 
     @Override
     protected void execute(Session session) throws Exception {
-        show(session, type, ticket);
+        try (
+                final Fetchable fetchable = session.fetchable(new TypedTicket(type, ticket)).get();
+                final ServerData dataAndExports = fetchable.fetch().get()) {
+            show(0, type, dataAndExports);
+        }
     }
 
-    private void show(Session session, String type, HasTicketId ticket)
+    private void show(int depth, String type, ServerData dataAndExports)
             throws IOException, ExecutionException, InterruptedException {
-        if ("Table".equals(type)) {
-            System.err.println("Unable to fetchObject for 'Table'");
-            return;
+        final String prefix = " ".repeat(depth);
+        System.err.println(prefix + "type: " + type);
+        System.err.println(prefix + "size: " + dataAndExports.data().remaining());
+        for (ServerObject export : dataAndExports.exports()) {
+            System.err.println(prefix + "exportId: " + export);
         }
-        final FetchedObject customObject = session.fetchObject(type, ticket).get();
-        show(session, customObject);
-    }
-
-    private void show(Session session, FetchedObject customObject)
-            throws IOException, ExecutionException, InterruptedException {
-        final String type = customObject.type();
-        System.err.println("type: " + type);
-        System.err.println("size: " + customObject.size());
-        for (ExportId exportId : customObject.exportIds()) {
-            System.err.println("exportId: " + exportId);
-        }
+        final byte[] data = new byte[dataAndExports.data().remaining()];
+        dataAndExports.data().slice().get(data);
         if (file != null) {
-            try (final OutputStream out = new BufferedOutputStream(Files.newOutputStream(file))) {
-                customObject.writeTo(out);
-            }
+            Files.write(file, data);
         } else {
-            customObject.writeTo(System.out);
+            System.out.write(data);
         }
         if (recursive) {
-            for (ExportId exportId : customObject.exportIds()) {
-                if (exportId.type().isPresent()) {
-                    show(session, exportId.type().get(), exportId);
-                }
+            for (ServerObject serverObject : dataAndExports.exports()) {
+                show(depth + 1, serverObject);
             }
+        }
+    }
+
+    private void show(int depth, ServerObject obj)
+            throws IOException, ExecutionException, InterruptedException {
+        if (obj instanceof Fetchable) {
+            final Fetchable fetchable = (Fetchable) obj;
+            try (final ServerData fetched = fetchable.fetch().get()) {
+                show(depth, fetchable.type(), fetched);
+            }
+        } else {
+            final String prefix = " ".repeat(depth);
+            System.err.println(prefix + obj + " is not fetchable");
         }
     }
 

@@ -34,20 +34,20 @@ class IgnoreImpl {
         }
 
         @Override
-        Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+        protected Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
             return new ByteArrayDeserializer();
         }
 
         @Override
-        KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
+        protected KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
                 SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
                 List<ColumnDefinition<?>> columnDefinitionsOut) {
             return null;
         }
 
         @Override
-        KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
+        protected KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
             return null;
         }
     }
