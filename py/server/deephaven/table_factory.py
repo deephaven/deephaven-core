@@ -373,7 +373,7 @@ def function_generated_table(table_generator: Callable[[], Table],
         refresh_interval_ms (int): Interval (in milliseconds) at which the 'table_generator' function is rerun.
         exec_ctx (ExecutionContext) -> Table): A custom execution context. If 'None', the current
             execution context is used. If there is no current execution context, a ValueError is raised.
-        **kwargs (Dictionary): Optional keyword arguments to pass to table_generator.
+        **kwargs: Optional keyword arguments to pass to table_generator.
 
     Returns:
         a new table
