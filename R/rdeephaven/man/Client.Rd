@@ -3,11 +3,10 @@
 \docType{class}
 \name{Client}
 \alias{Client}
-\title{The Deephaven R Client}
+\title{The Deephaven Client}
 \description{
-A Client is the entry point for interacting with the Deephaven server.
-It is used to create new tables, import data to and export data from the server,
-and run queries on the server.
+A Client is the entry point for interacting with the Deephaven server. It is used to create new tables,
+import data to and export data from the server, and run queries on the server.
 }
 \section{Methods}{
 \subsection{Public methods}{
