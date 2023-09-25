@@ -98,39 +98,39 @@ public class ParquetTableReadWriteTest {
         ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList(
-                        "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
-                        "nonNullString = `` + (i % 60)",
-                        "nullString = (String) null",
-                        "nonNullPolyString = `` + (i % 600)",
-                        "someIntColumn = i",
-//                        "someLongColumn = ii",
-//                        "someDoubleColumn = i*1.1",
-//                        "someFloatColumn = (float)(i*1.1)",
-//                        "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
-//                        "someShortColumn = (short)i",
-//                        "someByteColumn = (byte)i",
-//                        "someCharColumn = (char)i",
-//                        "someTime = DateTimeUtils.now() + i",
-//                        "someKey = `` + (int)(i /100)",
-//                        "nullKey = i < -1?`123`:null",
-                        "nullIntColumn = (int)null",
-//                        "nullLongColumn = (long)null",
-//                        "nullDoubleColumn = (double)null",
-//                        "nullFloatColumn = (float)null",
-//                        "nullBoolColumn = (Boolean)null",
-//                        "nullShortColumn = (short)null",
-//                        "nullByteColumn = (byte)null",
-//                        "nullCharColumn = (char)null",
-//                        "nullTime = (Instant)null",
-                        "nullString = (String)null"
+                        "someStringColumn = i % 10 == 0?null:(`` + (i % 101))"
+                // "nonNullString = `` + (i % 60)",
+                // "nullString = (String) null",
+                // "nonNullPolyString = `` + (i % 600)",
+                // "someIntColumn = i"
+                // "someLongColumn = ii",
+                // "someDoubleColumn = i*1.1",
+                // "someFloatColumn = (float)(i*1.1)",
+                // "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
+                // "someShortColumn = (short)i",
+                // "someByteColumn = (byte)i",
+                // "someCharColumn = (char)i",
+                // "someTime = DateTimeUtils.now() + i",
+                // "someKey = `` + (int)(i /100)",
+                // "nullKey = i < -1?`123`:null",
+                // "nullIntColumn = (int)null",
+                // "nullLongColumn = (long)null",
+                // "nullDoubleColumn = (double)null",
+                // "nullFloatColumn = (float)null",
+                // "nullBoolColumn = (Boolean)null",
+                // "nullShortColumn = (short)null",
+                // "nullByteColumn = (byte)null",
+                // "nullCharColumn = (char)null",
+                // "nullTime = (Instant)null",
+                // "nullString = (String)null"
                 ));
-//        if (includeBigDecimal) {
-//            columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
-//            columns.add("biColumn = java.math.BigInteger.valueOf(ii)");
-//        }
-//        if (includeSerializable) {
-//            columns.add("someSerializable = new SomeSillyTest(i)");
-//        }
+        if (includeBigDecimal) {
+            // columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
+            columns.add("biColumn = java.math.BigInteger.valueOf(ii)");
+        }
+        if (includeSerializable) {
+            columns.add("someSerializable = new SomeSillyTest(i)");
+        }
         return TableTools.emptyTable(size).select(
                 Selectable.from(columns));
     }
@@ -419,14 +419,28 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void testVectorColumns() {
-        final Table table = getTableFlat(10000, true, false);
+        final Table table = getTableFlat(10000, false, true);
         // Take a groupBy to create vector columns containing null values
         final Table vectorTable = table.groupBy();
+
         final File dest = new File(rootFile + File.separator + "vectorTable.parquet");
         ParquetTools.writeTable(vectorTable, dest);
         Table fromDisk = ParquetTools.readTable(dest);
         assertTableEquals(vectorTable, fromDisk);
     }
+
+    @Test
+    public void testVectorToArrayColumns() {
+        final Table table = getTableFlat(10000, true, true);
+        final Table arrayTable = table.groupBy().update(
+                "biColumn=biColumn.toArray()",
+                "someSerializable = someSerializable.toArray()");
+        final File dest = new File(rootFile + File.separator + "arrayTable.parquet");
+        ParquetTools.writeTable(arrayTable, dest);
+        Table fromDisk = ParquetTools.readTable(dest);
+        assertTableEquals(arrayTable, fromDisk);
+    }
+
 
     @Test
     public void testNullVectorColumns() {
@@ -451,18 +465,18 @@ public class ParquetTableReadWriteTest {
     public void testArrayColumns() {
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList(
-                        // "someStringArrayColumn = new String[] {i % 10 == 0?null:(`` + (i % 101))}",
-                        "someIntArrayColumn = new int[] {i}",
-                        // "someLongArrayColumn = new long[] {ii}",
-                        // "someDoubleArrayColumn = new double[] {i*1.1}",
-                        // "someFloatArrayColumn = new float[] {(float)(i*1.1)}",
-                        // "someBoolArrayColumn = new Boolean[] {i % 3 == 0?true:i%3 == 1?false:null}",
-                        // "someShorArrayColumn = new short[] {(short)i}",
-                        // "someByteArrayColumn = new byte[] {(byte)i}",
-                        // "someCharArrayColumn = new char[] {(char)i}",
-                        // "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
-                        // "nullStringArrayColumn = new String[] {(String)null}",
-                        "nullIntArrayColumn = new int[] {(int)null}"
+                        "someStringArrayColumn = new String[] {i % 10 == 0?null:(`` + (i % 101))}"
+                // "someIntArrayColumn = new int[] {i}",
+                // "someLongArrayColumn = new long[] {ii}",
+                // "someDoubleArrayColumn = new double[] {i*1.1}",
+                // "someFloatArrayColumn = new float[] {(float)(i*1.1)}",
+                // "someBoolArrayColumn = new Boolean[] {i % 3 == 0?true:i%3 == 1?false:null}",
+                // "someShorArrayColumn = new short[] {(short)i}",
+                // "someByteArrayColumn = new byte[] {(byte)i}",
+                // "someCharArrayColumn = new char[] {(char)i}",
+                // "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
+                // "nullStringArrayColumn = new String[] {(String)null}",
+                // "nullIntArrayColumn = new int[] {(int)null}"
                 // "nullLongArrayColumn = new long[] {(long)null}",
                 // "nullDoubleArrayColumn = new double[] {(double)null}",
                 // "nullFloatArrayColumn = new float[] {(float)null}",

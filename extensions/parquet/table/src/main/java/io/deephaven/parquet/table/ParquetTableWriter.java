@@ -332,84 +332,6 @@ public class ParquetTableWriter {
                 writeInstructions.getCompressionCodecName(), extraMetaData);
     }
 
-    private interface ColumnWriteHelper {
-
-        boolean isVectorFormat();
-
-        IntSupplier valuePageSizeSupplier();
-    }
-
-    /**
-     * ColumnWriteHelper for columns of "flat" data with no nesting or vector encoding.
-     */
-    private static class FlatColumnWriterHelper implements ColumnWriteHelper {
-
-        /**
-         * The maximum page size for values.
-         */
-        private final int maxValuePageSize;
-
-        private FlatColumnWriterHelper(final int maxValuePageSize) {
-            this.maxValuePageSize = maxValuePageSize;
-        }
-
-        public boolean isVectorFormat() {
-            return false;
-        }
-
-        public IntSupplier valuePageSizeSupplier() {
-            return () -> maxValuePageSize;
-        }
-    }
-
-    /**
-     * This is a helper struct storing useful data required to write column source in the parquet file, particularly
-     * helpful for writing array/vector data.
-     */
-    private static class VectorColumnWriterHelper implements ColumnWriteHelper {
-
-        /**
-         * The source for per-row array/vector lengths.
-         */
-        private final ColumnSource<?> lengthSource;
-
-        /**
-         * The RowSet for (ungrouped) values.
-         */
-        private final RowSet valueRowSet;
-
-        /**
-         * The size of each value page. Parallel to {@link #lengthPageSizes}.
-         */
-        private final TIntArrayList valuePageSizes;
-
-        /**
-         * The size of each length page. Parallel to {@link #valuePageSizes}.
-         */
-        private final TIntArrayList lengthPageSizes;
-
-        private VectorColumnWriterHelper(
-                @NotNull final ColumnSource<?> lengthSource,
-                @NotNull final RowSet valueRowSet) {
-            this.lengthSource = lengthSource;
-            this.valueRowSet = valueRowSet;
-            valuePageSizes = new TIntArrayList();
-            lengthPageSizes = new TIntArrayList();
-        }
-
-        public boolean isVectorFormat() {
-            return true;
-        }
-
-        public IntSupplier lengthPageSizeSupplier() {
-            return lengthPageSizes.iterator()::next;
-        }
-
-        public IntSupplier valuePageSizeSupplier() {
-            return valuePageSizes.iterator()::next;
-        }
-    }
-
     @VisibleForTesting
     static <DATA_TYPE> void writeColumnSource(
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
@@ -505,7 +427,8 @@ public class ParquetTableWriter {
             int dictSize = 0;
             boolean hasNulls = false;
             int maxValuesPerPage = writeInstructions.getTargetPageSize() / Integer.BYTES; // Because we will encode the
-                                                                                          // strings as integers
+                                                                                          // strings as integer
+                                                                                          // dictionary positions
             try (final ChunkSource.GetContext context = columnSourceIn.makeGetContext(maxValuesPerPage);
                     final RowSequence.Iterator tableRowSetIt = tableRowSet.getRowSequenceIterator()) {
                 int curPage = 0;

@@ -54,23 +54,6 @@ public interface TransferObject<B> extends SafeCloseable {
             return new StringTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
 
-        // If there's an explicit codec, we should disregard the defaults for these CodecLookup#lookup() will properly
-        // select the codec assigned by the instructions, so we only need to check and redirect once.
-        if (!CodecLookup.explicitCodecPresent(instructions.getCodecName(columnDefinition.getName()))) {
-            if (BigDecimal.class.equals(columnType)) {
-                // noinspection unchecked
-                final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
-                final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
-                        computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
-                final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
-                        precisionAndScale.precision, precisionAndScale.scale, -1);
-                return new CodecTransfer<>(bigDecimalColumnSource, codec, tableRowSet, instructions.getTargetPageSize());
-            } else if (BigInteger.class.equals(columnType)) {
-                return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
-                        instructions.getTargetPageSize());
-            }
-        }
-
         @Nullable final Class<?> dataType = columnDefinition.getDataType();
         @Nullable final Class<?> componentType = columnDefinition.getComponentType();
         if (dataType.isArray()) {
@@ -92,6 +75,9 @@ public interface TransferObject<B> extends SafeCloseable {
 //                return new ByteArrayTransfer(columnSource, instructions.getTargetPageSize());
             } else if (String.class.equals(componentType)) {
                 return new StringArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            } else if (BigInteger.class.equals(componentType)) {
+                return new CodecArrayTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
+                        instructions.getTargetPageSize());
             }
 //            // else if (explicit codec provided)
 //            // else if (big decimal)
@@ -116,13 +102,31 @@ public interface TransferObject<B> extends SafeCloseable {
 //                return new ByteVectorTransfer(columnSource, instructions.getTargetPageSize());
             } else if (String.class.equals(componentType)) {
                 return new StringVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            } else if (BigInteger.class.equals(componentType)) {
+                return new CodecVectorTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
+                        instructions.getTargetPageSize());
             }
 //            // else if (explicit codec provided)
 //            // else if (big decimal)
-//            // else if (big integer)
         }
 
-        // Following will properly select the specific codec if assigned for this column, else will get the default
+        // If there's an explicit codec, we should disregard the defaults for these CodecLookup#lookup() will properly
+        // select the codec assigned by the instructions, so we only need to check and redirect once.
+        if (!CodecLookup.explicitCodecPresent(instructions.getCodecName(columnDefinition.getName()))) {
+            if (BigDecimal.class.equals(columnType)) {
+                // noinspection unchecked
+                final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
+                final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
+                        computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
+                final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
+                        precisionAndScale.precision, precisionAndScale.scale, -1);
+                return new CodecTransfer<>(bigDecimalColumnSource, codec, tableRowSet, instructions.getTargetPageSize());
+            } else if (BigInteger.class.equals(columnType)) {
+                return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
+                        instructions.getTargetPageSize());
+            }
+        }
+
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
         return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
     }
