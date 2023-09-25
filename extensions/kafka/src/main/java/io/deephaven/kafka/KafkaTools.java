@@ -244,7 +244,7 @@ public class KafkaTools {
     /**
      * Enum to specify operations that may apply to either of Kafka KEY or VALUE fields.
      */
-    enum KeyOrValue {
+    public enum KeyOrValue {
         KEY, VALUE
     }
 
@@ -313,19 +313,19 @@ public class KafkaTools {
          */
         public static abstract class KeyOrValueSpec implements SchemaProviderProvider {
 
-            abstract Deserializer<?> getDeserializer(
+            protected abstract Deserializer<?> getDeserializer(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs);
 
-            abstract KeyOrValueIngestData getIngestData(
+            protected abstract KeyOrValueIngestData getIngestData(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs,
                     MutableInt nextColumnIndexMut,
                     List<ColumnDefinition<?>> columnDefinitionsOut);
 
-            abstract KeyOrValueProcessor getProcessor(
+            protected abstract KeyOrValueProcessor getProcessor(
                     TableDefinition tableDef,
                     KeyOrValueIngestData data);
         }
@@ -1502,7 +1502,7 @@ public class KafkaTools {
         }
     }
 
-    static class KeyOrValueIngestData {
+    public static class KeyOrValueIngestData {
         public Map<String, String> fieldPathToColumnName;
         public int simpleColumnIndex = NULL_COLUMN_INDEX;
         public Function<Object, Object> toObjectChunkMapper = Function.identity();

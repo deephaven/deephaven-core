@@ -32,8 +32,8 @@ public interface Session
     // ----------------------------------------------------------
 
     /**
-     * Advanced usage, creates a new export ID for {@code this} session, but must be managed by the caller. Useful for
-     * more advanced integrations, particularly around doPut. Callers are responsible for {@link #release(ExportId)
+     * Advanced usage, creates a new table export ID for {@code this} session, but must be managed by the caller. Useful
+     * for more advanced integrations, particularly around doPut. Callers are responsible for {@link #release(ExportId)
      * releasing} the export ID if necessary.
      *
      * @return the new export ID
@@ -43,9 +43,6 @@ public interface Session
 
     /**
      * Releases an export ID.
-     *
-     * <p>
-     * Note: this should <b>only</b> be called in combination with exports returned from {@link #newExportId()}.
      *
      * @param exportId the export ID
      * @return the future
@@ -63,6 +60,16 @@ public interface Session
      * @return the future
      */
     CompletableFuture<Void> publish(HasTicketId resultId, HasTicketId sourceId);
+
+    // ----------------------------------------------------------
+
+    /**
+     * Exports {@code typedTicket} to a client-managed server object.
+     *
+     * @param typedTicket the typed ticket
+     * @return the future
+     */
+    CompletableFuture<? extends ServerObject> export(HasTypedTicket typedTicket);
 
     // ----------------------------------------------------------
 

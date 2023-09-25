@@ -58,7 +58,6 @@ import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.vector.Vector;
@@ -732,22 +731,44 @@ public class QueryTable extends BaseTable<QueryTable> {
             }
             final List<ColumnName> groupByList = Arrays.asList(groupByColumns);
             final List<ColumnName> tableColumns = definition.getTypedColumnNames();
-            final Optional<Aggregation> agg = AggregateAllTable.singleAggregation(spec, groupByList, tableColumns);
+            final Optional<Aggregation> agg = singleAggregation(spec, groupByList, tableColumns);
             if (agg.isEmpty()) {
                 throw new IllegalArgumentException(
                         "aggAllBy has no columns to aggregate: spec=" + spec + ", groupByColumns="
                                 + toString(groupByList));
             }
-            final QueryTable tableToUse = (QueryTable) AggAllByUseTable.of(this, spec);
             final List<? extends Aggregation> aggs = List.of(agg.get());
             final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(aggs, false, null, groupByList);
-            return tableToUse.memoizeResult(aggKey, () -> {
+            return memoizeResult(aggKey, () -> {
                 final QueryTable result =
-                        tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), false, null, groupByList);
+                        aggNoMemo(AggregationProcessor.forAggregation(aggs), false, null, groupByList);
                 spec.walk(new AggAllByCopyAttributes(this, result));
                 return result;
             });
         }
+    }
+
+    /**
+     * Computes the single-aggregation from the agg-all implied by the {@code spec} and {@code groupByColumns} by
+     * removing the {@code groupByColumns} and any extra columns implied by the {@code spec}.
+     *
+     * @param spec the spec
+     * @param groupByColumns the group by columns
+     * @param tableColumns the table columns
+     * @return the aggregation, if non-empty
+     */
+    static Optional<Aggregation> singleAggregation(
+            AggSpec spec, Collection<? extends ColumnName> groupByColumns,
+            Collection<? extends ColumnName> tableColumns) {
+        Set<ColumnName> exclusions = AggregateAllExclusions.of(spec, groupByColumns, tableColumns);
+        List<ColumnName> columnsToAgg = new ArrayList<>(tableColumns.size());
+        for (ColumnName column : tableColumns) {
+            if (exclusions.contains(column)) {
+                continue;
+            }
+            columnsToAgg.add(column);
+        }
+        return columnsToAgg.isEmpty() ? Optional.empty() : Optional.of(spec.aggregation(columnsToAgg));
     }
 
     @Override
@@ -825,8 +846,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         Require.gtZero(nRows, "nRows");
 
-        Set<String> groupByColsSet = new HashSet<>(Arrays.asList(groupByColumns)); // TODO: WTF?
-        List<String> colNames = getDefinition().getColumnNames();
+        final Set<String> groupByColsSet = new HashSet<>(Arrays.asList(groupByColumns));
+        final List<String> colNames = getDefinition().getColumnNames();
 
         // Iterate through the columns and build updateView() arguments that will trim the columns to nRows rows
         String[] updates = new String[colNames.size() - groupByColumns.length];
@@ -842,24 +863,30 @@ public class QueryTable extends BaseTable<QueryTable> {
                             // colName = isNull(colName) ? null
                             // : colName.size() > nRows ? colName.subVector(0, nRows)
                             // : colName
-                            colName + '=' + "isNull(" + colName + ") ? null" +
-                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subVector(0, " + nRows
-                                    + ')' +
-                                    ':' + colName;
+                            String.format(
+                                    "%s=isNull(%s) ? null" +
+                                            ":%s.size() > %d ? %s.subVector(0, %d)" +
+                                            ":%s",
+                                    colName, colName, colName, nRows, colName, nRows, colName);
                 else
                     updates[j++] =
                             // Get the last nRows rows:
                             // colName = isNull(colName) ? null
                             // : colName.size() > nRows ? colName.subVector(colName.size() - nRows, colName.size())
                             // : colName
-                            colName + '=' + "isNull(" + colName + ") ? null" +
-                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subVector(" + colName
-                                    + ".size() - " + nRows + ", " + colName + ".size())" +
-                                    ':' + colName;
+                            String.format(
+                                    "%s=isNull(%s) ? null" +
+                                            ":%s.size() > %d ? %s.subVector(%s.size() - %d, %s.size())" +
+                                            ":%s",
+                                    colName, colName, colName, nRows, colName, colName, nRows, colName, colName);
             }
         }
 
-        return groupBy(groupByColumns).updateView(updates).ungroup().updateView(casting);
+        final List<Aggregation> aggs = colNames.stream()
+                .filter(cn -> !groupByColsSet.contains(cn))
+                .map(Aggregation::AggGroup)
+                .collect(Collectors.toList());
+        return aggBy(aggs, groupByColumns).updateView(updates).ungroup().updateView(casting);
     }
 
     @NotNull

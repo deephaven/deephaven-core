@@ -261,6 +261,9 @@ include(':plugin')
 include(':plugin-dagger')
 project(':plugin-dagger').projectDir = file('plugin/dagger')
 
+include(':plugin-echo')
+project(':plugin-echo').projectDir = file('plugin/echo')
+
 include(':plugin-figure')
 project(':plugin-figure').projectDir = file('plugin/figure')
 
