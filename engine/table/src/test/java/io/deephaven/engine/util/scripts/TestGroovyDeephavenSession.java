@@ -3,33 +3,28 @@
  */
 package io.deephaven.engine.util.scripts;
 
-import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.GroovyDeephavenSession;
-import io.deephaven.engine.liveness.LivenessScope;
-import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.ScriptSession;
-import io.deephaven.function.Basic;
-import io.deephaven.function.BinSearch;
-import io.deephaven.function.BinSearchAlgo;
 import io.deephaven.function.Numeric;
 import io.deephaven.function.Sort;
-import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
-import io.deephaven.utils.test.PropertySaver;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -45,6 +40,7 @@ public class TestGroovyDeephavenSession {
 
     private LivenessScope livenessScope;
     private GroovyDeephavenSession session;
+    private SafeCloseable executionContext;
 
     @Before
     public void setup() throws IOException {
@@ -53,10 +49,12 @@ public class TestGroovyDeephavenSession {
         session = new GroovyDeephavenSession(
                 ExecutionContext.getContext().getUpdateGraph(), NoOp.INSTANCE, null,
                 GroovyDeephavenSession.RunScripts.none());
+        executionContext = session.getExecutionContext().open();
     }
 
     @After
     public void teardown() {
+        executionContext.close();
         LivenessScopeStack.pop(livenessScope);
         livenessScope.release();
         livenessScope = null;
@@ -133,12 +131,16 @@ public class TestGroovyDeephavenSession {
 
     @Test
     public void testGroovyClassReload() throws IOException {
-        session.evaluateScript("public class MyClass1 { public static int getMyVar() { return 42 ; } };\n ExecutionContext.getContext().getQueryLibrary().importClass(MyClass1);\nt = emptyTable(1).update(\"Var=MyClass1.getMyVar()\");\n", "Script1").throwIfError();
+        session.evaluateScript(
+                "public class MyClass1 { public static int getMyVar() { return 42 ; } };\n ExecutionContext.getContext().getQueryLibrary().importClass(MyClass1);\nt = emptyTable(1).update(\"Var=MyClass1.getMyVar()\");\n",
+                "Script1").throwIfError();
         final Table t = (Table) session.getVariable("t");
         final int var1 = t.getColumnSource("Var").getInt(0);
         assertEquals(42, var1);
 
-        session.evaluateScript("public class MyClass1 { public static int getMyVar() { return 43 ; } };\n ExecutionContext.getContext().getQueryLibrary().importClass(MyClass1);\n t2 = emptyTable(1).update(\"Var=MyClass1.getMyVar()\");\n", "Script2").throwIfError();
+        session.evaluateScript(
+                "public class MyClass1 { public static int getMyVar() { return 43 ; } };\n ExecutionContext.getContext().getQueryLibrary().importClass(MyClass1);\n t2 = emptyTable(1).update(\"Var=MyClass1.getMyVar()\");\n",
+                "Script2").throwIfError();
         final Table t2 = (Table) session.getVariable("t2");
         final int var2 = t2.getColumnSource("Var").getInt(0);
         assertEquals(43, var2);
@@ -146,7 +148,9 @@ public class TestGroovyDeephavenSession {
         // we are not actually importing a Groovy class or reloading here, but it is convenient place to put the
         // importClass call of a regular class, so that we can examine what happens in a debugger and
         // learn how to differentiate it from a groovy class.
-        session.evaluateScript("ExecutionContext.getContext().getQueryLibrary().importClass(" + getClass().getCanonicalName() + ".class);\n t3 = emptyTable(1).update(\"Var=" + getClass().getCanonicalName() + ".VALUE_FOR_IMPORT\");\n", "Script3").throwIfError();
+        session.evaluateScript("ExecutionContext.getContext().getQueryLibrary().importClass("
+                + getClass().getCanonicalName() + ".class);\n t3 = emptyTable(1).update(\"Var="
+                + getClass().getCanonicalName() + ".VALUE_FOR_IMPORT\");\n", "Script3").throwIfError();
         final Table t3 = (Table) session.getVariable("t3");
         final int var3 = t3.getColumnSource("Var").getInt(0);
         assertEquals(VALUE_FOR_IMPORT, var3);
@@ -158,7 +162,7 @@ public class TestGroovyDeephavenSession {
     @Test
     public void testRemoveComments() {
         // pre and post strings separated by pipe character
-        final String[] testCases = new String[]{
+        final String[] testCases = new String[] {
                 "abc|abc",
                 "/* x */ foo //x|foo",
                 "// /* whatever */ |",
@@ -187,42 +191,33 @@ public class TestGroovyDeephavenSession {
         public static int field1;
         public static int field2;
 
-        public static void method() {
-        }
+        public static void method() {}
 
-        public static void method1() {
-        }
+        public static void method1() {}
 
-        public static void method2() {
-        }
+        public static void method2() {}
 
         public static class InnerStaticClass {
             public static int field;
             public static int field1;
             public static int field2;
 
-            public static void method() {
-            }
+            public static void method() {}
 
-            public static void method1() {
-            }
+            public static void method1() {}
 
-            public static void method2() {
-            }
+            public static void method2() {}
 
             public static class InnerInnerStaticClass {
                 public static int field;
                 public static int field1;
                 public static int field2;
 
-                public static void method() {
-                }
+                public static void method() {}
 
-                public static void method1() {
-                }
+                public static void method1() {}
 
-                public static void method2() {
-                }
+                public static void method2() {}
             }
         }
     }
@@ -231,8 +226,7 @@ public class TestGroovyDeephavenSession {
     public int field; // testIsValidImportString
 
     @SuppressWarnings("unused")
-    public void method() {
-    }
+    public void method() {}
 
     ; // for testIsValidImportString
 
@@ -241,7 +235,7 @@ public class TestGroovyDeephavenSession {
      */
     @Test
     public void testIsValidImportString() throws IOException {
-        final String[] failTestCases = new String[]{
+        final String[] failTestCases = new String[] {
                 "import import io.deephaven.engine.util.TableTools", // two imports
                 "static import io.deephaven.engine.util.TableTools", // static before import
                 "import // io.deephaven.engine.util.TableTools", // invalid after stripped comments
@@ -251,9 +245,28 @@ public class TestGroovyDeephavenSession {
                 "import io.deephaven.engine. util.TableTools; // has a space", // internal space
                 "import io.deephaven.engine.xxx.util.TableTools", // nonexistent package
                 "import io.deephaven.engine.util.TablexxxTools", // nonexistant classname
-                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClassstatic ", // includes "static " but is (correctly) not stripped out
-                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass import static", // import and static correctly not removed at the end
-                "import static io.deephaven.engine.util.scripts.Test;Groovy;DeephavenSession.StaticClass", // semicolons correctly not removed internally
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClassstatic ", // includes
+                                                                                                                // "static
+                                                                                                                // " but
+                                                                                                                // is
+                                                                                                                // (correctly)
+                                                                                                                // not
+                                                                                                                // stripped
+                                                                                                                // out
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass import static", // import
+                                                                                                                       // and
+                                                                                                                       // static
+                                                                                                                       // correctly
+                                                                                                                       // not
+                                                                                                                       // removed
+                                                                                                                       // at
+                                                                                                                       // the
+                                                                                                                       // end
+                "import static io.deephaven.engine.util.scripts.Test;Groovy;DeephavenSession.StaticClass", // semicolons
+                                                                                                           // correctly
+                                                                                                           // not
+                                                                                                           // removed
+                                                                                                           // internally
                 // not valid non-static imports of fields and methods
                 "import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.field  ;",
                 "import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.method ; ; ;",
@@ -264,7 +277,9 @@ public class TestGroovyDeephavenSession {
                 "importstaticio.deephaven.engine.util.scripts.TestGroovyDeephavenSession;", // missing spaces
                 "importstatic io.deephaven.engine.util.scripts.TestGroovyDeephavenSession;", // missing spaces
                 "import staticio.deephaven.engine.util.scripts.TestGroovyDeephavenSession;", // missing spaces
-                "static    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass", // import is not optional, ; is optional;
+                "static    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass", // import is not
+                                                                                                     // optional, ; is
+                                                                                                     // optional;
                 // groovy is not cool with non-star package imports for packages that don't exist
                 "import com.illumon.foo.bar;",
                 // make sure illegal java identifiers don't get through
@@ -272,11 +287,16 @@ public class TestGroovyDeephavenSession {
                 "import com.1illumon.*;",
                 "import com.ill-umon.*;",
         };
-        final String[] succeedTestCases = new String[]{
-                "import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass", //; is optional
-                "import   static    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass", //; is optional
-                "import   static /* static */   io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass;", // /* comment */ removed
-                " import    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass // whatever .*;", // //comment removed
+        final String[] succeedTestCases = new String[] {
+                "import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass", // ; is optional
+                "import   static    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass", // ; is
+                                                                                                              // optional
+                "import   static /* static */   io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass;", // /*
+                                                                                                                           // comment
+                                                                                                                           // */
+                                                                                                                           // removed
+                " import    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass // whatever .*;", // //comment
+                                                                                                                      // removed
 
                 // static imports of class, field, method, wildcards - all several levels deep
                 "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession", // no semicolon
@@ -311,60 +331,68 @@ public class TestGroovyDeephavenSession {
 
                 // groovy is cool with package star imports for packages that don't exist
                 // ... but we are not enabling that check
-//                "import io.deephaven.foo.bar.*",
+                // "import io.deephaven.foo.bar.*",
         };
 
         // Note that in `IrisDbGroovySession`, the _entire_ inbound-command is stripped of comments prior to individual
         // lines being passed to `isValidImportString()`. to replicate that behavior, we must `removeComments()` from
         // each string we are testing here.
         for (String testCase : failTestCases) {
-            final String fixedImportString = session.isValidImportString(GroovyDeephavenSession.removeComments(testCase));
+            final String fixedImportString =
+                    session.isValidImportString(GroovyDeephavenSession.removeComments(testCase));
             // handy for debugging the tests
             // if (fixedImportString!= null) {
-            //    IrisDbGroovySession.isValidImportString(log, testCase);
-            //}
+            // IrisDbGroovySession.isValidImportString(log, testCase);
+            // }
             assertNull("expected failure for: " + testCase, fixedImportString);
         }
 
         for (String testCase : succeedTestCases) {
-            final String fixedImportString = session.isValidImportString(GroovyDeephavenSession.removeComments(testCase));
+            final String fixedImportString =
+                    session.isValidImportString(GroovyDeephavenSession.removeComments(testCase));
             System.out.println("Test case: \"" + testCase + "\" -> \"" + fixedImportString + "\"");
 
             // handy for debugging the tests
-            //if( fixedImportString==null) {
-            //    IrisDbGroovySession.isValidImportString(log, testCase);
-            //}
+            // if( fixedImportString==null) {
+            // IrisDbGroovySession.isValidImportString(log, testCase);
+            // }
             assertNotNull("expected success for: " + testCase, fixedImportString);
         }
 
         // special package import cases
         // this package is unknown
         // DHC change in behavior: as a fix for #1129, we now use classgraph to find packages with no loaded classes
-        assertNotNull("expect failure for unknown package: com.google.common.html", session.isValidImportString(GroovyDeephavenSession.removeComments("import com.google.common.html.*;")));
+        assertNotNull("expect failure for unknown package: com.google.common.html",
+                session.isValidImportString(GroovyDeephavenSession.removeComments("import com.google.common.html.*;")));
         // Now load the class
-        assertNotNull("expect to find class: com.google.common.html.HtmlEscapers", session.isValidImportString(GroovyDeephavenSession.removeComments("import com.google.common.html.HtmlEscapers;")));
+        assertNotNull("expect to find class: com.google.common.html.HtmlEscapers", session.isValidImportString(
+                GroovyDeephavenSession.removeComments("import com.google.common.html.HtmlEscapers;")));
         // confirm non-classgraph package finding works
-        assertNotNull("expect to find package: com.google.common.html", session.isValidImportString(GroovyDeephavenSession.removeComments("import com.google.common.html.*;")));
+        assertNotNull("expect to find package: com.google.common.html",
+                session.isValidImportString(GroovyDeephavenSession.removeComments("import com.google.common.html.*;")));
 
     }
 
     @Test
     public void testRewriteStackTrace() {
         try {
-            session.evaluateScript("println \"Hello\";\nthrow new RuntimeException(\"Bad Line\");\nprintln \"Bye\";\n", "Script2").throwIfError();
+            session.evaluateScript("println \"Hello\";\nthrow new RuntimeException(\"Bad Line\");\nprintln \"Bye\";\n",
+                    "Script2").throwIfError();
             fail("failed to error out");
         } catch (RuntimeException e) {
             assertEquals("Error encountered at line 2: throw new RuntimeException(\"Bad Line\");", e.getMessage());
             final Throwable cause = e.getCause();
             assertTrue(cause instanceof RuntimeException);
-            //noinspection ConstantConditions
+            // noinspection ConstantConditions
             if (cause != null) {
                 assertEquals("Bad Line", cause.getMessage());
             }
         }
 
         try {
-            session.evaluateScript("println \"Going to source\";\nimport io.deephaven.engine.util.scripts.Imported;\nImported.main()\n", "Script3").throwIfError();
+            session.evaluateScript(
+                    "println \"Going to source\";\nimport io.deephaven.engine.util.scripts.Imported;\nImported.main()\n",
+                    "Script3").throwIfError();
             fail("failed to error out");
         } catch (RuntimeException e) {
             assertEquals("Error encountered at line 3: Imported.main()", e.getMessage());
@@ -375,7 +403,9 @@ public class TestGroovyDeephavenSession {
         }
 
         try {
-            session.evaluateScript("println \"Hello there\";\n\n// some more blank lines\n\n\n\n\n\n\n\nprintln \"Going to source\";\nimport io.deephaven.engine.util.scripts.ShortSource;\nShortSource.main();\n", "Script4").throwIfError();
+            session.evaluateScript(
+                    "println \"Hello there\";\n\n// some more blank lines\n\n\n\n\n\n\n\nprintln \"Going to source\";\nimport io.deephaven.engine.util.scripts.ShortSource;\nShortSource.main();\n",
+                    "Script4").throwIfError();
             fail("failed to error out");
         } catch (RuntimeException e) {
             // Check for the re-thrown exception pointing at our evaluated groovy command
@@ -391,189 +421,180 @@ public class TestGroovyDeephavenSession {
 
     @Test
     public void testPotentialAmbiguousMethodCalls() {
-            int[] a = new int[]{5, 2, 3};
-            int z = 1;
-            int Y = 2;
-            double d = 5d;
-            String c = null;
-            try {
-                c = "primMin = min(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ");\n";
-                session.evaluateScript(c).throwIfError();
-                Integer primMin = (Integer) session.getVariable("primMin");
-                assertEquals(Numeric.min(a), primMin.intValue());
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+        int[] a = new int[] {5, 2, 3};
+        int z = 1;
+        int Y = 2;
+        double d = 5d;
+        String c = null;
+        try {
+            c = "primMin = min(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ");\n";
+            session.evaluateScript(c).throwIfError();
+            Integer primMin = (Integer) session.getVariable("primMin");
+            assertEquals(Numeric.min(a), primMin.intValue());
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
 
-            try {
-                c = "z = " + z + "; \n" + "d = " + d + "; \n" +
-                        "wrapMin = min(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ", z);\n";
-                session.evaluateScript(c).throwIfError();
-                Integer wrapperMin = (Integer) session.getVariable("wrapMin");
-                assertEquals(Math.min(Numeric.min(a), z), wrapperMin.intValue());
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+        try {
 
-            try {
-                c = "z = " + z + "; \n" + "d = " + d + "; \n" +
-                        "m2 = max(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ", z, d);\n";
-                session.evaluateScript(c).throwIfError();
-                Double wrapperMax = (Double) session.getVariable("m2");
-                assertEquals(5.0d, wrapperMax, 0.0d);
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+            c = "z = " + z + "; \n" + "d = " + d + "; \n" +
+                    "wrapMin = min(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ", z);\n";
+            session.evaluateScript(c).throwIfError();
+            Integer wrapperMin = (Integer) session.getVariable("wrapMin");
+            assertEquals(Math.min(Numeric.min(a), z), wrapperMin.intValue());
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
 
-            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=min(Y, z)\")\n";
-            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-                QueryScope.addParam("z", z);
-                session.evaluateScript(c).throwIfError();
-                final Table t = (Table) session.getVariable("t");
-                final int var2 = t.getColumnSource("Z").getInt(0);
-                assertEquals(Numeric.min(Y, z), var2);
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+        try {
+            c = "z = " + z + "; \n" + "d = " + d + "; \n" +
+                    "m2 = max(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ", z, d);\n";
+            session.evaluateScript(c).throwIfError();
+            Double wrapperMax = (Double) session.getVariable("m2");
+            assertEquals(5.0d, wrapperMax, 0.0d);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
 
-            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=min(Y, 5d)\")\n";
-            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-                QueryScope.addParam("z", z);
-                session.evaluateScript(c).throwIfError();
-                final Table t = (Table) session.getVariable("t");
-                final double var2 = t.getColumnSource("Z").getDouble(0);
-                assertEquals(Numeric.min(Y, 5d), var2, 1e-10);
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+        c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=min(Y, z)\")\n";
+        try {
+            QueryScope.addParam("z", z);
+            session.evaluateScript(c).throwIfError();
+            final Table t = (Table) session.getVariable("t");
+            final int var2 = t.getColumnSource("Z").getInt(0);
+            assertEquals(Numeric.min(Y, z), var2);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
 
-            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=min(Y, d)\")\n";
-            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-                QueryScope.addParam("z", z);
-                QueryScope.addParam("d", d);
-                session.evaluateScript(c).throwIfError();
-                final Table t = (Table) session.getVariable("t");
-                final double var2 = t.getColumnSource("Z").getDouble(0);
-                assertEquals(Numeric.min(Y, d), var2, 1e-10);
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+        c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=min(Y, 5d)\")\n";
+        try {
+            QueryScope.addParam("z", z);
+            session.evaluateScript(c).throwIfError();
+            final Table t = (Table) session.getVariable("t");
+            final double var2 = t.getColumnSource("Z").getDouble(0);
+            assertEquals(Numeric.min(Y, 5d), var2, 1e-10);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
 
-            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=max(Y, z)\")\n";
-            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-                QueryScope.addParam("z", z);
-                session.evaluateScript(c).throwIfError();
-                final Table t = (Table) session.getVariable("t");
-                final int var2 = t.getColumnSource("Z").getInt(0);
-                assertEquals(Numeric.max(Y, z), var2);
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+        c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=min(Y, d)\")\n";
+        try {
+            QueryScope.addParam("z", z);
+            QueryScope.addParam("d", d);
+            session.evaluateScript(c).throwIfError();
+            final Table t = (Table) session.getVariable("t");
+            final double var2 = t.getColumnSource("Z").getDouble(0);
+            assertEquals(Numeric.min(Y, d), var2, 1e-10);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
+
+        c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=max(Y, z)\")\n";
+        try {
+            QueryScope.addParam("z", z);
+            session.evaluateScript(c).throwIfError();
+            final Table t = (Table) session.getVariable("t");
+            final int var2 = t.getColumnSource("Z").getInt(0);
+            assertEquals(Numeric.max(Y, z), var2);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
 
 
-            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=max(Y, 5d)\")\n";
-            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-                QueryScope.addParam("z", z);
-                session.evaluateScript(c).throwIfError();
-                final Table t = (Table) session.getVariable("t");
-                final double var2 = t.getColumnSource("Z").getDouble(0);
-                assertEquals(Numeric.max(Y, 5d), var2, 1e-10);
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+        c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=max(Y, 5d)\")\n";
+        try {
+            QueryScope.addParam("z", z);
+            session.evaluateScript(c).throwIfError();
+            final Table t = (Table) session.getVariable("t");
+            final double var2 = t.getColumnSource("Z").getDouble(0);
+            assertEquals(Numeric.max(Y, 5d), var2, 1e-10);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
 
-            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=max(Y, d)\")\n";
-            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-                QueryScope.addParam("z", z);
-                QueryScope.addParam("d", d);
-                session.evaluateScript(c).throwIfError();
-                final Table t = (Table) session.getVariable("t");
-                final double var2 = t.getColumnSource("Z").getDouble(0);
-                assertEquals(Numeric.max(Y, d), var2, 1e-10);
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+        c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=max(Y, d)\")\n";
+        try {
+            QueryScope.addParam("z", z);
+            QueryScope.addParam("d", d);
+            session.evaluateScript(c).throwIfError();
+            final Table t = (Table) session.getVariable("t");
+            final double var2 = t.getColumnSource("Z").getDouble(0);
+            assertEquals(Numeric.max(Y, d), var2, 1e-10);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
 
-            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sort(Y, z)\")\n";
-            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-                QueryScope.addParam("z", z);
-                session.evaluateScript(c).throwIfError();
-                final Table t = (Table) session.getVariable("t");
-                final int[] var2 = t.getColumnSource("Z", int[].class).get(0);
-                assertArrayEquals(Sort.sort(Y, z), var2);
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+        c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sort(Y, z)\")\n";
+        try {
+            QueryScope.addParam("z", z);
+            session.evaluateScript(c).throwIfError();
+            final Table t = (Table) session.getVariable("t");
+            final int[] var2 = t.getColumnSource("Z", int[].class).get(0);
+            assertArrayEquals(Sort.sort(Y, z), var2);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
 
-            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sort(new Number[]{Y, d})\")\n";
-            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-                QueryScope.addParam("z", z);
-                QueryScope.addParam("d", d);
-                session.evaluateScript(c).throwIfError();
-                final Table t = (Table) session.getVariable("t");
-                final Number[] var2 = t.getColumnSource("Z", Number[].class).get(0);
-                //noinspection unchecked
-                assertArrayEquals(Sort.<Comparable>sortObj(Y, d), var2);
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+        c = "t = emptyTable(1).updateView(\"Y=" + Y
+                + "\", \"Z=io.deephaven.function.Sort.<Comparable>sortObj(new Comparable[]{Y, d})\")\n";
+        try {
+            QueryScope.addParam("z", z);
+            QueryScope.addParam("d", d);
+            session.evaluateScript(c).throwIfError();
+            final Table t = (Table) session.getVariable("t");
+            final Comparable[] var2 = t.getColumnSource("Z", Comparable[].class).get(0);
+            // noinspection unchecked
+            assertArrayEquals(Sort.<Comparable>sortObj(Y, d), var2);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
 
-            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sortDescending(Y, z)\")\n";
-            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-                QueryScope.addParam("z", z);
-                session.evaluateScript(c).throwIfError();
-                final Table t = (Table) session.getVariable("t");
-                final int[] var2 = t.getColumnSource("Z", int[].class).get(0);
-                assertArrayEquals(Sort.sortDescending(Y, z), var2);
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+        c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sortDescending(Y, z)\")\n";
+        try {
+            QueryScope.addParam("z", z);
+            session.evaluateScript(c).throwIfError();
+            final Table t = (Table) session.getVariable("t");
+            final int[] var2 = t.getColumnSource("Z", int[].class).get(0);
+            assertArrayEquals(Sort.sortDescending(Y, z), var2);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
 
-            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sortDescending(new Number[]{Y, d})\")\n";
-            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-                QueryScope.addParam("z", z);
-                QueryScope.addParam("d", d);
-                session.evaluateScript(c).throwIfError();
-                final Table t = (Table) session.getVariable("t");
-                final Number[] var2 = t.getColumnSource("Z", Number[].class).get(0);
-                //noinspection unchecked
-                assertArrayEquals(Sort.<Comparable>sortDescendingObj(Y, d), var2);
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+        c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=sortDescending(new Number[]{Y, d})\")\n";
+        try {
+            QueryScope.addParam("z", z);
+            QueryScope.addParam("d", d);
+            session.evaluateScript(c).throwIfError();
+            final Table t = (Table) session.getVariable("t");
+            final Number[] var2 = t.getColumnSource("Z", Number[].class).get(0);
+            // noinspection unchecked
+            assertArrayEquals(Sort.<Comparable>sortDescendingObj(Y, d), var2);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
 
-            c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=ssVec(Y, z)\")\n";
-            try {
-//                QueryScope.setDefaultInstance(QueryScope.makeScriptSessionImpl(irisDbGroovySession));
-                QueryScope.addParam("z", z);
-                session.evaluateScript(c).throwIfError();
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Fail for : \n" + c);
-            }
+        c = "t = emptyTable(1).updateView(\"Y=" + Y + "\", \"Z=ssVec(Y, z)\")\n";
+        try {
+            QueryScope.addParam("z", z);
+            session.evaluateScript(c).throwIfError();
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Fail for : \n" + c);
+        }
     }
 
 
@@ -582,7 +603,6 @@ public class TestGroovyDeephavenSession {
         QueryScope.addParam("d", 5d);
         session.evaluateScript("t = emptyTable(1).updateView(\"Y=1\", \"Z=min(Y,d)\")\n").throwIfError();
         final Table t = (Table) session.getVariable("t");
-//        System.out.println(t.getColumnSource("Z").getType());
     }
 }
 

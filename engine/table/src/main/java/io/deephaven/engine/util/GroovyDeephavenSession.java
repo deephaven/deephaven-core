@@ -185,15 +185,14 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 QueryScopeParam.class.getName(),
                 QueryScope.class.getName(),
                 // classes
-                ExecutionContext.class.getName()
-        );
+                ExecutionContext.class.getName());
         imports.addStaticImport(CompressedString.class.getName(), "compress");
         imports.addStarImports(
                 "io.deephaven.api",
                 "io.deephaven.api.filter",
                 "java.util",
                 "java.lang"
-                // packages
+        // packages
         );
         imports.addStaticStars(
                 TableTools.class.getName(),
@@ -207,7 +206,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 OperationControl.class.getName(),
                 DeltaControl.class.getName(),
                 BadDataBehavior.class.getName()
-                // class members
+        // class members
         );
 
         CompilerConfiguration config = new CompilerConfiguration();
@@ -453,8 +452,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         // "everything_else" should be a valid java identifier of the form package.class[.class|.method|.field]. This
         // will be checked later
         Matcher matcher = Pattern
-                .compile("^\\s*(import\\s+)\\s*(?<static>static\\s+)?\\s*(?<body>.*?)(?<wildcard>\\.\\*)?(\\s+as\\s+(?<alias>.*?))?[\\s;]*$")
-                //                .compile("^\\s*(import\\s+)\\s*(?<static>static\\s+)?\\s*(?<body>[^\\s.;]*?)(?<wildcard>\\.\\*)?\\s*(?:as\\s+(?<alias>.*?))?[\\s;]*$")
+                .compile(
+                        "^\\s*(import\\s+)\\s*(?<static>static\\s+)?\\s*(?<body>.*?)(?<wildcard>\\.\\*)?(\\s+as\\s+(?<alias>.*?))?[\\s;]*$")
+                // .compile("^\\s*(import\\s+)\\s*(?<static>static\\s+)?\\s*(?<body>[^\\s.;]*?)(?<wildcard>\\.\\*)?\\s*(?:as\\s+(?<alias>.*?))?[\\s;]*$")
                 .matcher(importString);
         if (!matcher.matches()) {
             return null;
@@ -541,7 +541,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         String fixedImportString = isValidImportString(importString);
         if (fixedImportString != null) {
             scriptImports.add(importString);
-//            imports.addImports(importString);
+            // imports.addImports(importString);
         } else {
             throw new RuntimeException("Attempting to import a path that does not exist: " + importString);
         }
@@ -592,43 +592,40 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
 
 
-
-
-
-//                "import static io.deephaven.engine.util.TableTools.*;\n" +
-//                "import static io.deephaven.engine.table.impl.util.TableLoggers.*;\n" +
-//                "import io.deephaven.api.*;\n" +
-//                "import io.deephaven.api.filter.*;\n" +
-//                "import io.deephaven.engine.table.DataColumn;\n" +
-//                "import io.deephaven.engine.table.Table;\n" +
-//                "import io.deephaven.engine.table.TableFactory;\n" +
-//                "import io.deephaven.engine.table.PartitionedTable;\n" +
-//                "import io.deephaven.engine.table.PartitionedTableFactory;\n" +
-//                "import java.lang.reflect.Array;\n" +
-//                "import io.deephaven.util.type.TypeUtils;\n" +
-//                "import io.deephaven.util.type.ArrayTypeUtils;\n" +
-//                "import io.deephaven.time.DateTimeUtils;\n" +
-//                "import io.deephaven.base.string.cache.CompressedString;\n" +
-//                "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
-//                "import java.time.Instant;\n" +
-//                "import java.time.LocalDate;\n" +
-//                "import java.time.LocalTime;\n" +
-//                "import java.time.ZoneId;\n" +
-//                "import java.time.ZonedDateTime;\n" +
-//                "import io.deephaven.engine.context.QueryScopeParam;\n" +
-//                "import io.deephaven.engine.context.QueryScope;\n" +
-//                "import java.util.*;\n" +
-//                "import java.lang.*;\n" +
-//                "import static io.deephaven.util.QueryConstants.*;\n" +
-//                "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
-//                "import static io.deephaven.time.DateTimeUtils.*;\n" +
-//                "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
-//                "import static io.deephaven.api.agg.Aggregation.*;\n" +
-//                "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +
-//                "import io.deephaven.api.updateby.UpdateByControl;\n" +
-//                "import io.deephaven.api.updateby.OperationControl;\n" +
-//                "import io.deephaven.api.updateby.DeltaControl;\n" +
-//                "import io.deephaven.api.updateby.BadDataBehavior;\n" +
+        // "import static io.deephaven.engine.util.TableTools.*;\n" +
+        // "import static io.deephaven.engine.table.impl.util.TableLoggers.*;\n" +
+        // "import io.deephaven.api.*;\n" +
+        // "import io.deephaven.api.filter.*;\n" +
+        // "import io.deephaven.engine.table.DataColumn;\n" +
+        // "import io.deephaven.engine.table.Table;\n" +
+        // "import io.deephaven.engine.table.TableFactory;\n" +
+        // "import io.deephaven.engine.table.PartitionedTable;\n" +
+        // "import io.deephaven.engine.table.PartitionedTableFactory;\n" +
+        // "import java.lang.reflect.Array;\n" +
+        // "import io.deephaven.util.type.TypeUtils;\n" +
+        // "import io.deephaven.util.type.ArrayTypeUtils;\n" +
+        // "import io.deephaven.time.DateTimeUtils;\n" +
+        // "import io.deephaven.base.string.cache.CompressedString;\n" +
+        // "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
+        // "import java.time.Instant;\n" +
+        // "import java.time.LocalDate;\n" +
+        // "import java.time.LocalTime;\n" +
+        // "import java.time.ZoneId;\n" +
+        // "import java.time.ZonedDateTime;\n" +
+        // "import io.deephaven.engine.context.QueryScopeParam;\n" +
+        // "import io.deephaven.engine.context.QueryScope;\n" +
+        // "import java.util.*;\n" +
+        // "import java.lang.*;\n" +
+        // "import static io.deephaven.util.QueryConstants.*;\n" +
+        // "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
+        // "import static io.deephaven.time.DateTimeUtils.*;\n" +
+        // "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
+        // "import static io.deephaven.api.agg.Aggregation.*;\n" +
+        // "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +
+        // "import io.deephaven.api.updateby.UpdateByControl;\n" +
+        // "import io.deephaven.api.updateby.OperationControl;\n" +
+        // "import io.deephaven.api.updateby.DeltaControl;\n" +
+        // "import io.deephaven.api.updateby.BadDataBehavior;\n" +
 
                 String.join("\n", scriptImports) + "\n";
         return new Pair<>(commandPrefix, commandPrefix + command
@@ -654,19 +651,20 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         CompilerConfiguration config = new CompilerConfiguration(CompilerConfiguration.DEFAULT);
         ImportCustomizer imports = new ImportCustomizer();
-//        imports.
+        // imports.
         config.getCompilationCustomizers().add(imports);
         final CompilationUnit cu = new CompilationUnit(config, null, groovyShell.getClassLoader());
         cu.addSource(name, currentCommand);
-//        cu.addSource(new SourceUnit(name, currentCommand, cu.getConfiguration(), cu.getClassLoader(), cu.getErrorCollector()) {
-//            @Override
-//            public ModuleNode buildAST() {
-//                ModuleNode moduleNode = super.buildAST();
-//                moduleNode.setPackageName(PACKAGE);
-//                return moduleNode;
-//            }
-//        });
-//        cu.addPhaseOperation(specifyPackage, Phases.PARSING);
+        // cu.addSource(new SourceUnit(name, currentCommand, cu.getConfiguration(), cu.getClassLoader(),
+        // cu.getErrorCollector()) {
+        // @Override
+        // public ModuleNode buildAST() {
+        // ModuleNode moduleNode = super.buildAST();
+        // moduleNode.setPackageName(PACKAGE);
+        // return moduleNode;
+        // }
+        // });
+        // cu.addPhaseOperation(specifyPackage, Phases.PARSING);
         try {
             cu.compile(Phases.CLASS_GENERATION);
         } catch (RuntimeException e) {
