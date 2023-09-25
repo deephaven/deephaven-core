@@ -50,7 +50,7 @@ the `Client` class. See `?Client` for more information.
 \item \href{#method-TableHandle-std_by}{\code{TableHandle$std_by()}}
 \item \href{#method-TableHandle-percentile_by}{\code{TableHandle$percentile_by()}}
 \item \href{#method-TableHandle-count_by}{\code{TableHandle$count_by()}}
-\item \href{#method-TableHandle-cross_join}{\code{TableHandle$cross_join()}}
+\item \href{#method-TableHandle-join}{\code{TableHandle$join()}}
 \item \href{#method-TableHandle-natural_join}{\code{TableHandle$natural_join()}}
 \item \href{#method-TableHandle-exact_join}{\code{TableHandle$exact_join()}}
 \item \href{#method-TableHandle-sort}{\code{TableHandle$sort()}}
@@ -779,11 +779,11 @@ A TableHandle referencing the new table.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-cross_join"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-cross_join}{}}}
-\subsection{Method \code{cross_join()}}{
+\if{html}{\out{<a id="method-TableHandle-join"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-join}{}}}
+\subsection{Method \code{join()}}{
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$cross_join(table, on = character(), joins = character())}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$join(table, on = character(), joins = character())}\if{html}{\out{</div>}}
 }
 
 }
