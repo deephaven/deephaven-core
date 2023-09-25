@@ -13,12 +13,14 @@ import java.nio.IntBuffer;
 // TODO Add comments
 final class IntVectorTransfer extends PrimitiveVectorTransfer<IntVectorColumnWrapper, IntBuffer> {
     IntVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize, IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
+        super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
+                IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
     }
     @Override
     void resizeBuffer(@NotNull final int length) {
         buffer = IntBuffer.allocate(length);
     }
+
     @Override
     void copyToBuffer(@NotNull final IntVectorColumnWrapper data) {
         data.iterator().forEachRemaining((int value) -> buffer.put(value));

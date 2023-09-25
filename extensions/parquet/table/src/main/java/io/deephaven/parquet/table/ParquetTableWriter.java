@@ -46,6 +46,7 @@ import org.apache.parquet.column.statistics.IntStatistics;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -360,11 +361,82 @@ public class ParquetTableWriter {
                 usedDictionary = tryEncodeDictionary(writeInstructions, tableRowSet, columnDefinition, columnWriter,
                         columnSourceIn);
             }
+            @Nullable
+            final Class<?> dataType = columnDefinition.getDataType();
+            @Nullable
+            final Class<?> componentType = columnDefinition.getComponentType();
+            if (Vector.class.isAssignableFrom(dataType) && String.class.equals(componentType)) {
+                usedDictionary =
+                        tryVectorEncodeDictionary(writeInstructions, tableRowSet, columnDefinition, columnWriter,
+                                columnSourceIn);
+            }
             if (!usedDictionary) {
                 encodePlain(writeInstructions, tableRowSet, columnDefinition, columnType, columnWriter, columnSourceIn,
                         computedCache);
             }
         }
+    }
+
+    private static <DATA_TYPE> boolean tryVectorEncodeDictionary(
+            @NotNull final ParquetInstructions writeInstructions,
+            @NotNull final RowSet tableRowSet,
+            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
+            @NotNull final ColumnWriter columnWriter,
+            @NotNull final ColumnSource<DATA_TYPE> columnSourceIn) throws IOException {
+        final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
+        final int maxKeys = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionaryKeys();
+        final int maxDictSize = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionarySize();
+        final int NULL_POS = QueryConstants.NULL_INT; // TODO Explain why
+        final Statistics<?> statistics = columnWriter.getStats();
+        final List<IntBuffer> pageBuffers = new ArrayList<>();
+        final List<IntBuffer> arrayLengths = new ArrayList<>();
+        final BitSet pageBufferHasNull = new BitSet();
+        boolean hasNulls = false;
+        StringDictionary dictionary = new StringDictionary(maxKeys, maxDictSize, statistics);
+        int curPage = 0;
+        try (final DictEncodedStringVectorTransfer transferObject = new DictEncodedStringVectorTransfer(columnSourceIn,
+                tableRowSet, writeInstructions.getTargetPageSize(), dictionary, NULL_POS)) {
+            do {
+                transferObject.transferOnePageToBuffer();
+                pageBuffers.add(transferObject.getBuffer());
+                arrayLengths.add(transferObject.getRepeatCount());
+                boolean pageHasNulls = transferObject.pageHasNull();
+                hasNulls = hasNulls || pageHasNulls;
+                pageBufferHasNull.set(curPage++, pageHasNulls);
+            } while (transferObject.hasMoreDataToBuffer());
+        } catch (final DictionarySizeExceededException ignored) {
+            // Reset the stats because we will re-encode these in PLAIN encoding.
+            columnWriter.resetStats();
+            // We discard all the dictionary data accumulated so far and fall back to PLAIN encoding. We could have
+            // added a dictionary page first with data collected so far and then encoded the remaining data using PLAIN
+            // encoding (TODO deephaven-core#946).
+            return false;
+        }
+
+        if (dictionary.getKeyCount() == 0 && hasNulls) {
+            // Reset the stats because we will re-encode these in PLAIN encoding.
+            columnWriter.resetStats();
+            return false;
+        }
+        columnWriter.addDictionaryPage(dictionary.getEncodedKeys(), dictionary.getKeyCount());
+        // We've already determined min/max statistics while building the dictionary. Now use an integer statistics
+        // object to track the number of nulls that will be written.
+        Statistics<Integer> tmpStats = new IntStatistics();
+        for (int i = 0; i < pageBuffers.size(); ++i) {
+            final IntBuffer pageBuffer = pageBuffers.get(i);
+            final IntBuffer lengths = arrayLengths.get(i);
+            columnWriter.addVectorPage(pageBuffer, lengths, pageBuffer.remaining(), tmpStats);
+            // final boolean pageHasNulls = pageBufferHasNull.get(i);
+            // if (pageHasNulls) {
+            // columnWriter.addPage(pageBuffer, pageBuffer.remaining(), tmpStats);
+            // } else {
+            // columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining(), tmpStats);
+            // }
+        }
+        // Add the count of nulls to the overall stats.
+        statistics.incrementNumNulls(tmpStats.getNumNulls());
+        return true;
+
     }
 
     private static <DATA_TYPE> void encodePlain(@NotNull final ParquetInstructions writeInstructions,
@@ -408,8 +480,6 @@ public class ParquetTableWriter {
         // these assumptions will need to be revisited.
         Assert.eq(columnDefinition.getDataType(), "columnDefinition.getDataType()", String.class, "String.class");
 
-        // TODO Add support for vector of strings
-
         final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
         final int maxKeys = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionaryKeys();
         final int maxDictSize = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionarySize();
@@ -419,6 +489,7 @@ public class ParquetTableWriter {
             final BitSet pageBufferHasNull = new BitSet();
             Binary[] encodedKeys = new Binary[Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)];
 
+            // Set noEntryValue as NULL_INT, this will be the dictionary position for "null" values
             final TObjectIntHashMap<String> keyToPos =
                     new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY,
                             Constants.DEFAULT_LOAD_FACTOR,

@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.IntBuffer;
 
 // TODO Add comments
-final class IntArrayTransfer extends PrimitiveArrayAndVectorTransfer<int[], IntBuffer> {
+final class IntArrayTransfer extends PrimitiveArrayAndVectorTransfer<int[], int[], IntBuffer> {
     IntArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize, IntBuffer.allocate(targetPageSize / Integer.BYTES));
     }

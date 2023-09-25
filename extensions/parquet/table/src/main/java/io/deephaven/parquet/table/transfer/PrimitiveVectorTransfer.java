@@ -13,7 +13,7 @@ import java.nio.IntBuffer;
 
 // TODO Add comments
 abstract class PrimitiveVectorTransfer<T extends Vector<?>, B extends Buffer>
-        extends PrimitiveArrayAndVectorTransfer<T, B> {
+        extends PrimitiveArrayAndVectorTransfer<T, T, B> {
     private final int numBytesPerValue;
 
     PrimitiveVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,

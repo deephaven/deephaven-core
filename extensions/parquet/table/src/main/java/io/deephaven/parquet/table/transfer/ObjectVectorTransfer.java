@@ -11,7 +11,6 @@ import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
 abstract class ObjectVectorTransfer<T> extends ObjectArrayAndVectorTransfer<ObjectVectorColumnWrapper<T>> {
-
     ObjectVectorTransfer(final @NotNull ColumnSource<?> columnSource, final @NotNull RowSequence tableRowSet,
                          final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize);

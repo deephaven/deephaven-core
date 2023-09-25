@@ -12,14 +12,14 @@ import java.nio.Buffer;
 /**
  * TODO Add comments
  */
-abstract class PrimitiveArrayAndVectorTransfer<T, B extends Buffer> extends ArrayAndVectorTransfer<T, T, B> {
+abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends ArrayAndVectorTransfer<T, E, B> {
     PrimitiveArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int maxValuesPerPage, final int targetPageSize, @NotNull final B buffer) {
         super(columnSource, tableRowSet, maxValuesPerPage, targetPageSize, buffer);
     }
 
     @Override
-    public final int transferOnePageToBuffer() {
+    public int transferOnePageToBuffer() {
         // Clear any old buffered data
         buffer.clear();
         arrayLengths.clear();
@@ -47,7 +47,7 @@ abstract class PrimitiveArrayAndVectorTransfer<T, B extends Buffer> extends Arra
     }
 
     // TODO Add comments why not boolean
-    abstract void copyToBuffer(@NotNull final T data);
+    abstract void copyToBuffer(@NotNull final E data);
 
     abstract void resizeBuffer(@NotNull final int length);
 }
