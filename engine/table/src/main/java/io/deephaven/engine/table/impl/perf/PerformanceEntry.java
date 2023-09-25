@@ -50,9 +50,6 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         this.description = description;
         this.callerLine = callerLine;
         authContext = id == QueryConstants.NULL_INT ? null : ExecutionContext.getContext().getAuthContext();
-        if (id != QueryConstants.NULL_INT && authContext == null) {
-            throw new IllegalStateException("No AuthContext is installed. Do you need to open an ExecutionContext?");
-        }
         this.updateGraphName = updateGraphName;
         startSample = new RuntimeMemory.Sample();
         endSample = new RuntimeMemory.Sample();
