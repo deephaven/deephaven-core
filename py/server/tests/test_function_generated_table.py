@@ -139,8 +139,10 @@ class TableTestCase(BaseTestCase):
 
         # nrow is not a valid argument, so we expect a type error
         with update_graph.exclusive_lock(self.test_update_graph):
-            self.assertRaises(TypeError, table_generator_function, nrow=1, query_string="Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()")
-
+            with self.assertRaises(TypeError) as cm:
+                result_table = function_generated_table(table_generator_function, refresh_interval_ms=2000,
+                                                        nrow=1, query_string="Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()")
+            self.assertIn("table_generator_function() got an unexpected keyword argument 'nrow'", str(cm.exception))
 
 def get_row_key(row_position: int, t: Table) -> Any:
     return t.j_table.getRowSet().get(row_position)
