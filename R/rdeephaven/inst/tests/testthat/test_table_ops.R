@@ -777,7 +777,7 @@ test_that("join behaves as expected", {
       joins = c("X_y = X", "Y_y = Y", "Number1_y = Number1", "Number2_y = Number2")
     )
   new_tb1 <- data$df5 %>%
-    join(data$df6) %>%
+    cross_join(data$df6) %>%
     rename(
       X = X.x, Y = Y.x, Number1 = Number1.x, Number2 = Number2.x,
       X_y = X.y, Y_y = Y.y, Number1_y = Number1.y, Number2_y = Number2.y
