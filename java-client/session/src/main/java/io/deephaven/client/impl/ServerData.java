@@ -7,7 +7,6 @@ import com.google.protobuf.ByteString;
 import io.deephaven.client.impl.ObjectService.Bidirectional;
 import io.deephaven.client.impl.ObjectService.Fetchable;
 import io.deephaven.client.impl.ObjectService.MessageStream;
-import io.deephaven.proto.backplane.grpc.Data;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
  */
 public final class ServerData implements Closeable {
 
-    static ServerData of(Session session, Data data) {
+    static ServerData of(Session session, io.deephaven.proto.backplane.grpc.ServerData data) {
         return new ServerData(data.getPayload(), toServerObjects(session, data.getExportedReferencesList()));
     }
 

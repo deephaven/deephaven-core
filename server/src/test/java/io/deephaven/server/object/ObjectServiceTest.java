@@ -11,7 +11,7 @@ import io.deephaven.plugin.type.Exporter.Reference;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
 import io.deephaven.proto.backplane.grpc.ConnectRequest;
-import io.deephaven.proto.backplane.grpc.Data;
+import io.deephaven.proto.backplane.grpc.ServerData;
 import io.deephaven.proto.backplane.grpc.StreamRequest;
 import io.deephaven.proto.backplane.grpc.StreamResponse;
 import io.deephaven.proto.backplane.grpc.StreamResponse.MessageCase;
@@ -129,7 +129,7 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
         observer.onNext(connectRequest);
         observer.onCompleted();
         final StreamResponse rr = cf.get(5, TimeUnit.SECONDS);
-        final Data response = rr.getData();
+        final ServerData response = rr.getData();
 
         assertThat(rr.getMessageCase()).isEqualTo(MessageCase.DATA);
         assertThat(response.getExportedReferencesCount()).isEqualTo(5);
