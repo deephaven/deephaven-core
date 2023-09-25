@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
@@ -61,10 +62,15 @@ public class UnionSourceManager {
     private final MergedListener mergedListener;
     private final ConstituentChangesListenerRecorder constituentChangesListener;
     private final UpdateCommitter<UnionSourceManager> updateCommitter;
+    private final ExecutionContext executionContext;
 
     public UnionSourceManager(@NotNull final PartitionedTable partitionedTable) {
         constituentChangesPermitted = partitionedTable.constituentChangesPermitted();
         columnNames = partitionedTable.constituentDefinition().getColumnNamesArray();
+        executionContext = ExecutionContext.newBuilder()
+                .markSystemic()
+                .captureUpdateGraph()
+                .build();
 
         final Table coalescedPartitions = partitionedTable.table().coalesce().select(List.of(
                 new TableTransformationColumn(
@@ -244,7 +250,8 @@ public class UnionSourceManager {
         protected void process() {
             final TableUpdate constituentChanges = getAndCheckConstituentChanges();
             final TableUpdate downstream;
-            try (final ChangeProcessingContext context = new ChangeProcessingContext(constituentChanges)) {
+            try (final SafeCloseable ignored = executionContext.open();
+                    final ChangeProcessingContext context = new ChangeProcessingContext(constituentChanges)) {
                 downstream = context.processChanges();
             } catch (Throwable ex) {
                 propagateError(false, ex, entry);
