@@ -7,16 +7,19 @@ import com.google.auto.service.AutoService;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plugin.type.Exporter;
-import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.Exporter.Reference;
+import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
-import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
-import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
+import io.deephaven.proto.backplane.grpc.ConnectRequest;
+import io.deephaven.proto.backplane.grpc.Data;
+import io.deephaven.proto.backplane.grpc.StreamRequest;
+import io.deephaven.proto.backplane.grpc.StreamResponse;
+import io.deephaven.proto.backplane.grpc.StreamResponse.MessageCase;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.server.runner.DeephavenApiServerSingleAuthenticatedBase;
 import io.deephaven.server.session.SessionState.ExportObject;
-import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
 
@@ -28,6 +31,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -47,7 +54,7 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
     }
 
     @Test
-    public void myObject() throws IOException {
+    public void myObject() throws IOException, ExecutionException, InterruptedException, TimeoutException {
         ExportObject<MyObject> export = authenticatedSessionState()
                 .<MyObject>newExport(1)
                 .submit(ObjectServiceTest::createMyObject);
@@ -55,42 +62,84 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
     }
 
     @Test
-    public void myUnregisteredObject() {
+    public void myUnregisteredObject() throws InterruptedException, TimeoutException {
         ExportObject<MyUnregisteredObject> export = authenticatedSessionState()
                 .<MyUnregisteredObject>newExport(1)
                 .submit(MyUnregisteredObject::new);
-        final FetchObjectRequest request = FetchObjectRequest.newBuilder()
-                .setSourceId(TypedTicket.newBuilder()
-                        .setTicket(export.getExportId())
-                        .build())
+        final CompletableFuture<Object> cf = new CompletableFuture<>();
+        final StreamObserver<StreamRequest> observer = channel().object().messageStream(new StreamObserver<>() {
+            @Override
+            public void onNext(StreamResponse value) {
+                cf.complete(value);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                cf.completeExceptionally(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                if (!cf.isDone()) {
+                    cf.complete(new Object());
+                }
+            }
+        });
+        final StreamRequest connectRequest = StreamRequest.newBuilder()
+                .setConnect(ConnectRequest.newBuilder()
+                        .setSourceId(TypedTicket.newBuilder().setTicket(export.getExportId())))
                 .build();
+        observer.onNext(connectRequest);
+
         try {
-            // noinspection ResultOfMethodCallIgnored
-            channel().objectBlocking().fetchObject(request);
-            failBecauseExceptionWasNotThrown(StatusRuntimeException.class);
-        } catch (StatusRuntimeException e) {
+            cf.get(5, TimeUnit.SECONDS);
+            failBecauseExceptionWasNotThrown(ExecutionException.class);
+        } catch (ExecutionException e) {
             // expected
         }
     }
 
-    private void fetchMyObject(Ticket ticket, String expectedSomeString, int expectedSomeInt) throws IOException {
-        final FetchObjectRequest request = FetchObjectRequest.newBuilder()
-                .setSourceId(TypedTicket.newBuilder()
-                        .setType(MY_OBJECT_TYPE_NAME)
-                        .setTicket(ticket)
-                        .build())
+    private void fetchMyObject(Ticket ticket, String expectedSomeString, int expectedSomeInt)
+            throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        final StreamRequest connectRequest = StreamRequest.newBuilder()
+                .setConnect(ConnectRequest.newBuilder()
+                        .setSourceId(TypedTicket.newBuilder()
+                                .setType(MY_OBJECT_TYPE_NAME)
+                                .setTicket(ticket)))
                 .build();
-        final FetchObjectResponse response = channel().objectBlocking().fetchObject(request);
+        final CompletableFuture<StreamResponse> cf = new CompletableFuture<>();
+        final StreamObserver<StreamRequest> observer = channel().object().messageStream(new StreamObserver<>() {
+            @Override
+            public void onNext(StreamResponse value) {
+                cf.complete(value);
+            }
 
-        assertThat(response.getType()).isEqualTo(MY_OBJECT_TYPE_NAME);
-        assertThat(response.getTypedExportIdsCount()).isEqualTo(5);
-        assertThat(response.getTypedExportIds(0).getType()).isEqualTo("Table");
-        assertThat(response.getTypedExportIds(1).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
-        assertThat(response.getTypedExportIds(2).getType()).isEmpty();
-        assertThat(response.getTypedExportIds(3).getType()).isEqualTo("Table");
-        assertThat(response.getTypedExportIds(4).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
+            @Override
+            public void onError(Throwable t) {
+                cf.completeExceptionally(t);
+            }
 
-        final DataInputStream dis = new DataInputStream(response.getData().newInput());
+            @Override
+            public void onCompleted() {
+                if (!cf.isDone()) {
+                    cf.completeExceptionally(new RuntimeException("Expected future to complete"));
+                }
+            }
+        });
+        observer.onNext(connectRequest);
+        observer.onCompleted();
+        final StreamResponse rr = cf.get(5, TimeUnit.SECONDS);
+        final Data response = rr.getData();
+
+        assertThat(rr.getMessageCase()).isEqualTo(MessageCase.DATA);
+        assertThat(response.getExportedReferencesCount()).isEqualTo(5);
+        assertThat(response.getExportedReferences(0).getType()).isEqualTo("Table");
+        assertThat(response.getExportedReferences(1).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
+        assertThat(response.getExportedReferences(2).getType()).isEmpty();
+        assertThat(response.getExportedReferences(3).getType()).isEqualTo("Table");
+        assertThat(response.getExportedReferences(4).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
+
+        final DataInputStream dis = new DataInputStream(response.getPayload().newInput());
 
         // the original, out of order
         readRef(dis, 2);
