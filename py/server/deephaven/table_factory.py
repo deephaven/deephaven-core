@@ -342,7 +342,7 @@ def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
         raise DHError(e, "failed to create a ring table.") from e
 
 
-def function_generated_table(table_generator: Callable[[], Table],
+def function_generated_table(table_generator: Callable[..., Table],
            source_tables: Union[Table, List[Table]] = None,
            refresh_interval_ms: int = None,
            exec_ctx: ExecutionContext = None,
@@ -367,11 +367,11 @@ def function_generated_table(table_generator: Callable[[], Table],
     a LivenessScope.
 
     Args:
-        table_generator (Callable[[], Table]): The table generator function. This function must return a Table.
+        table_generator (Callable[..., Table]): The table generator function. This function must return a Table.
         source_tables (Union[Table, List[Table]]): Source tables used by the 'table_generator' function. The
             'table_generator' is rerun when any of these tables tick.
         refresh_interval_ms (int): Interval (in milliseconds) at which the 'table_generator' function is rerun.
-        exec_ctx (ExecutionContext) -> Table): A custom execution context. If 'None', the current
+        exec_ctx (ExecutionContext): A custom execution context. If 'None', the current
             execution context is used. If there is no current execution context, a ValueError is raised.
         **kwargs: Optional keyword arguments to pass to table_generator.
 
