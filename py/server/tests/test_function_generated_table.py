@@ -133,6 +133,14 @@ class TableTestCase(BaseTestCase):
         # we can be confident it's working.
         self.assertGreater(later_time, initial_time)
 
+    def test_generated_table_wrong_args(self):
+        def table_generator_function(nrows, query_string):
+            return empty_table(nrows).update(query_string)
+
+        # nrow is not a valid argument, so we expect a type error
+        with update_graph.exclusive_lock(self.test_update_graph):
+            self.assertRaises(TypeError, table_generator_function, nrow=1, query_string="Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()")
+
 
 def get_row_key(row_position: int, t: Table) -> Any:
     return t.j_table.getRowSet().get(row_position)
