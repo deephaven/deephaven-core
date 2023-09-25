@@ -19,7 +19,7 @@ abstract class PrimitiveArrayAndVectorTransfer<T, B extends Buffer> extends Arra
     }
 
     @Override
-    final public int transferOnePageToBuffer() {
+    public final int transferOnePageToBuffer() {
         // Clear any old buffered data
         buffer.clear();
         arrayLengths.clear();

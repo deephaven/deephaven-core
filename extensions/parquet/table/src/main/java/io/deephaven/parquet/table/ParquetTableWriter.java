@@ -434,22 +434,12 @@ public class ParquetTableWriter {
         try (final ColumnWriter columnWriter = rowGroupWriter.addColumn(
                 writeInstructions.getParquetColumnNameFromColumnNameOrDefault(name))) {
             boolean usedDictionary = false;
-            // TODO Look at dictionary encoding
-            // if (columnSourceIn.getType() == String.class) {
-            // usedDictionary = tryEncodeDictionary(writeInstructions,
-            // tableRowSet,
-            // columnDefinition,
-            // columnWriter,
-            // valueSource);
-            // }
-
+            if (columnSourceIn.getType() == String.class) {
+                usedDictionary = tryEncodeDictionary(writeInstructions, tableRowSet, columnDefinition, columnWriter,
+                        columnSourceIn);
+            }
             if (!usedDictionary) {
-                encodePlain(writeInstructions,
-                        tableRowSet,
-                        columnDefinition,
-                        columnType,
-                        columnWriter,
-                        columnSourceIn,
+                encodePlain(writeInstructions, tableRowSet, columnDefinition, columnType, columnWriter, columnSourceIn,
                         computedCache);
             }
         }
@@ -490,22 +480,17 @@ public class ParquetTableWriter {
             @NotNull final RowSet tableRowSet,
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
             @NotNull final ColumnWriter columnWriter,
-            @NotNull final ColumnSource<DATA_TYPE> valueSource,
-            @NotNull final ColumnWriteHelper writingHelper,
-            final int maxValuesPerPage,
-            final int maxRowsPerPage,
-            final int pageCount) throws IOException {
+            @NotNull final ColumnSource<DATA_TYPE> columnSourceIn) throws IOException {
         // Note: We only support strings as dictionary pages. Knowing that, we can make some assumptions about chunk
         // types and avoid a bunch of lambda and virtual method invocations. If we decide to support more, than
         // these assumptions will need to be revisited.
-        Assert.eq(valueSource.getType(), "valueSource.getType()", String.class, "ColumnSource supports dictionary");
+        Assert.eq(columnDefinition.getDataType(), "columnDefinition.getDataType()", String.class, "String.class");
+
+        // TODO Add support for vector of strings
 
         final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
         final int maxKeys = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionaryKeys();
         final int maxDictSize = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionarySize();
-        final VectorColumnWriterHelper vectorHelper = writingHelper.isVectorFormat()
-                ? (VectorColumnWriterHelper) writingHelper
-                : null;
         final Statistics<?> statistics = columnWriter.getStats();
         try {
             final List<IntBuffer> pageBuffers = new ArrayList<>();
@@ -519,16 +504,16 @@ public class ParquetTableWriter {
             int keyCount = 0;
             int dictSize = 0;
             boolean hasNulls = false;
-            final IntSupplier valuePageSizeGetter = writingHelper.valuePageSizeSupplier();
-            try (final ChunkSource.GetContext context = valueSource.makeGetContext(maxValuesPerPage);
-                    final RowSequence.Iterator it = vectorHelper != null
-                            ? vectorHelper.valueRowSet.getRowSequenceIterator()
-                            : tableRowSet.getRowSequenceIterator()) {
-                for (int curPage = 0; curPage < pageCount; curPage++) {
+            int maxValuesPerPage = writeInstructions.getTargetPageSize() / Integer.BYTES; // Because we will encode the
+                                                                                          // strings as integers
+            try (final ChunkSource.GetContext context = columnSourceIn.makeGetContext(maxValuesPerPage);
+                    final RowSequence.Iterator tableRowSetIt = tableRowSet.getRowSequenceIterator()) {
+                int curPage = 0;
+                do {
                     boolean pageHasNulls = false;
-                    final RowSequence rs = it.getNextRowSequenceWithLength(valuePageSizeGetter.getAsInt());
+                    final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(maxValuesPerPage);
                     final ObjectChunk<String, ? extends Values> chunk =
-                            valueSource.getChunk(context, rs).asObjectChunk();
+                            columnSourceIn.getChunk(context, rs).asObjectChunk();
                     final IntBuffer posInDictionary = IntBuffer.allocate(rs.intSize());
                     for (int vi = 0; vi < chunk.size(); ++vi) {
                         final String key = chunk.get(vi);
@@ -564,7 +549,8 @@ public class ParquetTableWriter {
                     }
                     pageBuffers.add(posInDictionary);
                     pageBufferHasNull.set(curPage, pageHasNulls);
-                }
+                    curPage++;
+                } while (tableRowSetIt.hasMore());
             }
 
             if (keyCount == 0 && hasNulls) {
@@ -573,27 +559,7 @@ public class ParquetTableWriter {
                 return false;
             }
 
-            List<IntBuffer> arraySizeBuffers = null;
-            if (vectorHelper != null) {
-                arraySizeBuffers = new ArrayList<>();
-                final IntSupplier lengthPageSizeGetter = vectorHelper.lengthPageSizeSupplier();
-                try (final ChunkSource.GetContext context =
-                        vectorHelper.lengthSource.makeGetContext(maxRowsPerPage);
-                        final RowSequence.Iterator it = tableRowSet.getRowSequenceIterator()) {
-                    while (it.hasMore()) {
-                        final RowSequence rs = it.getNextRowSequenceWithLength(lengthPageSizeGetter.getAsInt());
-                        final IntChunk<? extends Values> chunk =
-                                vectorHelper.lengthSource.getChunk(context, rs).asIntChunk();
-                        final IntBuffer newBuffer = IntBuffer.allocate(chunk.size());
-                        chunk.copyToTypedBuffer(0, newBuffer, 0, chunk.size());
-                        newBuffer.limit(chunk.size());
-                        arraySizeBuffers.add(newBuffer);
-                    }
-                }
-            }
-
             columnWriter.addDictionaryPage(encodedKeys, keyCount);
-            final Iterator<IntBuffer> arraySizeIt = arraySizeBuffers == null ? null : arraySizeBuffers.iterator();
             // We've already determined min/max statistics while building the dictionary. Now use an integer statistics
             // object to track the number of nulls that will be written.
             Statistics<Integer> tmpStats = new IntStatistics();
@@ -601,9 +567,7 @@ public class ParquetTableWriter {
                 final IntBuffer pageBuffer = pageBuffers.get(i);
                 final boolean pageHasNulls = pageBufferHasNull.get(i);
                 pageBuffer.flip();
-                if (vectorHelper != null) {
-                    columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining(), tmpStats);
-                } else if (pageHasNulls) {
+                if (pageHasNulls) {
                     columnWriter.addPage(pageBuffer, pageBuffer.remaining(), tmpStats);
                 } else {
                     columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining(), tmpStats);

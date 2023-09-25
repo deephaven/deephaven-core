@@ -35,7 +35,7 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
     }
 
     @Override
-    final public int transferOnePageToBuffer() {
+    public final int transferOnePageToBuffer() {
         if (!hasMoreDataToBuffer()) {
             return 0;
         }
@@ -58,17 +58,17 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
     abstract void copyAllFromChunkToBuffer();
 
     @Override
-    final public boolean hasMoreDataToBuffer() {
+    public final boolean hasMoreDataToBuffer() {
         return tableRowSetIt.hasMore();
     }
 
     @Override
-    final public IntBuffer getBuffer() {
+    public final IntBuffer getBuffer() {
         return buffer;
     }
 
     @Override
-    final public void close() {
+    public final void close() {
         context.close();
         tableRowSetIt.close();
     }
