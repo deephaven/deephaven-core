@@ -67,10 +67,6 @@ public class UnionSourceManager {
     public UnionSourceManager(@NotNull final PartitionedTable partitionedTable) {
         constituentChangesPermitted = partitionedTable.constituentChangesPermitted();
         columnNames = partitionedTable.constituentDefinition().getColumnNamesArray();
-        executionContext = ExecutionContext.newBuilder()
-                .markSystemic()
-                .captureUpdateGraph()
-                .build();
 
         final Table coalescedPartitions = partitionedTable.table().coalesce().select(List.of(
                 new TableTransformationColumn(
@@ -105,11 +101,17 @@ public class UnionSourceManager {
 
             updateCommitter = new UpdateCommitter<>(this, partitionedTable.table().getUpdateGraph(),
                     usm -> usm.unionRedirection.copyCurrToPrev());
+
+            executionContext = ExecutionContext.newBuilder()
+                    .markSystemic()
+                    .captureUpdateGraph()
+                    .build();
         } else {
             listenerRecorders = null;
             mergedListener = null;
             constituentChangesListener = null;
             updateCommitter = null;
+            executionContext = null;
         }
 
         try (final Stream<Table> initialConstituents = currConstituents()) {
