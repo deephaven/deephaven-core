@@ -97,7 +97,8 @@ uby_delta <- function(cols = character(), delta_control = "null_dominates") {
 #' Creates an exponential moving average (EMA) UpdateByOp for each column in `cols`, using ticks as the decay unit.
 #' The formula used is
 #'   `a = e^(-1 / decay_ticks)`
-#'   `ema_next = a * ema_last + (1 - a) * value`
+#'   `ema_first = first_value`
+#'   `ema_next = a * ema_prev + (1 - a) * current_value`
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the exponential moving average for all non-grouping columns.
@@ -113,8 +114,10 @@ uby_ema_tick <- function(decay_ticks, cols = character(), operation_control = op
 #' @description
 #' Creates an exponential moving average (EMA) UpdateByOp for each column in `cols`, using time as the decay unit.
 #' The formula used is
-#'   `a = e^(-dt / decay_time)`
-#'   `ema_next = a * ema_last + (1 - a) * value`
+#'   `dt_current = current_timestamp - prev_timestamp`
+#'   `a_current = e^(-dt_current / decay_time)`
+#'   `ema_first = first_value`
+#'   `ema_next = a_current * ema_prev + (1 - a_current) * current_value`
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param decay_time ISO-8601-formatted string specifying the decay rate.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -133,7 +136,8 @@ uby_ema_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' Creates an exponential moving sum (EMS) UpdateByOp for each column in `cols`, using ticks as the decay unit.
 #' The formula used is
 #'   `a = e^(-1 / decay_ticks)`
-#'   `ems_next = a * ems_last + value`
+#'   `ems_first = first_value`
+#'   `ems_next = a * ems_prev + current_value`
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the exponential moving sum for all non-grouping columns.
@@ -149,8 +153,10 @@ uby_ems_tick <- function(decay_ticks, cols = character(), operation_control = op
 #' @description
 #' Creates an exponential moving sum (EMS) UpdateByOp for each column in `cols`, using time as the decay unit.
 #' The formula used is
-#'   `a = e^(-dt / decay_time)`
-#'   `ems_next = a * ems_last + value`
+#'   `dt_current = current_timestamp - prev_timestamp`
+#'   `a_current = e^(-dt_current / decay_time)`
+#'   `ems_first = first_value`
+#'   `ems_next = a_current * ems_prev + current_value`
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param decay_time ISO-8601-formatted string specifying the decay rate.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -169,7 +175,8 @@ uby_ems_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' Creates an exponential moving minimum (EMMIN) UpdateByOp for each column in `cols`, using ticks as the decay unit.
 #' The formula used is
 #'   `a = e^(-1 / decay_ticks)`
-#'   `emmin_next = min(a * emmin_last, value)`
+#'   `emmin_first = first_value`
+#'   `emmin_next = min(a * emmin_prev, current_value)`
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the exponential moving minimum for all non-grouping columns.
@@ -185,8 +192,10 @@ uby_emmin_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' @description
 #' Creates an exponential moving minimum (EMMIN) UpdateByOp for each column in `cols`, using time as the decay unit.
 #' The formula used is
-#'   `a = e^(-dt / decay_time)`
-#'   `emmin_next = min(a * emmin_last, value)`
+#'   `dt_current = current_timestamp - prev_timestamp`
+#'   `a_current = e^(-dt_current / decay_time)`
+#'   `emmin_first = first_value`
+#'   `emmin_next = min(a_current * emmin_last, value)`
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param decay_time ISO-8601-formatted string specifying the decay rate.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -205,7 +214,8 @@ uby_emmin_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' Creates an exponential moving maximum (EMMAX) UpdateByOp for each column in `cols`, using ticks as the decay unit.
 #' The formula used is
 #'   `a = e^(-1 / decay_ticks)`
-#'   `emmax_next = max(a * emmax_last, value)`
+#'   `emmax_first = first_value`
+#'   `emmax_next = max(a * emmax_prev, current_value)`
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the exponential moving maximum for all non-grouping columns.
@@ -221,8 +231,10 @@ uby_emmax_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' @description
 #' Creates an exponential moving maximum (EMMAX) UpdateByOp for each column in `cols`, using time as the decay unit.
 #' The formula used is
-#'   `a = e^(-dt / decay_time)`
-#'   `emmax_next = max(a * emmax_last, value)`
+#'   `dt_current = current_timestamp - prev_timestamp`
+#'   `a_current = e^(-dt_current / decay_time)`
+#'   `emmax_first = first_value`
+#'   `emmax_next = max(a_current * emmax_prev, current_value)`
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param decay_time ISO-8601-formatted string specifying the decay rate.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -241,8 +253,7 @@ uby_emmax_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' Creates an exponential moving standard deviation (EMSTD) UpdateByOp for each column in `cols`, using ticks as the decay unit.
 #' The formula used is
 #'   `a = e^(-1 / decay_ticks)`
-#'   `ema_next = a * ema_last + (1 - a) * value`
-#'   `em_variance_next = a * (em_variance_last + (1 − a) * (value − ema_last)^2)`
+#'   `em_variance_next = a * (em_variance_prev + (1 − a) * (current_value − ema_prev)^2)`
 #'   `emstd_next = sqrt(em_variance_next)`
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -259,9 +270,11 @@ uby_emstd_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' @description
 #' Creates an exponential moving standard deviation (EMSTD) UpdateByOp for each column in `cols`, using time as the decay unit.
 #' The formula used is
-#'   `a = e^(-dt / decay_time)`
-#'   `ema_next = a * ema_last + (1 - a) * value`
-#'   `em_variance_next = a * (em_variance_last + (1 − a) * (value − ema_last)^2)`
+#'   `dt_current = current_timestamp - prev_timestamp`
+#'   `a_current = e^(-dt_current / decay_time)`
+#'   `em_variance_first = 0`
+#'   `ema_next = a_current * ema_last + (1 - a_current) * current_value`
+#'   `em_variance_next = a_current * (em_variance_prev + (1 − a_current) * (current_value − ema_prev)^2)`
 #'   `emstd_next = sqrt(em_variance_next)`
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param decay_time ISO-8601-formatted string specifying the decay rate.
