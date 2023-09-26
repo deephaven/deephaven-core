@@ -17,7 +17,7 @@ OperationControl <- R6Class("OperationControl",
 )
 
 #' @description
-#' Creates an OperationControl that controls behavior on special values in `udb_em*` operations. The arguments `on_null`
+#' Creates an OperationControl that controls behavior on special values in `uby_em*` operations. The arguments `on_null`
 #' and `on_nan` can take the following values:
 #'   'poison': Allow bad data to poison the result. This is only valid for use with NaN.
 #'   'reset': Reset the state for the bucket to None when invalid data is encountered.
@@ -31,7 +31,7 @@ OperationControl <- R6Class("OperationControl",
 #'   'decimal32': IEEE 754R Decimal32 format. 7 digits and rounding is half-even.
 #'   'decimal64': IEEE 754R Decimal64 format. 16 digits and rounding is half-even.
 #'   'unlimited': Unlimited precision arithmetic. Rounding is half-up.
-#' @return OperationControl to be used in `udb_em*`.
+#' @return OperationControl to be used in `uby_em*`.
 #' @export
 op_control <- function(on_null="skip", on_nan="skip", big_value_context="decimal128") {
 
