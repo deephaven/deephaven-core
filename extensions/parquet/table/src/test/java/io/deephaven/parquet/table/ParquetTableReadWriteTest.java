@@ -15,6 +15,8 @@ import io.deephaven.engine.primitive.function.ShortConsumer;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.select.FunctionalColumn;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
@@ -51,6 +53,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -58,7 +61,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.function.DoubleConsumer;
+import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
 
@@ -94,39 +99,38 @@ public class ParquetTableReadWriteTest {
     }
 
     private static Table getTableFlat(int size, boolean includeSerializable, boolean includeBigDecimal) {
-        // size = 8000;
         ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList(
                         "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
                         "nonNullString = `` + (i % 60)",
-                        "nullString = (String) null",
                         "nonNullPolyString = `` + (i % 600)",
-                        // "someIntColumn = i"
-                        // "someLongColumn = ii",
-                        // "someDoubleColumn = i*1.1",
-                        // "someFloatColumn = (float)(i*1.1)",
-                        // "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
-                        // "someShortColumn = (short)i",
-                        // "someByteColumn = (byte)i",
-                        // "someCharColumn = (char)i",
-                        // "someTime = DateTimeUtils.now() + i",
-                        // "someKey = `` + (int)(i /100)",
-                        // "nullKey = i < -1?`123`:null",
-                        // "nullIntColumn = (int)null",
-                        // "nullLongColumn = (long)null",
-                        // "nullDoubleColumn = (double)null",
-                        // "nullFloatColumn = (float)null",
-                        // "nullBoolColumn = (Boolean)null",
-                        // "nullShortColumn = (short)null",
-                        // "nullByteColumn = (byte)null",
-                        // "nullCharColumn = (char)null",
-                        // "nullTime = (Instant)null",
-                        "nullString = (String)null"));
-        // if (includeBigDecimal) {
-        // columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
-        // columns.add("biColumn = java.math.BigInteger.valueOf(ii)");
-        // }
+                        "someIntColumn = i",
+                        "someLongColumn = ii",
+                        "someDoubleColumn = i*1.1",
+                        "someFloatColumn = (float)(i*1.1)",
+                        "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
+                        "someShortColumn = (short)i",
+                        "someByteColumn = (byte)i",
+                        "someCharColumn = (char)i",
+                        "someTime = DateTimeUtils.now() + i",
+                        "someKey = `` + (int)(i /100)",
+                        "biColumn = java.math.BigInteger.valueOf(ii)",
+                        "nullString = (String) null",
+                        "nullKey = i < -1?`123`:null",
+                        "nullIntColumn = (int)null",
+                        "nullLongColumn = (long)null",
+                        "nullDoubleColumn = (double)null",
+                        "nullFloatColumn = (float)null",
+                        "nullBoolColumn = (Boolean)null",
+                        "nullShortColumn = (short)null",
+                        "nullByteColumn = (byte)null",
+                        "nullCharColumn = (char)null",
+                        "nullTime = (Instant)null",
+                        "nullBiColumn = (java.math.BigInteger)null"));
+        if (includeBigDecimal) {
+            columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
+        }
         if (includeSerializable) {
             columns.add("someSerializable = new SomeSillyTest(i)");
         }
@@ -416,55 +420,105 @@ public class ParquetTableReadWriteTest {
         }
     }
 
-    @Test
-    public void testVectorColumns() {
-        final Table table = getTableFlat(10000, false, false);
-        // Take a groupBy to create vector columns containing null values
-        final Table vectorTable = table.groupBy();
-
-        final File dest = new File(rootFile + File.separator + "vectorTable.parquet");
-        ParquetTools.writeTable(vectorTable, dest);
-        Table fromDisk = ParquetTools.readTable(dest);
-        assertTableEquals(vectorTable, fromDisk);
+    // TODO Delete this
+    private static Table getTableFlatTemp(int size, boolean includeSerializable, boolean includeBigDecimal) {
+        ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
+        ArrayList<String> columns =
+                new ArrayList<>(Arrays.asList(
+                        "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
+                        "nonNullString = `` + (i % 60)",
+                        "nonNullPolyString = `` + (i % 600)",
+                        "someIntColumn = i",
+                        // "someLongColumn = ii",
+                        // "someDoubleColumn = i*1.1",
+                        // "someFloatColumn = (float)(i*1.1)",
+                        // "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
+                        // "someShortColumn = (short)i",
+                        // "someByteColumn = (byte)i",
+                        // "someCharColumn = (char)i",
+                        // "someTime = DateTimeUtils.now() + i",
+                        "someSerializable = new SomeSillyTest(i)",
+                        "biColumn = java.math.BigInteger.valueOf(ii)",
+                        "someKey = `` + (int)(i /100)",
+                        "nullString = (String) null",
+                        "nullKey = i < -1?`123`:null",
+                        "nullIntColumn = (int)null",
+                        // "nullLongColumn = (long)null",
+                        // "nullDoubleColumn = (double)null",
+                        // "nullFloatColumn = (float)null",
+                        // "nullBoolColumn = (Boolean)null",
+                        // "nullShortColumn = (short)null",
+                        // "nullByteColumn = (byte)null",
+                        // "nullCharColumn = (char)null",
+                        // "nullTime = (Instant)null"
+                        "nullBiColumn = (java.math.BigInteger)null"));
+        // if (includeBigDecimal) {
+        // columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
+        // columns.add("biColumn = java.math.BigInteger.valueOf(ii)");
+        // }
+        // if (includeSerializable) {
+        // columns.add("someSerializable = new SomeSillyTest(i)");
+        // }
+        return TableTools.emptyTable(size).select(
+                Selectable.from(columns));
     }
 
     @Test
-    public void testVectorToArrayColumns() {
-        final Table table = getTableFlat(10000, true, true);
-        final Table arrayTable = table.groupBy().update(
-                "biColumn=biColumn.toArray()",
-                "someSerializable = someSerializable.toArray()");
-        final File dest = new File(rootFile + File.separator + "arrayTable.parquet");
-        ParquetTools.writeTable(arrayTable, dest);
+    public void testVectorColumns() {
+        final Table table = getTableFlatTemp(10000, true, false);
+        // Take a groupBy to create vector columns containing null values
+        Table vectorTable = table.groupBy().select();
+
+        final File dest = new File(rootFile + File.separator + "testVectorColumns.parquet");
+        ParquetTools.writeTable(vectorTable, dest);
         Table fromDisk = ParquetTools.readTable(dest);
+        assertTableEquals(vectorTable, fromDisk);
+
+        // Take a join with empty table to repeat the same row multiple times
+        vectorTable = vectorTable.join(TableTools.emptyTable(100)).select();
+        ParquetTools.writeTable(vectorTable, dest);
+        fromDisk = ParquetTools.readTable(dest);
+        assertTableEquals(vectorTable, fromDisk);
+
+        // Convert the table from vector to array column
+        final Table arrayTable = vectorTable.updateView(vectorTable.getColumnSourceMap().keySet().stream()
+                .map(name -> name + " = " + name + ".toArray()")
+                .toArray(String[]::new));
+        ParquetTools.writeTable(arrayTable, dest);
+        fromDisk = ParquetTools.readTable(dest);
         assertTableEquals(arrayTable, fromDisk);
     }
 
 
-    @Test
-    public void testNullVectorColumns() {
-        final Table nullTable = getTableFlat(10, true, false);
-
-        final File dest = new File(rootFile + File.separator + "nullTable.parquet");
-        ParquetTools.writeTable(nullTable, dest);
-        Table fromDisk = ParquetTools.readTable(dest);
-        assertTableEquals(nullTable, fromDisk);
-
-        // Take a groupBy to create vector columns containing null values
-        final Table nullVectorTable = nullTable.groupBy();
-        ParquetTools.writeTable(nullVectorTable, dest);
-        fromDisk = ParquetTools.readTable(dest);
-        assertTableEquals(nullVectorTable, fromDisk);
+    private static Table arrayToVectorTable(final Table table) {
+        final TableDefinition tableDefinition = table.getDefinition();
+        final List<SelectColumn> arrayToVectorFormulas = new ArrayList<>();
+        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
+            final String columnName = columnDefinition.getName();
+            final Class<Object> sourceDataType = (Class<Object>) columnDefinition.getDataType();
+            if (!sourceDataType.isArray()) {
+                continue;
+            }
+            final Class<?> componentType = Objects.requireNonNull(columnDefinition.getComponentType());
+            final VectorFactory vectorFactory = VectorFactory.forElementType(componentType);
+            final Object emptyArray = Array.newInstance(componentType, 0);
+            final Vector<?> emptyVector = vectorFactory.vectorWrap(emptyArray);
+            final Class<Vector<?>> destinationDataType = (Class<Vector<?>>) emptyVector.getClass();
+            final Function<Object, Vector<?>> vectorWrapFunction = vectorFactory::vectorWrap;
+            // noinspection unchecked,rawtypes
+            arrayToVectorFormulas.add(new FunctionalColumn<>(
+                    columnName, sourceDataType, columnName, destinationDataType, componentType, vectorWrapFunction));
+        }
+        return arrayToVectorFormulas.isEmpty() ? table : table.updateView(arrayToVectorFormulas);
     }
 
-    // TODO Add tests for table with mix of null and non-values
-    // TODO Also add tests for 10000 rows
+
     @Test
     public void testArrayColumns() {
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList(
-                        "someStringArrayColumn = new String[] {i % 10 == 0?null:(`` + (i % 101))}",
-                        // "someIntArrayColumn = new int[] {i}",
+                        "someStringArrayColumn = new String[] {i % 10 == 0 ? null : (`` + (i % 101))}",
+                        "someIntArrayColumn = new int[] {i}",
                         // "someLongArrayColumn = new long[] {ii}",
                         // "someDoubleArrayColumn = new double[] {i*1.1}",
                         // "someFloatArrayColumn = new float[] {(float)(i*1.1)}",
@@ -473,24 +527,31 @@ public class ParquetTableReadWriteTest {
                         // "someByteArrayColumn = new byte[] {(byte)i}",
                         // "someCharArrayColumn = new char[] {(char)i}",
                         // "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
-                        "nullStringArrayColumn = new String[] {(String)null}"
-                // "nullIntArrayColumn = new int[] {(int)null}"
-                // "nullLongArrayColumn = new long[] {(long)null}",
-                // "nullDoubleArrayColumn = new double[] {(double)null}",
-                // "nullFloatArrayColumn = new float[] {(float)null}",
-                // "nullBoolArrayColumn = new Boolean[] {(Boolean)null}",
-                // "nullShorArrayColumn = new short[] {(short)null}",
-                // "nullByteArrayColumn = new byte[] {(byte)null}",
-                // "nullCharArrayColumn = new char[] {(char)null}",
-                // "nullTimeArrayColumn = new Instant[] {(Instant)null}"
-                ));
+                        "someBiColumn = new java.math.BigInteger[] {java.math.BigInteger.valueOf(ii)}",
+                        "nullStringArrayColumn = new String[] {(String)null}",
+                        "nullIntArrayColumn = new int[] {(int)null}",
+                        // "nullLongArrayColumn = new long[] {(long)null}",
+                        // "nullDoubleArrayColumn = new double[] {(double)null}",
+                        // "nullFloatArrayColumn = new float[] {(float)null}",
+                        // "nullBoolArrayColumn = new Boolean[] {(Boolean)null}",
+                        // "nullShorArrayColumn = new short[] {(short)null}",
+                        // "nullByteArrayColumn = new byte[] {(byte)null}",
+                        // "nullCharArrayColumn = new char[] {(char)null}",
+                        // "nullTimeArrayColumn = new Instant[] {(Instant)null}"
+                        "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"));
 
-        final Table arrayTable = TableTools.emptyTable(7).select(
+        final Table arrayTable = TableTools.emptyTable(10000).select(
                 Selectable.from(columns));
-        final File dest = new File(rootFile + File.separator + "arrayTable.parquet");
+        final File dest = new File(rootFile + File.separator + "testArrayColumns.parquet");
         ParquetTools.writeTable(arrayTable, dest);
         Table fromDisk = ParquetTools.readTable(dest);
         assertTableEquals(arrayTable, fromDisk);
+
+        // Convert array table to vector
+        final Table vectorTable = arrayToVectorTable(arrayTable);
+        ParquetTools.writeTable(vectorTable, dest);
+        fromDisk = ParquetTools.readTable(dest);
+        assertTableEquals(vectorTable, fromDisk);
     }
 
     /**
@@ -503,16 +564,15 @@ public class ParquetTableReadWriteTest {
      * @return
      */
     private Table maybeFixBigDecimal(Table toFix) {
-        return toFix;
-        // final BigDecimalUtils.PrecisionAndScale pas = BigDecimalUtils.computePrecisionAndScale(toFix, "bdColumn");
-        // final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale, -1);
-        //
-        // ExecutionContext.getContext()
-        // .getQueryScope()
-        // .putParam("__codec", codec);
-        // return toFix
-        // .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
-        // .dropColumns("bdColE");
+        final BigDecimalUtils.PrecisionAndScale pas = BigDecimalUtils.computePrecisionAndScale(toFix, "bdColumn");
+        final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale, -1);
+
+        ExecutionContext.getContext()
+                .getQueryScope()
+                .putParam("__codec", codec);
+        return toFix
+                .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
+                .dropColumns("bdColE");
     }
 
     // Following is used for testing both writing APIs for parquet tables

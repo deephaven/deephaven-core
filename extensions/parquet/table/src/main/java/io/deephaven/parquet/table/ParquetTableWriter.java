@@ -32,6 +32,8 @@ import io.deephaven.stringset.StringSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.vector.IntVectorDirect;
+import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
@@ -252,6 +254,12 @@ public class ParquetTableWriter {
         return transformed;
     }
 
+    private static boolean isVectorDirectType(Class<?> type) {
+        // TODO Would need to add more types, check with Ryan if this seems okay
+        return type.equals(ObjectVectorDirect.class) ||
+                type.equals(IntVectorDirect.class);
+    }
+
     /**
      * Create a {@link ParquetFileWriter} for writing the table to disk.
      *
@@ -306,7 +314,11 @@ public class ParquetTableWriter {
                 columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.StringSet);
                 usedColumnInfo = true;
             } else if (Vector.class.isAssignableFrom(column.getDataType())) {
-                columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.Vector);
+                if (isVectorDirectType(column.getDataType())) {
+                    columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.VectorDirect);
+                } else {
+                    columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.Vector);
+                }
                 usedColumnInfo = true;
             }
 

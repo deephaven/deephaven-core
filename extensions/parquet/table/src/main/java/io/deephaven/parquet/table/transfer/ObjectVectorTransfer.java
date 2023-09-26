@@ -6,18 +6,18 @@ package io.deephaven.parquet.table.transfer;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.vector.ObjectVectorColumnWrapper;
+import io.deephaven.vector.ObjectVector;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
-abstract class ObjectVectorTransfer<T> extends ObjectArrayAndVectorTransfer<ObjectVectorColumnWrapper<T>> {
+abstract class ObjectVectorTransfer<T> extends ObjectArrayAndVectorTransfer<ObjectVector<T>> {
     ObjectVectorTransfer(final @NotNull ColumnSource<?> columnSource, final @NotNull RowSequence tableRowSet,
                          final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize);
     }
 
     @Override
-    final EncodedData encodeDataForBuffering(final @NotNull ObjectVectorColumnWrapper<T> data) {
+    final EncodedData encodeDataForBuffering(final @NotNull ObjectVector<T> data) {
         int numStrings = data.intSize();
         Binary[] binaryEncodedValues = new Binary[numStrings];
         int numBytesEncoded = 0;

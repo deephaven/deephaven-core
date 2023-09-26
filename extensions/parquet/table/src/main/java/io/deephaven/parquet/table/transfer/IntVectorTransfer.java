@@ -5,13 +5,13 @@ package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.vector.IntVectorColumnWrapper;
+import io.deephaven.vector.IntVectorDirect;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
 
 // TODO Add comments
-final class IntVectorTransfer extends PrimitiveVectorTransfer<IntVectorColumnWrapper, IntBuffer> {
+final class IntVectorTransfer extends PrimitiveVectorTransfer<IntVectorDirect, IntBuffer> {
     IntVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
                 IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
@@ -22,7 +22,7 @@ final class IntVectorTransfer extends PrimitiveVectorTransfer<IntVectorColumnWra
     }
 
     @Override
-    void copyToBuffer(@NotNull final IntVectorColumnWrapper data) {
+    void copyToBuffer(@NotNull final IntVectorDirect data) {
         data.iterator().forEachRemaining((int value) -> buffer.put(value));
     }
 }
