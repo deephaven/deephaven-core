@@ -23,12 +23,12 @@ abstract class ArrayAndVectorTransfer<T, E, B> extends VariableWidthTransfer<T, 
     }
 
     @Override
-    public final IntBuffer getRepeatCount() {
+    public IntBuffer getRepeatCount() {
         return arrayLengths;
     }
 
     @Override
-    final boolean addNullToBuffer() {
+    boolean addNullToBuffer() {
         // TODO Do we need to add anything to buffer?
         if (!arrayLengths.hasRemaining()) {
             return false;

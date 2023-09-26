@@ -3,19 +3,12 @@
  */
 package io.deephaven.parquet.table;
 
-import gnu.trove.impl.Constants;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
@@ -44,9 +37,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
 import org.apache.parquet.column.statistics.IntStatistics;
 import org.apache.parquet.column.statistics.Statistics;
-import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,7 +46,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
-import java.util.function.IntSupplier;
 
 /**
  * API for writing DH tables in parquet format
@@ -357,18 +347,10 @@ public class ParquetTableWriter {
         try (final ColumnWriter columnWriter = rowGroupWriter.addColumn(
                 writeInstructions.getParquetColumnNameFromColumnNameOrDefault(name))) {
             boolean usedDictionary = false;
-            if (columnSourceIn.getType() == String.class) {
+            if (String.class.equals(columnDefinition.getDataType())
+                    || String.class.equals(columnDefinition.getComponentType())) {
                 usedDictionary = tryEncodeDictionary(writeInstructions, tableRowSet, columnDefinition, columnWriter,
                         columnSourceIn);
-            }
-            @Nullable
-            final Class<?> dataType = columnDefinition.getDataType();
-            @Nullable
-            final Class<?> componentType = columnDefinition.getComponentType();
-            if (Vector.class.isAssignableFrom(dataType) && String.class.equals(componentType)) {
-                usedDictionary =
-                        tryVectorEncodeDictionary(writeInstructions, tableRowSet, columnDefinition, columnWriter,
-                                columnSourceIn);
             }
             if (!usedDictionary) {
                 encodePlain(writeInstructions, tableRowSet, columnDefinition, columnType, columnWriter, columnSourceIn,
@@ -377,7 +359,7 @@ public class ParquetTableWriter {
         }
     }
 
-    private static <DATA_TYPE> boolean tryVectorEncodeDictionary(
+    private static <DATA_TYPE> boolean tryEncodeDictionary(
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final RowSet tableRowSet,
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
@@ -389,17 +371,26 @@ public class ParquetTableWriter {
         final int NULL_POS = QueryConstants.NULL_INT; // TODO Explain why
         final Statistics<?> statistics = columnWriter.getStats();
         final List<IntBuffer> pageBuffers = new ArrayList<>();
-        final List<IntBuffer> arrayLengths = new ArrayList<>();
+        final List<IntBuffer> lengthsBuffers = new ArrayList<>();
         final BitSet pageBufferHasNull = new BitSet();
+        boolean isArrayOrVector = (columnSourceIn.getComponentType() != null);
         boolean hasNulls = false;
         StringDictionary dictionary = new StringDictionary(maxKeys, maxDictSize, statistics);
         int curPage = 0;
-        try (final DictEncodedStringVectorTransfer transferObject = new DictEncodedStringVectorTransfer(columnSourceIn,
-                tableRowSet, writeInstructions.getTargetPageSize(), dictionary, NULL_POS)) {
+        try (final DictEncodedStringTransferBase<?> transferObject = TransferObject.createDictEncodedStringTransfer(
+                columnSourceIn, columnDefinition, tableRowSet,
+                writeInstructions.getTargetPageSize(), dictionary, NULL_POS)) {
             do {
                 transferObject.transferOnePageToBuffer();
-                pageBuffers.add(transferObject.getBuffer());
-                arrayLengths.add(transferObject.getRepeatCount());
+                // Store a copy of the page buffer and lengths buffer for later use
+                IntBuffer pageBuffer = IntBuffer.allocate(transferObject.getBuffer().capacity());
+                pageBuffer.put(transferObject.getBuffer()).flip();
+                pageBuffers.add(pageBuffer);
+                if (isArrayOrVector) {
+                    IntBuffer lengthsBuffer = IntBuffer.allocate(transferObject.getRepeatCount().capacity());
+                    lengthsBuffer.put(transferObject.getRepeatCount()).flip();
+                    lengthsBuffers.add(lengthsBuffer);
+                }
                 boolean pageHasNulls = transferObject.pageHasNull();
                 hasNulls = hasNulls || pageHasNulls;
                 pageBufferHasNull.set(curPage++, pageHasNulls);
@@ -422,21 +413,24 @@ public class ParquetTableWriter {
         // We've already determined min/max statistics while building the dictionary. Now use an integer statistics
         // object to track the number of nulls that will be written.
         Statistics<Integer> tmpStats = new IntStatistics();
-        for (int i = 0; i < pageBuffers.size(); ++i) {
+        int numPages = pageBuffers.size();
+        for (int i = 0; i < numPages; ++i) {
             final IntBuffer pageBuffer = pageBuffers.get(i);
-            final IntBuffer lengths = arrayLengths.get(i);
-            columnWriter.addVectorPage(pageBuffer, lengths, pageBuffer.remaining(), tmpStats);
-            // final boolean pageHasNulls = pageBufferHasNull.get(i);
-            // if (pageHasNulls) {
-            // columnWriter.addPage(pageBuffer, pageBuffer.remaining(), tmpStats);
-            // } else {
-            // columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining(), tmpStats);
-            // }
+            if (isArrayOrVector) {
+                final IntBuffer lengths = lengthsBuffers.get(i);
+                columnWriter.addVectorPage(pageBuffer, lengths, pageBuffer.remaining(), tmpStats);
+            } else {
+                final boolean pageHasNulls = pageBufferHasNull.get(i);
+                if (pageHasNulls) {
+                    columnWriter.addPage(pageBuffer, pageBuffer.remaining(), tmpStats);
+                } else {
+                    columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining(), tmpStats);
+                }
+            }
         }
         // Add the count of nulls to the overall stats.
         statistics.incrementNumNulls(tmpStats.getNumNulls());
         return true;
-
     }
 
     private static <DATA_TYPE> void encodePlain(@NotNull final ParquetInstructions writeInstructions,
@@ -466,117 +460,6 @@ public class ParquetTableWriter {
                     columnWriter.addPage(transferObject.getBuffer(), numValuesBuffered, statistics);
                 }
             } while (transferObject.hasMoreDataToBuffer());
-        }
-    }
-
-    private static <DATA_TYPE> boolean tryEncodeDictionary(
-            @NotNull final ParquetInstructions writeInstructions,
-            @NotNull final RowSet tableRowSet,
-            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
-            @NotNull final ColumnWriter columnWriter,
-            @NotNull final ColumnSource<DATA_TYPE> columnSourceIn) throws IOException {
-        // Note: We only support strings as dictionary pages. Knowing that, we can make some assumptions about chunk
-        // types and avoid a bunch of lambda and virtual method invocations. If we decide to support more, than
-        // these assumptions will need to be revisited.
-        Assert.eq(columnDefinition.getDataType(), "columnDefinition.getDataType()", String.class, "String.class");
-
-        final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
-        final int maxKeys = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionaryKeys();
-        final int maxDictSize = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionarySize();
-        final Statistics<?> statistics = columnWriter.getStats();
-        try {
-            final List<IntBuffer> pageBuffers = new ArrayList<>();
-            final BitSet pageBufferHasNull = new BitSet();
-            Binary[] encodedKeys = new Binary[Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)];
-
-            // Set noEntryValue as NULL_INT, this will be the dictionary position for "null" values
-            final TObjectIntHashMap<String> keyToPos =
-                    new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY,
-                            Constants.DEFAULT_LOAD_FACTOR,
-                            QueryConstants.NULL_INT);
-            int keyCount = 0;
-            int dictSize = 0;
-            boolean hasNulls = false;
-            int maxValuesPerPage = writeInstructions.getTargetPageSize() / Integer.BYTES; // Because we will encode the
-                                                                                          // strings as integer
-                                                                                          // dictionary positions
-            try (final ChunkSource.GetContext context = columnSourceIn.makeGetContext(maxValuesPerPage);
-                    final RowSequence.Iterator tableRowSetIt = tableRowSet.getRowSequenceIterator()) {
-                int curPage = 0;
-                do {
-                    boolean pageHasNulls = false;
-                    final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(maxValuesPerPage);
-                    final ObjectChunk<String, ? extends Values> chunk =
-                            columnSourceIn.getChunk(context, rs).asObjectChunk();
-                    final IntBuffer posInDictionary = IntBuffer.allocate(rs.intSize());
-                    for (int vi = 0; vi < chunk.size(); ++vi) {
-                        final String key = chunk.get(vi);
-                        int dictionaryPos = keyToPos.get(key);
-                        if (dictionaryPos == keyToPos.getNoEntryValue()) {
-                            // Track the min/max statistics while the dictionary is being built.
-                            if (key == null) {
-                                hasNulls = pageHasNulls = true;
-                            } else {
-                                if (keyCount == encodedKeys.length) {
-                                    // Copy into an array of double the size with upper limit at maxKeys
-                                    if (keyCount == maxKeys) {
-                                        throw new DictionarySizeExceededException(String.format(
-                                                "Dictionary maximum keys exceeded for %s", columnDefinition.getName()));
-                                    }
-                                    encodedKeys = Arrays.copyOf(encodedKeys, (int) Math.min(keyCount * 2L, maxKeys));
-                                }
-                                final Binary encodedKey = Binary.fromString(key);
-                                dictSize += encodedKey.length();
-                                if (dictSize > maxDictSize) {
-                                    throw new DictionarySizeExceededException(
-                                            String.format("Dictionary maximum size exceeded for %s",
-                                                    columnDefinition.getName()));
-                                }
-                                encodedKeys[keyCount] = encodedKey;
-                                statistics.updateStats(encodedKey);
-                                dictionaryPos = keyCount;
-                                keyCount++;
-                            }
-                            keyToPos.put(key, dictionaryPos);
-                        }
-                        posInDictionary.put(dictionaryPos);
-                    }
-                    pageBuffers.add(posInDictionary);
-                    pageBufferHasNull.set(curPage, pageHasNulls);
-                    curPage++;
-                } while (tableRowSetIt.hasMore());
-            }
-
-            if (keyCount == 0 && hasNulls) {
-                // Reset the stats because we will re-encode these in PLAIN encoding.
-                columnWriter.resetStats();
-                return false;
-            }
-
-            columnWriter.addDictionaryPage(encodedKeys, keyCount);
-            // We've already determined min/max statistics while building the dictionary. Now use an integer statistics
-            // object to track the number of nulls that will be written.
-            Statistics<Integer> tmpStats = new IntStatistics();
-            for (int i = 0; i < pageBuffers.size(); ++i) {
-                final IntBuffer pageBuffer = pageBuffers.get(i);
-                final boolean pageHasNulls = pageBufferHasNull.get(i);
-                pageBuffer.flip();
-                if (pageHasNulls) {
-                    columnWriter.addPage(pageBuffer, pageBuffer.remaining(), tmpStats);
-                } else {
-                    columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining(), tmpStats);
-                }
-            }
-            // Add the count of nulls to the overall stats.
-            statistics.incrementNumNulls(tmpStats.getNumNulls());
-            return true;
-        } catch (final DictionarySizeExceededException ignored) {
-            // Reset the stats because we will re-encode these in PLAIN encoding.
-            columnWriter.resetStats();
-            // We discard all the dictionary data accumulated so far and fall back to PLAIN encoding. We could have
-            // added a dictionary page first with data collected so far and then encoded the remaining data using PLAIN
-            // encoding (TODO deephaven-core#946).
-            return false;
         }
     }
 

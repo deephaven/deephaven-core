@@ -81,7 +81,6 @@ public interface TransferObject<B> extends SafeCloseable {
             }
 //            // else if (explicit codec provided)
 //            // else if (big decimal)
-//            // else if (big integer)
         }
         if (Vector.class.isAssignableFrom(dataType)) {
             if (int.class.equals(componentType)) {
@@ -129,6 +128,26 @@ public interface TransferObject<B> extends SafeCloseable {
 
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
         return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
+    }
+
+    static <DATA_TYPE> DictEncodedStringTransferBase<?> createDictEncodedStringTransfer(
+            @NotNull final ColumnSource<DATA_TYPE> columnSource,
+            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
+            @NotNull final RowSet tableRowSet, final int targetPageSize,
+            @NotNull final StringDictionary dictionary, final int nullPos) {
+        @Nullable final Class<?> dataType = columnDefinition.getDataType();
+        @Nullable final Class<?> componentType = columnDefinition.getComponentType();
+        if (String.class.equals(dataType)) {
+            return new DictEncodedStringTransfer(columnSource, tableRowSet, targetPageSize, dictionary, nullPos);
+        }
+        if (dataType.isArray() && String.class.equals(componentType)) {
+            return new DictEncodedStringArrayTransfer(columnSource, tableRowSet, targetPageSize, dictionary, nullPos);
+        }
+        if (Vector.class.isAssignableFrom(dataType) && String.class.equals(componentType)) {
+                return new DictEncodedStringVectorTransfer(columnSource, tableRowSet, targetPageSize, dictionary, nullPos);
+        }
+        // Dictionary encoding not supported for other types
+        return null;
     }
 
     // TODO Rewrite the comments for this file
