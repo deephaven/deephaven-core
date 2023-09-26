@@ -4,9 +4,12 @@
 package io.deephaven.plot;
 
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.FigureWidgetMarker;
 import io.deephaven.engine.util.LiveWidget;
 import io.deephaven.engine.util.LiveWidgetVisibilityProvider;
+import io.deephaven.plot.util.tables.PartitionedTableHandle;
+import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.util.annotations.ScriptApi;
 
 import java.util.*;
@@ -23,8 +26,14 @@ public class FigureWidget extends FigureImpl implements LiveWidget, LiveWidgetVi
         super(figure);
         getFigure().consolidatePartitionedTables();
 
-        getFigure().getTableHandles().forEach(th -> th.getTable().retainReference());
-        getFigure().getPartitionedTableHandles().forEach(pth -> pth.getPartitionedTable().retainReference());
+        getFigure().getTableHandles().stream()
+                .map(TableHandle::getTable)
+                .filter(DynamicNode::notDynamicOrIsRefreshing)
+                .forEach(this::manage);
+        getFigure().getPartitionedTableHandles().stream()
+                .map(PartitionedTableHandle::getPartitionedTable)
+                .filter(DynamicNode::notDynamicOrIsRefreshing)
+                .forEach(this::manage);
     }
 
     @ScriptApi
@@ -41,11 +50,5 @@ public class FigureWidget extends FigureImpl implements LiveWidget, LiveWidgetVi
     @ScriptApi
     public void setValidGroups(final Collection<String> validGroups) {
         setValidGroups(validGroups.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-    }
-
-    @Override
-    protected void destroy() {
-        getFigure().getTableHandles().forEach(th -> th.getTable().dropReference());
-        getFigure().getPartitionedTableHandles().forEach(pth -> pth.getPartitionedTable().dropReference());
     }
 }

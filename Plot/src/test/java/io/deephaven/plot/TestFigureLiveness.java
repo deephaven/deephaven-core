@@ -8,7 +8,7 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 
-public class TestLiveness extends RefreshingTableTestCase {
+public class TestFigureLiveness extends RefreshingTableTestCase {
     public void testFigureLiveness() {
         // Scope that represents the incoming grpc call
         LivenessScope reqScope = new LivenessScope();
@@ -19,7 +19,6 @@ public class TestLiveness extends RefreshingTableTestCase {
         Figure plot;
         try (SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
             t = TableTools.timeTable("PT1s").updateView("Y=i", "X=i");
-//            t = TableTools.emptyTable(100).updateView("Y=i", "X=i");
             plot = PlottingConvenience.plot("series", t, "X", "Y").show();
             reqScope.manage((LivenessReferent) plot);// explicitly manage outside of the scope
         }

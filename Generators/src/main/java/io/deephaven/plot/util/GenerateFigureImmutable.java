@@ -3,7 +3,7 @@
  */
 package io.deephaven.plot.util;
 
-import io.deephaven.engine.liveness.ReferenceCountedLivenessReferent;
+import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.plot.*;
 import io.deephaven.plot.datasets.DataSeries;
 import io.deephaven.plot.datasets.multiseries.MultiSeries;
@@ -202,7 +202,7 @@ public class GenerateFigureImmutable {
                             Stream.of(interfaces),
                             Stream.of(seriesInterfaces)).collect(Collectors.joining(", ")));
         } else {
-            sb.append(" extends ").append(ReferenceCountedLivenessReferent.class.getName());
+            sb.append(" extends ").append(LivenessArtifact.class.getName());
             sb.append(" implements " + CLASS_NAME_INTERFACE);
         }
 
