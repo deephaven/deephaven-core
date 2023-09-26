@@ -32,6 +32,7 @@ import io.deephaven.stringset.StringSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.vector.CharVectorDirect;
 import io.deephaven.vector.IntVectorDirect;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.vector.Vector;
@@ -257,7 +258,8 @@ public class ParquetTableWriter {
     private static boolean isVectorDirectType(Class<?> type) {
         // TODO Would need to add more types, check with Ryan if this seems okay
         return type.equals(ObjectVectorDirect.class) ||
-                type.equals(IntVectorDirect.class);
+                type.equals(IntVectorDirect.class) ||
+                type.equals(CharVectorDirect.class);
     }
 
     /**

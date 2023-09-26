@@ -60,19 +60,19 @@ public interface TransferObject<B> extends SafeCloseable {
             if (int.class.equals(componentType)) {
                 return new IntArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            else if (long.class.equals(componentType)) {
-//                return LongArrayTransfer.create(columnSource, instructions.getTargetPageSize());
+//                return LongArrayTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (double.class.equals(componentType)) {
-//                return DoubleArrayTransfer.create(columnSource, instructions.getTargetPageSize());
+//                return DoubleArrayTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (float.class.equals(componentType)) {
-//                return FloatArrayTransfer.create(columnSource, instructions.getTargetPageSize());
+//                return FloatArrayTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (Boolean.class.equals(componentType)) {
-//                return BooleanArrayTransfer.create(columnSource, instructions.getTargetPageSize());
+//                return BooleanArrayTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (short.class.equals(componentType)) {
-//                return new ShortArrayTransfer(columnSource, instructions.getTargetPageSize());
-//            } else if (char.class.equals(componentType)) {
-//                return new CharArrayTransfer(columnSource, instructions.getTargetPageSize());
+//                return new ShortArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            } else if (char.class.equals(componentType)) {
+                return new CharArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (byte.class.equals(componentType)) {
-//                return new ByteArrayTransfer(columnSource, instructions.getTargetPageSize());
+//                return new ByteArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             } else if (String.class.equals(componentType)) {
                 return new StringArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             } else if (BigInteger.class.equals(componentType)) {
@@ -86,19 +86,19 @@ public interface TransferObject<B> extends SafeCloseable {
             if (int.class.equals(componentType)) {
                 return new IntVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (long.class.equals(componentType)) {
-//                return LongVectorTransfer.create(columnSource, instructions.getTargetPageSize());
+//                return LongVectorTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (double.class.equals(componentType)) {
-//                return DoubleVectorTransfer.create(columnSource, instructions.getTargetPageSize());
+//                return DoubleVectorTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (float.class.equals(componentType)) {
-//                return FloatVectorTransfer.create(columnSource, instructions.getTargetPageSize());
+//                return FloatVectorTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (Boolean.class.equals(componentType)) {
-//                return BooleanVectorTransfer.create(columnSource, instructions.getTargetPageSize());
+//                return BooleanVectorTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (short.class.equals(componentType)) {
-//                return new ShortVectorTransfer(columnSource, instructions.getTargetPageSize());
-//            } else if (char.class.equals(componentType)) {
-//                return new CharVectorTransfer(columnSource, instructions.getTargetPageSize());
+//                return new ShortVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            } else if (char.class.equals(componentType)) {
+                return new CharVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (byte.class.equals(componentType)) {
-//                return new ByteVectorTransfer(columnSource, instructions.getTargetPageSize());
+//                return new ByteVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             } else if (String.class.equals(componentType)) {
                 return new StringVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             } else if (BigInteger.class.equals(componentType)) {

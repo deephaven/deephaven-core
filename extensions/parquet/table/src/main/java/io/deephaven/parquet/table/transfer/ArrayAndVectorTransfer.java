@@ -29,7 +29,7 @@ abstract class ArrayAndVectorTransfer<T, E, B> extends VariableWidthTransfer<T, 
 
     @Override
     boolean addNullToBuffer() {
-        // TODO Do we need to add anything to buffer?
+        // TODO Add comment
         if (!arrayLengths.hasRemaining()) {
             return false;
         }
