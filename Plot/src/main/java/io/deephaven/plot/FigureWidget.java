@@ -19,10 +19,12 @@ public class FigureWidget extends FigureImpl implements LiveWidget, LiveWidgetVi
     private static final long serialVersionUID = 763409998768966385L;
     private String[] validGroups;
 
-    @SuppressWarnings("WeakerAccess") // this is used in the python integration
     public FigureWidget(final FigureImpl figure) {
         super(figure);
-        figure.getFigure().consolidatePartitionedTables();
+        getFigure().consolidatePartitionedTables();
+
+        getFigure().getTableHandles().forEach(th -> th.getTable().retainReference());
+        getFigure().getPartitionedTableHandles().forEach(pth -> pth.getPartitionedTable().retainReference());
     }
 
     @ScriptApi
@@ -39,5 +41,11 @@ public class FigureWidget extends FigureImpl implements LiveWidget, LiveWidgetVi
     @ScriptApi
     public void setValidGroups(final Collection<String> validGroups) {
         setValidGroups(validGroups.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+    }
+
+    @Override
+    protected void destroy() {
+        getFigure().getTableHandles().forEach(th -> th.getTable().dropReference());
+        getFigure().getPartitionedTableHandles().forEach(pth -> pth.getPartitionedTable().dropReference());
     }
 }

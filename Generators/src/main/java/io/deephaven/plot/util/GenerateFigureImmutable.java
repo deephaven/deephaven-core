@@ -3,6 +3,7 @@
  */
 package io.deephaven.plot.util;
 
+import io.deephaven.engine.liveness.ReferenceCountedLivenessReferent;
 import io.deephaven.plot.*;
 import io.deephaven.plot.datasets.DataSeries;
 import io.deephaven.plot.datasets.multiseries.MultiSeries;
@@ -20,6 +21,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.plot.util.PlotGeneratorUtils.indent;
 
@@ -30,14 +33,14 @@ import static io.deephaven.plot.util.PlotGeneratorUtils.indent;
 public class GenerateFigureImmutable {
     // See also GroovyStaticImportGenerator
 
-    private static Logger log = Logger.getLogger(GenerateFigureImmutable.class.toString());
+    private static final Logger log = Logger.getLogger(GenerateFigureImmutable.class.toString());
 
     private static final String CLASS_NAME_INTERFACE = "io.deephaven.plot.Figure";
     private static final String CLASS_NAME_IMPLEMENTATION = "io.deephaven.plot.FigureImpl";
 
     private final String outputClass;
     private final String outputClassNameShort;
-    private boolean isInterface;
+    private final boolean isInterface;
     private final String[] imports;
     private final String[] interfaces;
     private final String[] seriesInterfaces;
@@ -65,7 +68,7 @@ public class GenerateFigureImmutable {
             log.info("Processing class: " + c);
 
             for (final Method m : c.getMethods()) {
-                log.info("Processing method (" + c + "): " + m);
+                log.fine("Processing method (" + c + "): " + m);
                 boolean isStatic = Modifier.isStatic(m.getModifiers());
                 boolean isPublic = Modifier.isPublic(m.getModifiers());
                 boolean isObject = m.getDeclaringClass().equals(Object.class);
@@ -190,21 +193,16 @@ public class GenerateFigureImmutable {
         return result;
     }
 
-    private String generateImplements() {
+    private String generateInheritance() {
         final StringBuilder sb = new StringBuilder();
 
         if (isInterface) {
-            sb.append(" extends ");
-            sb.append("java.io.Serializable");
-
-            for (final String[] ii : new String[][] {interfaces, seriesInterfaces}) {
-                for (final String iface : ii) {
-                    // final String[] siface = iface.split("[.]");
-                    // final String name = siface[siface.length - 1];
-                    sb.append(", ").append(iface);
-                }
-            }
+            sb.append(" extends ").append(
+                    Stream.concat(
+                            Stream.of(interfaces),
+                            Stream.of(seriesInterfaces)).collect(Collectors.joining(", ")));
         } else {
+            sb.append(" extends ").append(ReferenceCountedLivenessReferent.class.getName());
             sb.append(" implements " + CLASS_NAME_INTERFACE);
         }
 
@@ -234,7 +232,7 @@ public class GenerateFigureImmutable {
         code += "/** An interface for constructing plots.  A Figure is immutable, and all function calls return a new immutable Figure instance.";
         code += "*/\n";
         code += "@SuppressWarnings({\"unused\", \"RedundantCast\", \"SameParameterValue\"})\n";
-        code += "public" + (isInterface ? " interface " : " class ") + outputClassNameShort + generateImplements()
+        code += "public" + (isInterface ? " interface " : " class ") + outputClassNameShort + generateInheritance()
                 + " {\n";
 
         code += "\n";
@@ -288,9 +286,7 @@ public class GenerateFigureImmutable {
             return "";
         }
 
-        return "    private static final long serialVersionUID = -4519904656095275663L;\n" +
-                "\n" +
-                "    private final BaseFigureImpl figure;\n" +
+        return "    private final BaseFigureImpl figure;\n" +
                 "    private final ChartLocation lastChart;\n" +
                 "    private final AxesLocation lastAxes;\n" +
                 "    private final AxisLocation lastAxis;\n" +
