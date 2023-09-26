@@ -86,7 +86,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         copyFile('deephaven/dhclient/', prefix + '/src/deephaven/dhclient/')
         copyFile('deephaven/examples/', prefix + '/src/deephaven/examples/')
         copyFile('deephaven/tests/', prefix + '/src/deephaven/tests/')
-        runCommand("PREFIX=\"" + prefix + "\"\n" +
+        runCommand("PREFIX=\"" + prefix + "\"; \\\n" +
                    '''set -eux; \\
                       mkdir -p ${PREFIX}/src/deephaven/build; \\
                       cd ${PREFIX}/src/deephaven/build; \\
@@ -102,7 +102,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         //
         runCommand("mkdir -p ${prefix}/bin /out")
         copyFile('cpp-tests-to-junit.sh', "${prefix}/bin/dhcpp-tests-to-junit.sh")
-        runCommand("PREFIX=\"" + prefix + "\"\n" +
+        runCommand("PREFIX=\"" + prefix + "\"; \\\n" +
                    '''set -eux; \\
                       cd ${PREFIX}/src/deephaven/build/tests; \\
                       echo build/tests: ==; ls .; echo ../../tests; ls ../../tests; \\
