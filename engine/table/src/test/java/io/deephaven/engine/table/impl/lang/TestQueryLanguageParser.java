@@ -2576,7 +2576,6 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression =
                 "floatCast((eq(remainder(myInt, 14), 0) ? NULL_DOUBLE : eq(remainder(myInt, 10), 0) ? divide(1.0F, 0.0F) : eq(remainder(myInt, 5), 0) ? divide(negate(1.0F), 0.0F) : multiply(floatCast(intCast(myIntObj)), (minus(multiply(Math.random(), 2), 1)))))";
         check(expression, resultExpression, float.class, new String[] {"myInt", "myIntObj"});
-
     }
 
     public void testUnsupportedOperators() throws Exception {
@@ -2931,6 +2930,17 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         String expression = "LanguageParserDummyClass.typedRefWithCapture(`hello`)";
         String resultExpression = "LanguageParserDummyClass.typedRefWithCapture(\"hello\")";
         check(expression, resultExpression, String.class, new String[] {});
+
+        // Call a generic method with explicit type arguments to ensure that the type arguments are printed.
+        // The type arguments (i.e., '<Object>'/'<Object, Object>') will be included in the output but not processed
+        // by the parser (that is why they must be set to 'Object' in this test).
+        expression = "LanguageParserDummyClass.<Object>typedRef()";
+        resultExpression = "LanguageParserDummyClass.<Object>typedRef()";
+        check(expression, resultExpression, Object.class, new String[] {});
+
+        expression = "LanguageParserDummyClass.<Object, Object>typedRefTwoTypes()";
+        resultExpression = "LanguageParserDummyClass.<Object, Object>typedRefTwoTypes()";
+        check(expression, resultExpression, Pair.class, new String[] {});
 
         // // Call generic method with explicit type arguments:
         // expression="LanguageParserDummyClass.<String>typedRef()";
