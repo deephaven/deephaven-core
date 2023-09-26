@@ -10,4 +10,4 @@ if [ "$#" -ne 2 ]; then
     exit 1
 fi
 
-/cpp-client/install/bin/tests --reporter XML --out "$1" 2>&1 | tee "$2"
+/opt/deephaven/bin/dhcpp-tests --reporter XML --out "$1" 2>&1 | tee "$2"
