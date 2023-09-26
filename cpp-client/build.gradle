@@ -101,7 +101,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         // Build tests.
         //
         runCommand("mkdir -p ${prefix}/bin /out")
-        copyFile('cpp-tests-to-junit.sh', "${prefix}/bin/dhcpp-tests-to-junit.sh')
+        copyFile('cpp-tests-to-junit.sh', "${prefix}/bin/dhcpp-tests-to-junit.sh")
         runCommand("PREFIX=\"" + prefix + "\"\n" +
                    '''set -eux; \\
                       cd ${PREFIX}/src/deephaven/build/tests; \\
