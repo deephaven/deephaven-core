@@ -1,0 +1,5 @@
+# suppress inspection "UnusedProperty" for whole file
+includefiles=resources/test1.prop,resources/test2.prop
+override1=true
+override2=true
+quant.fifthMomentMagnitude=0.0
