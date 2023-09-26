@@ -2399,6 +2399,23 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
         } else { // Groovy or Java method call (or explicit python call)
             printer.append(scopePrinter);
+
+            // Print method type arguments, if specified.
+            // (The parser ignores these, but they must be printed so that the printer output matches the printed AST.)
+            final Optional<NodeList<com.github.javaparser.ast.type.Type>> methodTypeArgs = n.getTypeArguments();
+            if (methodTypeArgs.isPresent()) {
+                printer.append('<');
+                NodeList<com.github.javaparser.ast.type.Type> get = methodTypeArgs.get();
+                for (int i = 0; i < get.size(); i++) {
+                    if (i > 0) {
+                        printer.append(", ");
+                    }
+                    com.github.javaparser.ast.type.Type typeArg = get.get(i);
+                    printer.append(typeArg.asString());
+                }
+                printer.append('>');
+            }
+
             printer.append(methodName);
         }
 
