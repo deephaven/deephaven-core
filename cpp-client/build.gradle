@@ -74,7 +74,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }
-    prefix = '/opt/deephaven'
+    def prefix = '/opt/deephaven'
     dockerfile {
         from('deephaven/cpp-client-base:local-build')
         //
