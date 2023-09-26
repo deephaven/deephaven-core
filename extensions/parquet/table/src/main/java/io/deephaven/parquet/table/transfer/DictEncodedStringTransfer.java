@@ -25,7 +25,7 @@ final public class DictEncodedStringTransfer extends DictEncodedStringTransferBa
         if (!buffer.hasRemaining()) {
             return false;
         }
-        pageHasNull = true;
+        setPageHasNull();
         buffer.put(nullPos);
         return true;
     }

@@ -12,12 +12,12 @@ import java.util.function.Supplier;
 
 abstract public class DictEncodedStringTransferBase<T>
         extends PrimitiveArrayAndVectorTransfer<T, IntBuffer, IntBuffer> {
-    protected boolean pageHasNull;
+    private boolean pageHasNull;
     private final StringDictionary dictionary;
     private final int nullPos;
 
-    public DictEncodedStringTransferBase(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,
-            int targetPageSize, StringDictionary dictionary, final int nullPos) {
+    DictEncodedStringTransferBase(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,
+            int targetPageSize, @NotNull StringDictionary dictionary, final int nullPos) {
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
                 IntBuffer.allocate(targetPageSize / Integer.BYTES));
         this.pageHasNull = false;
@@ -25,11 +25,15 @@ abstract public class DictEncodedStringTransferBase<T>
         this.nullPos = nullPos;
     }
 
-    @Override
-    final public int transferOnePageToBuffer() {
+    final public void prepareDictionaryAndTransferOnePageToBuffer() {
         // Reset state before transferring each page
         pageHasNull = false;
-        return super.transferOnePageToBuffer();
+        super.transferOnePageToBuffer();
+    }
+
+    @Override
+    final public int transferOnePageToBuffer() {
+        throw new UnsupportedOperationException("Use prepareDictionaryAndTransferOnePageToBuffer instead");
     }
 
     final EncodedData dictEncodingHelper(@NotNull Supplier<String> strSupplier, int numStrings) {
@@ -68,5 +72,9 @@ abstract public class DictEncodedStringTransferBase<T>
 
     final public boolean pageHasNull() {
         return pageHasNull;
+    }
+
+    final void setPageHasNull() {
+        this.pageHasNull = true;
     }
 }

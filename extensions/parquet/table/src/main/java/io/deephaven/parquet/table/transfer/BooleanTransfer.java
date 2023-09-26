@@ -15,7 +15,8 @@ import java.nio.ByteBuffer;
 final class BooleanTransfer extends PrimitiveTransfer<WritableByteChunk<Values>, ByteBuffer> {
 
     static BooleanTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, int targetPageSize) {
-        final int maxValuesPerPage = targetPageSize << 3;            // = targetPageSize * 8 because 8 booleans per byte
+        final int NUM_BOOLEANS_PER_BYTE = 8;
+        final int maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize * NUM_BOOLEANS_PER_BYTE));
         final byte[] backingArray = new byte[maxValuesPerPage];
         return new BooleanTransfer(
                 columnSource,

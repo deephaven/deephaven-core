@@ -15,7 +15,6 @@ import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 final class ShortTransfer extends IntCastablePrimitiveTransfer<ShortChunk<Values>> {
-
     ShortTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, final int targetSize) {
         super(columnSource, tableRowSet, targetSize);
     }

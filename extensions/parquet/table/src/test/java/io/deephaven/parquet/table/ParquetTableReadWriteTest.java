@@ -362,11 +362,11 @@ public class ParquetTableReadWriteTest {
             // LZ4_RAW. We should be able to read it anyway with no exceptions.
             String path = TestParquetTools.class.getResource("/sample_lz4_compressed.parquet").getFile();
             fromDisk = ParquetTools.readTable(path).select();
-            File randomDest = new File(rootFile, "random.parquet");
-            ParquetTools.writeTable(fromDisk, randomDest, ParquetTools.LZ4_RAW);
         } catch (RuntimeException e) {
             TestCase.fail("Failed to read parquet file sample_lz4_compressed.parquet");
         }
+        File randomDest = new File(rootFile, "random.parquet");
+        ParquetTools.writeTable(fromDisk, randomDest, ParquetTools.LZ4_RAW);
 
         // Read the LZ4 compressed file again, to make sure we use a new adapter
         fromDisk = ParquetTools.readTable(dest).select();
@@ -548,6 +548,56 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTable(vectorTable, dest);
         fromDisk = ParquetTools.readTable(dest);
         assertTableEquals(vectorTable, fromDisk);
+    }
+
+    @Test
+    public void profilingTest() {
+        ArrayList<String> columns =
+                new ArrayList<>(Arrays.asList(
+                        "someStringArrayColumn = new String[] {i % 10 == 0 ? null : (`` + (i % 101))}",
+                        "someIntArrayColumn = new int[] {i}",
+                        "someCharArrayColumn = new char[] {(char)i}",
+                        "someBiColumn = new java.math.BigInteger[] {java.math.BigInteger.valueOf(ii)}",
+                        "nullStringArrayColumn = new String[] {(String)null}",
+                        "nullIntArrayColumn = new int[] {(int)null}",
+                        "nullCharArrayColumn = new char[] {(char)null}",
+                        "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"));
+
+        final Table arrayTable = TableTools.emptyTable(10000).select(
+                Selectable.from(columns));
+        final File dest = new File(rootFile + File.separator + "testArrayColumns.parquet");
+
+        final int NUM_RUNS = 1000;
+        final long start1 = System.currentTimeMillis();
+        for (int i = 0; i < NUM_RUNS; i++) {
+            ParquetTools.writeTable(arrayTable, dest);
+        }
+        final long end1 = System.currentTimeMillis();
+        System.out.println("Total execution time for arrays: " + (end1 - start1) / NUM_RUNS + " msec");
+
+
+        // Convert array table to vector
+        final Table vectorTable = arrayToVectorTable(arrayTable);
+        final long start2 = System.currentTimeMillis();
+        for (int i = 0; i < NUM_RUNS; i++) {
+            ParquetTools.writeTable(vectorTable, dest);
+        }
+        final long end2 = System.currentTimeMillis();
+        System.out.println("Total execution time for vectors: " + (end2 - start2) / NUM_RUNS + " msec");
+    }
+
+    @Test
+    public void profilingTest2() {
+        final ParquetInstructions codec = ParquetTools.UNCOMPRESSED;
+        File dest = new File(rootFile + File.separator + "Table1.parquet");
+        final Table table1 = getTableFlat(10000, true, true);
+        final int NUM_RUNS = 1000;
+        final long start1 = System.currentTimeMillis();
+        for (int i = 0; i < NUM_RUNS; i++) {
+            ParquetTools.writeTable(table1, dest, codec);
+        }
+        final long end1 = System.currentTimeMillis();
+        System.out.println("Total execution time for non-arrays: " + (end1 - start1) / NUM_RUNS + " msec");
     }
 
     /**

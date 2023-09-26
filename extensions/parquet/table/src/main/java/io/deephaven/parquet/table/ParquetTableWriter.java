@@ -373,6 +373,14 @@ public class ParquetTableWriter {
         }
     }
 
+    // TODO Is it okay to keep this method here? Its only called inside tryEncodeDictionary. I can also make it an
+    // anonymous class inside the method but this seemed cleaner.
+    private static IntBuffer copy(IntBuffer orig) {
+        IntBuffer copy = IntBuffer.allocate(orig.capacity());
+        copy.put(orig).flip();
+        return copy;
+    }
+
     private static <DATA_TYPE> boolean tryEncodeDictionary(
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final RowSet tableRowSet,
@@ -394,27 +402,34 @@ public class ParquetTableWriter {
         try (final DictEncodedStringTransferBase<?> transferObject = TransferObject.createDictEncodedStringTransfer(
                 columnSourceIn, columnDefinition, tableRowSet,
                 writeInstructions.getTargetPageSize(), dictionary, NULL_POS)) {
+            boolean done = false;
             do {
-                transferObject.transferOnePageToBuffer();
-                // Store a copy of the page buffer and lengths buffer for later use
-                IntBuffer pageBuffer = IntBuffer.allocate(transferObject.getBuffer().capacity());
-                pageBuffer.put(transferObject.getBuffer()).flip();
-                pageBuffers.add(pageBuffer);
-                if (isArrayOrVector) {
-                    IntBuffer lengthsBuffer = IntBuffer.allocate(transferObject.getRepeatCount().capacity());
-                    lengthsBuffer.put(transferObject.getRepeatCount()).flip();
-                    lengthsBuffers.add(lengthsBuffer);
+                // Paginate the data and prepare the dictionary. Then add the dictionary page followed by all data pages
+                transferObject.prepareDictionaryAndTransferOnePageToBuffer();
+                done = !transferObject.hasMoreDataToBuffer();
+                if (done) {
+                    // If done, we store a reference to transfer object's page buffer, else we make copies of all the
+                    // page buffers and write them later
+                    pageBuffers.add(transferObject.getBuffer());
+                    if (isArrayOrVector) {
+                        lengthsBuffers.add(transferObject.getRepeatCount());
+                    }
+                } else {
+                    pageBuffers.add(copy(transferObject.getBuffer()));
+                    if (isArrayOrVector) {
+                        lengthsBuffers.add(copy(transferObject.getRepeatCount()));
+                    }
                 }
                 boolean pageHasNulls = transferObject.pageHasNull();
                 hasNulls = hasNulls || pageHasNulls;
                 pageBufferHasNull.set(curPage++, pageHasNulls);
-            } while (transferObject.hasMoreDataToBuffer());
+            } while (!done);
         } catch (final DictionarySizeExceededException ignored) {
             // Reset the stats because we will re-encode these in PLAIN encoding.
             columnWriter.resetStats();
-            // We discard all the dictionary data accumulated so far and fall back to PLAIN encoding. We could have
-            // added a dictionary page first with data collected so far and then encoded the remaining data using PLAIN
-            // encoding (TODO deephaven-core#946).
+            // TODO(deephaven-core#946): We discard all dictionary data accumulated so far and fall back to PLAIN
+            // encoding. We could have added a dictionary page first with data collected so far and then encoded the
+            // remaining data using PLAIN encoding
             return false;
         }
 
@@ -431,8 +446,7 @@ public class ParquetTableWriter {
         for (int i = 0; i < numPages; ++i) {
             final IntBuffer pageBuffer = pageBuffers.get(i);
             if (isArrayOrVector) {
-                final IntBuffer lengths = lengthsBuffers.get(i);
-                columnWriter.addVectorPage(pageBuffer, lengths, pageBuffer.remaining(), tmpStats);
+                columnWriter.addVectorPage(pageBuffer, lengthsBuffers.get(i), pageBuffer.remaining(), tmpStats);
             } else {
                 final boolean pageHasNulls = pageBufferHasNull.get(i);
                 if (pageHasNulls) {
