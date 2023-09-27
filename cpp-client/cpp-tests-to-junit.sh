@@ -15,4 +15,4 @@ if [ -z "${DH_PREFIX}" ]; then
     exit 1
 fi
 
-exec ${DH_PREFIX}/bin/dhcpp-tests --reporter XML --out "$1" 2>&1 | tee "$2"
+${DH_PREFIX}/bin/dhcpp-tests --reporter XML --out "$1" 2>&1 | tee "$2"

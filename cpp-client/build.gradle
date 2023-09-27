@@ -58,7 +58,7 @@ deephavenDocker {
 }
 
 def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
-    // Only tested on x86, and we only build dependencies for x86
+    // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
 
     copyIn {
@@ -78,38 +78,28 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
     dockerfile {
         from('deephaven/cpp-client-base:local-build')
         //
-        // Build client library.
+        // Build and install client.
         //
-        runCommand("mkdir -p ${prefix}/src/deephaven/{dhcore,dhclient,examples,tests}")
-        copyFile('deephaven/CMakeLists.txt',  prefix + '/src/deephaven/')
-        copyFile('deephaven/dhcore/',  prefix + '/src/deephaven/dhcore/')
-        copyFile('deephaven/dhclient/', prefix + '/src/deephaven/dhclient/')
-        copyFile('deephaven/examples/', prefix + '/src/deephaven/examples/')
-        copyFile('deephaven/tests/', prefix + '/src/deephaven/tests/')
-        runCommand("PREFIX=\"" + prefix + "\"; \\\n" +
-                   '''set -eux; \\
-                      mkdir -p ${PREFIX}/src/deephaven/build; \\
-                      cd ${PREFIX}/src/deephaven/build; \\
-                      . ${PREFIX}/env.sh; \\
-                      cmake -DCMAKE_INSTALL_PREFIX=$PREFIX \\
-                        -DCMAKE_BUILD_TYPE=Release \\
-                        -DBUILD_SHARED_LIBS=ON \\
-                        .. ; \\
-                      make -j${NCPUS} install
-                   ''')
-        //
-        // Build tests.
-        //
-        runCommand("mkdir -p ${prefix}/bin /out")
+        runCommand("mkdir -p /out ${prefix}/bin ${prefix}/src/deephaven/{dhcore,dhclient,examples,tests}")
+        copyFile('deephaven/CMakeLists.txt',  "${prefix}/src/deephaven/")
+        copyFile('deephaven/dhcore/',  "${prefix}/src/deephaven/dhcore/")
+        copyFile('deephaven/dhclient/', "${prefix}/src/deephaven/dhclient/")
+        copyFile('deephaven/examples/', "${prefix}/src/deephaven/examples/")
+        copyFile('deephaven/tests/', "${prefix}/src/deephaven/tests/")
         copyFile('cpp-tests-to-junit.sh', "${prefix}/bin/dhcpp-tests-to-junit.sh")
         runCommand("PREFIX=\"" + prefix + "\"; \\\n" +
                    '''set -eux; \\
-                      cd ${PREFIX}/src/deephaven/build/tests; \\
-                      echo build/tests: ==; ls .; echo ../../tests; ls ../../tests; \\
+                      mkdir -p ${PREFIX}/src/deephaven/build; \\
+                      mkdir -p ${PREFIX}/log; \\
+                      cd ${PREFIX}/src/deephaven/build; \\
                       . ${PREFIX}/env.sh; \\
-                      make -j${NCPUS}; \\
-                      mkdir -p ${PREFIX}/bin; \\
-                      cp -f ${PREFIX}/src/deephaven/build/tests/tests ${PREFIX}/bin/dhcpp-tests; \
+                      cmake \\
+                        -DCMAKE_INSTALL_PREFIX=${PREFIX} \\
+                        -DCMAKE_BUILD_TYPE=Release \\
+                        -DBUILD_SHARED_LIBS=ON \\
+                        .. ; \\
+                      make -j${NCPUS} install 2>&1 | gzip > ${PREFIX}/log/make-install.log.gz; \\
+                      cp -f ${PREFIX}/src/deephaven/build/tests/tests ${PREFIX}/bin/dhcpp-tests; \\
                       cd ..; \\
                       rm -fr ${PREFIX}/src/deephaven/build; \\
                       sed -i \\
