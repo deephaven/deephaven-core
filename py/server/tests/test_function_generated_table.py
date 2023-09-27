@@ -111,6 +111,151 @@ class TableTestCase(BaseTestCase):
             self.assertEqual(result_str, 'test string')
             self.assertEqual(result_int, 12345)
 
+    def test_generated_table_args(self):
+        def table_generator_function(nrows, query_string):
+            return empty_table(nrows).update(query_string)
+
+        with update_graph.exclusive_lock(self.test_update_graph):
+            result_table = function_generated_table(table_generator_function, refresh_interval_ms=2000,
+                                                    args=(5, "Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()"))
+            self.assertEqual(result_table.size, 5)
+            first_row_key = get_row_key(0, result_table)
+            initial_time = result_table.j_table.getColumnSource("Timestamp").get(first_row_key)
+
+            if not result_table.await_update(5_000):
+                raise RuntimeError("Result table did not update within 5 seconds")
+
+            first_row_key = get_row_key(0, result_table)
+            later_time = result_table.j_table.getColumnSource("Timestamp").get(first_row_key)
+
+        # Make sure it ticked at least once within 5 seconds. It should have ticked twice,
+        # but leaving a wider margin to ensure the test passes -- as long as it ticks at all
+        # we can be confident it's working.
+        self.assertGreater(later_time, initial_time)
+
+    def test_generated_table_kwargs(self):
+        def table_generator_function(nrows, query_string):
+            return empty_table(nrows).update(query_string)
+
+        with update_graph.exclusive_lock(self.test_update_graph):
+            result_table = function_generated_table(table_generator_function, refresh_interval_ms=2000,
+                                                    kwargs={'nrows': 5, 'query_string': "Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()"})
+            self.assertEqual(result_table.size, 5)
+            first_row_key = get_row_key(0, result_table)
+            initial_time = result_table.j_table.getColumnSource("Timestamp").get(first_row_key)
+
+            if not result_table.await_update(5_000):
+                raise RuntimeError("Result table did not update within 5 seconds")
+
+            first_row_key = get_row_key(0, result_table)
+            later_time = result_table.j_table.getColumnSource("Timestamp").get(first_row_key)
+
+        # Make sure it ticked at least once within 5 seconds. It should have ticked twice,
+        # but leaving a wider margin to ensure the test passes -- as long as it ticks at all
+        # we can be confident it's working.
+        self.assertGreater(later_time, initial_time)
+
+    def test_generated_table_args_and_kwargs(self):
+        def table_generator_function(nrows, query_string):
+            return empty_table(nrows).update(query_string)
+
+        with update_graph.exclusive_lock(self.test_update_graph):
+            result_table = function_generated_table(table_generator_function, refresh_interval_ms=2000,
+                                                    args=(5,), kwargs={'query_string': "Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()"})
+            self.assertEqual(result_table.size, 5)
+            first_row_key = get_row_key(0, result_table)
+            initial_time = result_table.j_table.getColumnSource("Timestamp").get(first_row_key)
+
+            if not result_table.await_update(5_000):
+                raise RuntimeError("Result table did not update within 5 seconds")
+
+            first_row_key = get_row_key(0, result_table)
+            later_time = result_table.j_table.getColumnSource("Timestamp").get(first_row_key)
+
+        # Make sure it ticked at least once within 5 seconds. It should have ticked twice,
+        # but leaving a wider margin to ensure the test passes -- as long as it ticks at all
+        # we can be confident it's working.
+        self.assertGreater(later_time, initial_time)
+
+    def test_generated_table_wrong_kwargs(self):
+        def table_generator_function(nrows, query_string):
+            return empty_table(nrows).update(query_string)
+
+        # nrow is not a valid argument, so we expect a type error
+        with update_graph.exclusive_lock(self.test_update_graph):
+            with self.assertRaises(Exception) as cm:
+                result_table = function_generated_table(table_generator_function, refresh_interval_ms=2000,
+                                                        kwargs={'nrow': 1, 'query_string': "Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()"})
+            self.assertIn("table_generator_function() got an unexpected keyword argument 'nrow'", str(cm.exception))
+
+    def test_generated_table_too_few_args(self):
+        def table_generator_function(nrows, query_string):
+            return empty_table(nrows).update(query_string)
+
+        # nrow is not a valid argument, so we expect a type error
+        with update_graph.exclusive_lock(self.test_update_graph):
+            with self.assertRaises(Exception) as cm:
+                result_table = function_generated_table(table_generator_function, refresh_interval_ms=2000,
+                                                        args=(1,))
+            self.assertIn("table_generator_function() missing 1 required positional argument: 'query_string'", str(cm.exception))
+
+    def test_generated_table_too_few_kwargs(self):
+        def table_generator_function(nrows, query_string):
+            return empty_table(nrows).update(query_string)
+
+        # nrow is not a valid argument, so we expect a type error
+        with update_graph.exclusive_lock(self.test_update_graph):
+            with self.assertRaises(Exception) as cm:
+                result_table = function_generated_table(table_generator_function, refresh_interval_ms=2000,
+                                                        kwargs={'query_string': "Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()"})
+            self.assertIn("table_generator_function() missing 1 required positional argument: 'nrows'", str(cm.exception))
+
+    def test_generated_table_too_few_args_and_kwargs(self):
+        def table_generator_function(nrows, arg2, query_string, arg4):
+            return empty_table(nrows).update(query_string)
+
+        # nrow is not a valid argument, so we expect a type error
+        with update_graph.exclusive_lock(self.test_update_graph):
+            with self.assertRaises(Exception) as cm:
+                result_table = function_generated_table(table_generator_function, refresh_interval_ms=2000,
+                                                        args=(5,),
+                                                        kwargs={'query_string': "Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()"})
+            self.assertIn("table_generator_function() missing 2 required positional arguments: 'arg2' and 'arg4'",
+                          str(cm.exception))
+
+    def test_generated_table_too_many_args(self):
+        def table_generator_function(nrows, query_string):
+            return empty_table(nrows).update(query_string)
+
+        # nrow is not a valid argument, so we expect a type error
+        with update_graph.exclusive_lock(self.test_update_graph):
+            with self.assertRaises(Exception) as cm:
+                result_table = function_generated_table(table_generator_function, refresh_interval_ms=2000,
+                                                        args=(1, "Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()", "hello"))
+            self.assertIn("table_generator_function() takes 2 positional arguments but 3 were given", str(cm.exception))
+
+    def test_generated_table_too_many_kwargs(self):
+        def table_generator_function(nrows, query_string):
+            return empty_table(nrows).update(query_string)
+
+        # nrow is not a valid argument, so we expect a type error
+        with update_graph.exclusive_lock(self.test_update_graph):
+            with self.assertRaises(Exception) as cm:
+                result_table = function_generated_table(table_generator_function, refresh_interval_ms=2000,
+                                                        kwargs={'nrows': 5, 'query_string': "Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()", 'non_argument': "hello"})
+            self.assertIn("table_generator_function() got an unexpected keyword argument 'non_argument'", str(cm.exception))
+
+    def test_generated_table_too_many_args_and_kwargs(self):
+        def table_generator_function(nrows, query_string):
+            return empty_table(nrows).update(query_string)
+
+        # nrow is not a valid argument, so we expect a type error
+        with update_graph.exclusive_lock(self.test_update_graph):
+            with self.assertRaises(Exception) as cm:
+                result_table = function_generated_table(table_generator_function, refresh_interval_ms=2000,
+                                                        args=(5, "Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()", "hello"),
+                                                        kwargs={'nrows': 5, 'query_string': "Timestamp = io.deephaven.base.clock.Clock.system().currentTimeMillis()", 'non_argument': "hello"})
+            self.assertIn("table_generator_function() got multiple values for argument 'nrows'", str(cm.exception))
 
 def get_row_key(row_position: int, t: Table) -> Any:
     return t.j_table.getRowSet().get(row_position)

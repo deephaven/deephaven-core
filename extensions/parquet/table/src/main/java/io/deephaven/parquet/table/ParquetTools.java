@@ -685,8 +685,15 @@ public class ParquetTools {
                 throw new IllegalArgumentException("First location key " + firstKey
                         + " has null partition value at partition key " + partitionKey);
             }
-            allColumns.add(ColumnDefinition.fromGenericType(partitionKey,
-                    getUnboxedTypeIfBoxed(partitionValue.getClass()), null, ColumnDefinition.ColumnType.Partitioning));
+
+            // Primitives should be unboxed, except booleans
+            Class<?> dataType = partitionValue.getClass();
+            if (dataType != Boolean.class) {
+                dataType = getUnboxedTypeIfBoxed(partitionValue.getClass());
+            }
+
+            allColumns.add(ColumnDefinition.fromGenericType(partitionKey, dataType, null,
+                    ColumnDefinition.ColumnType.Partitioning));
         }
         allColumns.addAll(schemaInfo.getFirst());
         return readPartitionedTable(readInstructions.isRefreshing() ? locationKeyFinder : initialKeys,

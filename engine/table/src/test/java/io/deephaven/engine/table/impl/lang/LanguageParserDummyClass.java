@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.lang;
 
+import io.deephaven.base.Pair;
 import io.deephaven.vector.IntVector;
 
 import java.io.Serializable;
@@ -80,6 +81,10 @@ public class LanguageParserDummyClass {
     }
 
     static public <T> T typedRef() {
+        return null;
+    }
+
+    static public <T, U> Pair<T, U> typedRefTwoTypes() {
         return null;
     }
 

@@ -11,6 +11,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.InMemoryTable;
+import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
@@ -353,6 +354,19 @@ public class TestParquetTools {
                 table1.updateView("Date=`2021-07-20`", "Num=200"),
                 table1.updateView("Date=`2021-07-21`", "Num=300")).moveColumnsUp("Date", "Num");
         assertTableEquals(expected, result);
+    }
+
+    @Test
+    public void testBooleanPartition() {
+        ParquetTools.writeTable(table1, new File(testRootFile, "Active=true" + File.separator + "file1.parquet"));
+        ParquetTools.writeTable(table1, new File(testRootFile, "Active=false" + File.separator + "file2.parquet"));
+        Table table = ParquetTools.readTable(testRootFile);
+        Assert.assertTrue(table instanceof UncoalescedTable);
+        final Table expected = TableTools.merge(
+                table1.updateView("Active=false"),
+                table1.updateView("Active=true")).moveColumnsUp("Active");
+
+        assertTableEquals(expected, table);
     }
 
     @Test
