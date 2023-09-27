@@ -114,6 +114,7 @@ def ema_tick(decay_ticks: float, cols: Union[str, List[str]],
     the decay unit.
 
     The formula used is
+
         |  a = e^(-1 / decay_ticks)
         |  ema_first = first_value
         |  ema_current = a * ema_prev + (1 - a) * current_value
@@ -148,6 +149,7 @@ def ema_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str
     decay unit.
 
     The formula used is
+
         |  dt_current = current_timestamp - prev_timestamp
         |  a_current = e^(-dt_current / decay_time)
         |  ema_first = first_value
@@ -186,6 +188,7 @@ def ems_tick(decay_ticks: float, cols: Union[str, List[str]],
     the decay unit.
 
     The formula used is
+
         |  a = e^(-1 / decay_ticks)
         |  ems_first = first_value
         |  ems_current = a * ems_prev + current_value
@@ -220,6 +223,7 @@ def ems_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str
     decay unit.
 
     The formula used is
+
         |  dt_current = current_timestamp - prev_timestamp
         |  a_current = e^(-dt_current / decay_time)
         |  ems_first = first_value
@@ -258,6 +262,7 @@ def emmin_tick(decay_ticks: float, cols: Union[str, List[str]],
     the decay unit.
 
     The formula used is
+
         |  a = e^(-1 / decay_ticks)
         |  emmin_first = first_value
         |  emmin_current = min(a * emmin_prev, current_value)
@@ -292,6 +297,7 @@ def emmin_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
     decay unit.
 
     The formula used is
+
         |  dt_current = current_timestamp - prev_timestamp
         |  a_current = e^(-dt_current / decay_time)
         |  emmin_first = first_value
@@ -330,6 +336,7 @@ def emmax_tick(decay_ticks: float, cols: Union[str, List[str]],
     the decay unit.
 
     The formula used is
+
         |  a = e^(-1 / decay_ticks)
         |  emmax_first = first_value
         |  emmax_current = max(a * emmax_prev, current_value)
@@ -364,6 +371,7 @@ def emmax_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
     decay unit.
 
     The formula used is
+
         |  dt_current = current_timestamp - prev_timestamp
         |  a_current = e^(-dt_current / decay_time)
         |  emmax_first = first_value
@@ -401,6 +409,7 @@ def emstd_tick(decay_ticks: float, cols: Union[str, List[str]],
     ticks as the decay unit.
 
     The formula used is
+
         |  a = e^(-1 / decay_ticks)
         |  em_variance_current = a * (em_variance_prev + (1 − a) * (current_value − ema_prev)^2)
         |  emstd_current = sqrt(em_variance_current)
@@ -435,6 +444,7 @@ def emstd_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
     time as the decay unit.
 
     The formula used is
+
         |  dt_current = current_timestamp - prev_timestamp
         |  a_current = e^(-dt_current / decay_time)
         |  em_variance_first = 0
@@ -609,7 +619,7 @@ def rolling_sum_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
     """Creates a rolling sum UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks 
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
     is considered to belong to the reverse window but not the forward window. Also, negative values are allowed and 
-    can be used to generate completely forward or completely reverse windows. 
+    can be used to generate completely forward or completely reverse windows.
 
     Here are some examples of window values:
         |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
