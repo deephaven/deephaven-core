@@ -114,8 +114,10 @@ def ema_tick(decay_ticks: float, cols: Union[str, List[str]],
     the decay unit.
 
     The formula used is
-        a = e^(-1 / decay_ticks)
-        ema_next = a * ema_last + (1 - a) * value
+
+        |  a = e^(-1 / decay_ticks)
+        |  ema_first = first_value
+        |  ema_current = a * ema_prev + (1 - a) * current_value
 
     Args:
         decay_ticks (float): the decay rate in ticks.
@@ -147,8 +149,11 @@ def ema_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str
     decay unit.
 
     The formula used is
-        a = e^(-dt / decay_time)
-        ema_next = a * ema_last + (1 - a) * value
+
+        |  dt_current = current_timestamp - prev_timestamp
+        |  a_current = e^(-dt_current / decay_time)
+        |  ema_first = first_value
+        |  ema_current = a_current * ema_prev + (1 - a_current) * current_value
 
     Args:
         ts_col (str): the column in the source table to use for timestamps.
@@ -183,8 +188,10 @@ def ems_tick(decay_ticks: float, cols: Union[str, List[str]],
     the decay unit.
 
     The formula used is
-        a = e^(-1 / decay_ticks)
-        ems_next = a * ems_last + value
+
+        |  a = e^(-1 / decay_ticks)
+        |  ems_first = first_value
+        |  ems_current = a * ems_prev + current_value
 
     Args:
         decay_ticks (float): the decay rate in ticks.
@@ -216,8 +223,11 @@ def ems_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str
     decay unit.
 
     The formula used is
-        a = e^(-dt / decay_time)
-        ems_next = a * ems_last + value
+
+        |  dt_current = current_timestamp - prev_timestamp
+        |  a_current = e^(-dt_current / decay_time)
+        |  ems_first = first_value
+        |  ems_current = a_current * ems_prev + current_value
 
     Args:
         ts_col (str): the column in the source table to use for timestamps.
@@ -252,8 +262,10 @@ def emmin_tick(decay_ticks: float, cols: Union[str, List[str]],
     the decay unit.
 
     The formula used is
-        a = e^(-1 / decay_ticks)
-        emmin_next = min(a * emmin_last, value)
+
+        |  a = e^(-1 / decay_ticks)
+        |  emmin_first = first_value
+        |  emmin_current = min(a * emmin_prev, current_value)
 
     Args:
         decay_ticks (float): the decay rate in ticks.
@@ -285,8 +297,11 @@ def emmin_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
     decay unit.
 
     The formula used is
-        a = e^(-dt / decay_time)
-        emmin_next = min(a * emmin_last, value)
+
+        |  dt_current = current_timestamp - prev_timestamp
+        |  a_current = e^(-dt_current / decay_time)
+        |  emmin_first = first_value
+        |  emmin_current = min(a_current * emmin_last, value)
 
     Args:
         ts_col (str): the column in the source table to use for timestamps.
@@ -321,8 +336,10 @@ def emmax_tick(decay_ticks: float, cols: Union[str, List[str]],
     the decay unit.
 
     The formula used is
-        a = e^(-1 / decay_ticks)
-        emmax_next = max(a * emmax_last, value)
+
+        |  a = e^(-1 / decay_ticks)
+        |  emmax_first = first_value
+        |  emmax_current = max(a * emmax_prev, current_value)
 
     Args:
         decay_ticks (float): the decay rate in ticks.
@@ -354,8 +371,11 @@ def emmax_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
     decay unit.
 
     The formula used is
-        a = e^(-dt / decay_time)
-        emmax_next = max(a * emmax_last, value)
+
+        |  dt_current = current_timestamp - prev_timestamp
+        |  a_current = e^(-dt_current / decay_time)
+        |  emmax_first = first_value
+        |  emmax_current = max(a_current * emmax_prev, current_value)
 
     Args:
         ts_col (str): the column in the source table to use for timestamps.
@@ -389,10 +409,10 @@ def emstd_tick(decay_ticks: float, cols: Union[str, List[str]],
     ticks as the decay unit.
 
     The formula used is
-        a = e^(-1 / decay_ticks)
-        ema_next = a * ema_last + (1 - a) * value
-        em_variance_next = a * (em_variance_last + (1 − a) * (value − ema_last)^2)
-        emstd_next = sqrt(em_variance_next)
+
+        |  a = e^(-1 / decay_ticks)
+        |  em_variance_current = a * (em_variance_prev + (1 − a) * (current_value − ema_prev)^2)
+        |  emstd_current = sqrt(em_variance_current)
 
     Args:
         decay_ticks (float): the decay rate in ticks.
@@ -424,10 +444,12 @@ def emstd_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
     time as the decay unit.
 
     The formula used is
-        a = e^(-dt / decay_time)
-        ema_next = a * ema_last + (1 - a) * value
-        em_variance_next = a * (em_variance_last + (1 − a) * (value − ema_last)^2)
-        emstd_next = sqrt(em_variance_next)
+
+        |  dt_current = current_timestamp - prev_timestamp
+        |  a_current = e^(-dt_current / decay_time)
+        |  em_variance_first = 0
+        |  em_variance_current = a_current * (em_variance_prev + (1 − a_current) * (current_value − ema_prev)^2)
+        |  emstd_current = sqrt(em_variance_current)
 
     Args:
         ts_col (str): the column in the source table to use for timestamps.
@@ -567,9 +589,9 @@ def delta(cols: Union[str, List[str]], delta_control: DeltaControl = DeltaContro
     the difference between the current value and the previous value. When the current value is null, this operation
     will output null. When the current value is valid, the output will depend on the DeltaControl provided.
 
-        When delta_control is not provided or set to NULL_DOMINATES, a value following a null value returns null.
-        When delta_control is set to VALUE_DOMINATES, a value following a null value returns the value.
-        When delta_control is set to ZERO_DOMINATES, a value following a null value returns zero.
+    When delta_control is not provided or set to NULL_DOMINATES, a value following a null value returns null.
+    When delta_control is set to VALUE_DOMINATES, a value following a null value returns the value.
+    When delta_control is set to ZERO_DOMINATES, a value following a null value returns zero.
 
     Args:
 
@@ -597,9 +619,10 @@ def rolling_sum_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
     """Creates a rolling sum UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks 
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
     is considered to belong to the reverse window but not the forward window. Also, negative values are allowed and 
-    can be used to generate completely forward or completely reverse windows. 
+    can be used to generate completely forward or completely reverse windows.
 
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_ticks = 1, fwd_ticks = 0 - contains only the current row
         rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
         rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
@@ -607,6 +630,18 @@ def rolling_sum_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
         rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the current row (inclusive)
         rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the current row (inclusive)
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the current row (inclusive)
+=======
+        |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
+        |  `rev_ticks = 10, fwd_ticks = 0` - contains 9 previous rows and the current row
+        |  `rev_ticks = 0, fwd_ticks = 10` - contains the following 10 rows, excludes the current row
+        |  `rev_ticks = 10, fwd_ticks = 10` - contains the previous 9 rows, the current row and the 10 rows following
+        |  `rev_ticks = 10, fwd_ticks = -5` - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+>>>>>>> main
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
@@ -636,12 +671,26 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     be null.
      
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
         rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the current row timestamp (inclusive), this is a purely backwards looking window
         rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m following the current row timestamp (inclusive), this is a purely forwards looking window
+=======
+        |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
+        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        |  `rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"` - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+>>>>>>> main
     
     Args:
         ts_col (str): the timestamp column for determining the window.
@@ -674,6 +723,7 @@ def rolling_group_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: i
     can be used to generate completely forward or completely reverse windows. 
 
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_ticks = 1, fwd_ticks = 0 - contains only the current row
         rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
         rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
@@ -681,6 +731,18 @@ def rolling_group_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: i
         rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the current row (inclusive)
         rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the current row (inclusive)
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the current row (inclusive)
+=======
+        |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
+        |  `rev_ticks = 10, fwd_ticks = 0` - contains 9 previous rows and the current row
+        |  `rev_ticks = 0, fwd_ticks = 10` - contains the following 10 rows, excludes the current row
+        |  `rev_ticks = 10, fwd_ticks = 10` - contains the previous 9 rows, the current row and the 10 rows following
+        |  `rev_ticks = 10, fwd_ticks = -5` - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+>>>>>>> main
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
@@ -710,12 +772,26 @@ def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
     be null.
      
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
         rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the current row timestamp (inclusive), this is a purely backwards looking window
         rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m following the current row timestamp (inclusive), this is a purely forwards looking window
+=======
+        |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
+        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        |  `rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"` - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+>>>>>>> main
     
     Args:
         ts_col (str): the timestamp column for determining the window
@@ -748,6 +824,7 @@ def rolling_avg_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
     can be used to generate completely forward or completely reverse windows.
 
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_ticks = 1, fwd_ticks = 0 - contains only the current row
         rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
         rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
@@ -755,6 +832,18 @@ def rolling_avg_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
         rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the current row (inclusive)
         rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the current row (inclusive)
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the current row (inclusive)
+=======
+        |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
+        |  `rev_ticks = 10, fwd_ticks = 0` - contains 9 previous rows and the current row
+        |  `rev_ticks = 0, fwd_ticks = 10` - contains the following 10 rows, excludes the current row
+        |  `rev_ticks = 10, fwd_ticks = 10` - contains the previous 9 rows, the current row and the 10 rows following
+        |  `rev_ticks = 10, fwd_ticks = -5` - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+>>>>>>> main
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
@@ -784,12 +873,26 @@ def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     be null.
      
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
         rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp ( inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the current row timestamp (inclusive), this is a purely backwards looking window
         rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m following the current row timestamp (inclusive), this is a purely forwards looking window
+=======
+        |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
+        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        |  `rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"` - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+>>>>>>> main
     
     Args:
         ts_col (str): the timestamp column for determining the window.
@@ -822,6 +925,7 @@ def rolling_min_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
     can be used to generate completely forward or completely reverse windows.
 
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_ticks = 1, fwd_ticks = 0 - contains only the current row
         rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
         rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
@@ -829,6 +933,18 @@ def rolling_min_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
         rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the current row (inclusive)
         rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the current row (inclusive)
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the current row (inclusive)
+=======
+        |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
+        |  `rev_ticks = 10, fwd_ticks = 0` - contains 9 previous rows and the current row
+        |  `rev_ticks = 0, fwd_ticks = 10` - contains the following 10 rows, excludes the current row
+        |  `rev_ticks = 10, fwd_ticks = 10` - contains the previous 9 rows, the current row and the 10 rows following
+        |  `rev_ticks = 10, fwd_ticks = -5` - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+>>>>>>> main
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
@@ -858,12 +974,26 @@ def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     be null.
      
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
         rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the current row timestamp (inclusive), this is a purely backwards looking window
         rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m following the current row timestamp (inclusive), this is a purely forwards looking window
+=======
+        |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
+        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        |  `rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"` - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+>>>>>>> main
     
     Args:
         ts_col (str): the timestamp column for determining the window
@@ -896,6 +1026,7 @@ def rolling_max_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
     can be used to generate completely forward or completely reverse windows.
 
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_ticks = 1, fwd_ticks = 0 - contains only the current row
         rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
         rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
@@ -903,6 +1034,18 @@ def rolling_max_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
         rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the current row (inclusive)
         rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the current row (inclusive)
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the current row (inclusive)
+=======
+        |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
+        |  `rev_ticks = 10, fwd_ticks = 0` - contains 9 previous rows and the current row
+        |  `rev_ticks = 0, fwd_ticks = 10` - contains the following 10 rows, excludes the current row
+        |  `rev_ticks = 10, fwd_ticks = 10` - contains the previous 9 rows, the current row and the 10 rows following
+        |  `rev_ticks = 10, fwd_ticks = -5` - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+>>>>>>> main
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
@@ -932,12 +1075,26 @@ def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     be null.
      
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
         rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the current row timestamp (inclusive), this is a purely backwards looking window
         rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m following the current row timestamp (inclusive), this is a purely forwards looking window
+=======
+        |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
+        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        |  `rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"` - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+>>>>>>> main
     
     Args:
         ts_col (str): the timestamp column for determining the window.
@@ -970,6 +1127,7 @@ def rolling_prod_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: in
     can be used to generate completely forward or completely reverse windows.
 
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_ticks = 1, fwd_ticks = 0 - contains only the current row
         rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
         rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
@@ -977,6 +1135,18 @@ def rolling_prod_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: in
         rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the current row (inclusive)
         rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the current row (inclusive)
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the current row (inclusive)
+=======
+        |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
+        |  `rev_ticks = 10, fwd_ticks = 0` - contains 9 previous rows and the current row
+        |  `rev_ticks = 0, fwd_ticks = 10` - contains the following 10 rows, excludes the current row
+        |  `rev_ticks = 10, fwd_ticks = 10` - contains the previous 9 rows, the current row and the 10 rows following
+        |  `rev_ticks = 10, fwd_ticks = -5` - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+>>>>>>> main
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
@@ -1006,12 +1176,26 @@ def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[
     be null.
      
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
         rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the current row timestamp (inclusive), this is a purely backwards looking window
         rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m following the current row timestamp (inclusive), this is a purely forwards looking window
+=======
+        |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
+        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        |  `rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"` - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+>>>>>>> main
     
     Args:
         ts_col (str): the timestamp column for determining the window
@@ -1044,6 +1228,7 @@ def rolling_count_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: i
     can be used to generate completely forward or completely reverse windows.
 
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_ticks = 1, fwd_ticks = 0 - contains only the current row
         rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
         rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
@@ -1051,6 +1236,18 @@ def rolling_count_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: i
         rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before the current row (inclusive)
         rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the current row (inclusive)
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows following the current row (inclusive)
+=======
+        |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
+        |  `rev_ticks = 10, fwd_ticks = 0` - contains 9 previous rows and the current row
+        |  `rev_ticks = 0, fwd_ticks = 10` - contains the following 10 rows, excludes the current row
+        |  `rev_ticks = 10, fwd_ticks = 10` - contains the previous 9 rows, the current row and the 10 rows following
+        |  `rev_ticks = 10, fwd_ticks = -5` - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+>>>>>>> main
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
@@ -1080,12 +1277,26 @@ def rolling_count_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
     be null.
 
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
         rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the current row timestamp (inclusive), this is a purely backwards looking window
         rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m following the current row timestamp (inclusive), this is a purely forwards looking window
+=======
+        |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
+        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        |  `rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"` - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+>>>>>>> main
 
     Args:
         ts_col (str): the timestamp column for determining the window.
@@ -1118,6 +1329,7 @@ def rolling_std_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
     can be used to generate completely forward or completely reverse windows.
 
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_ticks = 1, fwd_ticks = 0 - contains only the current row
         rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
         rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
@@ -1125,6 +1337,18 @@ def rolling_std_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
         rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before the current row (inclusive)
         rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the current row (inclusive)
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows following the current row (inclusive)
+=======
+        |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
+        |  `rev_ticks = 10, fwd_ticks = 0` - contains 9 previous rows and the current row
+        |  `rev_ticks = 0, fwd_ticks = 10` - contains the following 10 rows, excludes the current row
+        |  `rev_ticks = 10, fwd_ticks = 10` - contains the previous 9 rows, the current row and the 10 rows following
+        |  `rev_ticks = 10, fwd_ticks = -5` - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+>>>>>>> main
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
@@ -1154,12 +1378,26 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     be null.
 
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
         rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the current row timestamp (inclusive), this is a purely backwards looking window
         rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m following the current row timestamp (inclusive), this is a purely forwards looking window
+=======
+        |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
+        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        |  `rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"` - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+>>>>>>> main
 
     Args:
         ts_col (str): the timestamp column for determining the window.
@@ -1192,6 +1430,7 @@ def rolling_wavg_tick(wcol: str, cols: Union[str, List[str]], rev_ticks: int, fw
     can be used to generate completely forward or completely reverse windows.
 
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_ticks = 1, fwd_ticks = 0 - contains only the current row
         rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
         rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
@@ -1199,6 +1438,18 @@ def rolling_wavg_tick(wcol: str, cols: Union[str, List[str]], rev_ticks: int, fw
         rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before the current row (inclusive)
         rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the current row (inclusive)
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the current row (inclusive)
+=======
+        |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
+        |  `rev_ticks = 10, fwd_ticks = 0` - contains 9 previous rows and the current row
+        |  `rev_ticks = 0, fwd_ticks = 10` - contains the following 10 rows, excludes the current row
+        |  `rev_ticks = 10, fwd_ticks = 10` - contains the previous 9 rows, the current row and the 10 rows following
+        |  `rev_ticks = 10, fwd_ticks = -5` - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+>>>>>>> main
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
@@ -1231,12 +1482,26 @@ def rolling_wavg_time(ts_col: str, wcol: str, cols: Union[str, List[str]], rev_t
     be null.
 
     Here are some examples of window values:
+<<<<<<< HEAD
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
         rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following the current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the current row timestamp (inclusive), this is a purely backwards looking window
         rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m following the current row timestamp (inclusive), this is a purely forwards looking window
+=======
+        |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
+        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        |  `rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"` - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+>>>>>>> main
 
     Args:
         ts_col (str): the timestamp column for determining the window.

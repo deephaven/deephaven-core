@@ -2,16 +2,24 @@ package io.deephaven.qst.table;
 
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+<<<<<<< HEAD
 import java.lang.ref.WeakReference;
+=======
+>>>>>>> main
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+<<<<<<< HEAD
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.WeakHashMap;
+=======
+import java.util.Objects;
+import java.util.OptionalInt;
+>>>>>>> main
 import org.immutables.value.Generated;
 
 /**
@@ -23,14 +31,21 @@ import org.immutables.value.Generated;
 @Generated(from = "JoinTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
+<<<<<<< HEAD
 final class ImmutableJoinTable extends JoinTable {
+=======
+public final class ImmutableJoinTable extends JoinTable {
+>>>>>>> main
   private transient final int depth;
   private final TableSpec left;
   private final TableSpec right;
   private final List<JoinMatch> matches;
   private final List<JoinAddition> additions;
   private final Integer reserveBits;
+<<<<<<< HEAD
   private transient final int hashCode;
+=======
+>>>>>>> main
 
   private ImmutableJoinTable(
       TableSpec left,
@@ -44,11 +59,20 @@ final class ImmutableJoinTable extends JoinTable {
     this.additions = additions;
     this.reserveBits = reserveBits;
     this.depth = super.depth();
+<<<<<<< HEAD
     this.hashCode = computeHashCode();
   }
 
   /**
    * @return The computed-at-construction value of the {@code depth} attribute
+=======
+  }
+
+  /**
+   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
+   * depth of zero.
+   * @return the depth
+>>>>>>> main
    */
   @Override
   public int depth() {
@@ -200,7 +224,10 @@ final class ImmutableJoinTable extends JoinTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableJoinTable another) {
+<<<<<<< HEAD
     if (hashCode != another.hashCode) return false;
+=======
+>>>>>>> main
     return depth == another.depth
         && left.equals(another.left)
         && right.equals(another.right)
@@ -210,17 +237,25 @@ final class ImmutableJoinTable extends JoinTable {
   }
 
   /**
+<<<<<<< HEAD
    * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code left}, {@code right}, {@code matches}, {@code additions}, {@code reserveBits}.
+=======
+   * Computes a hash code from attributes: {@code depth}, {@code left}, {@code right}, {@code matches}, {@code additions}, {@code reserveBits}.
+>>>>>>> main
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+<<<<<<< HEAD
     return hashCode;
   }
 
   private int computeHashCode() {
     int h = 5381;
     h += (h << 5) + getClass().hashCode();
+=======
+    int h = 5381;
+>>>>>>> main
     h += (h << 5) + depth;
     h += (h << 5) + left.hashCode();
     h += (h << 5) + right.hashCode();
@@ -230,6 +265,7 @@ final class ImmutableJoinTable extends JoinTable {
     return h;
   }
 
+<<<<<<< HEAD
   private static final class InternerHolder {
     static final Map<ImmutableJoinTable, WeakReference<ImmutableJoinTable>> INTERNER =
         new WeakHashMap<>();
@@ -246,6 +282,11 @@ final class ImmutableJoinTable extends JoinTable {
       }
       return interned;
     }
+=======
+  private static ImmutableJoinTable validate(ImmutableJoinTable instance) {
+    instance.checkAdditions();
+    return instance;
+>>>>>>> main
   }
 
   /**
@@ -260,11 +301,15 @@ final class ImmutableJoinTable extends JoinTable {
       return (ImmutableJoinTable) instance;
     }
     return ImmutableJoinTable.builder()
+<<<<<<< HEAD
         .left(instance.left())
         .right(instance.right())
         .addAllMatches(instance.matches())
         .addAllAdditions(instance.additions())
         .reserveBits(instance.reserveBits())
+=======
+        .from(instance)
+>>>>>>> main
         .build();
   }
 
@@ -296,6 +341,7 @@ final class ImmutableJoinTable extends JoinTable {
   public static final class Builder implements JoinTable.Builder {
     private static final long INIT_BIT_LEFT = 0x1L;
     private static final long INIT_BIT_RIGHT = 0x2L;
+<<<<<<< HEAD
     private static final long OPT_BIT_RESERVE_BITS = 0x1L;
     private long initBits = 0x3L;
     private long optBits;
@@ -304,18 +350,130 @@ final class ImmutableJoinTable extends JoinTable {
     private TableSpec right;
     private final List<JoinMatch> matches = new ArrayList<JoinMatch>();
     private final List<JoinAddition> additions = new ArrayList<JoinAddition>();
+=======
+    private long initBits = 0x3L;
+
+    private TableSpec left;
+    private TableSpec right;
+    private List<JoinMatch> matches = new ArrayList<JoinMatch>();
+    private List<JoinAddition> additions = new ArrayList<JoinAddition>();
+>>>>>>> main
     private Integer reserveBits;
 
     private Builder() {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.Join} instance.
+     * @param instance The instance from which to copy values
+     * @return {@code this} builder for use in a chained invocation
+     */
+    public final Builder from(Join instance) {
+      Objects.requireNonNull(instance, "instance");
+      from((Object) instance);
+      return this;
+    }
+
+    /**
+     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.JoinTable} instance.
+     * @param instance The instance from which to copy values
+     * @return {@code this} builder for use in a chained invocation
+     */
+    public final Builder from(JoinTable instance) {
+      Objects.requireNonNull(instance, "instance");
+      from((Object) instance);
+      return this;
+    }
+
+    /**
+     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.JoinBase} instance.
+     * @param instance The instance from which to copy values
+     * @return {@code this} builder for use in a chained invocation
+     */
+    public final Builder from(JoinBase instance) {
+      Objects.requireNonNull(instance, "instance");
+      from((Object) instance);
+      return this;
+    }
+
+    private void from(Object object) {
+      long bits = 0;
+      if (object instanceof Join) {
+        Join instance = (Join) object;
+        if ((bits & 0x4L) == 0) {
+          right(instance.right());
+          bits |= 0x4L;
+        }
+        if ((bits & 0x1L) == 0) {
+          addAllAdditions(instance.additions());
+          bits |= 0x1L;
+        }
+        if ((bits & 0x2L) == 0) {
+          left(instance.left());
+          bits |= 0x2L;
+        }
+        if ((bits & 0x8L) == 0) {
+          addAllMatches(instance.matches());
+          bits |= 0x8L;
+        }
+      }
+      if (object instanceof JoinTable) {
+        JoinTable instance = (JoinTable) object;
+        if ((bits & 0x4L) == 0) {
+          right(instance.right());
+          bits |= 0x4L;
+        }
+        if ((bits & 0x1L) == 0) {
+          addAllAdditions(instance.additions());
+          bits |= 0x1L;
+        }
+        OptionalInt reserveBitsOptional = instance.reserveBits();
+        if (reserveBitsOptional.isPresent()) {
+          reserveBits(reserveBitsOptional);
+        }
+        if ((bits & 0x2L) == 0) {
+          left(instance.left());
+          bits |= 0x2L;
+        }
+        if ((bits & 0x8L) == 0) {
+          addAllMatches(instance.matches());
+          bits |= 0x8L;
+        }
+      }
+      if (object instanceof JoinBase) {
+        JoinBase instance = (JoinBase) object;
+        if ((bits & 0x4L) == 0) {
+          right(instance.right());
+          bits |= 0x4L;
+        }
+        if ((bits & 0x1L) == 0) {
+          addAllAdditions(instance.additions());
+          bits |= 0x1L;
+        }
+        if ((bits & 0x2L) == 0) {
+          left(instance.left());
+          bits |= 0x2L;
+        }
+        if ((bits & 0x8L) == 0) {
+          addAllMatches(instance.matches());
+          bits |= 0x8L;
+        }
+      }
+    }
+
+    /**
+>>>>>>> main
      * Initializes the value for the {@link JoinTable#left() left} attribute.
      * @param left The value for left 
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder left(TableSpec left) {
+<<<<<<< HEAD
       checkNotIsSet(leftIsSet(), "left");
+=======
+>>>>>>> main
       this.left = Objects.requireNonNull(left, "left");
       initBits &= ~INIT_BIT_LEFT;
       return this;
@@ -327,7 +485,10 @@ final class ImmutableJoinTable extends JoinTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder right(TableSpec right) {
+<<<<<<< HEAD
       checkNotIsSet(rightIsSet(), "right");
+=======
+>>>>>>> main
       this.right = Objects.requireNonNull(right, "right");
       initBits &= ~INIT_BIT_RIGHT;
       return this;
@@ -357,6 +518,19 @@ final class ImmutableJoinTable extends JoinTable {
 
 
     /**
+<<<<<<< HEAD
+=======
+     * Sets or replaces all elements for {@link JoinTable#matches() matches} list.
+     * @param elements An iterable of matches elements
+     * @return {@code this} builder for use in a chained invocation
+     */
+    public final Builder matches(Iterable<? extends JoinMatch> elements) {
+      this.matches.clear();
+      return addAllMatches(elements);
+    }
+
+    /**
+>>>>>>> main
      * Adds elements to {@link JoinTable#matches() matches} list.
      * @param elements An iterable of matches elements
      * @return {@code this} builder for use in a chained invocation
@@ -392,6 +566,19 @@ final class ImmutableJoinTable extends JoinTable {
 
 
     /**
+<<<<<<< HEAD
+=======
+     * Sets or replaces all elements for {@link JoinTable#additions() additions} list.
+     * @param elements An iterable of additions elements
+     * @return {@code this} builder for use in a chained invocation
+     */
+    public final Builder additions(Iterable<? extends JoinAddition> elements) {
+      this.additions.clear();
+      return addAllAdditions(elements);
+    }
+
+    /**
+>>>>>>> main
      * Adds elements to {@link JoinTable#additions() additions} list.
      * @param elements An iterable of additions elements
      * @return {@code this} builder for use in a chained invocation
@@ -409,9 +596,13 @@ final class ImmutableJoinTable extends JoinTable {
      * @return {@code this} builder for chained invocation
      */
     public final Builder reserveBits(int reserveBits) {
+<<<<<<< HEAD
       checkNotIsSet(reserveBitsIsSet(), "reserveBits");
       this.reserveBits = reserveBits;
       optBits |= OPT_BIT_RESERVE_BITS;
+=======
+      this.reserveBits = reserveBits;
+>>>>>>> main
       return this;
     }
 
@@ -421,9 +612,13 @@ final class ImmutableJoinTable extends JoinTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder reserveBits(OptionalInt reserveBits) {
+<<<<<<< HEAD
       checkNotIsSet(reserveBitsIsSet(), "reserveBits");
       this.reserveBits = reserveBits.isPresent() ? reserveBits.getAsInt() : null;
       optBits |= OPT_BIT_RESERVE_BITS;
+=======
+      this.reserveBits = reserveBits.isPresent() ? reserveBits.getAsInt() : null;
+>>>>>>> main
       return this;
     }
 
@@ -433,7 +628,13 @@ final class ImmutableJoinTable extends JoinTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableJoinTable build() {
+<<<<<<< HEAD
       checkRequiredAttributes();
+=======
+      if (initBits != 0) {
+        throw new IllegalStateException(formatRequiredAttributesMessage());
+      }
+>>>>>>> main
       return ImmutableJoinTable.validate(new ImmutableJoinTable(
           left,
           right,
@@ -442,6 +643,7 @@ final class ImmutableJoinTable extends JoinTable {
           reserveBits));
     }
 
+<<<<<<< HEAD
     private boolean reserveBitsIsSet() {
       return (optBits & OPT_BIT_RESERVE_BITS) != 0;
     }
@@ -468,6 +670,12 @@ final class ImmutableJoinTable extends JoinTable {
       List<String> attributes = new ArrayList<>();
       if (!leftIsSet()) attributes.add("left");
       if (!rightIsSet()) attributes.add("right");
+=======
+    private String formatRequiredAttributesMessage() {
+      List<String> attributes = new ArrayList<>();
+      if ((initBits & INIT_BIT_LEFT) != 0) attributes.add("left");
+      if ((initBits & INIT_BIT_RIGHT) != 0) attributes.add("right");
+>>>>>>> main
       return "Cannot build JoinTable, some of required attributes are not set " + attributes;
     }
   }

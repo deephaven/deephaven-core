@@ -1,7 +1,10 @@
 package io.deephaven.api.updateby.spec;
 
+<<<<<<< HEAD
 import java.util.ArrayList;
 import java.util.List;
+=======
+>>>>>>> main
 import java.util.Objects;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -21,6 +24,7 @@ import org.immutables.value.Generated;
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
 @Immutable
 public final class ImmutableRollingGroupSpec extends RollingGroupSpec {
+<<<<<<< HEAD
   private final WindowScale revWindowScale;
   private final WindowScale fwdWindowScale;
 
@@ -139,6 +143,10 @@ public final class ImmutableRollingGroupSpec extends RollingGroupSpec {
     if (this.fwdWindowScale == value) return this;
     WindowScale newValue = Objects.requireNonNull(value, "fwdWindowScale");
     return validate(new ImmutableRollingGroupSpec(this.revWindowScale, newValue));
+=======
+
+  private ImmutableRollingGroupSpec(ImmutableRollingGroupSpec.Builder builder) {
+>>>>>>> main
   }
 
   /**
@@ -152,6 +160,7 @@ public final class ImmutableRollingGroupSpec extends RollingGroupSpec {
         && equalTo(0, (ImmutableRollingGroupSpec) another);
   }
 
+<<<<<<< HEAD
   private boolean equalTo(int synthetic, ImmutableRollingGroupSpec another) {
     return revWindowScale.equals(another.revWindowScale)
         && fwdWindowScale.equals(another.fwdWindowScale);
@@ -159,10 +168,20 @@ public final class ImmutableRollingGroupSpec extends RollingGroupSpec {
 
   /**
    * Computes a hash code from attributes: {@code revWindowScale}, {@code fwdWindowScale}.
+=======
+  @SuppressWarnings("MethodCanBeStatic")
+  private boolean equalTo(int synthetic, ImmutableRollingGroupSpec another) {
+    return true;
+  }
+
+  /**
+   * Returns a constant hash code value.
+>>>>>>> main
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+<<<<<<< HEAD
     int h = 5381;
     h += (h << 5) + revWindowScale.hashCode();
     h += (h << 5) + fwdWindowScale.hashCode();
@@ -171,10 +190,18 @@ public final class ImmutableRollingGroupSpec extends RollingGroupSpec {
 
   /**
    * Prints the immutable value {@code RollingGroupSpec} with attribute values.
+=======
+    return 149477769;
+  }
+
+  /**
+   * Prints the immutable value {@code RollingGroupSpec}.
+>>>>>>> main
    * @return A string representation of the value
    */
   @Override
   public String toString() {
+<<<<<<< HEAD
     return "RollingGroupSpec{"
         + "revWindowScale=" + revWindowScale
         + ", fwdWindowScale=" + fwdWindowScale
@@ -184,6 +211,9 @@ public final class ImmutableRollingGroupSpec extends RollingGroupSpec {
   private static ImmutableRollingGroupSpec validate(ImmutableRollingGroupSpec instance) {
     instance.checkWindowSizes();
     return instance;
+=======
+    return "RollingGroupSpec{}";
+>>>>>>> main
   }
 
   /**
@@ -206,8 +236,11 @@ public final class ImmutableRollingGroupSpec extends RollingGroupSpec {
    * Creates a builder for {@link ImmutableRollingGroupSpec ImmutableRollingGroupSpec}.
    * <pre>
    * ImmutableRollingGroupSpec.builder()
+<<<<<<< HEAD
    *    .revWindowScale(io.deephaven.api.updateby.spec.WindowScale) // optional {@link RollingGroupSpec#revWindowScale() revWindowScale}
    *    .fwdWindowScale(io.deephaven.api.updateby.spec.WindowScale) // optional {@link RollingGroupSpec#fwdWindowScale() fwdWindowScale}
+=======
+>>>>>>> main
    *    .build();
    * </pre>
    * @return A new ImmutableRollingGroupSpec builder
@@ -226,19 +259,29 @@ public final class ImmutableRollingGroupSpec extends RollingGroupSpec {
   @Generated(from = "RollingGroupSpec", generator = "Immutables")
   @NotThreadSafe
   public static final class Builder {
+<<<<<<< HEAD
     private @Nullable WindowScale revWindowScale;
     private @Nullable WindowScale fwdWindowScale;
+=======
+>>>>>>> main
 
     private Builder() {
     }
 
     /**
+<<<<<<< HEAD
      * Fill a builder with attribute values from the provided {@code io.deephaven.api.updateby.spec.RollingGroupSpec} instance.
+=======
+     * Fill a builder with attribute values from the provided {@code RollingGroupSpec} instance.
+     * Regular attribute values will be replaced with those from the given instance.
+     * Absent optional values will not replace present values.
+>>>>>>> main
      * @param instance The instance from which to copy values
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder from(RollingGroupSpec instance) {
       Objects.requireNonNull(instance, "instance");
+<<<<<<< HEAD
       from((Object) instance);
       return this;
     }
@@ -299,6 +342,8 @@ public final class ImmutableRollingGroupSpec extends RollingGroupSpec {
      */
     public final Builder fwdWindowScale(WindowScale fwdWindowScale) {
       this.fwdWindowScale = Objects.requireNonNull(fwdWindowScale, "fwdWindowScale");
+=======
+>>>>>>> main
       return this;
     }
 
@@ -308,7 +353,11 @@ public final class ImmutableRollingGroupSpec extends RollingGroupSpec {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableRollingGroupSpec build() {
+<<<<<<< HEAD
       return ImmutableRollingGroupSpec.validate(new ImmutableRollingGroupSpec(this));
+=======
+      return new ImmutableRollingGroupSpec(this);
+>>>>>>> main
     }
   }
 }

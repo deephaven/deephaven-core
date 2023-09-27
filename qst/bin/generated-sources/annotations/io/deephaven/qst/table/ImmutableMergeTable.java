@@ -1,14 +1,21 @@
 package io.deephaven.qst.table;
 
+<<<<<<< HEAD
 import java.lang.ref.WeakReference;
+=======
+>>>>>>> main
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+<<<<<<< HEAD
 import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
+=======
+import java.util.Objects;
+>>>>>>> main
 import org.immutables.value.Generated;
 
 /**
@@ -20,19 +27,34 @@ import org.immutables.value.Generated;
 @Generated(from = "MergeTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
+<<<<<<< HEAD
 final class ImmutableMergeTable extends MergeTable {
   private transient final int depth;
   private final List<TableSpec> tables;
   private transient final int hashCode;
+=======
+public final class ImmutableMergeTable extends MergeTable {
+  private transient final int depth;
+  private final List<TableSpec> tables;
+>>>>>>> main
 
   private ImmutableMergeTable(List<TableSpec> tables) {
     this.tables = tables;
     this.depth = super.depth();
+<<<<<<< HEAD
     this.hashCode = computeHashCode();
   }
 
   /**
    * @return The computed-at-construction value of the {@code depth} attribute
+=======
+  }
+
+  /**
+   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
+   * depth of zero.
+   * @return the depth
+>>>>>>> main
    */
   @Override
   public int depth() {
@@ -81,28 +103,40 @@ final class ImmutableMergeTable extends MergeTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableMergeTable another) {
+<<<<<<< HEAD
     if (hashCode != another.hashCode) return false;
+=======
+>>>>>>> main
     return depth == another.depth
         && tables.equals(another.tables);
   }
 
   /**
+<<<<<<< HEAD
    * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code tables}.
+=======
+   * Computes a hash code from attributes: {@code depth}, {@code tables}.
+>>>>>>> main
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+<<<<<<< HEAD
     return hashCode;
   }
 
   private int computeHashCode() {
     int h = 5381;
     h += (h << 5) + getClass().hashCode();
+=======
+    int h = 5381;
+>>>>>>> main
     h += (h << 5) + depth;
     h += (h << 5) + tables.hashCode();
     return h;
   }
 
+<<<<<<< HEAD
   private static final class InternerHolder {
     static final Map<ImmutableMergeTable, WeakReference<ImmutableMergeTable>> INTERNER =
         new WeakHashMap<>();
@@ -119,6 +153,11 @@ final class ImmutableMergeTable extends MergeTable {
       }
       return interned;
     }
+=======
+  private static ImmutableMergeTable validate(ImmutableMergeTable instance) {
+    instance.checkSize();
+    return instance;
+>>>>>>> main
   }
 
   /**
@@ -133,7 +172,11 @@ final class ImmutableMergeTable extends MergeTable {
       return (ImmutableMergeTable) instance;
     }
     return ImmutableMergeTable.builder()
+<<<<<<< HEAD
         .addAllTables(instance.tables())
+=======
+        .from(instance)
+>>>>>>> main
         .build();
   }
 
@@ -159,12 +202,33 @@ final class ImmutableMergeTable extends MergeTable {
    */
   @Generated(from = "MergeTable", generator = "Immutables")
   public static final class Builder implements MergeTable.Builder {
+<<<<<<< HEAD
     private final List<TableSpec> tables = new ArrayList<TableSpec>();
+=======
+    private List<TableSpec> tables = new ArrayList<TableSpec>();
+>>>>>>> main
 
     private Builder() {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * Fill a builder with attribute values from the provided {@code MergeTable} instance.
+     * Regular attribute values will be replaced with those from the given instance.
+     * Absent optional values will not replace present values.
+     * Collection elements and entries will be added, not replaced.
+     * @param instance The instance from which to copy values
+     * @return {@code this} builder for use in a chained invocation
+     */
+    public final Builder from(MergeTable instance) {
+      Objects.requireNonNull(instance, "instance");
+      addAllTables(instance.tables());
+      return this;
+    }
+
+    /**
+>>>>>>> main
      * Adds one element to {@link MergeTable#tables() tables} list.
      * @param element A tables element
      * @return {@code this} builder for use in a chained invocation
@@ -188,6 +252,19 @@ final class ImmutableMergeTable extends MergeTable {
 
 
     /**
+<<<<<<< HEAD
+=======
+     * Sets or replaces all elements for {@link MergeTable#tables() tables} list.
+     * @param elements An iterable of tables elements
+     * @return {@code this} builder for use in a chained invocation
+     */
+    public final Builder tables(Iterable<? extends TableSpec> elements) {
+      this.tables.clear();
+      return addAllTables(elements);
+    }
+
+    /**
+>>>>>>> main
      * Adds elements to {@link MergeTable#tables() tables} list.
      * @param elements An iterable of tables elements
      * @return {@code this} builder for use in a chained invocation

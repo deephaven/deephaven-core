@@ -8,6 +8,11 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.concurrent.Immutable;
 import javax.annotation.concurrent.NotThreadSafe;
 import org.immutables.value.Generated;
+<<<<<<< HEAD
+=======
+import static io.deephaven.api.RangeEndRule.*;
+import static io.deephaven.api.RangeStartRule.*;
+>>>>>>> main
 
 /**
  * Immutable implementation of {@link RangeJoinMatch}.
@@ -105,13 +110,22 @@ public final class ImmutableRangeJoinMatch extends RangeJoinMatch {
 
   /**
    * Copy the current immutable object by setting a value for the {@link RangeJoinMatch#rangeStartRule() rangeStartRule} attribute.
+<<<<<<< HEAD
    * A value equality check is used to prevent copying of the same value by returning {@code this}.
+=======
+   * A shallow reference equality check is used to prevent copying of the same value by returning {@code this}.
+>>>>>>> main
    * @param value A new value for rangeStartRule
    * @return A modified copy of the {@code this} object
    */
   public final ImmutableRangeJoinMatch withRangeStartRule(RangeStartRule value) {
+<<<<<<< HEAD
     RangeStartRule newValue = Objects.requireNonNull(value, "rangeStartRule");
     if (this.rangeStartRule == newValue) return this;
+=======
+    if (this.rangeStartRule == value) return this;
+    RangeStartRule newValue = Objects.requireNonNull(value, "rangeStartRule");
+>>>>>>> main
     return validate(new ImmutableRangeJoinMatch(this.leftStartColumn, newValue, this.rightRangeColumn, this.rangeEndRule, this.leftEndColumn));
   }
 
@@ -129,13 +143,22 @@ public final class ImmutableRangeJoinMatch extends RangeJoinMatch {
 
   /**
    * Copy the current immutable object by setting a value for the {@link RangeJoinMatch#rangeEndRule() rangeEndRule} attribute.
+<<<<<<< HEAD
    * A value equality check is used to prevent copying of the same value by returning {@code this}.
+=======
+   * A shallow reference equality check is used to prevent copying of the same value by returning {@code this}.
+>>>>>>> main
    * @param value A new value for rangeEndRule
    * @return A modified copy of the {@code this} object
    */
   public final ImmutableRangeJoinMatch withRangeEndRule(RangeEndRule value) {
+<<<<<<< HEAD
     RangeEndRule newValue = Objects.requireNonNull(value, "rangeEndRule");
     if (this.rangeEndRule == newValue) return this;
+=======
+    if (this.rangeEndRule == value) return this;
+    RangeEndRule newValue = Objects.requireNonNull(value, "rangeEndRule");
+>>>>>>> main
     return validate(new ImmutableRangeJoinMatch(this.leftStartColumn, this.rangeStartRule, this.rightRangeColumn, newValue, this.leftEndColumn));
   }
 
@@ -226,9 +249,15 @@ public final class ImmutableRangeJoinMatch extends RangeJoinMatch {
    * <pre>
    * ImmutableRangeJoinMatch.builder()
    *    .leftStartColumn(io.deephaven.api.ColumnName) // required {@link RangeJoinMatch#leftStartColumn() leftStartColumn}
+<<<<<<< HEAD
    *    .rangeStartRule(io.deephaven.api.RangeStartRule) // required {@link RangeJoinMatch#rangeStartRule() rangeStartRule}
    *    .rightRangeColumn(io.deephaven.api.ColumnName) // required {@link RangeJoinMatch#rightRangeColumn() rightRangeColumn}
    *    .rangeEndRule(io.deephaven.api.RangeEndRule) // required {@link RangeJoinMatch#rangeEndRule() rangeEndRule}
+=======
+   *    .rangeStartRule(RangeStartRule) // required {@link RangeJoinMatch#rangeStartRule() rangeStartRule}
+   *    .rightRangeColumn(io.deephaven.api.ColumnName) // required {@link RangeJoinMatch#rightRangeColumn() rightRangeColumn}
+   *    .rangeEndRule(RangeEndRule) // required {@link RangeJoinMatch#rangeEndRule() rangeEndRule}
+>>>>>>> main
    *    .leftEndColumn(io.deephaven.api.ColumnName) // required {@link RangeJoinMatch#leftEndColumn() leftEndColumn}
    *    .build();
    * </pre>

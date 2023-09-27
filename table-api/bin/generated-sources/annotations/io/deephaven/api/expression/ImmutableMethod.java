@@ -175,7 +175,11 @@ public final class ImmutableMethod extends Method {
    * ImmutableMethod.builder()
    *    .object(io.deephaven.api.expression.Expression) // required {@link Method#object() object}
    *    .name(String) // required {@link Method#name() name}
+<<<<<<< HEAD
    *    .addArguments|addAllArguments(io.deephaven.api.expression.Expression) // {@link Method#arguments() arguments} elements
+=======
+   *    .addArguments|addAllArguments(Expression) // {@link Method#arguments() arguments} elements
+>>>>>>> main
    *    .build();
    * </pre>
    * @return A new ImmutableMethod builder

@@ -213,6 +213,7 @@ public final class ImmutableStandardField<T> extends StandardField<T> {
     }
 
     /**
+<<<<<<< HEAD
      * Fill a builder with attribute values from the provided {@code io.deephaven.appmode.Field} instance.
      * @param instance The instance from which to copy values
      * @return {@code this} builder for use in a chained invocation
@@ -226,12 +227,18 @@ public final class ImmutableStandardField<T> extends StandardField<T> {
 
     /**
      * Fill a builder with attribute values from the provided {@code io.deephaven.appmode.StandardField} instance.
+=======
+     * Fill a builder with attribute values from the provided {@code StandardField} instance.
+     * Regular attribute values will be replaced with those from the given instance.
+     * Absent optional values will not replace present values.
+>>>>>>> main
      * @param instance The instance from which to copy values
      * @return {@code this} builder for use in a chained invocation
      */
     @CanIgnoreReturnValue 
     public final Builder<T> from(StandardField<T> instance) {
       Objects.requireNonNull(instance, "instance");
+<<<<<<< HEAD
       from((Object) instance);
       return this;
     }
@@ -247,6 +254,15 @@ public final class ImmutableStandardField<T> extends StandardField<T> {
         }
         value(instance.value());
       }
+=======
+      name(instance.name());
+      value(instance.value());
+      Optional<String> descriptionOptional = instance.description();
+      if (descriptionOptional.isPresent()) {
+        description(descriptionOptional);
+      }
+      return this;
+>>>>>>> main
     }
 
     /**

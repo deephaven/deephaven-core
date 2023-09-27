@@ -3,7 +3,10 @@ package io.deephaven.ssl.config;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+<<<<<<< HEAD
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+=======
+>>>>>>> main
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.ArrayList;
 import java.util.List;
@@ -203,7 +206,10 @@ public final class ImmutableIdentityPrivateKey extends IdentityPrivateKey {
   @Generated(from = "IdentityPrivateKey", generator = "Immutables")
   @Deprecated
   @JsonDeserialize
+<<<<<<< HEAD
   @JsonTypeInfo(use=JsonTypeInfo.Id.NONE)
+=======
+>>>>>>> main
   @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.NONE)
   static final class Json extends IdentityPrivateKey {
     String certChainPath;

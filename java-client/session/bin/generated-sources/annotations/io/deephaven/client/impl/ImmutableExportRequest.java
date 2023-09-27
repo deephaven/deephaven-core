@@ -3,7 +3,10 @@ package io.deephaven.client.impl;
 import com.google.common.base.MoreObjects;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Var;
+<<<<<<< HEAD
 import io.deephaven.qst.table.TableSpec;
+=======
+>>>>>>> main
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -158,7 +161,11 @@ public final class ImmutableExportRequest extends ExportRequest {
    * Creates a builder for {@link ImmutableExportRequest ImmutableExportRequest}.
    * <pre>
    * ImmutableExportRequest.builder()
+<<<<<<< HEAD
    *    .table(io.deephaven.qst.table.TableSpec) // required {@link ExportRequest#table() table}
+=======
+   *    .table(io.deephaven.client.impl.TableSpec) // required {@link ExportRequest#table() table}
+>>>>>>> main
    *    .listener(io.deephaven.client.impl.ExportRequest.Listener) // required {@link ExportRequest#listener() listener}
    *    .build();
    * </pre>

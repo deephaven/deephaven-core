@@ -4,7 +4,10 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Var;
+<<<<<<< HEAD
 import io.deephaven.ssl.config.SSLConfig;
+=======
+>>>>>>> main
 import io.deephaven.uri.DeephavenTarget;
 import java.util.ArrayList;
 import java.util.List;
@@ -328,7 +331,11 @@ public final class ImmutableClientConfig extends ClientConfig {
    * <pre>
    * ImmutableClientConfig.builder()
    *    .target(io.deephaven.uri.DeephavenTarget) // required {@link ClientConfig#target() target}
+<<<<<<< HEAD
    *    .ssl(io.deephaven.ssl.config.SSLConfig) // optional {@link ClientConfig#ssl() ssl}
+=======
+   *    .ssl(SSLConfig) // optional {@link ClientConfig#ssl() ssl}
+>>>>>>> main
    *    .userAgent(String) // optional {@link ClientConfig#userAgent() userAgent}
    *    .overrideAuthority(String) // optional {@link ClientConfig#overrideAuthority() overrideAuthority}
    *    .putExtraHeaders|putAllExtraHeaders(String =&gt; String) // {@link ClientConfig#extraHeaders() extraHeaders} mappings

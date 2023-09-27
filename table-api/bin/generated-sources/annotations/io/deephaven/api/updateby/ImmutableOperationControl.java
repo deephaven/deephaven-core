@@ -215,7 +215,11 @@ public final class ImmutableOperationControl extends OperationControl {
 
   /**
    * Copy the current immutable object by setting an optional value for the {@link OperationControl#onNullValue() onNullValue} attribute.
+<<<<<<< HEAD
    * An equality check is used on inner nullable value to prevent copying of the same value by returning {@code this}.
+=======
+   * A shallow reference equality check is used on unboxed optional value to prevent copying of the same value by returning {@code this}.
+>>>>>>> main
    * @param optional A value for onNullValue
    * @return A modified copy of {@code this} object
    */
@@ -251,7 +255,11 @@ public final class ImmutableOperationControl extends OperationControl {
 
   /**
    * Copy the current immutable object by setting an optional value for the {@link OperationControl#onNanValue() onNanValue} attribute.
+<<<<<<< HEAD
    * An equality check is used on inner nullable value to prevent copying of the same value by returning {@code this}.
+=======
+   * A shallow reference equality check is used on unboxed optional value to prevent copying of the same value by returning {@code this}.
+>>>>>>> main
    * @param optional A value for onNanValue
    * @return A modified copy of {@code this} object
    */
@@ -287,7 +295,11 @@ public final class ImmutableOperationControl extends OperationControl {
 
   /**
    * Copy the current immutable object by setting an optional value for the {@link OperationControl#onNullTime() onNullTime} attribute.
+<<<<<<< HEAD
    * An equality check is used on inner nullable value to prevent copying of the same value by returning {@code this}.
+=======
+   * A shallow reference equality check is used on unboxed optional value to prevent copying of the same value by returning {@code this}.
+>>>>>>> main
    * @param optional A value for onNullTime
    * @return A modified copy of {@code this} object
    */
@@ -323,7 +335,11 @@ public final class ImmutableOperationControl extends OperationControl {
 
   /**
    * Copy the current immutable object by setting an optional value for the {@link OperationControl#onNegativeDeltaTime() onNegativeDeltaTime} attribute.
+<<<<<<< HEAD
    * An equality check is used on inner nullable value to prevent copying of the same value by returning {@code this}.
+=======
+   * A shallow reference equality check is used on unboxed optional value to prevent copying of the same value by returning {@code this}.
+>>>>>>> main
    * @param optional A value for onNegativeDeltaTime
    * @return A modified copy of {@code this} object
    */
@@ -359,7 +375,11 @@ public final class ImmutableOperationControl extends OperationControl {
 
   /**
    * Copy the current immutable object by setting an optional value for the {@link OperationControl#onZeroDeltaTime() onZeroDeltaTime} attribute.
+<<<<<<< HEAD
    * An equality check is used on inner nullable value to prevent copying of the same value by returning {@code this}.
+=======
+   * A shallow reference equality check is used on unboxed optional value to prevent copying of the same value by returning {@code this}.
+>>>>>>> main
    * @param optional A value for onZeroDeltaTime
    * @return A modified copy of {@code this} object
    */
@@ -513,11 +533,19 @@ public final class ImmutableOperationControl extends OperationControl {
    * Creates a builder for {@link ImmutableOperationControl ImmutableOperationControl}.
    * <pre>
    * ImmutableOperationControl.builder()
+<<<<<<< HEAD
    *    .onNullValue(io.deephaven.api.updateby.BadDataBehavior) // optional {@link OperationControl#onNullValue() onNullValue}
    *    .onNanValue(io.deephaven.api.updateby.BadDataBehavior) // optional {@link OperationControl#onNanValue() onNanValue}
    *    .onNullTime(io.deephaven.api.updateby.BadDataBehavior) // optional {@link OperationControl#onNullTime() onNullTime}
    *    .onNegativeDeltaTime(io.deephaven.api.updateby.BadDataBehavior) // optional {@link OperationControl#onNegativeDeltaTime() onNegativeDeltaTime}
    *    .onZeroDeltaTime(io.deephaven.api.updateby.BadDataBehavior) // optional {@link OperationControl#onZeroDeltaTime() onZeroDeltaTime}
+=======
+   *    .onNullValue(BadDataBehavior) // optional {@link OperationControl#onNullValue() onNullValue}
+   *    .onNanValue(BadDataBehavior) // optional {@link OperationControl#onNanValue() onNanValue}
+   *    .onNullTime(BadDataBehavior) // optional {@link OperationControl#onNullTime() onNullTime}
+   *    .onNegativeDeltaTime(BadDataBehavior) // optional {@link OperationControl#onNegativeDeltaTime() onNegativeDeltaTime}
+   *    .onZeroDeltaTime(BadDataBehavior) // optional {@link OperationControl#onZeroDeltaTime() onZeroDeltaTime}
+>>>>>>> main
    *    .bigValueContext(java.math.MathContext) // optional {@link OperationControl#bigValueContext() bigValueContext}
    *    .build();
    * </pre>

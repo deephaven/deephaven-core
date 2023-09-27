@@ -3,7 +3,10 @@ package io.deephaven.client.impl.script;
 import com.google.common.base.MoreObjects;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Var;
+<<<<<<< HEAD
 import io.deephaven.client.impl.FieldChanges;
+=======
+>>>>>>> main
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -151,7 +154,11 @@ public final class ImmutableChanges extends Changes {
    * <pre>
    * ImmutableChanges.builder()
    *    .errorMessage(String) // optional {@link Changes#errorMessage() errorMessage}
+<<<<<<< HEAD
    *    .changes(io.deephaven.client.impl.FieldChanges) // required {@link Changes#changes() changes}
+=======
+   *    .changes(io.deephaven.client.impl.script.FieldChanges) // required {@link Changes#changes() changes}
+>>>>>>> main
    *    .build();
    * </pre>
    * @return A new ImmutableChanges builder

@@ -145,7 +145,11 @@ public final class ImmutableFunction extends Function {
    * <pre>
    * ImmutableFunction.builder()
    *    .name(String) // required {@link Function#name() name}
+<<<<<<< HEAD
    *    .addArguments|addAllArguments(io.deephaven.api.expression.Expression) // {@link Function#arguments() arguments} elements
+=======
+   *    .addArguments|addAllArguments(Expression) // {@link Function#arguments() arguments} elements
+>>>>>>> main
    *    .build();
    * </pre>
    * @return A new ImmutableFunction builder

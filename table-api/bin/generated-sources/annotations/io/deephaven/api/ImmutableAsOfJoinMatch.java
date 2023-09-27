@@ -84,13 +84,22 @@ public final class ImmutableAsOfJoinMatch extends AsOfJoinMatch {
 
   /**
    * Copy the current immutable object by setting a value for the {@link AsOfJoinMatch#joinRule() joinRule} attribute.
+<<<<<<< HEAD
    * A value equality check is used to prevent copying of the same value by returning {@code this}.
+=======
+   * A shallow reference equality check is used to prevent copying of the same value by returning {@code this}.
+>>>>>>> main
    * @param value A new value for joinRule
    * @return A modified copy of the {@code this} object
    */
   public final ImmutableAsOfJoinMatch withJoinRule(AsOfJoinRule value) {
+<<<<<<< HEAD
     AsOfJoinRule newValue = Objects.requireNonNull(value, "joinRule");
     if (this.joinRule == newValue) return this;
+=======
+    if (this.joinRule == value) return this;
+    AsOfJoinRule newValue = Objects.requireNonNull(value, "joinRule");
+>>>>>>> main
     return new ImmutableAsOfJoinMatch(this, this.leftColumn, newValue, this.rightColumn);
   }
 

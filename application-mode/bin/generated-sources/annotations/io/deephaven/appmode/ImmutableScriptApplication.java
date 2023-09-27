@@ -282,18 +282,34 @@ public final class ImmutableScriptApplication extends ScriptApplication {
     }
 
     /**
+<<<<<<< HEAD
      * Fill a builder with attribute values from the provided {@code io.deephaven.appmode.ScriptApplication} instance.
+=======
+     * Fill a builder with attribute values from the provided {@code ScriptApplication} instance.
+     * Regular attribute values will be replaced with those from the given instance.
+     * Absent optional values will not replace present values.
+     * Collection elements and entries will be added, not replaced.
+>>>>>>> main
      * @param instance The instance from which to copy values
      * @return {@code this} builder for use in a chained invocation
      */
     @CanIgnoreReturnValue 
     public final Builder from(ScriptApplication instance) {
       Objects.requireNonNull(instance, "instance");
+<<<<<<< HEAD
       from((Object) instance);
+=======
+      id(instance.id());
+      name(instance.name());
+      addAllFiles(instance.files());
+      isEnabled(instance.isEnabled());
+      scriptType(instance.scriptType());
+>>>>>>> main
       return this;
     }
 
     /**
+<<<<<<< HEAD
      * Fill a builder with attribute values from the provided {@code io.deephaven.appmode.ApplicationConfig} instance.
      * @param instance The instance from which to copy values
      * @return {@code this} builder for use in a chained invocation
@@ -320,6 +336,8 @@ public final class ImmutableScriptApplication extends ScriptApplication {
     }
 
     /**
+=======
+>>>>>>> main
      * Initializes the value for the {@link ScriptApplication#id() id} attribute.
      * @param id The value for id 
      * @return {@code this} builder for use in a chained invocation

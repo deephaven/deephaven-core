@@ -3,7 +3,10 @@ package io.deephaven.ssl.config;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+<<<<<<< HEAD
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+=======
+>>>>>>> main
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -104,7 +107,10 @@ public final class ImmutableIdentityList extends IdentityList {
   @Generated(from = "IdentityList", generator = "Immutables")
   @Deprecated
   @JsonDeserialize
+<<<<<<< HEAD
   @JsonTypeInfo(use=JsonTypeInfo.Id.NONE)
+=======
+>>>>>>> main
   @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.NONE)
   static final class Json extends IdentityList {
     List<Identity> values = Collections.emptyList();
@@ -151,7 +157,11 @@ public final class ImmutableIdentityList extends IdentityList {
    * Creates a builder for {@link ImmutableIdentityList ImmutableIdentityList}.
    * <pre>
    * ImmutableIdentityList.builder()
+<<<<<<< HEAD
    *    .addValues|addAllValues(io.deephaven.ssl.config.Identity) // {@link IdentityList#values() values} elements
+=======
+   *    .addValues|addAllValues(Identity) // {@link IdentityList#values() values} elements
+>>>>>>> main
    *    .build();
    * </pre>
    * @return A new ImmutableIdentityList builder

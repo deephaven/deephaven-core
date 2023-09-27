@@ -1,11 +1,17 @@
 package io.deephaven.qst.table;
 
+<<<<<<< HEAD
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
+=======
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+>>>>>>> main
 import org.immutables.value.Generated;
 
 /**
@@ -19,28 +25,47 @@ import org.immutables.value.Generated;
 @Generated(from = "TailTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
+<<<<<<< HEAD
 final class ImmutableTailTable extends TailTable {
   private transient final int depth;
   private final TableSpec parent;
   private final long size;
   private transient final int hashCode;
+=======
+public final class ImmutableTailTable extends TailTable {
+  private transient final int depth;
+  private final TableSpec parent;
+  private final long size;
+>>>>>>> main
 
   private ImmutableTailTable(TableSpec parent, long size) {
     this.parent = Objects.requireNonNull(parent, "parent");
     this.size = size;
     this.depth = super.depth();
+<<<<<<< HEAD
     this.hashCode = computeHashCode();
+=======
+>>>>>>> main
   }
 
   private ImmutableTailTable(ImmutableTailTable original, TableSpec parent, long size) {
     this.parent = parent;
     this.size = size;
     this.depth = super.depth();
+<<<<<<< HEAD
     this.hashCode = computeHashCode();
   }
 
   /**
    * @return The computed-at-construction value of the {@code depth} attribute
+=======
+  }
+
+  /**
+   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
+   * depth of zero.
+   * @return the depth
+>>>>>>> main
    */
   @Override
   public int depth() {
@@ -98,35 +123,49 @@ final class ImmutableTailTable extends TailTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableTailTable another) {
+<<<<<<< HEAD
     if (hashCode != another.hashCode) return false;
+=======
+>>>>>>> main
     return depth == another.depth
         && parent.equals(another.parent)
         && size == another.size;
   }
 
   /**
+<<<<<<< HEAD
    * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code parent}, {@code size}.
+=======
+   * Computes a hash code from attributes: {@code depth}, {@code parent}, {@code size}.
+>>>>>>> main
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+<<<<<<< HEAD
     return hashCode;
   }
 
   private int computeHashCode() {
     int h = 5381;
     h += (h << 5) + getClass().hashCode();
+=======
+    int h = 5381;
+>>>>>>> main
     h += (h << 5) + depth;
     h += (h << 5) + parent.hashCode();
     h += (h << 5) + Long.hashCode(size);
     return h;
   }
 
+<<<<<<< HEAD
   private static final class InternerHolder {
     static final Map<ImmutableTailTable, WeakReference<ImmutableTailTable>> INTERNER =
         new WeakHashMap<>();
   }
 
+=======
+>>>>>>> main
   /**
    * Construct a new immutable {@code TailTable} instance.
    * @param parent The value for the {@code parent} attribute
@@ -139,6 +178,7 @@ final class ImmutableTailTable extends TailTable {
 
   private static ImmutableTailTable validate(ImmutableTailTable instance) {
     instance.checkSize();
+<<<<<<< HEAD
     synchronized (InternerHolder.INTERNER) {
       WeakReference<ImmutableTailTable> reference = InternerHolder.INTERNER.get(instance);
       ImmutableTailTable interned = reference != null ? reference.get() : null;
@@ -148,6 +188,9 @@ final class ImmutableTailTable extends TailTable {
       }
       return interned;
     }
+=======
+    return instance;
+>>>>>>> main
   }
 
   /**
@@ -162,8 +205,12 @@ final class ImmutableTailTable extends TailTable {
       return (ImmutableTailTable) instance;
     }
     return ImmutableTailTable.builder()
+<<<<<<< HEAD
         .parent(instance.parent())
         .size(instance.size())
+=======
+        .from(instance)
+>>>>>>> main
         .build();
   }
 
@@ -201,12 +248,59 @@ final class ImmutableTailTable extends TailTable {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.TailTable} instance.
+     * @param instance The instance from which to copy values
+     * @return {@code this} builder for use in a chained invocation
+     */
+    public final Builder from(TailTable instance) {
+      Objects.requireNonNull(instance, "instance");
+      from((Object) instance);
+      return this;
+    }
+
+    /**
+     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.SingleParentTable} instance.
+     * @param instance The instance from which to copy values
+     * @return {@code this} builder for use in a chained invocation
+     */
+    public final Builder from(SingleParentTable instance) {
+      Objects.requireNonNull(instance, "instance");
+      from((Object) instance);
+      return this;
+    }
+
+    private void from(Object object) {
+      long bits = 0;
+      if (object instanceof TailTable) {
+        TailTable instance = (TailTable) object;
+        size(instance.size());
+        if ((bits & 0x1L) == 0) {
+          parent(instance.parent());
+          bits |= 0x1L;
+        }
+      }
+      if (object instanceof SingleParentTable) {
+        SingleParentTable instance = (SingleParentTable) object;
+        if ((bits & 0x1L) == 0) {
+          parent(instance.parent());
+          bits |= 0x1L;
+        }
+      }
+    }
+
+    /**
+>>>>>>> main
      * Initializes the value for the {@link TailTable#parent() parent} attribute.
      * @param parent The value for parent 
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder parent(TableSpec parent) {
+<<<<<<< HEAD
       checkNotIsSet(parentIsSet(), "parent");
+=======
+>>>>>>> main
       this.parent = Objects.requireNonNull(parent, "parent");
       initBits &= ~INIT_BIT_PARENT;
       return this;
@@ -218,7 +312,10 @@ final class ImmutableTailTable extends TailTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder size(long size) {
+<<<<<<< HEAD
       checkNotIsSet(sizeIsSet(), "size");
+=======
+>>>>>>> main
       this.size = size;
       initBits &= ~INIT_BIT_SIZE;
       return this;
@@ -230,6 +327,7 @@ final class ImmutableTailTable extends TailTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableTailTable build() {
+<<<<<<< HEAD
       checkRequiredAttributes();
       return ImmutableTailTable.validate(new ImmutableTailTable(null, parent, size));
     }
@@ -250,12 +348,23 @@ final class ImmutableTailTable extends TailTable {
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
+=======
+      if (initBits != 0) {
+        throw new IllegalStateException(formatRequiredAttributesMessage());
+      }
+      return ImmutableTailTable.validate(new ImmutableTailTable(null, parent, size));
+>>>>>>> main
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
+<<<<<<< HEAD
       if (!parentIsSet()) attributes.add("parent");
       if (!sizeIsSet()) attributes.add("size");
+=======
+      if ((initBits & INIT_BIT_PARENT) != 0) attributes.add("parent");
+      if ((initBits & INIT_BIT_SIZE) != 0) attributes.add("size");
+>>>>>>> main
       return "Cannot build TailTable, some of required attributes are not set " + attributes;
     }
   }

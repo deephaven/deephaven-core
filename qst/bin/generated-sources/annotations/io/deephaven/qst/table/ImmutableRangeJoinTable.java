@@ -3,15 +3,22 @@ package io.deephaven.qst.table;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.agg.Aggregation;
+<<<<<<< HEAD
 import java.lang.ref.WeakReference;
+=======
+>>>>>>> main
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+<<<<<<< HEAD
 import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
+=======
+import java.util.Objects;
+>>>>>>> main
 import org.immutables.value.Generated;
 
 /**
@@ -23,14 +30,21 @@ import org.immutables.value.Generated;
 @Generated(from = "RangeJoinTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
+<<<<<<< HEAD
 final class ImmutableRangeJoinTable extends RangeJoinTable {
+=======
+public final class ImmutableRangeJoinTable extends RangeJoinTable {
+>>>>>>> main
   private transient final int depth;
   private final TableSpec left;
   private final TableSpec right;
   private final List<JoinMatch> exactMatches;
   private final RangeJoinMatch rangeMatch;
   private final List<Aggregation> aggregations;
+<<<<<<< HEAD
   private transient final int hashCode;
+=======
+>>>>>>> main
 
   private ImmutableRangeJoinTable(
       TableSpec left,
@@ -44,11 +58,20 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
     this.rangeMatch = rangeMatch;
     this.aggregations = aggregations;
     this.depth = super.depth();
+<<<<<<< HEAD
     this.hashCode = computeHashCode();
   }
 
   /**
    * @return The computed-at-construction value of the {@code depth} attribute
+=======
+  }
+
+  /**
+   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
+   * depth of zero.
+   * @return the depth
+>>>>>>> main
    */
   @Override
   public int depth() {
@@ -187,7 +210,10 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableRangeJoinTable another) {
+<<<<<<< HEAD
     if (hashCode != another.hashCode) return false;
+=======
+>>>>>>> main
     return depth == another.depth
         && left.equals(another.left)
         && right.equals(another.right)
@@ -197,17 +223,25 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
   }
 
   /**
+<<<<<<< HEAD
    * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code left}, {@code right}, {@code exactMatches}, {@code rangeMatch}, {@code aggregations}.
+=======
+   * Computes a hash code from attributes: {@code depth}, {@code left}, {@code right}, {@code exactMatches}, {@code rangeMatch}, {@code aggregations}.
+>>>>>>> main
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+<<<<<<< HEAD
     return hashCode;
   }
 
   private int computeHashCode() {
     int h = 5381;
     h += (h << 5) + getClass().hashCode();
+=======
+    int h = 5381;
+>>>>>>> main
     h += (h << 5) + depth;
     h += (h << 5) + left.hashCode();
     h += (h << 5) + right.hashCode();
@@ -217,6 +251,7 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
     return h;
   }
 
+<<<<<<< HEAD
   private static final class InternerHolder {
     static final Map<ImmutableRangeJoinTable, WeakReference<ImmutableRangeJoinTable>> INTERNER =
         new WeakHashMap<>();
@@ -233,6 +268,11 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
       }
       return interned;
     }
+=======
+  private static ImmutableRangeJoinTable validate(ImmutableRangeJoinTable instance) {
+    instance.checkAggregationsNonEmpty();
+    return instance;
+>>>>>>> main
   }
 
   /**
@@ -247,11 +287,15 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
       return (ImmutableRangeJoinTable) instance;
     }
     return ImmutableRangeJoinTable.builder()
+<<<<<<< HEAD
         .left(instance.left())
         .right(instance.right())
         .addAllExactMatches(instance.exactMatches())
         .rangeMatch(instance.rangeMatch())
         .addAllAggregations(instance.aggregations())
+=======
+        .from(instance)
+>>>>>>> main
         .build();
   }
 
@@ -288,20 +332,50 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
 
     private TableSpec left;
     private TableSpec right;
+<<<<<<< HEAD
     private final List<JoinMatch> exactMatches = new ArrayList<JoinMatch>();
     private RangeJoinMatch rangeMatch;
     private final List<Aggregation> aggregations = new ArrayList<Aggregation>();
+=======
+    private List<JoinMatch> exactMatches = new ArrayList<JoinMatch>();
+    private RangeJoinMatch rangeMatch;
+    private List<Aggregation> aggregations = new ArrayList<Aggregation>();
+>>>>>>> main
 
     private Builder() {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * Fill a builder with attribute values from the provided {@code RangeJoinTable} instance.
+     * Regular attribute values will be replaced with those from the given instance.
+     * Absent optional values will not replace present values.
+     * Collection elements and entries will be added, not replaced.
+     * @param instance The instance from which to copy values
+     * @return {@code this} builder for use in a chained invocation
+     */
+    public final Builder from(RangeJoinTable instance) {
+      Objects.requireNonNull(instance, "instance");
+      left(instance.left());
+      right(instance.right());
+      addAllExactMatches(instance.exactMatches());
+      rangeMatch(instance.rangeMatch());
+      addAllAggregations(instance.aggregations());
+      return this;
+    }
+
+    /**
+>>>>>>> main
      * Initializes the value for the {@link RangeJoinTable#left() left} attribute.
      * @param left The value for left 
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder left(TableSpec left) {
+<<<<<<< HEAD
       checkNotIsSet(leftIsSet(), "left");
+=======
+>>>>>>> main
       this.left = Objects.requireNonNull(left, "left");
       initBits &= ~INIT_BIT_LEFT;
       return this;
@@ -313,7 +387,10 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder right(TableSpec right) {
+<<<<<<< HEAD
       checkNotIsSet(rightIsSet(), "right");
+=======
+>>>>>>> main
       this.right = Objects.requireNonNull(right, "right");
       initBits &= ~INIT_BIT_RIGHT;
       return this;
@@ -343,6 +420,19 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
 
 
     /**
+<<<<<<< HEAD
+=======
+     * Sets or replaces all elements for {@link RangeJoinTable#exactMatches() exactMatches} list.
+     * @param elements An iterable of exactMatches elements
+     * @return {@code this} builder for use in a chained invocation
+     */
+    public final Builder exactMatches(Iterable<? extends JoinMatch> elements) {
+      this.exactMatches.clear();
+      return addAllExactMatches(elements);
+    }
+
+    /**
+>>>>>>> main
      * Adds elements to {@link RangeJoinTable#exactMatches() exactMatches} list.
      * @param elements An iterable of exactMatches elements
      * @return {@code this} builder for use in a chained invocation
@@ -360,7 +450,10 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder rangeMatch(RangeJoinMatch rangeMatch) {
+<<<<<<< HEAD
       checkNotIsSet(rangeMatchIsSet(), "rangeMatch");
+=======
+>>>>>>> main
       this.rangeMatch = Objects.requireNonNull(rangeMatch, "rangeMatch");
       initBits &= ~INIT_BIT_RANGE_MATCH;
       return this;
@@ -390,6 +483,19 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
 
 
     /**
+<<<<<<< HEAD
+=======
+     * Sets or replaces all elements for {@link RangeJoinTable#aggregations() aggregations} list.
+     * @param elements An iterable of aggregations elements
+     * @return {@code this} builder for use in a chained invocation
+     */
+    public final Builder aggregations(Iterable<? extends Aggregation> elements) {
+      this.aggregations.clear();
+      return addAllAggregations(elements);
+    }
+
+    /**
+>>>>>>> main
      * Adds elements to {@link RangeJoinTable#aggregations() aggregations} list.
      * @param elements An iterable of aggregations elements
      * @return {@code this} builder for use in a chained invocation
@@ -407,7 +513,13 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableRangeJoinTable build() {
+<<<<<<< HEAD
       checkRequiredAttributes();
+=======
+      if (initBits != 0) {
+        throw new IllegalStateException(formatRequiredAttributesMessage());
+      }
+>>>>>>> main
       return ImmutableRangeJoinTable.validate(new ImmutableRangeJoinTable(
           left,
           right,
@@ -416,6 +528,7 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
           createUnmodifiableList(true, aggregations)));
     }
 
+<<<<<<< HEAD
     private boolean leftIsSet() {
       return (initBits & INIT_BIT_LEFT) == 0;
     }
@@ -443,6 +556,13 @@ final class ImmutableRangeJoinTable extends RangeJoinTable {
       if (!leftIsSet()) attributes.add("left");
       if (!rightIsSet()) attributes.add("right");
       if (!rangeMatchIsSet()) attributes.add("rangeMatch");
+=======
+    private String formatRequiredAttributesMessage() {
+      List<String> attributes = new ArrayList<>();
+      if ((initBits & INIT_BIT_LEFT) != 0) attributes.add("left");
+      if ((initBits & INIT_BIT_RIGHT) != 0) attributes.add("right");
+      if ((initBits & INIT_BIT_RANGE_MATCH) != 0) attributes.add("rangeMatch");
+>>>>>>> main
       return "Cannot build RangeJoinTable, some of required attributes are not set " + attributes;
     }
   }

@@ -147,7 +147,11 @@ public final class ImmutableFilterAnd extends FilterAnd {
    * Creates a builder for {@link ImmutableFilterAnd ImmutableFilterAnd}.
    * <pre>
    * ImmutableFilterAnd.builder()
+<<<<<<< HEAD
    *    .addFilters|addAllFilters(io.deephaven.api.filter.Filter) // {@link FilterAnd#filters() filters} elements
+=======
+   *    .addFilters|addAllFilters(Filter) // {@link FilterAnd#filters() filters} elements
+>>>>>>> main
    *    .build();
    * </pre>
    * @return A new ImmutableFilterAnd builder
