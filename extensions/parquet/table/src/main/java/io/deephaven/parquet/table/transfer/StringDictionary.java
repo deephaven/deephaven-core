@@ -12,16 +12,19 @@ import org.apache.parquet.io.api.Binary;
 
 import java.util.Arrays;
 
-// TODO Add comments
+/**
+ * Stores a dictionary of strings and returns their position in the dictionary, useful for encoding string columns.
+ */
 final public class StringDictionary {
     private static final int INITIAL_DICTIONARY_SIZE = 1 << 8;
     private Binary[] encodedKeys;
     private int keyCount;
     private int dictSize;
-    private int maxKeys;
-    private int maxDictSize;
+    private final int maxKeys;
+    private final int maxDictSize;
     private final Statistics<?> statistics;
     private final TObjectIntHashMap<String> keyToPos;
+    private static final int NULL_KEY_POS = -1;
 
     public StringDictionary(final int maxKeys, final int maxDictSize, final Statistics<?> statistics) {
         this.dictSize = this.keyCount = 0;
@@ -40,10 +43,14 @@ final public class StringDictionary {
         return encodedKeys;
     }
 
+    /**
+     * Add a string key to the dictionary and return its position in the dictionary. The function returns the value
+     * {@link #NULL_KEY_POS} if the key is null.
+     */
     public int add(final String key) {
         if (key == null) {
             // Nulls are not added to the dictionary
-            return -1;
+            return NULL_KEY_POS;
         }
         int posInDictionary = keyToPos.get(key);
         if (posInDictionary == keyToPos.getNoEntryValue()) {

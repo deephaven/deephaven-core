@@ -25,7 +25,8 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
     private final ChunkSource.GetContext context;
     private final int maxValuesPerPage;
 
-    IntCastablePrimitiveTransfer(@NotNull final  ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
+    IntCastablePrimitiveTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+                                 final int targetPageSize) {
         this.columnSource = columnSource;
         this.tableRowSetIt = tableRowSet.getRowSequenceIterator();
         this.maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize / Integer.BYTES));

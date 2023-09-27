@@ -11,11 +11,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
 /**
- * Used as a base class of transfer objects for types like strings or big integers that need specialized encoding, and
- * thus we need to enforce page size limits while writing.
+ * Used as a base class of transfer objects for types like strings or big integers that need specialized encoding.
  */
 abstract class ObjectTransfer<T> extends VariableWidthTransfer<T, Binary, Binary[]> {
-    final private int bufferSize;
+    private final int bufferSize;
     private int bufferedDataCount;
     private int numBytesBuffered;
 
@@ -25,11 +24,10 @@ abstract class ObjectTransfer<T> extends VariableWidthTransfer<T, Binary, Binary
         bufferSize = targetPageSize;
         bufferedDataCount = 0;
         numBytesBuffered = 0;
-        // TODO Add comment about arguments
     }
 
     @Override
-    public int transferOnePageToBuffer() {
+    public final int transferOnePageToBuffer() {
         // Clear any old buffered data
         if (bufferedDataCount != 0) {
             Arrays.fill(buffer, 0, bufferedDataCount, null);
@@ -55,12 +53,12 @@ abstract class ObjectTransfer<T> extends VariableWidthTransfer<T, Binary, Binary
         return true;
     }
 
-    final boolean addEncodedDataToBuffer(@NotNull final EncodedData encodedData) {
+    final boolean addEncodedDataToBuffer(@NotNull final EncodedData data) {
         if (bufferedDataCount == bufferSize) {
             return false;
         }
-        buffer[bufferedDataCount++] = encodedData.data;
-        numBytesBuffered += encodedData.numBytes;
+        buffer[bufferedDataCount++] = data.encodedValues;
+        numBytesBuffered += data.numBytes;
         return true;
     }
 }

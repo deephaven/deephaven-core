@@ -11,18 +11,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Supplier;
 
-final public class DictEncodedStringVectorTransfer
-        extends DictEncodedStringTransferBase<ObjectVector<String>> {
-    public DictEncodedStringVectorTransfer(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,
+final class DictEncodedStringVectorTransfer extends DictEncodedStringTransferBase<ObjectVector<String>> {
+    DictEncodedStringVectorTransfer(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,
             int targetPageSize, StringDictionary dictionary, final int nullPos) {
         super(columnSource, tableRowSet, targetPageSize, dictionary, nullPos);
     }
 
     @Override
-    EncodedData encodeDataForBuffering(@NotNull ObjectVector<String> data) {
+    void encodeDataForBuffering(@NotNull ObjectVector<String> data) {
         try (CloseableIterator<String> iter = data.iterator()) {
             Supplier<String> supplier = iter::next;
-            return dictEncodingHelper(supplier, data.intSize());
+            dictEncodingHelper(supplier, data.intSize());
         }
     }
 }

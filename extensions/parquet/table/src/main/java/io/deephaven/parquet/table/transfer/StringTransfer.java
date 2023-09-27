@@ -15,8 +15,8 @@ final class StringTransfer extends ObjectTransfer<String> {
     }
 
     @Override
-    EncodedData encodeDataForBuffering(@NotNull String data) {
+    void encodeDataForBuffering(@NotNull String data) {
         Binary encodedValue = Binary.fromString(data);
-        return new EncodedData(encodedValue, encodedValue.length());
+        encodedData.fill(encodedValue, encodedValue.length());
     }
 }

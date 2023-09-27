@@ -10,21 +10,32 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.IntBuffer;
 import java.util.function.Supplier;
 
+/**
+ * Base class for transferring dictionary-encoded strings. This class updates the {@link StringDictionary} with all the
+ * strings it encounters and generates an IntBuffer of dictionary position values. This classes extends
+ * {@link PrimitiveArrayAndVectorTransfer} to manage the dictionary position value buffers.
+ */
 abstract public class DictEncodedStringTransferBase<T>
         extends PrimitiveArrayAndVectorTransfer<T, IntBuffer, IntBuffer> {
     private boolean pageHasNull;
     private final StringDictionary dictionary;
-    private final int nullPos;
+    private final int nullValue; // The value to store in buffer for null strings
+    private IntBuffer dictEncodedValues;
 
     DictEncodedStringTransferBase(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,
-            int targetPageSize, @NotNull StringDictionary dictionary, final int nullPos) {
+            int targetPageSize, @NotNull StringDictionary dictionary, final int nullValue) {
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
                 IntBuffer.allocate(targetPageSize / Integer.BYTES));
         this.pageHasNull = false;
         this.dictionary = dictionary;
-        this.nullPos = nullPos;
+        this.nullValue = nullValue;
+        this.dictEncodedValues = IntBuffer.allocate(targetPageSize);
     }
 
+    /**
+     * This method is used to prepare the dictionary and transfer one page of data to the buffer. This method should be
+     * used instead of {@link #transferOnePageToBuffer()}.
+     */
     final public void prepareDictionaryAndTransferOnePageToBuffer() {
         // Reset state before transferring each page
         pageHasNull = false;
@@ -36,26 +47,32 @@ abstract public class DictEncodedStringTransferBase<T>
         throw new UnsupportedOperationException("Use prepareDictionaryAndTransferOnePageToBuffer instead");
     }
 
-    final EncodedData dictEncodingHelper(@NotNull Supplier<String> strSupplier, int numStrings) {
-        final IntBuffer dictEncodedValues = IntBuffer.allocate(numStrings);
+    /**
+     * Helper method which takes a string supplier and number of strings, fetches that many strings from the supplier,
+     * adds them to the dictionary and populates an IntBuffer with dictionary position values.
+     */
+    final void dictEncodingHelper(@NotNull Supplier<String> strSupplier, int numStrings) {
+        dictEncodedValues.clear();
+        if (numStrings > dictEncodedValues.limit()) {
+            dictEncodedValues = IntBuffer.allocate(numStrings);
+        }
         int numBytesEncoded = 0;
         for (int i = 0; i < numStrings; i++) {
             String value = strSupplier.get();
             if (value == null) {
-                dictEncodedValues.put(nullPos);
+                dictEncodedValues.put(nullValue);
                 pageHasNull = true;
                 numBytesEncoded += Integer.BYTES;
-                // TODO How many bytes to count null as?
             } else {
                 int posInDictionary = dictionary.add(value);
                 dictEncodedValues.put(posInDictionary);
             }
         }
-        return new EncodedData(dictEncodedValues, numStrings, numBytesEncoded);
+        encodedData.fill(dictEncodedValues, numStrings, numBytesEncoded);
     }
 
     @Override
-    final void resizeBuffer(@NotNull final int length) {
+    final void resizeBuffer(final int length) {
         buffer = IntBuffer.allocate(length);
     }
 

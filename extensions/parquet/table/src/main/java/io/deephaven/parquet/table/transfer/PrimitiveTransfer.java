@@ -17,7 +17,7 @@ import java.nio.Buffer;
  * PrimitiveTransfer is a generic class that can be used to transfer primitive data types directly from a ColumnSource
  * to a Buffer using {@link ColumnSource#fillChunk(ChunkSource.FillContext, WritableChunk, RowSequence)}.
  */
-class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer> implements TransferObject<B> {
+abstract class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer> implements TransferObject<B> {
     private final C chunk;
     private final B buffer;
     private final ColumnSource<?> columnSource;
@@ -41,7 +41,7 @@ class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer> imple
     }
 
     @Override
-    public int transferOnePageToBuffer() {
+    public final int transferOnePageToBuffer() {
         if (!hasMoreDataToBuffer()) {
             return 0;
         }
@@ -60,12 +60,12 @@ class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer> imple
     }
 
     @Override
-    public B getBuffer() {
+    public final B getBuffer() {
         return buffer;
     }
 
     @Override
-    public void close() {
+    public final void close() {
         context.close();
         tableRowSetIt.close();
     }

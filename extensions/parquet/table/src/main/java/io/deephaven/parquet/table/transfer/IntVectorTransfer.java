@@ -10,15 +10,15 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
 
-// TODO Add comments
 final class IntVectorTransfer extends PrimitiveVectorTransfer<IntVector, IntBuffer> {
-    IntVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
+    IntVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+                      final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
                 IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
     }
 
     @Override
-    void resizeBuffer(@NotNull final int length) {
+    void resizeBuffer(final int length) {
         buffer = IntBuffer.allocate(length);
     }
 

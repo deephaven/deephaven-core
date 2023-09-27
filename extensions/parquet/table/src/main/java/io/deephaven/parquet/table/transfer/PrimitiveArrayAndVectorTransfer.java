@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.Buffer;
 
 /**
- * TODO Add comments
+ * Used as a base class of transfer objects for arrays/vectors of primitive types.
  */
 abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends ArrayAndVectorTransfer<T, E, B> {
     PrimitiveArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
@@ -22,33 +22,39 @@ abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends A
     public int transferOnePageToBuffer() {
         // Clear any old buffered data
         buffer.clear();
-        arrayLengths.clear();
+        repeatCounts.clear();
         // Fill the buffer with data from the table
         transferOnePageToBufferHelper();
         // Prepare buffer for reading
         buffer.flip();
-        arrayLengths.flip();
+        repeatCounts.flip();
         return buffer.limit();
     }
 
-    final boolean addEncodedDataToBuffer(@NotNull final EncodedData encodedData) {
-        if (!arrayLengths.hasRemaining()) {
+    final boolean addEncodedDataToBuffer(@NotNull final EncodedData data) {
+        if (!repeatCounts.hasRemaining()) {
             return false;
         }
-        if (buffer.position() == 0 && encodedData.numValues > buffer.remaining()) {
+        if (buffer.position() == 0 && data.numValues > buffer.remaining()) {
             // Resize the buffer if the first array/vector doesn't fit
-            resizeBuffer(encodedData.numValues);
-        } else if (encodedData.numValues > buffer.remaining()) {
+            resizeBuffer(data.numValues);
+        } else if (data.numValues > buffer.remaining()) {
             return false;
         }
-        copyToBuffer(encodedData.data);
-        arrayLengths.put(encodedData.numValues);
+        copyToBuffer(data.encodedValues);
+        repeatCounts.put(data.numValues);
         return true;
     }
 
-    // TODO Add comments why not boolean
+    /**
+     * Copy the encoded values to the buffer. This function should be called after checking that there is enough space
+     * in the buffer.
+     */
     abstract void copyToBuffer(@NotNull final E data);
 
-    abstract void resizeBuffer(@NotNull final int length);
+    /**
+     * Resize the buffer in case of overflow
+     */
+    abstract void resizeBuffer(final int length);
 }
 

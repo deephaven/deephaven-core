@@ -9,16 +9,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
 
-// TODO Add comments
 final class CharArrayTransfer extends PrimitiveArrayAndVectorTransfer<char[], char[], IntBuffer> {
-    CharArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize, IntBuffer.allocate(targetPageSize / Integer.BYTES));
+    CharArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+                      final int targetPageSize) {
+        // We encode characters as integers
+        super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
+                IntBuffer.allocate(targetPageSize / Integer.BYTES));
     }
 
     @Override
-    EncodedData encodeDataForBuffering(@NotNull final char[] data) {
-        // TODO Add comment explaining why we are sending Integer.Bytes
-        return new EncodedData(data, data.length, data.length * Integer.BYTES);
+    void encodeDataForBuffering(final char @NotNull [] data) {
+        encodedData.fill(data, data.length, data.length * Integer.BYTES);
     }
 
     @Override
@@ -27,12 +28,12 @@ final class CharArrayTransfer extends PrimitiveArrayAndVectorTransfer<char[], ch
     }
 
     @Override
-    void resizeBuffer(@NotNull final int length) {
+    void resizeBuffer(final int length) {
         buffer = IntBuffer.allocate(length);
     }
 
     @Override
-    void copyToBuffer(@NotNull final char[] data) {
+    void copyToBuffer(final char @NotNull [] data) {
         for (char c : data) {
             buffer.put((int) c);
         }

@@ -18,7 +18,6 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.LongBuffer;
 
 final class LongTransfer extends PrimitiveTransfer<WritableLongChunk<Values>, LongBuffer> {
-
     static LongTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, final int targetPageSize) {
         final int maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize / Long.BYTES));
         final long[] backingArray = new long[maxValuesPerPage];

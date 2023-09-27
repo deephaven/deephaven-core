@@ -10,6 +10,10 @@ import io.deephaven.vector.ObjectVector;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Used as a base class of transfer objects for vectors of types like strings or big integers that need specialized
+ * encoding.
+ */
 abstract class ObjectVectorTransfer<T> extends ObjectArrayAndVectorTransfer<ObjectVector<T>> {
     ObjectVectorTransfer(final @NotNull ColumnSource<?> columnSource, final @NotNull RowSequence tableRowSet,
                          final int targetPageSize) {
@@ -17,7 +21,7 @@ abstract class ObjectVectorTransfer<T> extends ObjectArrayAndVectorTransfer<Obje
     }
 
     @Override
-    final EncodedData encodeDataForBuffering(final @NotNull ObjectVector<T> data) {
+    final void encodeDataForBuffering(final @NotNull ObjectVector<T> data) {
         int numStrings = data.intSize();
         Binary[] binaryEncodedValues = new Binary[numStrings];
         int numBytesEncoded = 0;
@@ -32,7 +36,7 @@ abstract class ObjectVectorTransfer<T> extends ObjectArrayAndVectorTransfer<Obje
                 }
             }
         }
-        return new EncodedData(binaryEncodedValues, numStrings, numBytesEncoded);
+        encodedData.fill(binaryEncodedValues, numStrings, numBytesEncoded);
     }
 
     abstract Binary encodeToBinary(T value);

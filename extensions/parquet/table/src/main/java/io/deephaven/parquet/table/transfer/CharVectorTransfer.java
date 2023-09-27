@@ -10,15 +10,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
 
-// TODO Add comments
 final class CharVectorTransfer extends PrimitiveVectorTransfer<CharVector, IntBuffer> {
-    CharVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
+    CharVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+                       final int targetPageSize) {
+        // We encode characters as integers
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
                 IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
     }
 
     @Override
-    void resizeBuffer(@NotNull final int length) {
+    void resizeBuffer(final int length) {
         buffer = IntBuffer.allocate(length);
     }
 

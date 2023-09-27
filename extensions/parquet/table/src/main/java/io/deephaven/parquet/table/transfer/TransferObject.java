@@ -24,7 +24,7 @@ import java.util.Map;
  * Classes that implement this interface are responsible for converting data from individual DH columns into buffers
  * to be written out to the Parquet file.
  *
- * @param <B>
+ * @param <B> The type of the buffer to be written out to the Parquet file
  */
 public interface TransferObject<B> extends SafeCloseable {
     static <DATA_TYPE> TransferObject<?> create(
@@ -130,7 +130,7 @@ public interface TransferObject<B> extends SafeCloseable {
         return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
     }
 
-    static <DATA_TYPE> DictEncodedStringTransferBase<?> createDictEncodedStringTransfer(
+    static <DATA_TYPE> @Nullable DictEncodedStringTransferBase<?> createDictEncodedStringTransfer(
             @NotNull final ColumnSource<DATA_TYPE> columnSource,
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
             @NotNull final RowSet tableRowSet, final int targetPageSize,
@@ -150,8 +150,6 @@ public interface TransferObject<B> extends SafeCloseable {
         return null;
     }
 
-    // TODO Rewrite the comments for this file
-
     /**
      * Transfer one page size worth of fetched data into an internal buffer, which can then be accessed using
      * {@link TransferObject#getBuffer()}. The target page size is passed in the constructor.
@@ -163,7 +161,7 @@ public interface TransferObject<B> extends SafeCloseable {
     int transferOnePageToBuffer();
 
     /**
-     * Check if there is any fetched data which can be copied into buffer
+     * Check if there is any more data which can be copied into buffer
      */
     boolean hasMoreDataToBuffer();
 
@@ -174,7 +172,11 @@ public interface TransferObject<B> extends SafeCloseable {
      */
     B getBuffer();
 
-    // TODO Add comments here
+    /**
+     * Get the lengths of array/vector elements added to the buffer.
+     *
+     * @return the buffer with counts
+     */
     default IntBuffer getRepeatCount() {
         throw new UnsupportedOperationException("Only supported for array and vector transfer objects");
     }

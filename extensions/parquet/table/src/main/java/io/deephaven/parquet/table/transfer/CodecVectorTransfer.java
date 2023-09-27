@@ -9,7 +9,11 @@ import io.deephaven.util.codec.ObjectCodec;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
-// TODO Add comment explaining the difference between this class and CodecTransfer
+/**
+ * Used to encode vectors of objects using a codec provided on construction. The difference between using this class and
+ * {@link CodecTransfer} is that this class encodes each element of the vector individually whereas
+ * {@link CodecTransfer} will encode the entire vector as a single value.
+ */
 final class CodecVectorTransfer<T> extends ObjectVectorTransfer<T> {
     private final ObjectCodec<? super T> codec;
 

@@ -19,8 +19,8 @@ final class CodecTransfer<T> extends ObjectTransfer<T> {
     }
 
     @Override
-    EncodedData encodeDataForBuffering(@NotNull T data) {
+    void encodeDataForBuffering(@NotNull T data) {
         Binary encodedValue = Binary.fromConstantByteArray(codec.encode(data));
-        return new EncodedData(encodedValue, encodedValue.length());
+        encodedData.fill(encodedValue, encodedValue.length());
     }
 }

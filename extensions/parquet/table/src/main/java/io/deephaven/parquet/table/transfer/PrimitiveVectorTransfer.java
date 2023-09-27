@@ -9,9 +9,10 @@ import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.Buffer;
-import java.nio.IntBuffer;
 
-// TODO Add comments
+/**
+ * Used as a base class of transfer objects for vectors of primitive types.
+ */
 abstract class PrimitiveVectorTransfer<T extends Vector<?>, B extends Buffer>
         extends PrimitiveArrayAndVectorTransfer<T, T, B> {
     private final int numBytesPerValue;
@@ -23,9 +24,8 @@ abstract class PrimitiveVectorTransfer<T extends Vector<?>, B extends Buffer>
     }
 
     @Override
-    final EncodedData encodeDataForBuffering(@NotNull final T data) {
-        // TODO Add comment
-        return new EncodedData(data, data.intSize(), data.intSize() * numBytesPerValue);
+    final void encodeDataForBuffering(@NotNull final T data) {
+        encodedData.fill(data, data.intSize(), data.intSize() * numBytesPerValue);
     }
 
     @Override

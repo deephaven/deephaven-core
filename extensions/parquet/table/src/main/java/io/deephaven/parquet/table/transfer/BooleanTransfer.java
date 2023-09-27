@@ -13,7 +13,6 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.ByteBuffer;
 
 final class BooleanTransfer extends PrimitiveTransfer<WritableByteChunk<Values>, ByteBuffer> {
-
     static BooleanTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, int targetPageSize) {
         final int NUM_BOOLEANS_PER_BYTE = 8;
         final int maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize * NUM_BOOLEANS_PER_BYTE));

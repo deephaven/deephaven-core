@@ -9,16 +9,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
 
-// TODO Add comments
 final class IntArrayTransfer extends PrimitiveArrayAndVectorTransfer<int[], int[], IntBuffer> {
-    IntArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize, IntBuffer.allocate(targetPageSize / Integer.BYTES));
+    IntArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+                     final int targetPageSize) {
+        super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
+                IntBuffer.allocate(targetPageSize / Integer.BYTES));
     }
 
     @Override
-    EncodedData encodeDataForBuffering(@NotNull final int[] data) {
-        // TODO Add comment
-        return new EncodedData(data, data.length, data.length * Integer.BYTES);
+    void encodeDataForBuffering(final int @NotNull [] data) {
+        encodedData.fill(data, data.length, data.length * Integer.BYTES);
     }
 
     @Override
@@ -27,12 +27,12 @@ final class IntArrayTransfer extends PrimitiveArrayAndVectorTransfer<int[], int[
     }
 
     @Override
-    void resizeBuffer(@NotNull final int length) {
+    void resizeBuffer(final int length) {
         buffer = IntBuffer.allocate(length);
     }
 
     @Override
-   void copyToBuffer(@NotNull final int[] data) {
+    void copyToBuffer(final int @NotNull [] data) {
         buffer.put(data);
     }
 }

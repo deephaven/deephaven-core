@@ -11,7 +11,8 @@ package io.deephaven.parquet.table.transfer;
  import java.util.Arrays;
 
 /**
- * TODO: Add comments
+ * Used as a base class of arrays/vectors of transfer objects for types like strings or big integers that need
+ * specialized encoding.
  */
 abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T, Binary[], Binary[]> {
     private int bufferSize;
@@ -23,7 +24,6 @@ abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T,
         bufferSize = targetPageSize;
         bufferedDataCount = 0;
         numBytesBuffered = 0;
-        // TODO Add comment about arguments
     }
 
     @Override
@@ -33,11 +33,11 @@ abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T,
             Arrays.fill(buffer, 0, bufferedDataCount, null);
             bufferedDataCount = 0;
             numBytesBuffered = 0;
-            arrayLengths.clear();
+            repeatCounts.clear();
         }
         // Fill the buffer with data from the table
         transferOnePageToBufferHelper();
-        arrayLengths.flip();
+        repeatCounts.flip();
         return bufferedDataCount;
     }
 
@@ -46,11 +46,11 @@ abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T,
         return numBytesBuffered;
     }
 
-    final boolean addEncodedDataToBuffer(@NotNull final EncodedData encodedData) {
-        if (!arrayLengths.hasRemaining()) {
+    final boolean addEncodedDataToBuffer(@NotNull final EncodedData data) {
+        if (!repeatCounts.hasRemaining()) {
             return false;
         }
-        int numEncodedValues = encodedData.numValues;
+        int numEncodedValues = data.numValues;
         if (bufferedDataCount == 0 && numEncodedValues > bufferSize) {
             // Resize the buffer if the first array/vector doesn't fit
             bufferSize = numEncodedValues;
@@ -58,12 +58,12 @@ abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T,
         } else if (numEncodedValues > bufferSize - bufferedDataCount) {
             return false;
         }
-        Binary[] binaryEncodedValues = encodedData.data;
+        Binary[] binaryEncodedValues = data.encodedValues;
         for (final Binary val : binaryEncodedValues) {
             buffer[bufferedDataCount++] = val;
         }
-        numBytesBuffered += encodedData.numBytes;
-        arrayLengths.put(numEncodedValues);
+        numBytesBuffered += data.numBytes;
+        repeatCounts.put(numEncodedValues);
         return true;
     }
 }

@@ -575,7 +575,6 @@ public class ParquetTableReadWriteTest {
         final long end1 = System.currentTimeMillis();
         System.out.println("Total execution time for arrays: " + (end1 - start1) / NUM_RUNS + " msec");
 
-
         // Convert array table to vector
         final Table vectorTable = arrayToVectorTable(arrayTable);
         final long start2 = System.currentTimeMillis();

@@ -9,7 +9,11 @@ import io.deephaven.util.codec.ObjectCodec;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
-// TODO Add comment explaining the difference between this class and CodecTransfer
+/**
+ * Used to encode arrays of objects using a codec provided on construction. The difference between using this class and
+ * {@link CodecTransfer} is that this class encodes each element of the array individually whereas {@link CodecTransfer}
+ * will encode the entire array as a single value.
+ */
 final class CodecArrayTransfer<T> extends ObjectArrayTransfer<T> {
     private final ObjectCodec<? super T> codec;
 

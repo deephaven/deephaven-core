@@ -11,29 +11,28 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.IntBuffer;
 
 /**
- * TODO Add comments
+ * Base class for all array and vector transfer objects
  */
 abstract class ArrayAndVectorTransfer<T, E, B> extends VariableWidthTransfer<T, E, B> {
-    protected final IntBuffer arrayLengths; // TODO Use better name
+    final IntBuffer repeatCounts; // Stores the lengths of arrays/vectors
 
     ArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int maxValuesPerPage, final int targetPageSize, @NotNull final B buffer) {
         super(columnSource, tableRowSet, maxValuesPerPage, targetPageSize, buffer);
-        this.arrayLengths = IntBuffer.allocate(maxValuesPerPage);
+        this.repeatCounts = IntBuffer.allocate(maxValuesPerPage);
     }
 
     @Override
     public IntBuffer getRepeatCount() {
-        return arrayLengths;
+        return repeatCounts;
     }
 
     @Override
     boolean addNullToBuffer() {
-        // TODO Add comment
-        if (!arrayLengths.hasRemaining()) {
+        if (!repeatCounts.hasRemaining()) {
             return false;
         }
-        arrayLengths.put(QueryConstants.NULL_INT);
+        repeatCounts.put(QueryConstants.NULL_INT);
         return true;
     }
 }
