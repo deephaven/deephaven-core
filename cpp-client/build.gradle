@@ -80,7 +80,12 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         //
         // Build and install client.
         //
-        runCommand("mkdir -p /out ${prefix}/bin ${prefix}/src/deephaven/{dhcore,dhclient,examples,tests}")
+        runCommand("""mkdir -p \\
+                        /out \\
+                        ${prefix}/bin \\
+                        ${prefix}/log \\
+                        ${prefix}/src/deephaven/{dhcore,dhclient,examples,tests}
+                   """)
         copyFile('deephaven/CMakeLists.txt',  "${prefix}/src/deephaven/")
         copyFile('deephaven/dhcore/',  "${prefix}/src/deephaven/dhcore/")
         copyFile('deephaven/dhclient/', "${prefix}/src/deephaven/dhclient/")
@@ -89,8 +94,8 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         copyFile('cpp-tests-to-junit.sh', "${prefix}/bin/dhcpp-tests-to-junit.sh")
         runCommand("PREFIX=\"" + prefix + "\"; \\\n" +
                    '''set -eux; \\
+                      rm -fr ${PREFIX}/src/deephaven/build; \\
                       mkdir -p ${PREFIX}/src/deephaven/build; \\
-                      mkdir -p ${PREFIX}/log; \\
                       cd ${PREFIX}/src/deephaven/build; \\
                       . ${PREFIX}/env.sh; \\
                       cmake \\
@@ -101,10 +106,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
                       make -j${NCPUS} install 2>&1 | gzip > ${PREFIX}/log/make-install.log.gz; \\
                       cp -f ${PREFIX}/src/deephaven/build/tests/tests ${PREFIX}/bin/dhcpp-tests; \\
                       cd ..; \\
-                      rm -fr ${PREFIX}/src/deephaven/build; \\
-                      sed -i \\
-                        2i"LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${PREFIX}/lib; export LD_LIBRARY_PATH" \\
-                        ${PREFIX}/bin/dhcpp-tests-to-junit.sh
+                      rm -fr ${PREFIX}/src/deephaven/build
                    ''')
         //
         // Setup for test run.
@@ -112,6 +114,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
         environmentVariable 'DH_PREFIX', prefix
+        environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
