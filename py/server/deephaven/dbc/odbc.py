@@ -24,7 +24,7 @@ def read_cursor(cursor: turbodbc.cursor.Cursor) -> Table:
 
     Args:
         cursor (turbodbc.cursor.Cursor): a Turbodbc cursor. Prior to it being passed in, its execute() method must be
-            called to run a query operation that produces a result set
+            called to run a query operation that produces a result set.
 
     Returns:
         a new Table

@@ -82,7 +82,7 @@ _vectorized_count = 0
 
 
 class NodeType(Enum):
-    """An enum of node types for RollupTable"""
+    """An enum of node types for RollupTable."""
     AGGREGATED = _JNodeType.Aggregated
     """Nodes at an aggregated (rolled up) level in the RollupTable. An aggregated level is above the constituent (
     leaf) level. These nodes have column names and types that result from applying aggregations on the source table 
@@ -94,7 +94,7 @@ class NodeType(Enum):
 
 
 class SearchDisplayMode(Enum):
-    """An enum of search display modes for layout hints"""
+    """An enum of search display modes for layout hints."""
     DEFAULT = _JSearchDisplayMode.Default
     """Use the system default. This may depend on your user and/or system settings."""
     SHOW = _JSearchDisplayMode.Show
