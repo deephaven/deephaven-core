@@ -121,12 +121,13 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         //
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
+        environmentVariable 'DH_PREFIX', prefix
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
     parentContainers = [ Docker.registryTask(project, 'cpp-client-base') ]
-    entrypoint = [prefix + '/bin/dhcpp-tests-to-junit.sh', '/out/cpp-test.xml', '/out/cpp-test.log']
+    entrypoint = ["${prefix}/bin/dhcpp-tests-to-junit.sh", '/out/cpp-test.xml', '/out/cpp-test.log']
 }
 deephavenDocker.shouldLogIfTaskFails testCppClient
 tasks.check.dependsOn(testCppClient)
