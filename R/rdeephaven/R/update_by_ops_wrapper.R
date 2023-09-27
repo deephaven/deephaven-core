@@ -195,7 +195,7 @@ uby_emmin_tick <- function(decay_ticks, cols = character(), operation_control = 
 #'   `dt_current = current_timestamp - prev_timestamp`
 #'   `a_current = e^(-dt_current / decay_time)`
 #'   `emmin_first = first_value`
-#'   `emmin_next = min(a_current * emmin_last, value)`
+#'   `emmin_next = min(a_current * emmin_prev, value)`
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param decay_time ISO-8601-formatted string specifying the decay rate.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -273,7 +273,6 @@ uby_emstd_tick <- function(decay_ticks, cols = character(), operation_control = 
 #'   `dt_current = current_timestamp - prev_timestamp`
 #'   `a_current = e^(-dt_current / decay_time)`
 #'   `em_variance_first = 0`
-#'   `ema_next = a_current * ema_last + (1 - a_current) * current_value`
 #'   `em_variance_next = a_current * (em_variance_prev + (1 − a_current) * (current_value − ema_prev)^2)`
 #'   `emstd_next = sqrt(em_variance_next)`
 #' @param ts_col String denoting the column to use as the timestamp.
