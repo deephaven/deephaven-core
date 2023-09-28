@@ -13,7 +13,7 @@ import java.nio.IntBuffer;
 /**
  * Base class for all array and vector transfer objects
  */
-abstract class ArrayAndVectorTransfer<T, E, B> extends VariableWidthTransfer<T, E, B> {
+public abstract class ArrayAndVectorTransfer<T, E, B> extends VariableWidthTransfer<T, E, B> {
     final IntBuffer repeatCounts; // Stores the lengths of arrays/vectors
 
     ArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,

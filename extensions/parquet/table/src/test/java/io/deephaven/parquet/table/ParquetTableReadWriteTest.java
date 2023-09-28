@@ -436,7 +436,7 @@ public class ParquetTableReadWriteTest {
                         // "someShortColumn = (short)i",
                         // "someByteColumn = (byte)i",
                         "someCharColumn = (char)i",
-                        // "someTime = DateTimeUtils.now() + i",
+                        "someTime = DateTimeUtils.now() + i",
                         "biColumn = java.math.BigInteger.valueOf(ii)",
                         "someKey = `` + (int)(i /100)",
                         "nullString = (String) null",
@@ -449,7 +449,7 @@ public class ParquetTableReadWriteTest {
                         // "nullShortColumn = (short)null",
                         // "nullByteColumn = (byte)null",
                         "nullCharColumn = (char)null",
-                        // "nullTime = (Instant)null"
+                        "nullTime = (Instant)null",
                         "nullBiColumn = (java.math.BigInteger)null"));
         if (includeBigDecimal) {
             columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
@@ -509,21 +509,22 @@ public class ParquetTableReadWriteTest {
         return arrayToVectorFormulas.isEmpty() ? table : table.updateView(arrayToVectorFormulas);
     }
 
+    // TODO Interleave nulls in between values
     @Test
     public void testArrayColumns() {
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList(
                         "someStringArrayColumn = new String[] {i % 10 == 0 ? null : (`` + (i % 101))}",
-                        "someIntArrayColumn = new int[] {i}",
-                        // "someLongArrayColumn = new long[] {ii}",
-                        // "someDoubleArrayColumn = new double[] {i*1.1}",
-                        // "someFloatArrayColumn = new float[] {(float)(i*1.1)}",
-                        // "someBoolArrayColumn = new Boolean[] {i % 3 == 0?true:i%3 == 1?false:null}",
-                        // "someShorArrayColumn = new short[] {(short)i}",
-                        // "someByteArrayColumn = new byte[] {(byte)i}",
-                        "someCharArrayColumn = new char[] {(char)i}",
-                        // "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
-                        "someBiColumn = new java.math.BigInteger[] {java.math.BigInteger.valueOf(ii)}",
+                        "someIntArrayColumn = new int[] {i % 10 == 0 ? null : i}",
+                        // "someLongArrayColumn = new long[] {i % 10 == 0 ? null : i}",
+                        // "someDoubleArrayColumn = new double[] {i % 10 == 0 ? null : i*1.1}",
+                        // "someFloatArrayColumn = new float[] {i % 10 == 0 ? null : (float)i*1.1}",
+                        // "someBoolArrayColumn = new Boolean[] {i % 3 == 0 ? true :i % 3 == 1 ? false : null}",
+                        // "someShorArrayColumn = new short[] {i % 10 == 0 ? null : (shor)i}",
+                        // "someByteArrayColumn = new byte[] {i % 10 == 0 ? null : (byte)i}",
+                        "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
+                        "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
+                        "someBiColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
                         "nullStringArrayColumn = new String[] {(String)null}",
                         "nullIntArrayColumn = new int[] {(int)null}",
                         // "nullLongArrayColumn = new long[] {(long)null}",
@@ -533,7 +534,7 @@ public class ParquetTableReadWriteTest {
                         // "nullShorArrayColumn = new short[] {(short)null}",
                         // "nullByteArrayColumn = new byte[] {(byte)null}",
                         "nullCharArrayColumn = new char[] {(char)null}",
-                        // "nullTimeArrayColumn = new Instant[] {(Instant)null}"
+                        "nullTimeArrayColumn = new Instant[] {(Instant)null}",
                         "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"));
 
         final Table arrayTable = TableTools.emptyTable(10000).select(

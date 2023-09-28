@@ -53,7 +53,7 @@ abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends A
     abstract void copyToBuffer(@NotNull final E data);
 
     /**
-     * Resize the buffer in case of overflow
+     * Resize the underlying page buffer, needed in case of overflow when transferring the first array/vector.
      */
     abstract void resizeBuffer(final int length);
 }

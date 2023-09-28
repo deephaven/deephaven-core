@@ -18,6 +18,7 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.IntBuffer;
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -78,9 +79,11 @@ public interface TransferObject<B> extends SafeCloseable {
             } else if (BigInteger.class.equals(componentType)) {
                 return new CodecArrayTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
                         instructions.getTargetPageSize());
+            } else if (Instant.class.equals(componentType)) {
+                return new InstantArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-//            // else if (explicit codec provided)
-//            // else if (big decimal)
+            // else if (explicit codec provided)
+            // else if (big decimal)
         }
         if (Vector.class.isAssignableFrom(dataType)) {
             if (int.class.equals(componentType)) {
@@ -104,9 +107,11 @@ public interface TransferObject<B> extends SafeCloseable {
             } else if (BigInteger.class.equals(componentType)) {
                 return new CodecVectorTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
                         instructions.getTargetPageSize());
+            } else if (Instant.class.equals(componentType)) {
+                return new InstantVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-//            // else if (explicit codec provided)
-//            // else if (big decimal)
+            // else if (explicit codec provided)
+            // else if (big decimal)
         }
 
         // If there's an explicit codec, we should disregard the defaults for these CodecLookup#lookup() will properly

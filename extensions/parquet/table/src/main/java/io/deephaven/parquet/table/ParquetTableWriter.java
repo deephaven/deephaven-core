@@ -468,7 +468,6 @@ public class ParquetTableWriter {
             @NotNull final ColumnWriter columnWriter,
             @NotNull final ColumnSource<DATA_TYPE> columnSourceIn,
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) throws IOException {
-        // TODO Can move tableRowSetIt construction code from inside TransferObject to here in try-with-resources block
         try (final TransferObject<?> transferObject = TransferObject.create(computedCache,
                 tableRowSet,
                 columnSourceIn,
@@ -476,9 +475,7 @@ public class ParquetTableWriter {
                 columnType,
                 writeInstructions)) {
             final Statistics<?> statistics = columnWriter.getStats();
-            boolean writeVectorPages = columnSourceIn.getComponentType() != null
-                    && !CodecLookup.explicitCodecPresent(writeInstructions.getCodecName(columnDefinition.getName()))
-                    && !CodecLookup.codecRequired(columnDefinition);
+            boolean writeVectorPages = (transferObject instanceof ArrayAndVectorTransfer);
             do {
                 int numValuesBuffered = transferObject.transferOnePageToBuffer();
                 if (writeVectorPages) {
