@@ -157,10 +157,19 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
 
         if (success) {
             eventualResult.setLastNotificationStep(lastNotificationStep);
-            referenceForSource.swapDelegate(initialDelegate, eventualListener instanceof LegacyListenerAdapter
-                    ? (LegacyListenerAdapter) eventualListener
-                    : new WeakSimpleReference<>(eventualListener));
-            forceReferenceCountToZero();
+
+            // note: the source table first increments the notification step before notifying children,
+            // deephaven-core#4556 was caused by a swap to the eventual listener prior to the children being notified.
+            // Therefore, we must defer the swap until after the children have been notified.
+            sourceTable.getUpdateGraph().addNotification(new TerminalNotification() {
+                @Override
+                public void run() {
+                    referenceForSource.swapDelegate(initialDelegate, eventualListener instanceof LegacyListenerAdapter
+                            ? (LegacyListenerAdapter) eventualListener
+                            : new WeakSimpleReference<>(eventualListener));
+                    SwapListener.this.forceReferenceCountToZero();
+                }
+            });
         }
 
         return success;
