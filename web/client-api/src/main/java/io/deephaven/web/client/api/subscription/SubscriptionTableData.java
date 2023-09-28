@@ -12,10 +12,7 @@ import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
 import jsinterop.annotations.JsFunction;
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsArrayLike;
@@ -25,7 +22,11 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.NavigableSet;
 import java.util.PrimitiveIterator;
+import java.util.Spliterators;
 import java.util.TreeMap;
+import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
+
 import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 public class SubscriptionTableData {
@@ -43,7 +44,7 @@ public class SubscriptionTableData {
     private RangeSet index;
 
     // mappings from the index to the position of a row in the data array
-    private TreeMap<Long, Long> redirectedIndexes;
+    private TreeMap<Long, Integer> redirectedIndexes;
 
     // rows in the data columns that no longer contain data and can be reused
     private RangeSet reusableDestinations;
@@ -68,6 +69,7 @@ public class SubscriptionTableData {
 
         long includedRowCount = snapshot.getIncludedRows().size();
         RangeSet destination = freeRows(includedRowCount);
+        long[] destArray = array(destination);
 
         for (int index = 0; index < dataColumns.length; index++) {
             ColumnData dataColumn = dataColumns[index];
@@ -85,17 +87,49 @@ public class SubscriptionTableData {
             data[index] = localCopy;
             PrimitiveIterator.OfLong destIter = destination.indexIterator();
             PrimitiveIterator.OfLong indexIter = snapshot.getIncludedRows().indexIterator();
-            int j = 0;
-            while (indexIter.hasNext()) {
-                assert destIter.hasNext();
-                long dest = destIter.nextLong();
-                redirectedIndexes.put(indexIter.nextLong(), dest);
-                arrayCopy.copyTo(localCopy, dest, dataColumn.getData(), j++);
+            long[] indexArray = array(snapshot.getIncludedRows());
+            int[] positions = IntStream.range(0, indexArray.length).toArray();
+            shuffle(destArray, indexArray, positions);
+
+            for (int j = 0; j < indexArray.length; j++) {
+                long dest = destArray[j];
+                long index2 = indexArray[j];
+                redirectedIndexes.put(index2, (int) dest);
+                arrayCopy.copyTo(localCopy, dest, dataColumn.getData(), positions[j]);
             }
-            assert !destIter.hasNext();
+
+//            int j = 0;
+//            while (indexIter.hasNext()) {
+//                assert destIter.hasNext();
+//                long dest = destIter.nextLong();
+//                redirectedIndexes.put(indexIter.nextLong(), dest);
+//                arrayCopy.copyTo(localCopy, dest, dataColumn.getData(), j++);
+//            }
+//            assert !destIter.hasNext();
         }
 
         return notifyUpdates(index, RangeSet.empty(), RangeSet.empty());
+    }
+
+    private long[] array(RangeSet rangeSet) {
+        return StreamSupport.longStream(Spliterators.spliterator(rangeSet.indexIterator(), Long.MAX_VALUE, 0), false).toArray();
+    }
+
+    public void shuffle(long[] destArray, long[] indexArray, int[] positions) {
+        for (int i = destArray.length - 1; i > 0; i--) {
+            int j = (int) (Math.random() * (i + 1));
+            long x = destArray[i];
+            destArray[i] = destArray[j];
+            destArray[j] = x;
+
+            x = indexArray[i];
+            indexArray[i] = indexArray[j];
+            indexArray[j] = x;
+
+            int pos = positions[i];
+            positions[i] = positions[j];
+            positions[j] = pos;
+        }
     }
 
     /**
@@ -175,7 +209,7 @@ public class SubscriptionTableData {
             // iterate backward and move them forward
             for (Long key : toMove.descendingSet()) {
                 long shiftedKey = key + offset;
-                Long oldValue = redirectedIndexes.put(shiftedKey, redirectedIndexes.remove(key));
+                Integer oldValue = redirectedIndexes.put(shiftedKey, redirectedIndexes.remove(key));
                 assert oldValue == null : shiftedKey + " already has a value, " + oldValue;
                 shifter.append(shiftedKey);
             }
@@ -193,7 +227,7 @@ public class SubscriptionTableData {
                 // iterate forward and move them backward
                 for (Long key : toMove) {
                     long shiftedKey = key + offset;
-                    Long oldValue = redirectedIndexes.put(shiftedKey, redirectedIndexes.remove(key));
+                    Integer oldValue = redirectedIndexes.put(shiftedKey, redirectedIndexes.remove(key));
                     assert oldValue == null : shiftedKey + " already has a value, " + oldValue;
                     shifter.append(shiftedKey);
                 }
@@ -219,8 +253,8 @@ public class SubscriptionTableData {
                 long origIndex = addedIndexes.nextLong();
                 assert delta.getIncludedAdditions().contains(origIndex);
                 assert destIter.hasNext();
-                long dest = destIter.nextLong();
-                Long old = redirectedIndexes.put(origIndex, dest);
+                int dest = (int) destIter.nextLong();
+                Integer old = redirectedIndexes.put(origIndex, dest);
                 assert old == null || old == dest;
                 arrayCopy.copyTo(data[addedColumn.getColumnIndex()], dest, addedColumn.getValues().getData(), j++);
             }
@@ -457,10 +491,12 @@ public class SubscriptionTableData {
     @TsName(namespace = "dh")
     public class SubscriptionRow implements TableData.Row {
         private final long index;
+        private final long storageIndex;
         public LongWrapper indexCached;
 
-        public SubscriptionRow(long index) {
+        public SubscriptionRow(long index, int storageIndex) {
             this.index = index;
+            this.storageIndex = storageIndex;
         }
 
         @Override
@@ -473,9 +509,8 @@ public class SubscriptionTableData {
 
         @Override
         public Any get(Column column) {
-            int redirectedIndex = (int) (long) redirectedIndexes.get(this.index);
             JsArrayLike<Object> columnData = Js.asArrayLike(data[column.getIndex()]);
-            return columnData.getAtAsAny(redirectedIndex);
+            return columnData.getAtAsAny((int) storageIndex);
         }
 
         @Override
@@ -545,8 +580,8 @@ public class SubscriptionTableData {
         public JsArray<SubscriptionRow> getRows() {
             if (allRows == null) {
                 allRows = new JsArray<>();
-                index.indexIterator().forEachRemaining((long index) -> {
-                    allRows.push(new SubscriptionRow(index));
+                redirectedIndexes.forEach((index, storage) -> {
+                    allRows.push(new SubscriptionRow(index, storage));
                 });
                 if (JsSettings.isDevMode()) {
                     assert allRows.length == index.size();
@@ -568,7 +603,7 @@ public class SubscriptionTableData {
          */
         @Override
         public SubscriptionRow get(long index) {
-            return new SubscriptionRow(index);
+            return new SubscriptionRow(index, redirectedIndexes.get(index));
         }
 
         @Override
