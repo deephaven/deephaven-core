@@ -15,9 +15,9 @@ This README deals with general development for either the Python or Groovy serve
 
 ```shell
 ./gradlew server-jetty-app:run # Python session (default)
-./gradlew server-jetty-app:run -Pdebug # Attach a debugger to the Python session
+./gradlew server-jetty-app:run -Pdebug # Attach a Java debugger to the Python session on port 5005
 ./gradlew server-jetty-app:run -Pgroovy # Groovy session
-./gradlew server-jetty-app:run -Pgroovy -Pdebug # Attach a debugger to the Groovy session
+./gradlew server-jetty-app:run -Pgroovy -Pdebug # Attach a Java debugger to the Groovy session on port 5005
 ```
 
 ## Development with infrequent changes

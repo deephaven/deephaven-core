@@ -69,14 +69,6 @@ pip install --force py/embedded-server/build/wheel/deephaven_server-<version>-py
 
 Start the Java server by following the instructions [here](../server/jetty-app/README.md).
 
-## Debugging
-
-To attach a remote debugger and set breakpoints, use the `-Pdebug` option.
-
-```sh
-./gradlew :py-server:assemble -Pdebug
-```
-
 ## Tests
 
 Python unit tests must be run from the root directory of the cloned repository.
