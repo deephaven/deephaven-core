@@ -381,6 +381,35 @@ public class TestParquetTools {
     }
 
     @Test
+    public void benchmarkBigArrays() {
+        ExecutionContext.getContext().getQueryLibrary().importClass(LongVectorDirect.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(LongVector.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(LongStream.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(IntVectorDirect.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(IntVector.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(IntStream.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(TestParquetTools.class);
+
+        final Table stuff = emptyTable(100)
+                .update(
+                        "Doobles = (LongVector)new LongVectorDirect(LongStream.range(0, 50_000).toArray())",
+                        // // "Woobles = TestParquetTools.generateDoubles(500_000)",
+                        "Goobles = (IntVector)new IntVectorDirect(IntStream.range(0, 2*50_000).toArray())"
+                // "Toobles = TestParquetTools.generateDoubles(2*500_000)",
+                // "Noobles = TestParquetTools.makeSillyStringArray(500_000)"
+                );
+
+        final File f2w = new File(testRoot, "bigArray.parquet");
+        final int NUM_RUNS = 100;
+        final long start1 = System.currentTimeMillis();
+        for (int i = 0; i < NUM_RUNS; i++) {
+            ParquetTools.writeTable(stuff, f2w);
+        }
+        final long end1 = System.currentTimeMillis();
+        System.out.println("Total execution time for big arrays: " + (end1 - start1) / NUM_RUNS + " msec");
+    }
+
+    @Test
     public void testColumnSwapping() {
         testWriteRead(emptyTable(10).update("X = ii * 2", "Y = ii * 2 + 1"),
                 t -> t.updateView("T = X", "X = Y", "Y = T"));

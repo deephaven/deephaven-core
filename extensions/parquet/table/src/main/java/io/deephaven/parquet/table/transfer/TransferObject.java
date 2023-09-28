@@ -68,14 +68,14 @@ public interface TransferObject<B> extends SafeCloseable {
         if (columnType.isArray()) {
             if (int.class.equals(componentType)) {
                 return new IntArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-//            else if (long.class.equals(componentType)) {
-//                return LongArrayTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
+            } else if (long.class.equals(componentType)) {
+                return new LongArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (double.class.equals(componentType)) {
-//                return DoubleArrayTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
+//                return new DoubleArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (float.class.equals(componentType)) {
-//                return FloatArrayTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
+//                return new FloatArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (Boolean.class.equals(componentType)) {
-//                return BooleanArrayTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
+//                return new BooleanArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (short.class.equals(componentType)) {
 //                return new ShortArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             } else if (char.class.equals(componentType)) {
@@ -96,14 +96,14 @@ public interface TransferObject<B> extends SafeCloseable {
         if (Vector.class.isAssignableFrom(columnType)) {
             if (int.class.equals(componentType)) {
                 return new IntVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-//            } else if (long.class.equals(componentType)) {
-//                return LongVectorTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
+            } else if (long.class.equals(componentType)) {
+                return new LongVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (double.class.equals(componentType)) {
-//                return DoubleVectorTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
+//                return new DoubleVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (float.class.equals(componentType)) {
-//                return FloatVectorTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
+//                return new FloatVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (Boolean.class.equals(componentType)) {
-//                return BooleanVectorTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
+//                return new BooleanVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (short.class.equals(componentType)) {
 //                return new ShortVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             } else if (char.class.equals(componentType)) {
