@@ -509,7 +509,6 @@ public class ParquetTableReadWriteTest {
         return arrayToVectorFormulas.isEmpty() ? table : table.updateView(arrayToVectorFormulas);
     }
 
-    // TODO Interleave nulls in between values
     @Test
     public void testArrayColumns() {
         ArrayList<String> columns =
@@ -559,10 +558,12 @@ public class ParquetTableReadWriteTest {
                         "someIntArrayColumn = new int[] {i}",
                         "someCharArrayColumn = new char[] {(char)i}",
                         "someBiColumn = new java.math.BigInteger[] {java.math.BigInteger.valueOf(ii)}",
+                        "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
                         "nullStringArrayColumn = new String[] {(String)null}",
                         "nullIntArrayColumn = new int[] {(int)null}",
                         "nullCharArrayColumn = new char[] {(char)null}",
-                        "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"));
+                        "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}",
+                        "nullTimeArrayColumn = new Instant[] {(Instant)null}"));
 
         final Table arrayTable = TableTools.emptyTable(10000).select(
                 Selectable.from(columns));

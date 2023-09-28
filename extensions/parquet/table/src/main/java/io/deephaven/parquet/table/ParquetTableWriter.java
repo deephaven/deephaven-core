@@ -343,31 +343,19 @@ public class ParquetTableWriter {
             @NotNull final RowSet tableRowSet,
             @NotNull final RowGroupWriter rowGroupWriter,
             @NotNull final String name,
-            @NotNull ColumnSource<DATA_TYPE> columnSourceIn,
+            @NotNull ColumnSource<DATA_TYPE> columnSource,
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
             @NotNull final ParquetInstructions writeInstructions) throws IllegalAccessException, IOException {
-        Class<DATA_TYPE> columnType = columnSourceIn.getType();
-        if (columnType == Instant.class) {
-            // noinspection unchecked
-            columnSourceIn = (ColumnSource<DATA_TYPE>) ReinterpretUtils.instantToLongSource(
-                    (ColumnSource<Instant>) columnSourceIn);
-            columnType = columnSourceIn.getType();
-        } else if (columnType == Boolean.class) {
-            // noinspection unchecked
-            columnSourceIn = (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource(
-                    (ColumnSource<Boolean>) columnSourceIn);
-        }
-
         try (final ColumnWriter columnWriter = rowGroupWriter.addColumn(
                 writeInstructions.getParquetColumnNameFromColumnNameOrDefault(name))) {
             boolean usedDictionary = false;
             if (String.class.equals(columnDefinition.getDataType())
                     || String.class.equals(columnDefinition.getComponentType())) {
                 usedDictionary = tryEncodeDictionary(writeInstructions, tableRowSet, columnDefinition, columnWriter,
-                        columnSourceIn);
+                        columnSource);
             }
             if (!usedDictionary) {
-                encodePlain(writeInstructions, tableRowSet, columnDefinition, columnType, columnWriter, columnSourceIn,
+                encodePlain(writeInstructions, tableRowSet, columnDefinition, columnWriter, columnSource,
                         computedCache);
             }
         }
@@ -390,7 +378,8 @@ public class ParquetTableWriter {
         final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
         final int maxKeys = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionaryKeys();
         final int maxDictSize = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionarySize();
-        final int NULL_POS = QueryConstants.NULL_INT; // TODO Explain why
+        // We encode dictionary positions as integers, therefore for a null string, we use NULL_INT as the position
+        final int NULL_POS = QueryConstants.NULL_INT;
         final Statistics<?> statistics = columnWriter.getStats();
         final List<IntBuffer> pageBuffers = new ArrayList<>();
         final List<IntBuffer> lengthsBuffers = new ArrayList<>();
@@ -464,15 +453,13 @@ public class ParquetTableWriter {
     private static <DATA_TYPE> void encodePlain(@NotNull final ParquetInstructions writeInstructions,
             @NotNull final RowSet tableRowSet,
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
-            @NotNull final Class<DATA_TYPE> columnType,
             @NotNull final ColumnWriter columnWriter,
-            @NotNull final ColumnSource<DATA_TYPE> columnSourceIn,
+            @NotNull final ColumnSource<DATA_TYPE> columnSource,
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) throws IOException {
         try (final TransferObject<?> transferObject = TransferObject.create(computedCache,
                 tableRowSet,
-                columnSourceIn,
+                columnSource,
                 columnDefinition,
-                columnType,
                 writeInstructions)) {
             final Statistics<?> statistics = columnWriter.getStats();
             boolean writeVectorPages = (transferObject instanceof ArrayAndVectorTransfer);

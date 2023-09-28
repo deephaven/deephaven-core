@@ -7,6 +7,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.CodecLookup;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.parquet.table.*;
 import io.deephaven.util.SafeCloseable;
@@ -33,18 +34,26 @@ public interface TransferObject<B> extends SafeCloseable {
             @NotNull final RowSet tableRowSet,
             @NotNull final ColumnSource<DATA_TYPE> columnSource,
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
-            @NotNull final Class<DATA_TYPE> columnType,
             @NotNull final ParquetInstructions instructions) {
+        Class<DATA_TYPE> columnType = columnSource.getType();
         if (int.class.equals(columnType)) {
             return IntTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (long.class.equals(columnType)) {
             return LongTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
+        } else if (Instant.class.equals(columnType)) {
+            // noinspection unchecked
+            final ColumnSource<DATA_TYPE> longColumnSource =
+                    (ColumnSource<DATA_TYPE>) ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) columnSource);
+            return LongTransfer.create(longColumnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (double.class.equals(columnType)) {
             return DoubleTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (float.class.equals(columnType)) {
             return FloatTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (Boolean.class.equals(columnType)) {
-            return BooleanTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
+            // noinspection unchecked
+            final ColumnSource<DATA_TYPE> byteColumnSource =
+                    (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource((ColumnSource<Boolean>) columnSource);
+            return BooleanTransfer.create(byteColumnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (short.class.equals(columnType)) {
             return new ShortTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (char.class.equals(columnType)) {
@@ -55,9 +64,8 @@ public interface TransferObject<B> extends SafeCloseable {
             return new StringTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
 
-        @Nullable final Class<?> dataType = columnDefinition.getDataType();
         @Nullable final Class<?> componentType = columnDefinition.getComponentType();
-        if (dataType.isArray()) {
+        if (columnType.isArray()) {
             if (int.class.equals(componentType)) {
                 return new IntArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            else if (long.class.equals(componentType)) {
@@ -85,7 +93,7 @@ public interface TransferObject<B> extends SafeCloseable {
             // else if (explicit codec provided)
             // else if (big decimal)
         }
-        if (Vector.class.isAssignableFrom(dataType)) {
+        if (Vector.class.isAssignableFrom(columnType)) {
             if (int.class.equals(componentType)) {
                 return new IntVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (long.class.equals(componentType)) {

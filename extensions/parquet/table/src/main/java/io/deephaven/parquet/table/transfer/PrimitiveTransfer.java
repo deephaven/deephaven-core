@@ -46,7 +46,7 @@ abstract class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buff
             return 0;
         }
         // Fetch one page worth of data from the column source
-        final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength((long) maxValuesPerPage);
+        final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(maxValuesPerPage);
         columnSource.fillChunk(context, chunk, rs);
         // Assuming that buffer and chunk are backed by the same array.
         buffer.position(0);
