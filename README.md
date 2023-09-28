@@ -12,6 +12,12 @@ to that data, and build rich queries, dashboards, and representations with the r
 Deephaven Community Core is the open version of [Deephaven Enterprise](https://deephaven.io),
 which functions as the data backbone for prominent hedge funds, banks, and financial exchanges.
 
+- ![Build CI](https://github.com/deephaven/deephaven-core/actions/workflows/build-ci.yml/badge.svg?branch=main)
+- ![Quick CI](https://github.com/deephaven/deephaven-core/actions/workflows/quick-ci.yml/badge.svg?branch=main)
+- ![Docs CI](https://github.com/deephaven/deephaven-core/actions/workflows/docs-ci.yml/badge.svg?branch=main)
+- ![Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/check-ci.yml/badge.svg?branch=main)
+- ![Nightly Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-check-ci.yml/badge.svg?branch=main)
+
 ## Supported Languages
 
 | Language      | Server Application | Client Application |
@@ -44,16 +50,20 @@ Deephaven's client APIs use [gRPC](https://grpc.io/), [protobuf](https://github.
 
 ## Run the Deephaven server
 
+The Deephaven server can be instantiated [from Docker](#from-docker), [from Python](#from-python), or [from source code](#built-from-source).
+
 ### From Docker
 
 This is the easiest way to get started with Deephaven. For full instructions, see our [quickstart for Docker](https://deephaven.io/core/docs/tutorials/quickstart/).
 
-TL;DR:
+#### Python
 
 ```sh
 # Python
 docker run --rm --name deephaven -p 10000:10000 ghcr.io/deephaven/server:latest
 ```
+
+#### Groovy
 
 ```sh
 # Groovy
@@ -62,9 +72,7 @@ docker run --rm name deephaven -p 10000:10000 ghcr.io/deephaven/server-slim:late
 
 ### From Python
 
-Users who wish to avoid using Docker will likely want to use [pip-installed Deephaven](https://deephaven.io/core/docs/tutorials/quickstart-pip/).
-
-TL;DR
+Users who wish to use Python but not Docker should use [pip-installed Deephaven](https://deephaven.io/core/docs/tutorials/quickstart-pip/).
 
 ```sh
 pip install deephaven-server deephaven-ipywidgets
@@ -77,31 +85,13 @@ from deephaven_server import Server
 s = Server(port=10000, jvm_args=["-Xmx4g"]).start()
 ```
 
+The input arguments to `Server` specify to connect to the Deephaven server on port `10000` and to allocate 4GB of memory to the JVM.
+
 ### Built from source
 
-Users who wish to modify source code and contribute to the project should build Deephaven from source. For full instructions, see [how to build Deephaven from source](https://deephaven.io/core/docs/how-to-guides/launch-build/).
+Users who wish to modify source code and contribute to the project should build Deephaven from source. For full instructions, see [How to build Deephaven from source](https://deephaven.io/core/docs/how-to-guides/launch-build/).
 
-TL;DR for Python:
-
-```sh
-git clone https://github.com/deephaven/deephaven-core.git
-cd deephaven-core
-python -m venv /tmp/my-dh-venv
-source /tmp/my-dh-venv/bin/activate
-./gradlew py-server:assemble
-pip install "py/server/build/wheel/deephaven_core-<version>-py3-non-any.whl[autocomplete]
-./gradlew server-jetty-app:run
-```
-
-TL;DR for Groovy:
-
-```sh
-git clone https://github.com/deephaven/deephaven-core.git
-cd deephaven-core
-./gradlew server-jetty-app:run -Pgroovy
-```
-
-### Required dependencies
+#### Required dependencies
 
 Building and running Deephaven requires a few software packages.
 
@@ -110,7 +100,7 @@ Building and running Deephaven requires a few software packages.
 | git            | ^2.25.0                       | All          |
 | java           | >=11, <20                     | All          |
 | docker         | ^20.10.8                      | All          |
-| docker-compose | ^1.29.0                       | All          |
+| docker compose | ^2                            | All          |
 | Windows        | 10 (OS build 20262 or higher) | Only Windows |
 | WSL            | 2                             | Only Windows |
 
@@ -120,7 +110,7 @@ You can check if these packages are installed and functioning by running:
 git version
 java -version
 docker version
-docker-compose version
+docker compose version
 docker run hello-world
 ```
 
@@ -133,9 +123,60 @@ On Windows, all commands must be run inside a WSL 2 terminal.
 
 :::
 
-### Authentication
+#### Python
 
-Deephaven, by default, uses pre-shared key authentication to authenticate against unauthorized access. For more information on supported authentication methods:
+A Python virtual environment is highly recommended for building Deephaven from source. Additionally, the wheel is installed with [gradle](https://gradle.org/) and built with [pip](https://pypi.org/project/pip/). If you don't want autocomplete, remove `[autocomplete]` from the pip install command below.
+
+```sh
+git clone https://github.com/deephaven/deephaven-core.git
+cd deephaven-core
+python -m venv /tmp/my-dh-venv
+source /tmp/my-dh-venv/bin/activate
+./gradlew py-server:assemble
+pip install "py/server/build/wheel/deephaven_core-<version>-py3-non-any.whl[autocomplete]
+./gradlew server-jetty-app:run
+```
+
+#### Groovy
+
+The Groovy server is built with [gradle](https://gradle.org/). `-Pgroovy` builds the Groovy server instead of Python.
+
+```sh
+git clone https://github.com/deephaven/deephaven-core.git
+cd deephaven-core
+./gradlew server-jetty-app:run -Pgroovy
+```
+
+## Get the authentication key
+
+Deephaven, by default, uses pre-shared key authentication to authenticate against unauthorized access. 
+
+### Deephaven run from Docker
+
+The pre-shared key is printed to the Docker logs when the server is started. Set your own key with the configuration parameter `-Dauthentication.psk=<YourKey>`. For users running Deephaven via Docker, this is set in the `environment` section of a `docker-compose.yml` file, or as a space-separated configuration parameter at the end of the [`docker run` command](#from-docker).
+
+To find the pre-shared key in the Docker logs:
+
+```sh
+docker compose logs -f | grep "access through pre-shared key"
+```
+
+### Deephaven run from Python
+
+When a Deephaven server is started from Python, executing Deephaven queries from Python does _not_ require the key. However, if you wish to connect to the IDE via your web browser, you will need the pre-shared key. If you don't set the key, you won't be able to access it, since Deephaven servers started from Python don't generate Docker logs. To set the pre-shared key, add `"-Dauthentication.psk=<YourKey>"` as an additional JVM parameter to the server. The following example sets the key to `MyPreSharedKey`:
+
+```python
+from deephaven_server import Server
+s = Server(port=10000, jvm_args=["-Xmx4g", "-Dauthentication.psk=MyPreSharedKey"]).start()
+```
+
+### Client APIs
+
+Clients that attempt to connect to a server using pre-shared key authentication will need to supply the key to complete the connection.
+
+### Documentation
+
+For more information on supported authentication methods:
 
 - [How to configure and use pre-shared key authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-psk/)
 - [How to configure and use anonymous authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-anon/)
@@ -143,23 +184,17 @@ Deephaven, by default, uses pre-shared key authentication to authenticate agains
 - [How to configure and use mTLS authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-mtls/)
 - [How to configure and use Keycload/OpenID authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-keycloak/)
 
-If using a randomly generated pre-shared key, you can find the key in the server logs:
+## Connect to the server
 
-```bash
-docker compose logs -f | grep "access through pre-shared key"
-```
-
-### Connect to the server
-
-Deephaven is run from a web browser, and can be connected to via `http://localhost:10000/ide`. If using authentication, enter credentials to gain access to the IDE.
+The Deephaven UI is accessible from a web browser. For a server running locally on port 10000, it can be connected to via `http://localhost:10000/ide`. For a server running remotely on port 10000, it can be connected to via `<hostname>:10000/ide`. If using authentication, enter credentials to gain access to the IDE.
 
 ## First query
 
 From the Deephaven IDE, you can perform your first query.
 
-This Python script creates two small tables: one for employees and one for departments.
-It joins the two tables on the DeptID column to show the name of the department
-where each employee works.
+The scripts below create two small tables: one for employees and one for departments. They are joined on the `DeptID` column to show the name of the department where each employee works.
+
+### Python
 
 ```python
 from deephaven import new_table
@@ -177,6 +212,26 @@ right = new_table([
         string_col("DeptName", ["Sales", "Engineering", "Clerical", "Marketing"]),
         string_col("Telephone", ["(646) 555-0134", "(646) 555-0178", "(646) 555-0159", "(212) 555-0111"])
     ])
+
+t = left.join(right, "DeptID", "DeptName, DeptTelephone=Telephone")
+```
+
+![alt_text](docs/images/ide_first_query.png "Deephaven IDE First Query")
+
+### Groovy
+
+```groovy
+left = newTable(
+        string_col("LastName", "Rafferty", "Jones", "Steiner", "Robins", "Smith", "Rogers"),
+        int_col("DeptID", 31, 33, 33, 34, 34, NULL_INT),
+        string_col("Telephone", "(347) 555-0123", "(917) 555-0198", "(212) 555-0167", "(952) 555-0110", null, null)
+    )
+
+right = newTable(
+        intCol("DeptID", 31, 33, 34, 35),
+        stringCol("DeptName", "Sales", "Engineering", "Clerical", "Marketing"),
+        stringCol("Telephone", "(646) 555-0134", "(646) 555-0178", "(646) 555-0159", "(212) 555-0111")
+    )
 
 t = left.join(right, "DeptID", "DeptName, DeptTelephone=Telephone")
 ```
