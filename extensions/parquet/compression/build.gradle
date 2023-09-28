@@ -6,7 +6,6 @@ plugins {
 dependencies {
     api project(':Util')
 
-    // TODO(deephaven-core#3148): LZ4_RAW parquet support
     Classpaths.inheritParquetHadoop(project)
     Classpaths.inheritParquetHadoopConfiguration(project)
 

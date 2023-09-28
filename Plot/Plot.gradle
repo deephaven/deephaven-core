@@ -17,7 +17,7 @@ dependencies {
     implementation project(':engine-tuple')
     implementation project(':log-factory')
 
-    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
+    Classpaths.inheritGroovy(project, 'groovy', 'api')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
     Classpaths.inheritAutoService(project)
 
