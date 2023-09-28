@@ -20,7 +20,7 @@ OperationControl <- R6Class("OperationControl",
 #' Creates an OperationControl that controls behavior on special values in `uby_em*` operations. The arguments `on_null`
 #' and `on_nan` can take the following values:
 #'   'poison': Allow bad data to poison the result. This is only valid for use with NaN.
-#'   'reset': Reset the state for the bucket to None when invalid data is encountered.
+#'   'reset': Reset the state for the bucket to NULL when invalid data is encountered.
 #'   'skip': Skip and do not process the invalid data without changing state.
 #'   'throw': Throw an exception and abort processing when bad data is encountered.
 #' @param on_null Defines how an UpdateByOp handles null values it encounters. 'skip' is the default.
