@@ -34,7 +34,9 @@ class BaseTestCase(unittest.TestCase):
         cls._execution_context.close()
 
     def setUp(self) -> None:
-        self.opened_scope = liveness_scope().open()
+        # Note that this is technically not a supported way to use liveness_scope, but we are deliberately leaving
+        # the scope open across separate method calls, which we would normally consider unsafe.
+        self.opened_scope = liveness_scope()
 
     def tearDown(self) -> None:
         with self.opened_scope:

@@ -3,7 +3,54 @@
 #
 
 """This module gives the users a finer degree of control over when to clean up unreferenced nodes in the query update
-graph instead of solely relying on garbage collection."""
+graph instead of solely relying on garbage collection.
+
+Examples:
+
+    Use the liveness_scope() function to produce a simple liveness scope that will be used only within a `with` expression
+    or as a decorator.
+
+    .. code-block:: python
+
+        with liveness_scope() as scope:
+            ticking_table = some_ticking_source()
+            table = ticking_table.snapshot().join(table=other_ticking_table, on=...)
+            scope.preserve(table)
+        return table
+
+    .. code-block:: python
+
+        @liveness_scope
+        def get_values():
+            ticking_table = some_ticking_source().last_by("Sym")
+            return dhnp.to_numpy(ticking_table)
+
+
+    Use the LivenessScope type for greater control, allowing a scope to be opened more than once, and to release the
+    resources that it manages when the scope will no longer be used.
+
+
+    .. code-block:: python
+
+        def make_table_and_scope(a: int):
+            scope = LivenessScope()
+            with scope.open():
+                ticking_table = some_ticking_source().where(f"A={a}")
+                return some_ticking_table, scope
+
+        t1, s1 = make_table_and_scope(1)
+        # .. wait for a while
+        s1.release()
+        t2, s2 = make_table_and_scope(2)
+        # etc
+
+    In both cases, the scope object has a few methods that can be used to more directly manage liveness referents:
+     * `scope.preserve(obj)` will preserve the given instance in the next scope outside the specified scope instance
+     * `scope.manange(obj)` will directly manage the given instance in the specified scope. Take care not to
+       double-manage objects when using in conjunction with a `with` block or function decorator.
+     * `scope.unmanage(obj)` will stop managing the given instance. This can be used regardless of how the instance
+       was managed to begin with.
+"""
 import contextlib
 
 import jpy
@@ -38,28 +85,16 @@ def _unwrap_to_liveness_referent(referent: Union[JObjectWrapper, jpy.JType]) -> 
     raise DHError("Provided referent isn't a LivenessReferent or a JObjectWrapper around one")
 
 
-class LivenessScope(JObjectWrapper):
-    """A LivenessScope automatically manages reference counting of tables and other query resources that are
-    created in it. It implements the context manager protocol and thus can be used in the with statement.
-
-    Note, LivenessScope should not be instantiated directly but rather through the 'liveness_scope' function.
+class _BaseLivenessScope(JObjectWrapper):
+    """
+    Internal base type for Java LivenessScope types in python.
     """
     j_object_type = _JLivenessScope
 
-    def __init__(self, j_scope: jpy.JType):
-        self.j_scope = j_scope
+    def __init__(self):
+        self.j_scope = _JLivenessScope()
 
-    def __enter__(self):
-        warn('Instead of passing liveness_scope() to with, call open() on it first',
-             DeprecationWarning, stacklevel=2)
-        _push(self.j_scope)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        _pop(self.j_scope)
-        self.release()
-
-    def release(self) -> None:
+    def _release(self) -> None:
         """Closes the LivenessScope and releases all the query graph resources.
 
         Raises:
@@ -70,41 +105,6 @@ class LivenessScope(JObjectWrapper):
             self.j_scope = None
         except Exception as e:
             raise DHError(e, message="failed to close the LivenessScope.")
-
-    def close(self):
-        """Closes the LivenessScope and releases all the query graph resources.
-
-        Raises:
-            DHError if this instance wasn't on the top of the stack, or this instance was released too many times
-        """
-        warn('This function is deprecated, prefer release(). Use cases that rely on this are likely to now fail.',
-             DeprecationWarning, stacklevel=2)
-        _pop(self.j_scope)
-        self.release()
-
-    @contextlib.contextmanager
-    def open(self, release_after_block: bool = True) -> "LivenessScope":
-        """
-        Uses this scope for the duration of the `with` block. The scope defaults to being closed
-        when the block ends, disable by passing release_after_block=False
-
-        Args:
-            release_after_block (bool): True to release the scope when the block ends, False to leave the
-            scope open, allowing it to be reused and keeping collected referents live.  Default is True.
-
-        Returns: None, to allow changes in the future.
-        """
-        _push(self.j_scope)
-        try:
-            yield self
-        finally:
-            _pop(self.j_scope)
-            if release_after_block:
-                self.release()
-
-    @property
-    def j_object(self) -> jpy.JType:
-        return self.j_scope
 
     def preserve(self, referent: Union[JObjectWrapper, jpy.JType]) -> None:
         """Preserves a query graph node (usually a Table) to keep it live for the outer scope.
@@ -171,12 +171,55 @@ class LivenessScope(JObjectWrapper):
         except Exception as e:
             raise DHError(e, message="failed to unmanage object")
 
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_scope
+
+
+class SimpleLivenessScope(_BaseLivenessScope):
+    """
+    A SimpleLivenessScope automatically managed reference counting of tables and other query resources that
+    are created in it. Instances are created through calling `liveness_scope()` in a `with` block or as a
+    function decorator, and will be disposed of automatically.
+    """
+
+
+class LivenessScope(_BaseLivenessScope):
+    """A LivenessScope automatically manages reference counting of tables and other query resources that are
+    created in it. Any created instances must have `release()` called on them to correctly free resources
+    that have been managed.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def release(self) -> None:
+        """Closes the LivenessScope and releases all the managed resources.
+
+        Raises:
+            DHError if this instance has been released too many times
+        """
+        self._release()
+
+    @contextlib.contextmanager
+    def open(self) -> None:
+        """
+        Uses this scope for the duration of a `with` block, automatically managing all resources created in the block.
+
+        Returns: None, to allow changes in the future.
+        """
+        _push(self.j_scope)
+        try:
+            yield None
+        finally:
+            _pop(self.j_scope)
+
 
 def is_liveness_referent(referent: Union[JObjectWrapper, jpy.JType]) -> bool:
     """
     Returns True if the provided object is a LivenessReferent, and so can be managed by a LivenessScope.
     Args:
-        referent: the object that maybe a LivenessReferent
+        referent: the object that may be a LivenessReferent
 
     Returns:
         True if the object is a LivenessReferent, False otherwise.
@@ -188,11 +231,21 @@ def is_liveness_referent(referent: Union[JObjectWrapper, jpy.JType]) -> bool:
     return False
 
 
-def liveness_scope() -> LivenessScope:
-    """Creates a LivenessScope for running a block of code.
+@contextlib.contextmanager
+def liveness_scope() -> SimpleLivenessScope:
+    """Creates and opens a LivenessScope for running a block of code. Use
+    this function to wrap a block of code using a `with` statement.
 
-    Returns:
-        a LivenessScope
+    For the duration of the `with` block, the liveness scope will be open
+    and any liveness referents created will be manged by it automatically.
+
+    Yields:
+        a SimpleLivenessScope
     """
-    j_scope = _JLivenessScope()
-    return LivenessScope(j_scope=j_scope)
+    scope = SimpleLivenessScope()
+    _push(scope.j_scope)
+    try:
+        yield scope
+    finally:
+        _pop(scope.j_scope)
+        scope._release()
