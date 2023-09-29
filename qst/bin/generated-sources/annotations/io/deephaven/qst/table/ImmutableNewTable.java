@@ -18,35 +18,21 @@ import org.immutables.value.Generated;
 @Generated(from = "NewTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-<<<<<<< HEAD
-final class ImmutableNewTable extends NewTable {
-=======
 public final class ImmutableNewTable extends NewTable {
->>>>>>> main
   private transient final int depth;
   private final Map<String, Array<?>> columns;
   private final int size;
 
-<<<<<<< HEAD
-  private ImmutableNewTable(ImmutableNewTable.Builder builder) {
-    this.columns = createUnmodifiableMap(false, false, builder.columns);
-    this.size = builder.size;
-=======
   private ImmutableNewTable(Map<String, Array<?>> columns, int size) {
     this.columns = columns;
     this.size = size;
->>>>>>> main
     this.depth = super.depth();
   }
 
   /**
-<<<<<<< HEAD
-   * @return The computed-at-construction value of the {@code depth} attribute
-=======
    * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
    * depth of zero.
    * @return the depth
->>>>>>> main
    */
   @Override
   public int depth() {
@@ -70,8 +56,6 @@ public final class ImmutableNewTable extends NewTable {
   }
 
   /**
-<<<<<<< HEAD
-=======
    * Copy the current immutable object by replacing the {@link NewTable#columns() columns} map with the specified map.
    * Nulls are not permitted as keys or values.
    * A shallow reference equality check is used to prevent copying of the same value by returning {@code this}.
@@ -96,7 +80,6 @@ public final class ImmutableNewTable extends NewTable {
   }
 
   /**
->>>>>>> main
    * This instance is equal to all instances of {@code ImmutableNewTable} that have equal attribute values.
    * @return {@code true} if {@code this} is equal to {@code another} instance
    */
@@ -120,10 +103,6 @@ public final class ImmutableNewTable extends NewTable {
   @Override
   public int hashCode() {
     int h = 5381;
-<<<<<<< HEAD
-    h += (h << 5) + getClass().hashCode();
-=======
->>>>>>> main
     h += (h << 5) + depth;
     h += (h << 5) + columns.hashCode();
     h += (h << 5) + size;
@@ -137,8 +116,6 @@ public final class ImmutableNewTable extends NewTable {
   }
 
   /**
-<<<<<<< HEAD
-=======
    * Creates an immutable copy of a {@link NewTable} value.
    * Uses accessors to get values to initialize the new immutable instance.
    * If an instance is already immutable, it is returned as is.
@@ -155,7 +132,6 @@ public final class ImmutableNewTable extends NewTable {
   }
 
   /**
->>>>>>> main
    * Creates a builder for {@link ImmutableNewTable ImmutableNewTable}.
    * <pre>
    * ImmutableNewTable.builder()
@@ -181,19 +157,13 @@ public final class ImmutableNewTable extends NewTable {
     private static final long INIT_BIT_SIZE = 0x1L;
     private long initBits = 0x1L;
 
-<<<<<<< HEAD
-    private final Map<String, Array<?>> columns = new LinkedHashMap<String, Array<?>>();
-=======
     private Map<String, Array<?>> columns = new LinkedHashMap<String, Array<?>>();
->>>>>>> main
     private int size;
 
     private Builder() {
     }
 
     /**
-<<<<<<< HEAD
-=======
      * Fill a builder with attribute values from the provided {@code NewTable} instance.
      * Regular attribute values will be replaced with those from the given instance.
      * Absent optional values will not replace present values.
@@ -209,7 +179,6 @@ public final class ImmutableNewTable extends NewTable {
     }
 
     /**
->>>>>>> main
      * Put one entry to the {@link NewTable#columns() columns} map.
      * @param key The key in the columns map
      * @param value The associated value in the columns map
@@ -237,8 +206,6 @@ public final class ImmutableNewTable extends NewTable {
     }
 
     /**
-<<<<<<< HEAD
-=======
      * Sets or replaces all mappings from the specified map as entries for the {@link NewTable#columns() columns} map. Nulls are not permitted
      * @param entries The entries that will be added to the columns map
      * @return {@code this} builder for use in a chained invocation
@@ -249,7 +216,6 @@ public final class ImmutableNewTable extends NewTable {
     }
 
     /**
->>>>>>> main
      * Put all mappings from the specified map as entries to {@link NewTable#columns() columns} map. Nulls are not permitted
      * @param entries The entries that will be added to the columns map
      * @return {@code this} builder for use in a chained invocation
@@ -271,10 +237,6 @@ public final class ImmutableNewTable extends NewTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder size(int size) {
-<<<<<<< HEAD
-      checkNotIsSet(sizeIsSet(), "size");
-=======
->>>>>>> main
       this.size = size;
       initBits &= ~INIT_BIT_SIZE;
       return this;
@@ -286,38 +248,15 @@ public final class ImmutableNewTable extends NewTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableNewTable build() {
-<<<<<<< HEAD
-      checkRequiredAttributes();
-      return ImmutableNewTable.validate(new ImmutableNewTable(this));
-    }
-
-    private boolean sizeIsSet() {
-      return (initBits & INIT_BIT_SIZE) == 0;
-    }
-
-    private static void checkNotIsSet(boolean isSet, String name) {
-      if (isSet) throw new IllegalStateException("Builder of NewTable is strict, attribute is already set: ".concat(name));
-    }
-
-    private void checkRequiredAttributes() {
-      if (initBits != 0) {
-        throw new IllegalStateException(formatRequiredAttributesMessage());
-      }
-=======
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
       return ImmutableNewTable.validate(new ImmutableNewTable(createUnmodifiableMap(false, false, columns), size));
->>>>>>> main
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-<<<<<<< HEAD
-      if (!sizeIsSet()) attributes.add("size");
-=======
       if ((initBits & INIT_BIT_SIZE) != 0) attributes.add("size");
->>>>>>> main
       return "Cannot build NewTable, some of required attributes are not set " + attributes;
     }
   }

@@ -23,16 +23,12 @@ import org.immutables.value.Generated;
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
 @Immutable
 public final class ImmutableRollingWAvgSpec extends RollingWAvgSpec {
-<<<<<<< HEAD
   private final WindowScale revWindowScale;
   private final WindowScale fwdWindowScale;
-=======
->>>>>>> main
   private final String weightCol;
 
   private ImmutableRollingWAvgSpec(String weightCol) {
     this.weightCol = Objects.requireNonNull(weightCol, "weightCol");
-<<<<<<< HEAD
     this.revWindowScale = initShim.revWindowScale();
     this.fwdWindowScale = initShim.fwdWindowScale();
     this.initShim = null;
@@ -132,12 +128,6 @@ public final class ImmutableRollingWAvgSpec extends RollingWAvgSpec {
     return shim != null
         ? shim.fwdWindowScale()
         : this.fwdWindowScale;
-=======
-  }
-
-  private ImmutableRollingWAvgSpec(ImmutableRollingWAvgSpec original, String weightCol) {
-    this.weightCol = weightCol;
->>>>>>> main
   }
 
   /**
@@ -149,7 +139,6 @@ public final class ImmutableRollingWAvgSpec extends RollingWAvgSpec {
   }
 
   /**
-<<<<<<< HEAD
    * Copy the current immutable object by setting a value for the {@link RollingWAvgSpec#revWindowScale() revWindowScale} attribute.
    * A shallow reference equality check is used to prevent copying of the same value by returning {@code this}.
    * @param value A new value for revWindowScale
@@ -174,8 +163,6 @@ public final class ImmutableRollingWAvgSpec extends RollingWAvgSpec {
   }
 
   /**
-=======
->>>>>>> main
    * Copy the current immutable object by setting a value for the {@link RollingWAvgSpec#weightCol() weightCol} attribute.
    * An equals check used to prevent copying of the same value by returning {@code this}.
    * @param value A new value for weightCol
@@ -184,11 +171,7 @@ public final class ImmutableRollingWAvgSpec extends RollingWAvgSpec {
   public final ImmutableRollingWAvgSpec withWeightCol(String value) {
     String newValue = Objects.requireNonNull(value, "weightCol");
     if (this.weightCol.equals(newValue)) return this;
-<<<<<<< HEAD
     return validate(new ImmutableRollingWAvgSpec(this.revWindowScale, this.fwdWindowScale, newValue));
-=======
-    return new ImmutableRollingWAvgSpec(this, newValue);
->>>>>>> main
   }
 
   /**
@@ -203,7 +186,6 @@ public final class ImmutableRollingWAvgSpec extends RollingWAvgSpec {
   }
 
   private boolean equalTo(int synthetic, ImmutableRollingWAvgSpec another) {
-<<<<<<< HEAD
     return revWindowScale.equals(another.revWindowScale)
         && fwdWindowScale.equals(another.fwdWindowScale)
         && weightCol.equals(another.weightCol);
@@ -211,23 +193,13 @@ public final class ImmutableRollingWAvgSpec extends RollingWAvgSpec {
 
   /**
    * Computes a hash code from attributes: {@code revWindowScale}, {@code fwdWindowScale}, {@code weightCol}.
-=======
-    return weightCol.equals(another.weightCol);
-  }
-
-  /**
-   * Computes a hash code from attributes: {@code weightCol}.
->>>>>>> main
    * @return hashCode value
    */
   @Override
   public int hashCode() {
     int h = 5381;
-<<<<<<< HEAD
     h += (h << 5) + revWindowScale.hashCode();
     h += (h << 5) + fwdWindowScale.hashCode();
-=======
->>>>>>> main
     h += (h << 5) + weightCol.hashCode();
     return h;
   }
@@ -239,13 +211,9 @@ public final class ImmutableRollingWAvgSpec extends RollingWAvgSpec {
   @Override
   public String toString() {
     return "RollingWAvgSpec{"
-<<<<<<< HEAD
         + "revWindowScale=" + revWindowScale
         + ", fwdWindowScale=" + fwdWindowScale
         + ", weightCol=" + weightCol
-=======
-        + "weightCol=" + weightCol
->>>>>>> main
         + "}";
   }
 
@@ -255,16 +223,12 @@ public final class ImmutableRollingWAvgSpec extends RollingWAvgSpec {
    * @return An immutable RollingWAvgSpec instance
    */
   public static ImmutableRollingWAvgSpec of(String weightCol) {
-<<<<<<< HEAD
     return validate(new ImmutableRollingWAvgSpec(weightCol));
   }
 
   private static ImmutableRollingWAvgSpec validate(ImmutableRollingWAvgSpec instance) {
     instance.checkWindowSizes();
     return instance;
-=======
-    return new ImmutableRollingWAvgSpec(weightCol);
->>>>>>> main
   }
 
   /**
@@ -287,11 +251,8 @@ public final class ImmutableRollingWAvgSpec extends RollingWAvgSpec {
    * Creates a builder for {@link ImmutableRollingWAvgSpec ImmutableRollingWAvgSpec}.
    * <pre>
    * ImmutableRollingWAvgSpec.builder()
-<<<<<<< HEAD
    *    .revWindowScale(io.deephaven.api.updateby.spec.WindowScale) // optional {@link RollingWAvgSpec#revWindowScale() revWindowScale}
    *    .fwdWindowScale(io.deephaven.api.updateby.spec.WindowScale) // optional {@link RollingWAvgSpec#fwdWindowScale() fwdWindowScale}
-=======
->>>>>>> main
    *    .weightCol(String) // required {@link RollingWAvgSpec#weightCol() weightCol}
    *    .build();
    * </pre>
@@ -314,30 +275,20 @@ public final class ImmutableRollingWAvgSpec extends RollingWAvgSpec {
     private static final long INIT_BIT_WEIGHT_COL = 0x1L;
     private long initBits = 0x1L;
 
-<<<<<<< HEAD
     private @Nullable WindowScale revWindowScale;
     private @Nullable WindowScale fwdWindowScale;
-=======
->>>>>>> main
     private @Nullable String weightCol;
 
     private Builder() {
     }
 
     /**
-<<<<<<< HEAD
      * Fill a builder with attribute values from the provided {@code io.deephaven.api.updateby.spec.RollingWAvgSpec} instance.
-=======
-     * Fill a builder with attribute values from the provided {@code RollingWAvgSpec} instance.
-     * Regular attribute values will be replaced with those from the given instance.
-     * Absent optional values will not replace present values.
->>>>>>> main
      * @param instance The instance from which to copy values
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder from(RollingWAvgSpec instance) {
       Objects.requireNonNull(instance, "instance");
-<<<<<<< HEAD
       from((Object) instance);
       return this;
     }
@@ -399,9 +350,6 @@ public final class ImmutableRollingWAvgSpec extends RollingWAvgSpec {
      */
     public final Builder fwdWindowScale(WindowScale fwdWindowScale) {
       this.fwdWindowScale = Objects.requireNonNull(fwdWindowScale, "fwdWindowScale");
-=======
-      weightCol(instance.weightCol());
->>>>>>> main
       return this;
     }
 
@@ -425,11 +373,7 @@ public final class ImmutableRollingWAvgSpec extends RollingWAvgSpec {
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
-<<<<<<< HEAD
       return ImmutableRollingWAvgSpec.validate(new ImmutableRollingWAvgSpec(this));
-=======
-      return new ImmutableRollingWAvgSpec(null, weightCol);
->>>>>>> main
     }
 
     private String formatRequiredAttributesMessage() {

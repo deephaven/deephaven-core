@@ -3,10 +3,7 @@ package io.deephaven.ssl.config;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-<<<<<<< HEAD
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-=======
->>>>>>> main
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -107,10 +104,7 @@ public final class ImmutableProtocolsExplicit extends ProtocolsExplicit {
   @Generated(from = "ProtocolsExplicit", generator = "Immutables")
   @Deprecated
   @JsonDeserialize
-<<<<<<< HEAD
   @JsonTypeInfo(use=JsonTypeInfo.Id.NONE)
-=======
->>>>>>> main
   @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.NONE)
   static final class Json extends ProtocolsExplicit {
     List<String> values = Collections.emptyList();

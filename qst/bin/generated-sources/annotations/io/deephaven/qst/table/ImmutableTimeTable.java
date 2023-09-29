@@ -17,11 +17,7 @@ import org.immutables.value.Generated;
 @Generated(from = "TimeTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-<<<<<<< HEAD
-final class ImmutableTimeTable extends TimeTable {
-=======
 public final class ImmutableTimeTable extends TimeTable {
->>>>>>> main
   private transient final int depth;
   private final Clock clock;
   private final Duration interval;
@@ -32,21 +28,13 @@ public final class ImmutableTimeTable extends TimeTable {
   private ImmutableTimeTable(ImmutableTimeTable.Builder builder) {
     this.interval = builder.interval;
     this.startTime = builder.startTime;
-<<<<<<< HEAD
-    if (builder.clockIsSet()) {
-=======
     if (builder.clock != null) {
->>>>>>> main
       initShim.clock(builder.clock);
     }
     if (builder.blinkTableIsSet()) {
       initShim.blinkTable(builder.blinkTable);
     }
-<<<<<<< HEAD
-    if (builder.idIsSet()) {
-=======
     if (builder.id != null) {
->>>>>>> main
       initShim.id(builder.id);
     }
     this.depth = initShim.depth();
@@ -56,8 +44,6 @@ public final class ImmutableTimeTable extends TimeTable {
     this.initShim = null;
   }
 
-<<<<<<< HEAD
-=======
   private ImmutableTimeTable(
       Clock clock,
       Duration interval,
@@ -76,7 +62,6 @@ public final class ImmutableTimeTable extends TimeTable {
     this.initShim = null;
   }
 
->>>>>>> main
   private static final byte STAGE_INITIALIZING = -1;
   private static final byte STAGE_UNINITIALIZED = 0;
   private static final byte STAGE_INITIALIZED = 1;
@@ -162,13 +147,9 @@ public final class ImmutableTimeTable extends TimeTable {
   }
 
   /**
-<<<<<<< HEAD
-   * @return The computed-at-construction value of the {@code depth} attribute
-=======
    * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
    * depth of zero.
    * @return the depth
->>>>>>> main
    */
   @Override
   public int depth() {
@@ -228,8 +209,6 @@ public final class ImmutableTimeTable extends TimeTable {
   }
 
   /**
-<<<<<<< HEAD
-=======
    * Copy the current immutable object by setting a value for the {@link TimeTable#clock() clock} attribute.
    * A shallow reference equality check is used to prevent copying of the same value by returning {@code this}.
    * @param value A new value for clock
@@ -301,7 +280,6 @@ public final class ImmutableTimeTable extends TimeTable {
   }
 
   /**
->>>>>>> main
    * This instance is equal to all instances of {@code ImmutableTimeTable} that have equal attribute values.
    * @return {@code true} if {@code this} is equal to {@code another} instance
    */
@@ -328,10 +306,6 @@ public final class ImmutableTimeTable extends TimeTable {
   @Override
   public int hashCode() {
     int h = 5381;
-<<<<<<< HEAD
-    h += (h << 5) + getClass().hashCode();
-=======
->>>>>>> main
     h += (h << 5) + depth;
     h += (h << 5) + clock.hashCode();
     h += (h << 5) + interval.hashCode();
@@ -347,8 +321,6 @@ public final class ImmutableTimeTable extends TimeTable {
   }
 
   /**
-<<<<<<< HEAD
-=======
    * Creates an immutable copy of a {@link TimeTable} value.
    * Uses accessors to get values to initialize the new immutable instance.
    * If an instance is already immutable, it is returned as is.
@@ -365,7 +337,6 @@ public final class ImmutableTimeTable extends TimeTable {
   }
 
   /**
->>>>>>> main
    * Creates a builder for {@link ImmutableTimeTable ImmutableTimeTable}.
    * <pre>
    * ImmutableTimeTable.builder()
@@ -392,14 +363,7 @@ public final class ImmutableTimeTable extends TimeTable {
   @Generated(from = "TimeTable", generator = "Immutables")
   public static final class Builder implements TimeTable.Builder {
     private static final long INIT_BIT_INTERVAL = 0x1L;
-<<<<<<< HEAD
-    private static final long OPT_BIT_CLOCK = 0x1L;
-    private static final long OPT_BIT_START_TIME = 0x2L;
-    private static final long OPT_BIT_BLINK_TABLE = 0x4L;
-    private static final long OPT_BIT_ID = 0x8L;
-=======
     private static final long OPT_BIT_BLINK_TABLE = 0x1L;
->>>>>>> main
     private long initBits = 0x1L;
     private long optBits;
 
@@ -413,8 +377,6 @@ public final class ImmutableTimeTable extends TimeTable {
     }
 
     /**
-<<<<<<< HEAD
-=======
      * Fill a builder with attribute values from the provided {@code TimeTable} instance.
      * Regular attribute values will be replaced with those from the given instance.
      * Absent optional values will not replace present values.
@@ -435,20 +397,13 @@ public final class ImmutableTimeTable extends TimeTable {
     }
 
     /**
->>>>>>> main
      * Initializes the value for the {@link TimeTable#clock() clock} attribute.
      * <p><em>If not set, this attribute will have a default value as returned by the initializer of {@link TimeTable#clock() clock}.</em>
      * @param clock The value for clock 
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder clock(Clock clock) {
-<<<<<<< HEAD
-      checkNotIsSet(clockIsSet(), "clock");
       this.clock = Objects.requireNonNull(clock, "clock");
-      optBits |= OPT_BIT_CLOCK;
-=======
-      this.clock = Objects.requireNonNull(clock, "clock");
->>>>>>> main
       return this;
     }
 
@@ -458,10 +413,6 @@ public final class ImmutableTimeTable extends TimeTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder interval(Duration interval) {
-<<<<<<< HEAD
-      checkNotIsSet(intervalIsSet(), "interval");
-=======
->>>>>>> main
       this.interval = Objects.requireNonNull(interval, "interval");
       initBits &= ~INIT_BIT_INTERVAL;
       return this;
@@ -473,13 +424,7 @@ public final class ImmutableTimeTable extends TimeTable {
      * @return {@code this} builder for chained invocation
      */
     public final Builder startTime(Instant startTime) {
-<<<<<<< HEAD
-      checkNotIsSet(startTimeIsSet(), "startTime");
       this.startTime = Objects.requireNonNull(startTime, "startTime");
-      optBits |= OPT_BIT_START_TIME;
-=======
-      this.startTime = Objects.requireNonNull(startTime, "startTime");
->>>>>>> main
       return this;
     }
 
@@ -489,13 +434,7 @@ public final class ImmutableTimeTable extends TimeTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder startTime(Optional<? extends Instant> startTime) {
-<<<<<<< HEAD
-      checkNotIsSet(startTimeIsSet(), "startTime");
       this.startTime = startTime.orElse(null);
-      optBits |= OPT_BIT_START_TIME;
-=======
-      this.startTime = startTime.orElse(null);
->>>>>>> main
       return this;
     }
 
@@ -506,10 +445,6 @@ public final class ImmutableTimeTable extends TimeTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder blinkTable(boolean blinkTable) {
-<<<<<<< HEAD
-      checkNotIsSet(blinkTableIsSet(), "blinkTable");
-=======
->>>>>>> main
       this.blinkTable = blinkTable;
       optBits |= OPT_BIT_BLINK_TABLE;
       return this;
@@ -522,13 +457,7 @@ public final class ImmutableTimeTable extends TimeTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder id(Object id) {
-<<<<<<< HEAD
-      checkNotIsSet(idIsSet(), "id");
       this.id = Objects.requireNonNull(id, "id");
-      optBits |= OPT_BIT_ID;
-=======
-      this.id = Objects.requireNonNull(id, "id");
->>>>>>> main
       return this;
     }
 
@@ -538,58 +467,19 @@ public final class ImmutableTimeTable extends TimeTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableTimeTable build() {
-<<<<<<< HEAD
-      checkRequiredAttributes();
-      return ImmutableTimeTable.validate(new ImmutableTimeTable(this));
-    }
-
-    private boolean clockIsSet() {
-      return (optBits & OPT_BIT_CLOCK) != 0;
-    }
-
-    private boolean startTimeIsSet() {
-      return (optBits & OPT_BIT_START_TIME) != 0;
-    }
-
-=======
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
       return ImmutableTimeTable.validate(new ImmutableTimeTable(this));
     }
 
->>>>>>> main
     private boolean blinkTableIsSet() {
       return (optBits & OPT_BIT_BLINK_TABLE) != 0;
     }
 
-<<<<<<< HEAD
-    private boolean idIsSet() {
-      return (optBits & OPT_BIT_ID) != 0;
-    }
-
-    private boolean intervalIsSet() {
-      return (initBits & INIT_BIT_INTERVAL) == 0;
-    }
-
-    private static void checkNotIsSet(boolean isSet, String name) {
-      if (isSet) throw new IllegalStateException("Builder of TimeTable is strict, attribute is already set: ".concat(name));
-    }
-
-    private void checkRequiredAttributes() {
-      if (initBits != 0) {
-        throw new IllegalStateException(formatRequiredAttributesMessage());
-      }
-    }
-
-    private String formatRequiredAttributesMessage() {
-      List<String> attributes = new ArrayList<>();
-      if (!intervalIsSet()) attributes.add("interval");
-=======
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
       if ((initBits & INIT_BIT_INTERVAL) != 0) attributes.add("interval");
->>>>>>> main
       return "Cannot build TimeTable, some of required attributes are not set " + attributes;
     }
   }

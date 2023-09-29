@@ -116,11 +116,7 @@ public final class ImmutableFields extends Fields {
    * Creates a builder for {@link ImmutableFields ImmutableFields}.
    * <pre>
    * ImmutableFields.builder()
-<<<<<<< HEAD
-   *    .putFields|putAllFields(String =&gt; io.deephaven.appmode.Field&amp;lt;?&amp;gt;) // {@link Fields#fields() fields} mappings
-=======
    *    .putFields|putAllFields(String =&gt; Field&amp;lt;?&amp;gt;) // {@link Fields#fields() fields} mappings
->>>>>>> main
    *    .build();
    * </pre>
    * @return A new ImmutableFields builder

@@ -23,16 +23,12 @@ import org.immutables.value.Generated;
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
 @Immutable
 public final class ImmutableRollingMinMaxSpec extends RollingMinMaxSpec {
-<<<<<<< HEAD
   private final WindowScale revWindowScale;
   private final WindowScale fwdWindowScale;
-=======
->>>>>>> main
   private final boolean isMax;
 
   private ImmutableRollingMinMaxSpec(boolean isMax) {
     this.isMax = isMax;
-<<<<<<< HEAD
     this.revWindowScale = initShim.revWindowScale();
     this.fwdWindowScale = initShim.fwdWindowScale();
     this.initShim = null;
@@ -132,8 +128,6 @@ public final class ImmutableRollingMinMaxSpec extends RollingMinMaxSpec {
     return shim != null
         ? shim.fwdWindowScale()
         : this.fwdWindowScale;
-=======
->>>>>>> main
   }
 
   /**
@@ -145,7 +139,6 @@ public final class ImmutableRollingMinMaxSpec extends RollingMinMaxSpec {
   }
 
   /**
-<<<<<<< HEAD
    * Copy the current immutable object by setting a value for the {@link RollingMinMaxSpec#revWindowScale() revWindowScale} attribute.
    * A shallow reference equality check is used to prevent copying of the same value by returning {@code this}.
    * @param value A new value for revWindowScale
@@ -170,8 +163,6 @@ public final class ImmutableRollingMinMaxSpec extends RollingMinMaxSpec {
   }
 
   /**
-=======
->>>>>>> main
    * Copy the current immutable object by setting a value for the {@link RollingMinMaxSpec#isMax() isMax} attribute.
    * A value equality check is used to prevent copying of the same value by returning {@code this}.
    * @param value A new value for isMax
@@ -179,11 +170,7 @@ public final class ImmutableRollingMinMaxSpec extends RollingMinMaxSpec {
    */
   public final ImmutableRollingMinMaxSpec withIsMax(boolean value) {
     if (this.isMax == value) return this;
-<<<<<<< HEAD
     return validate(new ImmutableRollingMinMaxSpec(this.revWindowScale, this.fwdWindowScale, value));
-=======
-    return new ImmutableRollingMinMaxSpec(value);
->>>>>>> main
   }
 
   /**
@@ -198,7 +185,6 @@ public final class ImmutableRollingMinMaxSpec extends RollingMinMaxSpec {
   }
 
   private boolean equalTo(int synthetic, ImmutableRollingMinMaxSpec another) {
-<<<<<<< HEAD
     return revWindowScale.equals(another.revWindowScale)
         && fwdWindowScale.equals(another.fwdWindowScale)
         && isMax == another.isMax;
@@ -206,23 +192,13 @@ public final class ImmutableRollingMinMaxSpec extends RollingMinMaxSpec {
 
   /**
    * Computes a hash code from attributes: {@code revWindowScale}, {@code fwdWindowScale}, {@code isMax}.
-=======
-    return isMax == another.isMax;
-  }
-
-  /**
-   * Computes a hash code from attributes: {@code isMax}.
->>>>>>> main
    * @return hashCode value
    */
   @Override
   public int hashCode() {
     int h = 5381;
-<<<<<<< HEAD
     h += (h << 5) + revWindowScale.hashCode();
     h += (h << 5) + fwdWindowScale.hashCode();
-=======
->>>>>>> main
     h += (h << 5) + Boolean.hashCode(isMax);
     return h;
   }
@@ -234,13 +210,9 @@ public final class ImmutableRollingMinMaxSpec extends RollingMinMaxSpec {
   @Override
   public String toString() {
     return "RollingMinMaxSpec{"
-<<<<<<< HEAD
         + "revWindowScale=" + revWindowScale
         + ", fwdWindowScale=" + fwdWindowScale
         + ", isMax=" + isMax
-=======
-        + "isMax=" + isMax
->>>>>>> main
         + "}";
   }
 
@@ -250,16 +222,12 @@ public final class ImmutableRollingMinMaxSpec extends RollingMinMaxSpec {
    * @return An immutable RollingMinMaxSpec instance
    */
   public static ImmutableRollingMinMaxSpec of(boolean isMax) {
-<<<<<<< HEAD
     return validate(new ImmutableRollingMinMaxSpec(isMax));
   }
 
   private static ImmutableRollingMinMaxSpec validate(ImmutableRollingMinMaxSpec instance) {
     instance.checkWindowSizes();
     return instance;
-=======
-    return new ImmutableRollingMinMaxSpec(isMax);
->>>>>>> main
   }
 
   /**
@@ -282,11 +250,8 @@ public final class ImmutableRollingMinMaxSpec extends RollingMinMaxSpec {
    * Creates a builder for {@link ImmutableRollingMinMaxSpec ImmutableRollingMinMaxSpec}.
    * <pre>
    * ImmutableRollingMinMaxSpec.builder()
-<<<<<<< HEAD
    *    .revWindowScale(io.deephaven.api.updateby.spec.WindowScale) // optional {@link RollingMinMaxSpec#revWindowScale() revWindowScale}
    *    .fwdWindowScale(io.deephaven.api.updateby.spec.WindowScale) // optional {@link RollingMinMaxSpec#fwdWindowScale() fwdWindowScale}
-=======
->>>>>>> main
    *    .isMax(boolean) // required {@link RollingMinMaxSpec#isMax() isMax}
    *    .build();
    * </pre>
@@ -309,30 +274,20 @@ public final class ImmutableRollingMinMaxSpec extends RollingMinMaxSpec {
     private static final long INIT_BIT_IS_MAX = 0x1L;
     private long initBits = 0x1L;
 
-<<<<<<< HEAD
     private @Nullable WindowScale revWindowScale;
     private @Nullable WindowScale fwdWindowScale;
-=======
->>>>>>> main
     private boolean isMax;
 
     private Builder() {
     }
 
     /**
-<<<<<<< HEAD
      * Fill a builder with attribute values from the provided {@code io.deephaven.api.updateby.spec.RollingMinMaxSpec} instance.
-=======
-     * Fill a builder with attribute values from the provided {@code RollingMinMaxSpec} instance.
-     * Regular attribute values will be replaced with those from the given instance.
-     * Absent optional values will not replace present values.
->>>>>>> main
      * @param instance The instance from which to copy values
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder from(RollingMinMaxSpec instance) {
       Objects.requireNonNull(instance, "instance");
-<<<<<<< HEAD
       from((Object) instance);
       return this;
     }
@@ -394,9 +349,6 @@ public final class ImmutableRollingMinMaxSpec extends RollingMinMaxSpec {
      */
     public final Builder fwdWindowScale(WindowScale fwdWindowScale) {
       this.fwdWindowScale = Objects.requireNonNull(fwdWindowScale, "fwdWindowScale");
-=======
-      isMax(instance.isMax());
->>>>>>> main
       return this;
     }
 
@@ -420,11 +372,7 @@ public final class ImmutableRollingMinMaxSpec extends RollingMinMaxSpec {
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
-<<<<<<< HEAD
       return ImmutableRollingMinMaxSpec.validate(new ImmutableRollingMinMaxSpec(this));
-=======
-      return new ImmutableRollingMinMaxSpec(isMax);
->>>>>>> main
     }
 
     private String formatRequiredAttributesMessage() {

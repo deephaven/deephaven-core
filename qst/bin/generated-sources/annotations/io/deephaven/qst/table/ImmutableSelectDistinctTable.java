@@ -1,22 +1,12 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.Selectable;
-<<<<<<< HEAD
-import java.lang.ref.WeakReference;
-=======
->>>>>>> main
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-<<<<<<< HEAD
-import java.util.Map;
 import java.util.Objects;
-import java.util.WeakHashMap;
-=======
-import java.util.Objects;
->>>>>>> main
 import org.immutables.value.Generated;
 
 /**
@@ -28,37 +18,21 @@ import org.immutables.value.Generated;
 @Generated(from = "SelectDistinctTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-<<<<<<< HEAD
-final class ImmutableSelectDistinctTable extends SelectDistinctTable {
-  private transient final int depth;
-  private final TableSpec parent;
-  private final List<Selectable> columns;
-  private transient final int hashCode;
-=======
 public final class ImmutableSelectDistinctTable extends SelectDistinctTable {
   private transient final int depth;
   private final TableSpec parent;
   private final List<Selectable> columns;
->>>>>>> main
 
   private ImmutableSelectDistinctTable(TableSpec parent, List<Selectable> columns) {
     this.parent = parent;
     this.columns = columns;
     this.depth = super.depth();
-<<<<<<< HEAD
-    this.hashCode = computeHashCode();
-  }
-
-  /**
-   * @return The computed-at-construction value of the {@code depth} attribute
-=======
   }
 
   /**
    * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
    * depth of zero.
    * @return the depth
->>>>>>> main
    */
   @Override
   public int depth() {
@@ -90,11 +64,7 @@ public final class ImmutableSelectDistinctTable extends SelectDistinctTable {
   public final ImmutableSelectDistinctTable withParent(TableSpec value) {
     if (this.parent == value) return this;
     TableSpec newValue = Objects.requireNonNull(value, "parent");
-<<<<<<< HEAD
-    return validate(new ImmutableSelectDistinctTable(newValue, this.columns));
-=======
     return new ImmutableSelectDistinctTable(newValue, this.columns);
->>>>>>> main
   }
 
   /**
@@ -104,11 +74,7 @@ public final class ImmutableSelectDistinctTable extends SelectDistinctTable {
    */
   public final ImmutableSelectDistinctTable withColumns(Selectable... elements) {
     List<Selectable> newValue = createUnmodifiableList(false, createSafeList(Arrays.asList(elements), true, false));
-<<<<<<< HEAD
-    return validate(new ImmutableSelectDistinctTable(this.parent, newValue));
-=======
     return new ImmutableSelectDistinctTable(this.parent, newValue);
->>>>>>> main
   }
 
   /**
@@ -120,11 +86,7 @@ public final class ImmutableSelectDistinctTable extends SelectDistinctTable {
   public final ImmutableSelectDistinctTable withColumns(Iterable<? extends Selectable> elements) {
     if (this.columns == elements) return this;
     List<Selectable> newValue = createUnmodifiableList(false, createSafeList(elements, true, false));
-<<<<<<< HEAD
-    return validate(new ImmutableSelectDistinctTable(this.parent, newValue));
-=======
     return new ImmutableSelectDistinctTable(this.parent, newValue);
->>>>>>> main
   }
 
   /**
@@ -139,61 +101,24 @@ public final class ImmutableSelectDistinctTable extends SelectDistinctTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableSelectDistinctTable another) {
-<<<<<<< HEAD
-    if (hashCode != another.hashCode) return false;
-=======
->>>>>>> main
     return depth == another.depth
         && parent.equals(another.parent)
         && columns.equals(another.columns);
   }
 
   /**
-<<<<<<< HEAD
-   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code parent}, {@code columns}.
-=======
    * Computes a hash code from attributes: {@code depth}, {@code parent}, {@code columns}.
->>>>>>> main
    * @return hashCode value
    */
   @Override
   public int hashCode() {
-<<<<<<< HEAD
-    return hashCode;
-  }
-
-  private int computeHashCode() {
     int h = 5381;
-    h += (h << 5) + getClass().hashCode();
-=======
-    int h = 5381;
->>>>>>> main
     h += (h << 5) + depth;
     h += (h << 5) + parent.hashCode();
     h += (h << 5) + columns.hashCode();
     return h;
   }
 
-<<<<<<< HEAD
-  private static final class InternerHolder {
-    static final Map<ImmutableSelectDistinctTable, WeakReference<ImmutableSelectDistinctTable>> INTERNER =
-        new WeakHashMap<>();
-  }
-
-  private static ImmutableSelectDistinctTable validate(ImmutableSelectDistinctTable instance) {
-    synchronized (InternerHolder.INTERNER) {
-      WeakReference<ImmutableSelectDistinctTable> reference = InternerHolder.INTERNER.get(instance);
-      ImmutableSelectDistinctTable interned = reference != null ? reference.get() : null;
-      if (interned == null) {
-        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
-        interned = instance;
-      }
-      return interned;
-    }
-  }
-
-=======
->>>>>>> main
   /**
    * Creates an immutable copy of a {@link SelectDistinctTable} value.
    * Uses accessors to get values to initialize the new immutable instance.
@@ -206,12 +131,7 @@ public final class ImmutableSelectDistinctTable extends SelectDistinctTable {
       return (ImmutableSelectDistinctTable) instance;
     }
     return ImmutableSelectDistinctTable.builder()
-<<<<<<< HEAD
-        .parent(instance.parent())
-        .addAllColumns(instance.columns())
-=======
         .from(instance)
->>>>>>> main
         .build();
   }
 
@@ -242,18 +162,12 @@ public final class ImmutableSelectDistinctTable extends SelectDistinctTable {
     private long initBits = 0x1L;
 
     private TableSpec parent;
-<<<<<<< HEAD
-    private final List<Selectable> columns = new ArrayList<Selectable>();
-=======
     private List<Selectable> columns = new ArrayList<Selectable>();
->>>>>>> main
 
     private Builder() {
     }
 
     /**
-<<<<<<< HEAD
-=======
      * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.SelectableTable} instance.
      * @param instance The instance from which to copy values
      * @return {@code this} builder for use in a chained invocation
@@ -320,16 +234,11 @@ public final class ImmutableSelectDistinctTable extends SelectDistinctTable {
     }
 
     /**
->>>>>>> main
      * Initializes the value for the {@link SelectDistinctTable#parent() parent} attribute.
      * @param parent The value for parent 
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder parent(TableSpec parent) {
-<<<<<<< HEAD
-      checkNotIsSet(parentIsSet(), "parent");
-=======
->>>>>>> main
       this.parent = Objects.requireNonNull(parent, "parent");
       initBits &= ~INIT_BIT_PARENT;
       return this;
@@ -359,8 +268,6 @@ public final class ImmutableSelectDistinctTable extends SelectDistinctTable {
 
 
     /**
-<<<<<<< HEAD
-=======
      * Sets or replaces all elements for {@link SelectDistinctTable#columns() columns} list.
      * @param elements An iterable of columns elements
      * @return {@code this} builder for use in a chained invocation
@@ -371,7 +278,6 @@ public final class ImmutableSelectDistinctTable extends SelectDistinctTable {
     }
 
     /**
->>>>>>> main
      * Adds elements to {@link SelectDistinctTable#columns() columns} list.
      * @param elements An iterable of columns elements
      * @return {@code this} builder for use in a chained invocation
@@ -389,38 +295,15 @@ public final class ImmutableSelectDistinctTable extends SelectDistinctTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableSelectDistinctTable build() {
-<<<<<<< HEAD
-      checkRequiredAttributes();
-      return ImmutableSelectDistinctTable.validate(new ImmutableSelectDistinctTable(parent, createUnmodifiableList(true, columns)));
-    }
-
-    private boolean parentIsSet() {
-      return (initBits & INIT_BIT_PARENT) == 0;
-    }
-
-    private static void checkNotIsSet(boolean isSet, String name) {
-      if (isSet) throw new IllegalStateException("Builder of SelectDistinctTable is strict, attribute is already set: ".concat(name));
-    }
-
-    private void checkRequiredAttributes() {
-      if (initBits != 0) {
-        throw new IllegalStateException(formatRequiredAttributesMessage());
-      }
-=======
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
       return new ImmutableSelectDistinctTable(parent, createUnmodifiableList(true, columns));
->>>>>>> main
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-<<<<<<< HEAD
-      if (!parentIsSet()) attributes.add("parent");
-=======
       if ((initBits & INIT_BIT_PARENT) != 0) attributes.add("parent");
->>>>>>> main
       return "Cannot build SelectDistinctTable, some of required attributes are not set " + attributes;
     }
   }

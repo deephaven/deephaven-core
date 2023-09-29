@@ -1,22 +1,12 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.JoinMatch;
-<<<<<<< HEAD
-import java.lang.ref.WeakReference;
-=======
->>>>>>> main
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-<<<<<<< HEAD
-import java.util.Map;
 import java.util.Objects;
-import java.util.WeakHashMap;
-=======
-import java.util.Objects;
->>>>>>> main
 import org.immutables.value.Generated;
 
 /**
@@ -28,20 +18,12 @@ import org.immutables.value.Generated;
 @Generated(from = "WhereInTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-<<<<<<< HEAD
-final class ImmutableWhereInTable extends WhereInTable {
-=======
 public final class ImmutableWhereInTable extends WhereInTable {
->>>>>>> main
   private transient final int depth;
   private final TableSpec left;
   private final TableSpec right;
   private final List<JoinMatch> matches;
   private final boolean inverted;
-<<<<<<< HEAD
-  private transient final int hashCode;
-=======
->>>>>>> main
 
   private ImmutableWhereInTable(
       TableSpec left,
@@ -53,20 +35,12 @@ public final class ImmutableWhereInTable extends WhereInTable {
     this.matches = matches;
     this.inverted = inverted;
     this.depth = super.depth();
-<<<<<<< HEAD
-    this.hashCode = computeHashCode();
-  }
-
-  /**
-   * @return The computed-at-construction value of the {@code depth} attribute
-=======
   }
 
   /**
    * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
    * depth of zero.
    * @return the depth
->>>>>>> main
    */
   @Override
   public int depth() {
@@ -174,10 +148,6 @@ public final class ImmutableWhereInTable extends WhereInTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableWhereInTable another) {
-<<<<<<< HEAD
-    if (hashCode != another.hashCode) return false;
-=======
->>>>>>> main
     return depth == another.depth
         && left.equals(another.left)
         && right.equals(another.right)
@@ -186,25 +156,12 @@ public final class ImmutableWhereInTable extends WhereInTable {
   }
 
   /**
-<<<<<<< HEAD
-   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code left}, {@code right}, {@code matches}, {@code inverted}.
-=======
    * Computes a hash code from attributes: {@code depth}, {@code left}, {@code right}, {@code matches}, {@code inverted}.
->>>>>>> main
    * @return hashCode value
    */
   @Override
   public int hashCode() {
-<<<<<<< HEAD
-    return hashCode;
-  }
-
-  private int computeHashCode() {
     int h = 5381;
-    h += (h << 5) + getClass().hashCode();
-=======
-    int h = 5381;
->>>>>>> main
     h += (h << 5) + depth;
     h += (h << 5) + left.hashCode();
     h += (h << 5) + right.hashCode();
@@ -213,28 +170,9 @@ public final class ImmutableWhereInTable extends WhereInTable {
     return h;
   }
 
-<<<<<<< HEAD
-  private static final class InternerHolder {
-    static final Map<ImmutableWhereInTable, WeakReference<ImmutableWhereInTable>> INTERNER =
-        new WeakHashMap<>();
-  }
-
-  private static ImmutableWhereInTable validate(ImmutableWhereInTable instance) {
-    instance.checkNotEmpty();
-    synchronized (InternerHolder.INTERNER) {
-      WeakReference<ImmutableWhereInTable> reference = InternerHolder.INTERNER.get(instance);
-      ImmutableWhereInTable interned = reference != null ? reference.get() : null;
-      if (interned == null) {
-        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
-        interned = instance;
-      }
-      return interned;
-    }
-=======
   private static ImmutableWhereInTable validate(ImmutableWhereInTable instance) {
     instance.checkNotEmpty();
     return instance;
->>>>>>> main
   }
 
   /**
@@ -249,14 +187,7 @@ public final class ImmutableWhereInTable extends WhereInTable {
       return (ImmutableWhereInTable) instance;
     }
     return ImmutableWhereInTable.builder()
-<<<<<<< HEAD
-        .left(instance.left())
-        .right(instance.right())
-        .addAllMatches(instance.matches())
-        .inverted(instance.inverted())
-=======
         .from(instance)
->>>>>>> main
         .build();
   }
 
@@ -292,19 +223,13 @@ public final class ImmutableWhereInTable extends WhereInTable {
 
     private TableSpec left;
     private TableSpec right;
-<<<<<<< HEAD
-    private final List<JoinMatch> matches = new ArrayList<JoinMatch>();
-=======
     private List<JoinMatch> matches = new ArrayList<JoinMatch>();
->>>>>>> main
     private boolean inverted;
 
     private Builder() {
     }
 
     /**
-<<<<<<< HEAD
-=======
      * Fill a builder with attribute values from the provided {@code WhereInTable} instance.
      * Regular attribute values will be replaced with those from the given instance.
      * Absent optional values will not replace present values.
@@ -322,16 +247,11 @@ public final class ImmutableWhereInTable extends WhereInTable {
     }
 
     /**
->>>>>>> main
      * Initializes the value for the {@link WhereInTable#left() left} attribute.
      * @param left The value for left 
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder left(TableSpec left) {
-<<<<<<< HEAD
-      checkNotIsSet(leftIsSet(), "left");
-=======
->>>>>>> main
       this.left = Objects.requireNonNull(left, "left");
       initBits &= ~INIT_BIT_LEFT;
       return this;
@@ -343,10 +263,6 @@ public final class ImmutableWhereInTable extends WhereInTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder right(TableSpec right) {
-<<<<<<< HEAD
-      checkNotIsSet(rightIsSet(), "right");
-=======
->>>>>>> main
       this.right = Objects.requireNonNull(right, "right");
       initBits &= ~INIT_BIT_RIGHT;
       return this;
@@ -376,8 +292,6 @@ public final class ImmutableWhereInTable extends WhereInTable {
 
 
     /**
-<<<<<<< HEAD
-=======
      * Sets or replaces all elements for {@link WhereInTable#matches() matches} list.
      * @param elements An iterable of matches elements
      * @return {@code this} builder for use in a chained invocation
@@ -388,7 +302,6 @@ public final class ImmutableWhereInTable extends WhereInTable {
     }
 
     /**
->>>>>>> main
      * Adds elements to {@link WhereInTable#matches() matches} list.
      * @param elements An iterable of matches elements
      * @return {@code this} builder for use in a chained invocation
@@ -406,10 +319,6 @@ public final class ImmutableWhereInTable extends WhereInTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder inverted(boolean inverted) {
-<<<<<<< HEAD
-      checkNotIsSet(invertedIsSet(), "inverted");
-=======
->>>>>>> main
       this.inverted = inverted;
       initBits &= ~INIT_BIT_INVERTED;
       return this;
@@ -421,50 +330,17 @@ public final class ImmutableWhereInTable extends WhereInTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableWhereInTable build() {
-<<<<<<< HEAD
-      checkRequiredAttributes();
-      return ImmutableWhereInTable.validate(new ImmutableWhereInTable(left, right, createUnmodifiableList(true, matches), inverted));
-    }
-
-    private boolean leftIsSet() {
-      return (initBits & INIT_BIT_LEFT) == 0;
-    }
-
-    private boolean rightIsSet() {
-      return (initBits & INIT_BIT_RIGHT) == 0;
-    }
-
-    private boolean invertedIsSet() {
-      return (initBits & INIT_BIT_INVERTED) == 0;
-    }
-
-    private static void checkNotIsSet(boolean isSet, String name) {
-      if (isSet) throw new IllegalStateException("Builder of WhereInTable is strict, attribute is already set: ".concat(name));
-    }
-
-    private void checkRequiredAttributes() {
-      if (initBits != 0) {
-        throw new IllegalStateException(formatRequiredAttributesMessage());
-      }
-=======
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
       return ImmutableWhereInTable.validate(new ImmutableWhereInTable(left, right, createUnmodifiableList(true, matches), inverted));
->>>>>>> main
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-<<<<<<< HEAD
-      if (!leftIsSet()) attributes.add("left");
-      if (!rightIsSet()) attributes.add("right");
-      if (!invertedIsSet()) attributes.add("inverted");
-=======
       if ((initBits & INIT_BIT_LEFT) != 0) attributes.add("left");
       if ((initBits & INIT_BIT_RIGHT) != 0) attributes.add("right");
       if ((initBits & INIT_BIT_INVERTED) != 0) attributes.add("inverted");
->>>>>>> main
       return "Cannot build WhereInTable, some of required attributes are not set " + attributes;
     }
   }

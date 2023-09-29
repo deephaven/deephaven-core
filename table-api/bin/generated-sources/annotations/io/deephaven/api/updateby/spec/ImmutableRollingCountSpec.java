@@ -1,10 +1,7 @@
 package io.deephaven.api.updateby.spec;
 
-<<<<<<< HEAD
 import java.util.ArrayList;
 import java.util.List;
-=======
->>>>>>> main
 import java.util.Objects;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -24,7 +21,6 @@ import org.immutables.value.Generated;
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
 @Immutable
 public final class ImmutableRollingCountSpec extends RollingCountSpec {
-<<<<<<< HEAD
   private final WindowScale revWindowScale;
   private final WindowScale fwdWindowScale;
 
@@ -143,10 +139,6 @@ public final class ImmutableRollingCountSpec extends RollingCountSpec {
     if (this.fwdWindowScale == value) return this;
     WindowScale newValue = Objects.requireNonNull(value, "fwdWindowScale");
     return validate(new ImmutableRollingCountSpec(this.revWindowScale, newValue));
-=======
-
-  private ImmutableRollingCountSpec(ImmutableRollingCountSpec.Builder builder) {
->>>>>>> main
   }
 
   /**
@@ -160,7 +152,6 @@ public final class ImmutableRollingCountSpec extends RollingCountSpec {
         && equalTo(0, (ImmutableRollingCountSpec) another);
   }
 
-<<<<<<< HEAD
   private boolean equalTo(int synthetic, ImmutableRollingCountSpec another) {
     return revWindowScale.equals(another.revWindowScale)
         && fwdWindowScale.equals(another.fwdWindowScale);
@@ -168,20 +159,10 @@ public final class ImmutableRollingCountSpec extends RollingCountSpec {
 
   /**
    * Computes a hash code from attributes: {@code revWindowScale}, {@code fwdWindowScale}.
-=======
-  @SuppressWarnings("MethodCanBeStatic")
-  private boolean equalTo(int synthetic, ImmutableRollingCountSpec another) {
-    return true;
-  }
-
-  /**
-   * Returns a constant hash code value.
->>>>>>> main
    * @return hashCode value
    */
   @Override
   public int hashCode() {
-<<<<<<< HEAD
     int h = 5381;
     h += (h << 5) + revWindowScale.hashCode();
     h += (h << 5) + fwdWindowScale.hashCode();
@@ -190,18 +171,10 @@ public final class ImmutableRollingCountSpec extends RollingCountSpec {
 
   /**
    * Prints the immutable value {@code RollingCountSpec} with attribute values.
-=======
-    return -1310757863;
-  }
-
-  /**
-   * Prints the immutable value {@code RollingCountSpec}.
->>>>>>> main
    * @return A string representation of the value
    */
   @Override
   public String toString() {
-<<<<<<< HEAD
     return "RollingCountSpec{"
         + "revWindowScale=" + revWindowScale
         + ", fwdWindowScale=" + fwdWindowScale
@@ -211,9 +184,6 @@ public final class ImmutableRollingCountSpec extends RollingCountSpec {
   private static ImmutableRollingCountSpec validate(ImmutableRollingCountSpec instance) {
     instance.checkWindowSizes();
     return instance;
-=======
-    return "RollingCountSpec{}";
->>>>>>> main
   }
 
   /**
@@ -236,11 +206,8 @@ public final class ImmutableRollingCountSpec extends RollingCountSpec {
    * Creates a builder for {@link ImmutableRollingCountSpec ImmutableRollingCountSpec}.
    * <pre>
    * ImmutableRollingCountSpec.builder()
-<<<<<<< HEAD
    *    .revWindowScale(io.deephaven.api.updateby.spec.WindowScale) // optional {@link RollingCountSpec#revWindowScale() revWindowScale}
    *    .fwdWindowScale(io.deephaven.api.updateby.spec.WindowScale) // optional {@link RollingCountSpec#fwdWindowScale() fwdWindowScale}
-=======
->>>>>>> main
    *    .build();
    * </pre>
    * @return A new ImmutableRollingCountSpec builder
@@ -259,29 +226,19 @@ public final class ImmutableRollingCountSpec extends RollingCountSpec {
   @Generated(from = "RollingCountSpec", generator = "Immutables")
   @NotThreadSafe
   public static final class Builder {
-<<<<<<< HEAD
     private @Nullable WindowScale revWindowScale;
     private @Nullable WindowScale fwdWindowScale;
-=======
->>>>>>> main
 
     private Builder() {
     }
 
     /**
-<<<<<<< HEAD
      * Fill a builder with attribute values from the provided {@code io.deephaven.api.updateby.spec.RollingCountSpec} instance.
-=======
-     * Fill a builder with attribute values from the provided {@code RollingCountSpec} instance.
-     * Regular attribute values will be replaced with those from the given instance.
-     * Absent optional values will not replace present values.
->>>>>>> main
      * @param instance The instance from which to copy values
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder from(RollingCountSpec instance) {
       Objects.requireNonNull(instance, "instance");
-<<<<<<< HEAD
       from((Object) instance);
       return this;
     }
@@ -342,8 +299,6 @@ public final class ImmutableRollingCountSpec extends RollingCountSpec {
      */
     public final Builder fwdWindowScale(WindowScale fwdWindowScale) {
       this.fwdWindowScale = Objects.requireNonNull(fwdWindowScale, "fwdWindowScale");
-=======
->>>>>>> main
       return this;
     }
 
@@ -353,11 +308,7 @@ public final class ImmutableRollingCountSpec extends RollingCountSpec {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableRollingCountSpec build() {
-<<<<<<< HEAD
       return ImmutableRollingCountSpec.validate(new ImmutableRollingCountSpec(this));
-=======
-      return new ImmutableRollingCountSpec(this);
->>>>>>> main
     }
   }
 }

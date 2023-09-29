@@ -186,7 +186,6 @@ final class ImmutableSelectableImpl extends SelectableImpl {
     }
 
     /**
-<<<<<<< HEAD
      * Fill a builder with attribute values from the provided {@code io.deephaven.api.Selectable} instance.
      * @param instance The instance from which to copy values
      * @return {@code this} builder for use in a chained invocation
@@ -199,17 +198,11 @@ final class ImmutableSelectableImpl extends SelectableImpl {
 
     /**
      * Fill a builder with attribute values from the provided {@code io.deephaven.api.SelectableImpl} instance.
-=======
-     * Fill a builder with attribute values from the provided {@code SelectableImpl} instance.
-     * Regular attribute values will be replaced with those from the given instance.
-     * Absent optional values will not replace present values.
->>>>>>> main
      * @param instance The instance from which to copy values
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder from(SelectableImpl instance) {
       Objects.requireNonNull(instance, "instance");
-<<<<<<< HEAD
       from((Object) instance);
       return this;
     }
@@ -222,13 +215,6 @@ final class ImmutableSelectableImpl extends SelectableImpl {
       }
     }
 
-=======
-      newColumn(instance.newColumn());
-      expression(instance.expression());
-      return this;
-    }
-
->>>>>>> main
     /**
      * Initializes the value for the {@link SelectableImpl#newColumn() newColumn} attribute.
      * @param newColumn The value for newColumn 

@@ -43,22 +43,13 @@ public final class ImmutableDeltaControl extends DeltaControl {
 
   /**
    * Copy the current immutable object by setting a value for the {@link DeltaControl#nullBehavior() nullBehavior} attribute.
-<<<<<<< HEAD
    * A value equality check is used to prevent copying of the same value by returning {@code this}.
-=======
-   * A shallow reference equality check is used to prevent copying of the same value by returning {@code this}.
->>>>>>> main
    * @param value A new value for nullBehavior
    * @return A modified copy of the {@code this} object
    */
   public final ImmutableDeltaControl withNullBehavior(NullBehavior value) {
-<<<<<<< HEAD
     NullBehavior newValue = Objects.requireNonNull(value, "nullBehavior");
     if (this.nullBehavior == newValue) return this;
-=======
-    if (this.nullBehavior == value) return this;
-    NullBehavior newValue = Objects.requireNonNull(value, "nullBehavior");
->>>>>>> main
     return new ImmutableDeltaControl(newValue);
   }
 

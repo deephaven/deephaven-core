@@ -1,17 +1,8 @@
 package io.deephaven.qst.table;
 
-<<<<<<< HEAD
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.WeakHashMap;
-=======
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
->>>>>>> main
 import org.immutables.value.Generated;
 
 /**
@@ -25,43 +16,24 @@ import org.immutables.value.Generated;
 @Generated(from = "SnapshotTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-<<<<<<< HEAD
-final class ImmutableSnapshotTable extends SnapshotTable {
-  private transient final int depth;
-  private final TableSpec base;
-  private transient final int hashCode;
-=======
 public final class ImmutableSnapshotTable extends SnapshotTable {
   private transient final int depth;
   private final TableSpec base;
->>>>>>> main
 
   private ImmutableSnapshotTable(TableSpec base) {
     this.base = Objects.requireNonNull(base, "base");
     this.depth = super.depth();
-<<<<<<< HEAD
-    this.hashCode = computeHashCode();
-=======
->>>>>>> main
   }
 
   private ImmutableSnapshotTable(ImmutableSnapshotTable original, TableSpec base) {
     this.base = base;
     this.depth = super.depth();
-<<<<<<< HEAD
-    this.hashCode = computeHashCode();
-  }
-
-  /**
-   * @return The computed-at-construction value of the {@code depth} attribute
-=======
   }
 
   /**
    * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
    * depth of zero.
    * @return the depth
->>>>>>> main
    */
   @Override
   public int depth() {
@@ -85,11 +57,7 @@ public final class ImmutableSnapshotTable extends SnapshotTable {
   public final ImmutableSnapshotTable withBase(TableSpec value) {
     if (this.base == value) return this;
     TableSpec newValue = Objects.requireNonNull(value, "base");
-<<<<<<< HEAD
-    return validate(new ImmutableSnapshotTable(this, newValue));
-=======
     return new ImmutableSnapshotTable(this, newValue);
->>>>>>> main
   }
 
   /**
@@ -104,70 +72,29 @@ public final class ImmutableSnapshotTable extends SnapshotTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableSnapshotTable another) {
-<<<<<<< HEAD
-    if (hashCode != another.hashCode) return false;
-=======
->>>>>>> main
     return depth == another.depth
         && base.equals(another.base);
   }
 
   /**
-<<<<<<< HEAD
-   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code base}.
-=======
    * Computes a hash code from attributes: {@code depth}, {@code base}.
->>>>>>> main
    * @return hashCode value
    */
   @Override
   public int hashCode() {
-<<<<<<< HEAD
-    return hashCode;
-  }
-
-  private int computeHashCode() {
     int h = 5381;
-    h += (h << 5) + getClass().hashCode();
-=======
-    int h = 5381;
->>>>>>> main
     h += (h << 5) + depth;
     h += (h << 5) + base.hashCode();
     return h;
   }
 
-<<<<<<< HEAD
-  private static final class InternerHolder {
-    static final Map<ImmutableSnapshotTable, WeakReference<ImmutableSnapshotTable>> INTERNER =
-        new WeakHashMap<>();
-  }
-
-=======
->>>>>>> main
   /**
    * Construct a new immutable {@code SnapshotTable} instance.
    * @param base The value for the {@code base} attribute
    * @return An immutable SnapshotTable instance
    */
   public static ImmutableSnapshotTable of(TableSpec base) {
-<<<<<<< HEAD
-    return validate(new ImmutableSnapshotTable(base));
-  }
-
-  private static ImmutableSnapshotTable validate(ImmutableSnapshotTable instance) {
-    synchronized (InternerHolder.INTERNER) {
-      WeakReference<ImmutableSnapshotTable> reference = InternerHolder.INTERNER.get(instance);
-      ImmutableSnapshotTable interned = reference != null ? reference.get() : null;
-      if (interned == null) {
-        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
-        interned = instance;
-      }
-      return interned;
-    }
-=======
     return new ImmutableSnapshotTable(base);
->>>>>>> main
   }
 
   /**
@@ -182,11 +109,7 @@ public final class ImmutableSnapshotTable extends SnapshotTable {
       return (ImmutableSnapshotTable) instance;
     }
     return ImmutableSnapshotTable.builder()
-<<<<<<< HEAD
-        .base(instance.base())
-=======
         .from(instance)
->>>>>>> main
         .build();
   }
 
@@ -221,8 +144,6 @@ public final class ImmutableSnapshotTable extends SnapshotTable {
     }
 
     /**
-<<<<<<< HEAD
-=======
      * Fill a builder with attribute values from the provided {@code SnapshotTable} instance.
      * Regular attribute values will be replaced with those from the given instance.
      * Absent optional values will not replace present values.
@@ -236,16 +157,11 @@ public final class ImmutableSnapshotTable extends SnapshotTable {
     }
 
     /**
->>>>>>> main
      * Initializes the value for the {@link SnapshotTable#base() base} attribute.
      * @param base The value for base 
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder base(TableSpec base) {
-<<<<<<< HEAD
-      checkNotIsSet(baseIsSet(), "base");
-=======
->>>>>>> main
       this.base = Objects.requireNonNull(base, "base");
       initBits &= ~INIT_BIT_BASE;
       return this;
@@ -257,38 +173,15 @@ public final class ImmutableSnapshotTable extends SnapshotTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableSnapshotTable build() {
-<<<<<<< HEAD
-      checkRequiredAttributes();
-      return ImmutableSnapshotTable.validate(new ImmutableSnapshotTable(null, base));
-    }
-
-    private boolean baseIsSet() {
-      return (initBits & INIT_BIT_BASE) == 0;
-    }
-
-    private static void checkNotIsSet(boolean isSet, String name) {
-      if (isSet) throw new IllegalStateException("Builder of SnapshotTable is strict, attribute is already set: ".concat(name));
-    }
-
-    private void checkRequiredAttributes() {
-      if (initBits != 0) {
-        throw new IllegalStateException(formatRequiredAttributesMessage());
-      }
-=======
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
       return new ImmutableSnapshotTable(null, base);
->>>>>>> main
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-<<<<<<< HEAD
-      if (!baseIsSet()) attributes.add("base");
-=======
       if ((initBits & INIT_BIT_BASE) != 0) attributes.add("base");
->>>>>>> main
       return "Cannot build SnapshotTable, some of required attributes are not set " + attributes;
     }
   }

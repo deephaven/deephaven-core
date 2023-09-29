@@ -22,12 +22,8 @@ import org.immutables.value.Generated;
 @ParametersAreNonnullByDefault
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
 @Immutable
-<<<<<<< HEAD
 public final class ImmutableFilterNot<F extends Filter>
     extends FilterNot<F> {
-=======
-public final class ImmutableFilterNot<F extends Filter> extends FilterNot<F> {
->>>>>>> main
   private final F filter;
 
   private ImmutableFilterNot(F filter) {

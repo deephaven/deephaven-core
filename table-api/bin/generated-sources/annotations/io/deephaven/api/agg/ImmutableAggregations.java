@@ -122,11 +122,7 @@ public final class ImmutableAggregations extends Aggregations {
    * Creates a builder for {@link ImmutableAggregations ImmutableAggregations}.
    * <pre>
    * ImmutableAggregations.builder()
-<<<<<<< HEAD
    *    .addAggregations|addAllAggregations(io.deephaven.api.agg.Aggregation) // {@link Aggregations#aggregations() aggregations} elements
-=======
-   *    .addAggregations|addAllAggregations(Aggregation) // {@link Aggregations#aggregations() aggregations} elements
->>>>>>> main
    *    .build();
    * </pre>
    * @return A new ImmutableAggregations builder

@@ -147,11 +147,7 @@ public final class ImmutableFilterOr extends FilterOr {
    * Creates a builder for {@link ImmutableFilterOr ImmutableFilterOr}.
    * <pre>
    * ImmutableFilterOr.builder()
-<<<<<<< HEAD
    *    .addFilters|addAllFilters(io.deephaven.api.filter.Filter) // {@link FilterOr#filters() filters} elements
-=======
-   *    .addFilters|addAllFilters(Filter) // {@link FilterOr#filters() filters} elements
->>>>>>> main
    *    .build();
    * </pre>
    * @return A new ImmutableFilterOr builder

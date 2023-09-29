@@ -88,7 +88,7 @@ class NodeType(Enum):
     leaf) level. These nodes have column names and types that result from applying aggregations on the source table 
     of the RollupTable. """
     CONSTITUENT = _JNodeType.Constituent
-    """Nodes at the leaf level when :meth:`~deephaven.table.Table.rollup` method is called with 
+    """Nodes at the leaf level when :meth:`~deephaven.table.Table.rollup` is called with 
     include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names 
     and types from the source table of the RollupTable. """
 
@@ -242,7 +242,7 @@ class RollupTable(JObjectWrapper):
 
         Args:
             filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
-                expression(s) or Filter object(s).
+                expression(s) or Filter object(s)
 
         Returns:
             a new RollupTable
@@ -312,7 +312,7 @@ class TreeTable(JObjectWrapper):
 
         Args:
             recorder (TreeNodeOperationsRecorder): the TreeNodeOperationsRecorder containing the node operations to be
-                applied, it must be created by calling the 'node_operation_recorder' method on the same table.
+                applied. It must be created by calling the 'node_operation_recorder' method on the same table.
 
         Returns:
             a new TreeTable
@@ -333,7 +333,7 @@ class TreeTable(JObjectWrapper):
 
         Args:
             filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
-                expression(s) or Filter object(s).
+                expression(s) or Filter object(s)
 
         Returns:
             a new TreeTable
@@ -586,7 +586,7 @@ class Table(JObjectWrapper):
         not in the table.
 
         Args:
-            cols (Union[str, Sequence[str]]): the column name(s).
+            cols (Union[str, Sequence[str]]): the column name(s)
 
         Returns:
             bool
@@ -2154,12 +2154,12 @@ class Table(JObjectWrapper):
                include_constituents: bool = False) -> RollupTable:
         """Creates a rollup table.
 
-         A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
-         using one less by column on each level. The column that is no longer part of the aggregation key is
-         replaced with null on each level.
+        A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
+        using one less by column on each level. The column that is no longer part of the aggregation key is
+        replaced with null on each level.
 
-         Note that some aggregations can not be used in creating a rollup tables. These include: group, partition, median,
-         pct, and weighted_avg.
+        Note that some aggregations can not be used in creating a rollup tables. These include: group, partition, median,
+        pct, and weighted_avg.
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s).
@@ -2284,17 +2284,17 @@ class PartitionedTable(JObjectWrapper):
                                constituent_column: str = None,
                                constituent_table_columns: List[Column] = None,
                                constituent_changes_permitted: bool = None) -> PartitionedTable:
-        """Creates a PartitionedTable from the provided underlying partitioned Table.
+        """ Creates a PartitionedTable from the provided underlying partitioned Table.
 
-        Note: key_cols, unique_keys, constituent_column, constituent_table_columns,
-        constituent_changes_permitted must either be all None or all have values. When they are None, their values will
-        be inferred as follows:
-            key_cols: the names of all columns with a non-Table data type
-            unique_keys: False
-            constituent_column: the name of the first column with a Table data type
-            constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
-                column. Consequently, the constituent column can't be empty
-            constituent_changes_permitted: the value of table.is_refreshing
+        |  Note: key_cols, unique_keys, constituent_column, constituent_table_columns,
+            constituent_changes_permitted must either be all None or all have values. 
+            When they are None, their values will be inferred as follows: 
+        |  key_cols: the names of all columns with a non-Table data type 
+        |  unique_keys: False 
+        |  constituent_column: the name of the first column with a Table data type 
+        |  constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
+            column. Consequently, the constituent column can't be empty. 
+        |  constituent_changes_permitted: the value of table.is_refreshing
 
 
         Args:
@@ -2548,7 +2548,7 @@ class PartitionedTable(JObjectWrapper):
         if the Table underlying this PartitionedTable changes, a corresponding change will propagate to the result.
 
         Args:
-            func (Callable[[Table], Table]: a function which takes a Table as input and returns a new Table.
+            func (Callable[[Table], Table]): a function which takes a Table as input and returns a new Table.
 
         Returns:
             a PartitionedTable
@@ -2576,7 +2576,7 @@ class PartitionedTable(JObjectWrapper):
         Args:
             other (PartitionedTable): the other Partitioned table whose constituent tables will be passed in as the 2nd
                 argument to the provided function.
-            func (Callable[[Table, Table], Table]: a function which takes two Tables as input and returns a new Table.
+            func (Callable[[Table, Table], Table]): a function which takes two Tables as input and returns a new Table.
 
         Returns:
             a PartitionedTable
@@ -2601,8 +2601,8 @@ class PartitionedTable(JObjectWrapper):
                 present when an operation uses this PartitionedTable and another PartitionedTable as inputs for a
                 :meth:`~PartitionedTable.partitioned_transform`. Default is True.
             sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs
-            in exactly one constituent table of the underlying partitioned table. If the other table argument is also a
-            PartitionedTableProxy, its constituents will also be subjected to this constraint.
+                in exactly one constituent table of the underlying partitioned table. If the other table argument is also a
+                PartitionedTableProxy, its constituents will also be subjected to this constraint.
         """
         return PartitionedTableProxy(
             j_pt_proxy=self.j_partitioned_table.proxy(require_matching_keys, sanity_check_joins))

@@ -1,17 +1,8 @@
 package io.deephaven.qst.table;
 
-<<<<<<< HEAD
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.WeakHashMap;
-=======
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
->>>>>>> main
 import org.immutables.value.Generated;
 
 /**
@@ -25,43 +16,24 @@ import org.immutables.value.Generated;
 @Generated(from = "ReverseTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-<<<<<<< HEAD
-final class ImmutableReverseTable extends ReverseTable {
-  private transient final int depth;
-  private final TableSpec parent;
-  private transient final int hashCode;
-=======
 public final class ImmutableReverseTable extends ReverseTable {
   private transient final int depth;
   private final TableSpec parent;
->>>>>>> main
 
   private ImmutableReverseTable(TableSpec parent) {
     this.parent = Objects.requireNonNull(parent, "parent");
     this.depth = super.depth();
-<<<<<<< HEAD
-    this.hashCode = computeHashCode();
-=======
->>>>>>> main
   }
 
   private ImmutableReverseTable(ImmutableReverseTable original, TableSpec parent) {
     this.parent = parent;
     this.depth = super.depth();
-<<<<<<< HEAD
-    this.hashCode = computeHashCode();
-  }
-
-  /**
-   * @return The computed-at-construction value of the {@code depth} attribute
-=======
   }
 
   /**
    * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
    * depth of zero.
    * @return the depth
->>>>>>> main
    */
   @Override
   public int depth() {
@@ -85,11 +57,7 @@ public final class ImmutableReverseTable extends ReverseTable {
   public final ImmutableReverseTable withParent(TableSpec value) {
     if (this.parent == value) return this;
     TableSpec newValue = Objects.requireNonNull(value, "parent");
-<<<<<<< HEAD
-    return validate(new ImmutableReverseTable(this, newValue));
-=======
     return new ImmutableReverseTable(this, newValue);
->>>>>>> main
   }
 
   /**
@@ -104,70 +72,29 @@ public final class ImmutableReverseTable extends ReverseTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableReverseTable another) {
-<<<<<<< HEAD
-    if (hashCode != another.hashCode) return false;
-=======
->>>>>>> main
     return depth == another.depth
         && parent.equals(another.parent);
   }
 
   /**
-<<<<<<< HEAD
-   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code parent}.
-=======
    * Computes a hash code from attributes: {@code depth}, {@code parent}.
->>>>>>> main
    * @return hashCode value
    */
   @Override
   public int hashCode() {
-<<<<<<< HEAD
-    return hashCode;
-  }
-
-  private int computeHashCode() {
     int h = 5381;
-    h += (h << 5) + getClass().hashCode();
-=======
-    int h = 5381;
->>>>>>> main
     h += (h << 5) + depth;
     h += (h << 5) + parent.hashCode();
     return h;
   }
 
-<<<<<<< HEAD
-  private static final class InternerHolder {
-    static final Map<ImmutableReverseTable, WeakReference<ImmutableReverseTable>> INTERNER =
-        new WeakHashMap<>();
-  }
-
-=======
->>>>>>> main
   /**
    * Construct a new immutable {@code ReverseTable} instance.
    * @param parent The value for the {@code parent} attribute
    * @return An immutable ReverseTable instance
    */
   public static ImmutableReverseTable of(TableSpec parent) {
-<<<<<<< HEAD
-    return validate(new ImmutableReverseTable(parent));
-  }
-
-  private static ImmutableReverseTable validate(ImmutableReverseTable instance) {
-    synchronized (InternerHolder.INTERNER) {
-      WeakReference<ImmutableReverseTable> reference = InternerHolder.INTERNER.get(instance);
-      ImmutableReverseTable interned = reference != null ? reference.get() : null;
-      if (interned == null) {
-        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
-        interned = instance;
-      }
-      return interned;
-    }
-=======
     return new ImmutableReverseTable(parent);
->>>>>>> main
   }
 
   /**
@@ -182,11 +109,7 @@ public final class ImmutableReverseTable extends ReverseTable {
       return (ImmutableReverseTable) instance;
     }
     return ImmutableReverseTable.builder()
-<<<<<<< HEAD
-        .parent(instance.parent())
-=======
         .from(instance)
->>>>>>> main
         .build();
   }
 
@@ -221,8 +144,6 @@ public final class ImmutableReverseTable extends ReverseTable {
     }
 
     /**
-<<<<<<< HEAD
-=======
      * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.ReverseTable} instance.
      * @param instance The instance from which to copy values
      * @return {@code this} builder for use in a chained invocation
@@ -263,16 +184,11 @@ public final class ImmutableReverseTable extends ReverseTable {
     }
 
     /**
->>>>>>> main
      * Initializes the value for the {@link ReverseTable#parent() parent} attribute.
      * @param parent The value for parent 
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder parent(TableSpec parent) {
-<<<<<<< HEAD
-      checkNotIsSet(parentIsSet(), "parent");
-=======
->>>>>>> main
       this.parent = Objects.requireNonNull(parent, "parent");
       initBits &= ~INIT_BIT_PARENT;
       return this;
@@ -284,38 +200,15 @@ public final class ImmutableReverseTable extends ReverseTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableReverseTable build() {
-<<<<<<< HEAD
-      checkRequiredAttributes();
-      return ImmutableReverseTable.validate(new ImmutableReverseTable(null, parent));
-    }
-
-    private boolean parentIsSet() {
-      return (initBits & INIT_BIT_PARENT) == 0;
-    }
-
-    private static void checkNotIsSet(boolean isSet, String name) {
-      if (isSet) throw new IllegalStateException("Builder of ReverseTable is strict, attribute is already set: ".concat(name));
-    }
-
-    private void checkRequiredAttributes() {
-      if (initBits != 0) {
-        throw new IllegalStateException(formatRequiredAttributesMessage());
-      }
-=======
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
       return new ImmutableReverseTable(null, parent);
->>>>>>> main
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-<<<<<<< HEAD
-      if (!parentIsSet()) attributes.add("parent");
-=======
       if ((initBits & INIT_BIT_PARENT) != 0) attributes.add("parent");
->>>>>>> main
       return "Cannot build ReverseTable, some of required attributes are not set " + attributes;
     }
   }

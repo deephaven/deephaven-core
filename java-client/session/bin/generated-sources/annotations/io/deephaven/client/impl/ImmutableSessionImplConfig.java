@@ -4,10 +4,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.primitives.Booleans;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Var;
-<<<<<<< HEAD
-import io.deephaven.proto.DeephavenChannel;
-=======
->>>>>>> main
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -223,11 +219,7 @@ public final class ImmutableSessionImplConfig extends SessionImplConfig {
 
   /**
    * Whether the {@link Session} implementation will implement a batch {@link TableHandleManager}. By default, is
-<<<<<<< HEAD
    * {@code true}. The default can be overridden via the system property {@value DEEPHAVEN_SESSION_BATCH}.
-=======
-   * {@code false}. The default can be overridden via the system property {@code deephaven.session.batch}.
->>>>>>> main
    * @return true if the session will implement a batch manager, false if the session will implement a serial manager
    */
   @Override
@@ -240,12 +232,8 @@ public final class ImmutableSessionImplConfig extends SessionImplConfig {
 
   /**
    * Whether the default batch {@link TableHandleManager} will use mix-in more relevant stacktraces. By default, is
-<<<<<<< HEAD
    * {@code false}. The default can be overridden via the system property
    * {@value DEEPHAVEN_SESSION_BATCH_STACKTRACES}.
-=======
-   * {@code false}. The default can be overridden via the system property {@code deephaven.session.batch.stacktraces}.
->>>>>>> main
    * @return true if the default batch manager will mix-in stacktraces, false otherwise
    */
   @Override
@@ -258,11 +246,7 @@ public final class ImmutableSessionImplConfig extends SessionImplConfig {
 
   /**
    * The session execute timeout. By default, is {@code PT1m}. The default can be overridden via the system property
-<<<<<<< HEAD
    * {@value DEEPHAVEN_SESSION_EXECUTE_TIMEOUT}.
-=======
-   * {@code deephaven.session.executeTimeout}.
->>>>>>> main
    * @return the session execute timeout
    */
   @Override
@@ -275,11 +259,7 @@ public final class ImmutableSessionImplConfig extends SessionImplConfig {
 
   /**
    * The {@link Session} and {@link ConsoleSession} close timeout. By default, is {@code PT5s}. The default can be
-<<<<<<< HEAD
    * overridden via the system property {@value DEEPHAVEN_SESSION_CLOSE_TIMEOUT}.
-=======
-   * overridden via the system property {@code deephaven.session.closeTimeout}.
->>>>>>> main
    * @return the close timeout
    */
   @Override
@@ -498,11 +478,7 @@ public final class ImmutableSessionImplConfig extends SessionImplConfig {
    * <pre>
    * ImmutableSessionImplConfig.builder()
    *    .executor(concurrent.ScheduledExecutorService) // required {@link SessionImplConfig#executor() executor}
-<<<<<<< HEAD
-   *    .channel(io.deephaven.proto.DeephavenChannel) // required {@link SessionImplConfig#channel() channel}
-=======
    *    .channel(io.deephaven.client.impl.DeephavenChannel) // required {@link SessionImplConfig#channel() channel}
->>>>>>> main
    *    .authenticationTypeAndValue(String) // optional {@link SessionImplConfig#authenticationTypeAndValue() authenticationTypeAndValue}
    *    .delegateToBatch(boolean) // optional {@link SessionImplConfig#delegateToBatch() delegateToBatch}
    *    .mixinStacktrace(boolean) // optional {@link SessionImplConfig#mixinStacktrace() mixinStacktrace}
