@@ -18,12 +18,14 @@ abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T,
     private int bufferSize;
     private int bufferedDataCount;
     private int numBytesBuffered;
+    Binary[] binaryEncodedValues;
 
     ObjectArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize, targetPageSize, new Binary[targetPageSize]);
         bufferSize = targetPageSize;
         bufferedDataCount = 0;
         numBytesBuffered = 0;
+        binaryEncodedValues = null; // We will allocate them as needed because high cost of construction Binary objects
     }
 
     @Override
@@ -58,7 +60,7 @@ abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T,
         } else if (numEncodedValues > bufferSize - bufferedDataCount) {
             return false;
         }
-        Binary[] binaryEncodedValues = data.encodedValues;
+        Binary[] encodedValues = data.encodedValues;
         for (final Binary val : binaryEncodedValues) {
             buffer[bufferedDataCount++] = val;
         }

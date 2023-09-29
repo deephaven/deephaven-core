@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
  * encoding.
  */
 abstract class ObjectVectorTransfer<T> extends ObjectArrayAndVectorTransfer<ObjectVector<T>> {
+
     ObjectVectorTransfer(final @NotNull ColumnSource<?> columnSource, final @NotNull RowSequence tableRowSet,
                          final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize);
@@ -22,11 +23,13 @@ abstract class ObjectVectorTransfer<T> extends ObjectArrayAndVectorTransfer<Obje
 
     @Override
     final void encodeDataForBuffering(final @NotNull ObjectVector<T> data) {
-        int numStrings = data.intSize();
-        Binary[] binaryEncodedValues = new Binary[numStrings];
+        int numObjects = data.intSize();
+        if (binaryEncodedValues == null || numObjects > binaryEncodedValues.length) {
+            binaryEncodedValues = new Binary[numObjects];
+        }
         int numBytesEncoded = 0;
         try (CloseableIterator<T> iter = data.iterator()) {
-            for (int i = 0; i < numStrings; i++) {
+            for (int i = 0; i < numObjects; i++) {
                 T value = iter.next();
                 if (value == null) {
                     binaryEncodedValues[i] = null;
@@ -36,7 +39,7 @@ abstract class ObjectVectorTransfer<T> extends ObjectArrayAndVectorTransfer<Obje
                 }
             }
         }
-        encodedData.fill(binaryEncodedValues, numStrings, numBytesEncoded);
+        encodedData.fill(binaryEncodedValues, numObjects, numBytesEncoded);
     }
 
     abstract Binary encodeToBinary(T value);
