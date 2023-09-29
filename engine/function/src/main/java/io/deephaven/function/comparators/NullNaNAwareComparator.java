@@ -60,11 +60,12 @@ public class NullNaNAwareComparator<T> implements Comparator<T> {
         }
 
         if (o1 instanceof Number && o2 instanceof Number) {
-            return toBigDecimal((Number)o1).compareTo(toBigDecimal((Number)o2));
+            return toBigDecimal((Number) o1).compareTo(toBigDecimal((Number) o2));
         } else if (o1 instanceof Comparable && o2 instanceof Comparable) {
-            return ((Comparable)o1).compareTo(o2);
+            return ((Comparable) o1).compareTo(o2);
         } else {
-            throw new UnsupportedOperationException("Input types are not java.lang.Number or java.lang.Comparable: (" + o1.getClass() + ", " + o2.getClass() + ")");
+            throw new UnsupportedOperationException("Input types are not java.lang.Number or java.lang.Comparable: ("
+                    + o1.getClass() + ", " + o2.getClass() + ")");
         }
     }
 
@@ -84,7 +85,8 @@ public class NullNaNAwareComparator<T> implements Comparator<T> {
         } else if (x instanceof BigDecimal) {
             return (BigDecimal) x;
         } else {
-            throw new UnsupportedOperationException("Unsupported java.lang.Number data type passed in to toBigDecimal (" + x.getClass() + ")");
+            throw new UnsupportedOperationException(
+                    "Unsupported java.lang.Number data type passed in to toBigDecimal (" + x.getClass() + ")");
         }
     }
 }
