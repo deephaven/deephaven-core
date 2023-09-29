@@ -4,6 +4,7 @@
 package io.deephaven.figure;
 
 import io.deephaven.api.Selectable;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.gui.shape.JShapes;
@@ -170,7 +171,7 @@ public class FigureWidgetTranslator {
     }
 
     private FigureDescriptor.ChartDescriptor translate(ChartImpl chart) {
-        assert chart.dimension() == 2 : "Only dim=2 supported";
+        Assert.eq(chart.dimension(), "chart.dimensions()", 2);
         FigureDescriptor.ChartDescriptor.Builder clientChart = FigureDescriptor.ChartDescriptor.newBuilder();
 
         boolean swappedPositions = chart.getPlotOrientation() != ChartImpl.PlotOrientation.VERTICAL;
@@ -188,7 +189,7 @@ public class FigureWidgetTranslator {
             if ((i == 0 && !swappedPositions) || (i == 1 && swappedPositions)) {
                 type = AxisDescriptor.AxisType.X;
             } else {
-                assert i == 0 || i == 1;
+                Assert.eqTrue(i == 0 || i == 1, "i == 0 || i == 1");
                 type = AxisDescriptor.AxisType.Y;
             }
             List<AxisImpl> currentPositionAxes = chart.getAxis()[i];
@@ -264,11 +265,11 @@ public class FigureWidgetTranslator {
             final AxisDescriptor catAxis;
             final AxisDescriptor numAxis;
             if (xAxis.getFormatType() == AxisDescriptor.AxisFormatType.CATEGORY) {
-                assert yAxis.getFormatType() == AxisDescriptor.AxisFormatType.NUMBER;
+                Assert.eq(yAxis.getFormatType(), "yAxis.getFormatType()", AxisDescriptor.AxisFormatType.NUMBER);
                 catAxis = xAxis;
                 numAxis = yAxis;
             } else if (yAxis.getFormatType() == AxisDescriptor.AxisFormatType.CATEGORY) {
-                assert xAxis.getFormatType() == AxisDescriptor.AxisFormatType.NUMBER;
+                Assert.eq(xAxis.getFormatType(), "xAxis.getFormatType()", AxisDescriptor.AxisFormatType.NUMBER);
                 catAxis = yAxis;
                 numAxis = xAxis;
             } else {

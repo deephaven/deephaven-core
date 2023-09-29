@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
@@ -61,6 +62,7 @@ public class UnionSourceManager {
     private final MergedListener mergedListener;
     private final ConstituentChangesListenerRecorder constituentChangesListener;
     private final UpdateCommitter<UnionSourceManager> updateCommitter;
+    private final ExecutionContext executionContext;
 
     public UnionSourceManager(@NotNull final PartitionedTable partitionedTable) {
         constituentChangesPermitted = partitionedTable.constituentChangesPermitted();
@@ -99,11 +101,17 @@ public class UnionSourceManager {
 
             updateCommitter = new UpdateCommitter<>(this, partitionedTable.table().getUpdateGraph(),
                     usm -> usm.unionRedirection.copyCurrToPrev());
+
+            executionContext = ExecutionContext.newBuilder()
+                    .markSystemic()
+                    .captureUpdateGraph()
+                    .build();
         } else {
             listenerRecorders = null;
             mergedListener = null;
             constituentChangesListener = null;
             updateCommitter = null;
+            executionContext = null;
         }
 
         try (final Stream<Table> initialConstituents = currConstituents()) {
@@ -244,7 +252,8 @@ public class UnionSourceManager {
         protected void process() {
             final TableUpdate constituentChanges = getAndCheckConstituentChanges();
             final TableUpdate downstream;
-            try (final ChangeProcessingContext context = new ChangeProcessingContext(constituentChanges)) {
+            try (final SafeCloseable ignored = executionContext.open();
+                    final ChangeProcessingContext context = new ChangeProcessingContext(constituentChanges)) {
                 downstream = context.processChanges();
             } catch (Throwable ex) {
                 propagateError(false, ex, entry);

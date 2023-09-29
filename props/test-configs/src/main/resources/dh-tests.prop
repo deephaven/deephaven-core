@@ -57,9 +57,9 @@ QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
 
 ########## Deephaven Groovy and Python Session defaults ##########
 
-GroovyDeephavenSession.initScripts=core/deephaven_core_utils.groovy
+GroovyDeephavenSession.initScripts=
 
-PythonDeephavenSession.initScripts=core/deephaven_jpy_init.py
+PythonDeephavenSession.initScripts=
 
 ###### Measurement Options ######
 statsdriver.enabled=false

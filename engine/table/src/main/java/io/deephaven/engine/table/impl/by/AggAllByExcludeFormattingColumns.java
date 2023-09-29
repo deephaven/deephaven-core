@@ -1,36 +1,36 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.agg.spec.*;
-import io.deephaven.engine.table.Table;
 
-import java.util.Objects;
+class AggAllByExcludeFormattingColumns implements AggSpec.Visitor {
 
-class AggAllByUseTable implements AggSpec.Visitor {
-
-    public static Table of(Table parent, AggSpec spec) {
-        return spec.walk(new AggAllByUseTable(parent)).out();
+    public static boolean of(AggSpec spec) {
+        return spec.walk(new AggAllByExcludeFormattingColumns()).out();
     }
 
-    private final Table parent;
-    private Table out;
+    /**
+     * {@code true} if we should drop formatting columns from the output, {@code false} otherwise, decided based on
+     * aggregation operation. For example, {@link AggSpecDistinct} should keep formatting columns but {@link AggSpecSum}
+     * should drop them because it doesn't make sense to apply formatting to sum but does make sense to apply the same
+     * formatting to distinct values of the same column.
+     */
+    private boolean out;
 
-    public AggAllByUseTable(Table parent) {
-        this.parent = Objects.requireNonNull(parent);
-    }
+    private AggAllByExcludeFormattingColumns() {}
 
-    public Table out() {
-        return Objects.requireNonNull(out);
+    public boolean out() {
+        return out;
     }
 
     private void keep() {
-        out = parent;
+        out = false;
     }
 
     private void drop() {
-        out = parent.dropColumnFormats();
+        out = true;
     }
 
     @Override

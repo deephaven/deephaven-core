@@ -27,11 +27,21 @@ class AddToInputTable extends FlightExampleBase {
 
     @Override
     protected void execute(FlightSession flight) throws Exception {
-        final ColumnHeader<Instant> header = ColumnHeader.ofInstant("Timestamp");
-
+        final var header = ColumnHeader.of(
+                ColumnHeader.ofBoolean("Boolean"),
+                ColumnHeader.ofByte("Byte"),
+                ColumnHeader.ofChar("Char"),
+                ColumnHeader.ofShort("Short"),
+                ColumnHeader.ofInt("Int"),
+                ColumnHeader.ofLong("Long"),
+                ColumnHeader.ofFloat("Float"),
+                ColumnHeader.ofDouble("Double"),
+                ColumnHeader.ofString("String"),
+                ColumnHeader.ofInstant("Instant"),
+                ColumnHeader.of("ByteVector", byte[].class));
         final TableSpec timestamp = InMemoryAppendOnlyInputTable.of(TableHeader.of(header));
         final TableSpec timestampLastBy =
-                timestamp.aggBy(Collections.singletonList(Aggregation.AggLast("Timestamp")));
+                timestamp.aggBy(Collections.singletonList(Aggregation.AggLast("Instant")));
 
         final List<TableHandle> handles = flight.session().batch().execute(Arrays.asList(timestamp, timestampLastBy));
         try (
@@ -44,7 +54,8 @@ class AddToInputTable extends FlightExampleBase {
 
             while (true) {
                 // Add a new row, at least once every second
-                final NewTable newRow = header.row(Instant.now()).newTable();
+                final NewTable newRow = header.row(true, (byte) 42, 'a', (short) 32_000, 1234567, 1234567890123L, 3.14f,
+                        3.14d, "Hello, World", Instant.now(), "abc".getBytes()).newTable();
                 flight.addToInputTable(timestampHandle, newRow, bufferAllocator).get(5, TimeUnit.SECONDS);
                 Thread.sleep(ThreadLocalRandom.current().nextLong(1000));
             }

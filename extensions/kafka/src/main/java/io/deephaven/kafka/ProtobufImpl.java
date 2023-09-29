@@ -110,13 +110,13 @@ class ProtobufImpl {
         }
 
         @Override
-        Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+        protected Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
             return new KafkaProtobufDeserializer<>(Objects.requireNonNull(schemaRegistryClient));
         }
 
         @Override
-        KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+        protected KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs, MutableInt nextColumnIndexMut, List<ColumnDefinition<?>> columnDefinitionsOut) {
             final Descriptor descriptor;
             try {
@@ -154,7 +154,7 @@ class ProtobufImpl {
         }
 
         @Override
-        KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
+        protected KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
             // noinspection unchecked
             return new KeyOrValueProcessorImpl(
                     MultiFieldChunkAdapter.chunkOffsets(tableDef, data.fieldPathToColumnName),

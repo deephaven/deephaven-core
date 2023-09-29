@@ -550,7 +550,7 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("percentile_by", &TableHandleWrapper::PercentileBy)
     .method("count_by", &TableHandleWrapper::CountBy)
 
-    .method("cross_join", &TableHandleWrapper::CrossJoin)
+    .method("join", &TableHandleWrapper::CrossJoin)
     .method("natural_join", &TableHandleWrapper::NaturalJoin)
     .method("exact_join", &TableHandleWrapper::ExactJoin)
 

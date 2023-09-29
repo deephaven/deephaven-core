@@ -1,37 +1,26 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.log.LogOutput;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.InvalidatedRegionException;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.locations.DependentRegistrar;
+import io.deephaven.engine.testutil.locations.TableBackedTableLocationKey;
 import io.deephaven.engine.testutil.locations.TableBackedTableLocationProvider;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.NotificationAdapter;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.FindExceptionCause;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.function.ThrowingRunnable;
-import io.deephaven.util.locks.AwareFunctionalLock;
 import io.deephaven.util.process.ProcessEnvironment;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
@@ -41,136 +30,6 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
 
     private CapturingUpdateGraph updateGraph;
     private SafeCloseable contextCloseable;
-
-    private static final class CapturingUpdateGraph implements UpdateGraph {
-
-        private final ControlledUpdateGraph delegate;
-
-        private final ExecutionContext context;
-
-        private final List<Runnable> sources = new ArrayList<>();
-
-        private CapturingUpdateGraph(@NotNull final ControlledUpdateGraph delegate) {
-            this.delegate = delegate;
-            context = ExecutionContext.getContext().withUpdateGraph(this);
-        }
-
-        @Override
-        public void addSource(@NotNull Runnable updateSource) {
-            delegate.addSource(updateSource);
-            sources.add(updateSource);
-        }
-
-        private void refreshSources() {
-            sources.forEach(Runnable::run);
-        }
-
-        @Override
-        public LogOutput append(LogOutput logOutput) {
-            return logOutput.append("CapturingUpdateGraph of ").append(delegate);
-        }
-
-        @Override
-        public boolean satisfied(final long step) {
-            return delegate.satisfied(step);
-        }
-
-        @Override
-        public UpdateGraph getUpdateGraph() {
-            return this;
-        }
-
-        private Notification wrap(@NotNull final Notification notification) {
-            return new NotificationAdapter(notification) {
-                @Override
-                public void run() {
-                    try (final SafeCloseable ignored = context.open()) {
-                        super.run();
-                    }
-                }
-            };
-        }
-
-        @Override
-        public void addNotification(@NotNull final Notification notification) {
-            delegate.addNotification(wrap(notification));
-        }
-
-        @Override
-        public void addNotifications(@NotNull final Collection<? extends Notification> notifications) {
-            delegate.addNotifications(notifications.stream().map(this::wrap).collect(Collectors.toList()));
-        }
-
-        @Override
-        public boolean maybeAddNotification(@NotNull final Notification notification, final long deliveryStep) {
-            return delegate.maybeAddNotification(wrap(notification), deliveryStep);
-        }
-
-        @Override
-        public String getName() {
-            return "CapturingUpdateGraph";
-        }
-
-        @Override
-        public AwareFunctionalLock sharedLock() {
-            return delegate.sharedLock();
-        }
-
-        @Override
-        public AwareFunctionalLock exclusiveLock() {
-            return delegate.exclusiveLock();
-        }
-
-        @Override
-        public LogicalClock clock() {
-            return delegate.clock();
-        }
-
-        @Override
-        public int parallelismFactor() {
-            return delegate.parallelismFactor();
-        }
-
-        @Override
-        public LogEntry logDependencies() {
-            return delegate.logDependencies();
-        }
-
-        @Override
-        public boolean currentThreadProcessesUpdates() {
-            return delegate.currentThreadProcessesUpdates();
-        }
-
-        @Override
-        public boolean serialTableOperationsSafe() {
-            return delegate.serialTableOperationsSafe();
-        }
-
-        @Override
-        public boolean setSerialTableOperationsSafe(final boolean newValue) {
-            return delegate.serialTableOperationsSafe();
-        }
-
-        @Override
-        public boolean supportsRefreshing() {
-            return delegate.supportsRefreshing();
-        }
-
-        @Override
-        public void requestRefresh() {
-            delegate.requestRefresh();
-        }
-
-        @Override
-        public void removeSource(@NotNull Runnable updateSource) {
-            sources.remove(updateSource);
-            delegate.removeSource(updateSource);
-        }
-
-        public <T extends Exception> void runWithinUnitTestCycle(@NotNull final ThrowingRunnable<T> runnable) throws T {
-            delegate.runWithinUnitTestCycle(runnable);
-        }
-    }
 
     @Override
     public void setUp() throws Exception {
@@ -182,7 +41,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         setExpectError(false);
 
         updateGraph = new CapturingUpdateGraph(ExecutionContext.getContext().getUpdateGraph().cast());
-        contextCloseable = updateGraph.context.open();
+        contextCloseable = updateGraph.getContext().open();
     }
 
     @Override
@@ -255,7 +114,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         tlp.removeTableLocationKey(tlks[0]);
         tlp.refresh();
 
-        allowingError(() -> updateGraph.delegate.runWithinUnitTestCycle(() -> {
+        allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
             registrar.run();
         }), errors -> errors.size() == 1 &&
@@ -270,7 +129,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
 
         tlp.addPending(p3);
         tlp.refresh();
-        updateGraph.delegate.runWithinUnitTestCycle(() -> {
+        updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
             registrar.run();
         });
@@ -286,7 +145,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         tlp.removeTableLocationKey(tlks[0]);
         tlp.refresh();
 
-        allowingError(() -> updateGraph.delegate.runWithinUnitTestCycle(() -> {
+        allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
             registrar.run();
         }), errors -> errors.size() == 1 &&
@@ -304,16 +163,67 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         // The TableBackedTableLocation has a copy() of the p3 table which is itself a leaf. Erroring P3 will
         // cause one error to come from the copied table, and one from the merged() table. We just need to validate
         // that the exceptions we see are a ConstituentTableException and an ISE
-        allowingError(() -> updateGraph.delegate.runWithinUnitTestCycle(
+        allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(
                 () -> p3.notifyListenersOnError(new IllegalStateException("This is a test error"), null)),
                 errors -> errors.size() == 1 &&
                         FindExceptionCause.isOrCausedBy(errors.get(0), IllegalStateException.class).isPresent());
     }
 
     /**
+     * This is a test for PR 4537, where SourceTable removes itself from the wrong refresh provider
+     */
+    @Test
+    public void testRemoveAndFail() {
+        final SourcePartitionedTable spt = setUpData();
+
+        final Table partitionTable = spt.table();
+        assertEquals(2, partitionTable.size());
+        try (final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+            assertTableEquals(tableIt.next(), p1);
+            assertTableEquals(tableIt.next(), p2);
+        }
+
+        TableBackedTableLocationKey[] tlks = tlp.getTableLocationKeys().stream()
+                .sorted()
+                .map(k -> (TableBackedTableLocationKey) k)
+                .toArray(TableBackedTableLocationKey[]::new);
+
+        final RowSet rowSet = p1.getRowSet().copy();
+        removeRows(tlks[0].table(), rowSet);
+        tlp.getTableLocation(tlks[0]).refresh();
+
+        // First cause the location to fail. for example size -> 0 because "someone deleted my data"
+        // We expect an error here because the table itself is going to fail.
+        allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
+            // This should process the pending update from the refresh above.
+            updateGraph.refreshSources();
+            registrar.run();
+        }),
+                errors -> errors.size() == 1 &&
+                        FindExceptionCause.isOrCausedBy(errors.get(0), TableDataException.class).isPresent());
+        getUpdateErrors().clear();
+
+        // Then delete it for real
+        tlp.removeTableLocationKey(tlks[0]);
+        tlp.refresh();
+
+        // We should NOT get an error here because the failed table should have removed itself from the registrar.
+        updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
+            updateGraph.refreshSources();
+            registrar.run();
+        });
+
+        assertEquals(1, partitionTable.size());
+        try (final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+            assertTableEquals(tableIt.next(), p2);
+        }
+    }
+
+    /**
      * This test verifies that after a location is removed any attempt to read from it, current or previous values will
      * fail.
      */
+    @Test
     public void testCantReadPrev() {
         final SourcePartitionedTable spt = setUpData();
 

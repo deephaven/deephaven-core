@@ -10,7 +10,7 @@ import unittest
 import pandas
 import pyarrow.parquet
 
-from deephaven import empty_table, dtypes, new_table
+from deephaven import DHError, empty_table, dtypes, new_table
 from deephaven import arrow as dharrow
 from deephaven.column import InputColumn
 from deephaven.pandas import to_pandas, to_table
@@ -239,10 +239,10 @@ class ParquetTestCase(BaseTestCase):
         dh_table = self.get_table_data()
         self.round_trip_with_compression("UNCOMPRESSED", dh_table)
         self.round_trip_with_compression("SNAPPY", dh_table)
-        # LZO is not fully supported in python/c++
-        # self.round_trip_with_compression("LZO", dh_table)
-        # TODO(deephaven-core#3148): LZ4_RAW parquet support
-        # self.round_trip_with_compression("LZ4", dh_table)
+        self.round_trip_with_compression("LZO", dh_table)
+        self.round_trip_with_compression("LZ4", dh_table)
+        self.round_trip_with_compression("LZ4_RAW", dh_table)
+        self.round_trip_with_compression("LZ4RAW", dh_table)
         self.round_trip_with_compression("GZIP", dh_table)
         self.round_trip_with_compression("ZSTD", dh_table)
 
@@ -261,6 +261,10 @@ class ParquetTestCase(BaseTestCase):
         # Read the parquet file using deephaven.parquet and compare
         result_table = read('data_from_dh.parquet')
         self.assert_table_equals(dh_table, result_table)
+
+        # LZO is not fully supported in pyarrow, so we can't do the rest of the tests
+        if compression_codec_name is 'LZO':
+            return
 
         # Read the parquet file as a pandas dataframe, convert it to deephaven table and compare
         if pandas.__version__.split('.')[0] == "1":
@@ -285,8 +289,11 @@ class ParquetTestCase(BaseTestCase):
         self.assert_table_equals(dh_table, result_table)
 
         # Write the pandas dataframe back to parquet (via pyarraow) and read it back using deephaven.parquet to compare
+        # Pandas references LZ4_RAW as LZ4, so we need to convert the name
         dataframe.to_parquet('data_from_pandas.parquet',
-                             compression=None if compression_codec_name == 'UNCOMPRESSED' else compression_codec_name)
+                             compression=None if compression_codec_name == 'UNCOMPRESSED' else
+                             "LZ4" if compression_codec_name == 'LZ4_RAW' or compression_codec_name == 'LZ4RAW'
+                             else compression_codec_name)
         result_table = read('data_from_pandas.parquet')
         self.assert_table_equals(dh_table, result_table)
 
@@ -297,7 +304,7 @@ class ParquetTestCase(BaseTestCase):
         # result_table = read('data_from_pandas.parquet')
         # self.assert_table_equals(dh_table, result_table)
 
-    def test_writing_via_pyarrow(self):
+    def test_writing_lists_via_pyarrow(self):
         # This function tests that we can write tables with list types to parquet files via pyarrow and read them back
         # through deephaven's parquet reader code with no exceptions
         pa_table = pyarrow.table({'numList': [[2, 2, 4]],
@@ -306,6 +313,25 @@ class ParquetTestCase(BaseTestCase):
         from_disk = read('data_from_pa.parquet').select()
         pa_table_from_disk = dharrow.to_arrow(from_disk)
         self.assertTrue(pa_table.equals(pa_table_from_disk))
+
+    def test_writing_time_via_pyarrow(self):
+        def _test_writing_time_helper(filename):
+            metadata = pyarrow.parquet.read_metadata(filename)
+            if "isAdjustedToUTC=false" in str(metadata.row_group(0).column(0)):
+                # TODO(deephaven-core#976): Unable to read non UTC adjusted timestamps
+                with self.assertRaises(DHError) as e:
+                    read(filename)
+                self.assertIn("ParquetFileReaderException", e.exception.root_cause)
+
+        df = pandas.DataFrame({
+            "f": pandas.date_range("20130101", periods=3),
+        })
+        df.to_parquet("pyarrow_26.parquet", engine='pyarrow', compression=None, version='2.6')
+        _test_writing_time_helper("pyarrow_26.parquet")
+        df.to_parquet("pyarrow_24.parquet", engine='pyarrow', compression=None, version='2.4')
+        _test_writing_time_helper("pyarrow_24.parquet")
+        df.to_parquet("pyarrow_10.parquet", engine='pyarrow', compression=None, version='1.0')
+        _test_writing_time_helper("pyarrow_10.parquet")
 
     def test_dictionary_encoding(self):
         dh_table = empty_table(10).update(formulas=[

@@ -1,27 +1,33 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.qst.table;
+package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.spec.*;
 import io.deephaven.api.agg.spec.AggSpec.Visitor;
+import io.deephaven.engine.util.ColumnFormatting;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Computes the columns to exclude from aggregation output
  */
-final class AggregateAllExclusions implements Visitor {
+public final class AggregateAllExclusions implements Visitor {
 
-    public static Set<ColumnName> of(AggSpec spec, Collection<? extends Selectable> groupByColumns) {
-        final Set<ColumnName> exclusions =
-                groupByColumns.stream().map(Selectable::newColumn).collect(Collectors.toSet());
+    public static Set<ColumnName> of(
+            AggSpec spec,
+            Collection<? extends ColumnName> groupByColumns,
+            Collection<? extends ColumnName> allColumns) {
+        final Set<ColumnName> exclusions = new HashSet<>(groupByColumns);
+        final boolean excludeFormattingColumns = AggAllByExcludeFormattingColumns.of(spec);
+        if (excludeFormattingColumns) {
+            allColumns.stream().filter(cn -> ColumnFormatting.isFormattingColumn(cn.name())).forEach(exclusions::add);
+        }
         final Set<ColumnName> otherExclusions = spec.walk(new AggregateAllExclusions()).out();
         exclusions.addAll(otherExclusions);
         return exclusions;

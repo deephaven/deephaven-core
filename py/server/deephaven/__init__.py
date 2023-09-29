@@ -29,5 +29,5 @@ from ._gc import garbage_collect
 from .dbc import read_sql
 
 __all__ = ["read_csv", "write_csv", "kafka_consumer", "kafka_producer", "empty_table", "time_table", "merge",
-           "merge_sorted", "new_table", "input_table", "ring_table", "DynamicTableWriter", "TableReplayer",
-           "garbage_collect", "read_sql", "DHError", "SortDirection"]
+           "merge_sorted", "new_table", "input_table", "ring_table", "function_generated_table", "DynamicTableWriter",
+           "TableReplayer", "garbage_collect", "read_sql", "DHError", "SortDirection"]
