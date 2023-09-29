@@ -38,7 +38,7 @@ Client <- R6Class("Client",
     #' Initializes a Client object using a pointer to an existing client connection.
     #' @param xptr External pointer to an existing client connection.
     initialize_for_xptr = function(xptr) {
-      verify_type("xptr", xptr, "externalptr", "XPtr", TRUE)
+      verify_type("xptr", xptr, TRUE, "externalptr", "an XPtr")
       self$.internal_rcpp_object = new(INTERNAL_Client, xptr)
     },
 
