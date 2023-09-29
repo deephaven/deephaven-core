@@ -405,11 +405,19 @@ TableHandle <- R6Class("TableHandle",
       return(TableHandle$new(self$.internal_rcpp_object$count_by(col, by)))
     },
 
-    #' @export
-    cross_join = function(table, on = character(), joins = character()) {
+    #' @description
+    #' Creates a new table containing rows that have matching values in both tables. Rows that do not have matching
+    #' criteria will not be included in the result. If there are multiple matches between a row from the left table
+    #' and rows from the right table, all matching combinations will be included. If no columns to match (on) are
+    #' specified, every combination of left and right table rows is included.
+    #' @param table TableHandle referencing the table to join with.
+    #' @param on String or list of strings denoting the names of the columns to join on.
+    #' @param joins String or list of strings denoting the names of the columns to add from `table`.
+    #' @return A TableHandle referencing the new table.
+    join = function(table, on = character(), joins = character()) {
       verify_string("on", on, FALSE)
       verify_string("joins", joins, FALSE)
-      return(TableHandle$new(self$.internal_rcpp_object$cross_join(
+      return(TableHandle$new(self$.internal_rcpp_object$join(
         table$.internal_rcpp_object,
         on, joins
       )))
@@ -423,6 +431,7 @@ TableHandle <- R6Class("TableHandle",
     #' @param table TableHandle referencing the table to join with.
     #' @param on String or list of strings denoting the names of the columns to join on.
     #' @param joins String or list of strings denoting the names of the columns to add from `table`.
+    #' @return A TableHandle referencing the new table.
     natural_join = function(table, on = character(), joins = character()) {
       verify_string("on", on, FALSE)
       verify_string("joins", joins, FALSE)
@@ -439,6 +448,7 @@ TableHandle <- R6Class("TableHandle",
     #' @param table TableHandle referencing the table to join with.
     #' @param on String or list of strings denoting the names of the columns to join on.
     #' @param joins String or list of strings denoting the names of the columns to add from `table`.
+    #' @return A TableHandle referencing the new table.
     exact_join = function(table, on = character(), joins = character()) {
       verify_string("on", on, FALSE)
       verify_string("joins", joins, FALSE)

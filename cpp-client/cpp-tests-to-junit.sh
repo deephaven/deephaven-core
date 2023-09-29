@@ -10,4 +10,9 @@ if [ "$#" -ne 2 ]; then
     exit 1
 fi
 
-/cpp-client/install/bin/tests --reporter XML --out "$1" 2>&1 | tee "$2"
+if [ -z "${DH_PREFIX}" ]; then
+    echo "$0: Environment variable DHCPP_PREFIX is not set, aborting." 1>&2
+    exit 1
+fi
+
+${DH_PREFIX}/bin/dhcpp/tests --reporter XML --out "$1" 2>&1 | tee "$2"
