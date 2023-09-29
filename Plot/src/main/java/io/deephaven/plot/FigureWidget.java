@@ -4,12 +4,9 @@
 package io.deephaven.plot;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.FigureWidgetMarker;
 import io.deephaven.engine.util.LiveWidget;
 import io.deephaven.engine.util.LiveWidgetVisibilityProvider;
-import io.deephaven.plot.util.tables.PartitionedTableHandle;
-import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.util.annotations.ScriptApi;
 
 import java.util.*;
@@ -25,15 +22,6 @@ public class FigureWidget extends FigureImpl implements LiveWidget, LiveWidgetVi
     public FigureWidget(final FigureImpl figure) {
         super(figure);
         getFigure().consolidatePartitionedTables();
-
-        getFigure().getTableHandles().stream()
-                .map(TableHandle::getTable)
-                .filter(DynamicNode::notDynamicOrIsRefreshing)
-                .forEach(this::manage);
-        getFigure().getPartitionedTableHandles().stream()
-                .map(PartitionedTableHandle::getPartitionedTable)
-                .filter(DynamicNode::notDynamicOrIsRefreshing)
-                .forEach(this::manage);
     }
 
     @ScriptApi
