@@ -1325,7 +1325,6 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         filteredTable.setWhereListener(whereListener);
                                         recorder.setMergedListener(whereListener);
                                         swapListener.setListenerAndResult(recorder, filteredTable);
-                                        filteredTable.addParentReference(swapListener);
                                         filteredTable.addParentReference(whereListener);
                                     } else if (refreshingFilters) {
                                         final WhereListener whereListener = new WhereListener(
