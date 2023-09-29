@@ -324,10 +324,7 @@ uby_rolling_sum_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
 #' Here are some examples of window values:
-#'   `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
 #'   `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (inclusive)
-#'   `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
-#'     current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
 #'     the current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
@@ -383,10 +380,7 @@ uby_rolling_group_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
 #' Here are some examples of window values:
-#'   `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
 #'   `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (inclusive)
-#'   `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
-#'     current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
 #'     the current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
@@ -442,10 +436,7 @@ uby_rolling_avg_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
 #' Here are some examples of window values:
-#'   `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
 #'   `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (inclusive)
-#'   `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
-#'     current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
 #'     the current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
@@ -501,10 +492,7 @@ uby_rolling_min_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
 #' Here are some examples of window values:
-#'   `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
 #'   `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (inclusive)
-#'   `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
-#'     current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
 #'     the current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
@@ -560,10 +548,7 @@ uby_rolling_max_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
 #' Here are some examples of window values:
-#'   `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
 #'   `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (inclusive)
-#'   `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
-#'     current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
 #'     the current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
@@ -619,10 +604,7 @@ uby_rolling_prod_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
 #' Here are some examples of window values:
-#'   `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
 #'   `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (inclusive)
-#'   `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
-#'     current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
 #'     the current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
@@ -678,10 +660,7 @@ uby_rolling_count_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
 #' Here are some examples of window values:
-#'   `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
 #'   `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (inclusive)
-#'   `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
-#'     current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
 #'     the current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
@@ -737,10 +716,7 @@ uby_rolling_std_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
 #' Here are some examples of window values:
-#'   `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
 #'   `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (inclusive)
-#'   `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
-#'     current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
 #'     the current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
@@ -798,10 +774,7 @@ uby_rolling_wavg_tick <- function(wcol, cols, rev_ticks, fwd_ticks = 0) {
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
 #' Here are some examples of window values:
-#'   `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
 #'   `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (inclusive)
-#'   `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
-#'     current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
 #'     the current row timestamp (inclusive)
 #'   `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
