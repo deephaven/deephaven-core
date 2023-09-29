@@ -13,28 +13,35 @@ import org.jetbrains.annotations.NotNull;
  * encoding.
  */
 abstract class ObjectArrayTransfer<T> extends ObjectArrayAndVectorTransfer<T[]> {
-        ObjectArrayTransfer(final @NotNull ColumnSource<?> columnSource, final @NotNull RowSequence tableRowSet,
+    /**
+     * Used as a temporary buffer for storing encoded data for a single row before it is copied to the main buffer.
+     * Allocated lazily because of the high cost of construction of Binary objects.
+     */
+    private Binary[] encodedDataBuf;
+
+    ObjectArrayTransfer(final @NotNull ColumnSource<?> columnSource, final @NotNull RowSequence tableRowSet,
                         final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize);
+        encodedDataBuf = null;
     }
 
     @Override
     final void encodeDataForBuffering(final T[] data) {
         int numObjects = data.length;
-        if (binaryEncodedValues == null || numObjects > binaryEncodedValues.length) {
-            binaryEncodedValues = new Binary[numObjects];
+        if (encodedDataBuf == null || numObjects > encodedDataBuf.length) {
+            encodedDataBuf = new Binary[numObjects];
         }
         int numBytesEncoded = 0;
         for (int i = 0; i < numObjects; i++) {
             T value = data[i];
             if (value == null) {
-                binaryEncodedValues[i] = null;
+                encodedDataBuf[i] = null;
             } else {
-                binaryEncodedValues[i] = encodeToBinary(value);
-                numBytesEncoded += binaryEncodedValues[i].length();
+                encodedDataBuf[i] = encodeToBinary(value);
+                numBytesEncoded += encodedDataBuf[i].length();
             }
         }
-        encodedData.fill(binaryEncodedValues, numObjects, numBytesEncoded);
+        encodedData.fill(encodedDataBuf, numObjects, numBytesEncoded);
     }
 
     /**
