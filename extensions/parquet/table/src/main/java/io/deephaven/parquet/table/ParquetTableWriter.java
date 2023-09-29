@@ -388,13 +388,13 @@ public class ParquetTableWriter {
         boolean hasNulls = false;
         StringDictionary dictionary = new StringDictionary(maxKeys, maxDictSize, statistics);
         int curPage = 0;
-        try (final DictEncodedStringTransferBase<?> transferObject = TransferObject.createDictEncodedStringTransfer(
+        try (final TransferObject<IntBuffer> transferObject = TransferObject.createDictEncodedStringTransfer(
                 columnSourceIn, columnDefinition, tableRowSet,
                 writeInstructions.getTargetPageSize(), dictionary, NULL_POS)) {
             boolean done = false;
             do {
                 // Paginate the data and prepare the dictionary. Then add the dictionary page followed by all data pages
-                transferObject.prepareDictionaryAndTransferOnePageToBuffer();
+                transferObject.transferOnePageToBuffer();
                 done = !transferObject.hasMoreDataToBuffer();
                 if (done) {
                     // If done, we store a reference to transfer object's page buffer, else we make copies of all the

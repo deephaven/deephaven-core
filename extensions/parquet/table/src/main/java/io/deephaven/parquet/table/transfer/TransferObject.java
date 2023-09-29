@@ -143,7 +143,7 @@ public interface TransferObject<B> extends SafeCloseable {
         return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
     }
 
-    static <DATA_TYPE> @Nullable DictEncodedStringTransferBase<?> createDictEncodedStringTransfer(
+    static <DATA_TYPE> @Nullable TransferObject<IntBuffer> createDictEncodedStringTransfer(
             @NotNull final ColumnSource<DATA_TYPE> columnSource,
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
             @NotNull final RowSet tableRowSet, final int targetPageSize,
@@ -166,6 +166,7 @@ public interface TransferObject<B> extends SafeCloseable {
     /**
      * Transfer one page size worth of fetched data into an internal buffer, which can then be accessed using
      * {@link TransferObject#getBuffer()}. The target page size is passed in the constructor.
+     * For dictionary encoded string transfers, this method also updates the dictionary with the strings encountered.
      *
      * @return The number of fetched data entries copied into the buffer. This can be different from the total
      * number of entries fetched in case of variable-width types (e.g. strings) when used with additional
@@ -184,6 +185,15 @@ public interface TransferObject<B> extends SafeCloseable {
      * @return the buffer
      */
     B getBuffer();
+
+    /**
+     * Returns whether we encountered any null value while transferring page data to buffer. This method is only used
+     * for dictionary encoded string transfer objects. This method should be called after
+     * {@link #transferOnePageToBuffer()} and the state resets everytime we call {@link #transferOnePageToBuffer()}.
+     */
+    default boolean pageHasNull() {
+        throw new UnsupportedOperationException("Only supported for dictionary encoded string transfer objects");
+    }
 
     /**
      * Get the lengths of array/vector elements added to the buffer.

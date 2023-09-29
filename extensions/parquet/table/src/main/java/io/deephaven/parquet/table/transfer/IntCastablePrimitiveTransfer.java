@@ -36,7 +36,7 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
     }
 
     @Override
-    public final int transferOnePageToBuffer() {
+    public int transferOnePageToBuffer() {
         if (!hasMoreDataToBuffer()) {
             return 0;
         }

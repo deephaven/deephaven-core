@@ -11,9 +11,10 @@ import java.nio.IntBuffer;
 import java.util.function.Supplier;
 
 /**
- * Base class for transferring dictionary-encoded strings. This class updates the {@link StringDictionary} with all the
- * strings it encounters and generates an IntBuffer of dictionary position values. This classes extends
- * {@link PrimitiveArrayAndVectorTransfer} to manage the dictionary position value buffers.
+ * Base class for reading dictionary-encoded string arrays and vectors. This class updates the {@link StringDictionary}
+ * with all the strings it encounters and generates an IntBuffer of dictionary position values. This class extends
+ * {@link PrimitiveArrayAndVectorTransfer} to manage the dictionary positions in an {@link IntBuffer} similar to an Int
+ * array/vector column.
  */
 abstract public class DictEncodedStringTransferBase<T>
         extends PrimitiveArrayAndVectorTransfer<T, IntBuffer, IntBuffer> {
@@ -32,24 +33,17 @@ abstract public class DictEncodedStringTransferBase<T>
         this.dictEncodedValues = IntBuffer.allocate(targetPageSize);
     }
 
-    /**
-     * This method is used to prepare the dictionary and transfer one page of data to the buffer. This method should be
-     * used instead of {@link #transferOnePageToBuffer()}.
-     */
-    final public void prepareDictionaryAndTransferOnePageToBuffer() {
-        // Reset state before transferring each page
-        pageHasNull = false;
-        super.transferOnePageToBuffer();
-    }
-
     @Override
     final public int transferOnePageToBuffer() {
-        throw new UnsupportedOperationException("Use prepareDictionaryAndTransferOnePageToBuffer instead");
+        // Reset state before transferring each page
+        pageHasNull = false;
+        return super.transferOnePageToBuffer();
     }
 
     /**
-     * Helper method which takes a string supplier and number of strings, fetches that many strings from the supplier,
-     * adds them to the dictionary and populates an IntBuffer with dictionary position values.
+     * Helper method which takes a string supplier (from the array/vector transfer child classes) and number of strings,
+     * fetches that many strings from the supplier, adds them to the dictionary and populates an IntBuffer with
+     * dictionary position values.
      */
     final void dictEncodingHelper(@NotNull Supplier<String> strSupplier, int numStrings) {
         dictEncodedValues.clear();
@@ -89,9 +83,5 @@ abstract public class DictEncodedStringTransferBase<T>
 
     final public boolean pageHasNull() {
         return pageHasNull;
-    }
-
-    final void setPageHasNull() {
-        this.pageHasNull = true;
     }
 }

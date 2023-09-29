@@ -3,40 +3,59 @@
  */
 package io.deephaven.parquet.table.transfer;
 
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
-import java.util.function.Supplier;
 
-final class DictEncodedStringTransfer extends DictEncodedStringTransferBase<String> {
+/**
+ * Transfer object for dictionary encoded string columns. This class updates the {@link StringDictionary} with all the
+ * strings it encounters and generates an IntBuffer of dictionary position values. The class extends from
+ * {@link IntCastablePrimitiveTransfer} to manage the dictionary position {@link IntBuffer} similar to an Int column.
+ */
+
+final class DictEncodedStringTransfer extends IntCastablePrimitiveTransfer<ObjectChunk<String, Values>> {
+    /**
+     * The position of the null value in the dictionary encoded strings.
+     */
     private final int nullPos;
+    private final StringDictionary dictionary;
+    private boolean pageHasNull;
 
     DictEncodedStringTransfer(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,
             int targetPageSize, StringDictionary dictionary, final int nullPos) {
-        super(columnSource, tableRowSet, targetPageSize, dictionary, nullPos);
+        super(columnSource, tableRowSet, targetPageSize);
         this.nullPos = nullPos;
+        this.dictionary = dictionary;
+        this.pageHasNull = false;
     }
 
     @Override
-    boolean addNullToBuffer() {
-        if (!buffer.hasRemaining()) {
-            return false;
+    public int transferOnePageToBuffer() {
+        // Reset state before transferring each page
+        pageHasNull = false;
+        return super.transferOnePageToBuffer();
+    }
+
+    @Override
+    public void copyAllFromChunkToBuffer() {
+        int chunkSize = chunk.size();
+        for (int i = 0; i < chunkSize; i++) {
+            String value = chunk.get(i);
+            if (value == null) {
+                buffer.put(nullPos);
+                pageHasNull = true;
+            } else {
+                int posInDictionary = dictionary.add(value);
+                buffer.put(posInDictionary);
+            }
         }
-        setPageHasNull();
-        buffer.put(nullPos);
-        return true;
     }
 
-    @Override
-    void encodeDataForBuffering(@NotNull String data) {
-        Supplier<String> supplier = () -> data;
-        dictEncodingHelper(supplier, 1);
-    }
-
-    @Override
-    public IntBuffer getRepeatCount() {
-        throw new UnsupportedOperationException("getRepeatCount() not supported for DictEncodedStringTransfer");
+    public boolean pageHasNull() {
+        return pageHasNull;
     }
 }
