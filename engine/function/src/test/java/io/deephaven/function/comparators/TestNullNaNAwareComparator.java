@@ -5,15 +5,46 @@ package io.deephaven.function.comparators;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 
+import java.lang.Number;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Comparator;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
+import static io.deephaven.function.comparators.NullNaNAwareComparator.toBigDecimal;
+
 /**
  * Test NullNaNAwareComparator.
  */
 public class TestNullNaNAwareComparator extends BaseArrayTestCase {
+
+    public void testNotComparable() {
+        final Object v1 = new java.lang.Object();
+        final Object v2 = new java.lang.Object();
+
+        final Comparator<Object> cmp = new NullNaNAwareComparator<>();
+
+        try {
+            cmp.compare(v1, v2);
+            fail("Expected UnsupportedOperationException");
+        } catch (final UnsupportedOperationException e) {
+            // expected
+        }
+    }
+
+    public void testString() {
+        final String v1 = "a";
+        final String v2 = "b";
+
+        final Comparator<String> cmp = new NullNaNAwareComparator<>();
+        assertEquals(0, cmp.compare(v1, v1));
+        assertEquals(0, cmp.compare(v2, v2));
+        assertEquals(-1, cmp.compare(v1, v2));
+        assertEquals(1, cmp.compare(v2, v1));
+    }
 
     public void testDouble() {
         final Double v1 = 1.4;
@@ -93,5 +124,34 @@ public class TestNullNaNAwareComparator extends BaseArrayTestCase {
 
         assertEquals(-1, cmp.compare(v1, v6));
         assertEquals(1, cmp.compare(v6, v1));
+    }
+
+    public void testMixedNumeric() {
+        final Float v1 = 1.4f;
+        final Double v2 = 2.3d;
+
+        final Comparator<Number> cmp = new NullNaNAwareComparator<Number>();
+        assertEquals(0, cmp.compare(v1, v1));
+        assertEquals(0, cmp.compare(v2, v2));
+        assertEquals(-1, cmp.compare(v1, v2));
+        assertEquals(1, cmp.compare(v2, v1));
+    }
+
+    public void testToBigDecimal() {
+        assertEquals(new BigDecimal(1), toBigDecimal((byte) 1));
+        assertEquals(new BigDecimal(1), toBigDecimal((short) 1));
+        assertEquals(new BigDecimal(1), toBigDecimal((int) 1));
+        assertEquals(new BigDecimal(1), toBigDecimal((long) 1));
+        assertEquals(new BigDecimal(1), toBigDecimal((float) 1));
+        assertEquals(new BigDecimal(1), toBigDecimal((double) 1));
+        assertEquals(new BigDecimal(1), toBigDecimal(BigInteger.valueOf(1)));
+        assertEquals(new BigDecimal(1), toBigDecimal(new BigDecimal(1)));
+
+        try {
+            toBigDecimal(new AtomicInteger(1));
+            fail("Expected UnsupportedOperationException");
+        } catch (final UnsupportedOperationException e) {
+            // expected
+        }
     }
 }

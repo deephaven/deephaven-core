@@ -4,6 +4,9 @@
 
 package io.deephaven.function.comparators;
 
+import java.lang.Number;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Comparator;
 
 import static io.deephaven.function.Basic.isNull;
@@ -14,7 +17,7 @@ import static io.deephaven.function.Numeric.isNaN;
  *
  * @param <T> type to compare.
  */
-public class NullNaNAwareComparator<T extends Comparable<? super T>> implements Comparator<T> {
+public class NullNaNAwareComparator<T> implements Comparator<T> {
 
     /**
      * Creates a comparator.
@@ -56,7 +59,32 @@ public class NullNaNAwareComparator<T extends Comparable<? super T>> implements 
             return -1;
         }
 
-        return o1.compareTo(o2);
+        if (o1 instanceof Number && o2 instanceof Number) {
+            return toBigDecimal((Number)o1).compareTo(toBigDecimal((Number)o2));
+        } else if (o1 instanceof Comparable && o2 instanceof Comparable) {
+            return ((Comparable)o1).compareTo(o2);
+        } else {
+            throw new UnsupportedOperationException("Input types are not java.lang.Number or java.lang.Comparable: (" + o1.getClass() + ", " + o2.getClass() + ")");
+        }
     }
 
+    /**
+     * Convert a number to a BigDecimal.
+     * 
+     * @param x a number
+     * @return number represented as a BigDecimal
+     */
+    protected static BigDecimal toBigDecimal(final Number x) {
+        if (x instanceof Byte || x instanceof Short || x instanceof Integer || x instanceof Long) {
+            return new BigDecimal(x.longValue());
+        } else if (x instanceof Float || x instanceof Double) {
+            return new BigDecimal(x.doubleValue());
+        } else if (x instanceof BigInteger) {
+            return new BigDecimal((BigInteger) x);
+        } else if (x instanceof BigDecimal) {
+            return (BigDecimal) x;
+        } else {
+            throw new UnsupportedOperationException("Unsupported java.lang.Number data type passed in to toBigDecimal (" + x.getClass() + ")");
+        }
+    }
 }
