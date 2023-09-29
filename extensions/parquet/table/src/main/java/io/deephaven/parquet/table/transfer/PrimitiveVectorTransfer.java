@@ -25,7 +25,8 @@ abstract class PrimitiveVectorTransfer<T extends Vector<?>, B extends Buffer>
 
     @Override
     final void encodeDataForBuffering(@NotNull final T data) {
-        encodedData.fill(data, data.intSize(), data.intSize() * numBytesPerValue);
+        int numValues = data.intSize();
+        encodedData.fill(data, numValues, numValues * numBytesPerValue);
     }
 
     @Override
