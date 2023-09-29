@@ -976,8 +976,6 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     public static class FilteredTable extends QueryTable implements WhereFilter.RecomputeListener {
         private final QueryTable source;
-        @ReferentialIntegrity
-        private final WhereFilter[] filters;
         private boolean refilterMatchedRequested = false;
         private boolean refilterUnmatchedRequested = false;
         private MergedListener whereListener;
@@ -986,11 +984,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final WhereFilter[] filters) {
             super(source.getDefinition(), currentMapping, source.columns, null, null);
             this.source = source;
-            this.filters = filters;
             for (final WhereFilter f : filters) {
-                if (f instanceof LivenessReferent && f.isRefreshing()) {
-                    manage((LivenessReferent) f);
-                }
+                addParentReference(f);
             }
         }
 
