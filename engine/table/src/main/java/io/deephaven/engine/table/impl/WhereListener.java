@@ -63,6 +63,7 @@ class WhereListener extends MergedListener {
         for (final WhereFilter filter : this.filters) {
             hasColumnArray |= !filter.getColumnArrays().isEmpty();
             filterColumnNames.addAll(filter.getColumns());
+            result.addParentReference(filter);
         }
         permitParallelization = AbstractFilterExecution.permitParallelization(filters);
         this.filterColumns = hasColumnArray ? null

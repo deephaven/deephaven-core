@@ -980,13 +980,9 @@ public class QueryTable extends BaseTable<QueryTable> {
         private boolean refilterUnmatchedRequested = false;
         private MergedListener whereListener;
 
-        public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source,
-                final WhereFilter[] filters) {
+        public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source) {
             super(source.getDefinition(), currentMapping, source.columns, null, null);
             this.source = source;
-            for (final WhereFilter f : filters) {
-                addParentReference(f);
-            }
         }
 
         @Override
@@ -1283,8 +1279,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     }
                                     currentMapping.initializePreviousValue();
 
-                                    final FilteredTable filteredTable =
-                                            new FilteredTable(currentMapping, this, filters);
+                                    final FilteredTable filteredTable = new FilteredTable(currentMapping, this);
 
                                     for (final WhereFilter filter : filters) {
                                         filter.setRecomputeListener(filteredTable);

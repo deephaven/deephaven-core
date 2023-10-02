@@ -115,6 +115,9 @@ public class SimulationClock implements Clock {
         }
         this.maxSpeed = maxSpeed;
         updateGraph.addSource(refreshTask);
+        if (maxSpeed) {
+            updateGraph.requestRefresh();
+        }
     }
 
     /**
