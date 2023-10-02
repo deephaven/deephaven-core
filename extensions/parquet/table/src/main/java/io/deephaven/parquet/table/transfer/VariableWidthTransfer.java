@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Base type for all transfer objects where we don't know the size of the data before actually reading the data. This
  * includes strings, codec encoded objects, arrays and vectors. This class provides methods to iterate over the column,
- * fetch the data, encode it and adds it to buffer while enforcing page size constraints and handling overflow.
+ * fetch the data, encode it and add it to buffer while enforcing page size constraints and handling overflow.
  *
  * @param <T> The type of the data in the column
  * @param <E> The type of the encoded data to be added to the buffer
@@ -31,14 +31,15 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
     private final int targetPageSize;
     private int currentChunkIdx;
     /**
-     * The reusable field used to store the output from {@link #encodeDataForBuffering(Object)}.
+     * The reusable field used to store the output from {@link #encodeDataForBuffering}.
      */
-    final EncodedData encodedData;
+    private final EncodedData encodedData;
     /**
-     * The value which took us beyond the page size limit. We cache it to avoid re-encoding.
+     * Whether {@link #encodedData} stores the encoded value corresponding to {@link #currentChunkIdx}. This is useful
+     * to cache the value which took us beyond the page size limit. We cache it to avoid re-encoding.
      */
     @Nullable
-    private EncodedData cachedValue;
+    private boolean cached;
 
     VariableWidthTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int maxValuesPerPage, final int targetPageSize, @NotNull final B buffer) {
@@ -48,11 +49,11 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
         Assert.gtZero(maxValuesPerPage, "targetPageSize");
         this.maxValuesPerPage = maxValuesPerPage;
         Assert.gtZero(maxValuesPerPage, "maxValuesPerPage");
-        this.context = columnSource.makeGetContext(maxValuesPerPage);
+        this.context = columnSource.makeGetContext(Math.toIntExact(Math.min(maxValuesPerPage, tableRowSet.size())));
         this.currentChunkIdx = 0;
         this.buffer = buffer;
         this.encodedData = new EncodedData();
-        cachedValue = null;
+        this.cached = false;
     }
 
     @Override
@@ -71,21 +72,20 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
      * encoded data, the number of values encoded (which can be more than 1 in case of array/vector columns) and the
      * number of bytes encoded.
      */
-    final class EncodedData {
-        // TODO Where should I place this class in this file
+    static final class EncodedData<E> {
         E encodedValues;
         int numValues;
         int numBytes;
 
         /**
-         * Construct an empty object to be filled later using {@link #fill(Object, int, int)} method
+         * Construct an empty object to be filled later using {@link #fillSingle} method
          */
         EncodedData() {}
 
         /**
          * Used for non vector/array types where we have a single value in each row
          */
-        void fill(@NotNull final E encodedValues, final int numBytes) {
+        void fillSingle(@NotNull final E encodedValues, final int numBytes) {
             this.encodedValues = encodedValues;
             this.numBytes = numBytes;
             this.numValues = 1;
@@ -94,20 +94,18 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
         /**
          * Used for vector/array types where we can have a more than one value in each row
          */
-        void fill(@NotNull final E data, final int numValues, final int numBytes) {
-            fill(data, numBytes);
+        void fillRepeated(@NotNull final E data, final int numBytes, final int numValues) {
+            fillSingle(data, numBytes);
             this.numValues = numValues;
         }
     }
-
 
     /**
      * Helper method which transfers one page size worth of data from column source to buffer. The method assumes we
      * have more data to buffer, so should be called if {@link #hasMoreDataToBuffer()} returns true.
      */
     final void transferOnePageToBufferHelper() {
-        boolean stop = false;
-        do {
+        OUTER: do {
             if (chunk == null) {
                 // Fetch a chunk of data from the table
                 final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(maxValuesPerPage);
@@ -120,61 +118,64 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
                 final T data = chunk.get(currentChunkIdx);
                 if (data == null) {
                     if (!addNullToBuffer()) {
-                        stop = true;
-                        break;
+                        // Reattempt adding null to the buffer in the next iteration
+                        break OUTER;
                     }
                     currentChunkIdx++;
                     continue;
                 }
-                EncodedData nextEntry;
-                if (cachedValue == null) {
-                    encodeDataForBuffering(data);
-                    nextEntry = encodedData;
-                } else {
-                    // We avoid re-encoding by using the cached value
-                    nextEntry = cachedValue;
-                    cachedValue = null;
+                if (!cached) {
+                    encodeDataForBuffering(data, encodedData);
                 }
-                int numBytesBuffered = getNumBytesBuffered();
-                // Always copy the first entry
-                if ((numBytesBuffered != 0 && numBytesBuffered + nextEntry.numBytes > targetPageSize) ||
-                        !addEncodedDataToBuffer(nextEntry)) {
-                    stop = true;
-                    cachedValue = nextEntry;
-                    break;
+                final int numBytesBuffered = getNumBytesBuffered();
+                final boolean isFirstEntry = (numBytesBuffered == 0);
+                if (isFirstEntry) {
+                    // Always copy the first entry
+                    addEncodedDataToBuffer(encodedData, true);
+                } else if (numBytesBuffered + encodedData.numBytes > targetPageSize ||
+                        !addEncodedDataToBuffer(encodedData, false)) {
+                    // Reattempt adding the encoded value to the buffer in the next iteration
+                    cached = true;
+                    break OUTER;
                 }
+                cached = false;
                 currentChunkIdx++;
             }
             if (currentChunkIdx == chunk.size()) {
                 chunk = null;
             }
-        } while (!stop && tableRowSetIt.hasMore());
+        } while (tableRowSetIt.hasMore());
     }
 
     /**
-     * This method is called when we encounter a null in the column.
+     * This method is called when we encounter a null row.
      *
-     * @return Whether we succeeded in adding the null to the buffer. A false value indicates overflow of underlying
+     * @return Whether we succeeded in adding the null row to the buffer. A false value indicates overflow of underlying
      *         buffer and that we should stop reading more data from the column and return the buffer as-is.
      */
     abstract boolean addNullToBuffer();
 
     /**
      * This method is called when we fetch a non-null row entry from the column and need to encode it before adding it
-     * to the buffer. This method assumes the data is non-null. The encoded data is stored in the variable
-     * {@link #encodedData}
+     * to the buffer. This method assumes the data is non-null. The encoded data is stored in the paramater
+     * {@code encodedData}
      *
      * @param data The fetched value to be encoded, can be an array/vector or a single value
+     * @param encodedData The object to be filled with the encoded data
      */
-    abstract void encodeDataForBuffering(@NotNull final T data);
+    abstract void encodeDataForBuffering(@NotNull final T data, @NotNull final EncodedData<E> encodedData);
 
     /**
      * This method is called for adding the encoded data to the buffer.
+     * 
+     * @param data The encoded data to be added to the buffer
+     * @param force Whether we should force adding the data to the buffer even if it overflows buffer size and requires
+     *        resizing
      *
      * @return Whether we succeeded in adding the data to the buffer. A false value indicates overflow of underlying
      *         buffer and that we should stop reading more data from the column and return the buffer as-is.
      */
-    abstract boolean addEncodedDataToBuffer(@NotNull final EncodedData data);
+    abstract boolean addEncodedDataToBuffer(@NotNull final EncodedData<E> data, final boolean force);
 
     /**
      * The total number of encoded bytes present in the buffer. Useful for adding page size constraints.

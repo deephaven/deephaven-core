@@ -45,7 +45,8 @@ abstract public class DictEncodedStringTransferBase<T>
      * fetches that many strings from the supplier, adds them to the dictionary and populates an IntBuffer with
      * dictionary position values.
      */
-    final void dictEncodingHelper(@NotNull Supplier<String> strSupplier, int numStrings) {
+    final void dictEncodingHelper(@NotNull Supplier<String> strSupplier, int numStrings,
+            @NotNull final EncodedData<IntBuffer> encodedData) {
         dictEncodedValues.clear();
         if (numStrings > dictEncodedValues.limit()) {
             dictEncodedValues = IntBuffer.allocate(numStrings);
@@ -62,7 +63,7 @@ abstract public class DictEncodedStringTransferBase<T>
                 dictEncodedValues.put(posInDictionary);
             }
         }
-        encodedData.fill(dictEncodedValues, numStrings, numBytesEncoded);
+        encodedData.fillRepeated(dictEncodedValues, numBytesEncoded, numStrings);
     }
 
     @Override
@@ -78,7 +79,7 @@ abstract public class DictEncodedStringTransferBase<T>
 
     @Override
     final int getNumBytesBuffered() {
-        return buffer.position() * Integer.BYTES;
+        return (buffer.position() + repeatCounts.position()) * Integer.BYTES;
     }
 
     final public boolean pageHasNull() {

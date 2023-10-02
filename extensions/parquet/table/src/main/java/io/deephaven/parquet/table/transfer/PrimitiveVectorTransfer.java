@@ -24,13 +24,13 @@ abstract class PrimitiveVectorTransfer<T extends Vector<?>, B extends Buffer>
     }
 
     @Override
-    final void encodeDataForBuffering(@NotNull final T data) {
+    final void encodeDataForBuffering(@NotNull final T data, @NotNull final EncodedData<T> encodedData) {
         int numValues = data.intSize();
-        encodedData.fill(data, numValues, numValues * numBytesPerValue);
+        encodedData.fillRepeated(data, numValues * numBytesPerValue, numValues);
     }
 
     @Override
     final int getNumBytesBuffered() {
-        return buffer.position() * numBytesPerValue;
+        return buffer.position() * numBytesPerValue + repeatCounts.position() * Integer.BYTES;
     }
 }

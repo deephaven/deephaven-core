@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table.transfer;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
@@ -31,15 +32,17 @@ abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends A
         return buffer.limit();
     }
 
-    final boolean addEncodedDataToBuffer(@NotNull final EncodedData data) {
+    final boolean addEncodedDataToBuffer(@NotNull final EncodedData<E> data, boolean force) {
         if (!repeatCounts.hasRemaining()) {
+            Assert.eqFalse(force, "force");
             return false;
         }
-        if (buffer.position() == 0 && data.numValues > buffer.remaining()) {
-            // Resize the buffer if the first array/vector doesn't fit
-            resizeBuffer(data.numValues);
-        } else if (data.numValues > buffer.remaining()) {
-            return false;
+        if (data.numValues > buffer.remaining()) {
+            if (force) {
+                resizeBuffer(data.numValues);
+            } else {
+                return false;
+            }
         }
         copyToBuffer(data.encodedValues);
         repeatCounts.put(data.numValues);

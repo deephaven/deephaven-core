@@ -28,7 +28,7 @@ abstract class ObjectVectorTransfer<T> extends ObjectArrayAndVectorTransfer<Obje
     }
 
     @Override
-    final void encodeDataForBuffering(final @NotNull ObjectVector<T> data) {
+    final void encodeDataForBuffering(final @NotNull ObjectVector<T> data, @NotNull final EncodedData<Binary[]> encodedData) {
         int numObjects = data.intSize();
         if (encodedDataBuf == null || numObjects > encodedDataBuf.length) {
             encodedDataBuf = new Binary[numObjects];
@@ -45,7 +45,7 @@ abstract class ObjectVectorTransfer<T> extends ObjectArrayAndVectorTransfer<Obje
                 }
             }
         }
-        encodedData.fill(encodedDataBuf, numObjects, numBytesEncoded);
+        encodedData.fillRepeated(encodedDataBuf, numBytesEncoded, numObjects);
     }
 
     abstract Binary encodeToBinary(T value);

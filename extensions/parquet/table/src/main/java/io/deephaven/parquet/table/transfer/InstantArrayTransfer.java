@@ -22,16 +22,16 @@ final class InstantArrayTransfer extends PrimitiveArrayAndVectorTransfer<Instant
     }
 
     @Override
-    void encodeDataForBuffering(final Instant @NotNull [] data) {
+    void encodeDataForBuffering(final Instant @NotNull [] data, @NotNull final EncodedData<Instant[]> encodedData) {
         // We lie here about encoding the data and instead send back an Instant array with number of bytes equal to
         // the final length after we convert them to Longs. We later do the conversion from Instant -> Long
         // inside {@link #copyToBuffer} below. This is done to avoid creating a temporary array of Longs.
-        encodedData.fill(data, data.length, data.length * Long.BYTES);
+        encodedData.fillRepeated(data, data.length * Long.BYTES, data.length);
     }
 
     @Override
     int getNumBytesBuffered() {
-        return buffer.position() * Long.BYTES;
+        return buffer.position() * Long.BYTES + getRepeatCount().position() * Integer.BYTES;
     }
 
     @Override

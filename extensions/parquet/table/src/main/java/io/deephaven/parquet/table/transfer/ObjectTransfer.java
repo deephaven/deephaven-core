@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table.transfer;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import org.apache.parquet.io.api.Binary;
@@ -53,7 +54,13 @@ abstract class ObjectTransfer<T> extends VariableWidthTransfer<T, Binary, Binary
         return true;
     }
 
-    final boolean addEncodedDataToBuffer(@NotNull final EncodedData data) {
+    final boolean addEncodedDataToBuffer(@NotNull final EncodedData<Binary> data, final boolean force) {
+        if (force && bufferedDataCount != 0) {
+            // This should never happen, because numBytesBuffered should be zero if bufferedDataCount is zero
+            //noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted();
+            return false;
+        }
         if (bufferedDataCount == bufferSize) {
             return false;
         }

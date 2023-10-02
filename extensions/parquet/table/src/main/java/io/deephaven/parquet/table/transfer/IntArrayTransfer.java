@@ -5,6 +5,7 @@ package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
@@ -17,13 +18,13 @@ final class IntArrayTransfer extends PrimitiveArrayAndVectorTransfer<int[], int[
     }
 
     @Override
-    void encodeDataForBuffering(final int @NotNull [] data) {
-        encodedData.fill(data, data.length, data.length * Integer.BYTES);
+    void encodeDataForBuffering(final int @NotNull [] data, @NotNull final EncodedData<int[]> encodedData) {
+        encodedData.fillRepeated(data, data.length * Integer.BYTES, data.length);
     }
 
     @Override
     int getNumBytesBuffered() {
-        return buffer.position() * Integer.BYTES;
+        return (buffer.position() + repeatCounts.position()) * Integer.BYTES;
     }
 
     @Override

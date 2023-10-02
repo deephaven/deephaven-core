@@ -18,13 +18,13 @@ final class CharArrayTransfer extends PrimitiveArrayAndVectorTransfer<char[], ch
     }
 
     @Override
-    void encodeDataForBuffering(final char @NotNull [] data) {
-        encodedData.fill(data, data.length, data.length * Integer.BYTES);
+    void encodeDataForBuffering(final char @NotNull [] data, @NotNull final EncodedData<char[]> encodedData) {
+        encodedData.fillRepeated(data, data.length * Integer.BYTES, data.length);
     }
 
     @Override
     int getNumBytesBuffered() {
-        return buffer.position() * Integer.BYTES;
+        return (buffer.position() + repeatCounts.position()) * Integer.BYTES;
     }
 
     @Override

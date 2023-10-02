@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table.transfer;
 
+ import io.deephaven.base.verify.Assert;
  import io.deephaven.engine.rowset.RowSequence;
  import io.deephaven.engine.table.ColumnSource;
  import org.apache.parquet.io.api.Binary;
@@ -43,20 +44,23 @@ abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T,
 
     @Override
     final int getNumBytesBuffered() {
-        return numBytesBuffered;
+        return numBytesBuffered + repeatCounts.position() * Integer.BYTES;
     }
 
-    final boolean addEncodedDataToBuffer(@NotNull final EncodedData data) {
+    final boolean addEncodedDataToBuffer(@NotNull final EncodedData<Binary[]> data, final boolean force) {
         if (!repeatCounts.hasRemaining()) {
+            Assert.eqFalse(force, "force");
             return false;
         }
-        int numEncodedValues = data.numValues;
-        if (bufferedDataCount == 0 && numEncodedValues > bufferSize) {
-            // Resize the buffer if the first array/vector doesn't fit
-            bufferSize = numEncodedValues;
-            buffer = new Binary[bufferSize];
-        } else if (numEncodedValues > bufferSize - bufferedDataCount) {
-            return false;
+        final int numEncodedValues = data.numValues;
+        if (numEncodedValues > bufferSize - bufferedDataCount) {
+            if (force) {
+                // Resize the buffer
+                bufferSize = numEncodedValues + bufferedDataCount;
+                buffer = new Binary[bufferSize];
+            } else {
+                return false;
+            }
         }
         for (final Binary val : data.encodedValues) {
             buffer[bufferedDataCount++] = val;

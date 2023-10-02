@@ -707,14 +707,13 @@ public class ParquetTools {
         return readPartitionedTable(layout, layout.getInstructions(), layout.getTableDefinition());
     }
 
-    private static final SimpleTypeMap<Class<?>> DB_ARRAY_TYPE_MAP = SimpleTypeMap.create(
+    private static final SimpleTypeMap<Class<?>> VECTOR_TYPE_MAP = SimpleTypeMap.create(
             null, CharVector.class, ByteVector.class, ShortVector.class, IntVector.class, LongVector.class,
             FloatVector.class, DoubleVector.class, ObjectVector.class);
 
-    private static final SimpleTypeMap<Class<?>> DB_VECTOR_DIRECT_TYPE_MAP = SimpleTypeMap.create(
+    private static final SimpleTypeMap<Class<?>> VECTOR_DIRECT_TYPE_MAP = SimpleTypeMap.create(
             null, CharVectorDirect.class, ByteVectorDirect.class, ShortVectorDirect.class, IntVectorDirect.class,
-            LongVectorDirect.class,
-            FloatVectorDirect.class, DoubleVectorDirect.class, ObjectVectorDirect.class);
+            LongVectorDirect.class, FloatVectorDirect.class, DoubleVectorDirect.class, ObjectVectorDirect.class);
 
 
     private static Class<?> loadClass(final String colName, final String desc, final String className) {
@@ -747,14 +746,14 @@ public class ParquetTools {
                 if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.StringSet) {
                     colDef = ColumnDefinition.fromGenericType(parquetColDef.name, StringSet.class, null);
                 } else if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.Vector) {
-                    final Class<?> vectorType = DB_ARRAY_TYPE_MAP.get(baseType);
+                    final Class<?> vectorType = VECTOR_TYPE_MAP.get(baseType);
                     if (vectorType != null) {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, vectorType, baseType);
                     } else {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, ObjectVector.class, baseType);
                     }
                 } else if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.VectorDirect) {
-                    final Class<?> vectorDirectType = DB_VECTOR_DIRECT_TYPE_MAP.get(baseType);
+                    final Class<?> vectorDirectType = VECTOR_DIRECT_TYPE_MAP.get(baseType);
                     if (vectorDirectType != null) {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, vectorDirectType, baseType);
                     } else {

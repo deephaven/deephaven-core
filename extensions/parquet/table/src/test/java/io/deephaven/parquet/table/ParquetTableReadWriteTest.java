@@ -429,7 +429,7 @@ public class ParquetTableReadWriteTest {
                         "nonNullString = `` + (i % 60)",
                         "nonNullPolyString = `` + (i % 600)",
                         "someIntColumn = i",
-                        // "someLongColumn = ii",
+                        "someLongColumn = ii",
                         // "someDoubleColumn = i*1.1",
                         // "someFloatColumn = (float)(i*1.1)",
                         // "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
@@ -442,7 +442,7 @@ public class ParquetTableReadWriteTest {
                         "nullString = (String) null",
                         "nullKey = i < -1?`123`:null",
                         "nullIntColumn = (int)null",
-                        // "nullLongColumn = (long)null",
+                        "nullLongColumn = (long)null",
                         // "nullDoubleColumn = (double)null",
                         // "nullFloatColumn = (float)null",
                         // "nullBoolColumn = (Boolean)null",
@@ -536,8 +536,7 @@ public class ParquetTableReadWriteTest {
                         "nullTimeArrayColumn = new Instant[] {(Instant)null}",
                         "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"));
 
-        final Table arrayTable = TableTools.emptyTable(10000).select(
-                Selectable.from(columns));
+        final Table arrayTable = TableTools.emptyTable(10000).select(Selectable.from(columns));
         final File dest = new File(rootFile + File.separator + "testArrayColumns.parquet");
         ParquetTools.writeTable(arrayTable, dest);
         Table fromDisk = ParquetTools.readTable(dest);

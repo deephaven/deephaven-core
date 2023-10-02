@@ -7,6 +7,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.IntBuffer;
 import java.util.function.Supplier;
 
 final class DictEncodedStringArrayTransfer extends DictEncodedStringTransferBase<String[]> {
@@ -34,8 +35,8 @@ final class DictEncodedStringArrayTransfer extends DictEncodedStringTransferBase
     }
 
     @Override
-    void encodeDataForBuffering(@NotNull String @NotNull [] data) {
+    void encodeDataForBuffering(@NotNull String @NotNull [] data, @NotNull final EncodedData<IntBuffer> encodedData) {
         supplier.fill(data);
-        dictEncodingHelper(supplier, data.length);
+        dictEncodingHelper(supplier, data.length, encodedData);
     }
 }

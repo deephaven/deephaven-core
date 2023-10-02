@@ -26,7 +26,7 @@ abstract class ObjectArrayTransfer<T> extends ObjectArrayAndVectorTransfer<T[]> 
     }
 
     @Override
-    final void encodeDataForBuffering(final T[] data) {
+    final void encodeDataForBuffering(final T @NotNull [] data, @NotNull final EncodedData<Binary[]> encodedData) {
         int numObjects = data.length;
         if (encodedDataBuf == null || numObjects > encodedDataBuf.length) {
             encodedDataBuf = new Binary[numObjects];
@@ -41,7 +41,7 @@ abstract class ObjectArrayTransfer<T> extends ObjectArrayAndVectorTransfer<T[]> 
                 numBytesEncoded += encodedDataBuf[i].length();
             }
         }
-        encodedData.fill(encodedDataBuf, numObjects, numBytesEncoded);
+        encodedData.fillRepeated(encodedDataBuf, numBytesEncoded, numObjects);
     }
 
     /**

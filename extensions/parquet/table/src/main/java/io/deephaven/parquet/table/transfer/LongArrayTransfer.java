@@ -17,13 +17,13 @@ final class LongArrayTransfer extends PrimitiveArrayAndVectorTransfer<long[], lo
     }
 
     @Override
-    void encodeDataForBuffering(final long @NotNull [] data) {
-        encodedData.fill(data, data.length, data.length * Long.BYTES);
+    void encodeDataForBuffering(final long @NotNull [] data, @NotNull final EncodedData<long[]> encodedData) {
+        encodedData.fillRepeated(data, data.length * Long.BYTES, data.length);
     }
 
     @Override
     int getNumBytesBuffered() {
-        return buffer.position() * Integer.BYTES;
+        return buffer.position() * Long.BYTES + getRepeatCount().position() * Integer.BYTES;
     }
 
     @Override

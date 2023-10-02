@@ -9,6 +9,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.IntBuffer;
 import java.util.function.Supplier;
 
 final class DictEncodedStringVectorTransfer extends DictEncodedStringTransferBase<ObjectVector<String>> {
@@ -18,10 +19,10 @@ final class DictEncodedStringVectorTransfer extends DictEncodedStringTransferBas
     }
 
     @Override
-    void encodeDataForBuffering(@NotNull ObjectVector<String> data) {
+    void encodeDataForBuffering(@NotNull ObjectVector<String> data, @NotNull final EncodedData<IntBuffer> encodedData) {
         try (CloseableIterator<String> iter = data.iterator()) {
             Supplier<String> supplier = iter::next;
-            dictEncodingHelper(supplier, data.intSize());
+            dictEncodingHelper(supplier, data.intSize(), encodedData);
         }
     }
 }
