@@ -17,11 +17,10 @@ import java.util.OptionalInt;
 import java.util.function.Function;
 
 /**
- * The kafka protobuf options. This will fetch the {@link com.google.protobuf.Descriptors.Descriptor protobuf
- * descriptor} for the {@link #schemaSubject()} from the schema registry using version {@link #schemaVersion()} and
- * create {@link com.google.protobuf.Message message} parsing functions according to
- * {@link io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)}. These
- * functions will be adapted to handle schema changes.
+ * The kafka protobuf options. This will get the {@link com.google.protobuf.Descriptors.Descriptor protobuf descriptor}
+ * according to the the {@link #descriptorProvider()} and create {@link com.google.protobuf.Message message} parsing
+ * functions according to
+ * {@link io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)}.
  *
  * @see Consume#protobufSpec(ProtobufConsumeOptions)
  * @see <a href=
