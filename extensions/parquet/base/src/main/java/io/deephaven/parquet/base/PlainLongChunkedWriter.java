@@ -29,14 +29,14 @@ import java.nio.LongBuffer;
 public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Long.BYTES;
     private final ByteBufferAllocator allocator;
-
     private LongBuffer targetBuffer;
     private ByteBuffer innerBuffer;
-
+    private IntBuffer nullOffsets;
 
     PlainLongChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator) {
         this.allocator = allocator;
         realloc(targetPageSize);
+        nullOffsets = IntBuffer.allocate(4);
     }
 
     @Override
@@ -128,7 +128,7 @@ public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer>
                                                   @NotNull final Statistics<?> statistics) {
         ensureCapacityFor(bulkValues);
         int i = 0;
-        IntBuffer nullOffsets = IntBuffer.allocate(4);
+        nullOffsets.clear();
         while (bulkValues.hasRemaining()) {
             final long v = bulkValues.get();
             if (v != QueryConstants.NULL_LONG) {

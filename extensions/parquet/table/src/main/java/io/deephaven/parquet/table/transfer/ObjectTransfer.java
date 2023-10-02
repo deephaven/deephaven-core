@@ -51,11 +51,12 @@ abstract class ObjectTransfer<T> extends VariableWidthTransfer<T, Binary, Binary
             return false;
         }
         buffer[bufferedDataCount++] = null;
+        numBytesBuffered += Integer.BYTES;
         return true;
     }
 
     final boolean addEncodedDataToBuffer(@NotNull final EncodedData<Binary> data, final boolean force) {
-        if (force && bufferedDataCount != 0) {
+        if (force && numBytesBuffered != 0) {
             // This should never happen, because numBytesBuffered should be zero if bufferedDataCount is zero
             //noinspection ThrowableNotThrown
             Assert.statementNeverExecuted();

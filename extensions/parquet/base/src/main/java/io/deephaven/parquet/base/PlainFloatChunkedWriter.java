@@ -29,14 +29,14 @@ import java.nio.IntBuffer;
 public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Float.BYTES;
     private final ByteBufferAllocator allocator;
-
     private FloatBuffer targetBuffer;
     private ByteBuffer innerBuffer;
-
+    private IntBuffer nullOffsets;
 
     PlainFloatChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator) {
         this.allocator = allocator;
         realloc(targetPageSize);
+        nullOffsets = IntBuffer.allocate(4);
     }
 
     @Override
@@ -128,7 +128,7 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
                                                   @NotNull final Statistics<?> statistics) {
         ensureCapacityFor(bulkValues);
         int i = 0;
-        IntBuffer nullOffsets = IntBuffer.allocate(4);
+        nullOffsets.clear();
         while (bulkValues.hasRemaining()) {
             final float v = bulkValues.get();
             if (v != QueryConstants.NULL_FLOAT) {

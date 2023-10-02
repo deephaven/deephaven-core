@@ -22,18 +22,17 @@ import java.nio.IntBuffer;
  * Plain encoding except for binary values
  */
 public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]> {
-
     private static final int MAXIMUM_TOTAL_CAPACITY = ArrayUtil.MAX_ARRAY_SIZE;
-
     private final ByteBufferAllocator allocator;
-
     ByteBuffer innerBuffer;
+    private IntBuffer nullOffsets;
 
-    public PlainBinaryChunkedWriter(final int pageSize, @NotNull final ByteBufferAllocator allocator) {
+    PlainBinaryChunkedWriter(final int pageSize, @NotNull final ByteBufferAllocator allocator) {
         innerBuffer = allocator.allocate(pageSize);
         innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
         this.allocator = allocator;
         innerBuffer.mark();
+        nullOffsets = IntBuffer.allocate(4);
     }
 
     @Override
@@ -121,7 +120,7 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
     public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull Binary[] bulkValues,
                                                            final int nonNullLeafCount,
                                                            @NotNull final Statistics<?> statistics) {
-        IntBuffer nullOffsets = IntBuffer.allocate(4);
+        nullOffsets.clear();
         for (int i = 0; i < nonNullLeafCount; i++) {
             if (bulkValues[i] != null) {
                 final Binary v = bulkValues[i];

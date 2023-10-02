@@ -28,16 +28,16 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
      * Short data types which are written as primitive ints but have a different definition of {@code null}.
      */
     private final int nullValue;
-
     private final ByteBufferAllocator allocator;
-
     private IntBuffer targetBuffer;
     private ByteBuffer innerBuffer;
+    private IntBuffer nullOffsets;
 
     PlainIntChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator, final int nullValue) {
         this.allocator = allocator;
         this.nullValue = nullValue;
         realloc(targetPageSize);
+        nullOffsets = IntBuffer.allocate(4);
     }
 
     PlainIntChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator) {
@@ -133,7 +133,7 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
                                                   @NotNull final Statistics<?> statistics) {
         ensureCapacityFor(bulkValues);
         int i = 0;
-        IntBuffer nullOffsets = IntBuffer.allocate(4);
+        nullOffsets.clear();
         while (bulkValues.hasRemaining()) {
             final int v = bulkValues.get();
             if (v != nullValue) {

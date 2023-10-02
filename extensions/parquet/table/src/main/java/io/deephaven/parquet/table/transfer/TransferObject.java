@@ -70,8 +70,8 @@ public interface TransferObject<B> extends SafeCloseable {
                 return new IntArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             } else if (long.class.equals(componentType)) {
                 return new LongArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-//            } else if (double.class.equals(componentType)) {
-//                return new DoubleArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            } else if (double.class.equals(componentType)) {
+                return new DoubleArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (float.class.equals(componentType)) {
 //                return new FloatArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
 //            } else if (Boolean.class.equals(componentType)) {
