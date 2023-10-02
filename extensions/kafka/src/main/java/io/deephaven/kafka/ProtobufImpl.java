@@ -4,7 +4,6 @@
 package io.deephaven.kafka;
 
 import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Message;
 import com.google.protobuf.Parser;
@@ -18,16 +17,8 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.functions.ToBooleanFunction;
-import io.deephaven.functions.ToByteFunction;
-import io.deephaven.functions.ToCharFunction;
-import io.deephaven.functions.ToDoubleFunction;
-import io.deephaven.functions.ToFloatFunction;
-import io.deephaven.functions.ToIntFunction;
-import io.deephaven.functions.ToLongFunction;
 import io.deephaven.functions.ToObjectFunction;
 import io.deephaven.functions.ToPrimitiveFunction;
-import io.deephaven.functions.ToShortFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.kafka.KafkaTools.Consume;
 import io.deephaven.kafka.KafkaTools.KeyOrValue;
@@ -41,31 +32,13 @@ import io.deephaven.kafka.protobuf.DescriptorProvider;
 import io.deephaven.kafka.protobuf.DescriptorSchemaRegistry;
 import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
 import io.deephaven.kafka.protobuf.ProtobufConsumeOptions.FieldPathToColumnName;
-import io.deephaven.protobuf.FieldNumberPath;
-import io.deephaven.protobuf.FieldOptions;
 import io.deephaven.protobuf.FieldPath;
 import io.deephaven.protobuf.ProtobufDescriptorParser;
 import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import io.deephaven.protobuf.ProtobufFunction;
 import io.deephaven.protobuf.ProtobufFunctions;
 import io.deephaven.protobuf.ProtobufFunctions.Builder;
-import io.deephaven.qst.type.ArrayType;
-import io.deephaven.qst.type.BooleanType;
-import io.deephaven.qst.type.BoxedType;
-import io.deephaven.qst.type.ByteType;
-import io.deephaven.qst.type.CharType;
-import io.deephaven.qst.type.CustomType;
-import io.deephaven.qst.type.DoubleType;
-import io.deephaven.qst.type.FloatType;
-import io.deephaven.qst.type.GenericType;
-import io.deephaven.qst.type.InstantType;
-import io.deephaven.qst.type.IntType;
-import io.deephaven.qst.type.LongType;
-import io.deephaven.qst.type.PrimitiveType;
-import io.deephaven.qst.type.ShortType;
-import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
-import io.deephaven.qst.type.Type.Visitor;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -75,13 +48,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 
 /**
  * This layer builds on top of {@link ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)} by
@@ -92,12 +63,6 @@ import java.util.function.Function;
  * descriptor} {@link TypedFunction functions} can be adapted into the original function type.
  */
 class ProtobufImpl {
-
-    @VisibleForTesting
-    static ProtobufFunctions schemaChangeAwareFunctions(Descriptor descriptor,
-            ProtobufDescriptorParserOptions options) {
-        return new ParsedStates(descriptor, options).functionsForSchemaChanges();
-    }
 
     @VisibleForTesting
     static ProtobufFunctions simple(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
@@ -245,294 +210,6 @@ class ProtobufImpl {
         final TypedFunction<X> f2 = DhNullableTypeTransform.of(f);
         final ToPrimitiveFunction<X> unboxed = UnboxTransform.of(f2).orElse(null);
         return unboxed != null ? unboxed : f2;
-    }
-
-    private static class ParsedStates {
-        private final Descriptor originalDescriptor;
-        private final ProtobufDescriptorParserOptions options;
-        private final Map<Descriptor, ProtobufFunctions> parsed;
-
-        private ParsedStates(Descriptor originalDescriptor, ProtobufDescriptorParserOptions options) {
-            this.originalDescriptor = Objects.requireNonNull(originalDescriptor);
-            this.options = Objects.requireNonNull(options);
-            this.parsed = new HashMap<>();
-            getOrCreate(originalDescriptor);
-        }
-
-        public ProtobufFunctions functionsForSchemaChanges() {
-            final Builder builder = ProtobufFunctions.builder();
-            for (ProtobufFunction f : getOrCreate(originalDescriptor).functions()) {
-                builder.addFunctions(ProtobufFunction.of(f.path(), new ForPath(f).adaptForSchemaChanges()));
-            }
-            return builder.build();
-        }
-
-        private ProtobufFunctions getOrCreate(Descriptor descriptor) {
-            return parsed.computeIfAbsent(descriptor, this::create);
-        }
-
-        private ProtobufFunctions create(Descriptor newDescriptor) {
-            if (!originalDescriptor.getFullName().equals(newDescriptor.getFullName())) {
-                throw new IllegalArgumentException(String.format(
-                        "Expected descriptor names to match. expected='%s', actual='%s'. You may need to explicitly set schema_message_name.",
-                        originalDescriptor.getFullName(), newDescriptor.getFullName()));
-            }
-            if (newDescriptor == originalDescriptor) {
-                return withMostAppropriateType(ProtobufDescriptorParser.parse(newDescriptor, options));
-            }
-            final Function<FieldPath, FieldOptions> adaptedOptions = fieldPath -> {
-                final FieldPath originalFieldPath = adaptFieldPath(fieldPath).orElse(null);
-                if (originalFieldPath == null) {
-                    // This must be a new field, exclude it.
-                    return FieldOptions.exclude();
-                }
-                return options.fieldOptions().apply(originalFieldPath);
-            };
-            final ProtobufDescriptorParserOptions a = ProtobufDescriptorParserOptions.builder()
-                    .parsers(options.parsers())
-                    .fieldOptions(adaptedOptions)
-                    .build();
-            return withMostAppropriateType(ProtobufDescriptorParser.parse(newDescriptor, a));
-        }
-
-        private Optional<FieldPath> adaptFieldPath(FieldPath path) {
-            if (path.path().isEmpty()) {
-                return Optional.of(path);
-            }
-            final List<FieldDescriptor> originalFds = new ArrayList<>(path.path().size());
-            Descriptor descriptor = originalDescriptor;
-            final Iterator<FieldDescriptor> it = path.path().iterator();
-            while (true) {
-                final FieldDescriptor currentFd = it.next();
-                final FieldDescriptor originalFd = descriptor.findFieldByNumber(currentFd.getNumber());
-                if (originalFd == null) {
-                    // originalFd does not exist
-                    return Optional.empty();
-                }
-                originalFds.add(originalFd);
-                if (!it.hasNext()) {
-                    break;
-                }
-                descriptor = originalFd.getMessageType();
-            }
-            return Optional.of(FieldPath.of(originalFds));
-        }
-
-        private class ForPath {
-            private final ProtobufFunction originalFunction;
-            private final Map<Descriptor, TypedFunction<Message>> functions;
-
-            public ForPath(ProtobufFunction originalFunction) {
-                this.originalFunction = Objects.requireNonNull(originalFunction);
-                this.functions = new HashMap<>();
-            }
-
-            public TypedFunction<Message> adaptForSchemaChanges() {
-                final Type<?> originalReturnType = originalReturnType();
-                final TypedFunction<Message> out = originalReturnType.walk(new AdaptForSchemaChanges());
-                if (!originalReturnType.equals(out.returnType())) {
-                    throw new IllegalStateException(String.format(
-                            "AdaptForSchemaChanges error, mismatched types for %s. expected=%s, actual=%s",
-                            originalFunction.path().namePath(), originalReturnType, out.returnType()));
-                }
-                return out;
-            }
-
-            private Type<?> originalReturnType() {
-                return originalFunction.function().returnType();
-            }
-
-            private boolean test(Message message) {
-                return ((ToBooleanFunction<Message>) getOrCreateForType(message)).test(message);
-            }
-
-            private char applyAsChar(Message message) {
-                return ((ToCharFunction<Message>) getOrCreateForType(message)).applyAsChar(message);
-            }
-
-            private byte applyAsByte(Message message) {
-                return ((ToByteFunction<Message>) getOrCreateForType(message)).applyAsByte(message);
-            }
-
-            private short applyAsShort(Message message) {
-                return ((ToShortFunction<Message>) getOrCreateForType(message)).applyAsShort(message);
-            }
-
-            private int applyAsInt(Message message) {
-                return ((ToIntFunction<Message>) getOrCreateForType(message)).applyAsInt(message);
-            }
-
-            private long applyAsLong(Message message) {
-                return ((ToLongFunction<Message>) getOrCreateForType(message)).applyAsLong(message);
-            }
-
-            private float applyAsFloat(Message message) {
-                return ((ToFloatFunction<Message>) getOrCreateForType(message)).applyAsFloat(message);
-            }
-
-            private double applyAsDouble(Message message) {
-                return ((ToDoubleFunction<Message>) getOrCreateForType(message)).applyAsDouble(message);
-            }
-
-            private <T> T applyAsObject(Message message) {
-                return ((ToObjectFunction<Message, T>) getOrCreateForType(message)).apply(message);
-            }
-
-            private TypedFunction<Message> getOrCreateForType(Message message) {
-                return getOrCreate(message.getDescriptorForType());
-            }
-
-            private TypedFunction<Message> getOrCreate(Descriptor descriptor) {
-                return functions.computeIfAbsent(descriptor, this::createFunctionFor);
-            }
-
-            private TypedFunction<Message> createFunctionFor(Descriptor descriptor) {
-                final Type<?> originalReturnType = originalReturnType();
-                final TypedFunction<Message> newFunction =
-                        find(ParsedStates.this.getOrCreate(descriptor), originalFunction.path().numberPath())
-                                .map(ProtobufFunction::function)
-                                .orElse(null);
-                final TypedFunction<Message> adaptedFunction =
-                        SchemaChangeAdaptFunction.of(newFunction, originalReturnType).orElse(null);
-                if (adaptedFunction == null) {
-                    throw new UncheckedDeephavenException(
-                            String.format("Incompatible schema change for %s, originalType=%s, newType=%s",
-                                    originalFunction.path().namePath(), originalReturnType,
-                                    newFunction == null ? null : newFunction.returnType()));
-                }
-                if (!originalReturnType.equals(adaptedFunction.returnType())) {
-                    // If this happens, must be a logical error in SchemaChangeAdaptFunction
-                    throw new IllegalStateException(String.format(
-                            "Expected adapted return types to be equal for %s, originalType=%s, adaptedType=%s",
-                            originalFunction.path().namePath(), originalReturnType, adaptedFunction.returnType()));
-                }
-                return adaptedFunction;
-            }
-
-            class AdaptForSchemaChanges
-                    implements Visitor<TypedFunction<Message>>, PrimitiveType.Visitor<TypedFunction<Message>> {
-
-                @Override
-                public TypedFunction<Message> visit(PrimitiveType<?> primitiveType) {
-                    return primitiveType.walk((PrimitiveType.Visitor<TypedFunction<Message>>) this);
-                }
-
-                @Override
-                public ToObjectFunction<Message, Object> visit(GenericType<?> genericType) {
-                    // noinspection unchecked
-                    return ToObjectFunction.of(ForPath.this::applyAsObject, (GenericType<Object>) genericType);
-                }
-
-                @Override
-                public ToBooleanFunction<Message> visit(BooleanType booleanType) {
-                    return ForPath.this::test;
-                }
-
-                @Override
-                public ToByteFunction<Message> visit(ByteType byteType) {
-                    return ForPath.this::applyAsByte;
-                }
-
-                @Override
-                public ToCharFunction<Message> visit(CharType charType) {
-                    return ForPath.this::applyAsChar;
-                }
-
-                @Override
-                public ToShortFunction<Message> visit(ShortType shortType) {
-                    return ForPath.this::applyAsShort;
-                }
-
-                @Override
-                public ToIntFunction<Message> visit(IntType intType) {
-                    return ForPath.this::applyAsInt;
-                }
-
-                @Override
-                public ToLongFunction<Message> visit(LongType longType) {
-                    return ForPath.this::applyAsLong;
-                }
-
-                @Override
-                public ToFloatFunction<Message> visit(FloatType floatType) {
-                    return ForPath.this::applyAsFloat;
-                }
-
-                @Override
-                public ToDoubleFunction<Message> visit(DoubleType doubleType) {
-                    return ForPath.this::applyAsDouble;
-                }
-            }
-        }
-    }
-
-    private static class SchemaChangeAdaptFunction<T> implements TypedFunction.Visitor<T, TypedFunction<T>> {
-
-        public static <T> Optional<TypedFunction<T>> of(TypedFunction<T> f, Type<?> desiredReturnType) {
-            if (f == null) {
-                return NullFunctions.of(desiredReturnType);
-            }
-            if (desiredReturnType.equals(f.returnType())) {
-                return Optional.of(f);
-            }
-            return Optional.ofNullable(f.walk(new SchemaChangeAdaptFunction<>(desiredReturnType)));
-        }
-
-        private final Type<?> desiredReturnType;
-
-        public SchemaChangeAdaptFunction(Type<?> desiredReturnType) {
-            this.desiredReturnType = Objects.requireNonNull(desiredReturnType);
-        }
-
-        @Override
-        public TypedFunction<T> visit(ToPrimitiveFunction<T> f) {
-            if (desiredReturnType.equals(f.returnType().boxedType())) {
-                return BoxTransform.of(f);
-            }
-            return null;
-        }
-
-        @Override
-        public TypedFunction<T> visit(ToObjectFunction<T, ?> f) {
-            return f.returnType().walk(new GenericType.Visitor<>() {
-                @Override
-                public TypedFunction<T> visit(BoxedType<?> boxedType) {
-                    if (desiredReturnType.equals(boxedType.primitiveType())) {
-                        return UnboxTransform.of(f).orElse(null);
-                    }
-                    return null;
-                }
-
-                @Override
-                public TypedFunction<T> visit(StringType stringType) {
-                    return null;
-                }
-
-                @Override
-                public TypedFunction<T> visit(InstantType instantType) {
-                    return null;
-                }
-
-                @Override
-                public TypedFunction<T> visit(ArrayType<?, ?> arrayType) {
-                    return null;
-                }
-
-                @Override
-                public TypedFunction<T> visit(CustomType<?> customType) {
-                    return null;
-                }
-            });
-        }
-    }
-
-    private static Optional<ProtobufFunction> find(ProtobufFunctions f, FieldNumberPath numberPath) {
-        for (ProtobufFunction function : f.functions()) {
-            if (numberPath.equals(function.path().numberPath())) {
-                return Optional.of(function);
-            }
-        }
-        return Optional.empty();
     }
 
     private static Descriptor descriptor(Class<? extends Message> clazz)
