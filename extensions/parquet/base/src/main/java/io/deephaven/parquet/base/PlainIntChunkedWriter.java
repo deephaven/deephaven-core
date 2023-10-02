@@ -131,32 +131,51 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     public WriteResult writeBulkVectorFilterNulls(@NotNull final IntBuffer bulkValues,
                                                   final int rowCount,
                                                   @NotNull final Statistics<?> statistics) {
-        ensureCapacityFor(bulkValues);
-        int i = 0;
-        nullOffsets.clear();
-        while (bulkValues.hasRemaining()) {
-            final int v = bulkValues.get();
-            if (v != nullValue) {
-                writeInteger(v);
-                statistics.updateStats(v);
-            } else {
-                nullOffsets = Helpers.ensureCapacity(nullOffsets);
-                nullOffsets.put(i);
-                statistics.incrementNumNulls();
-            }
-            i++;
-        }
+//        ensureCapacityFor(bulkValues);
+//        int i = 0;
+//        IntBuffer nullOffsets = IntBuffer.allocate(4);
+//        while (bulkValues.hasRemaining()) {
+//            final int v = bulkValues.get();
+//            if (v != nullValue) {
+//                writeInteger(v);
+//                statistics.updateStats(v);
+//            } else {
+//                nullOffsets = Helpers.ensureCapacity(nullOffsets);
+//                nullOffsets.put(i);
+//                statistics.incrementNumNulls();
+//            }
+//            i++;
+//        }
         return new WriteResult(rowCount, nullOffsets);
     }
 
+    final public void clearNullOffsets() {
+        nullOffsets.clear();
+    }
+
+    final public void writeValue(final int pos, final int v, @NotNull final Statistics<?> statistics) {
+        if (v != nullValue) {
+            writeInteger(v);
+            statistics.updateStats(v);
+        } else {
+            nullOffsets = Helpers.ensureCapacity(nullOffsets);
+            nullOffsets.put(pos);
+            statistics.incrementNumNulls();
+        }
+    }
+
     private void ensureCapacityFor(@NotNull final IntBuffer valuesToAdd) {
-        if (!valuesToAdd.hasRemaining()) {
+        ensureCapacityFor(valuesToAdd.remaining());
+    }
+
+    public void ensureCapacityFor(@NotNull final int numValuesToAdd) {
+        if (numValuesToAdd == 0) {
             return;
         }
 
         final int currentCapacity = targetBuffer.capacity();
         final int currentPosition = targetBuffer.position();
-        final long requiredCapacity = (long) currentPosition + valuesToAdd.remaining();
+        final long requiredCapacity = (long) currentPosition + numValuesToAdd;
         if (requiredCapacity < currentCapacity) {
             return;
         }

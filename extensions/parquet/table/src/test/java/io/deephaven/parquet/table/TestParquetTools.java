@@ -426,12 +426,11 @@ public class TestParquetTools {
             ParquetTools.writeTable(stuff, f2w);
         }
         final long end1 = System.currentTimeMillis();
-        System.out.println("Total execution time for big arrays: " + (end1 - start1) / NUM_RUNS + " msec");
+        System.out.println("Total execution time for big int arrays: " + (end1 - start1) / NUM_RUNS + " msec");
 
         final Table readBack = ParquetTools.readTable(f2w);
         assertTableEquals(stuff, readBack);
     }
-
 
     @Test
     public void testColumnSwapping() {

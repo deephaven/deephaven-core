@@ -37,6 +37,18 @@ public interface ColumnWriter extends SafeCloseable {
             throws IOException;
 
     /**
+     * Add a vector page to the file.
+     */
+    void addVectorPage(@NotNull Object pageData,
+            @NotNull IntBuffer repeatCount,
+            int valuesCount,
+            @NotNull Statistics<?> statistics,
+            BulkWriter writer)
+            throws IOException;
+
+    BulkWriter getWriter();
+
+    /**
      * Reset the statistics for this column. This must be called between each row group.
      */
     void resetStats();

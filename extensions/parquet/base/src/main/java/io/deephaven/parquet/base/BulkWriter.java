@@ -89,6 +89,19 @@ public interface BulkWriter<BUFFER_TYPE> {
             final int rowCount,
             @NotNull Statistics<?> statistics);
 
+
+    default void writeValue(final int pos, final int v, @NotNull final Statistics<?> statistics) {
+        throw new UnsupportedOperationException("writeValue not supported for this type");
+    }
+
+    default void ensureCapacityFor(@NotNull final int numValuesToAdd) {
+        throw new UnsupportedOperationException("writeValue not supported for this type");
+    }
+
+    default void clearNullOffsets() {
+        throw new UnsupportedOperationException("clearNullOffsets not supported for this type");
+    }
+
     /**
      * Clear all internal state.
      */

@@ -9,10 +9,12 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.util.BigDecimalUtils;
+import io.deephaven.parquet.base.BulkWriter;
 import io.deephaven.parquet.table.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.vector.Vector;
+import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -185,6 +187,15 @@ public interface TransferObject<B> extends SafeCloseable {
      * @return the buffer
      */
     B getBuffer();
+
+
+    default void setWriter(final BulkWriter writer) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    default void setStats(final Statistics<?> stats) {
+        throw new UnsupportedOperationException("Not supported");
+    }
 
     /**
      * Returns whether we encountered any null value while transferring page data to buffer. This method is only used
