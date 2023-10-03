@@ -5,7 +5,6 @@ package io.deephaven.engine.util;
 
 import com.google.auto.service.AutoService;
 import groovy.lang.Binding;
-import groovy.lang.Closure;
 import groovy.lang.GroovyShell;
 import groovy.lang.MissingPropertyException;
 import io.deephaven.api.agg.Aggregation;
@@ -44,18 +43,10 @@ import io.deephaven.util.type.TypeUtils;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
-import org.codehaus.groovy.ast.ClassNode;
-import org.codehaus.groovy.ast.ModuleNode;
-import org.codehaus.groovy.classgen.GeneratorContext;
-import org.codehaus.groovy.control.CompilationFailedException;
 import org.codehaus.groovy.control.CompilationUnit;
-import org.codehaus.groovy.control.CompilePhase;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.Phases;
-import org.codehaus.groovy.control.SourceUnit;
-import org.codehaus.groovy.control.customizers.CompilationCustomizer;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
-import org.codehaus.groovy.control.io.StringReaderSource;
 import org.codehaus.groovy.tools.GroovyClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -96,6 +87,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()
             .getStringWithDefault("GroovyDeephavenSession.defaultScriptPath", ".");
 
+    private static final boolean INCLUDE_DEFAULT_IMPORTS_IN_LOADED_GROOVY =
+            Configuration.getInstance()
+                    .getBooleanWithDefault("GroovyDeephavenSession.includeDefaultImportsInGroovyScripts", false);
+    private static final boolean INCLUDE_CONSOLE_IMPORTS_IN_LOADED_GROOVY =
+            INCLUDE_DEFAULT_IMPORTS_IN_LOADED_GROOVY && Configuration.getInstance()
+                    .getBooleanWithDefault("GroovyDeephavenSession.includeConsoleImportsInGroovyScripts", false);
+
     private static final boolean ALLOW_UNKNOWN_GROOVY_PACKAGE_IMPORTS = Configuration.getInstance()
             .getBooleanForClassWithDefault(GroovyDeephavenSession.class, "allowUnknownGroovyPackageImports", false);
 
@@ -130,16 +128,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private final ScriptFinder scriptFinder;
 
-    private final ImportCustomizer imports = new ImportCustomizer();
-    private final CompilationUnit.ISourceUnitOperation specifyPackage = new CompilationUnit.ISourceUnitOperation() {
-        @Override
-        public void call(SourceUnit source) throws CompilationFailedException {
-            source.getAST().setPackageName(PACKAGE);
-        }
-    };
-
-
-    private final ArrayList<String> scriptImports = new ArrayList<>();
+    private final ImportCustomizer consoleImports = new ImportCustomizer();
+    private final ImportCustomizer loadedGroovyScriptImports = new ImportCustomizer();
 
     private final Set<String> dynamicClasses = new HashSet<>();
     private final GroovyShell groovyShell;
@@ -166,51 +156,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             throws IOException {
         super(updateGraph, objectTypeLookup, changeListener);
 
-        imports.addImports(
-                DataColumn.class.getName(),
-                Table.class.getName(),
-                TableFactory.class.getName(),
-                PartitionedTable.class.getName(),
-                PartitionedTableFactory.class.getName(),
-                Array.class.getName(),
-                TypeUtils.class.getName(),
-                ArrayTypeUtils.class.getName(),
-                DateTimeUtils.class.getName(),
-                CompressedString.class.getName(),
-                Instant.class.getName(),
-                LocalDate.class.getName(),
-                LocalTime.class.getName(),
-                ZoneId.class.getName(),
-                ZonedDateTime.class.getName(),
-                QueryScopeParam.class.getName(),
-                QueryScope.class.getName(),
-                // classes
-                ExecutionContext.class.getName());
-        imports.addStaticImport(CompressedString.class.getName(), "compress");
-        imports.addStarImports(
-                "io.deephaven.api",
-                "io.deephaven.api.filter",
-                "java.util",
-                "java.lang"
-        // packages
-        );
-        imports.addStaticStars(
-                TableTools.class.getName(),
-                TableLoggers.class.getName(),
-                QueryConstants.class.getName(),
-                GroovyStaticImports.class.getName(),
-                DateTimeUtils.class.getName(),
-                QueryLanguageFunctionUtils.class.getName(),
-                Aggregation.class.getName(),
-                UpdateByOperation.class.getName(),
-                OperationControl.class.getName(),
-                DeltaControl.class.getName(),
-                BadDataBehavior.class.getName()
-        // class members
-        );
+        addDefaultImports(consoleImports);
+        if (INCLUDE_DEFAULT_IMPORTS_IN_LOADED_GROOVY) {
+            addDefaultImports(this.loadedGroovyScriptImports);
+        }
 
         CompilerConfiguration config = new CompilerConfiguration();
-        config.getCompilationCustomizers().add(imports);
+        config.getCompilationCustomizers().add(consoleImports);
         groovyShell = new GroovyShell(STATIC_LOADER, config) {
             protected synchronized String generateScriptName() {
                 return GroovyDeephavenSession.this.generateScriptName();
@@ -229,6 +181,51 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         for (final String path : runScripts.paths) {
             runScript(path);
         }
+    }
+
+    /**
+     * Adds the default imports that Groovy users assume to be present.
+     */
+    private void addDefaultImports(ImportCustomizer imports) {
+        // TODO (core#230): Remove large list of manual text-based consoleImports
+        // NOTE: Don't add to this list without a compelling reason!!! Use the user script import if possible.
+        imports.addImports(
+                DataColumn.class.getName(),
+                Table.class.getName(),
+                TableFactory.class.getName(),
+                PartitionedTable.class.getName(),
+                PartitionedTableFactory.class.getName(),
+                Array.class.getName(),
+                TypeUtils.class.getName(),
+                ArrayTypeUtils.class.getName(),
+                DateTimeUtils.class.getName(),
+                CompressedString.class.getName(),
+                Instant.class.getName(),
+                LocalDate.class.getName(),
+                LocalTime.class.getName(),
+                ZoneId.class.getName(),
+                ZonedDateTime.class.getName(),
+                QueryScopeParam.class.getName(),
+                QueryScope.class.getName(),
+                ExecutionContext.class.getName());
+        imports.addStaticImport(CompressedString.class.getName(), "compress");
+        imports.addStarImports(
+                "io.deephaven.api",
+                "io.deephaven.api.filter",
+                "java.util",
+                "java.lang");
+        imports.addStaticStars(
+                TableTools.class.getName(),
+                TableLoggers.class.getName(),
+                QueryConstants.class.getName(),
+                GroovyStaticImports.class.getName(),
+                DateTimeUtils.class.getName(),
+                QueryLanguageFunctionUtils.class.getName(),
+                Aggregation.class.getName(),
+                UpdateByOperation.class.getName(),
+                OperationControl.class.getName(),
+                DeltaControl.class.getName(),
+                BadDataBehavior.class.getName());
     }
 
     private String generateScriptName() {
@@ -299,8 +296,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final Pair<String, String> fc = fullCommand(command);
         final String lastCommand = fc.second;
         final String commandPrefix = fc.first;
-
-        System.out.println(lastCommand);
 
         final String oldScriptName = script;
 
@@ -438,6 +433,15 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     /**
+     * Represents an import that can be added to an ImportCustomizer, as a valid return from
+     * {@link #isValidImportString(String)}.
+     */
+    @VisibleForTesting
+    public interface GroovyImport {
+        void append(ImportCustomizer imports);
+    }
+
+    /**
      * Ensure that the given importString is valid. Return a canonical version of the import string if it is valid.
      *
      * @param importString the string to check. importString is "[import] [static]
@@ -446,50 +450,70 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
      *         package.class.part.part[.*];"
      */
     @VisibleForTesting
-    public String isValidImportString(String importString) {
+    public Optional<GroovyImport> isValidImportString(String importString) {
         // look for (ignoring whitespace): optional "import" optional "static" everything_else optional ".*" optional
+        // "as" optional ".*" optional
         // semicolon
         // "everything_else" should be a valid java identifier of the form package.class[.class|.method|.field]. This
         // will be checked later
         Matcher matcher = Pattern
                 .compile(
                         "^\\s*(import\\s+)\\s*(?<static>static\\s+)?\\s*(?<body>.*?)(?<wildcard>\\.\\*)?(\\s+as\\s+(?<alias>.*?))?[\\s;]*$")
-                // .compile("^\\s*(import\\s+)\\s*(?<static>static\\s+)?\\s*(?<body>[^\\s.;]*?)(?<wildcard>\\.\\*)?\\s*(?:as\\s+(?<alias>.*?))?[\\s;]*$")
                 .matcher(importString);
         if (!matcher.matches()) {
-            return null;
+            return Optional.empty();
         }
         final boolean isStatic = matcher.group("static") != null;
         final boolean isWildcard = matcher.group("wildcard") != null;
         final String body = matcher.group("body");
+        @Nullable
+        final String alias = matcher.group("alias");
         if (body == null) {
-            return null;
+            return Optional.empty();
         }
+        final Optional<GroovyImport> result;
 
         boolean okToImport;
         if (isStatic) {
+            final String typeName;
+            @Nullable
+            final String memberName;
             if (isWildcard) {
                 // import static package.class[.class].*
                 okToImport = classExists(body);
+                typeName = body;
+                memberName = null;
             } else {
                 // import static package.class.class
                 // import static package.class[.class].method
                 // import static package.class[.class].field
                 final int lastSeparator = body.lastIndexOf(".");
                 if (lastSeparator > 0) {
-                    final String prefix = body.substring(0, lastSeparator);
-                    final String suffix = body.substring(lastSeparator + 1);
-                    okToImport = functionExists(prefix, suffix) || fieldExists(prefix, suffix) || classExists(body);
+                    typeName = body.substring(0, lastSeparator);
+                    memberName = body.substring(lastSeparator + 1);
+                    okToImport = functionExists(typeName, memberName) || fieldExists(typeName, memberName)
+                            || classExists(body);
                 } else {
                     okToImport = classExists(body);
+                    typeName = body;
+                    memberName = null;
                 }
+            }
+            if (okToImport) {
+                if (isWildcard) {
+                    result = Optional.of(imports -> imports.addStaticStars(body));
+                } else {
+                    result = Optional.of(imports -> imports.addStaticImport(alias, typeName, memberName));
+                }
+            } else {
+                return Optional.empty();
             }
         } else {
             if (isWildcard) {
-                okToImport = classExists(body) || (Package.getPackage(body) != null)
-                        || packageIsVisibleToClassGraph(body);
-
-                if (!okToImport) {
+                if (classExists(body) || (groovyShell.getClassLoader().getDefinedPackage(body) != null)
+                        || packageIsVisibleToClassGraph(body)) {
+                    result = Optional.of(imports -> imports.addStarImports(body));
+                } else {
                     if (ALLOW_UNKNOWN_GROOVY_PACKAGE_IMPORTS) {
                         // Check for proper form of a package. Pass a package star import that is plausible. Groovy is
                         // OK with packages that cannot be found, unlike java.
@@ -499,33 +523,34 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                             log.info().append("Package or class \"").append(body)
                                     .append("\" could not be verified.")
                                     .endl();
-                            okToImport = true;
+                            result = Optional.of(imports -> imports.addStarImports(body));
                         } else {
                             log.warn().append("Package or class \"").append(body)
                                     .append("\" could not be verified and does not appear to be a valid java identifier.")
                                     .endl();
+                            return Optional.empty();
                         }
                     } else {
                         log.warn().append("Package or class \"").append(body)
                                 .append("\" could not be verified.")
                                 .endl();
+                        return Optional.empty();
                     }
                 }
             } else {
-                okToImport = classExists(body);
+                if (classExists(body)) {
+                    result = Optional.of(imports -> imports.addImport(alias, body));
+                } else {
+                    return Optional.empty();
+                }
             }
         }
 
-        if (okToImport) {
-            String fixedImport = "import " + (isStatic ? "static " : "") + body + (isWildcard ? ".*" : "") + ";";
-            log.info().append("Adding persistent import ")
-                    .append(isStatic ? "(static/" : "(normal/").append(isWildcard ? "wildcard): \"" : "normal): \"")
-                    .append(fixedImport).append("\" from original string: \"").append(importString).append("\"").endl();
-            return fixedImport;
-        } else {
-            log.error().append("Invalid import: \"").append(importString).append("\"").endl();
-            return null;
-        }
+        String fixedImport = "import " + (isStatic ? "static " : "") + body + (isWildcard ? ".*" : "") + ";";
+        log.info().append("Adding persistent import ")
+                .append(isStatic ? "(static/" : "(normal/").append(isWildcard ? "wildcard): \"" : "normal): \"")
+                .append(fixedImport).append("\" from original string: \"").append(importString).append("\"").endl();
+        return result;
     }
 
     private static boolean packageIsVisibleToClassGraph(String packageImport) {
@@ -538,10 +563,12 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     private void updateScriptImports(String importString) {
-        String fixedImportString = isValidImportString(importString);
-        if (fixedImportString != null) {
-            scriptImports.add(importString);
-            // imports.addImports(importString);
+        Optional<GroovyImport> validated = isValidImportString(importString);
+        if (validated.isPresent()) {
+            validated.get().append(consoleImports);
+            if (GroovyDeephavenSession.INCLUDE_CONSOLE_IMPORTS_IN_LOADED_GROOVY) {
+                validated.get().append(loadedGroovyScriptImports);
+            }
         } else {
             throw new RuntimeException("Attempting to import a path that does not exist: " + importString);
         }
@@ -586,48 +613,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
      * @return a pair of our command prefix (first) and the full command (second)
      */
     private Pair<String, String> fullCommand(String command) {
-        // TODO (core#230): Remove large list of manual text-based imports
-        // NOTE: Don't add to this list without a compelling reason!!! Use the user script import if possible.
-        final String commandPrefix = "package " + PACKAGE + ";\n" +
-
-
-
-        // "import static io.deephaven.engine.util.TableTools.*;\n" +
-        // "import static io.deephaven.engine.table.impl.util.TableLoggers.*;\n" +
-        // "import io.deephaven.api.*;\n" +
-        // "import io.deephaven.api.filter.*;\n" +
-        // "import io.deephaven.engine.table.DataColumn;\n" +
-        // "import io.deephaven.engine.table.Table;\n" +
-        // "import io.deephaven.engine.table.TableFactory;\n" +
-        // "import io.deephaven.engine.table.PartitionedTable;\n" +
-        // "import io.deephaven.engine.table.PartitionedTableFactory;\n" +
-        // "import java.lang.reflect.Array;\n" +
-        // "import io.deephaven.util.type.TypeUtils;\n" +
-        // "import io.deephaven.util.type.ArrayTypeUtils;\n" +
-        // "import io.deephaven.time.DateTimeUtils;\n" +
-        // "import io.deephaven.base.string.cache.CompressedString;\n" +
-        // "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
-        // "import java.time.Instant;\n" +
-        // "import java.time.LocalDate;\n" +
-        // "import java.time.LocalTime;\n" +
-        // "import java.time.ZoneId;\n" +
-        // "import java.time.ZonedDateTime;\n" +
-        // "import io.deephaven.engine.context.QueryScopeParam;\n" +
-        // "import io.deephaven.engine.context.QueryScope;\n" +
-        // "import java.util.*;\n" +
-        // "import java.lang.*;\n" +
-        // "import static io.deephaven.util.QueryConstants.*;\n" +
-        // "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
-        // "import static io.deephaven.time.DateTimeUtils.*;\n" +
-        // "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
-        // "import static io.deephaven.api.agg.Aggregation.*;\n" +
-        // "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +
-        // "import io.deephaven.api.updateby.UpdateByControl;\n" +
-        // "import io.deephaven.api.updateby.OperationControl;\n" +
-        // "import io.deephaven.api.updateby.DeltaControl;\n" +
-        // "import io.deephaven.api.updateby.BadDataBehavior;\n" +
-
-                String.join("\n", scriptImports) + "\n";
+        final String commandPrefix = "package " + PACKAGE + ";\n";
         return new Pair<>(commandPrefix, commandPrefix + command
                 + "\n\n// this final true prevents Groovy from interpreting a trailing class definition as something to execute\n;\ntrue;\n");
     }
@@ -651,20 +637,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         CompilerConfiguration config = new CompilerConfiguration(CompilerConfiguration.DEFAULT);
         ImportCustomizer imports = new ImportCustomizer();
-        // imports.
         config.getCompilationCustomizers().add(imports);
         final CompilationUnit cu = new CompilationUnit(config, null, groovyShell.getClassLoader());
         cu.addSource(name, currentCommand);
-        // cu.addSource(new SourceUnit(name, currentCommand, cu.getConfiguration(), cu.getClassLoader(),
-        // cu.getErrorCollector()) {
-        // @Override
-        // public ModuleNode buildAST() {
-        // ModuleNode moduleNode = super.buildAST();
-        // moduleNode.setPackageName(PACKAGE);
-        // return moduleNode;
-        // }
-        // });
-        // cu.addPhaseOperation(specifyPackage, Phases.PARSING);
+
         try {
             cu.compile(Phases.CLASS_GENERATION);
         } catch (RuntimeException e) {
@@ -674,7 +650,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         if (dynamicClassDestination == null) {
             return;
         }
-        // noinspection unchecked
         final List<GroovyClass> classes = cu.getClasses();
         final Map<String, byte[]> newDynamicClasses = new HashMap<>();
         for (final GroovyClass aClass : classes) {
@@ -808,17 +783,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     @Override
     public Throwable sanitizeThrowable(Throwable e) {
         return GroovyExceptionWrapper.maybeTranslateGroovyException(e);
-    }
-
-    private static class SourceDisabledClosure extends Closure<Object> {
-        SourceDisabledClosure(GroovyDeephavenSession groovySession) {
-            super(groovySession, null);
-        }
-
-        @Override
-        public String call(Object... args) {
-            throw new UnsupportedOperationException("This console does not support source.");
-        }
     }
 
     public static class RunScripts {

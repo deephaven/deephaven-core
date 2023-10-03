@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Optional;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -338,25 +339,16 @@ public class TestGroovyDeephavenSession {
         // lines being passed to `isValidImportString()`. to replicate that behavior, we must `removeComments()` from
         // each string we are testing here.
         for (String testCase : failTestCases) {
-            final String fixedImportString =
+            Optional<GroovyDeephavenSession.GroovyImport> result =
                     session.isValidImportString(GroovyDeephavenSession.removeComments(testCase));
-            // handy for debugging the tests
-            // if (fixedImportString!= null) {
-            // IrisDbGroovySession.isValidImportString(log, testCase);
-            // }
-            assertNull("expected failure for: " + testCase, fixedImportString);
+            assertNull("expected failure for: " + testCase, result.orElse(null));
         }
 
         for (String testCase : succeedTestCases) {
-            final String fixedImportString =
+            Optional<GroovyDeephavenSession.GroovyImport> result =
                     session.isValidImportString(GroovyDeephavenSession.removeComments(testCase));
-            System.out.println("Test case: \"" + testCase + "\" -> \"" + fixedImportString + "\"");
 
-            // handy for debugging the tests
-            // if( fixedImportString==null) {
-            // IrisDbGroovySession.isValidImportString(log, testCase);
-            // }
-            assertNotNull("expected success for: " + testCase, fixedImportString);
+            assertNotNull("expected success for: " + testCase, result.orElse(null));
         }
 
         // special package import cases
