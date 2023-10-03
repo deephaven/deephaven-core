@@ -33,6 +33,7 @@ the `Client` class. See `?Client` for more information.
 \item \href{#method-TableHandle-where}{\code{TableHandle$where()}}
 \item \href{#method-TableHandle-group_by}{\code{TableHandle$group_by()}}
 \item \href{#method-TableHandle-ungroup}{\code{TableHandle$ungroup()}}
+\item \href{#method-TableHandle-update_by}{\code{TableHandle$update_by()}}
 \item \href{#method-TableHandle-agg_by}{\code{TableHandle$agg_by()}}
 \item \href{#method-TableHandle-agg_all_by}{\code{TableHandle$agg_all_by()}}
 \item \href{#method-TableHandle-first_by}{\code{TableHandle$first_by()}}
@@ -421,6 +422,32 @@ A TableHandle referencing the new table.
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-update_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-update_by}{}}}
+\subsection{Method \code{update_by()}}{
+Creates a table with additional columns calculated from window-based aggregations of columns in this table.
+The aggregations are defined by the provided operations, which support incremental aggregations over the
+corresponding rows in the table. The aggregations will apply position or time-based windowing and compute the
+results over the entire table or each row group as identified by the provided key columns.
+See `?UpdateBy` for more information.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$update_by(ops, by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{ops}}{UpdateByOp or list of UpdateByOps to perform on non-grouping columns.}
+
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TableHandle-agg_by"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-agg_by}{}}}
 \subsection{Method \code{agg_by()}}{
@@ -433,7 +460,7 @@ aggregation(s) specified. See `?Aggregations` for more information.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{aggs}}{Aggregation or list of Aggregations to perform on non-grouping columns.}
+\item{\code{aggs}}{AggOp or list of AggOps to perform on non-grouping columns.}
 
 \item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
 }
