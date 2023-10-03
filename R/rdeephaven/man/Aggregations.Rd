@@ -48,8 +48,8 @@ how to interpret. Here is a list of all aggregation functions available in Deeph
 \item \code{\link[=agg_count]{agg_count()}}
 }
 
-For more details on each aggregation function, click on the method above or see the reference documentation by
-running \code{?agg_first}, \code{?agg_last}, etc.
+For more details on each aggregation function, click on one of the methods above or see the reference documentation
+by running \code{?agg_first}, \code{?agg_last}, etc.
 }
 
 \section{Usage}{
