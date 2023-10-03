@@ -20,6 +20,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     private static final Logger log = LoggerFactory.getLogger(PyCallableWrapperJpyImpl.class);
 
     private static final PyObject NUMBA_VECTORIZED_FUNC_TYPE = getNumbaVectorizedFuncType();
+    private static final PyObject NUMBA_GUVECTORIZED_FUNC_TYPE = getNumbaGUVectorizedFuncType();
 
     private static final PyModule dh_table_module = PyModule.importModule("deephaven.table");
 
@@ -47,6 +48,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     private Collection<ChunkArgument> chunkArguments;
     private boolean numbaVectorized;
     private PyObject unwrapped;
+    private PyObject returnTypeAwareCallable;
 
     public PyCallableWrapperJpyImpl(PyObject pyCallable) {
         this.pyCallable = pyCallable;
@@ -91,6 +93,17 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         }
     }
 
+    private static PyObject getNumbaGUVectorizedFuncType() {
+        try {
+            return PyModule.importModule("numba.np.ufunc.gufunc").getAttribute("GUFunc");
+        } catch (Exception e) {
+            if (log.isDebugEnabled()) {
+                log.debug("Numba isn't installed in the Python environment.");
+            }
+            return null;
+        }
+    }
+
     private void prepareSignature() {
         if (pyCallable.getType().equals(NUMBA_VECTORIZED_FUNC_TYPE)) {
             List<PyObject> params = pyCallable.getAttribute("types").asList();
@@ -105,9 +118,25 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                                 + " has multiple signatures; this is not currently supported for numba vectorized functions");
             }
             signature = params.get(0).getStringValue();
-            unwrapped = null;
+            unwrapped = pyCallable;
             numbaVectorized = true;
             vectorized = true;
+        } else if (pyCallable.equals(NUMBA_GUVECTORIZED_FUNC_TYPE)) {
+            List<PyObject> params = pyCallable.getAttribute("types").asList();
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "numba guvectorized function must have an explicit signature: " + pyCallable);
+            }
+            // numba allows a vectorized function to have multiple signatures
+            if (params.size() > 1) {
+                throw new UnsupportedOperationException(
+                        pyCallable
+                                + " has multiple signatures; this is not currently supported for numba vectorized functions");
+            }
+            signature = params.get(0).getStringValue();
+            unwrapped = pyCallable;
+            numbaVectorized = false;
+            vectorized = false;
         } else if (pyCallable.hasAttribute("dh_vectorized")) {
             signature = pyCallable.getAttribute("signature").toString();
             unwrapped = pyCallable.getAttribute("callable");
@@ -119,6 +148,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             numbaVectorized = false;
             vectorized = false;
         }
+        returnTypeAwareCallable = dh_table_module.call("_py_udf", unwrapped);
     }
 
     @Override
@@ -133,14 +163,6 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         // eg. [ll->d] defines two int64 (long) arguments and a double return type.
         if (signature == null || signature.isEmpty()) {
             throw new IllegalStateException("Signature should always be available.");
-        }
-
-        char numpyTypeCode = signature.charAt(signature.length() - 1);
-        Class<?> returnType = numpyType2JavaClass.get(numpyTypeCode);
-        if (returnType == null) {
-            throw new IllegalStateException(
-                    "Vectorized functions should always have an integral, floating point, boolean, String, or Object return type: "
-                            + numpyTypeCode);
         }
 
         List<Class<?>> paramTypes = new ArrayList<>();
@@ -159,12 +181,17 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         }
 
         this.paramTypes = paramTypes;
+
+        returnType = (Class<?>) returnTypeAwareCallable.getAttribute("return_type", null);
+        if (returnType == null) {
+            throw new IllegalStateException(
+                    "Python functions should always have an integral, floating point, boolean, String, arrays, or Object return type");
+        }
+
         if (returnType == Object.class) {
             this.returnType = PyObject.class;
         } else if (returnType == boolean.class) {
             this.returnType = Boolean.class;
-        } else {
-            this.returnType = returnType;
         }
     }
 
@@ -176,8 +203,10 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         }
     }
 
+
     @Override
     public Object call(Object... args) {
+        PyObject pyCallable = this.returnTypeAwareCallable != null ? this.returnTypeAwareCallable : this.pyCallable;
         return PythonScopeJpyImpl.convert(pyCallable.callMethod("__call__", args));
     }
 

@@ -9,12 +9,15 @@ from __future__ import annotations
 
 import contextlib
 import inspect
+import sys
 from enum import Enum
 from enum import auto
-from typing import Any, Optional, Callable, Dict
+from functools import wraps
+from typing import Any, Optional, Callable, Dict, _GenericAlias
 from typing import Sequence, List, Union, Protocol
 
 import jpy
+import numba
 import numpy as np
 
 from deephaven import DHError
@@ -29,6 +32,7 @@ from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict
 from deephaven.jcompat import to_sequence, j_array_list
 from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
+from deephaven.dtypes import _PRIMITIVE_DTYPE_ARRAY_DTYPE_MAP
 
 # Table
 _J_Table = jpy.get_type("io.deephaven.engine.table.Table")
@@ -362,9 +366,24 @@ def _j_py_script_session() -> _JPythonScriptSession:
 _numpy_type_codes = ["i", "l", "h", "f", "d", "b", "?", "U", "O"]
 
 
+def _array_component_type(fn) -> str:
+    sig = inspect.signature(fn)
+    t = sig.return_annotation
+    if isinstance(t, _GenericAlias) and issubclass(t.__origin__, Sequence):
+        return np.dtype(t.__args__[0]).char
+
+    if sys.version_info.minor > 8:
+        import types
+        if isinstance(t, types.GenericAlias) and (issubclass(t.__origin__, Sequence) or t.__origin__ == np.ndarray):
+            if t.__args__:
+                return np.dtype(t.__args__[0]).char
+
+    return ""
+
+
 def _encode_signature(fn: Callable) -> str:
     """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
-    type to numpy dtype chars (i,l,h,f,d,b,?,U,O), and pack them into a string with parameter type chars first,
+    type to numpy dtype chars (i,l,h,H,f,d,b,?,U,O), and pack them into a string with parameter type chars first,
     in their original order, followed by the delimiter string '->', then the return type_char.
 
     If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
@@ -410,6 +429,7 @@ def dh_vectorize(fn):
     """
     signature = _encode_signature(fn)
 
+    @wraps(fn)
     def wrapper(*args):
         if len(args) != len(signature) - len("->?") + 2:
             raise ValueError(
@@ -467,6 +487,93 @@ def _query_scope_ctx():
     else:
         # in the __main__ module, use the default main global scope
         yield
+
+
+_numpy_int_type_codes = ["i", "l", "h", "b"]
+_numpy_floating_type_codes = ["f", "d"]
+
+
+def _from_numpy_scalar_to_py(x):
+    """Convert a numpy scalar to a Python scalar."""
+    if hasattr(x, "dtype"):
+        if x.dtype.char in _numpy_int_type_codes:
+            return int(x)
+        elif x.dtype.char in _numpy_floating_type_codes:
+            return float(x)
+        elif x.dtype.char == '?':
+            return bool(x)
+        elif x.dtype.char == 'U':
+            return str(x)
+        elif x.dtype.char == 'O':
+            return x
+        else:
+            raise TypeError(f"Unsupported dtype: {x.dtype}")
+    else:
+        return x
+
+
+def _py_udf(fn: Callable):
+    """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
+    Python and Java. This decorator is intended for use by the Deephaven query engine and should not be used by
+    users.
+
+    For now, this decorator is only capable of converting Python function return values to Java values. It
+    does not yet convert Java values in arguments to usable Python object (e.g. numpy arrays) or properly translate
+    Deephaven primitive null values.
+
+    For properly annotated functions, including numba vectorized and guvectorized ones, this decorator inspects the
+    signature of the function and determines its return type including supported primitive types and arrays of
+    the supported primitive types. It then converts the return value of the function to the corresponding Java value
+    of the same type. For unsupported types, the decorator returns the original Python value which appears as
+    org.jpy.PyObject in Java.
+    """
+
+    if hasattr(fn, "return_type"):
+        return fn
+
+    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
+        dh_dtype = dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
+    else:
+        dh_dtype = dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
+
+    return_array = False
+    if hasattr(fn, "signature"):
+        sig = fn.signature
+        rtype = sig.split("->")[-1].strip("()")
+        if rtype:
+            return_array = True
+    else:
+        component_type = _array_component_type(fn)
+        if component_type:
+            dh_dtype = dtypes.from_np_dtype(np.dtype(component_type))
+            return_array = True
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        ret = fn(*args, **kwargs)
+        if return_array:
+            return dtypes.array(dh_dtype, ret)
+        elif dh_dtype == dtypes.PyObject:
+            return ret
+        else:
+            return _from_numpy_scalar_to_py(ret)
+
+    wrapper.j_name = dh_dtype.j_name
+    if return_array:
+        ret_dtype = _PRIMITIVE_DTYPE_ARRAY_DTYPE_MAP.get(dh_dtype)
+        if ret_dtype is None:
+            raise TypeError(f"No corresponding Java array type for: {dh_dtype}")
+    else:
+        ret_dtype = dh_dtype
+
+    if hasattr(dh_dtype.j_type, 'jclass'):
+        j_class = ret_dtype.j_type.jclass
+    else:
+        j_class = ret_dtype.qst_type.clazz()
+
+    wrapper.return_type = j_class
+
+    return wrapper
 
 
 class SortDirection(Enum):

@@ -120,6 +120,8 @@ PyObject = DType(j_name="org.jpy.PyObject")
 """Python object type"""
 JObject = DType(j_name="java.lang.Object")
 """Java Object type"""
+bool_array = DType(j_name='[Z')
+"""boolean array type"""
 byte_array = DType(j_name='[B')
 """Byte array type"""
 int8_array = byte_array
@@ -128,6 +130,8 @@ short_array = DType(j_name='[S')
 """Short array type"""
 int16_array = short_array
 """Short array type"""
+char_array = DType(j_name='[C')
+"""char array type"""
 int32_array = DType(j_name='[I')
 """32bit integer array type"""
 long_array = DType(j_name='[J')
@@ -136,7 +140,7 @@ int64_array = long_array
 """64bit integer array type"""
 int_array = long_array
 """64bit integer array type"""
-single_array = DType(j_name='[S')
+single_array = DType(j_name='[F')
 """Single-precision floating-point array type"""
 float32_array = single_array
 """Single-precision floating-point array type"""
@@ -148,6 +152,8 @@ float_array = double_array
 """Double-precision floating-point array type"""
 string_array = DType(j_name='[Ljava.lang.String;')
 """Java String array type"""
+boolean_array = DType(j_name='[Ljava.lang.Boolean;')
+"""Java Boolean array type"""
 instant_array = DType(j_name='[Ljava.time.Instant;')
 """Java Instant array type"""
 zdt_array = DType(j_name='[Ljava.time.ZonedDateTime;')
@@ -162,6 +168,20 @@ _PRIMITIVE_DTYPE_NULL_MAP = {
     int64: NULL_LONG,
     float32: NULL_FLOAT,
     float64: NULL_DOUBLE,
+}
+
+_PRIMITIVE_DTYPE_ARRAY_DTYPE_MAP = {
+    bool_: bool_array,
+    byte: int8_array,
+    char: char_array,
+    int16: int16_array,
+    int32: int32_array,
+    int64: int64_array,
+    float32: float32_array,
+    float64: float64_array,
+    string: string_array,
+    Instant: instant_array,
+    ZonedDateTime: zdt_array,
 }
 
 
