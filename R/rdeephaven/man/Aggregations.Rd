@@ -33,19 +33,19 @@ Aggregation functions are used to define the grouped data in an aggregated table
 or \code{agg_all_by()}. These functions are \emph{generators}, meaning they return \emph{functions} that the Deephaven engine knows
 how to interpret. Here is a list of all aggregation functions available in Deephaven:
 \itemize{
-\item \code{\link[=agg_first]{agg_first()}}
-\item \code{\link[=agg_last]{agg_last()}}
-\item \code{\link[=agg_min]{agg_min()}}
-\item \code{\link[=agg_max]{agg_max()}}
-\item \code{\link[=agg_sum]{agg_sum()}}
-\item \code{\link[=agg_abs_sum]{agg_abs_sum()}}
-\item \code{\link[=agg_avg]{agg_avg()}}
-\item \code{\link[=agg_w_avg]{agg_w_avg()}}
-\item \code{\link[=agg_median]{agg_median()}}
-\item \code{\link[=agg_var]{agg_var()}}
-\item \code{\link[=agg_std]{agg_std()}}
-\item \code{\link[=agg_percentile]{agg_percentile()}}
-\item \code{\link[=agg_count]{agg_count()}}
+\item \code{\link[=agg_first]{agg_first(cols)}}: Creates a First aggregation that computes the first value of each column in \code{cols} for each aggregation group.
+\item \code{\link[=agg_last]{agg_last(cols)}}: Creates a Last aggregation that computes the last value of each column in \code{cols} for each aggregation group.
+\item \code{\link[=agg_min]{agg_min(cols)}}: Creates a Minimum aggregation that computes the minimum of each column in \code{cols} for each aggregation group.
+\item \code{\link[=agg_max]{agg_max(cols)}}: Creates a Maximum aggregation that computes the maximum of each column in \code{cols} for each aggregation group.
+\item \code{\link[=agg_sum]{agg_sum(cols)}}: Creates a Sum aggregation that computes the sum of each column in \code{cols} for each aggregation group.
+\item \code{\link[=agg_abs_sum]{agg_abs_sum(cols)}}: Creates an Absolute Sum aggregation that computes the absolute sum of each column in \code{cols} for each aggregation group.
+\item \code{\link[=agg_avg]{agg_avg(cols)}}: Creates an Average aggregation that computes the average of each column in \code{cols} for each aggregation group.
+\item \code{\link[=agg_w_avg]{agg_w_avg(wcol, cols)}}: Creates a Weighted Average aggregation that computes the weighted average of each column in \code{cols} for each aggregation group.
+\item \code{\link[=agg_median]{agg_median(cols)}}: Creates a Median aggregation that computes the median of each column in \code{cols} for each aggregation group.
+\item \code{\link[=agg_var]{agg_var(cols)}}: Creates a Variance aggregation that computes the variance of each column in \code{cols} for each aggregation group.
+\item \code{\link[=agg_std]{agg_std(cols)}}: Creates a Standard Deviation aggregation that computes the standard deviation of each column in \code{cols}, for each aggregation group.
+\item \code{\link[=agg_percentile]{agg_percentile(percentile, cols)}}: Creates a Percentile aggregation that computes the given percentile of each column in \code{cols} for each aggregation group.
+\item \code{\link[=agg_count]{agg_count(col)}}: Creates a Count aggregation that computes the number of rows in each aggregation group.
 }
 
 For more details on each aggregation function, click on one of the methods above or see the reference documentation
