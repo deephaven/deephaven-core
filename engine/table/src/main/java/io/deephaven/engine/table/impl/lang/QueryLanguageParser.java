@@ -2352,6 +2352,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                             try {
                                 return castExpr.accept(this, printer);
                             } catch (Exception e) {
+                                // exceptions could be thrown by {@link #tryVectorizePythonCallable}
                                 replaceChildExpression(
                                         castExpr.getParentNode().orElseThrow(),
                                         castExpr,
@@ -2645,7 +2646,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     autoCastChecked = true;
                 } else {
                     throw new PythonCallVectorizationFailure(
-                            "The return values of Python vectorized function can't be cast: " + n1);
+                            "The return values of Python vectorized functions can't be cast: " + n1);
                 }
             } else if (cls == MethodCallExpr.class) {
                 String methodName = ((MethodCallExpr) n1).getNameAsString();
@@ -3329,7 +3330,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         public void setCasted(boolean casted) {
             isCasted = casted;
         }
-
 
         private PyCallableDetails(@Nullable String pythonScopeExpr, @NotNull String pythonMethodName) {
             this.pythonScopeExpr = pythonScopeExpr;

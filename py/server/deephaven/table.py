@@ -369,15 +369,21 @@ _numpy_type_codes = ["i", "l", "h", "f", "d", "b", "?", "U", "O"]
 def _array_component_type(fn) -> str:
     sig = inspect.signature(fn)
     t = sig.return_annotation
+    component_type = ""
     if isinstance(t, _GenericAlias) and issubclass(t.__origin__, Sequence):
-        return np.dtype(t.__args__[0]).char
+        component_type = t.__args__[0]
 
+    # np.ndarray as a generic alias is only available in Python 3.9+
     if sys.version_info.minor > 8:
         import types
         if isinstance(t, types.GenericAlias) and (issubclass(t.__origin__, Sequence) or t.__origin__ == np.ndarray):
-            if t.__args__:
-                return np.dtype(t.__args__[0]).char
+            component_type = t.__args__[0]
 
+    if component_type:
+        try:
+            return np.dtype(component_type).char
+        except:
+            pass
     return ""
 
 
