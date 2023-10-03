@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.sources.ring;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.BaseTable;
@@ -11,6 +12,7 @@ import io.deephaven.engine.table.impl.SwapListener;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotFunction;
 import io.deephaven.engine.table.impl.sources.ring.AddsToRingsListener.Init;
+import io.deephaven.util.SafeCloseable;
 
 import java.util.Objects;
 
@@ -93,7 +95,10 @@ public class RingTableTools {
         }
 
         public Table constructResults() {
-            BaseTable.initializeWithSnapshot(RingTableSnapshotFunction.class.getSimpleName(), swapListener, this);
+            try (final SafeCloseable ignored =
+                    ExecutionContext.getContext().withUpdateGraph(parent.getUpdateGraph()).open()) {
+                BaseTable.initializeWithSnapshot(RingTableSnapshotFunction.class.getSimpleName(), swapListener, this);
+            }
             return Objects.requireNonNull(results);
         }
 
