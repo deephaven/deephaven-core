@@ -679,21 +679,18 @@ public class ConstructSnapshot {
                     keysToSnapshot = null;
                 } else {
                     final RowSet rowSetToUse = usePrev ? table.getRowSet().prev() : table.getRowSet();
-                    try (final SafeCloseable ignored = usePrev ? rowSetToUse : null) {
-                        final WritableRowSet forwardKeys =
-                                positionsToSnapshot == null ? null
-                                        : rowSetToUse.subSetForPositions(positionsToSnapshot);
-                        final RowSet reverseKeys = reversePositionsToSnapshot == null ? null
-                                : rowSetToUse.subSetForReversePositions(reversePositionsToSnapshot);
-                        if (forwardKeys != null) {
-                            if (reverseKeys != null) {
-                                forwardKeys.insert(reverseKeys);
-                                reverseKeys.close();
-                            }
-                            keysToSnapshot = forwardKeys;
-                        } else {
-                            keysToSnapshot = reverseKeys;
+                    final WritableRowSet forwardKeys =
+                            positionsToSnapshot == null ? null : rowSetToUse.subSetForPositions(positionsToSnapshot);
+                    final RowSet reverseKeys = reversePositionsToSnapshot == null ? null
+                            : rowSetToUse.subSetForReversePositions(reversePositionsToSnapshot);
+                    if (forwardKeys != null) {
+                        if (reverseKeys != null) {
+                            forwardKeys.insert(reverseKeys);
+                            reverseKeys.close();
                         }
+                        keysToSnapshot = forwardKeys;
+                    } else {
+                        keysToSnapshot = reverseKeys;
                     }
                 }
                 try (final RowSet ignored = keysToSnapshot) {
