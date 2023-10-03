@@ -273,7 +273,13 @@ void Server::Shutdown() {
     return;
   }
   cancelled_ = true;
+  auto tickets_to_release = std::move(outstanding_tickets_);
+  outstanding_tickets_.clear();
   guard.unlock();
+
+  for (auto &ticket : tickets_to_release) {
+    ReleaseUnchecked(std::move(ticket));
+  }
 
   // This will cause the handshake thread to shut down (because cancelled_ is true).
   condVar_.notify_all();
@@ -282,12 +288,12 @@ void Server::Shutdown() {
 }
 
 namespace {
-Ticket makeNewTicket(int32_t ticketId) {
-  constexpr auto ticketSize = sizeof(ticketId);
-  static_assert(ticketSize == 4, "Unexpected ticket size");
-  char buffer[ticketSize + 1];
+Ticket MakeNewTicket(int32_t ticket_id) {
+  constexpr auto kTicketSize = sizeof(ticket_id);
+  static_assert(kTicketSize == 4, "Unexpected ticket size");
+  char buffer[kTicketSize + 1];
   buffer[0] = 'e';
-  memcpy(buffer + 1, &ticketId, ticketSize);
+  memcpy(buffer + 1, &ticket_id, kTicketSize);
   Ticket result;
   *result.mutable_ticket() = std::string(buffer, sizeof(buffer));
   return result;
@@ -295,39 +301,42 @@ Ticket makeNewTicket(int32_t ticketId) {
 }  // namespace
 
 Ticket Server::NewTicket() {
-  auto ticketId = nextFreeTicketId_++;
-  return makeNewTicket(ticketId);
+  std::unique_lock guard(mutex_);
+  auto ticket_id = nextFreeTicketId_++;
+  auto ticket = MakeNewTicket(ticket_id);
+  outstanding_tickets_.insert(ticket);
+  return ticket;
 }
 
 void Server::Release(Ticket ticket) {
   // TODO(kosak): In a future version we might queue up these released tickets and release
   // them asynchronously, in order to give clients a little performance bump without
   // adding too much unexpected asynchronicity to their programs.
-  //
-  // TODO(kosak): Currently we have a TableHandle leak issue where if the customer calls
-  // Client::Close (leading to Server::Shutdown), we just disconnect from the Deephaven session
-  // without releasing any TableHandles that might still be outstanding. I'm not sure if the
-  // Deephaven server releases resources in that case, or whether they become dangling.
-  // I think what we probably need to do is for Server to keep track of all outstanding TableHandles,
-  // and release them all at Server::Shutdown() time. Then this code will only take an action in the
-  // non-Shutdown case, when it knows that the TableHandle is still outstanding).
-
-  // This is still racy but once we implement the above it will get better.
   std::unique_lock guard(mutex_);
   if (cancelled_) {
     return;
   }
+  if (outstanding_tickets_.erase(ticket) == 0) {
+    const char *message = "Server was asked to release a ticket that it is not managing.";
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+  }
   guard.unlock();
+  ReleaseUnchecked(std::move(ticket));
+}
 
+void Server::ReleaseUnchecked(Ticket ticket) {
   ReleaseRequest req;
   ReleaseResponse resp;
   *req.mutable_id() = std::move(ticket);
   SendRpc([&](grpc::ClientContext *ctx) {
     return sessionStub_->Release(ctx, req, &resp);
-  });
+  }, true);  // 'true' to disregard cancellation state.
 }
 
-void Server::SendRpc(const std::function<grpc::Status(grpc::ClientContext *)> &callback) {
+// 'disregard_cancellation_state' is usually false. We set it to true during Shutdown(), so that
+// we can release outstanding TableHandles even after the cancelled_ flag is set.
+void Server::SendRpc(const std::function<grpc::Status(grpc::ClientContext *)> &callback,
+    bool disregard_cancellation_state) {
   using deephaven::dhcore::utility::TimePointToStr;
   auto now = std::chrono::system_clock::now();
   gpr_log(GPR_DEBUG,
@@ -342,12 +351,15 @@ void Server::SendRpc(const std::function<grpc::Status(grpc::ClientContext *)> &c
     ctx.AddMetadata(name, value);
   });
 
-  std::unique_lock guard(mutex_);
-  if (cancelled_) {
-    const char *message = "Server cancelled. All further RPCs are being rejected";
-    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+  if (!disregard_cancellation_state) {
+    std::unique_lock guard(mutex_);
+    if (cancelled_) {
+      const char *message = "Server cancelled. All further RPCs are being rejected";
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+    }
+    guard.unlock();
   }
-  guard.unlock();
+
   auto status = callback(&ctx);
   if (!status.ok()) {
     auto message = Stringf("Error %o. Message: %o", status.error_code(), status.error_message());
@@ -434,12 +446,7 @@ void Server::ForEachHeaderNameAndValue(
   }
 }
 
-CompletionQueueCallback::CompletionQueueCallback(std::chrono::system_clock::time_point send_time) :
-    sendTime_(send_time) {}
-CompletionQueueCallback::~CompletionQueueCallback() = default;
-
 namespace {
-
 std::optional<std::chrono::milliseconds> ExtractExpirationInterval(
     const ConfigurationConstantsResponse &cc_resp) {
   auto ip2 = cc_resp.config_values().find(timeoutKey);

@@ -34,20 +34,16 @@
 #include "deephaven/proto/table.grpc.pb.h"
 
 namespace deephaven::client::server {
-struct CompletionQueueCallback {
-public:
-  explicit CompletionQueueCallback(std::chrono::system_clock::time_point send_time);
-  CompletionQueueCallback(const CompletionQueueCallback &other) = delete;
-  CompletionQueueCallback(CompletionQueueCallback &&other) = delete;
-  virtual ~CompletionQueueCallback();
+namespace internal {
+struct TicketLess {
+  using Ticket = io::deephaven::proto::backplane::grpc::Ticket;
 
-  virtual void OnSuccess() = 0;
-  virtual void OnFailure(std::exception_ptr eptr) = 0;
-
-  std::chrono::system_clock::time_point sendTime_;
-  grpc::ClientContext ctx_;
-  grpc::Status status_;
+  bool operator()(const Ticket &lhs, const Ticket &rhs) const {
+    return lhs.ticket() < rhs.ticket();
+  }
 };
+
+}  // namespace internal
 
 class Server : public std::enable_shared_from_this<Server> {
   struct Private {
@@ -132,7 +128,9 @@ public:
 
   void Release(Ticket ticket);
 
-  void SendRpc(const std::function<grpc::Status(grpc::ClientContext*)> &callback);
+  void SendRpc(const std::function<grpc::Status(grpc::ClientContext*)> &callback) {
+    SendRpc(callback, false);
+  }
 
   void ForEachHeaderNameAndValue(
       const std::function<void(const std::string &, const std::string &)> &fun);
@@ -144,6 +142,10 @@ public:
   const std::string &me() { return me_; }
 
 private:
+  void SendRpc(const std::function<grpc::Status(grpc::ClientContext*)> &callback,
+      bool disregard_cancellation_state);
+  void ReleaseUnchecked(Ticket ticket);
+
   static const char *const kAuthorizationKey;
 
   static void SendKeepaliveMessages(const std::shared_ptr<Server> &self);
@@ -160,11 +162,12 @@ private:
   std::unique_ptr<arrow::flight::FlightClient> flightClient_;
   const ClientOptions::extra_headers_t extraHeaders_;
 
-  std::atomic<int32_t> nextFreeTicketId_;
 
   std::mutex mutex_;
   std::condition_variable condVar_;
+  int32_t nextFreeTicketId_ = 1;
   bool cancelled_ = false;
+  std::set<Ticket, internal::TicketLess> outstanding_tickets_;
   std::string sessionToken_;
   std::chrono::milliseconds expirationInterval_;
   std::chrono::system_clock::time_point nextHandshakeTime_;
