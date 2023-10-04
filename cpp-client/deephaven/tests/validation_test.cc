@@ -65,8 +65,7 @@ void TestWheresHelper(std::string_view what, const TableHandle &table,
   for (const auto &bw : bad_wheres) {
     try {
       Streamf(std::cerr, "Trying %o %o\n", what, bw);
-      auto t1 = table.Where(bw);
-      (void)t1;
+      (void)table.Where(bw);
     } catch (const std::exception &e) {
       Streamf(std::cerr, "%o: %o: Failed *as expected* with: %o\n", what, bw, e.what());
       continue;
@@ -76,8 +75,7 @@ void TestWheresHelper(std::string_view what, const TableHandle &table,
   }
 
   for (const auto &gw : good_wheres) {
-    auto t1 = table.Where(gw);
-    (void)t1;
+    (void)table.Where(gw);
     Streamf(std::cerr, "%o: %o: Succeeded as expected\n", what, gw);
   }
 }
@@ -106,8 +104,7 @@ void TestSelectsHelper(std::string_view what, const TableHandle &table,
     SimpleOstringstream selection;
     selection << separatedList(bs.begin(), bs.end());
     try {
-      auto t1 = table.Select(bs);
-      (void)t1;
+      (void)table.Select(bs);
     } catch (const std::exception &e) {
       Streamf(std::cerr, "%o: %o: Failed as expected with: %o\n", what, selection.str(), e.what());
       continue;
@@ -117,8 +114,7 @@ void TestSelectsHelper(std::string_view what, const TableHandle &table,
   }
 
   for (const auto &gs : good_selects) {
-    auto t1 = table.Select(gs);
-    (void)t1;
+    (void)table.Select(gs);
     Streamf(std::cerr, "%o: %o: Succeeded as expected\n", what,
         separatedList(gs.begin(), gs.end()));
   }
