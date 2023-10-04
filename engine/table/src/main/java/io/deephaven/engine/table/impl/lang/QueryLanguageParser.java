@@ -2337,10 +2337,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         new PyCallableDetails(null, methodName));
 
                 if (PyCallableWrapper.class.isAssignableFrom(method.getDeclaringClass())) {
-                    Optional<Class<?>> optionalRetType = pythonFuncReturnType(callMethodCall);
+                    Optional<Class<?>> optionalRetType = pyCallableReturnType(callMethodCall);
                     if (optionalRetType.isPresent()) {
                         Class<?> retType = optionalRetType.get();
-                        final Optional<CastExpr> optionalCastExpr = makeCastExpression(retType, callMethodCall);
+                        final Optional<CastExpr> optionalCastExpr =
+                                makeCastExpressionForPyCallable(retType, callMethodCall);
                         if (optionalCastExpr.isPresent()) {
                             final CastExpr castExpr = optionalCastExpr.get();
                             replaceChildExpression(
@@ -2457,7 +2458,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 typeArguments);
     }
 
-    private Optional<CastExpr> makeCastExpression(Class<?> retType, MethodCallExpr callMethodCall) {
+    private Optional<CastExpr> makeCastExpressionForPyCallable(Class<?> retType, MethodCallExpr callMethodCall) {
         if (retType.isPrimitive()) {
             return Optional.of(new CastExpr(
                     new PrimitiveType(PrimitiveType.Primitive
@@ -2487,7 +2488,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return Optional.empty();
     }
 
-    private Optional<Class<?>> pythonFuncReturnType(@NotNull MethodCallExpr n) {
+    private Optional<Class<?>> pyCallableReturnType(@NotNull MethodCallExpr n) {
         final PyCallableDetails pyCallableDetails = n.getData(QueryLanguageParserDataKeys.PY_CALLABLE_DETAILS);
         final String pyMethodName = pyCallableDetails.pythonMethodName;
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();

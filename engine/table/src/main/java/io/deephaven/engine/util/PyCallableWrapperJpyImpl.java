@@ -48,7 +48,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     private Collection<ChunkArgument> chunkArguments;
     private boolean numbaVectorized;
     private PyObject unwrapped;
-    private PyObject returnTypeAwareCallable;
+    private PyObject pyUdfDecoratedCallable;
 
     public PyCallableWrapperJpyImpl(PyObject pyCallable) {
         this.pyCallable = pyCallable;
@@ -148,7 +148,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             numbaVectorized = false;
             vectorized = false;
         }
-        returnTypeAwareCallable = dh_table_module.call("_py_udf", unwrapped);
+        pyUdfDecoratedCallable = dh_table_module.call("_py_udf", unwrapped);
     }
 
     @Override
@@ -182,7 +182,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
 
         this.paramTypes = paramTypes;
 
-        returnType = (Class<?>) returnTypeAwareCallable.getAttribute("return_type", null);
+        returnType = (Class<?>) pyUdfDecoratedCallable.getAttribute("return_type", null);
         if (returnType == null) {
             throw new IllegalStateException(
                     "Python functions should always have an integral, floating point, boolean, String, arrays, or Object return type");
@@ -206,7 +206,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
 
     @Override
     public Object call(Object... args) {
-        PyObject pyCallable = this.returnTypeAwareCallable != null ? this.returnTypeAwareCallable : this.pyCallable;
+        PyObject pyCallable = this.pyUdfDecoratedCallable != null ? this.pyUdfDecoratedCallable : this.pyCallable;
         return PythonScopeJpyImpl.convert(pyCallable.callMethod("__call__", args));
     }
 
