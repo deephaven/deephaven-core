@@ -22,7 +22,7 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
             for xi in x:
                 res[0] += xi
 
-        t = empty_table(10).update(["X=i%3", "Y=i"]).group_by("X").update("Z= g(Y)")
+        t = empty_table(10).update(["X=i%3", "Y=i"]).group_by("X").update("Z=g(Y)")
         m = t.meta_table
         self.assertEqual(t.columns[2].data_type, dtypes.int64)
 

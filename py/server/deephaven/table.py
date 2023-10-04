@@ -528,7 +528,7 @@ def _py_udf(fn: Callable):
     Deephaven primitive null values.
 
     For properly annotated functions, including numba vectorized and guvectorized ones, this decorator inspects the
-    signature of the function and determines its return type including supported primitive types and arrays of
+    signature of the function and determines its return type, including supported primitive types and arrays of
     the supported primitive types. It then converts the return value of the function to the corresponding Java value
     of the same type. For unsupported types, the decorator returns the original Python value which appears as
     org.jpy.PyObject in Java.
