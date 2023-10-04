@@ -2145,19 +2145,19 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
             if (beforeState == LogicalClock.State.Idle) {
-                this.step = beforeStep;
+                step = beforeStep;
                 return false;
             }
 
-            final boolean notifiedOnThisStep = step == capturedLastIndexClockStep;
+            final boolean notifiedOnThisStep = beforeStep == capturedLastIndexClockStep;
             final boolean usePrevious = !notifiedOnThisStep;
 
-            this.step = notifiedOnThisStep ? step : step - 1;
+            step = notifiedOnThisStep ? beforeStep : beforeStep - 1;
 
             if (log.isDebugEnabled()) {
                 log.debug().append(logPrefix)
-                        .append("previousValuesAllowed usePrevious=").append(usePrevious)
-                        .append(", step=").append(step).append(", validStep=").append(this.step).endl();
+                        .append("usePreviousValues usePrevious=").append(usePrevious)
+                        .append(", beforeStep=").append(beforeStep).append(", validStep=").append(step).endl();
             }
 
             return usePrevious;
