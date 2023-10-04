@@ -43,9 +43,4 @@ public abstract class JsPluginPackagePath extends JsPluginBase {
     public final Path packageJson() {
         return path().resolve(PACKAGE_JSON);
     }
-
-    @Override
-    public final <T> T walk(JsPlugin.Visitor<T> visitor) {
-        return visitor.visit(this);
-    }
 }

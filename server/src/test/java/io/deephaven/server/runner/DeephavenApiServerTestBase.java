@@ -6,7 +6,6 @@ package io.deephaven.server.runner;
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.client.ClientDefaultsModule;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -66,9 +65,6 @@ public abstract class DeephavenApiServerTestBase {
             Builder withServerConfig(ServerConfig serverConfig);
 
             @BindsInstance
-            Builder withConfiguration(Configuration config);;
-
-            @BindsInstance
             Builder withOut(@Named("out") PrintStream out);
 
             @BindsInstance
@@ -109,7 +105,6 @@ public abstract class DeephavenApiServerTestBase {
 
         serverComponent = DaggerDeephavenApiServerTestBase_TestComponent.builder()
                 .withServerConfig(config)
-                .withConfiguration(Configuration.getInstance())
                 .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(System.out)
                 .withErr(System.err)

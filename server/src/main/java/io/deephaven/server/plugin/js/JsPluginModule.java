@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Provides the {@link JsPluginManifestPath manifest path} of {@value JS_PLUGIN_RESOURCE_BASE} if the configuration
@@ -54,10 +53,7 @@ public interface JsPluginModule {
     @Provides
     @ElementsIntoSet
     static Set<Registration> providesPackageRoots() {
-        return jsPluginsPackageRoots()
-                .stream()
-                .map(Registration.class::cast)
-                .collect(Collectors.toSet());
+        return Set.copyOf(jsPluginsPackageRoots());
     }
 
     // deephaven.jsPlugins.resourceBase (manifest root)

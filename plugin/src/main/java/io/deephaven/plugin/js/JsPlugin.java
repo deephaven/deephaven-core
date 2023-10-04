@@ -15,11 +15,4 @@ import io.deephaven.plugin.Plugin;
  */
 public interface JsPlugin extends Plugin {
 
-    <T> T walk(Visitor<T> visitor);
-
-    interface Visitor<T> {
-        T visit(JsPluginPackagePath packageRoot);
-
-        T visit(JsPluginManifestPath manifestRoot);
-    }
 }

@@ -4,7 +4,6 @@
 package io.deephaven.server.jetty;
 
 import io.deephaven.plugin.js.JsPlugin;
-import io.deephaven.plugin.js.JsPlugin.Visitor;
 import io.deephaven.plugin.js.JsPluginManifestPath;
 import io.deephaven.plugin.js.JsPluginPackagePath;
 
@@ -37,33 +36,19 @@ class JsPlugins implements Consumer<JsPlugin> {
 
     @Override
     public void accept(JsPlugin jsPlugin) {
-        final IOException ioException = jsPlugin.walk(new CopyToZipFilesystem());
-        if (ioException != null) {
-            throw new UncheckedIOException(ioException);
-        }
-    }
-
-    private class CopyToZipFilesystem implements Visitor<IOException> {
-
-        @Override
-        public IOException visit(JsPluginPackagePath srcPackagePath) {
-            try {
-                copy(srcPackagePath, zipFs);
-                return null;
-            } catch (IOException e) {
-                return e;
+        try {
+            if (jsPlugin instanceof JsPluginPackagePath) {
+                copy((JsPluginPackagePath) jsPlugin, zipFs);
+                return;
             }
-        }
-
-        @Override
-        public IOException visit(JsPluginManifestPath srcManifestPath) {
-            try {
-                copyAll(srcManifestPath, zipFs);
-                return null;
-            } catch (IOException e) {
-                return e;
+            if (jsPlugin instanceof JsPluginManifestPath) {
+                copyAll((JsPluginManifestPath) jsPlugin, zipFs);
+                return;
             }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
+        throw new IllegalStateException("Unexpected JsPlugin class: " + jsPlugin.getClass());
     }
 
     private static void copy(JsPluginPackagePath srcPackagePath, JsPluginsZipFilesystem dest)

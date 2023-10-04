@@ -14,7 +14,6 @@ public interface DeephavenApiServerComponent {
     DeephavenApiServer getServer();
 
     interface Builder<Self extends Builder<Self, Component>, Component extends DeephavenApiServerComponent> {
-
         @BindsInstance
         Self withOut(@Nullable @Named("out") PrintStream out);
 

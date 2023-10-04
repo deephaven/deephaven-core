@@ -55,9 +55,4 @@ public abstract class JsPluginManifestPath extends JsPluginBase {
     public final JsPluginPackagePath packagePath(String name) {
         return JsPluginPackagePath.of(path().resolve(name));
     }
-
-    @Override
-    public final <T> T walk(JsPlugin.Visitor<T> visitor) {
-        return visitor.visit(this);
-    }
 }
