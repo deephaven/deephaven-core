@@ -393,6 +393,13 @@ public class TestGroovyDeephavenSession {
             assertEquals("Busted", cause.getMessage());
             assertNull(cause.getCause());
         }
+        try {
+            session.evaluateScript("println(Imported.main())").throwIfError();
+            fail("failed to error out");
+        } catch (Exception e) {
+            assertEquals("Busted", e.getMessage());
+            assertNull(e.getCause());
+        }
 
         try {
             session.evaluateScript(

@@ -5,6 +5,7 @@ package io.deephaven.engine.util;
 
 import com.google.auto.service.AutoService;
 import groovy.lang.Binding;
+import groovy.lang.GroovyClassLoader;
 import groovy.lang.GroovyShell;
 import groovy.lang.MissingPropertyException;
 import io.deephaven.api.agg.Aggregation;
@@ -98,7 +99,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             .getBooleanForClassWithDefault(GroovyDeephavenSession.class, "allowUnknownGroovyPackageImports", false);
 
     private static final ClassLoader STATIC_LOADER =
-            new URLClassLoader(new URL[0], GroovyDeephavenSession.class.getClassLoader()) {
+            new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()) {
                 final ConcurrentHashMap<String, Object> mapping = new ConcurrentHashMap<>();
 
                 @Override
@@ -161,9 +162,17 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             addDefaultImports(this.loadedGroovyScriptImports);
         }
 
-        CompilerConfiguration config = new CompilerConfiguration();
-        config.getCompilationCustomizers().add(consoleImports);
-        groovyShell = new GroovyShell(STATIC_LOADER, config) {
+        // Specify a classloader to read from the classpath, with script imports
+        CompilerConfiguration scriptConfig = new CompilerConfiguration();
+        scriptConfig.getCompilationCustomizers().add(loadedGroovyScriptImports);
+        GroovyClassLoader scriptClassLoader = new GroovyClassLoader(STATIC_LOADER, scriptConfig);
+
+        //
+        CompilerConfiguration consoleConfig = new CompilerConfiguration();
+        consoleConfig.getCompilationCustomizers().add(consoleImports);
+
+
+        groovyShell = new GroovyShell(scriptClassLoader, consoleConfig) {
             protected synchronized String generateScriptName() {
                 return GroovyDeephavenSession.this.generateScriptName();
             }
@@ -503,7 +512,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 if (isWildcard) {
                     result = Optional.of(imports -> imports.addStaticStars(body));
                 } else {
-                    result = Optional.of(imports -> imports.addStaticImport(alias, typeName, memberName));
+                    if (alias != null) {
+                        result = Optional.of(imports -> imports.addStaticImport(typeName, memberName));
+                    } else {
+                        result = Optional.of(imports -> imports.addStaticImport(alias, typeName, memberName));
+                    }
                 }
             } else {
                 return Optional.empty();
@@ -539,7 +552,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 }
             } else {
                 if (classExists(body)) {
-                    result = Optional.of(imports -> imports.addImport(alias, body));
+                    if (alias == null) {
+                        result = Optional.of(imports -> imports.addImports(body));
+                    } else {
+                        result = Optional.of(imports -> imports.addImport(alias, body));
+                    }
                 } else {
                     return Optional.empty();
                 }
@@ -636,8 +653,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String name = getNextScriptClassName();
 
         CompilerConfiguration config = new CompilerConfiguration(CompilerConfiguration.DEFAULT);
-        ImportCustomizer imports = new ImportCustomizer();
-        config.getCompilationCustomizers().add(imports);
+        config.getCompilationCustomizers().add(consoleImports);
         final CompilationUnit cu = new CompilationUnit(config, null, groovyShell.getClassLoader());
         cu.addSource(name, currentCommand);
 
