@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -13,8 +13,11 @@ import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.io.logger.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * The WhereListener is a MergedListener for computing updated filters
@@ -47,10 +50,10 @@ class WhereListener extends MergedListener {
             final Logger log,
             final QueryTable sourceTable,
             final ListenerRecorder recorder,
-            final Collection<NotificationQueue.Dependency> dependencies,
             final QueryTable.FilteredTable result,
             final WhereFilter[] filters) {
-        super(recorder == null ? Collections.emptyList() : Collections.singleton(recorder), dependencies,
+        super(recorder == null ? Collections.emptyList() : Collections.singleton(recorder),
+                extractDependencies(filters),
                 "where(" + Arrays.toString(filters) + ")", result);
         this.sourceTable = sourceTable;
         this.recorder = recorder;
@@ -63,6 +66,9 @@ class WhereListener extends MergedListener {
         for (final WhereFilter filter : this.filters) {
             hasColumnArray |= !filter.getColumnArrays().isEmpty();
             filterColumnNames.addAll(filter.getColumns());
+            if (filter instanceof LivenessReferent && filter.isRefreshing()) {
+                manage((LivenessReferent) filter);
+            }
         }
         permitParallelization = AbstractFilterExecution.permitParallelization(filters);
         this.filterColumns = hasColumnArray ? null
@@ -79,6 +85,19 @@ class WhereListener extends MergedListener {
         } else {
             segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS;
         }
+    }
+
+    @NotNull
+    private static List<NotificationQueue.Dependency> extractDependencies(@NotNull final WhereFilter[] filters) {
+        return Stream.concat(
+                Stream.of(filters)
+                        .filter(f -> f instanceof NotificationQueue.Dependency)
+                        .map(f -> (NotificationQueue.Dependency) f),
+                Stream.of(filters)
+                        .filter(f -> f instanceof DependencyStreamProvider)
+                        .flatMap(f -> ((DependencyStreamProvider) f)
+                                .getDependencyStream()))
+                .collect(Collectors.toList());
     }
 
     @Override
