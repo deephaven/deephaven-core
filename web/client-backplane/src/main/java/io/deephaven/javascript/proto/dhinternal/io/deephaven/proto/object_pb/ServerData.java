@@ -15,13 +15,13 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.object_pb.Data",
+        name = "dhinternal.io.deephaven.proto.object_pb.ServerData",
         namespace = JsPackage.GLOBAL)
-public class Data {
+public class ServerData {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetPayloadUnionType {
         @JsOverlay
-        static Data.GetPayloadUnionType of(Object o) {
+        static ServerData.GetPayloadUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -49,7 +49,7 @@ public class Data {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface SetPayloadValueUnionType {
         @JsOverlay
-        static Data.SetPayloadValueUnionType of(Object o) {
+        static ServerData.SetPayloadValueUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -83,7 +83,7 @@ public class Data {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface GetTicketUnionType {
                     @JsOverlay
-                    static Data.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType of(
+                    static ServerData.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType of(
                             Object o) {
                         return Js.cast(o);
                     }
@@ -110,46 +110,46 @@ public class Data {
                 }
 
                 @JsOverlay
-                static Data.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType create() {
+                static ServerData.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                Data.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                ServerData.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                 @JsProperty
                 void setTicket(
-                        Data.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType ticket);
+                        ServerData.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                            Js.<Data.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<ServerData.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                            Js.<Data.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<ServerData.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
             }
 
             @JsOverlay
-            static Data.ToObjectReturnType.ExportedReferencesListFieldType create() {
+            static ServerData.ToObjectReturnType.ExportedReferencesListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            Data.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType getTicket();
+            ServerData.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType getTicket();
 
             @JsProperty
             String getType();
 
             @JsProperty
             void setTicket(
-                    Data.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType ticket);
+                    ServerData.ToObjectReturnType.ExportedReferencesListFieldType.TicketFieldType ticket);
 
             @JsProperty
             void setType(String type);
@@ -158,7 +158,7 @@ public class Data {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface GetPayloadUnionType {
             @JsOverlay
-            static Data.ToObjectReturnType.GetPayloadUnionType of(Object o) {
+            static ServerData.ToObjectReturnType.GetPayloadUnionType of(Object o) {
                 return Js.cast(o);
             }
 
@@ -184,39 +184,39 @@ public class Data {
         }
 
         @JsOverlay
-        static Data.ToObjectReturnType create() {
+        static ServerData.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<Data.ToObjectReturnType.ExportedReferencesListFieldType> getExportedReferencesList();
+        JsArray<ServerData.ToObjectReturnType.ExportedReferencesListFieldType> getExportedReferencesList();
 
         @JsProperty
-        Data.ToObjectReturnType.GetPayloadUnionType getPayload();
+        ServerData.ToObjectReturnType.GetPayloadUnionType getPayload();
 
         @JsOverlay
         default void setExportedReferencesList(
-                Data.ToObjectReturnType.ExportedReferencesListFieldType[] exportedReferencesList) {
+                ServerData.ToObjectReturnType.ExportedReferencesListFieldType[] exportedReferencesList) {
             setExportedReferencesList(
-                    Js.<JsArray<Data.ToObjectReturnType.ExportedReferencesListFieldType>>uncheckedCast(
+                    Js.<JsArray<ServerData.ToObjectReturnType.ExportedReferencesListFieldType>>uncheckedCast(
                             exportedReferencesList));
         }
 
         @JsProperty
         void setExportedReferencesList(
-                JsArray<Data.ToObjectReturnType.ExportedReferencesListFieldType> exportedReferencesList);
+                JsArray<ServerData.ToObjectReturnType.ExportedReferencesListFieldType> exportedReferencesList);
 
         @JsProperty
-        void setPayload(Data.ToObjectReturnType.GetPayloadUnionType payload);
+        void setPayload(ServerData.ToObjectReturnType.GetPayloadUnionType payload);
 
         @JsOverlay
         default void setPayload(String payload) {
-            setPayload(Js.<Data.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(payload));
+            setPayload(Js.<ServerData.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(payload));
         }
 
         @JsOverlay
         default void setPayload(Uint8Array payload) {
-            setPayload(Js.<Data.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(payload));
+            setPayload(Js.<ServerData.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(payload));
         }
     }
 
@@ -229,7 +229,7 @@ public class Data {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface GetTicketUnionType {
                     @JsOverlay
-                    static Data.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType of(
+                    static ServerData.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType of(
                             Object o) {
                         return Js.cast(o);
                     }
@@ -256,46 +256,46 @@ public class Data {
                 }
 
                 @JsOverlay
-                static Data.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType create() {
+                static ServerData.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                Data.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                ServerData.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                 @JsProperty
                 void setTicket(
-                        Data.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType ticket);
+                        ServerData.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                            Js.<Data.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<ServerData.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                            Js.<Data.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<ServerData.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
             }
 
             @JsOverlay
-            static Data.ToObjectReturnType0.ExportedReferencesListFieldType create() {
+            static ServerData.ToObjectReturnType0.ExportedReferencesListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            Data.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType getTicket();
+            ServerData.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType getTicket();
 
             @JsProperty
             String getType();
 
             @JsProperty
             void setTicket(
-                    Data.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType ticket);
+                    ServerData.ToObjectReturnType0.ExportedReferencesListFieldType.TicketFieldType ticket);
 
             @JsProperty
             void setType(String type);
@@ -304,7 +304,7 @@ public class Data {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface GetPayloadUnionType {
             @JsOverlay
-            static Data.ToObjectReturnType0.GetPayloadUnionType of(Object o) {
+            static ServerData.ToObjectReturnType0.GetPayloadUnionType of(Object o) {
                 return Js.cast(o);
             }
 
@@ -330,49 +330,50 @@ public class Data {
         }
 
         @JsOverlay
-        static Data.ToObjectReturnType0 create() {
+        static ServerData.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<Data.ToObjectReturnType0.ExportedReferencesListFieldType> getExportedReferencesList();
+        JsArray<ServerData.ToObjectReturnType0.ExportedReferencesListFieldType> getExportedReferencesList();
 
         @JsProperty
-        Data.ToObjectReturnType0.GetPayloadUnionType getPayload();
+        ServerData.ToObjectReturnType0.GetPayloadUnionType getPayload();
 
         @JsOverlay
         default void setExportedReferencesList(
-                Data.ToObjectReturnType0.ExportedReferencesListFieldType[] exportedReferencesList) {
+                ServerData.ToObjectReturnType0.ExportedReferencesListFieldType[] exportedReferencesList) {
             setExportedReferencesList(
-                    Js.<JsArray<Data.ToObjectReturnType0.ExportedReferencesListFieldType>>uncheckedCast(
+                    Js.<JsArray<ServerData.ToObjectReturnType0.ExportedReferencesListFieldType>>uncheckedCast(
                             exportedReferencesList));
         }
 
         @JsProperty
         void setExportedReferencesList(
-                JsArray<Data.ToObjectReturnType0.ExportedReferencesListFieldType> exportedReferencesList);
+                JsArray<ServerData.ToObjectReturnType0.ExportedReferencesListFieldType> exportedReferencesList);
 
         @JsProperty
-        void setPayload(Data.ToObjectReturnType0.GetPayloadUnionType payload);
+        void setPayload(ServerData.ToObjectReturnType0.GetPayloadUnionType payload);
 
         @JsOverlay
         default void setPayload(String payload) {
-            setPayload(Js.<Data.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(payload));
+            setPayload(Js.<ServerData.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(payload));
         }
 
         @JsOverlay
         default void setPayload(Uint8Array payload) {
-            setPayload(Js.<Data.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(payload));
+            setPayload(Js.<ServerData.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(payload));
         }
     }
 
-    public static native Data deserializeBinary(Uint8Array bytes);
+    public static native ServerData deserializeBinary(Uint8Array bytes);
 
-    public static native Data deserializeBinaryFromReader(Data message, Object reader);
+    public static native ServerData deserializeBinaryFromReader(ServerData message, Object reader);
 
-    public static native void serializeBinaryToWriter(Data message, Object writer);
+    public static native void serializeBinaryToWriter(ServerData message, Object writer);
 
-    public static native Data.ToObjectReturnType toObject(boolean includeInstance, Data msg);
+    public static native ServerData.ToObjectReturnType toObject(
+            boolean includeInstance, ServerData msg);
 
     public native TypedTicket addExportedReferences();
 
@@ -384,7 +385,7 @@ public class Data {
 
     public native JsArray<TypedTicket> getExportedReferencesList();
 
-    public native Data.GetPayloadUnionType getPayload();
+    public native ServerData.GetPayloadUnionType getPayload();
 
     public native String getPayload_asB64();
 
@@ -399,19 +400,19 @@ public class Data {
         setExportedReferencesList(Js.<JsArray<TypedTicket>>uncheckedCast(value));
     }
 
-    public native void setPayload(Data.SetPayloadValueUnionType value);
+    public native void setPayload(ServerData.SetPayloadValueUnionType value);
 
     @JsOverlay
     public final void setPayload(String value) {
-        setPayload(Js.<Data.SetPayloadValueUnionType>uncheckedCast(value));
+        setPayload(Js.<ServerData.SetPayloadValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
     public final void setPayload(Uint8Array value) {
-        setPayload(Js.<Data.SetPayloadValueUnionType>uncheckedCast(value));
+        setPayload(Js.<ServerData.SetPayloadValueUnionType>uncheckedCast(value));
     }
 
-    public native Data.ToObjectReturnType0 toObject();
+    public native ServerData.ToObjectReturnType0 toObject();
 
-    public native Data.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native ServerData.ToObjectReturnType0 toObject(boolean includeInstance);
 }

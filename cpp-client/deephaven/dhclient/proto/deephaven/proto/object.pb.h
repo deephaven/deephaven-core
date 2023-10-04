@@ -54,18 +54,21 @@ namespace grpc {
 class BrowserNextResponse;
 struct BrowserNextResponseDefaultTypeInternal;
 extern BrowserNextResponseDefaultTypeInternal _BrowserNextResponse_default_instance_;
+class ClientData;
+struct ClientDataDefaultTypeInternal;
+extern ClientDataDefaultTypeInternal _ClientData_default_instance_;
 class ConnectRequest;
 struct ConnectRequestDefaultTypeInternal;
 extern ConnectRequestDefaultTypeInternal _ConnectRequest_default_instance_;
-class Data;
-struct DataDefaultTypeInternal;
-extern DataDefaultTypeInternal _Data_default_instance_;
 class FetchObjectRequest;
 struct FetchObjectRequestDefaultTypeInternal;
 extern FetchObjectRequestDefaultTypeInternal _FetchObjectRequest_default_instance_;
 class FetchObjectResponse;
 struct FetchObjectResponseDefaultTypeInternal;
 extern FetchObjectResponseDefaultTypeInternal _FetchObjectResponse_default_instance_;
+class ServerData;
+struct ServerDataDefaultTypeInternal;
+extern ServerDataDefaultTypeInternal _ServerData_default_instance_;
 class StreamRequest;
 struct StreamRequestDefaultTypeInternal;
 extern StreamRequestDefaultTypeInternal _StreamRequest_default_instance_;
@@ -79,10 +82,11 @@ extern StreamResponseDefaultTypeInternal _StreamResponse_default_instance_;
 }  // namespace io
 PROTOBUF_NAMESPACE_OPEN
 template<> ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::BrowserNextResponse>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::ClientData* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::ClientData>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::ConnectRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::ConnectRequest>(Arena*);
-template<> ::io::deephaven::proto::backplane::grpc::Data* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Data>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::FetchObjectRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::FetchObjectRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::FetchObjectResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::FetchObjectResponse>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::ServerData* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::ServerData>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::StreamRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::StreamRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::StreamResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::StreamResponse>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
@@ -582,24 +586,24 @@ class ConnectRequest final :
 };
 // -------------------------------------------------------------------
 
-class Data final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.Data) */ {
+class ClientData final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.ClientData) */ {
  public:
-  inline Data() : Data(nullptr) {}
-  ~Data() override;
-  explicit PROTOBUF_CONSTEXPR Data(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline ClientData() : ClientData(nullptr) {}
+  ~ClientData() override;
+  explicit PROTOBUF_CONSTEXPR ClientData(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  Data(const Data& from);
-  Data(Data&& from) noexcept
-    : Data() {
+  ClientData(const ClientData& from);
+  ClientData(ClientData&& from) noexcept
+    : ClientData() {
     *this = ::std::move(from);
   }
 
-  inline Data& operator=(const Data& from) {
+  inline ClientData& operator=(const ClientData& from) {
     CopyFrom(from);
     return *this;
   }
-  inline Data& operator=(Data&& from) noexcept {
+  inline ClientData& operator=(ClientData&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -622,20 +626,20 @@ class Data final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const Data& default_instance() {
+  static const ClientData& default_instance() {
     return *internal_default_instance();
   }
-  static inline const Data* internal_default_instance() {
-    return reinterpret_cast<const Data*>(
-               &_Data_default_instance_);
+  static inline const ClientData* internal_default_instance() {
+    return reinterpret_cast<const ClientData*>(
+               &_ClientData_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     3;
 
-  friend void swap(Data& a, Data& b) {
+  friend void swap(ClientData& a, ClientData& b) {
     a.Swap(&b);
   }
-  inline void Swap(Data* other) {
+  inline void Swap(ClientData* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -648,7 +652,7 @@ class Data final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(Data* other) {
+  void UnsafeArenaSwap(ClientData* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -656,13 +660,13 @@ class Data final :
 
   // implements Message ----------------------------------------------
 
-  Data* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<Data>(arena);
+  ClientData* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ClientData>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const Data& from);
+  void CopyFrom(const ClientData& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom(const Data& from);
+  void MergeFrom(const ClientData& from);
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
   public:
@@ -679,15 +683,183 @@ class Data final :
   void SharedCtor();
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(Data* other);
+  void InternalSwap(ClientData* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "io.deephaven.proto.backplane.grpc.Data";
+    return "io.deephaven.proto.backplane.grpc.ClientData";
   }
   protected:
-  explicit Data(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit ClientData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kReferencesFieldNumber = 2,
+    kPayloadFieldNumber = 1,
+  };
+  // repeated .io.deephaven.proto.backplane.grpc.TypedTicket references = 2;
+  int references_size() const;
+  private:
+  int _internal_references_size() const;
+  public:
+  void clear_references();
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* mutable_references(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TypedTicket >*
+      mutable_references();
+  private:
+  const ::io::deephaven::proto::backplane::grpc::TypedTicket& _internal_references(int index) const;
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* _internal_add_references();
+  public:
+  const ::io::deephaven::proto::backplane::grpc::TypedTicket& references(int index) const;
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* add_references();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TypedTicket >&
+      references() const;
+
+  // bytes payload = 1;
+  void clear_payload();
+  const std::string& payload() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_payload(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_payload();
+  PROTOBUF_NODISCARD std::string* release_payload();
+  void set_allocated_payload(std::string* payload);
+  private:
+  const std::string& _internal_payload() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_payload(const std::string& value);
+  std::string* _internal_mutable_payload();
+  public:
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.ClientData)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TypedTicket > references_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr payload_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2fobject_2eproto;
+};
+// -------------------------------------------------------------------
+
+class ServerData final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.ServerData) */ {
+ public:
+  inline ServerData() : ServerData(nullptr) {}
+  ~ServerData() override;
+  explicit PROTOBUF_CONSTEXPR ServerData(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  ServerData(const ServerData& from);
+  ServerData(ServerData&& from) noexcept
+    : ServerData() {
+    *this = ::std::move(from);
+  }
+
+  inline ServerData& operator=(const ServerData& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ServerData& operator=(ServerData&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const ServerData& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const ServerData* internal_default_instance() {
+    return reinterpret_cast<const ServerData*>(
+               &_ServerData_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    4;
+
+  friend void swap(ServerData& a, ServerData& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ServerData* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ServerData* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  ServerData* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ServerData>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const ServerData& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const ServerData& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ServerData* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.ServerData";
+  }
+  protected:
+  explicit ServerData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -736,7 +908,7 @@ class Data final :
   std::string* _internal_mutable_payload();
   public:
 
-  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.Data)
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.ServerData)
  private:
   class _Internal;
 
@@ -804,7 +976,7 @@ class StreamRequest final :
                &_StreamRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    4;
+    5;
 
   friend void swap(StreamRequest& a, StreamRequest& b) {
     a.Swap(&b);
@@ -896,23 +1068,23 @@ class StreamRequest final :
       ::io::deephaven::proto::backplane::grpc::ConnectRequest* connect);
   ::io::deephaven::proto::backplane::grpc::ConnectRequest* unsafe_arena_release_connect();
 
-  // .io.deephaven.proto.backplane.grpc.Data data = 2;
+  // .io.deephaven.proto.backplane.grpc.ClientData data = 2;
   bool has_data() const;
   private:
   bool _internal_has_data() const;
   public:
   void clear_data();
-  const ::io::deephaven::proto::backplane::grpc::Data& data() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::Data* release_data();
-  ::io::deephaven::proto::backplane::grpc::Data* mutable_data();
-  void set_allocated_data(::io::deephaven::proto::backplane::grpc::Data* data);
+  const ::io::deephaven::proto::backplane::grpc::ClientData& data() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::ClientData* release_data();
+  ::io::deephaven::proto::backplane::grpc::ClientData* mutable_data();
+  void set_allocated_data(::io::deephaven::proto::backplane::grpc::ClientData* data);
   private:
-  const ::io::deephaven::proto::backplane::grpc::Data& _internal_data() const;
-  ::io::deephaven::proto::backplane::grpc::Data* _internal_mutable_data();
+  const ::io::deephaven::proto::backplane::grpc::ClientData& _internal_data() const;
+  ::io::deephaven::proto::backplane::grpc::ClientData* _internal_mutable_data();
   public:
   void unsafe_arena_set_allocated_data(
-      ::io::deephaven::proto::backplane::grpc::Data* data);
-  ::io::deephaven::proto::backplane::grpc::Data* unsafe_arena_release_data();
+      ::io::deephaven::proto::backplane::grpc::ClientData* data);
+  ::io::deephaven::proto::backplane::grpc::ClientData* unsafe_arena_release_data();
 
   void clear_message();
   MessageCase message_case() const;
@@ -932,7 +1104,7 @@ class StreamRequest final :
     constexpr MessageUnion() : _constinit_{} {}
       ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized _constinit_;
     ::io::deephaven::proto::backplane::grpc::ConnectRequest* connect_;
-    ::io::deephaven::proto::backplane::grpc::Data* data_;
+    ::io::deephaven::proto::backplane::grpc::ClientData* data_;
   } message_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   uint32_t _oneof_case_[1];
@@ -994,7 +1166,7 @@ class StreamResponse final :
                &_StreamResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    5;
+    6;
 
   friend void swap(StreamResponse& a, StreamResponse& b) {
     a.Swap(&b);
@@ -1067,23 +1239,23 @@ class StreamResponse final :
   enum : int {
     kDataFieldNumber = 1,
   };
-  // .io.deephaven.proto.backplane.grpc.Data data = 1;
+  // .io.deephaven.proto.backplane.grpc.ServerData data = 1;
   bool has_data() const;
   private:
   bool _internal_has_data() const;
   public:
   void clear_data();
-  const ::io::deephaven::proto::backplane::grpc::Data& data() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::Data* release_data();
-  ::io::deephaven::proto::backplane::grpc::Data* mutable_data();
-  void set_allocated_data(::io::deephaven::proto::backplane::grpc::Data* data);
+  const ::io::deephaven::proto::backplane::grpc::ServerData& data() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::ServerData* release_data();
+  ::io::deephaven::proto::backplane::grpc::ServerData* mutable_data();
+  void set_allocated_data(::io::deephaven::proto::backplane::grpc::ServerData* data);
   private:
-  const ::io::deephaven::proto::backplane::grpc::Data& _internal_data() const;
-  ::io::deephaven::proto::backplane::grpc::Data* _internal_mutable_data();
+  const ::io::deephaven::proto::backplane::grpc::ServerData& _internal_data() const;
+  ::io::deephaven::proto::backplane::grpc::ServerData* _internal_mutable_data();
   public:
   void unsafe_arena_set_allocated_data(
-      ::io::deephaven::proto::backplane::grpc::Data* data);
-  ::io::deephaven::proto::backplane::grpc::Data* unsafe_arena_release_data();
+      ::io::deephaven::proto::backplane::grpc::ServerData* data);
+  ::io::deephaven::proto::backplane::grpc::ServerData* unsafe_arena_release_data();
 
   void clear_message();
   MessageCase message_case() const;
@@ -1101,7 +1273,7 @@ class StreamResponse final :
   union MessageUnion {
     constexpr MessageUnion() : _constinit_{} {}
       ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized _constinit_;
-    ::io::deephaven::proto::backplane::grpc::Data* data_;
+    ::io::deephaven::proto::backplane::grpc::ServerData* data_;
   } message_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   uint32_t _oneof_case_[1];
@@ -1157,7 +1329,7 @@ class BrowserNextResponse final :
                &_BrowserNextResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    6;
+    7;
 
   friend void swap(BrowserNextResponse& a, BrowserNextResponse& b) {
     a.Swap(&b);
@@ -1552,44 +1724,44 @@ inline void ConnectRequest::set_allocated_source_id(::io::deephaven::proto::back
 
 // -------------------------------------------------------------------
 
-// Data
+// ClientData
 
 // bytes payload = 1;
-inline void Data::clear_payload() {
+inline void ClientData::clear_payload() {
   payload_.ClearToEmpty();
 }
-inline const std::string& Data::payload() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.Data.payload)
+inline const std::string& ClientData::payload() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ClientData.payload)
   return _internal_payload();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void Data::set_payload(ArgT0&& arg0, ArgT... args) {
+void ClientData::set_payload(ArgT0&& arg0, ArgT... args) {
  
  payload_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.Data.payload)
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.ClientData.payload)
 }
-inline std::string* Data::mutable_payload() {
+inline std::string* ClientData::mutable_payload() {
   std::string* _s = _internal_mutable_payload();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.Data.payload)
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.ClientData.payload)
   return _s;
 }
-inline const std::string& Data::_internal_payload() const {
+inline const std::string& ClientData::_internal_payload() const {
   return payload_.Get();
 }
-inline void Data::_internal_set_payload(const std::string& value) {
+inline void ClientData::_internal_set_payload(const std::string& value) {
   
   payload_.Set(value, GetArenaForAllocation());
 }
-inline std::string* Data::_internal_mutable_payload() {
+inline std::string* ClientData::_internal_mutable_payload() {
   
   return payload_.Mutable(GetArenaForAllocation());
 }
-inline std::string* Data::release_payload() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.Data.payload)
+inline std::string* ClientData::release_payload() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.ClientData.payload)
   return payload_.Release();
 }
-inline void Data::set_allocated_payload(std::string* payload) {
+inline void ClientData::set_allocated_payload(std::string* payload) {
   if (payload != nullptr) {
     
   } else {
@@ -1601,43 +1773,134 @@ inline void Data::set_allocated_payload(std::string* payload) {
     payload_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.Data.payload)
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.ClientData.payload)
 }
 
-// repeated .io.deephaven.proto.backplane.grpc.TypedTicket exported_references = 2;
-inline int Data::_internal_exported_references_size() const {
-  return exported_references_.size();
+// repeated .io.deephaven.proto.backplane.grpc.TypedTicket references = 2;
+inline int ClientData::_internal_references_size() const {
+  return references_.size();
 }
-inline int Data::exported_references_size() const {
-  return _internal_exported_references_size();
+inline int ClientData::references_size() const {
+  return _internal_references_size();
 }
-inline ::io::deephaven::proto::backplane::grpc::TypedTicket* Data::mutable_exported_references(int index) {
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.Data.exported_references)
-  return exported_references_.Mutable(index);
+inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ClientData::mutable_references(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.ClientData.references)
+  return references_.Mutable(index);
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TypedTicket >*
-Data::mutable_exported_references() {
-  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.Data.exported_references)
-  return &exported_references_;
+ClientData::mutable_references() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.ClientData.references)
+  return &references_;
 }
-inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& Data::_internal_exported_references(int index) const {
-  return exported_references_.Get(index);
+inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& ClientData::_internal_references(int index) const {
+  return references_.Get(index);
 }
-inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& Data::exported_references(int index) const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.Data.exported_references)
-  return _internal_exported_references(index);
+inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& ClientData::references(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ClientData.references)
+  return _internal_references(index);
 }
-inline ::io::deephaven::proto::backplane::grpc::TypedTicket* Data::_internal_add_exported_references() {
-  return exported_references_.Add();
+inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ClientData::_internal_add_references() {
+  return references_.Add();
 }
-inline ::io::deephaven::proto::backplane::grpc::TypedTicket* Data::add_exported_references() {
-  ::io::deephaven::proto::backplane::grpc::TypedTicket* _add = _internal_add_exported_references();
-  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.Data.exported_references)
+inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ClientData::add_references() {
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* _add = _internal_add_references();
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.ClientData.references)
   return _add;
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TypedTicket >&
-Data::exported_references() const {
-  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.Data.exported_references)
+ClientData::references() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.ClientData.references)
+  return references_;
+}
+
+// -------------------------------------------------------------------
+
+// ServerData
+
+// bytes payload = 1;
+inline void ServerData::clear_payload() {
+  payload_.ClearToEmpty();
+}
+inline const std::string& ServerData::payload() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ServerData.payload)
+  return _internal_payload();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void ServerData::set_payload(ArgT0&& arg0, ArgT... args) {
+ 
+ payload_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.ServerData.payload)
+}
+inline std::string* ServerData::mutable_payload() {
+  std::string* _s = _internal_mutable_payload();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.ServerData.payload)
+  return _s;
+}
+inline const std::string& ServerData::_internal_payload() const {
+  return payload_.Get();
+}
+inline void ServerData::_internal_set_payload(const std::string& value) {
+  
+  payload_.Set(value, GetArenaForAllocation());
+}
+inline std::string* ServerData::_internal_mutable_payload() {
+  
+  return payload_.Mutable(GetArenaForAllocation());
+}
+inline std::string* ServerData::release_payload() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.ServerData.payload)
+  return payload_.Release();
+}
+inline void ServerData::set_allocated_payload(std::string* payload) {
+  if (payload != nullptr) {
+    
+  } else {
+    
+  }
+  payload_.SetAllocated(payload, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (payload_.IsDefault()) {
+    payload_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.ServerData.payload)
+}
+
+// repeated .io.deephaven.proto.backplane.grpc.TypedTicket exported_references = 2;
+inline int ServerData::_internal_exported_references_size() const {
+  return exported_references_.size();
+}
+inline int ServerData::exported_references_size() const {
+  return _internal_exported_references_size();
+}
+inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ServerData::mutable_exported_references(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.ServerData.exported_references)
+  return exported_references_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TypedTicket >*
+ServerData::mutable_exported_references() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.ServerData.exported_references)
+  return &exported_references_;
+}
+inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& ServerData::_internal_exported_references(int index) const {
+  return exported_references_.Get(index);
+}
+inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& ServerData::exported_references(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ServerData.exported_references)
+  return _internal_exported_references(index);
+}
+inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ServerData::_internal_add_exported_references() {
+  return exported_references_.Add();
+}
+inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ServerData::add_exported_references() {
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* _add = _internal_add_exported_references();
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.ServerData.exported_references)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TypedTicket >&
+ServerData::exported_references() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.ServerData.exported_references)
   return exported_references_;
 }
 
@@ -1719,7 +1982,7 @@ inline ::io::deephaven::proto::backplane::grpc::ConnectRequest* StreamRequest::m
   return _msg;
 }
 
-// .io.deephaven.proto.backplane.grpc.Data data = 2;
+// .io.deephaven.proto.backplane.grpc.ClientData data = 2;
 inline bool StreamRequest::_internal_has_data() const {
   return message_case() == kData;
 }
@@ -1737,11 +2000,11 @@ inline void StreamRequest::clear_data() {
     clear_has_message();
   }
 }
-inline ::io::deephaven::proto::backplane::grpc::Data* StreamRequest::release_data() {
+inline ::io::deephaven::proto::backplane::grpc::ClientData* StreamRequest::release_data() {
   // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.StreamRequest.data)
   if (_internal_has_data()) {
     clear_has_message();
-    ::io::deephaven::proto::backplane::grpc::Data* temp = message_.data_;
+    ::io::deephaven::proto::backplane::grpc::ClientData* temp = message_.data_;
     if (GetArenaForAllocation() != nullptr) {
       temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
     }
@@ -1751,27 +2014,27 @@ inline ::io::deephaven::proto::backplane::grpc::Data* StreamRequest::release_dat
     return nullptr;
   }
 }
-inline const ::io::deephaven::proto::backplane::grpc::Data& StreamRequest::_internal_data() const {
+inline const ::io::deephaven::proto::backplane::grpc::ClientData& StreamRequest::_internal_data() const {
   return _internal_has_data()
       ? *message_.data_
-      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::Data&>(::io::deephaven::proto::backplane::grpc::_Data_default_instance_);
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::ClientData&>(::io::deephaven::proto::backplane::grpc::_ClientData_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::Data& StreamRequest::data() const {
+inline const ::io::deephaven::proto::backplane::grpc::ClientData& StreamRequest::data() const {
   // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.StreamRequest.data)
   return _internal_data();
 }
-inline ::io::deephaven::proto::backplane::grpc::Data* StreamRequest::unsafe_arena_release_data() {
+inline ::io::deephaven::proto::backplane::grpc::ClientData* StreamRequest::unsafe_arena_release_data() {
   // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.StreamRequest.data)
   if (_internal_has_data()) {
     clear_has_message();
-    ::io::deephaven::proto::backplane::grpc::Data* temp = message_.data_;
+    ::io::deephaven::proto::backplane::grpc::ClientData* temp = message_.data_;
     message_.data_ = nullptr;
     return temp;
   } else {
     return nullptr;
   }
 }
-inline void StreamRequest::unsafe_arena_set_allocated_data(::io::deephaven::proto::backplane::grpc::Data* data) {
+inline void StreamRequest::unsafe_arena_set_allocated_data(::io::deephaven::proto::backplane::grpc::ClientData* data) {
   clear_message();
   if (data) {
     set_has_data();
@@ -1779,16 +2042,16 @@ inline void StreamRequest::unsafe_arena_set_allocated_data(::io::deephaven::prot
   }
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.StreamRequest.data)
 }
-inline ::io::deephaven::proto::backplane::grpc::Data* StreamRequest::_internal_mutable_data() {
+inline ::io::deephaven::proto::backplane::grpc::ClientData* StreamRequest::_internal_mutable_data() {
   if (!_internal_has_data()) {
     clear_message();
     set_has_data();
-    message_.data_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::Data >(GetArenaForAllocation());
+    message_.data_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::ClientData >(GetArenaForAllocation());
   }
   return message_.data_;
 }
-inline ::io::deephaven::proto::backplane::grpc::Data* StreamRequest::mutable_data() {
-  ::io::deephaven::proto::backplane::grpc::Data* _msg = _internal_mutable_data();
+inline ::io::deephaven::proto::backplane::grpc::ClientData* StreamRequest::mutable_data() {
+  ::io::deephaven::proto::backplane::grpc::ClientData* _msg = _internal_mutable_data();
   // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.StreamRequest.data)
   return _msg;
 }
@@ -1806,7 +2069,7 @@ inline StreamRequest::MessageCase StreamRequest::message_case() const {
 
 // StreamResponse
 
-// .io.deephaven.proto.backplane.grpc.Data data = 1;
+// .io.deephaven.proto.backplane.grpc.ServerData data = 1;
 inline bool StreamResponse::_internal_has_data() const {
   return message_case() == kData;
 }
@@ -1824,11 +2087,11 @@ inline void StreamResponse::clear_data() {
     clear_has_message();
   }
 }
-inline ::io::deephaven::proto::backplane::grpc::Data* StreamResponse::release_data() {
+inline ::io::deephaven::proto::backplane::grpc::ServerData* StreamResponse::release_data() {
   // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.StreamResponse.data)
   if (_internal_has_data()) {
     clear_has_message();
-    ::io::deephaven::proto::backplane::grpc::Data* temp = message_.data_;
+    ::io::deephaven::proto::backplane::grpc::ServerData* temp = message_.data_;
     if (GetArenaForAllocation() != nullptr) {
       temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
     }
@@ -1838,27 +2101,27 @@ inline ::io::deephaven::proto::backplane::grpc::Data* StreamResponse::release_da
     return nullptr;
   }
 }
-inline const ::io::deephaven::proto::backplane::grpc::Data& StreamResponse::_internal_data() const {
+inline const ::io::deephaven::proto::backplane::grpc::ServerData& StreamResponse::_internal_data() const {
   return _internal_has_data()
       ? *message_.data_
-      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::Data&>(::io::deephaven::proto::backplane::grpc::_Data_default_instance_);
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::ServerData&>(::io::deephaven::proto::backplane::grpc::_ServerData_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::Data& StreamResponse::data() const {
+inline const ::io::deephaven::proto::backplane::grpc::ServerData& StreamResponse::data() const {
   // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.StreamResponse.data)
   return _internal_data();
 }
-inline ::io::deephaven::proto::backplane::grpc::Data* StreamResponse::unsafe_arena_release_data() {
+inline ::io::deephaven::proto::backplane::grpc::ServerData* StreamResponse::unsafe_arena_release_data() {
   // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.StreamResponse.data)
   if (_internal_has_data()) {
     clear_has_message();
-    ::io::deephaven::proto::backplane::grpc::Data* temp = message_.data_;
+    ::io::deephaven::proto::backplane::grpc::ServerData* temp = message_.data_;
     message_.data_ = nullptr;
     return temp;
   } else {
     return nullptr;
   }
 }
-inline void StreamResponse::unsafe_arena_set_allocated_data(::io::deephaven::proto::backplane::grpc::Data* data) {
+inline void StreamResponse::unsafe_arena_set_allocated_data(::io::deephaven::proto::backplane::grpc::ServerData* data) {
   clear_message();
   if (data) {
     set_has_data();
@@ -1866,16 +2129,16 @@ inline void StreamResponse::unsafe_arena_set_allocated_data(::io::deephaven::pro
   }
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.StreamResponse.data)
 }
-inline ::io::deephaven::proto::backplane::grpc::Data* StreamResponse::_internal_mutable_data() {
+inline ::io::deephaven::proto::backplane::grpc::ServerData* StreamResponse::_internal_mutable_data() {
   if (!_internal_has_data()) {
     clear_message();
     set_has_data();
-    message_.data_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::Data >(GetArenaForAllocation());
+    message_.data_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::ServerData >(GetArenaForAllocation());
   }
   return message_.data_;
 }
-inline ::io::deephaven::proto::backplane::grpc::Data* StreamResponse::mutable_data() {
-  ::io::deephaven::proto::backplane::grpc::Data* _msg = _internal_mutable_data();
+inline ::io::deephaven::proto::backplane::grpc::ServerData* StreamResponse::mutable_data() {
+  ::io::deephaven::proto::backplane::grpc::ServerData* _msg = _internal_mutable_data();
   // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.StreamResponse.data)
   return _msg;
 }
@@ -1896,6 +2159,8 @@ inline StreamResponse::MessageCase StreamResponse::message_case() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

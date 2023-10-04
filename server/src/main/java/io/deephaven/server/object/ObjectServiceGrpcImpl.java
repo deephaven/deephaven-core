@@ -149,12 +149,12 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                             "Data message sent before Connect message");
                 }
-                Data data = request.getData();
+                ClientData data = request.getData();
                 LivenessScope exportScope = new LivenessScope();
 
                 List<SessionState.ExportObject<Object>> referenceObjects;
                 try (SafeCloseable ignored = LivenessScopeStack.open(exportScope, false)) {
-                    referenceObjects = data.getExportedReferencesList().stream()
+                    referenceObjects = data.getReferencesList().stream()
                             .map(typedTicket -> ticketRouter.resolve(session, typedTicket.getTicket(), "ticket"))
                             .collect(Collectors.toList());
                 }
@@ -353,7 +353,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         public void onData(ByteBuffer message, Object[] references) throws ObjectCommunicationException {
             List<ExportObject<?>> exports = new ArrayList<>(references.length);
             try {
-                Data.Builder payload = Data.newBuilder().setPayload(ByteString.copyFrom(message));
+                ServerData.Builder payload = ServerData.newBuilder().setPayload(ByteString.copyFrom(message));
 
                 for (Object reference : references) {
                     final String type = typeLookup.type(reference).orElse(null);

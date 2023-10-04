@@ -97,29 +97,41 @@ message ConnectRequest {
 }
 
 /*
- * A generic payload that can be sent by either the server or the client, containing
- * arbitrary binary data, and any number of typed tickets. The current convention is
- * that the client can send tickets it was given from the server, and the server will
- * send server-created export tickets for new objects.
+ * A generic payload sent from the client to the server. The specific requirements and
+ * guarantees are defined by the specific plugin.
  */
-message Data {
-    // Arbitrary bytes defined by the plugin's definition/purpose.
+message ClientData {
+    // The payload, may be empty.
     bytes payload = 1;
+
     /*
-     * References to be sent client->server or server->client.
+     * The typed references, may be empty.
      *
-     * When the server sends references to objects on the server, those objects already
-     * exist and can be exported right away. Those tickets then are server-sent exports,
-     * and are already resolved. Note that these references could be missing a type,
-     * meaning that the object cannot be fetched, but can still be released or passed
-     * back to the server. To correctly free up unused server resources, clients must
-     * take care to release tickets when they will no longer be used.
+     * These references may be any ticket, resolved or not. This lets the client reference
+     * objects that already exist on the server or are still pending. Note that pending
+     * tickets require the server to wait until that object exists before passing this request
+     * to the server plugin, and since messages are always processed in order, later requests
+     * will also be delayed.
+     */
+    repeated io.deephaven.proto.backplane.grpc.TypedTicket references = 2;
+}
+
+/*
+ * A generic payload sent from the server to the client. The specific requirements and
+ * guarantees of this are defined by the specific plugin.
+ */
+message ServerData {
+    // The payload, may be empty.
+    bytes payload = 1;
+
+    /*
+     * The exported references, may be empty.
      *
-     * Tickets sent from the client to the server can be any ticket, resolved or not.
-     * This lets the client reference objects that already exist on the server or are
-     * still pending. Note that pending tickets require the server to wait until that
-     * object exists before passing this Data request to the server plugin, and since
-     * messages are always processed in order, later requests will also be delayed.
+     * To correctly free up unused server resources, clients must take care to release
+     * these exports when they will no longer be used. A reference may be missing a type,
+     * meaning that the object cannot be used as the source_id for a ConnectRequest, but
+     * it may still be passed back to the server as part of ClientData references, and
+     * it still needs to be released when no longer used.
      */
     repeated io.deephaven.proto.backplane.grpc.TypedTicket exported_references = 2;
 }
@@ -133,16 +145,16 @@ message StreamRequest {
         // a specific object on the server.
         ConnectRequest connect = 1;
         // Data to pass to the object on the server.
-        Data data = 2;
+        ClientData data = 2;
     }
 }
 /*
- * Server responses to the client. Currently can only be Data messages.
+ * Server responses to the client. Currently can only be ServerData messages.
  */
 message StreamResponse {
     oneof message {
         // Data to pass to the client about the object on the server.
-        Data data = 1;
+        ServerData data = 1;
     }
 }
 
