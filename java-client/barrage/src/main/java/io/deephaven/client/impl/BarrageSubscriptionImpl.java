@@ -136,7 +136,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
                 // if the message was empty, then BaseTable prevents propagating the empty update, and our listener was
                 // not invoked, so let's invoke it ourselves
-                if (numRows == 0) {
+                if (listener != null && numRows == 0) {
                     final TableUpdate emptyUpdate = new TableUpdateImpl(
                             RowSetFactory.empty(), RowSetFactory.empty(), RowSetFactory.empty(), RowSetShiftData.EMPTY,
                             ModifiedColumnSet.EMPTY);
