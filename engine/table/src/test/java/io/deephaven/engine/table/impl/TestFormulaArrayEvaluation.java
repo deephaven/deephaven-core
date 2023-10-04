@@ -272,7 +272,8 @@ public class TestFormulaArrayEvaluation {
         final long duration = System.currentTimeMillis() - startTm;
         Assert.assertTrue(
                 String.format("Test finishes in less than 15 seconds, instead duration was %d ms", duration),
-                duration < 15_000);    }
+                duration < 15_000);
+    }
 
     @Test
     public void updateTableStableMultiShiftedColValuesTest() {
