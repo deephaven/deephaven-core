@@ -222,6 +222,36 @@ public class TestTableTools {
     }
 
     @Test
+    public void testEmptyTableIsFlat() {
+        Assert.assertTrue(emptyTable(0).isFlat());
+        Assert.assertTrue(emptyTable(42).isFlat());
+    }
+
+    @Test
+    public void testNewTableIsFlat() {
+        Table t1 = newTable(
+                col("String", "c", "e", "g"),
+                col("Int", 2, 4, 6),
+                col("Double", 1.2, 2.6, Double.NaN),
+                col("Float", 1.2f, 2.6f, Float.NaN));
+        Assert.assertTrue(t1.isFlat());
+
+        final Table t2 = newTable(t1.getDefinition());
+        Assert.assertTrue(t2.isFlat());
+
+        final Table t3 = newTable(t1.getDefinition(),
+                col("String", "c", "e", "g"),
+                col("Int", 2, 4, 6),
+                col("Double", 1.2, 2.6, Double.NaN),
+                col("Float", 1.2f, 2.6f, Float.NaN));
+        Assert.assertTrue(t3.isFlat());
+
+        final Table t4 = newTable(3, Arrays.asList("String", "Int"),
+                Arrays.asList(TableTools.objColSource("c", "e", "g"), TableTools.colSource(2, 4, 6)));
+        Assert.assertTrue(t4.isFlat());
+    }
+
+    @Test
     public void testRoundDecimalColumns() {
         Table table = newTable(
                 col("String", "c", "e", "g"),

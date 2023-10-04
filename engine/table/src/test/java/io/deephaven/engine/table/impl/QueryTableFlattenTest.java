@@ -37,7 +37,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
             showWithRowSet(queryTable);
         }
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new FlatChecker(queryTable.flatten()),
+                new FlatChecker(queryTable, queryTable.flatten()),
                 new TableComparator(queryTable, queryTable.flatten()),
                 new EvalNugget() {
                     public Table e() {
@@ -304,25 +304,29 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     }
 
     /**
-     * Makes sure that the row set of our table is actually contiguous.
+     * Makes sure that the table and row set of our table is actually contiguous.
      */
     protected static class FlatChecker implements EvalNuggetInterface {
-        private final Table t1;
+        private final Table original;
+        private final Table flattened;
 
-        FlatChecker(Table t1) {
-            this.t1 = t1;
+        FlatChecker(Table original, Table flattened) {
+            this.original = original;
+            this.flattened = flattened;
         }
 
         @Override
         public void validate(String msg) {
-            if (t1.getRowSet().size() > 0) {
-                Assert.assertEquals(msg, t1.getRowSet().size() - 1, t1.getRowSet().lastRowKey());
-            }
+            Assert.assertFalse(original.isFlat());
+            Assert.assertTrue(original.getRowSet().isFlat());
+
+            Assert.assertTrue(flattened.isFlat());
+            Assert.assertTrue(flattened.getRowSet().isFlat());
         }
 
         @Override
         public void show() throws IOException {
-            showWithRowSet(t1);
+            showWithRowSet(flattened);
         }
     }
 
