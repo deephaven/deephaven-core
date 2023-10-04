@@ -244,7 +244,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      * This is the last step on which the UG-synced RowSet was updated. This is used only for consistency checking
      * between our initial creation and subsequent updates.
      */
-    private long lastIndexClockStep = 0;
+    private long lastUpdateClockStep = 0;
 
     private Throwable pendingError = null;
     private final List<Delta> pendingDeltas = new ArrayList<>();
@@ -603,8 +603,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         @Override
         public void onUpdate(final TableUpdate upstream) {
             synchronized (BarrageMessageProducer.this) {
-                if (lastIndexClockStep >= parent.getUpdateGraph().clock().currentStep()) {
-                    throw new IllegalStateException(logPrefix + "lastIndexClockStep=" + lastIndexClockStep
+                if (lastUpdateClockStep >= parent.getUpdateGraph().clock().currentStep()) {
+                    throw new IllegalStateException(logPrefix + "lastUpdateClockStep=" + lastUpdateClockStep
                             + " >= notification on "
                             + parent.getUpdateGraph().clock().currentStep());
                 }
@@ -619,11 +619,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 parentTableSize = parent.size();
 
                 // mark when the last indices are from, so that terminal notifications can make use of them if required
-                lastIndexClockStep = parent.getUpdateGraph().clock().currentStep();
+                lastUpdateClockStep = parent.getUpdateGraph().clock().currentStep();
                 if (log.isDebugEnabled()) {
                     try (final RowSet prevRowSet = parent.getRowSet().copyPrev()) {
                         log.debug().append(logPrefix)
-                                .append("lastIndexClockStep=").append(lastIndexClockStep)
+                                .append("lastUpdateClockStep=").append(lastUpdateClockStep)
                                 .append(", upstream=").append(upstream).append(", shouldEnqueueDelta=")
                                 .append(shouldEnqueueDelta)
                                 .append(", rowSet=").append(parent.getRowSet()).append(", prevRowSet=")
@@ -2120,12 +2120,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         postSnapshotColumns.clear();
     }
 
-    private synchronized long getLastIndexClockStep() {
-        return lastIndexClockStep;
+    private synchronized long getLastUpdateClockStep() {
+        return lastUpdateClockStep;
     }
 
     private class SnapshotControl implements ConstructSnapshot.SnapshotControl {
-        long capturedLastIndexClockStep;
+        long capturedLastUpdateClockStep;
         long step = -1;
         final List<Subscription> snapshotSubscriptions;
 
@@ -2140,7 +2140,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 return false;
             }
 
-            capturedLastIndexClockStep = getLastIndexClockStep();
+            capturedLastUpdateClockStep = getLastUpdateClockStep();
 
             final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
@@ -2149,15 +2149,16 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 return false;
             }
 
-            final boolean notifiedOnThisStep = beforeStep == capturedLastIndexClockStep;
+            final boolean notifiedOnThisStep = beforeStep == capturedLastUpdateClockStep;
             final boolean usePrevious = !notifiedOnThisStep;
 
             step = notifiedOnThisStep ? beforeStep : beforeStep - 1;
 
             if (log.isDebugEnabled()) {
                 log.debug().append(logPrefix)
-                        .append("usePreviousValues usePrevious=").append(usePrevious)
-                        .append(", beforeStep=").append(beforeStep).append(", validStep=").append(step).endl();
+                        .append("usePreviousValues: usePrevious=").append(usePrevious)
+                        .append(", beforeStep=").append(beforeStep)
+                        .append(", lastUpdateStep=").append(capturedLastUpdateClockStep).endl();
             }
 
             return usePrevious;
@@ -2168,7 +2169,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             if (!parentIsRefreshing) {
                 return true;
             }
-            return capturedLastIndexClockStep == getLastIndexClockStep();
+            return capturedLastUpdateClockStep == getLastUpdateClockStep();
         }
 
         @Override
@@ -2336,6 +2337,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     @Override
     public synchronized void setLastNotificationStep(final long lastNotificationStep) {
-        lastIndexClockStep = Math.max(lastNotificationStep, lastIndexClockStep);
+        lastUpdateClockStep = Math.max(lastNotificationStep, lastUpdateClockStep);
     }
 }
