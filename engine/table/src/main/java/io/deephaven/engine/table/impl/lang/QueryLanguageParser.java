@@ -122,6 +122,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -2484,7 +2485,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return Optional.of(new CastExpr(new ClassOrInterfaceType(null, "java.lang.Boolean"), callMethodCall));
         } else if (retType == String.class) {
             return Optional.of(new CastExpr(new ClassOrInterfaceType(null, "java.lang.String"), callMethodCall));
+        } else if (retType == Instant.class) {
+            return Optional.of(new CastExpr(new ClassOrInterfaceType(null, "java.time.Instant"), callMethodCall));
         }
+
         return Optional.empty();
     }
 

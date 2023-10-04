@@ -6,6 +6,7 @@ import io.deephaven.io.logger.Logger;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         numpyType2JavaClass.put('b', byte.class);
         numpyType2JavaClass.put('?', boolean.class);
         numpyType2JavaClass.put('U', String.class);
+        numpyType2JavaClass.put('M', Instant.class);
         numpyType2JavaClass.put('O', Object.class);
     }
 

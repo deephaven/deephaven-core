@@ -5,6 +5,8 @@ import unittest
 from typing import List, Tuple, Sequence
 
 import numpy as np
+import pandas as pd
+import datetime
 from deephaven import empty_table, dtypes
 from tests.testbase import BaseTestCase
 
@@ -74,6 +76,32 @@ foo = Foo()
 
                 t = empty_table(10).update("X = i").update(f"Y= foo.fn(X + 1)")
                 self.assertNotEqual(t.columns[1].data_type, dh_dtype)
+
+    def test_datetime_scalar_return(self):
+        dt_dtypes = [
+            "np.dtype('datetime64[ns]')",
+            "np.dtype('datetime64[ms]')",
+            "datetime.datetime",
+            "pd.Timestamp"
+        ]
+
+        for np_dtype in dt_dtypes:
+            with self.subTest(np_dtype=np_dtype):
+                func_decl_str = f"""def fn(col) -> {np_dtype}:"""
+                if np_dtype == "np.dtype('datetime64[ns]')":
+                    func_body_str = f"""    return pd.Timestamp(col).to_numpy()"""
+                elif np_dtype == "datetime.datetime":
+                    func_body_str = f"""    return pd.Timestamp(col).to_pydatetime()"""
+                elif np_dtype == "pd.Timestamp":
+                    func_body_str = f"""    return pd.Timestamp(col)"""
+                func_body_str = f"""    return pd.Timestamp(col).to_numpy()"""
+                exec("\n".join([func_decl_str, func_body_str]), globals())
+
+                t = empty_table(10).update("X = i").update(f"Y= fn(X + 1)")
+                self.assertEqual(t.columns[1].data_type, dtypes.Instant)
+                # vectorized
+                t = empty_table(10).update("X = i").update(f"Y= fn(X)")
+                self.assertEqual(t.columns[1].data_type, dtypes.Instant)
 
 
 if __name__ == '__main__':
