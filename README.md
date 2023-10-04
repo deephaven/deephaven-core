@@ -60,6 +60,12 @@ docker run hello-world
 If any dependencies are missing or unsupported versions are installed, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/quickstart#prerequisites) for installation instructions.
 
 
+For running unit tests, you will also need Git LFS. Run the following commands inside the core repo to fetch all required files from LFS:
+```
+git lfs install
+git lfs pull
+```
+
 ### Create deployment
 
 A directory must be created to store files and mount points for your deployment.  Here, we are using the `deephaven-deployment` directory.  
