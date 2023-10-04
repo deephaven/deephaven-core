@@ -238,10 +238,10 @@ public class ParquetTools {
     }
 
     /**
-     * Generates grouping file path from the table destination file path. For example, table A with destination
+     * Generates grouping file path relative to the table destination file path. For example, table A with destination
      * {@code tableDest} as {@code "dir/A.parquet"} and grouping column {@code columnName} as {@code "g"} have grouping
      * file at {@code "dir/.dh_metadata/indexes/g/index_g_A.parquet"}. TODO Rewrite this comment based on finalized
-     * version TODO Add a test for this method
+     * version
      */
     public static String getRelativeGroupingFilePath(@NotNull final File tableDest, @NotNull final String columnName) {
         return String.format(".dh_metadata/indexes/%s/index_%s_%s", columnName, columnName, tableDest.getName());
@@ -378,8 +378,8 @@ public class ParquetTools {
         for (int gci = 0; gci < groupingColumnNames.length; gci++) {
             final String groupingColumnName = groupingColumnNames[gci];
             final String parquetColumnName = parquetColumnNames[gci];
-            final String groupingFilePath = getRelativeGroupingFilePath(destFile, parquetColumnName);
-            final File groupingFile = new File(destFile.getParent(), groupingFilePath);
+            final String groupingFileRelativePath = getRelativeGroupingFilePath(destFile, parquetColumnName);
+            final File groupingFile = new File(destFile.getParent(), groupingFileRelativePath);
             prepareDestinationFileLocation(groupingFile);
             deleteBackupFile(groupingFile);
             final File shadowGroupingFile = getShadowFile(groupingFile);
@@ -585,25 +585,33 @@ public class ParquetTools {
             if (Files.exists(metadataPath)) {
                 return readPartitionedTableWithMetadata(source, instructions);
             }
-            final Path firstEntryPath;
+            Path firstEntryPath;
             try (final DirectoryStream<Path> sourceStream = Files.newDirectoryStream(sourcePath)) {
                 final Iterator<Path> entryIterator = sourceStream.iterator();
                 if (!entryIterator.hasNext()) {
                     throw new TableDataException("Source directory " + source + " is empty");
                 }
-                firstEntryPath = entryIterator.next();
+                while (entryIterator.hasNext()) {
+                    firstEntryPath = entryIterator.next();
+                    final String firstEntryFileName = firstEntryPath.getFileName().toString();
+                    final BasicFileAttributes firstEntryAttr = readAttributes(firstEntryPath);
+                    if (firstEntryPath.toFile().isHidden()) {
+                        // Ignore hidden files
+                        continue;
+                    }
+                    if (firstEntryAttr.isDirectory() && firstEntryFileName.contains("=")) {
+                        return readPartitionedTableInferSchema(new ParquetKeyValuePartitionedLayout(source, 32),
+                                instructions);
+                    }
+                    if (firstEntryAttr.isRegularFile() && firstEntryFileName.endsWith(PARQUET_FILE_EXTENSION)) {
+                        return readPartitionedTableInferSchema(new ParquetFlatPartitionedLayout(source), instructions);
+                    }
+                    throw new TableDataException(
+                            "No recognized Parquet table layout found in file " + firstEntryPath.toAbsolutePath());
+                }
             } catch (IOException e) {
                 throw new TableDataException("Error reading source directory " + source, e);
             }
-            final String firstEntryFileName = firstEntryPath.getFileName().toString();
-            final BasicFileAttributes firstEntryAttr = readAttributes(firstEntryPath);
-            if (firstEntryAttr.isDirectory() && firstEntryFileName.contains("=")) {
-                return readPartitionedTableInferSchema(new ParquetKeyValuePartitionedLayout(source, 32), instructions);
-            }
-            if (firstEntryAttr.isRegularFile() && firstEntryFileName.endsWith(PARQUET_FILE_EXTENSION)) {
-                return readPartitionedTableInferSchema(new ParquetFlatPartitionedLayout(source), instructions);
-            }
-            throw new TableDataException("No recognized Parquet table layout found in " + source);
         }
         throw new TableDataException("Source " + source + " is neither a directory nor a regular file");
     }

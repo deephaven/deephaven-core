@@ -50,6 +50,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -673,7 +674,7 @@ public class ParquetTableReadWriteTest {
         final String destFilename = "groupingColumnsWriteTests.parquet";
         final File destFile = new File(parentDir, destFilename);
         writer.writeTable(tableToSave, destFile);
-        String vvvGroupingFilePath = ParquetTools.getRelativeGroupingFilePath(destFile, "vvv");
+        String vvvGroupingFilePath = ".dh_metadata/indexes/vvv/index_vvv_groupingColumnsWriteTests.parquet";
         verifyFilesInDir(parentDir, new String[] {destFilename}, Map.of("vvv", new String[] {vvvGroupingFilePath}));
 
         Table fromDisk = ParquetTools.readTable(destFile);
@@ -702,6 +703,43 @@ public class ParquetTableReadWriteTest {
         FileUtils.deleteRecursively(parentDir);
     }
 
+    @Test
+    public void groupingColumnsBasicReadTests() throws IOException {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length == 0);
+
+        Integer data[] = new Integer[500 * 4];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = i / 4;
+        }
+        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv").withGrouping());
+        final Table tableToSave = TableTools.newTable(tableDefinition, TableTools.col("vvv", data));
+
+        final String destFilename = "data.parquet";
+        final File destFile = new File(parentDir, destFilename);
+        ParquetTools.writeTable(tableToSave, destFile);
+        String vvvGroupingFilePath = ".dh_metadata/indexes/vvv/index_vvv_data.parquet";
+        verifyFilesInDir(parentDir, new String[] {destFilename}, Map.of("vvv", new String[] {vvvGroupingFilePath}));
+        Table fromDisk = ParquetTools.readTable(parentDir);
+        TstUtils.assertTableEquals(fromDisk, tableToSave);
+
+        // Add an empty dot file in the parent directory
+        final File dotFile = new File(parentDir, ".hiddenData");
+        assertTrue(dotFile.createNewFile());
+        fromDisk = ParquetTools.readTable(parentDir);
+        TstUtils.assertTableEquals(fromDisk, tableToSave);
+
+        // Add another table in parent directory in hidden file
+        final Table anotherTable = TableTools.emptyTable(5).update("A=(int)i");
+        final File pqDotFile = new File(parentDir, ".hiddenData.parquet");
+        ParquetTools.writeTable(anotherTable, pqDotFile);
+        fromDisk = ParquetTools.readTable(parentDir);
+        TstUtils.assertTableEquals(fromDisk, tableToSave);
+    }
+
+
     /**
      * These are tests for writing multiple parquet tables with grouping columns.
      */
@@ -729,8 +767,8 @@ public class ParquetTableReadWriteTest {
 
         ParquetTools.writeTables(tablesToSave, firstTable.getDefinition(), destFiles);
 
-        String firstGroupingFilePath = ParquetTools.getRelativeGroupingFilePath(firstDestFile, "vvv");
-        String secondGroupingFilePath = ParquetTools.getRelativeGroupingFilePath(secondDestFile, "vvv");
+        String firstGroupingFilePath = ".dh_metadata/indexes/vvv/index_vvv_firstTable.parquet";
+        String secondGroupingFilePath = ".dh_metadata/indexes/vvv/index_vvv_secondTable.parquet";
         verifyFilesInDir(parentDir, new String[] {firstFilename, secondFilename},
                 Map.of("vvv", new String[] {firstGroupingFilePath, secondGroupingFilePath}));
 
@@ -769,13 +807,13 @@ public class ParquetTableReadWriteTest {
         final String destFilename = "groupingColumnsWriteTests.parquet";
         final File destFile = new File(parentDir, destFilename);
         writer.writeTable(tableToSave, destFile);
-        String vvvGroupingFilePath = ParquetTools.getRelativeGroupingFilePath(destFile, "vvv");
+        String vvvGroupingFilePath = ".dh_metadata/indexes/vvv/index_vvv_groupingColumnsWriteTests.parquet";
 
         // Write a new table successfully at the same position with different grouping columns
         final TableDefinition anotherTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("xxx").withGrouping());
         Table anotherTableToSave = TableTools.newTable(anotherTableDefinition, TableTools.col("xxx", data));
         writer.writeTable(anotherTableToSave, destFile);
-        final String xxxGroupingFilePath = ParquetTools.getRelativeGroupingFilePath(destFile, "xxx");
+        final String xxxGroupingFilePath = ".dh_metadata/indexes/xxx/index_xxx_groupingColumnsWriteTests.parquet";
 
         // The directory now should contain the updated table, its grouping file for column xxx, and old grouping file
         // for column vvv

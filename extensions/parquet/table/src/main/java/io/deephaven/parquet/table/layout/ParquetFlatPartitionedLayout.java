@@ -46,6 +46,10 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         try (final DirectoryStream<Path> parquetFileStream =
                 Files.newDirectoryStream(tableRootDirectory.toPath(), ParquetFileHelper::fileNameMatches)) {
             for (final Path parquetFilePath : parquetFileStream) {
+                if (parquetFilePath.toFile().isHidden()) {
+                    // Ignore hidden files
+                    continue;
+                }
                 ParquetTableLocationKey locationKey = cache.get(parquetFilePath);
                 if (locationKey == null) {
                     locationKey = locationKey(parquetFilePath);

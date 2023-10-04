@@ -157,11 +157,12 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         final File parquetFile = tl().getParquetFile();
         try {
             final GroupingColumnInfo groupingColumnInfo = tl().getGroupingColumns().get(parquetColumnName);
+            final String groupingFileRelativePath = groupingColumnInfo == null
+                    ? ParquetTools.getRelativeGroupingFilePath(parquetFile, parquetColumnName) // TODO Test this
+                    : groupingColumnInfo.groupingTablePath();
+            final String groupingFilePath =
+                    parquetFile.toPath().getParent().resolve(groupingFileRelativePath).toString();
             final ParquetFileReader parquetFileReader;
-            // TODO Think if I need to do something here
-            final String groupingFilePath = groupingColumnInfo == null
-                    ? ParquetTools.getRelativeGroupingFilePath(parquetFile, parquetColumnName)
-                    : parquetFile.toPath().getParent().resolve(groupingColumnInfo.groupingTablePath()).toString();
             try {
                 parquetFileReader = new ParquetFileReader(groupingFilePath, tl().getChannelProvider());
             } catch (IOException e) {
