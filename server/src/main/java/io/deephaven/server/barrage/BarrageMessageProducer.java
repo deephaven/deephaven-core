@@ -2126,7 +2126,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private class SnapshotControl implements ConstructSnapshot.SnapshotControl {
         long capturedLastUpdateClockStep;
-        long step = -1;
+        long resultValidStep = -1;
         final List<Subscription> snapshotSubscriptions;
 
         SnapshotControl(final List<Subscription> snapshotSubscriptions) {
@@ -2145,14 +2145,14 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
             if (beforeState == LogicalClock.State.Idle) {
-                step = beforeStep;
+                resultValidStep = beforeStep;
                 return false;
             }
 
             final boolean notifiedOnThisStep = beforeStep == capturedLastUpdateClockStep;
             final boolean usePrevious = !notifiedOnThisStep;
 
-            step = notifiedOnThisStep ? beforeStep : beforeStep - 1;
+            resultValidStep = notifiedOnThisStep ? beforeStep : beforeStep - 1;
 
             if (log.isDebugEnabled()) {
                 log.debug().append(logPrefix)
@@ -2179,7 +2179,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 success = snapshotConsistent(afterClockValue, usedPreviousValues);
 
                 if (!success) {
-                    step = -1;
+                    resultValidStep = -1;
                 } else {
                     flipSnapshotStateForSubscriptions(snapshotSubscriptions);
                     finalizeSnapshotForSubscriptions(snapshotSubscriptions);
@@ -2191,7 +2191,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
             if (log.isDebugEnabled()) {
                 log.debug().append(logPrefix)
-                        .append("success=").append(success).append(", step=").append(step).endl();
+                        .append("success=").append(success).append(", validStep=").append(resultValidStep).endl();
             }
             return success;
         }
