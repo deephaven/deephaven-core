@@ -209,7 +209,7 @@ def null_remap(dtype: DType) -> Callable[[Any], Any]:
 
 def _instant_array(data: Sequence) -> jpy.JType:
     """Converts a sequence of either datetime64[ns], datetime.datetime, pandas.Timestamp, datetime strings,
-    integers in nanoseconds, to a Java array of Instant values. """
+    or integers in nanoseconds, to a Java array of Instant values. """
     # try to convert to numpy array of datetime64 if not already, so that we can call translateArrayLongToInstant on
     # it to reduce the number of round trips to the JVM
     if not isinstance(data, np.ndarray):
