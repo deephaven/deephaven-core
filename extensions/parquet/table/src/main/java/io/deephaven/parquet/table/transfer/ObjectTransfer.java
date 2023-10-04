@@ -56,7 +56,6 @@ abstract class ObjectTransfer<T> extends VariableWidthTransfer<T, Binary, Binary
             return false;
         }
         buffer[bufferedDataCount++] = null;
-        numBytesBuffered += Integer.BYTES;
         return true;
     }
 

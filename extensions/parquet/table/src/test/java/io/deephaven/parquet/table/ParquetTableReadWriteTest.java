@@ -75,6 +75,7 @@ import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class ParquetTableReadWriteTest {
+
     private static final String ROOT_FILENAME = ParquetTableReadWriteTest.class.getName() + "_root";
     public static final int LARGE_TABLE_SIZE = 2_000_000;
 
@@ -101,8 +102,7 @@ public class ParquetTableReadWriteTest {
     private static Table getTableFlat(int size, boolean includeSerializable, boolean includeBigDecimal) {
         ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
         ArrayList<String> columns =
-                new ArrayList<>(Arrays.asList(
-                        "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
+                new ArrayList<>(Arrays.asList("someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
                         "nonNullString = `` + (i % 60)",
                         "nonNullPolyString = `` + (i % 600)",
                         "someIntColumn = i",
@@ -116,7 +116,6 @@ public class ParquetTableReadWriteTest {
                         "someTime = DateTimeUtils.now() + i",
                         "someKey = `` + (int)(i /100)",
                         "biColumn = java.math.BigInteger.valueOf(ii)",
-                        "nullString = (String) null",
                         "nullKey = i < -1?`123`:null",
                         "nullIntColumn = (int)null",
                         "nullLongColumn = (long)null",
@@ -127,7 +126,8 @@ public class ParquetTableReadWriteTest {
                         "nullByteColumn = (byte)null",
                         "nullCharColumn = (char)null",
                         "nullTime = (Instant)null",
-                        "nullBiColumn = (java.math.BigInteger)null"));
+                        "nullBiColumn = (java.math.BigInteger)null",
+                        "nullString = (String)null"));
         if (includeBigDecimal) {
             columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
         }
@@ -510,69 +510,6 @@ public class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void profilingTestArrays() {
-        ArrayList<String> columns =
-                new ArrayList<>(Arrays.asList(
-                        "someStringArrayColumn = new String[] {i % 10 == 0 ? null : (`` + (i % 101))}",
-                        "someIntArrayColumn = new int[] {i}",
-                        "someCharArrayColumn = new char[] {(char)i}",
-                        "someBiColumn = new java.math.BigInteger[] {java.math.BigInteger.valueOf(ii)}",
-                        "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
-                        "nullStringArrayColumn = new String[] {(String)null}",
-                        "nullIntArrayColumn = new int[] {(int)null}",
-                        "nullCharArrayColumn = new char[] {(char)null}",
-                        "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}",
-                        "nullTimeArrayColumn = new Instant[] {(Instant)null}"));
-
-        final Table arrayTable = TableTools.emptyTable(10000).select(Selectable.from(columns));
-        final File dest = new File(rootFile + File.separator + "testArrayColumns.parquet");
-
-        final int NUM_RUNS = 1000;
-        final long start1 = System.nanoTime();
-        for (int i = 0; i < NUM_RUNS; i++) {
-            ParquetTools.writeTable(arrayTable, dest);
-        }
-        final long end1 = System.nanoTime();
-        System.out
-                .println("Total execution time for small arrays: " + (end1 - start1) / (NUM_RUNS * 1000_000) + " msec");
-    }
-
-    @Test
-    public void benchmarkByteArrays() {
-        final int ARRAY_SIZE = 512;
-        final int NUM_ROWS = 20000;
-        final int NUM_RUNS = 1;
-
-        ArrayList<String> columns = new ArrayList<>(Arrays.asList("someByteColumn = (byte)i"));
-        Table table = TableTools.emptyTable(ARRAY_SIZE).select(Selectable.from(columns));
-        table = table.groupBy().select();
-
-        // Take join with self to repeat the rows
-        table = table.join(TableTools.emptyTable(NUM_ROWS)).select();
-
-        // Convert the table from vector to array column
-        table = table.updateView(table.getColumnSourceMap().keySet().stream()
-                .map(name -> name + " = " + name + ".toArray()")
-                .toArray(String[]::new));
-
-        final File dest = new File(rootFile + File.separator + "benchmarkByteArrays.parquet");
-        final long start1 = System.nanoTime();
-        for (int i = 0; i < NUM_RUNS; i++) {
-            ParquetTools.writeTable(table, dest, ParquetTools.UNCOMPRESSED);
-        }
-        final long end1 = System.nanoTime();
-        System.out.println(
-                "Total execution time for byte arrays: " + (double) (end1 - start1) / (NUM_RUNS * 1000_000) + " msec");
-        Table fromDisk = ParquetTools.readTable(dest);
-        assertTableEquals(table, fromDisk);
-
-        ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
-        ColumnChunkMetaData columnMetadataDH = metadata.getBlocks().get(0).getColumns().get(0);
-        int numPages = columnMetadataDH.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
-        System.out.println("Number of pages = " + numPages);
-    }
-
-    @Test
     public void testArrayColumns() {
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList(
@@ -610,57 +547,6 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTable(vectorTable, dest);
         fromDisk = ParquetTools.readTable(dest);
         assertTableEquals(vectorTable, fromDisk);
-    }
-
-    @Test
-    public void profilingTest() {
-        ArrayList<String> columns =
-                new ArrayList<>(Arrays.asList(
-                        "someStringArrayColumn = new String[] {i % 10 == 0 ? null : (`` + (i % 101))}",
-                        "someIntArrayColumn = new int[] {i}",
-                        "someCharArrayColumn = new char[] {(char)i}",
-                        "someBiColumn = new java.math.BigInteger[] {java.math.BigInteger.valueOf(ii)}",
-                        "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
-                        "nullStringArrayColumn = new String[] {(String)null}",
-                        "nullIntArrayColumn = new int[] {(int)null}",
-                        "nullCharArrayColumn = new char[] {(char)null}",
-                        "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}",
-                        "nullTimeArrayColumn = new Instant[] {(Instant)null}"));
-
-        final Table arrayTable = TableTools.emptyTable(10000).select(
-                Selectable.from(columns));
-        final File dest = new File(rootFile + File.separator + "testArrayColumns.parquet");
-
-        final int NUM_RUNS = 1000;
-        final long start1 = System.currentTimeMillis();
-        for (int i = 0; i < NUM_RUNS; i++) {
-            ParquetTools.writeTable(arrayTable, dest);
-        }
-        final long end1 = System.currentTimeMillis();
-        System.out.println("Total execution time for arrays: " + (end1 - start1) / NUM_RUNS + " msec");
-
-        // Convert array table to vector
-        final Table vectorTable = arrayToVectorTable(arrayTable);
-        final long start2 = System.currentTimeMillis();
-        for (int i = 0; i < NUM_RUNS; i++) {
-            ParquetTools.writeTable(vectorTable, dest);
-        }
-        final long end2 = System.currentTimeMillis();
-        System.out.println("Total execution time for vectors: " + (end2 - start2) / NUM_RUNS + " msec");
-    }
-
-    @Test
-    public void profilingTest2() {
-        final ParquetInstructions codec = ParquetTools.UNCOMPRESSED;
-        File dest = new File(rootFile + File.separator + "Table1.parquet");
-        final Table table1 = getTableFlat(10000, true, true);
-        final int NUM_RUNS = 1000;
-        final long start1 = System.currentTimeMillis();
-        for (int i = 0; i < NUM_RUNS; i++) {
-            ParquetTools.writeTable(table1, dest, codec);
-        }
-        final long end1 = System.currentTimeMillis();
-        System.out.println("Total execution time for non-arrays: " + (end1 - start1) / NUM_RUNS + " msec");
     }
 
     /**
@@ -1078,21 +964,6 @@ public class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void randomTest() {
-        File destPA = new File(
-                "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa.parquet");
-        ParquetMetadata metadataPA = new ParquetTableLocationKey(destPA, 0, null).getMetadata();
-        ColumnChunkMetaData columnMetadataPA = metadataPA.getBlocks().get(0).getColumns().get(0);
-        int numPagesPA = columnMetadataPA.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
-
-        File destDH = new File(
-                "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_dh.parquet");
-        ParquetMetadata metadataDH = new ParquetTableLocationKey(destDH, 0, null).getMetadata();
-        ColumnChunkMetaData columnMetadataDH = metadataDH.getBlocks().get(0).getColumns().get(0);
-        int numPagesDH = columnMetadataDH.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
-    }
-
-    @Test
     public void overflowingStringsTest() {
         // Test the behavior of writing parquet files if entries exceed the page size limit
         final int pageSize = ParquetInstructions.MIN_TARGET_PAGE_SIZE;
@@ -1102,27 +973,27 @@ public class ParquetTableReadWriteTest {
                 "someStringColumn = `" + someString + "` + i%10"));
         final long numRows = 10;
         ColumnChunkMetaData columnMetadata = overflowingStringsTestHelper(columns, numRows, pageSize);
-        // String metadataStr = columnMetadata.toString();
-        // assertTrue(metadataStr.contains("someStringColumn") && metadataStr.contains("PLAIN")
-        // && !metadataStr.contains("RLE_DICTIONARY"));
-        //
-        // // We exceed page size on hitting 4 rows, and we have 10 total rows.
-        // // Therefore, we should have total 4 pages containing 3, 3, 3, 1 rows respectively.
-        // assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 4);
+        String metadataStr = columnMetadata.toString();
+        assertTrue(metadataStr.contains("someStringColumn") && metadataStr.contains("PLAIN")
+                && !metadataStr.contains("RLE_DICTIONARY"));
+
+        // We exceed page size on hitting 4 rows, and we have 10 total rows.
+        // Therefore, we should have total 4 pages containing 3, 3, 3, 1 rows respectively.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 4);
 
         final char[] veryLongData = new char[pageSize];
         someString = new String(veryLongData);
-        // columns = new ArrayList<>(
-        // Arrays.asList("someStringColumn = ii % 2 == 0 ? Long.toString(ii) : `" + someString + "` + ii"));
-        // columnMetadata = overflowingStringsTestHelper(columns, numRows, pageSize);
-        // // We will have 10 pages each containing 1 row.
-        // assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 10);
+        columns = new ArrayList<>(
+                Arrays.asList("someStringColumn =  ii % 2 == 0 ? Long.toString(ii) : `" + someString + "` + ii"));
+        columnMetadata = overflowingStringsTestHelper(columns, numRows, pageSize);
+        // We will have 10 pages each containing 1 row.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 10);
 
         // Table with null rows
         columns = new ArrayList<>(Arrays.asList("someStringColumn =  ii % 2 == 0 ? null : `" + someString + "` + ii"));
         columnMetadata = overflowingStringsTestHelper(columns, numRows, pageSize);
-        // We will have 6 pages each containing 2 rows, a null and veryLongData the containing 1, 2, 2, 2, 2, 1 rows.
-        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 6);
+        // We will have 5 pages containing 3, 2, 2, 2, 1 rows.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 5);
     }
 
     private static ColumnChunkMetaData overflowingStringsTestHelper(final Collection<String> columns,
