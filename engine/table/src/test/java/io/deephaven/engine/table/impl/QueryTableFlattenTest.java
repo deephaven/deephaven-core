@@ -37,7 +37,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
             showWithRowSet(queryTable);
         }
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new FlatChecker(queryTable, queryTable.flatten()),
+                new NonFlatToFlatChecker(queryTable, queryTable.flatten()),
                 new TableComparator(queryTable, queryTable.flatten()),
                 new EvalNugget() {
                     public Table e() {
@@ -67,6 +67,12 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         for (int size : sizes) {
             testFlatten(size);
         }
+    }
+
+    public void testSemiFlat() {
+        final QueryTable semiflat = testTable(col("Sym", "cc", "dd"));
+        TstUtils.validate("semiflat",
+                new EvalNuggetInterface[] {new SemiFlatToFlatChecker(semiflat, semiflat.flatten())});
     }
 
     public void testLegacyFlatten3() {
@@ -304,13 +310,39 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     }
 
     /**
-     * Makes sure that the table and row set of our table is actually contiguous.
+     * Makes sure that a non-flat table gets turned into a flattened table
      */
-    protected static class FlatChecker implements EvalNuggetInterface {
+    protected static class NonFlatToFlatChecker implements EvalNuggetInterface {
         private final Table original;
         private final Table flattened;
 
-        FlatChecker(Table original, Table flattened) {
+        NonFlatToFlatChecker(Table original, Table flattened) {
+            this.original = original;
+            this.flattened = flattened;
+        }
+
+        @Override
+        public void validate(String msg) {
+            Assert.assertFalse(original.isFlat());
+            Assert.assertTrue(flattened.isFlat());
+            Assert.assertTrue(flattened.getRowSet().isFlat());
+        }
+
+        @Override
+        public void show() throws IOException {
+            showWithRowSet(flattened);
+        }
+    }
+
+    /**
+     * Makes sure that a semi-flat (row set is flat, but table not marked as flat) table gets turned into a flattened
+     * table.
+     */
+    protected static class SemiFlatToFlatChecker implements EvalNuggetInterface {
+        private final Table original;
+        private final Table flattened;
+
+        SemiFlatToFlatChecker(Table original, Table flattened) {
             this.original = original;
             this.flattened = flattened;
         }
@@ -319,7 +351,6 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         public void validate(String msg) {
             Assert.assertFalse(original.isFlat());
             Assert.assertTrue(original.getRowSet().isFlat());
-
             Assert.assertTrue(flattened.isFlat());
             Assert.assertTrue(flattened.getRowSet().isFlat());
         }
