@@ -23,17 +23,22 @@ public abstract class ArrayAndVectorTransfer<T, E, B> extends VariableWidthTrans
     }
 
     @Override
-    public IntBuffer getRepeatCount() {
+    public final IntBuffer getRepeatCount() {
         return repeatCounts;
     }
 
     @Override
-    boolean addNullToBuffer() {
+    final boolean addNullToBuffer() {
         if (!repeatCounts.hasRemaining()) {
             return false;
         }
         repeatCounts.put(QueryConstants.NULL_INT);
         return true;
+    }
+
+    @Override
+    final boolean isBufferEmpty() {
+        return getNumBytesBuffered() == 0 && repeatCounts.position() == 0;
     }
 }
 

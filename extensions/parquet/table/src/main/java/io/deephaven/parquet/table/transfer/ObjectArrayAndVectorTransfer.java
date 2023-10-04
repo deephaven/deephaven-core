@@ -44,7 +44,7 @@ abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T,
 
     @Override
     final int getNumBytesBuffered() {
-        return numBytesBuffered + repeatCounts.position() * Integer.BYTES;
+        return numBytesBuffered;
     }
 
     final boolean addEncodedDataToBuffer(@NotNull final EncodedData<Binary[]> data, final boolean force) {

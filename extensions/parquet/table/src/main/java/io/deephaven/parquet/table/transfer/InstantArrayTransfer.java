@@ -31,7 +31,7 @@ final class InstantArrayTransfer extends PrimitiveArrayAndVectorTransfer<Instant
 
     @Override
     int getNumBytesBuffered() {
-        return buffer.position() * Long.BYTES + getRepeatCount().position() * Integer.BYTES;
+        return buffer.position() * Long.BYTES;
     }
 
     @Override

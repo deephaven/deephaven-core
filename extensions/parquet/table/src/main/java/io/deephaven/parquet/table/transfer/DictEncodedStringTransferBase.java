@@ -79,7 +79,7 @@ abstract public class DictEncodedStringTransferBase<T>
 
     @Override
     final int getNumBytesBuffered() {
-        return (buffer.position() + repeatCounts.position()) * Integer.BYTES;
+        return buffer.position() * Integer.BYTES;
     }
 
     final public boolean pageHasNull() {

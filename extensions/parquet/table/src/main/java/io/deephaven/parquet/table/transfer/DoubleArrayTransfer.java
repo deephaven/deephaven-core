@@ -23,7 +23,7 @@ final class DoubleArrayTransfer extends PrimitiveArrayAndVectorTransfer<double[]
 
     @Override
     int getNumBytesBuffered() {
-        return buffer.position() * Double.BYTES + getRepeatCount().position() * Integer.BYTES;
+        return buffer.position() * Double.BYTES;
     }
 
     @Override

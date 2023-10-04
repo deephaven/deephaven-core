@@ -31,6 +31,6 @@ abstract class PrimitiveVectorTransfer<T extends Vector<?>, B extends Buffer>
 
     @Override
     final int getNumBytesBuffered() {
-        return buffer.position() * numBytesPerValue + repeatCounts.position() * Integer.BYTES;
+        return buffer.position() * numBytesPerValue;
     }
 }

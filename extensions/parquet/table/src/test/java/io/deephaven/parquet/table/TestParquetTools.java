@@ -12,6 +12,8 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.partitioned.LongConstantColumn;
+import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
@@ -410,28 +412,32 @@ public class TestParquetTools {
     }
 
     @Test
-    public void benchmarkBigIntArrays() {
-        ExecutionContext.getContext().getQueryLibrary().importClass(IntVectorDirect.class);
-        ExecutionContext.getContext().getQueryLibrary().importClass(IntVector.class);
-        ExecutionContext.getContext().getQueryLibrary().importClass(IntStream.class);
+    public void benchmarkLongArrays() {
+        ExecutionContext.getContext().getQueryLibrary().importClass(LongStream.class);
 
-        Table stuff = emptyTable(100)
-                .update("Goobles = (IntVector)new IntVectorDirect(IntStream.range(0, 2*50_000).toArray())");
-        stuff = stuff.update("Goobles = Goobles.toArray()");
+        final int ARRAY_SIZE = 1;
+        final int NUM_ROWS = 100000;
+        final int NUM_RUNS = 1000;
+
+        Table stuff = emptyTable(NUM_ROWS)
+                .update(List.of(new LongConstantColumn("Dummy", 100),
+                        new FunctionalColumn("Dummy", long.class, "Goobles", long[].class, long.class,
+                                i -> LongStream.range(0, ARRAY_SIZE).toArray())))
+                .dropColumns("Dummy")
+                .select();
 
         final File f2w = new File(testRoot, "bigArray.parquet");
-        final int NUM_RUNS = 100;
-        final long start1 = System.currentTimeMillis();
+
+        final long start1 = System.nanoTime();
         for (int i = 0; i < NUM_RUNS; i++) {
-            ParquetTools.writeTable(stuff, f2w);
+            ParquetTools.writeTable(stuff, f2w, ParquetTools.UNCOMPRESSED);
         }
-        final long end1 = System.currentTimeMillis();
-        System.out.println("Total execution time for big arrays: " + (end1 - start1) / NUM_RUNS + " msec");
+        final long end1 = System.nanoTime();
+        System.out.println("Total execution time: " + (double) (end1 - start1) / (NUM_RUNS * 1000_000) + " msec");
 
         final Table readBack = ParquetTools.readTable(f2w);
         assertTableEquals(stuff, readBack);
     }
-
 
     @Test
     public void testColumnSwapping() {

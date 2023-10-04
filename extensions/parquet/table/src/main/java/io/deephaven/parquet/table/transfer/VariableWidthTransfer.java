@@ -33,7 +33,7 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
     /**
      * The reusable field used to store the output from {@link #encodeDataForBuffering}.
      */
-    private final EncodedData encodedData;
+    private final EncodedData<E> encodedData;
     /**
      * Whether {@link #encodedData} stores the encoded value corresponding to {@link #currentChunkIdx}. This is useful
      * to cache the value which took us beyond the page size limit. We cache it to avoid re-encoding.
@@ -52,7 +52,7 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
         this.context = columnSource.makeGetContext(Math.toIntExact(Math.min(maxValuesPerPage, tableRowSet.size())));
         this.currentChunkIdx = 0;
         this.buffer = buffer;
-        this.encodedData = new EncodedData();
+        this.encodedData = new EncodedData<E>();
         this.cached = false;
     }
 
@@ -127,12 +127,10 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
                 if (!cached) {
                     encodeDataForBuffering(data, encodedData);
                 }
-                final int numBytesBuffered = getNumBytesBuffered();
-                final boolean isFirstEntry = (numBytesBuffered == 0);
-                if (isFirstEntry) {
+                if (isBufferEmpty()) {
                     // Always copy the first entry
                     addEncodedDataToBuffer(encodedData, true);
-                } else if (numBytesBuffered + encodedData.numBytes > targetPageSize ||
+                } else if (getNumBytesBuffered() + encodedData.numBytes > targetPageSize ||
                         !addEncodedDataToBuffer(encodedData, false)) {
                     // Reattempt adding the encoded value to the buffer in the next iteration
                     cached = true;
@@ -178,9 +176,14 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
     abstract boolean addEncodedDataToBuffer(@NotNull final EncodedData<E> data, final boolean force);
 
     /**
-     * The total number of encoded bytes present in the buffer. Useful for adding page size constraints.
+     * The total number of encoded bytes corresponding to non-null values. Useful for adding page size constraints.
      */
     abstract int getNumBytesBuffered();
+
+    /**
+     * Whether the buffer is empty, i.e. it contains no null or non-null value.
+     */
+    abstract boolean isBufferEmpty();
 
     final public void close() {
         context.close();

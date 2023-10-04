@@ -24,7 +24,7 @@ final class CharArrayTransfer extends PrimitiveArrayAndVectorTransfer<char[], ch
 
     @Override
     int getNumBytesBuffered() {
-        return (buffer.position() + repeatCounts.position()) * Integer.BYTES;
+        return buffer.position() * Integer.BYTES;
     }
 
     @Override

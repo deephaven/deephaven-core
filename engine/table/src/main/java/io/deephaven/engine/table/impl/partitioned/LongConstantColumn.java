@@ -25,12 +25,12 @@ import java.util.Map;
 /**
  * {@link SelectColumn} implementation to assign a constant {@code long} value.
  */
-class LongConstantColumn implements SelectColumn {
+public class LongConstantColumn implements SelectColumn {
 
     private final String outputColumnName;
     private final long outputValue;
 
-    LongConstantColumn(
+    public LongConstantColumn(
             @NotNull final String outputColumnName,
             final long outputValue) {
         this.outputColumnName = outputColumnName;
@@ -77,7 +77,7 @@ class LongConstantColumn implements SelectColumn {
 
     @Override
     public final Class<?> getReturnedType() {
-        return Table.class;
+        return long.class;
     }
 
     @Override
@@ -98,12 +98,12 @@ class LongConstantColumn implements SelectColumn {
 
     @Override
     public final WritableColumnSource<?> newDestInstance(final long size) {
-        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, Table.class);
+        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, long.class);
     }
 
     @Override
     public final WritableColumnSource<?> newFlatDestInstance(final long size) {
-        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, Table.class, null);
+        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, long.class, null);
     }
 
     @Override

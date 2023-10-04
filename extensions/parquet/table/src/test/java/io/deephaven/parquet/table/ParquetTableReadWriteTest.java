@@ -528,12 +528,48 @@ public class ParquetTableReadWriteTest {
         final File dest = new File(rootFile + File.separator + "testArrayColumns.parquet");
 
         final int NUM_RUNS = 1000;
-        final long start1 = System.currentTimeMillis();
+        final long start1 = System.nanoTime();
         for (int i = 0; i < NUM_RUNS; i++) {
             ParquetTools.writeTable(arrayTable, dest);
         }
-        final long end1 = System.currentTimeMillis();
-        System.out.println("Total execution time for arrays: " + (end1 - start1) / NUM_RUNS + " msec");
+        final long end1 = System.nanoTime();
+        System.out
+                .println("Total execution time for small arrays: " + (end1 - start1) / (NUM_RUNS * 1000_000) + " msec");
+    }
+
+    @Test
+    public void benchmarkByteArrays() {
+        final int ARRAY_SIZE = 512;
+        final int NUM_ROWS = 20000;
+        final int NUM_RUNS = 1;
+
+        ArrayList<String> columns = new ArrayList<>(Arrays.asList("someByteColumn = (byte)i"));
+        Table table = TableTools.emptyTable(ARRAY_SIZE).select(Selectable.from(columns));
+        table = table.groupBy().select();
+
+        // Take join with self to repeat the rows
+        table = table.join(TableTools.emptyTable(NUM_ROWS)).select();
+
+        // Convert the table from vector to array column
+        table = table.updateView(table.getColumnSourceMap().keySet().stream()
+                .map(name -> name + " = " + name + ".toArray()")
+                .toArray(String[]::new));
+
+        final File dest = new File(rootFile + File.separator + "benchmarkByteArrays.parquet");
+        final long start1 = System.nanoTime();
+        for (int i = 0; i < NUM_RUNS; i++) {
+            ParquetTools.writeTable(table, dest, ParquetTools.UNCOMPRESSED);
+        }
+        final long end1 = System.nanoTime();
+        System.out.println(
+                "Total execution time for byte arrays: " + (double) (end1 - start1) / (NUM_RUNS * 1000_000) + " msec");
+        Table fromDisk = ParquetTools.readTable(dest);
+        assertTableEquals(table, fromDisk);
+
+        ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+        ColumnChunkMetaData columnMetadataDH = metadata.getBlocks().get(0).getColumns().get(0);
+        int numPages = columnMetadataDH.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
+        System.out.println("Number of pages = " + numPages);
     }
 
     @Test
@@ -1039,6 +1075,21 @@ public class ParquetTableReadWriteTest {
                 secondColumnMetadata.contains("longStringColumn") && !secondColumnMetadata.contains("RLE_DICTIONARY"));
         final String thirdColumnMetadata = metadata.getBlocks().get(0).getColumns().get(2).toString();
         assertTrue(thirdColumnMetadata.contains("someIntColumn") && !thirdColumnMetadata.contains("RLE_DICTIONARY"));
+    }
+
+    @Test
+    public void randomTest() {
+        File destPA = new File(
+                "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa.parquet");
+        ParquetMetadata metadataPA = new ParquetTableLocationKey(destPA, 0, null).getMetadata();
+        ColumnChunkMetaData columnMetadataPA = metadataPA.getBlocks().get(0).getColumns().get(0);
+        int numPagesPA = columnMetadataPA.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
+
+        File destDH = new File(
+                "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_dh.parquet");
+        ParquetMetadata metadataDH = new ParquetTableLocationKey(destDH, 0, null).getMetadata();
+        ColumnChunkMetaData columnMetadataDH = metadataDH.getBlocks().get(0).getColumns().get(0);
+        int numPagesDH = columnMetadataDH.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
     }
 
     @Test

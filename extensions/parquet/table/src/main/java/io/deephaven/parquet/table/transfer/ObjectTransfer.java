@@ -46,6 +46,11 @@ abstract class ObjectTransfer<T> extends VariableWidthTransfer<T, Binary, Binary
     }
 
     @Override
+    final boolean isBufferEmpty() {
+        return numBytesBuffered == 0;
+    }
+
+    @Override
     final boolean addNullToBuffer() {
         if (bufferedDataCount == bufferSize) {
             return false;

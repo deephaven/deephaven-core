@@ -62,6 +62,20 @@ public interface TransferObject<B> extends SafeCloseable {
             return new ByteTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         } else if (String.class.equals(columnType)) {
             return new StringTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+        } else if (CodecLookup.explicitCodecPresent(instructions.getCodecName(columnDefinition.getName()))) {
+            final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
+            return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
+        } else if (BigDecimal.class.equals(columnType)) {
+                // noinspection unchecked
+                final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
+                final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
+                        computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
+                final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
+                        precisionAndScale.precision, precisionAndScale.scale, -1);
+                return new CodecTransfer<>(bigDecimalColumnSource, codec, tableRowSet, instructions.getTargetPageSize());
+        } else if (BigInteger.class.equals(columnType)) {
+            return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
+                    instructions.getTargetPageSize());
         }
 
         @Nullable final Class<?> componentType = columnDefinition.getComponentType();
@@ -80,13 +94,13 @@ public interface TransferObject<B> extends SafeCloseable {
 //                return new ShortArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             } else if (char.class.equals(componentType)) {
                 return new CharArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-//            } else if (byte.class.equals(componentType)) {
-//                return new ByteArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            } else if (byte.class.equals(componentType)) {
+                return new ByteArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             } else if (String.class.equals(componentType)) {
                 return new StringArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             } else if (BigInteger.class.equals(componentType)) {
-                return new CodecArrayTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
-                        instructions.getTargetPageSize());
+                return new CodecArrayTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1),
+                        tableRowSet, instructions.getTargetPageSize());
             } else if (Instant.class.equals(componentType)) {
                 return new InstantArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
@@ -113,8 +127,8 @@ public interface TransferObject<B> extends SafeCloseable {
             } else if (String.class.equals(componentType)) {
                 return new StringVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             } else if (BigInteger.class.equals(componentType)) {
-                return new CodecVectorTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
-                        instructions.getTargetPageSize());
+                return new CodecVectorTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1),
+                        tableRowSet, instructions.getTargetPageSize());
             } else if (Instant.class.equals(componentType)) {
                 return new InstantVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
@@ -122,24 +136,8 @@ public interface TransferObject<B> extends SafeCloseable {
             // else if (big decimal)
         }
 
-        // If there's an explicit codec, we should disregard the defaults for these CodecLookup#lookup() will properly
-        // select the codec assigned by the instructions, so we only need to check and redirect once.
-        if (!CodecLookup.explicitCodecPresent(instructions.getCodecName(columnDefinition.getName()))) {
-            if (BigDecimal.class.equals(columnType)) {
-                // noinspection unchecked
-                final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
-                final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
-                        computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
-                final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
-                        precisionAndScale.precision, precisionAndScale.scale, -1);
-                return new CodecTransfer<>(bigDecimalColumnSource, codec, tableRowSet, instructions.getTargetPageSize());
-            } else if (BigInteger.class.equals(columnType)) {
-                return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
-                        instructions.getTargetPageSize());
-            }
-        }
-
-        final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
+        // Go with the default
+        final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.getDefaultCodec(columnType);;
         return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
     }
 

@@ -23,7 +23,7 @@ final class LongArrayTransfer extends PrimitiveArrayAndVectorTransfer<long[], lo
 
     @Override
     int getNumBytesBuffered() {
-        return buffer.position() * Long.BYTES + getRepeatCount().position() * Integer.BYTES;
+        return buffer.position() * Long.BYTES;
     }
 
     @Override
