@@ -71,13 +71,8 @@ class LongConstantColumn implements SelectColumn {
     }
 
     @Override
-    public final List<String> initInputs(@NotNull final Table table) {
-        return initInputs(table.getRowSet(), table.getColumnSourceMap());
-    }
-
-    @Override
     public final Class<?> getReturnedType() {
-        return Table.class;
+        return long.class;
     }
 
     @Override
@@ -98,12 +93,12 @@ class LongConstantColumn implements SelectColumn {
 
     @Override
     public final WritableColumnSource<?> newDestInstance(final long size) {
-        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, Table.class);
+        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, long.class);
     }
 
     @Override
     public final WritableColumnSource<?> newFlatDestInstance(final long size) {
-        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, Table.class, null);
+        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, long.class, null);
     }
 
     @Override

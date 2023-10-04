@@ -68,7 +68,9 @@ public interface SelectColumn extends Selectable {
      * @param table the table to initialize internals from
      * @return a list containing all columns from 'table' that the result depends on
      */
-    List<String> initInputs(Table table);
+    default List<String> initInputs(Table table) {
+        return initInputs(table.getRowSet(), table.getColumnSourceMap());
+    }
 
     /**
      * Initialize the column from the provided set of underlying columns and row set.

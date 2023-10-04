@@ -26,11 +26,6 @@ public class NullSelectColumn<T> implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(final Table table) {
-        return Collections.emptyList();
-    }
-
-    @Override
     public List<String> initInputs(final TrackingRowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         return Collections.emptyList();
