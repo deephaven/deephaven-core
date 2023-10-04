@@ -16,74 +16,208 @@ UpdateByOp <- R6Class("UpdateByOp",
 
 ### All of the functions below return an instance of an 'UpdateByOp' object
 
+#' @name
+#' uby_cum_sum
+#' @title
+#' Cumulative sum of specified columns by group
+#' @md
+#'
 #' @description
 #' Creates a cumulative sum UpdateByOp that computes the cumulative sum of each column in `cols` for each aggregation group.
+#'
+#' @details
+#' The aggregation groups that this function acts on are defined with the `by` parameter of the `update_by()` caller
+#' function. The aggregation groups are defined by the unique combinations of values in the `by` columns. For example,
+#' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
+#' `A` and `B` columns.
+#'
+#' This function, like the other Deephaven `uby_*` functions, is a generator function. That is, its output is another
+#' function that is intended to be used in a call to `update_by()`. This detail is typically hidden from the user by
+#' `update_by()`, which calls the generated functions internally. However, it is important to understand this detail
+#' for debugging purposes, as the output of an `agg_*` function can otherwise seem expected.
+#'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the cumulative sum for all non-grouping columns.
 #' @return UpdateByOp to be used in `update_by()`.
+#'
+#' @examples
+#' print("hello!")
+#'
 #' @export
 uby_cum_sum <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
   return(UpdateByOp$new(INTERNAL_cum_sum(cols)))
 }
 
+#' @name
+#' uby_cum_prod
+#' @title
+#' Cumulative product of specified columns by group
+#' @md
+#'
 #' @description
 #' Creates a cumulative product UpdateByOp that computes the cumulative product of each column in `cols` for each aggregation group.
+#'
+#' @details
+#' The aggregation groups that this function acts on are defined with the `by` parameter of the `update_by()` caller
+#' function. The aggregation groups are defined by the unique combinations of values in the `by` columns. For example,
+#' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
+#' `A` and `B` columns.
+#'
+#' This function, like the other Deephaven `uby_*` functions, is a generator function. That is, its output is another
+#' function that is intended to be used in a call to `update_by()`. This detail is typically hidden from the user by
+#' `update_by()`, which calls the generated functions internally. However, it is important to understand this detail
+#' for debugging purposes, as the output of an `agg_*` function can otherwise seem expected.
+#'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the cumulative product for all non-grouping columns.
 #' @return UpdateByOp to be used in `update_by()`.
+#'
+#' @examples
+#' print("hello!")
+#'
 #' @export
 uby_cum_prod <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
   return(UpdateByOp$new(INTERNAL_cum_prod(cols)))
 }
 
+#' @name
+#' uby_cum_min
+#' @title
+#' Cumulative minimum of specified columns by group
+#' @md
+#'
 #' @description
 #' Creates a cumulative minimum UpdateByOp that computes the cumulative minimum of each column in `cols` for each aggregation group.
+#'
+#' @details
+#' The aggregation groups that this function acts on are defined with the `by` parameter of the `update_by()` caller
+#' function. The aggregation groups are defined by the unique combinations of values in the `by` columns. For example,
+#' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
+#' `A` and `B` columns.
+#'
+#' This function, like the other Deephaven `uby_*` functions, is a generator function. That is, its output is another
+#' function that is intended to be used in a call to `update_by()`. This detail is typically hidden from the user by
+#' `update_by()`, which calls the generated functions internally. However, it is important to understand this detail
+#' for debugging purposes, as the output of an `agg_*` function can otherwise seem expected.
+#'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the cumulative minimum for all non-grouping columns.
 #' @return UpdateByOp to be used in `update_by()`.
+#'
+#' @examples
+#' print("hello!")
+#'
 #' @export
 uby_cum_min <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
   return(UpdateByOp$new(INTERNAL_cum_min(cols)))
 }
 
+#' @name
+#' uby_cum_max
+#' @title
+#' Cumulative maximum of specified columns by group
+#' @md
+#'
 #' @description
 #' Creates a cumulative maximum UpdateByOp that computes the cumulative maximum of each column in `cols` for each aggregation group.
+#'
+#' @details
+#' The aggregation groups that this function acts on are defined with the `by` parameter of the `update_by()` caller
+#' function. The aggregation groups are defined by the unique combinations of values in the `by` columns. For example,
+#' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
+#' `A` and `B` columns.
+#'
+#' This function, like the other Deephaven `uby_*` functions, is a generator function. That is, its output is another
+#' function that is intended to be used in a call to `update_by()`. This detail is typically hidden from the user by
+#' `update_by()`, which calls the generated functions internally. However, it is important to understand this detail
+#' for debugging purposes, as the output of an `agg_*` function can otherwise seem expected.
+#'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the cumulative maximum for all non-grouping columns.
 #' @return UpdateByOp to be used in `update_by()`.
+#'
+#' @examples
+#' print("hello!")
+#'
 #' @export
 uby_cum_max <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
   return(UpdateByOp$new(INTERNAL_cum_max(cols)))
 }
 
+#' @name
+#' uby_cum_min
+#' @title
+#' Replace null values with the last known non-null value
+#' @md
+#'
 #' @description
 #' Creates a forward fill UpdateByOp that replaces null values in `cols` with the last known non-null values.
 #' This operation is forward only.
+#'
+#' @details
+#' The aggregation groups that this function acts on are defined with the `by` parameter of the `update_by()` caller
+#' function. The aggregation groups are defined by the unique combinations of values in the `by` columns. For example,
+#' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
+#' `A` and `B` columns.
+#'
+#' This function, like the other Deephaven `uby_*` functions, is a generator function. That is, its output is another
+#' function that is intended to be used in a call to `update_by()`. This detail is typically hidden from the user by
+#' `update_by()`, which calls the generated functions internally. However, it is important to understand this detail
+#' for debugging purposes, as the output of an `agg_*` function can otherwise seem expected.
+#'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to perform a forward fill on all non-grouping columns.
 #' @return UpdateByOp to be used in `update_by()`.
+#'
+#' @examples
+#' print("hello!")
+#'
 #' @export
 uby_forward_fill <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
   return(UpdateByOp$new(INTERNAL_forward_fill(cols)))
 }
 
+
+#' @name
+#' uby_delta
+#' @title
+#' Row-wise difference by group
+#' @md
+#'
 #' @description
 #' Creates a delta UpdateByOp for each column in `cols`. The Delta operation computes the difference between the
 #' current value and the previous value. When the current value is null, this operation will output null.
 #' When the current value is valid, the output will depend on the `delta_control` provided.
+#'
+#' @details
+#' The `delta_control` parameter controls how this operation treats null values. It can be one of the following:
+#' - `'null_dominates'`: A valid value following a null value returns null.
+#' - `'value_dominates'`: A valid value following a null value returns the valid value.
+#' - `'zero_dominates'`: A valid value following a null value returns zero.
+#'
+#' The aggregation groups that this function acts on are defined with the `by` parameter of the `update_by()` caller
+#' function. The aggregation groups are defined by the unique combinations of values in the `by` columns. For example,
+#' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
+#' `A` and `B` columns.
+#'
+#' This function, like the other Deephaven `uby_*` functions, is a generator function. That is, its output is another
+#' function that is intended to be used in a call to `update_by()`. This detail is typically hidden from the user by
+#' `update_by()`, which calls the generated functions internally. However, it is important to understand this detail
+#' for debugging purposes, as the output of an `agg_*` function can otherwise seem expected.
+#'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to apply the delta operation to all non-grouping columns.
-#' @param delta_control Defines how the delta operation handles null values. Can be one of the following:
-#'   'null_dominates': A valid value following a null value returns null.
-#'   'value_dominates': A valid value following a null value returns the valid value.
-#'   'zero_dominates': A valid value following a null value returns zero.
-#' Defaults to `null_dominates`.
+#' @param delta_control Defines how the delta operation handles null values. Defaults to `'null_dominates'`.
 #' @return UpdateByOp to be used in `update_by()`.
+#'
+#' @examples
+#' print("hello!")
+#'
 #' @export
 uby_delta <- function(cols = character(), delta_control = "null_dominates") {
   verify_string("cols", cols, FALSE)
