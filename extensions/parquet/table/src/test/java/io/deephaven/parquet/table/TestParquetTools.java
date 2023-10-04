@@ -423,10 +423,9 @@ public class TestParquetTools {
                 t -> t.updateView("Y = Z", "Y = X").where("Y % 2 == 0"));
     }
 
-    private static final String invalidParquetFileErrorMsgString = "Invalid parquet file detected, please ensure these "
-            +
-            "files are fetched properly from Git LFS. You can run commands 'git lfs install; git lfs pull' to fetch" +
-            " the files. Check cause of exception for more details.";
+    private static final String InvalidParquetFileErrorMsgString = "Invalid parquet file detected, please ensure " +
+            "the file is fetched properly from Git LFS. Run commands 'git lfs install; git lfs pull' inside the repo " +
+            "to pull the files from LFS. Check cause of exception for more details.";
 
     @Test
     public void e0() {
@@ -448,7 +447,7 @@ public class TestParquetTools {
             assertTableEquals(uncompressed, zstd);
         } catch (RuntimeException e) {
             if (e.getCause() instanceof InvalidParquetFileException) {
-                throw new UncheckedDeephavenException(invalidParquetFileErrorMsgString, e.getCause());
+                throw new UncheckedDeephavenException(InvalidParquetFileErrorMsgString, e.getCause());
             }
         }
     }
@@ -473,7 +472,7 @@ public class TestParquetTools {
             assertTableEquals(uncompressed, zstd);
         } catch (RuntimeException e) {
             if (e.getCause() instanceof InvalidParquetFileException) {
-                throw new UncheckedDeephavenException(invalidParquetFileErrorMsgString, e.getCause());
+                throw new UncheckedDeephavenException(InvalidParquetFileErrorMsgString, e.getCause());
             }
         }
     }
@@ -498,7 +497,7 @@ public class TestParquetTools {
             assertTableEquals(uncompressed, zstd);
         } catch (RuntimeException e) {
             if (e.getCause() instanceof InvalidParquetFileException) {
-                throw new UncheckedDeephavenException(invalidParquetFileErrorMsgString, e.getCause());
+                throw new UncheckedDeephavenException(InvalidParquetFileErrorMsgString, e.getCause());
             }
         }
     }

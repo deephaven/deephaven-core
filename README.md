@@ -60,7 +60,7 @@ docker run hello-world
 If any dependencies are missing or unsupported versions are installed, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/quickstart#prerequisites) for installation instructions.
 
 
-For running unit tests, you will also need Git LFS. Run the following commands inside the core repo to fetch all required files from LFS:
+For running the unit tests, you will also need to install [Git LFS](https://git-lfs.com/) and fetch all the required files. Run the following commands from inside the directory:
 ```
 git lfs install
 git lfs pull
