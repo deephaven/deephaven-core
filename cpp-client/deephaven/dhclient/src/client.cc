@@ -142,14 +142,12 @@ TableHandle TableHandleManager::MakeTableHandleFromTicket(std::string ticket) co
 }
 
 void TableHandleManager::RunScript(std::string code) const {
-  auto res = SFCallback<>::CreateForFuture();
-  impl_->RunScriptAsync(std::move(code), std::move(res.first));
-  (void)res.second.get();
+  impl_->RunScript(std::move(code));
 }
 
 namespace {
 ComboAggregateRequest::Aggregate
-createDescForMatchPairs(ComboAggregateRequest::AggType aggregate_type,
+CreateDescForMatchPairs(ComboAggregateRequest::AggType aggregate_type,
     std::vector<std::string> column_specs) {
   ComboAggregateRequest::Aggregate result;
   result.set_type(aggregate_type);
@@ -168,7 +166,7 @@ ComboAggregateRequest::Aggregate CreateDescForColumn(ComboAggregateRequest::AggT
 }
 
 Aggregate createAggForMatchPairs(ComboAggregateRequest::AggType aggregate_type, std::vector<std::string> column_specs) {
-  auto ad = createDescForMatchPairs(aggregate_type, std::move(column_specs));
+  auto ad = CreateDescForMatchPairs(aggregate_type, std::move(column_specs));
   auto impl = AggregateImpl::Create(std::move(ad));
   return Aggregate(std::move(impl));
 }
@@ -586,22 +584,11 @@ void TableHandle::RemoveTable(const deephaven::client::TableHandle &table_to_rem
 }
 
 void TableHandle::BindToVariable(std::string variable) const {
-  auto res = SFCallback<>::CreateForFuture();
-  BindToVariableAsync(std::move(variable), std::move(res.first));
-  (void)res.second.get();
-}
-
-void TableHandle::BindToVariableAsync(std::string variable,
-    std::shared_ptr<SFCallback<>> callback) const {
-  return impl_->BindToVariableAsync(std::move(variable), std::move(callback));
+  return impl_->BindToVariable(std::move(variable));
 }
 
 internal::TableHandleStreamAdaptor TableHandle::Stream(bool want_headers) const {
   return {*this, want_headers};
-}
-
-void TableHandle::Observe() const {
-  impl_->Observe();
 }
 
 int64_t TableHandle::NumRows() const {

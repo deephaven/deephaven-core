@@ -27,8 +27,7 @@ set(ALL_FILES
     src/ticking/shift_processor.cc
     src/ticking/space_mapper.cc
     src/ticking/ticking.cc
-    src/utility/cbfuture.cc
-    src/utility/cython_support.cc
+        src/utility/cython_support.cc
     src/utility/utility.cc
 
     include/private/deephaven/dhcore/ticking/immer_table_state.h
@@ -50,9 +49,7 @@ set(ALL_FILES
     include/public/deephaven/dhcore/container/row_sequence.h
     include/public/deephaven/dhcore/ticking/barrage_processor.h
     include/public/deephaven/dhcore/ticking/ticking.h
-    include/public/deephaven/dhcore/utility/callbacks.h
-    include/public/deephaven/dhcore/utility/cbfuture.h
-    include/public/deephaven/dhcore/utility/cython_support.h
+        include/public/deephaven/dhcore/utility/cython_support.h
     include/public/deephaven/dhcore/utility/utility.h
 
     flatbuf/deephaven/flatbuf/Barrage_generated.h
