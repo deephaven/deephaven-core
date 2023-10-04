@@ -134,7 +134,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * Verify that the source code obtained from printing the AST is the same as the source code produced by the
      * original technique of writing code to a StringBuilder while visiting nodes.
      */
-    private static final boolean VERIFY_AST_CHANGES = false;
+    private static final boolean VERIFY_AST_CHANGES = true;
 
     private static final Logger log = LoggerFactory.getLogger(QueryLanguageParser.class);
     private static final String GET_ATTRIBUTE_METHOD_NAME = "getAttribute";
