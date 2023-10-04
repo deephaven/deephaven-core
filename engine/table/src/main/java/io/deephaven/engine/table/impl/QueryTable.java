@@ -1367,18 +1367,17 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table flatten() {
+        if (!flat && !isRefreshing() && rowSet.isFlat()) {
+            // We're already flat, and we'll never update; so we can just return a flat copy
+            final QueryTable copyWithFlat = copy();
+            copyWithFlat.setFlat();
+            return copyWithFlat;
+        }
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            if (!isFlat() && !isRefreshing() && rowSet.size() - 1 == rowSet.lastRowKey()) {
-                // We're already flat, and we'll never update; so we can just return ourselves, after setting ourselves
-                // flat
-                setFlat();
-            }
-
             if (isFlat()) {
                 return prepareReturnThis();
             }
-
             return getResult(new FlattenOperation(this));
         }
     }
@@ -1390,9 +1389,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public boolean isFlat() {
         if (flat) {
-            Assert.assertion(rowSet.lastRowKey() == rowSet.size() - 1, "rowSet.lastRowKey() == rowSet.size() - 1",
-                    rowSet,
-                    "rowSet");
+            Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()", rowSet, "rowSet");
         }
         return flat;
     }
