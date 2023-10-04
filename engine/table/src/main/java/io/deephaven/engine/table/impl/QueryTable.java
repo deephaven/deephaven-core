@@ -1297,28 +1297,19 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         }
                                     }
 
-                                    final List<NotificationQueue.Dependency> dependencies = Stream.concat(
-                                            Stream.of(filters)
-                                                    .filter(f -> f instanceof NotificationQueue.Dependency)
-                                                    .map(f -> (NotificationQueue.Dependency) f),
-                                            Stream.of(filters)
-                                                    .filter(f -> f instanceof DependencyStreamProvider)
-                                                    .flatMap(f -> ((DependencyStreamProvider) f)
-                                                            .getDependencyStream()))
-                                            .collect(Collectors.toList());
                                     if (swapListener != null) {
                                         final ListenerRecorder recorder = new ListenerRecorder(
                                                 "where(" + Arrays.toString(filters) + ")", QueryTable.this,
                                                 filteredTable);
                                         final WhereListener whereListener = new WhereListener(
-                                                log, this, recorder, dependencies, filteredTable, filters);
+                                                log, this, recorder, filteredTable, filters);
                                         filteredTable.setWhereListener(whereListener);
                                         recorder.setMergedListener(whereListener);
                                         swapListener.setListenerAndResult(recorder, filteredTable);
                                         filteredTable.addParentReference(whereListener);
                                     } else if (refreshingFilters) {
                                         final WhereListener whereListener = new WhereListener(
-                                                log, this, null, dependencies, filteredTable, filters);
+                                                log, this, null, filteredTable, filters);
                                         filteredTable.setWhereListener(whereListener);
                                         filteredTable.addParentReference(whereListener);
                                     }

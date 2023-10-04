@@ -125,8 +125,7 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl
         final RowSet added = updateAndGetAddedIndex();
         if (added != null && !added.isEmpty()) {
             resultTable.getRowSet().writableCast().insert(added);
-            resultTable.notifyListeners(added, RowSetFactory.empty(),
-                    RowSetFactory.empty());
+            resultTable.notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
         }
     }
 
