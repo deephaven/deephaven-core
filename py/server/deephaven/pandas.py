@@ -170,13 +170,7 @@ def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None, c
             series = _column_to_series(table, col_def_dict[col], conv_null)
             data[col] = series
 
-        dtype_set = set([v.dtype for k, v in data.items()])
-        if len(dtype_set) == 1:
-            return pd.DataFrame(data=np.stack([v.array for k, v in data.items()], axis=1),
-                                columns=cols,
-                                copy=False)
-        else:
-            return pd.DataFrame(data=data, columns=cols, copy=False)
+        return pd.DataFrame(data=data, columns=cols, copy=False)
     except DHError:
         raise
     except Exception as e:

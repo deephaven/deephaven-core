@@ -10,7 +10,6 @@
 #include "deephaven/client/utility/misc_types.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
-#include "deephaven/dhcore/utility/callbacks.h"
 
 namespace deephaven::client::impl {
 class UpdateByOperationImpl;

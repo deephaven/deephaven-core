@@ -15,6 +15,7 @@
 #include "deephaven/client/client.h"
 #include "deephaven/client/columns.h"
 #include "deephaven/client/flight.h"
+#include "deephaven/client/update_by.h"
 #include "deephaven/client/utility/arrow_util.h"
 
 #include <arrow/c/abi.h>
@@ -23,6 +24,7 @@
 #include <Rcpp.h>
 
 using deephaven::dhcore::utility::Base64Encode;
+using deephaven::client::update_by::OperationControl;
 
 // forward declaration of classes
 class TableHandleWrapper;
@@ -32,8 +34,10 @@ class ClientWrapper;
 // forward declaration of conversion functions
 std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate(Rcpp::List rcpp_list);
 std::vector<deephaven::client::TableHandle> convertRcppListToVectorOfTypeTableHandle(Rcpp::List rcpp_list);
+std::vector<deephaven::client::UpdateByOperation> convertRcppListToVectorOfTypeUpdateByOperation(Rcpp::List rcpp_list);
 
-// ######################### DH WRAPPERS #########################
+
+// WRAPPING AGGREGATIONS FOR TH.AGG_BY()
 
 class AggregateWrapper {
 public:
@@ -112,6 +116,246 @@ AggregateWrapper* INTERNAL_agg_count(std::string col) {
     return new AggregateWrapper(deephaven::client::Aggregate::Count(col));
 }
 
+// WRAPPING UPDATE BY OPS FOR TH.UPDATE_BY()
+
+class UpdateByOpWrapper {
+public:
+    UpdateByOpWrapper();
+    UpdateByOpWrapper(deephaven::client::UpdateByOperation update_by_op) :
+        internal_update_by_op(std::move(update_by_op)) {}
+private:
+    deephaven::client::UpdateByOperation internal_update_by_op;
+    friend TableHandleWrapper;
+    friend std::vector<deephaven::client::UpdateByOperation> convertRcppListToVectorOfTypeUpdateByOperation(Rcpp::List rcpp_list);
+};
+
+std::vector<deephaven::client::UpdateByOperation> convertRcppListToVectorOfTypeUpdateByOperation(Rcpp::List rcpp_list) {
+    std::vector<deephaven::client::UpdateByOperation> converted_list;
+    converted_list.reserve(rcpp_list.size());
+
+    for(int i = 0; i < rcpp_list.size(); i++) {
+        Rcpp::Environment rcpp_list_element = rcpp_list[i];
+        Rcpp::XPtr<UpdateByOpWrapper> xptr(rcpp_list_element.get(".pointer"));
+        deephaven::client::UpdateByOperation internal_update_by_op = xptr->internal_update_by_op;
+        converted_list.push_back(internal_update_by_op);
+    }
+
+    return converted_list;
+}
+
+OperationControl* INTERNAL_opControlGenerator(std::string on_null, std::string on_nan, std::string big_value_context) {
+    OperationControl* op_control = new OperationControl();
+
+    if(on_null == "null") {
+        op_control->on_null = deephaven::client::update_by::BadDataBehavior::kPoison;
+    }
+    else if(on_null == "skip") {
+        op_control->on_null = deephaven::client::update_by::BadDataBehavior::kSkip;
+    }
+    else if(on_null == "reset") {
+        op_control->on_null = deephaven::client::update_by::BadDataBehavior::kReset;
+    }
+    else if(on_null == "throw") {
+        op_control->on_null = deephaven::client::update_by::BadDataBehavior::kThrow;
+    }
+
+    if(on_nan == "null") {
+        op_control->on_nan = deephaven::client::update_by::BadDataBehavior::kPoison;
+    }
+    else if(on_nan == "skip") {
+        op_control->on_nan = deephaven::client::update_by::BadDataBehavior::kSkip;
+    }
+    else if(on_nan == "reset") {
+        op_control->on_nan = deephaven::client::update_by::BadDataBehavior::kReset;
+    }
+    else if(on_nan == "throw") {
+        op_control->on_nan = deephaven::client::update_by::BadDataBehavior::kThrow;
+    }
+
+    if (big_value_context == "decimal32") {
+        op_control->big_value_context = deephaven::client::update_by::MathContext::kDecimal32;
+    }
+    else if (big_value_context == "decimal64") {
+        op_control->big_value_context = deephaven::client::update_by::MathContext::kDecimal64;
+    }
+    else if (big_value_context == "decimal128") {
+        op_control->big_value_context = deephaven::client::update_by::MathContext::kDecimal128;
+    }
+    else if (big_value_context == "unlimited") {
+        op_control->big_value_context = deephaven::client::update_by::MathContext::kUnlimited;
+    }
+
+    return op_control;
+}
+
+UpdateByOpWrapper* INTERNAL_cumSum(std::vector<std::string> cols) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::cumSum(cols));
+}
+
+UpdateByOpWrapper* INTERNAL_cumProd(std::vector<std::string> cols) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::cumProd(cols));
+}
+
+UpdateByOpWrapper* INTERNAL_cumMin(std::vector<std::string> cols) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::cumMin(cols));
+}
+
+UpdateByOpWrapper* INTERNAL_cumMax(std::vector<std::string> cols) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::cumMax(cols));
+}
+
+UpdateByOpWrapper* INTERNAL_forwardFill(std::vector<std::string> cols) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::forwardFill(cols));
+}
+
+UpdateByOpWrapper* INTERNAL_delta(std::vector<std::string> cols, std::string delta_control) {
+    deephaven::client::update_by::DeltaControl cpp_delta_control;
+
+    if(delta_control == "null_dominates") {
+        cpp_delta_control = deephaven::client::update_by::DeltaControl::kNullDominates;
+    }
+    else if (delta_control == "value_dominates") {
+        cpp_delta_control = deephaven::client::update_by::DeltaControl::kValueDominates;
+    }
+    else if (delta_control == "zero_dominates") {
+        cpp_delta_control = deephaven::client::update_by::DeltaControl::kZeroDominates;
+    }
+
+    return new UpdateByOpWrapper(deephaven::client::update_by::delta(cols, cpp_delta_control));
+}
+
+UpdateByOpWrapper* INTERNAL_emaTick(double decay_ticks, std::vector<std::string> cols,
+                                   const OperationControl &op_control = OperationControl()) {
+   return new UpdateByOpWrapper(deephaven::client::update_by::emaTick(decay_ticks, cols, op_control));
+}
+
+UpdateByOpWrapper* INTERNAL_emaTime(std::string timestamp_col, std::string decay_time, std::vector<std::string> cols,
+                                    const OperationControl &op_control = OperationControl()) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::emaTime(timestamp_col, decay_time, cols, op_control));
+}
+
+UpdateByOpWrapper* INTERNAL_emsTick(double decay_ticks, std::vector<std::string> cols,
+                                    const OperationControl &op_control = OperationControl()) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::emsTick(decay_ticks, cols, op_control));
+}
+
+UpdateByOpWrapper* INTERNAL_emsTime(std::string timestamp_col, std::string decay_time, std::vector<std::string> cols,
+                                    const OperationControl &op_control = OperationControl()) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::emsTime(timestamp_col, decay_time, cols, op_control));
+}
+
+UpdateByOpWrapper* INTERNAL_emminTick(double decay_ticks, std::vector<std::string> cols,
+                                      const OperationControl &op_control = OperationControl()) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::emminTick(decay_ticks, cols, op_control));
+}
+
+UpdateByOpWrapper* INTERNAL_emminTime(std::string timestamp_col, std::string decay_time, std::vector<std::string> cols,
+                                      const OperationControl &op_control = OperationControl()) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::emminTime(timestamp_col, decay_time, cols, op_control));
+}
+
+UpdateByOpWrapper* INTERNAL_emmaxTick(double decay_ticks, std::vector<std::string> cols,
+                                      const OperationControl &op_control = OperationControl()) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::emmaxTick(decay_ticks, cols, op_control));
+}
+
+UpdateByOpWrapper* INTERNAL_emmaxTime(std::string timestamp_col, std::string decay_time, std::vector<std::string> cols,
+                                      const OperationControl &op_control = OperationControl()) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::emmaxTime(timestamp_col, decay_time, cols, op_control));
+}
+
+UpdateByOpWrapper* INTERNAL_emstdTick(double decay_ticks, std::vector<std::string> cols,
+                                      const OperationControl &op_control = OperationControl()) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::emstdTick(decay_ticks, cols, op_control));
+}
+
+UpdateByOpWrapper* INTERNAL_emstdTime(std::string timestamp_col, std::string decay_time, std::vector<std::string> cols,
+                                      const OperationControl &op_control = OperationControl()) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::emstdTime(timestamp_col, decay_time, cols, op_control));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingSumTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingSumTick(cols, rev_ticks, fwd_ticks));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingSumTime(std::string timestamp_col, std::vector<std::string> cols,
+                                           std::string rev_time, std::string fwd_time) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingSumTime(timestamp_col, cols, rev_time, fwd_time));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingGroupTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingGroupTick(cols, rev_ticks, fwd_ticks));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingGroupTime(std::string timestamp_col, std::vector<std::string> cols,
+                                             std::string rev_time, std::string fwd_time) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingGroupTime(timestamp_col, cols, rev_time, fwd_time));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingAvgTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingAvgTick(cols, rev_ticks, fwd_ticks));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingAvgTime(std::string timestamp_col, std::vector<std::string> cols,
+                                           std::string rev_time, std::string fwd_time) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingAvgTime(timestamp_col, cols, rev_time, fwd_time));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingMinTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingMinTick(cols, rev_ticks, fwd_ticks));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingMinTime(std::string timestamp_col, std::vector<std::string> cols,
+                                           std::string rev_time, std::string fwd_time) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingMinTime(timestamp_col, cols, rev_time, fwd_time));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingMaxTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingMaxTick(cols, rev_ticks, fwd_ticks));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingMaxTime(std::string timestamp_col, std::vector<std::string> cols,
+                                           std::string rev_time, std::string fwd_time) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingMaxTime(timestamp_col, cols, rev_time, fwd_time));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingProdTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingProdTick(cols, rev_ticks, fwd_ticks));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingProdTime(std::string timestamp_col, std::vector<std::string> cols,
+                                            std::string rev_time, std::string fwd_time) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingProdTime(timestamp_col, cols, rev_time, fwd_time));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingCountTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingCountTick(cols, rev_ticks, fwd_ticks));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingCountTime(std::string timestamp_col, std::vector<std::string> cols,
+                                             std::string rev_time, std::string fwd_time) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingCountTime(timestamp_col, cols, rev_time, fwd_time));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingStdTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingStdTick(cols, rev_ticks, fwd_ticks));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingStdTime(std::string timestamp_col, std::vector<std::string> cols,
+                                           std::string rev_time, std::string fwd_time) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingStdTime(timestamp_col, cols, rev_time, fwd_time));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingWavgTick(std::string weight_col, std::vector<std::string> cols,
+                                            int rev_ticks, int fwd_ticks) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingWavgTick(weight_col, cols, rev_ticks, fwd_ticks));
+}
+
+UpdateByOpWrapper* INTERNAL_rollingWavgTime(std::string timestamp_col, std::string weight_col, std::vector<std::string> cols,
+                                            std::string rev_time, std::string fwd_time) {
+    return new UpdateByOpWrapper(deephaven::client::update_by::rollingWavgTime(timestamp_col, weight_col, cols, rev_time, fwd_time));
+}
+
 
 class TableHandleWrapper {
 public:
@@ -148,6 +392,11 @@ public:
 
     TableHandleWrapper* Ungroup(std::vector<std::string> group_by_cols) {
         return new TableHandleWrapper(internal_tbl_hdl.Ungroup(false, group_by_cols));
+    };
+
+    TableHandleWrapper* UpdateBy(Rcpp::List updateByOps, std::vector<std::string> group_by_cols) {
+        std::vector<deephaven::client::UpdateByOperation> converted_updateByOps = convertRcppListToVectorOfTypeUpdateByOperation(updateByOps);
+        return new TableHandleWrapper(internal_tbl_hdl.UpdateBy(converted_updateByOps, group_by_cols));
     };
 
     TableHandleWrapper* AggBy(Rcpp::List aggregations, std::vector<std::string> group_by_columns) {
@@ -496,14 +745,21 @@ private:
 
 using namespace Rcpp;
 
+RCPP_EXPOSED_CLASS(OperationControl)
+
 RCPP_EXPOSED_CLASS(ClientOptionsWrapper)
 RCPP_EXPOSED_CLASS(TableHandleWrapper)
 RCPP_EXPOSED_CLASS(AggregateWrapper)
-RCPP_EXPOSED_CLASS(SortPairWrapper)
 RCPP_EXPOSED_CLASS(ArrowArrayStream)
 
 RCPP_MODULE(DeephavenInternalModule) {
-    class_<AggregateWrapper>("INTERNAL_Aggregate")
+
+    class_<OperationControl>("INTERNAL_OperationControl")
+    ;
+    function("INTERNAL_op_control_generator", &INTERNAL_opControlGenerator);
+
+
+    class_<AggregateWrapper>("INTERNAL_AggOp")
     ;
     function("INTERNAL_agg_first", &INTERNAL_agg_first);
     function("INTERNAL_agg_last", &INTERNAL_agg_last);
@@ -520,6 +776,44 @@ RCPP_MODULE(DeephavenInternalModule) {
     function("INTERNAL_agg_count", &INTERNAL_agg_count);
 
 
+    class_<UpdateByOpWrapper>("INTERNAL_UpdateByOp")
+    ;
+    function("INTERNAL_cum_sum", &INTERNAL_cumSum);
+    function("INTERNAL_cum_prod", &INTERNAL_cumProd);
+    function("INTERNAL_cum_min", &INTERNAL_cumMin);
+    function("INTERNAL_cum_max", &INTERNAL_cumMax);
+    function("INTERNAL_forward_fill", &INTERNAL_forwardFill);
+    function("INTERNAL_delta", &INTERNAL_delta);
+    function("INTERNAL_ema_tick", &INTERNAL_emaTick);
+    function("INTERNAL_ema_time", &INTERNAL_emaTime);
+    function("INTERNAL_ems_tick", &INTERNAL_emsTick);
+    function("INTERNAL_ems_time", &INTERNAL_emsTime);
+    function("INTERNAL_emmin_tick", &INTERNAL_emminTick);
+    function("INTERNAL_emmin_time", &INTERNAL_emminTime);
+    function("INTERNAL_emmax_tick", &INTERNAL_emmaxTick);
+    function("INTERNAL_emmax_time", &INTERNAL_emmaxTime);
+    function("INTERNAL_emstd_tick", &INTERNAL_emstdTick);
+    function("INTERNAL_emstd_time", &INTERNAL_emstdTime);
+    function("INTERNAL_rolling_sum_tick", &INTERNAL_rollingSumTick);
+    function("INTERNAL_rolling_sum_time", &INTERNAL_rollingSumTime);
+    function("INTERNAL_rolling_group_tick", &INTERNAL_rollingGroupTick);
+    function("INTERNAL_rolling_group_time", &INTERNAL_rollingGroupTime);
+    function("INTERNAL_rolling_avg_tick", &INTERNAL_rollingAvgTick);
+    function("INTERNAL_rolling_avg_time", &INTERNAL_rollingAvgTime);
+    function("INTERNAL_rolling_min_tick", &INTERNAL_rollingMinTick);
+    function("INTERNAL_rolling_min_time", &INTERNAL_rollingMinTime);
+    function("INTERNAL_rolling_max_tick", &INTERNAL_rollingMaxTick);
+    function("INTERNAL_rolling_max_time", &INTERNAL_rollingMaxTime);
+    function("INTERNAL_rolling_prod_tick", &INTERNAL_rollingProdTick);
+    function("INTERNAL_rolling_prod_time", &INTERNAL_rollingProdTime);
+    function("INTERNAL_rolling_count_tick", &INTERNAL_rollingCountTick);
+    function("INTERNAL_rolling_count_time", &INTERNAL_rollingCountTime);
+    function("INTERNAL_rolling_std_tick", &INTERNAL_rollingStdTick);
+    function("INTERNAL_rolling_std_time", &INTERNAL_rollingStdTime);
+    function("INTERNAL_rolling_wavg_tick", &INTERNAL_rollingWavgTick);
+    function("INTERNAL_rolling_wavg_time", &INTERNAL_rollingWavgTime);
+
+
     class_<TableHandleWrapper>("INTERNAL_TableHandle")
     .method("select", &TableHandleWrapper::Select)
     .method("view", &TableHandleWrapper::View)
@@ -531,6 +825,7 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("group_by", &TableHandleWrapper::GroupBy)
     .method("ungroup", &TableHandleWrapper::Ungroup)
 
+    .method("update_by", &TableHandleWrapper::UpdateBy)
     .method("agg_by", &TableHandleWrapper::AggBy)
     .method("agg_all_by", &TableHandleWrapper::AggAllBy)
 
@@ -550,7 +845,7 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("percentile_by", &TableHandleWrapper::PercentileBy)
     .method("count_by", &TableHandleWrapper::CountBy)
 
-    .method("cross_join", &TableHandleWrapper::CrossJoin)
+    .method("join", &TableHandleWrapper::CrossJoin)
     .method("natural_join", &TableHandleWrapper::NaturalJoin)
     .method("exact_join", &TableHandleWrapper::ExactJoin)
 

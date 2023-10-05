@@ -6,7 +6,6 @@ package io.deephaven.client.impl;
 import com.google.protobuf.ByteString;
 import io.deephaven.client.impl.ObjectService.Bidirectional;
 import io.deephaven.client.impl.ObjectService.MessageStream;
-import io.deephaven.proto.backplane.grpc.Data;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -33,10 +32,10 @@ public final class ClientData {
         return tickets;
     }
 
-    Data proto() {
-        return Data.newBuilder()
+    io.deephaven.proto.backplane.grpc.ClientData proto() {
+        return io.deephaven.proto.backplane.grpc.ClientData.newBuilder()
                 .setPayload(ByteString.copyFrom(data().slice()))
-                .addAllExportedReferences(() -> tickets()
+                .addAllReferences(() -> tickets()
                         .stream()
                         .map(HasTypedTicket::typedTicket)
                         .map(TypedTicket::proto)

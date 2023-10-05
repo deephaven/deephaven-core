@@ -474,26 +474,31 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         StepUpdater.checkForOlderStep(step, lastSatisfiedStep);
         StepUpdater.checkForOlderStep(step, lastNotificationStep);
 
-        final Collection<Object> localParents = parents;
         // If we have no parents whatsoever then we are a source, and have no dependency chain other than the UGP
         // itself
-        if (localParents.isEmpty()) {
-            if (updateGraph.satisfied(step)) {
-                updateGraph.logDependencies().append("Root node satisfied ").append(this)
-                        .endl();
-                StepUpdater.tryUpdateRecordedStep(LAST_SATISFIED_STEP_UPDATER, this, step);
-                return true;
+        final Collection<Object> localParents = parents;
+
+        if (!updateGraph.satisfied(step)) {
+            if (localParents.isEmpty()) {
+                updateGraph.logDependencies().append("Root node not satisfied ").append(this).endl();
+            } else {
+                updateGraph.logDependencies().append("Update graph not satisfied for ").append(this).endl();
             }
             return false;
         }
 
-        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+        if (localParents.isEmpty()) {
+            updateGraph.logDependencies().append("Root node satisfied ").append(this).endl();
+            StepUpdater.tryUpdateRecordedStep(LAST_SATISFIED_STEP_UPDATER, this, step);
+            return true;
+        }
+
         synchronized (localParents) {
             for (Object parent : localParents) {
                 if (parent instanceof NotificationQueue.Dependency) {
                     if (!((NotificationQueue.Dependency) parent).satisfied(step)) {
                         updateGraph.logDependencies()
-                                .append("Parents dependencies not satisfied for ").append(this)
+                                .append("Parent dependencies not satisfied for ").append(this)
                                 .append(", parent=").append((NotificationQueue.Dependency) parent)
                                 .endl();
                         return false;
@@ -503,7 +508,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
 
         updateGraph.logDependencies()
-                .append("All parents dependencies satisfied for ").append(this)
+                .append("All parent dependencies satisfied for ").append(this)
                 .endl();
 
         StepUpdater.tryUpdateRecordedStep(LAST_SATISFIED_STEP_UPDATER, this, step);

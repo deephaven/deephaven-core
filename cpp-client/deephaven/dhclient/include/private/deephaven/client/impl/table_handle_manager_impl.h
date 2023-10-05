@@ -26,9 +26,6 @@ class TableHandleManagerImpl final : public std::enable_shared_from_this<TableHa
   using DurationSpecifier = deephaven::client::utility::DurationSpecifier;
   using TimePointSpecifier = deephaven::client::utility::TimePointSpecifier;
 
-  template<typename ...Args>
-  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
-
 public:
   [[nodiscard]]
   static std::shared_ptr<TableHandleManagerImpl> Create(std::optional<Ticket> console_id,
@@ -51,7 +48,7 @@ public:
   [[nodiscard]]
   std::shared_ptr<TableHandleImpl> TimeTable(DurationSpecifier period, TimePointSpecifier start_time,
       bool blink_table);
-  void RunScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback);
+  void RunScript(std::string code);
   [[nodiscard]]
   std::shared_ptr<TableHandleImpl> InputTable(const TableHandleImpl &initial_table,
       std::vector<std::string> columns);
