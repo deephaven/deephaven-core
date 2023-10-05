@@ -10,7 +10,6 @@ package io.deephaven.plot;
 import groovy.lang.Closure;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.plot.Axes;
 import io.deephaven.plot.Axis;
@@ -37,8 +36,6 @@ import io.deephaven.plot.errors.PlotRuntimeException;
 import io.deephaven.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.plot.filters.SelectableDataSet;
 import io.deephaven.plot.util.PlotUtils;
-import io.deephaven.plot.util.tables.PartitionedTableHandle;
-import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.time.calendar.BusinessCalendar;
 import java.lang.Comparable;
 import java.lang.String;
@@ -75,27 +72,17 @@ public class FigureImpl extends io.deephaven.engine.liveness.LivenessArtifact im
         if(this.lastAxes != null) { this.lastAxesMap.put(this.lastChart, this.lastAxes); }
         if(this.lastAxis != null) { this.lastAxisMap.put(this.lastAxes, this.lastAxis); }
         if(this.lastSeries != null) { this.lastSeriesMap.put(this.lastAxes, this.lastSeries); }
-        getFigure().getTableHandles().stream()
-                .map(TableHandle::getTable)
-                .filter(DynamicNode::notDynamicOrIsRefreshing)
-                .forEach(this::manage);
-        getFigure().getPartitionedTableHandles().stream()
-                .map(PartitionedTableHandle::getPartitionedTable)
-                .filter(DynamicNode::notDynamicOrIsRefreshing)
-                .forEach(this::manage);
     }
 
     public FigureImpl(final FigureImpl figure) {
-        this(
-                Require.neqNull(figure, "figure").figure,
-                figure.lastChart,
-                figure.lastAxes,
-                figure.lastAxis,
-                figure.lastSeries,
-                figure.lastAxesMap,
-                figure.lastAxisMap,
-                figure.lastSeriesMap
-        );
+        this.figure = Require.neqNull(figure, "figure").figure;
+        this.lastChart = figure.lastChart;
+        this.lastAxes = figure.lastAxes;
+        this.lastAxis = figure.lastAxis;
+        this.lastSeries = figure.lastSeries;
+        this.lastAxesMap = figure.lastAxesMap;
+        this.lastAxisMap = figure.lastAxisMap;
+        this.lastSeriesMap = figure.lastSeriesMap;
     }
 
     private FigureImpl(final BaseFigureImpl figure) {

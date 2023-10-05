@@ -309,27 +309,17 @@ public class GenerateFigureImmutable {
                 "        if(this.lastAxes != null) { this.lastAxesMap.put(this.lastChart, this.lastAxes); }\n" +
                 "        if(this.lastAxis != null) { this.lastAxisMap.put(this.lastAxes, this.lastAxis); }\n" +
                 "        if(this.lastSeries != null) { this.lastSeriesMap.put(this.lastAxes, this.lastSeries); }\n" +
-                "        getFigure().getTableHandles().stream()\n" +
-                "                .map(TableHandle::getTable)\n" +
-                "                .filter(DynamicNode::notDynamicOrIsRefreshing)\n" +
-                "                .forEach(this::manage);\n" +
-                "        getFigure().getPartitionedTableHandles().stream()\n" +
-                "                .map(PartitionedTableHandle::getPartitionedTable)\n" +
-                "                .filter(DynamicNode::notDynamicOrIsRefreshing)\n" +
-                "                .forEach(this::manage);\n" +
                 "    }\n" +
                 "\n" +
                 "    public " + outputClassNameShort + "(final " + outputClassNameShort + " figure) {\n" +
-                "        this(\n" +
-                "                Require.neqNull(figure, \"figure\").figure,\n" +
-                "                figure.lastChart,\n" +
-                "                figure.lastAxes,\n" +
-                "                figure.lastAxis,\n" +
-                "                figure.lastSeries,\n" +
-                "                figure.lastAxesMap,\n" +
-                "                figure.lastAxisMap,\n" +
-                "                figure.lastSeriesMap\n" +
-                "        );\n" +
+                "        this.figure = Require.neqNull(figure, \"figure\").figure;\n" +
+                "        this.lastChart = figure.lastChart;\n" +
+                "        this.lastAxes = figure.lastAxes;\n" +
+                "        this.lastAxis = figure.lastAxis;\n" +
+                "        this.lastSeries = figure.lastSeries;\n" +
+                "        this.lastAxesMap = figure.lastAxesMap;\n" +
+                "        this.lastAxisMap = figure.lastAxisMap;\n" +
+                "        this.lastSeriesMap = figure.lastSeriesMap;\n" +
                 "    }\n" +
                 "\n" +
                 "    private " + outputClassNameShort + "(final BaseFigureImpl figure) {\n" +
@@ -950,18 +940,15 @@ public class GenerateFigureImmutable {
         log.warning("Running GenerateFigureImmutable assertNoChange=" + assertNoChange);
 
         final String[] imports = {
-                "io.deephaven.base.verify.Require",
-                "io.deephaven.engine.updategraph.DynamicNode",
                 "io.deephaven.plot.datasets.DataSeriesInternal",
                 "io.deephaven.plot.datasets.multiseries.MultiSeriesInternal",
-                "io.deephaven.plot.errors.PlotRuntimeException",
-                "io.deephaven.plot.errors.PlotUnsupportedOperationException",
-                "io.deephaven.plot.util.PlotUtils",
-                "io.deephaven.plot.util.tables.TableHandle",
-                "io.deephaven.plot.util.tables.PartitionedTableHandle",
+                "io.deephaven.base.verify.Require",
                 "java.util.Map",
                 "java.util.HashMap",
                 "java.util.Arrays",
+                "io.deephaven.plot.util.PlotUtils",
+                "io.deephaven.plot.errors.PlotRuntimeException",
+                "io.deephaven.plot.errors.PlotUnsupportedOperationException"
         };
 
         final String[] interfaces = {
