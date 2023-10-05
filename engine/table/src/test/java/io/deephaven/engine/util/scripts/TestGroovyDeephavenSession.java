@@ -338,13 +338,13 @@ public class TestGroovyDeephavenSession {
         // each string we are testing here.
         for (String testCase : failTestCases) {
             Optional<GroovyDeephavenSession.GroovyImport> result =
-                    session.isValidImportString(GroovyDeephavenSession.removeComments(testCase));
+                    session.createImport(GroovyDeephavenSession.removeComments(testCase));
             assertNull("expected failure for: " + testCase, result.orElse(null));
         }
 
         for (String testCase : succeedTestCases) {
             Optional<GroovyDeephavenSession.GroovyImport> result =
-                    session.isValidImportString(GroovyDeephavenSession.removeComments(testCase));
+                    session.createImport(GroovyDeephavenSession.removeComments(testCase));
 
             assertNotNull("expected success for: " + testCase, result.orElse(null));
         }
@@ -353,13 +353,13 @@ public class TestGroovyDeephavenSession {
         // this package is unknown
         // DHC change in behavior: as a fix for #1129, we now use classgraph to find packages with no loaded classes
         assertNotNull("expect failure for unknown package: com.google.common.html",
-                session.isValidImportString(GroovyDeephavenSession.removeComments("import com.google.common.html.*;")));
+                session.createImport(GroovyDeephavenSession.removeComments("import com.google.common.html.*;")));
         // Now load the class
-        assertNotNull("expect to find class: com.google.common.html.HtmlEscapers", session.isValidImportString(
+        assertNotNull("expect to find class: com.google.common.html.HtmlEscapers", session.createImport(
                 GroovyDeephavenSession.removeComments("import com.google.common.html.HtmlEscapers;")));
         // confirm non-classgraph package finding works
         assertNotNull("expect to find package: com.google.common.html",
-                session.isValidImportString(GroovyDeephavenSession.removeComments("import com.google.common.html.*;")));
+                session.createImport(GroovyDeephavenSession.removeComments("import com.google.common.html.*;")));
 
     }
 

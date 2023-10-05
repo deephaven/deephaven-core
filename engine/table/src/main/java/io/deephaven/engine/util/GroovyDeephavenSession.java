@@ -12,6 +12,7 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.DeltaControl;
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
@@ -23,7 +24,9 @@ import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.util.NameValidator;
-import io.deephaven.engine.table.DataColumn;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.Table;
@@ -199,7 +202,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         // TODO (core#230): Remove large list of manual text-based consoleImports
         // NOTE: Don't add to this list without a compelling reason!!! Use the user script import if possible.
         imports.addImports(
-                DataColumn.class.getName(),
+                ColumnSource.class.getName(),
+                RowSet.class.getName(),
+                TrackingRowSet.class.getName(),
                 Table.class.getName(),
                 TableFactory.class.getName(),
                 PartitionedTable.class.getName(),
@@ -208,7 +213,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 TypeUtils.class.getName(),
                 ArrayTypeUtils.class.getName(),
                 DateTimeUtils.class.getName(),
-                CompressedString.class.getName(),
                 Instant.class.getName(),
                 LocalDate.class.getName(),
                 LocalTime.class.getName(),
@@ -216,8 +220,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 ZonedDateTime.class.getName(),
                 QueryScopeParam.class.getName(),
                 QueryScope.class.getName(),
-                ExecutionContext.class.getName());
-        imports.addStaticImport(CompressedString.class.getName(), "compress");
+                UpdateByControl.class.getName(),
+                OperationControl.class.getName(),
+                DeltaControl.class.getName(),
+                BadDataBehavior.class.getName()
+                );
         imports.addStarImports(
                 "io.deephaven.api",
                 "io.deephaven.api.filter",
@@ -231,10 +238,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 DateTimeUtils.class.getName(),
                 QueryLanguageFunctionUtils.class.getName(),
                 Aggregation.class.getName(),
-                UpdateByOperation.class.getName(),
-                OperationControl.class.getName(),
-                DeltaControl.class.getName(),
-                BadDataBehavior.class.getName());
+                UpdateByOperation.class.getName());
     }
 
     private String generateScriptName() {
@@ -443,11 +447,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     /**
      * Represents an import that can be added to an ImportCustomizer, as a valid return from
-     * {@link #isValidImportString(String)}.
+     * {@link #createImport(String)}.
      */
     @VisibleForTesting
     public interface GroovyImport {
-        void append(ImportCustomizer imports);
+        void appendTo(ImportCustomizer imports);
     }
 
     /**
@@ -459,7 +463,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
      *         package.class.part.part[.*];"
      */
     @VisibleForTesting
-    public Optional<GroovyImport> isValidImportString(String importString) {
+    public Optional<GroovyImport> createImport(String importString) {
         // look for (ignoring whitespace): optional "import" optional "static" everything_else optional ".*" optional
         // "as" optional ".*" optional
         // semicolon
@@ -580,11 +584,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     private void updateScriptImports(String importString) {
-        Optional<GroovyImport> validated = isValidImportString(importString);
+        Optional<GroovyImport> validated = createImport(importString);
         if (validated.isPresent()) {
-            validated.get().append(consoleImports);
+            validated.get().appendTo(consoleImports);
             if (GroovyDeephavenSession.INCLUDE_CONSOLE_IMPORTS_IN_LOADED_GROOVY) {
-                validated.get().append(loadedGroovyScriptImports);
+                validated.get().appendTo(loadedGroovyScriptImports);
             }
         } else {
             throw new RuntimeException("Attempting to import a path that does not exist: " + importString);
