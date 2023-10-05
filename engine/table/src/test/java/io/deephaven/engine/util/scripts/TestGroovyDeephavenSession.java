@@ -224,12 +224,13 @@ public class TestGroovyDeephavenSession {
     }
 
     @SuppressWarnings("unused")
-    public int field; // testIsValidImportString
+    // testIsValidImportString
+    public int field;
 
     @SuppressWarnings("unused")
+    // for testIsValidImportString
     public void method() {}
 
-    ; // for testIsValidImportString
 
     /**
      * test the code that checks an import request for validity.
@@ -282,6 +283,9 @@ public class TestGroovyDeephavenSession {
                 "import com.123.foo.bar.*;",
                 "import com.1illumon.*;",
                 "import com.ill-umon.*;",
+                // valid imports that can't be aliased
+                "import static io.deephaven.engine.util.scripts.* as wild",
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.* as wild",
         };
         final String[] succeedTestCases = new String[] {
                 // ; is optional
@@ -331,6 +335,16 @@ public class TestGroovyDeephavenSession {
                 // groovy is cool with package star imports for packages that don't exist
                 // ... but we are not enabling that check
                 // "import io.deephaven.foo.bar.*",
+
+                // Verify non-wildcard cases with "as" to alias the import to something else
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession as TestType",
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession as TestType ; ",
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.field as fieldName",
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.field as fieldName;",
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.method as methodName",
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.method as methodName ; ; ;",
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass as StaticType",
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.field as fieldName",
         };
 
         // Note that in `GroovyDeephavenSession`, the _entire_ inbound-command is stripped of comments prior to individual

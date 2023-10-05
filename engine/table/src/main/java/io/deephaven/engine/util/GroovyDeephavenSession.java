@@ -492,6 +492,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             @Nullable
             final String memberName;
             if (isWildcard) {
+                if (alias != null) {
+                    return Optional.empty();
+                }
                 // import static package.class[.class].*
                 okToImport = classExists(body);
                 typeName = body;
@@ -527,6 +530,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             }
         } else {
             if (isWildcard) {
+                if (alias != null) {
+                    return Optional.empty();
+                }
                 if (classExists(body) || (groovyShell.getClassLoader().getDefinedPackage(body) != null)
                         || packageIsVisibleToClassGraph(body)) {
                     result = Optional.of(imports -> imports.addStarImports(body));
