@@ -363,12 +363,12 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return None
 
 
-_numpy_type_codes = ["i", "l", "h", "f", "d", "b", "?", "U", "M", "O"]
+_SUPPORTED_NP_TYPE_CODES = ["i", "l", "h", "f", "d", "b", "?", "U", "M", "O"]
 
 
 def _encode_signature(fn: Callable) -> str:
     """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
-    type to numpy dtype chars (i,l,h,H,f,d,b,?,U,M,O), and pack them into a string with parameter type chars first,
+    type to numpy dtype chars (i,l,h,f,d,b,?,U,M,O), and pack them into a string with parameter type chars first,
     in their original order, followed by the delimiter string '->', then the return type_char.
 
     If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
@@ -380,8 +380,8 @@ def _encode_signature(fn: Callable) -> str:
         np_type_codes.append(_np_dtype_char(p.annotation))
 
     return_type_code = _np_dtype_char(sig.return_annotation)
-    np_type_codes = [c if c in _numpy_type_codes else "O" for c in np_type_codes]
-    return_type_code = return_type_code if return_type_code in _numpy_type_codes else "O"
+    np_type_codes = [c if c in _SUPPORTED_NP_TYPE_CODES else "O" for c in np_type_codes]
+    return_type_code = return_type_code if return_type_code in _SUPPORTED_NP_TYPE_CODES else "O"
 
     np_type_codes.extend(["-", ">", return_type_code])
     return "".join(np_type_codes)

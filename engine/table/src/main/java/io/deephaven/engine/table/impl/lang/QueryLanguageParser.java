@@ -2023,7 +2023,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         if (classA == boolean.class && classB == Boolean.class) {
             // a little hacky, but this handles the null case where it unboxes. very weird stuff
             final Expression uncastExpr = n.getThenExpr();
-            final CastExpr castExpr = new CastExpr(new ClassOrInterfaceType(null, "Boolean"), uncastExpr);
+            final CastExpr castExpr = new CastExpr(StaticJavaParser.parseClassOrInterfaceType("Boolean"), uncastExpr);
             n.setThenExpr(castExpr);
             // fix parent in uncastExpr (it is cleared when it is replaced with the CastExpr)
             uncastExpr.setParentNode(castExpr);
@@ -2032,7 +2032,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         if (classA == Boolean.class && classB == boolean.class) {
             // a little hacky, but this handles the null case where it unboxes. very weird stuff
             final Expression uncastExpr = n.getElseExpr();
-            final CastExpr castExpr = new CastExpr(new ClassOrInterfaceType(null, "Boolean"), uncastExpr);
+            final CastExpr castExpr = new CastExpr(StaticJavaParser.parseClassOrInterfaceType("Boolean"), uncastExpr);
             n.setElseExpr(castExpr);
             // fix parent in uncastExpr (it is cleared when it is replaced with the CastExpr)
             uncastExpr.setParentNode(castExpr);
@@ -2159,7 +2159,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 printer.append(", " + clsName + ".class");
 
                 final ClassExpr targetType =
-                        new ClassExpr(new ClassOrInterfaceType(null, printer.pythonCastContext.getSimpleName()));
+                        new ClassExpr(
+                                StaticJavaParser.parseClassOrInterfaceType(printer.pythonCastContext.getSimpleName()));
                 getAttributeArgs.add(targetType);
 
                 // Let's advertise to the caller the cast context type
@@ -2338,7 +2339,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         new PyCallableDetails(null, methodName));
 
                 if (PyCallableWrapper.class.isAssignableFrom(method.getDeclaringClass())) {
-                    Optional<Class<?>> optionalRetType = pyCallableReturnType(callMethodCall);
+                    final Optional<Class<?>> optionalRetType = pyCallableReturnType(callMethodCall);
                     if (optionalRetType.isPresent()) {
                         Class<?> retType = optionalRetType.get();
                         final Optional<CastExpr> optionalCastExpr =
@@ -2405,7 +2406,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
                     final ObjectCreationExpr newPyCallableExpr = new ObjectCreationExpr(
                             null,
-                            new ClassOrInterfaceType(null, pyCallableWrapperImplName),
+                            StaticJavaParser.parseClassOrInterfaceType(pyCallableWrapperImplName),
                             NodeList.nodeList(getAttributeCall));
 
                     final MethodCallExpr callMethodCall = new MethodCallExpr(
@@ -2466,11 +2467,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                             .valueOf(retType.getSimpleName().toUpperCase())),
                     callMethodCall));
         } else if (retType.getComponentType() != null) {
-            Class<?> componentType = retType.getComponentType();
+            final Class<?> componentType = retType.getComponentType();
             if (componentType.isPrimitive()) {
                 ArrayType arrayType;
                 if (componentType == boolean.class) {
-                    arrayType = new ArrayType(new ClassOrInterfaceType(null, "java.lang.Boolean"));
+                    arrayType = new ArrayType(StaticJavaParser.parseClassOrInterfaceType("java.lang.Boolean"));
                 } else {
                     arrayType = new ArrayType(new PrimitiveType(PrimitiveType.Primitive
                             .valueOf(retType.getComponentType().getSimpleName().toUpperCase())));
@@ -2479,15 +2480,19 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             } else if (retType.getComponentType() == String.class || retType.getComponentType() == Boolean.class
                     || retType.getComponentType() == Instant.class) {
                 ArrayType arrayType =
-                        new ArrayType(new ClassOrInterfaceType(null, retType.getComponentType().getSimpleName()));
+                        new ArrayType(
+                                StaticJavaParser.parseClassOrInterfaceType(retType.getComponentType().getSimpleName()));
                 return Optional.of(new CastExpr(arrayType, callMethodCall));
             }
         } else if (retType == Boolean.class) {
-            return Optional.of(new CastExpr(new ClassOrInterfaceType(null, "java.lang.Boolean"), callMethodCall));
+            return Optional
+                    .of(new CastExpr(StaticJavaParser.parseClassOrInterfaceType("java.lang.Boolean"), callMethodCall));
         } else if (retType == String.class) {
-            return Optional.of(new CastExpr(new ClassOrInterfaceType(null, "java.lang.String"), callMethodCall));
+            return Optional
+                    .of(new CastExpr(StaticJavaParser.parseClassOrInterfaceType("java.lang.String"), callMethodCall));
         } else if (retType == Instant.class) {
-            return Optional.of(new CastExpr(new ClassOrInterfaceType(null, "java.time.Instant"), callMethodCall));
+            return Optional
+                    .of(new CastExpr(StaticJavaParser.parseClassOrInterfaceType("java.time.Instant"), callMethodCall));
         }
 
         return Optional.empty();

@@ -123,7 +123,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             }
             signature = params.get(0).getStringValue();
             unwrapped = pyCallable;
-            // since vectorization doesn't support array type parameters, don't flat numba guvectorized as vectorized
+            // since vectorization doesn't support array type parameters, don't flag numba guvectorized as vectorized
             numbaVectorized = isNumbaVectorized;
             vectorized = isNumbaVectorized;
         } else if (pyCallable.hasAttribute("dh_vectorized")) {
@@ -171,7 +171,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
 
         this.paramTypes = paramTypes;
 
-        returnType = (Class<?>) pyUdfDecoratedCallable.getAttribute("return_type", null);
+        returnType = pyUdfDecoratedCallable.getAttribute("return_type", null);
         if (returnType == null) {
             throw new IllegalStateException(
                     "Python functions should always have an integral, floating point, boolean, String, arrays, or Object return type");
@@ -182,15 +182,16 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         }
     }
 
+    // In vectorized mode, we want to call the vectorized function directly.
     public PyObject vectorizedCallable() {
-        if (numbaVectorized) {
+        if (numbaVectorized || vectorized) {
             return pyCallable;
         } else {
             return dh_table_module.call("dh_vectorize", unwrapped);
         }
     }
 
-
+    // In non-vectorized mode, we want to call the udf decorated function or the original function.
     @Override
     public Object call(Object... args) {
         PyObject pyCallable = this.pyUdfDecoratedCallable != null ? this.pyUdfDecoratedCallable : this.pyCallable;
