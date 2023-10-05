@@ -1,17 +1,24 @@
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.DependencyStreamProvider;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
-class WhereFilterInvertedImpl implements WhereFilter {
+class WhereFilterInvertedImpl
+        extends WhereFilterLivenessArtifactImpl
+        implements DependencyStreamProvider {
 
     static WhereFilter of(WhereFilter filter) {
         return new WhereFilterInvertedImpl(filter);
@@ -21,6 +28,19 @@ class WhereFilterInvertedImpl implements WhereFilter {
 
     private WhereFilterInvertedImpl(WhereFilter filter) {
         this.filter = Objects.requireNonNull(filter);
+        if (filter instanceof LivenessArtifact && filter.isRefreshing()) {
+            manage((LivenessArtifact) filter);
+        }
+    }
+
+    @Override
+    public Stream<NotificationQueue.Dependency> getDependencyStream() {
+        if (filter instanceof NotificationQueue.Dependency) {
+            return Stream.of((NotificationQueue.Dependency) filter);
+        } else if (filter instanceof DependencyStreamProvider) {
+            return ((DependencyStreamProvider) filter).getDependencyStream();
+        }
+        return Stream.empty();
     }
 
     @Override

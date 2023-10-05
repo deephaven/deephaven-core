@@ -37,10 +37,11 @@ public class SimulationClock implements Clock {
     private final Condition ugpCondition = updateGraph.exclusiveLock().newCondition();
 
     private Instant now;
+    private boolean maxSpeed;
 
     /**
      * Create a simulation clock for the specified time range and step.
-     * 
+     *
      * @param startTime The initial time that will be returned by this clock, before it is started
      * @param endTime The final time that will be returned by this clock, when the simulation has completed
      * @param stepSize The time to "elapse" in each run loop
@@ -109,13 +110,14 @@ public class SimulationClock implements Clock {
      * @param maxSpeed run the simulation clock at the max possible speed.
      */
     public void start(final boolean maxSpeed) {
-        if (maxSpeed) {
-            updateGraph.setTargetCycleDurationMillis(0);
-        }
         if (!state.compareAndSet(State.NOT_STARTED, State.STARTED)) {
             throw new IllegalStateException(this + " already started");
         }
+        this.maxSpeed = maxSpeed;
         updateGraph.addSource(refreshTask);
+        if (maxSpeed) {
+            updateGraph.requestRefresh();
+        }
     }
 
     /**
@@ -133,11 +135,14 @@ public class SimulationClock implements Clock {
         }
         final Instant incremented = DateTimeUtils.plus(now, stepNanos);
         now = DateTimeUtils.isAfter(incremented, endTime) ? endTime : incremented;
+        if (maxSpeed) {
+            updateGraph.requestRefresh();
+        }
     }
 
     /**
      * Is the simulation done?
-     * 
+     *
      * @return True if the simulation is done
      */
     public boolean done() {
