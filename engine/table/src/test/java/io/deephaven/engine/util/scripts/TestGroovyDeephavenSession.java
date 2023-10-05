@@ -158,7 +158,7 @@ public class TestGroovyDeephavenSession {
     }
 
     /**
-     * test the static removeComments method in IrisDbGroovySession.
+     * test the static removeComments method in GroovyDeephavenSession.
      */
     @Test
     public void testRemoveComments() {
@@ -237,37 +237,30 @@ public class TestGroovyDeephavenSession {
     @Test
     public void testIsValidImportString() throws IOException {
         final String[] failTestCases = new String[] {
-                "import import io.deephaven.engine.util.TableTools", // two imports
-                "static import io.deephaven.engine.util.TableTools", // static before import
-                "import // io.deephaven.engine.util.TableTools", // invalid after stripped comments
-                "import io.deephaven.engine.util.TableTools.", // trailing .
-                "import io.deephaven.engine.util.TableTools.**", // invalid wildcard
-                "import io.deephaven.engine.util.TableTools.*.*", // doubled wildcard
-                "import io.deephaven.engine. util.TableTools; // has a space", // internal space
-                "import io.deephaven.engine.xxx.util.TableTools", // nonexistent package
-                "import io.deephaven.engine.util.TablexxxTools", // nonexistant classname
-                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClassstatic ", // includes
-                                                                                                                // "static
-                                                                                                                // " but
-                                                                                                                // is
-                                                                                                                // (correctly)
-                                                                                                                // not
-                                                                                                                // stripped
-                                                                                                                // out
-                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass import static", // import
-                                                                                                                       // and
-                                                                                                                       // static
-                                                                                                                       // correctly
-                                                                                                                       // not
-                                                                                                                       // removed
-                                                                                                                       // at
-                                                                                                                       // the
-                                                                                                                       // end
-                "import static io.deephaven.engine.util.scripts.Test;Groovy;DeephavenSession.StaticClass", // semicolons
-                                                                                                           // correctly
-                                                                                                           // not
-                                                                                                           // removed
-                                                                                                           // internally
+                // two imports
+                "import import io.deephaven.engine.util.TableTools",
+                // static before import
+                "static import io.deephaven.engine.util.TableTools",
+                // invalid after stripped comments
+                "import // io.deephaven.engine.util.TableTools",
+                // trailing .
+                "import io.deephaven.engine.util.TableTools.",
+                // invalid wildcard
+                "import io.deephaven.engine.util.TableTools.**",
+                // doubled wildcard
+                "import io.deephaven.engine.util.TableTools.*.*",
+                // internal space
+                "import io.deephaven.engine. util.TableTools; // has a space",
+                // nonexistent package
+                "import io.deephaven.engine.xxx.util.TableTools",
+                // nonexistent classname
+                "import io.deephaven.engine.util.TablexxxTools",
+                // includes "static" but is (correctly) not stripped out
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClassstatic ",
+                // import and static correctly not removed at the end
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass import static",
+                // semicolons correctly not removed internally
+                "import static io.deephaven.engine.util.scripts.Test;Groovy;DeephavenSession.StaticClass",
                 // not valid non-static imports of fields and methods
                 "import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.field  ;",
                 "import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.method ; ; ;",
@@ -275,12 +268,14 @@ public class TestGroovyDeephavenSession {
                 "import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.InnerStaticClass.method",
                 "import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.InnerStaticClass.InnerInnerStaticClass.field",
                 "import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.InnerStaticClass.InnerInnerStaticClass.method",
-                "importstaticio.deephaven.engine.util.scripts.TestGroovyDeephavenSession;", // missing spaces
-                "importstatic io.deephaven.engine.util.scripts.TestGroovyDeephavenSession;", // missing spaces
-                "import staticio.deephaven.engine.util.scripts.TestGroovyDeephavenSession;", // missing spaces
-                "static    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass", // import is not
-                                                                                                     // optional, ; is
-                                                                                                     // optional;
+                // missing spaces
+                "importstaticio.deephaven.engine.util.scripts.TestGroovyDeephavenSession;",
+                // missing spaces
+                "importstatic io.deephaven.engine.util.scripts.TestGroovyDeephavenSession;",
+                // missing spaces
+                "import staticio.deephaven.engine.util.scripts.TestGroovyDeephavenSession;",
+                // import is not optional, ; is optional;
+                "static    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass",
                 // groovy is not cool with non-star package imports for packages that don't exist
                 "import com.illumon.foo.bar;",
                 // make sure illegal java identifiers don't get through
@@ -289,24 +284,27 @@ public class TestGroovyDeephavenSession {
                 "import com.ill-umon.*;",
         };
         final String[] succeedTestCases = new String[] {
-                "import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass", // ; is optional
-                "import   static    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass", // ; is
-                                                                                                              // optional
-                "import   static /* static */   io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass;", // /*
-                                                                                                                           // comment
-                                                                                                                           // */
-                                                                                                                           // removed
-                " import    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass // whatever .*;", // //comment
-                                                                                                                      // removed
+                // ; is optional
+                "import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass",
+                // ; is optional
+                "import   static    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass",
+                // /* comment */ removed
+                "import   static /* static */   io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass;",
+                // //comment  removed
+                " import    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass // whatever .*;",
 
                 // static imports of class, field, method, wildcards - all several levels deep
-                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession", // no semicolon
-                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.*;", // semicolon
+                // no semicolon
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession",
+                // semicolon
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.*;",
                 "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.field  ;",
                 "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.method ; ; ;",
                 "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.*",
-                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass", // no semicolon
-                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.*;", // semicolon
+                // no semicolon
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass",
+                // semicolon
+                "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.*;",
                 "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.field  ;",
                 "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.method ; ; ;",
                 "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.InnerStaticClass",
@@ -335,7 +333,7 @@ public class TestGroovyDeephavenSession {
                 // "import io.deephaven.foo.bar.*",
         };
 
-        // Note that in `IrisDbGroovySession`, the _entire_ inbound-command is stripped of comments prior to individual
+        // Note that in `GroovyDeephavenSession`, the _entire_ inbound-command is stripped of comments prior to individual
         // lines being passed to `isValidImportString()`. to replicate that behavior, we must `removeComments()` from
         // each string we are testing here.
         for (String testCase : failTestCases) {
@@ -597,7 +595,6 @@ public class TestGroovyDeephavenSession {
             fail("Fail for : \n" + c);
         }
     }
-
 
     @Test
     public void testMinInFormula() {
