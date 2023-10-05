@@ -2476,7 +2476,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                             .valueOf(retType.getComponentType().getSimpleName().toUpperCase())));
                 }
                 return Optional.of(new CastExpr(arrayType, callMethodCall));
-            } else if (retType.getComponentType() == String.class || retType.getComponentType() == Boolean.class) {
+            } else if (retType.getComponentType() == String.class || retType.getComponentType() == Boolean.class
+                    || retType.getComponentType() == Instant.class) {
                 ArrayType arrayType =
                         new ArrayType(new ClassOrInterfaceType(null, retType.getComponentType().getSimpleName()));
                 return Optional.of(new CastExpr(arrayType, callMethodCall));

@@ -31,7 +31,7 @@ from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict
 from deephaven.jcompat import to_sequence, j_array_list
 from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
-from deephaven.dtypes import _PRIMITIVE_DTYPE_ARRAY_DTYPE_MAP, _from_numpy_scalar_to_py, _np_dtype_char, \
+from deephaven.dtypes import _PRIMITIVE_DTYPE_ARRAY_DTYPE_MAP, _scalar, _np_dtype_char, \
     _component_np_dtype_char
 
 # Table
@@ -431,7 +431,7 @@ def _py_udf(fn: Callable):
         elif dh_dtype == dtypes.PyObject:
             return ret
         else:
-            return _from_numpy_scalar_to_py(ret)
+            return _scalar(ret)
 
     wrapper.j_name = dh_dtype.j_name
     if return_array:
@@ -482,7 +482,7 @@ def dh_vectorize(fn):
             vectorized_args = zip(*args[2:])
             for i in range(chunk_size):
                 scalar_args = next(vectorized_args)
-                chunk_result[i] = _from_numpy_scalar_to_py(fn(*scalar_args))
+                chunk_result[i] = _scalar(fn(*scalar_args))
         else:
             for i in range(chunk_size):
                 chunk_result[i] = fn()

@@ -9,7 +9,6 @@ Each data type is represented by a DType class which supports creating arrays of
 from __future__ import annotations
 
 import datetime
-import inspect
 import sys
 from typing import Any, Sequence, Callable, Dict, Type, Union, _GenericAlias, Optional
 
@@ -265,13 +264,14 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
                 raise ValueError("Not a callable")
             seq = [remap(v) for v in seq]
 
+        if dtype == Instant:
+            return _instant_array(seq)
+
         if isinstance(seq, np.ndarray):
             if dtype == bool_:
                 bytes_ = seq.astype(dtype=np.int8)
                 j_bytes = array(byte, bytes_)
                 seq = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(j_bytes)
-            elif dtype == Instant:
-                return _instant_array(seq)
 
         return jpy.array(dtype.j_type, seq)
     except Exception as e:
@@ -321,8 +321,10 @@ _numpy_int_type_codes = ["i", "l", "h", "b"]
 _numpy_floating_type_codes = ["f", "d"]
 
 
-def _from_numpy_scalar_to_py(x):
-    """Convert a numpy scalar to a Python scalar."""
+def _scalar(x):
+    """Converts a Python value to a Java scalar value. It converts the numpy primitive types, string to
+    their Python equivalents so that JPY can handle them. For datetime values, it converts them to Java Instant.
+    Otherwise, it returns the value as is."""
     if hasattr(x, "dtype"):
         if x.dtype.char in _numpy_int_type_codes:
             return int(x)
@@ -340,6 +342,9 @@ def _from_numpy_scalar_to_py(x):
         else:
             raise TypeError(f"Unsupported dtype: {x.dtype}")
     else:
+        if isinstance(x, (datetime.datetime, pd.Timestamp)):
+            from deephaven.time import to_j_instant
+            return to_j_instant(x)
         return x
 
 
@@ -363,11 +368,12 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
     if isinstance(t, _GenericAlias) and issubclass(t.__origin__, Sequence):
         component_type = t.__args__[0]
 
-    # np.ndarray as a generic alias is only available in Python 3.9+
+    # np.ndarray as a generic alias is only supported in Python 3.9+
     if sys.version_info.minor > 8:
         import types
         if isinstance(t, types.GenericAlias) and (issubclass(t.__origin__, Sequence) or t.__origin__ == np.ndarray):
             component_type = t.__args__[0]
+
     if component_type:
         return _np_dtype_char(component_type)
     else:
