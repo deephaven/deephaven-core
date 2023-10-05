@@ -100,7 +100,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
 4. Start an R console inside the rdeephaven directory. In that console, install the dephaven client dependencies
    (since we are building from source, dependencies will not be automatically pulled in):
    ```r
-   install.packages(c('Rcpp', 'arrow', 'R6', 'dplyr'))
+   install.packages(c('Rcpp', 'arrow', 'R6', 'dplyr', 'lubridate', 'zoo'))
    ```
    then install the deephaven client itself:
    ```r
