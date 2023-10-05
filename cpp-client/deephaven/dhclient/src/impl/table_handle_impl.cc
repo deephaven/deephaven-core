@@ -11,12 +11,9 @@
 #include <arrow/scalar.h>
 #include <arrow/type.h>
 #include <arrow/table.h>
-#include "deephaven/client/impl/boolean_expression_impl.h"
-#include "deephaven/client/impl/columns_impl.h"
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/client/impl/update_by_operation_impl.h"
 #include "deephaven/client/client.h"
-#include "deephaven/client/columns.h"
 #include "deephaven/client/impl/util.h"
 #include "deephaven/client/subscription/subscribe_thread.h"
 #include "deephaven/client/subscription/subscription_handle.h"
@@ -57,12 +54,7 @@ using io::deephaven::proto::backplane::grpc::UnstructuredFilterTableRequest;
 using io::deephaven::proto::backplane::grpc::WhereInRequest;
 using io::deephaven::proto::backplane::script::grpc::BindTableToVariableRequest;
 using io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse;
-using deephaven::client::SortDirection;
-using deephaven::client::impl::ColumnImpl;
-using deephaven::client::impl::DateTimeColImpl;
 using deephaven::client::impl::MoveVectorData;
-using deephaven::client::impl::NumColImpl;
-using deephaven::client::impl::StrColImpl;
 using deephaven::client::server::Server;
 using deephaven::client::subscription::SubscriptionThread;
 using deephaven::client::subscription::SubscriptionHandle;
@@ -616,38 +608,6 @@ std::shared_ptr<SubscriptionHandle> TableHandleImpl::Subscribe(std::shared_ptr<T
 void TableHandleImpl::Unsubscribe(const std::shared_ptr<SubscriptionHandle> &handle) {
   managerImpl_->RemoveSubscriptionHandle(handle);
   handle->Cancel();
-}
-
-std::vector<std::shared_ptr<ColumnImpl>> TableHandleImpl::GetColumnImpls() {
-  auto schema = Schema();
-  auto result = MakeReservedVector<std::shared_ptr<ColumnImpl>>(schema->Names().size());
-  for (const auto &name: schema->Names()) {
-    result.push_back(ColumnImpl::Create(name));
-  }
-  return result;
-}
-
-std::shared_ptr<NumColImpl> TableHandleImpl::GetNumColImpl(std::string column_name) {
-  LookupHelper(column_name,
-      {
-          ElementTypeId::kInt8,
-          ElementTypeId::kInt16,
-          ElementTypeId::kInt32,
-          ElementTypeId::kInt64,
-          ElementTypeId::kFloat,
-          ElementTypeId::kDouble,
-      });
-  return NumColImpl::Create(std::move(column_name));
-}
-
-std::shared_ptr<StrColImpl> TableHandleImpl::GetStrColImpl(std::string column_name) {
-  LookupHelper(column_name, {ElementTypeId::kString});
-  return StrColImpl::Create(std::move(column_name));
-}
-
-std::shared_ptr<DateTimeColImpl> TableHandleImpl::GetDateTimeColImpl(std::string column_name) {
-  LookupHelper(column_name, {ElementTypeId::kTimestamp});
-  return DateTimeColImpl::Create(std::move(column_name));
 }
 
 void TableHandleImpl::LookupHelper(const std::string &column_name,

@@ -40,6 +40,7 @@ TEST_CASE("DateTime parse fails", "[datetime]") {
 
 //TODO(kosak): implement fractional seconds, then remove the !mayfail tag
 TEST_CASE("DateTime parse fractions", "[datetime][!mayfail]") {
+
   auto dt1 = DateTime::Parse("2001-03-01T12:34:56.987-0500");
   CHECK(dt1.Nanos() == 1234567);
   auto dt2 = DateTime::Parse("2001-03-01T12:34:56.987654-0500");
