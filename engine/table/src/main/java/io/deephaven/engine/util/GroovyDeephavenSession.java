@@ -223,8 +223,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 UpdateByControl.class.getName(),
                 OperationControl.class.getName(),
                 DeltaControl.class.getName(),
-                BadDataBehavior.class.getName()
-                );
+                BadDataBehavior.class.getName(),
+                ExecutionContext.class.getName());
         imports.addStarImports(
                 "io.deephaven.api",
                 "io.deephaven.api.filter",

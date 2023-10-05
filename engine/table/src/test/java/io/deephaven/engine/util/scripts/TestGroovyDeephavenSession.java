@@ -294,7 +294,7 @@ public class TestGroovyDeephavenSession {
                 "import   static    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass",
                 // /* comment */ removed
                 "import   static /* static */   io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass;",
-                // //comment  removed
+                // //comment removed
                 " import    io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass // whatever .*;",
 
                 // static imports of class, field, method, wildcards - all several levels deep
@@ -347,9 +347,9 @@ public class TestGroovyDeephavenSession {
                 "import static io.deephaven.engine.util.scripts.TestGroovyDeephavenSession.StaticClass.field as fieldName",
         };
 
-        // Note that in `GroovyDeephavenSession`, the _entire_ inbound-command is stripped of comments prior to individual
-        // lines being passed to `isValidImportString()`. to replicate that behavior, we must `removeComments()` from
-        // each string we are testing here.
+        // Note that in `GroovyDeephavenSession`, the _entire_ inbound-command is stripped of comments prior to
+        // individual lines being passed to `isValidImportString()`. to replicate that behavior, we must
+        // `removeComments()` from each string we are testing here.
         for (String testCase : failTestCases) {
             Optional<GroovyDeephavenSession.GroovyImport> result =
                     session.createImport(GroovyDeephavenSession.removeComments(testCase));
