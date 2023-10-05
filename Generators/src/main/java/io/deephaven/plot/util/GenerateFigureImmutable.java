@@ -67,7 +67,7 @@ public class GenerateFigureImmutable {
             log.info("Processing class: " + c);
 
             for (final Method m : c.getMethods()) {
-                log.fine("Processing method (" + c + "): " + m);
+                log.info("Processing method (" + c + "): " + m);
                 boolean isStatic = Modifier.isStatic(m.getModifiers());
                 boolean isPublic = Modifier.isPublic(m.getModifiers());
                 boolean isObject = m.getDeclaringClass().equals(Object.class);
@@ -111,7 +111,7 @@ public class GenerateFigureImmutable {
         boolean skip = skip(f);
 
         if (skip) {
-            log.warning("*** Skipping function: " + f);
+            log.info("*** Skipping function: " + f);
             return;
         }
 
@@ -243,7 +243,7 @@ public class GenerateFigureImmutable {
             final boolean skip = skip(f);
 
             if (skip) {
-                log.warning("*** Skipping function: " + f);
+                log.info("*** Skipping function: " + f);
                 continue;
             }
 
@@ -258,7 +258,7 @@ public class GenerateFigureImmutable {
             final boolean skip = skip(f);
 
             if (skip) {
-                log.warning("*** Skipping function: " + f);
+                log.info("*** Skipping function: " + f);
                 continue;
             }
 
@@ -937,7 +937,7 @@ public class GenerateFigureImmutable {
             throws ClassNotFoundException, IOException {
 
         log.setLevel(Level.WARNING);
-        log.warning("Running GenerateFigureImmutable assertNoChange=" + assertNoChange);
+        log.info("Running GenerateFigureImmutable assertNoChange=" + assertNoChange);
 
         final String[] imports = {
                 "io.deephaven.plot.datasets.DataSeriesInternal",
@@ -1015,7 +1015,7 @@ public class GenerateFigureImmutable {
             out.print(code);
             out.close();
 
-            log.warning(gen.outputClass + " written to: " + file);
+            log.info(gen.outputClass + " written to: " + file);
         }
     }
 
