@@ -31,7 +31,7 @@ from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict
 from deephaven.jcompat import to_sequence, j_array_list
 from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
-from deephaven.dtypes import _PRIMITIVE_DTYPE_ARRAY_DTYPE_MAP, _scalar, _np_dtype_char, \
+from deephaven.dtypes import _BUILDABLE_ARRAY_DTYPE_MAP, _scalar, _np_dtype_char, \
     _component_np_dtype_char
 
 # Table
@@ -412,7 +412,10 @@ def _py_udf(fn: Callable):
         dh_dtype = dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
 
     return_array = False
-    if hasattr(fn, "signature"):
+
+    # If the function is a numba guvectorized function, examine the signature of the function to determine if it
+    # returns an array.
+    if isinstance(fn, numba.np.ufunc.gufunc.GUFunc):
         sig = fn.signature
         rtype = sig.split("->")[-1].strip("()")
         if rtype:
@@ -421,7 +424,8 @@ def _py_udf(fn: Callable):
         component_type = _component_np_dtype_char(inspect.signature(fn).return_annotation)
         if component_type:
             dh_dtype = dtypes.from_np_dtype(np.dtype(component_type))
-            return_array = True
+            if dh_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
+                return_array = True
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -434,12 +438,7 @@ def _py_udf(fn: Callable):
             return _scalar(ret)
 
     wrapper.j_name = dh_dtype.j_name
-    if return_array:
-        ret_dtype = _PRIMITIVE_DTYPE_ARRAY_DTYPE_MAP.get(dh_dtype)
-        if ret_dtype is None:
-            raise TypeError(f"No corresponding Java array type for: {dh_dtype}")
-    else:
-        ret_dtype = dh_dtype
+    ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(dh_dtype) if return_array else dh_dtype
 
     if hasattr(dh_dtype.j_type, 'jclass'):
         j_class = ret_dtype.j_type.jclass
@@ -526,8 +525,6 @@ def _query_scope_ctx():
     else:
         # in the __main__ module, use the default main global scope
         yield
-
-
 
 
 class SortDirection(Enum):

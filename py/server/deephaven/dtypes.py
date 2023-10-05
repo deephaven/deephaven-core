@@ -172,7 +172,7 @@ _PRIMITIVE_DTYPE_NULL_MAP = {
     float64: NULL_DOUBLE,
 }
 
-_PRIMITIVE_DTYPE_ARRAY_DTYPE_MAP = {
+_BUILDABLE_ARRAY_DTYPE_MAP = {
     bool_: bool_array,
     byte: int8_array,
     char: char_array,
@@ -183,7 +183,6 @@ _PRIMITIVE_DTYPE_ARRAY_DTYPE_MAP = {
     float64: float64_array,
     string: string_array,
     Instant: instant_array,
-    ZonedDateTime: zdt_array,
 }
 
 
@@ -317,8 +316,8 @@ def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -
     return PyObject
 
 
-_numpy_int_type_codes = ["i", "l", "h", "b"]
-_numpy_floating_type_codes = ["f", "d"]
+_NUMPY_INT_TYPE_CODES = ["i", "l", "h", "b"]
+_NUMPY_FLOATING_TYPE_CODES = ["f", "d"]
 
 
 def _scalar(x):
@@ -326,9 +325,9 @@ def _scalar(x):
     their Python equivalents so that JPY can handle them. For datetime values, it converts them to Java Instant.
     Otherwise, it returns the value as is."""
     if hasattr(x, "dtype"):
-        if x.dtype.char in _numpy_int_type_codes:
+        if x.dtype.char in _NUMPY_INT_TYPE_CODES:
             return int(x)
-        elif x.dtype.char in _numpy_floating_type_codes:
+        elif x.dtype.char in _NUMPY_FLOATING_TYPE_CODES:
             return float(x)
         elif x.dtype.char == '?':
             return bool(x)

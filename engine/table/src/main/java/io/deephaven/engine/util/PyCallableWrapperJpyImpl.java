@@ -107,38 +107,25 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     }
 
     private void prepareSignature() {
-        if (pyCallable.getType().equals(NUMBA_VECTORIZED_FUNC_TYPE)) {
+        boolean isNumbaVectorized = pyCallable.getType().equals(NUMBA_VECTORIZED_FUNC_TYPE);
+        boolean isNumbaGUVectorized = pyCallable.equals(NUMBA_GUVECTORIZED_FUNC_TYPE);
+        if (isNumbaGUVectorized || isNumbaVectorized) {
             List<PyObject> params = pyCallable.getAttribute("types").asList();
             if (params.isEmpty()) {
                 throw new IllegalArgumentException(
-                        "numba vectorized function must have an explicit signature: " + pyCallable);
+                        "numba vectorized/guvectorized function must have an explicit signature: " + pyCallable);
             }
             // numba allows a vectorized function to have multiple signatures
             if (params.size() > 1) {
                 throw new UnsupportedOperationException(
                         pyCallable
-                                + " has multiple signatures; this is not currently supported for numba vectorized functions");
+                                + " has multiple signatures; this is not currently supported for numba vectorized/guvectorized functions");
             }
             signature = params.get(0).getStringValue();
             unwrapped = pyCallable;
-            numbaVectorized = true;
-            vectorized = true;
-        } else if (pyCallable.equals(NUMBA_GUVECTORIZED_FUNC_TYPE)) {
-            List<PyObject> params = pyCallable.getAttribute("types").asList();
-            if (params.isEmpty()) {
-                throw new IllegalArgumentException(
-                        "numba guvectorized function must have an explicit signature: " + pyCallable);
-            }
-            // numba allows a vectorized function to have multiple signatures
-            if (params.size() > 1) {
-                throw new UnsupportedOperationException(
-                        pyCallable
-                                + " has multiple signatures; this is not currently supported for numba vectorized functions");
-            }
-            signature = params.get(0).getStringValue();
-            unwrapped = pyCallable;
-            numbaVectorized = false;
-            vectorized = false;
+            // since vectorization doesn't support array type parameters, don't flat numba guvectorized as vectorized
+            numbaVectorized = isNumbaVectorized;
+            vectorized = isNumbaVectorized;
         } else if (pyCallable.hasAttribute("dh_vectorized")) {
             signature = pyCallable.getAttribute("signature").toString();
             unwrapped = pyCallable.getAttribute("callable");
@@ -190,9 +177,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                     "Python functions should always have an integral, floating point, boolean, String, arrays, or Object return type");
         }
 
-        if (returnType == Object.class) {
-            this.returnType = PyObject.class;
-        } else if (returnType == boolean.class) {
+        if (returnType == boolean.class) {
             this.returnType = Boolean.class;
         }
     }

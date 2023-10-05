@@ -134,10 +134,32 @@ foo = Foo()
                     func_body_str_1 = """"""
                     func_body_str_2 = f"""    return {data}"""
                     exec("\n".join([func_decl_str, func_body_str_1, func_body_str_2]), globals().update(
-                         {"dt_list": dt_list, "np_array": np_array}));
+                        {"dt_list": dt_list, "np_array": np_array}));
 
                     t = empty_table(10).update("X = i").update(f"Y= fn(X + 1)")
                     self.assertEqual(t.columns[1].data_type, dtypes.instant_array)
+
+    def test_return_value_errors(self):
+        def fn(col) -> List[object]:
+            return [col]
+
+        def fn1(col) -> List:
+            return [col]
+
+        def fn2(col):
+            return col
+
+        with self.subTest(fn):
+            t = empty_table(1).update("X = i").update(f"Y= fn(X + 1)")
+            self.assertEqual(t.columns[1].data_type, dtypes.JObject)
+
+        with self.subTest(fn1):
+            t = empty_table(1).update("X = i").update(f"Y= fn1(X + 1)")
+            self.assertEqual(t.columns[1].data_type, dtypes.JObject)
+
+        with self.subTest(fn2):
+            t = empty_table(1).update("X = i").update(f"Y= fn2(X + 1)")
+            self.assertEqual(t.columns[1].data_type, dtypes.JObject)
 
 
 if __name__ == '__main__':
