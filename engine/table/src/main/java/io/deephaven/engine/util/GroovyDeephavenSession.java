@@ -167,7 +167,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         scriptConfig.getCompilationCustomizers().add(loadedGroovyScriptImports);
         GroovyClassLoader scriptClassLoader = new GroovyClassLoader(STATIC_LOADER, scriptConfig);
 
-        //
+        // Specify a configuration for compiling/running console commands for custom imports
         CompilerConfiguration consoleConfig = new CompilerConfiguration();
         consoleConfig.getCompilationCustomizers().add(consoleImports);
 
