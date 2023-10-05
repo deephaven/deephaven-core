@@ -100,7 +100,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
 4. Start an R console inside the rdeephaven directory. In that console, install the dephaven client dependencies
    (since we are building from source, dependencies will not be automatically pulled in):
    ```r
-   install.packages(c('Rcpp', 'arrow', 'R6', 'dplyr', 'lubridate', 'zoo'))
+   install.packages(c('Rcpp', 'arrow', 'R6', 'dplyr'))
    ```
    then install the deephaven client itself:
    ```r
@@ -161,7 +161,12 @@ this means that the C++ compiler does not know where to find the relevant header
 
 ## Running the unit tests
 
-The Deephaven R client utilizes R's `testthat` package to perform unit tests. In order to run these unit tests, install `testthat` via `install.packages("testthat")`. Then, from an R session with `rdeephaven` installed, run the unit tests:
+The Deephaven R client utilizes R's `testthat` package to perform unit tests. In order to run these unit tests, install `testthat` and the other dependent packages:
+```r
+install.packages(c('testthat', 'lubridate', 'zoo'))
+```
+
+Then, from an R session with `rdeephaven` installed, run the unit tests:
 ```r
 library(testthat)
 test_package("rdeephaven")
