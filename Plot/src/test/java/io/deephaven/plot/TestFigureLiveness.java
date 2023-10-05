@@ -18,8 +18,10 @@ public class TestFigureLiveness extends RefreshingTableTestCase {
         Table t;
         Figure plot;
         try (SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
-            t = TableTools.timeTable("PT1s").updateView("Y=i", "X=i");
-            plot = PlottingConvenience.plot("series", t, "X", "Y").show();
+            t = TableTools.timeTable("PT1s").updateView("Y=i", "X=i", "Z=i");
+            plot = PlottingConvenience.plot("series", t, "X", "Y")
+                    .plotBy("multieseries", t, "X", "Y", "Z")
+                    .show();
             reqScope.manage((LivenessReferent) plot);// explicitly manage outside of the scope
         }
 

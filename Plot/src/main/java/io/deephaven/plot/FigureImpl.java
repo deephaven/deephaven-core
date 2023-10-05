@@ -49,7 +49,9 @@ import java.util.function.DoubleUnaryOperator;
 
 /** An interface for constructing plots.  A Figure is immutable, and all function calls return a new immutable Figure instance.*/
 @SuppressWarnings({"unused", "RedundantCast", "SameParameterValue"})
-public class FigureImpl extends io.deephaven.engine.liveness.LivenessArtifact implements io.deephaven.plot.Figure {
+public class FigureImpl implements io.deephaven.plot.Figure {
+
+    private static final long serialVersionUID = -4519904656095275663L;
 
     private final BaseFigureImpl figure;
     private final ChartLocation lastChart;

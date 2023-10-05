@@ -3,7 +3,6 @@
  */
 package io.deephaven.plot.util;
 
-import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.plot.*;
 import io.deephaven.plot.datasets.DataSeries;
 import io.deephaven.plot.datasets.multiseries.MultiSeries;
@@ -193,7 +192,7 @@ public class GenerateFigureImmutable {
         return result;
     }
 
-    private String generateInheritance() {
+    private String generateImplements() {
         final StringBuilder sb = new StringBuilder();
 
         if (isInterface) {
@@ -202,7 +201,6 @@ public class GenerateFigureImmutable {
                             Stream.of(interfaces),
                             Stream.of(seriesInterfaces)).collect(Collectors.joining(", ")));
         } else {
-            sb.append(" extends ").append(LivenessArtifact.class.getName());
             sb.append(" implements " + CLASS_NAME_INTERFACE);
         }
 
@@ -232,7 +230,7 @@ public class GenerateFigureImmutable {
         code += "/** An interface for constructing plots.  A Figure is immutable, and all function calls return a new immutable Figure instance.";
         code += "*/\n";
         code += "@SuppressWarnings({\"unused\", \"RedundantCast\", \"SameParameterValue\"})\n";
-        code += "public" + (isInterface ? " interface " : " class ") + outputClassNameShort + generateInheritance()
+        code += "public" + (isInterface ? " interface " : " class ") + outputClassNameShort + generateImplements()
                 + " {\n";
 
         code += "\n";
@@ -286,7 +284,9 @@ public class GenerateFigureImmutable {
             return "";
         }
 
-        return "    private final BaseFigureImpl figure;\n" +
+        return "    private static final long serialVersionUID = -4519904656095275663L;\n" +
+                "\n" +
+                "    private final BaseFigureImpl figure;\n" +
                 "    private final ChartLocation lastChart;\n" +
                 "    private final AxesLocation lastAxes;\n" +
                 "    private final AxisLocation lastAxis;\n" +
