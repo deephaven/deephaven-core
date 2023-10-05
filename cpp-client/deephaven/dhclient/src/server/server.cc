@@ -21,6 +21,7 @@
 using arrow::flight::FlightClient;
 using deephaven::client::impl::MoveVectorData;
 using deephaven::dhcore::utility::Bit_cast;
+using deephaven::dhcore::utility::GetWhat;
 using deephaven::dhcore::utility::Streamf;
 using deephaven::dhcore::utility::Stringf;
 using io::deephaven::proto::backplane::grpc::AddTableRequest;
@@ -277,8 +278,13 @@ void Server::Shutdown() {
   outstanding_tickets_.clear();
   guard.unlock();
 
-  for (auto &ticket : tickets_to_release) {
-    ReleaseUnchecked(std::move(ticket));
+  for (const auto &ticket : tickets_to_release) {
+    try {
+      ReleaseUnchecked(ticket);
+    } catch (...) {
+      auto what = GetWhat(std::current_exception());
+      gpr_log(GPR_INFO, "Server::Shutdown() is ignoring thrown exception: %s", what.c_str());
+    }
   }
 
   // This will cause the handshake thread to shut down (because cancelled_ is true).

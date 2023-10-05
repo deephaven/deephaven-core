@@ -35,6 +35,7 @@ using deephaven::client::subscription::SubscriptionHandle;
 using deephaven::client::utility::Executor;
 using deephaven::client::utility::OkOrThrow;
 using deephaven::dhcore::clienttable::Schema;
+using deephaven::dhcore::utility::GetWhat;
 using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::dhcore::utility::separatedList;
 using deephaven::dhcore::utility::SimpleOstringstream;
@@ -73,7 +74,12 @@ Client &Client::operator=(Client &&other) noexcept = default;
 Client::~Client() {
   gpr_log(GPR_INFO, "Destructing Client ClientImpl(%p).",
       static_cast<void*>(impl_.get()));
-  Close();
+  try {
+    Close();
+  } catch (...) {
+    auto what = GetWhat(std::current_exception());
+    gpr_log(GPR_INFO, "Client destructor is ignoring thrown exception: %s", what.c_str());
+  }
 }
 
 // Tear down Client state.

@@ -177,6 +177,11 @@ void TableHandleManagerImpl::RemoveSubscriptionHandle(const std::shared_ptr<Subs
 }
 namespace {
 Ticket MakeScopeReference(std::string_view table_name) {
+  if (table_name.empty()) {
+    auto message = DEEPHAVEN_LOCATION_STR("table_name is empty");
+    throw std::runtime_error(message);
+  }
+
   Ticket result;
   result.mutable_ticket()->reserve(2 + table_name.size());
   result.mutable_ticket()->append("s/");
