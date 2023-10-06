@@ -1,6 +1,87 @@
+#' @name
+#' UpdateBy
+#' @title
+#' UpdateBy
+#' @md
+#' @usage NULL
+#' @format NULL
+#' @docType class
+#'
 #' @description
-#' An UpdateByOp represents a window-based operator that can be passed to `update_by()`.
-#' Note that UpdateByOps should not be instantiated directly by user code, but rather by provided uby_* functions.
+#' Deephaven's `update_by()` table method and suite of UpdateBy functions enable cumulative and moving calculations
+#' on static _and_ streaming tables. Complex operations like cumulative minima and maxima, exponential moving averages,
+#' and rolling standard deviations are all possible and effortless to execute. As is always the case in Deephaven,
+#' the results of these calculations will continue to update as their parent tables are updated. Additionally, it's easy
+#' to group data by one or more columns, enabling complex group-wise calculations with a single line of code.
+#'
+#' @section
+#' Applying UpdateBy functions to a table:
+#' The table method `update_by()` is the entrypoint for UpdateBy operations. It takes two arguments: the first is an
+#' UpdateBy function or a list of UpdateBy functions denoting the calculations to perform on specific columns of the
+#' table. Then, it takes a column name or a list of column names that define the groups to perform the calculations on.
+#' If you don't want grouped calculations, this argument can be omitted.
+#'
+#' The `update_by()` method itself does not know anything about the columns you want to perform calculations on. Rather,
+#' the desired columns are passed to individual UpdateBy functions, enabling a massive amount of flexibility.
+#'
+#' @section
+#' UpdateBy functions:
+#' UpdateBy functions are the workers that actually execute the complex UpdateBy calculations. These functions are
+#' _generators_, meaning they return _functions_ that the Deephaven engine knows how to interpret.
+#' Here is a list of all UpdateBy functions available in Deephaven:
+#'
+#' - [`uby_cum_min()`][uby_cum_min]
+#' - [`uby_cum_max()`][uby_cum_max]
+#' - [`uby_cum_sum()`][uby_cum_sum]
+#' - [`uby_cum_prod()`][uby_cum_prod]
+#' - [`uby_forward_fill()`][uby_forward_fill]
+#' - [`uby_delta()`][uby_delta]
+#' - [`uby_emmin_tick()`][uby_emmin_tick]
+#' - [`uby_emmin_time()`][uby_emmin_time]
+#' - [`uby_emmax_tick()`][uby_emmax_tick]
+#' - [`uby_emmax_time()`][uby_emmax_time]
+#' - [`uby_ems_tick()`][uby_ems_tick]
+#' - [`uby_ems_time()`][uby_ems_time]
+#' - [`uby_ema_tick()`][uby_ema_tick]
+#' - [`uby_ema_time()`][uby_ema_time]
+#' - [`uby_emstd_tick()`][uby_emstd_tick]
+#' - [`uby_emstd_time()`][uby_emstd_time]
+#' - [`uby_rolling_count_tick()`][uby_rolling_count_tick]
+#' - [`uby_rolling_count_time()`][uby_rolling_count_time]
+#' - [`uby_rolling_group_tick()`][uby_rolling_group_tick]
+#' - [`uby_rolling_group_time()`][uby_rolling_group_time]
+#' - [`uby_rolling_min_tick()`][uby_rolling_min_tick]
+#' - [`uby_rolling_min_time()`][uby_rolling_min_time]
+#' - [`uby_rolling_max_tick()`][uby_rolling_max_tick]
+#' - [`uby_rolling_max_time()`][uby_rolling_max_time]
+#' - [`uby_rolling_sum_tick()`][uby_rolling_sum_tick]
+#' - [`uby_rolling_sum_time()`][uby_rolling_sum_time]
+#' - [`uby_rolling_prod_tick()`][uby_rolling_prod_tick]
+#' - [`uby_rolling_prod_time()`][uby_rolling_prod_time]
+#' - [`uby_rolling_avg_tick()`][uby_rolling_avg_tick]
+#' - [`uby_rolling_avg_time()`][uby_rolling_avg_time]
+#' - [`uby_rolling_wavg_tick()`][uby_rolling_wavg_tick]
+#' - [`uby_rolling_wavg_time()`][uby_rolling_wavg_time]
+#' - [`uby_rolling_std_tick()`][uby_rolling_std_tick]
+#' - [`uby_rolling_std_time()`][uby_rolling_std_time]
+#'
+#' For more details on each aggregation function, click on one of the methods above or see the reference documentation
+#' by running `?uby_cum_min`, `?uby_delta`, etc.
+#'
+#' @section
+#' Usage:
+#'
+#' ```
+#' NULL
+#' ```
+#'
+NULL
+
+
+# An UpdateByOp represents a window-based operator that can be passed to update_by(). This is the return type of
+# all of the uby_* functions. It is a wrapper around an Rcpp_INTERNAL_UpdateByOp, which itself is a wrapper around a
+# C++ UpdateByOpWrapper, which is finally a wrapper around a C++ UpdateByOperation. See rdeephaven/src/client.cpp for details.
+# Note that UpdateByOps should not be instantiated directly by user code, but rather by provided uby_* functions.
 UpdateByOp <- R6Class("UpdateByOp",
   cloneable = FALSE,
   public = list(
@@ -148,7 +229,7 @@ uby_cum_max <- function(cols = character()) {
 }
 
 #' @name
-#' uby_cum_min
+#' uby_forward_fill
 #' @title
 #' Replace null values with the last known non-null value
 #' @md

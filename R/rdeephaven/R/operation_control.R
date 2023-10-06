@@ -1,8 +1,7 @@
-#' @description
-#' An OperationControl defines the control parameters of some UpdateByOps used in an update_by table operation.
-#' The UpdateByOps can use OperationControl to handle erroneous data are `ema_tick`, `ema_time`, `emmax_tick`,
-#' `emmax_time`, `emmin_tick`, `emmin_time`, and `ems_time`.
-#' Note that OperationControl should not be instantiated directly by user code, but rather `by op_control()`.
+# An OperationControl defines the control parameters of some UpdateByOps used in an update_by table operation.
+# This is the return type of op_control(). It is a wrapper around an Rcpp_INTERNAL_OperationControl, which itself is a
+# wrapper around a C++ OperationControl. See rdeephaven/src/client.cpp for details.
+# Note that OperationControl should not be instantiated directly by user code, but rather by op_control().
 OperationControl <- R6Class("OperationControl",
   cloneable = FALSE,
   public = list(

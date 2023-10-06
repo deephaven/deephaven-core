@@ -1,11 +1,10 @@
 #' @name
-#' Aggregations
+#' AggBy
 #' @title
-#' Aggregations
+#' AggBy
 #' @md
 #' @usage NULL
 #' @format NULL
-#' @methods NULL
 #' @docType class
 #'
 #' @description
@@ -27,27 +26,29 @@
 #'   The resulting grouped data is defined by the aggregation specified. This method applies the aggregation to all
 #'   columns of the table, so it can only accept one aggregation at a time.
 #'
-#' For more details, see the reference documentation on each method by running `?agg_by`, or `?agg_all_by`.
+#' The `agg_by()` and `agg_all_by()` methods themselves do not know anything about the columns you want to perform
+#' aggregations on. Rather, the desired columns are passed to individual Aggregation functions, enabling you to apply
+#' various kinds of aggregations to different columns or groups of columns as needed.
 #'
 #' @section
 #' Aggregation functions:
-#' Aggregation functions are used to define the grouped data in an aggregated table by passing them to `agg_by()`
+#' Aggregation functions are used to perform aggregation calculations on grouped data by passing them to `agg_by()`
 #' or `agg_all_by()`. These functions are _generators_, meaning they return _functions_ that the Deephaven engine knows
 #' how to interpret. Here is a list of all aggregation functions available in Deephaven:
 #'
-#' - [`agg_first(cols)`][agg_first]: Creates a First aggregation that computes the first value of each column in `cols` for each aggregation group.
-#' - [`agg_last(cols)`][agg_last]: Creates a Last aggregation that computes the last value of each column in `cols` for each aggregation group.
-#' - [`agg_min(cols)`][agg_min]: Creates a Minimum aggregation that computes the minimum of each column in `cols` for each aggregation group.
-#' - [`agg_max(cols)`][agg_max]: Creates a Maximum aggregation that computes the maximum of each column in `cols` for each aggregation group.
-#' - [`agg_sum(cols)`][agg_sum]: Creates a Sum aggregation that computes the sum of each column in `cols` for each aggregation group.
-#' - [`agg_abs_sum(cols)`][agg_abs_sum]: Creates an Absolute Sum aggregation that computes the absolute sum of each column in `cols` for each aggregation group.
-#' - [`agg_avg(cols)`][agg_avg]: Creates an Average aggregation that computes the average of each column in `cols` for each aggregation group.
-#' - [`agg_w_avg(wcol, cols)`][agg_w_avg]: Creates a Weighted Average aggregation that computes the weighted average of each column in `cols` for each aggregation group.
-#' - [`agg_median(cols)`][agg_median]: Creates a Median aggregation that computes the median of each column in `cols` for each aggregation group.
-#' - [`agg_var(cols)`][agg_var]: Creates a Variance aggregation that computes the variance of each column in `cols` for each aggregation group.
-#' - [`agg_std(cols)`][agg_std]: Creates a Standard Deviation aggregation that computes the standard deviation of each column in `cols`, for each aggregation group.
-#' - [`agg_percentile(percentile, cols)`][agg_percentile]: Creates a Percentile aggregation that computes the given percentile of each column in `cols` for each aggregation group.
-#' - [`agg_count(col)`][agg_count]: Creates a Count aggregation that computes the number of rows in each aggregation group.
+#' - [`agg_first()`][agg_first]
+#' - [`agg_last()`][agg_last]
+#' - [`agg_min()`][agg_min]
+#' - [`agg_max()`][agg_max]
+#' - [`agg_sum()`][agg_sum]
+#' - [`agg_abs_sum()`][agg_abs_sum]
+#' - [`agg_avg()`][agg_avg]
+#' - [`agg_w_avg()`][agg_w_avg]
+#' - [`agg_median()`][agg_median]
+#' - [`agg_var()`][agg_var]
+#' - [`agg_std()`][agg_std]
+#' - [`agg_percentile()`][agg_percentile]
+#' - [`agg_count()`][agg_count]
 #'
 #' For more details on each aggregation function, click on one of the methods above or see the reference documentation
 #' by running `?agg_first`, `?agg_last`, etc.
@@ -61,6 +62,10 @@
 #'
 NULL
 
+# An AggOp represents an aggregation operator that can be passed to agg_by() or agg_all_by(). This is the return type
+# of all of the agg_* functions. It is a wrapper around an Rcpp_INTERNAL_AggOp, which itself is a wrapper around a
+# C++ AggregateWrapper, which is finally a wrapper around a C++ Aggregate. See rdeephaven/src/client.cpp for details.
+# Note that AggOps should not be instantiated directly by user code, but rather by provided agg_* functions.
 AggOp <- R6Class("AggOp",
   cloneable = FALSE,
   public = list(
