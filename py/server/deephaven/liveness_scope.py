@@ -178,7 +178,7 @@ class _BaseLivenessScope(JObjectWrapper):
 
 class SimpleLivenessScope(_BaseLivenessScope):
     """
-    A SimpleLivenessScope automatically managed reference counting of tables and other query resources that
+    A SimpleLivenessScope automatically manages reference counting of tables and other query resources that
     are created in it. Instances are created through calling `liveness_scope()` in a `with` block or as a
     function decorator, and will be disposed of automatically.
     """
