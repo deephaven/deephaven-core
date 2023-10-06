@@ -20,6 +20,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedta
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ColumnStatisticsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
@@ -1435,11 +1436,19 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     // TODO: #697: Column statistic support
     // @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
-        return Callbacks.<ColumnStatistics, String>promise(null, c -> {
-            // workerConnection.getServer().getColumnStatisticsForTable(state().getHandle(), column.getName(), c);
-            throw new UnsupportedOperationException("getColumnStatistics");
-        }).then(
-                tableStatics -> Promise.resolve(new JsColumnStatistics(tableStatics)));
+        return workerConnection.newState((c, state, metadata) -> {
+        }, "get column statistics")
+                .refetch(this, workerConnection.metadata())
+                .then(state -> {
+                    JsTable table = new JsTable(workerConnection, state);
+                    table.setViewport(0, 0);
+
+                    return table.getViewportData();
+                })
+                .then(tableData -> {
+
+                    return Promise.resolve(new JsColumnStatistics(null));
+                });
     }
 
     private Literal objectToLiteral(String valueType, Object value) {
