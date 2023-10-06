@@ -254,6 +254,7 @@ service TableService {
    */
   rpc MetaTable(MetaTableRequest) returns (ExportedTableCreationResponse) {}
 
+  rpc ComputeColumnStatistics(ColumnStatisticsRequest) returns (ExportedTableCreationResponse) {}
 }
 
 message TableReference {
@@ -1231,6 +1232,14 @@ message WhereInRequest {
   repeated string columns_to_match = 5;
 }
 
+message ColumnStatisticsRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+
+  string column_name = 3;
+  optional int32 max_unique_values = 4;
+}
+
 message BatchTableRequest {
   repeated Operation ops = 1;
 
@@ -1278,6 +1287,7 @@ message BatchTableRequest {
       RangeJoinTablesRequest range_join = 39;
       AjRajTablesRequest aj = 40;
       AjRajTablesRequest raj = 41;
+      ColumnStatisticsRequest column_statistics = 42;
     }
   }
 }
