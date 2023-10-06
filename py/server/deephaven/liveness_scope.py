@@ -55,7 +55,7 @@ import contextlib
 
 import jpy
 
-from typing import Union
+from typing import Union, Iterator
 from warnings import warn
 
 from deephaven import DHError
@@ -202,7 +202,7 @@ class LivenessScope(_BaseLivenessScope):
         self._release()
 
     @contextlib.contextmanager
-    def open(self) -> None:
+    def open(self) -> Iterator[None]:
         """
         Uses this scope for the duration of a `with` block, automatically managing all resources created in the block.
 
@@ -232,7 +232,7 @@ def is_liveness_referent(referent: Union[JObjectWrapper, jpy.JType]) -> bool:
 
 
 @contextlib.contextmanager
-def liveness_scope() -> SimpleLivenessScope:
+def liveness_scope() -> Iterator[SimpleLivenessScope]:
     """Creates and opens a LivenessScope for running a block of code. Use
     this function to wrap a block of code using a `with` statement.
 

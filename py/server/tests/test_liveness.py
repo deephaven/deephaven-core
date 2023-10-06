@@ -36,17 +36,21 @@ class LivenessTestCase(BaseTestCase):
             df = to_pandas(must_keep)
             l_scope.preserve(must_keep)
 
-        self.assertTrue(not_managed.j_table.tryRetainReference())
         self.assertTrue(must_keep.j_table.tryRetainReference())
         self.assertFalse(to_discard.j_table.tryRetainReference())
 
-        with liveness_scope():
+        @liveness_scope()
+        def function_test():
             to_discard = self.create_table()
             df = to_pandas(to_discard)
-            must_keep = self.create_table()
-            df = to_pandas(must_keep)
 
-    def test_simple_liveness_nested(self):
+        function_test()
+        self.assertFalse(to_discard.j_table.tryRetainReference())
+
+        self.assertTrue(not_managed.j_table.tryRetainReference())
+
+
+def test_simple_liveness_nested(self):
         with liveness_scope() as l_scope:
             to_discard = self.create_table()
             df = to_pandas(to_discard)
