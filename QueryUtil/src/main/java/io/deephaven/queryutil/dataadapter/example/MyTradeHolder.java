@@ -1,12 +1,11 @@
 package io.deephaven.queryutil.dataadapter.example;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.time.DateTime;
 import io.deephaven.queryutil.dataadapter.KeyedRecordAdapter;
 import io.deephaven.queryutil.dataadapter.TableToRecordListener;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
-import io.deephaven.queryutil.dataadapter.rec.RecordUpdaters;
+import io.deephaven.time.DateTime;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.Map;
@@ -21,11 +20,10 @@ public class MyTradeHolder {
     public static final RecordAdapterDescriptor<MyTradeHolder> myTradeHolderRecordAdapterDescriptor =
             RecordAdapterDescriptorBuilder
                     .create(MyTradeHolder::new)
-                    .addColumnAdapter("Sym", RecordUpdaters.getStringUpdater(MyTradeHolder::setSym))
-                    .addColumnAdapter("Price", RecordUpdaters.getDoubleUpdater(MyTradeHolder::setPrice))
-                    .addColumnAdapter("Size", RecordUpdaters.getIntUpdater(MyTradeHolder::setSize))
-                    .addColumnAdapter("Timestamp",
-                            RecordUpdaters.getReferenceTypeUpdater(DateTime.class, MyTradeHolder::setTimestamp))
+                    .addStringColumnAdapter("Sym", MyTradeHolder::setSym)
+                    .addDoubleColumnAdapter("Price", MyTradeHolder::setPrice)
+                    .addIntColumnAdapter("Size", MyTradeHolder::setSize)
+                    .addObjColumnAdapter("Timestamp", DateTime.class, MyTradeHolder::setTimestamp)
                     .build();
 
     private String sym;

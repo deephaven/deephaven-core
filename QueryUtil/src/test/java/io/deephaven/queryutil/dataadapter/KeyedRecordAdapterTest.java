@@ -6,7 +6,6 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.queryutil.dataadapter.rec.RecordUpdaters;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
 import io.deephaven.queryutil.dataadapter.rec.json.JsonRecordAdapterUtil;
 import io.deephaven.util.QueryConstants;
@@ -164,22 +163,15 @@ public class KeyedRecordAdapterTest extends RefreshingTableTestCase {
                 KeyedRecordAdapter.makeRecordAdapterCompositeKey(
                         source,
                         RecordAdapterDescriptorBuilder.create(MyRecord::new)
-                                .addColumnAdapter("StringCol",
-                                        RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myString = s))
-                                .addColumnAdapter("CharCol",
-                                        RecordUpdaters.getCharUpdater((myRecord, s) -> myRecord.myChar = s))
-                                .addColumnAdapter("ByteCol",
-                                        RecordUpdaters.getByteUpdater((myRecord, s) -> myRecord.myByte = s))
-                                .addColumnAdapter("ShortCol",
-                                        RecordUpdaters.getShortUpdater((myRecord, s) -> myRecord.myShort = s))
-                                .addColumnAdapter("IntCol",
-                                        RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myInt = s))
-                                .addColumnAdapter("FloatCol",
-                                        RecordUpdaters.getFloatUpdater((myRecord, s) -> myRecord.myFloat = s))
-                                .addColumnAdapter("LongCol",
-                                        RecordUpdaters.getLongUpdater((myRecord, s) -> myRecord.myLong = s))
-                                .addColumnAdapter("DoubleCol",
-                                        RecordUpdaters.getDoubleUpdater((myRecord, s) -> myRecord.myDouble = s))
+                                .addStringColumnAdapter("StringCol", (myRecord, s) -> myRecord.myString = s)
+                                .addStringColumnAdapter("StringCol", (myRecord, s) -> myRecord.myString = s)
+                                .addCharColumnAdapter("CharCol", (myRecord, s) -> myRecord.myChar = s)
+                                .addByteColumnAdapter("ByteCol", (myRecord, s) -> myRecord.myByte = s)
+                                .addShortColumnAdapter("ShortCol", (myRecord, s) -> myRecord.myShort = s)
+                                .addIntColumnAdapter("IntCol", (myRecord, s) -> myRecord.myInt = s)
+                                .addFloatColumnAdapter("FloatCol", (myRecord, s) -> myRecord.myFloat = s)
+                                .addLongColumnAdapter("LongCol", (myRecord, s) -> myRecord.myLong = s)
+                                .addDoubleColumnAdapter("DoubleCol", (myRecord, s) -> myRecord.myDouble = s)
                                 .build(),
                         "KeyCol1", "KeyCol2");
 
@@ -234,24 +226,15 @@ public class KeyedRecordAdapterTest extends RefreshingTableTestCase {
                 KeyedRecordAdapter.makeKeyedRecordAdapterSimpleKey(
                         source,
                         RecordAdapterDescriptorBuilder.create(MyRecord::new)
-                                .addColumnAdapter("StringCol",
-                                        RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myString = s))
-                                .addColumnAdapter("CharCol",
-                                        RecordUpdaters.getCharUpdater((myRecord, s) -> myRecord.myChar = s))
-                                .addColumnAdapter("ByteCol",
-                                        RecordUpdaters.getByteUpdater((myRecord, s) -> myRecord.myByte = s))
-                                .addColumnAdapter("ShortCol",
-                                        RecordUpdaters.getShortUpdater((myRecord, s) -> myRecord.myShort = s))
-                                .addColumnAdapter("IntCol",
-                                        RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myInt = s))
-                                .addColumnAdapter("FloatCol",
-                                        RecordUpdaters.getFloatUpdater((myRecord, s) -> myRecord.myFloat = s))
-                                .addColumnAdapter("LongCol",
-                                        RecordUpdaters.getLongUpdater((myRecord, s) -> myRecord.myLong = s))
-                                .addColumnAdapter("DoubleCol",
-                                        RecordUpdaters.getDoubleUpdater((myRecord, s) -> myRecord.myDouble = s))
-                                .addColumnAdapter("KeyCol1",
-                                        RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myKeyString = s))
+                                .addStringColumnAdapter("StringCol", (myRecord, s) -> myRecord.myString = s)
+                                .addCharColumnAdapter("CharCol", (myRecord, s) -> myRecord.myChar = s)
+                                .addByteColumnAdapter("ByteCol", (myRecord, s) -> myRecord.myByte = s)
+                                .addShortColumnAdapter("ShortCol", (myRecord, s) -> myRecord.myShort = s)
+                                .addIntColumnAdapter("IntCol", (myRecord, s) -> myRecord.myInt = s)
+                                .addFloatColumnAdapter("FloatCol", (myRecord, s) -> myRecord.myFloat = s)
+                                .addLongColumnAdapter("LongCol", (myRecord, s) -> myRecord.myLong = s)
+                                .addDoubleColumnAdapter("DoubleCol", (myRecord, s) -> myRecord.myDouble = s)
+                                .addStringColumnAdapter("KeyCol1", (myRecord, s) -> myRecord.myKeyString = s)
                                 .build(),
                         "KeyCol1", String.class);
 
@@ -326,24 +309,15 @@ public class KeyedRecordAdapterTest extends RefreshingTableTestCase {
                 KeyedRecordAdapter.makeKeyedRecordAdapterSimpleKey(
                         source,
                         RecordAdapterDescriptorBuilder.create(MyRecord::new)
-                                .addColumnAdapter("StringCol",
-                                        RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myString = s))
-                                .addColumnAdapter("CharCol",
-                                        RecordUpdaters.getCharUpdater((myRecord, s) -> myRecord.myChar = s))
-                                .addColumnAdapter("ByteCol",
-                                        RecordUpdaters.getByteUpdater((myRecord, s) -> myRecord.myByte = s))
-                                .addColumnAdapter("ShortCol",
-                                        RecordUpdaters.getShortUpdater((myRecord, s) -> myRecord.myShort = s))
-                                .addColumnAdapter("IntCol",
-                                        RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myInt = s))
-                                .addColumnAdapter("FloatCol",
-                                        RecordUpdaters.getFloatUpdater((myRecord, s) -> myRecord.myFloat = s))
-                                .addColumnAdapter("LongCol",
-                                        RecordUpdaters.getLongUpdater((myRecord, s) -> myRecord.myLong = s))
-                                .addColumnAdapter("DoubleCol",
-                                        RecordUpdaters.getDoubleUpdater((myRecord, s) -> myRecord.myDouble = s))
-                                .addColumnAdapter("KeyCol1",
-                                        RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myKeyInt = s))
+                                .addStringColumnAdapter("StringCol", (myRecord, s) -> myRecord.myString = s)
+                                .addCharColumnAdapter("CharCol", (myRecord, s) -> myRecord.myChar = s)
+                                .addByteColumnAdapter("ByteCol", (myRecord, s) -> myRecord.myByte = s)
+                                .addShortColumnAdapter("ShortCol", (myRecord, s) -> myRecord.myShort = s)
+                                .addIntColumnAdapter("IntCol", (myRecord, s) -> myRecord.myInt = s)
+                                .addFloatColumnAdapter("FloatCol", (myRecord, s) -> myRecord.myFloat = s)
+                                .addLongColumnAdapter("LongCol", (myRecord, s) -> myRecord.myLong = s)
+                                .addDoubleColumnAdapter("DoubleCol", (myRecord, s) -> myRecord.myDouble = s)
+                                .addIntColumnAdapter("KeyCol1", (myRecord, s) -> myRecord.myKeyInt = s)
                                 .build(),
                         "KeyCol1", Integer.class);
 
@@ -432,26 +406,16 @@ public class KeyedRecordAdapterTest extends RefreshingTableTestCase {
                 KeyedRecordAdapter.makeRecordAdapterCompositeKey(
                         source,
                         RecordAdapterDescriptorBuilder.create(MyRecord::new)
-                                .addColumnAdapter("StringCol",
-                                        RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myString = s))
-                                .addColumnAdapter("CharCol",
-                                        RecordUpdaters.getCharUpdater((myRecord, s) -> myRecord.myChar = s))
-                                .addColumnAdapter("ByteCol",
-                                        RecordUpdaters.getByteUpdater((myRecord, s) -> myRecord.myByte = s))
-                                .addColumnAdapter("ShortCol",
-                                        RecordUpdaters.getShortUpdater((myRecord, s) -> myRecord.myShort = s))
-                                .addColumnAdapter("IntCol",
-                                        RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myInt = s))
-                                .addColumnAdapter("FloatCol",
-                                        RecordUpdaters.getFloatUpdater((myRecord, s) -> myRecord.myFloat = s))
-                                .addColumnAdapter("LongCol",
-                                        RecordUpdaters.getLongUpdater((myRecord, s) -> myRecord.myLong = s))
-                                .addColumnAdapter("DoubleCol",
-                                        RecordUpdaters.getDoubleUpdater((myRecord, s) -> myRecord.myDouble = s))
-                                .addColumnAdapter("KeyCol1",
-                                        RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myKeyString = s))
-                                .addColumnAdapter("KeyCol2",
-                                        RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myKeyInt = s))
+                                .addStringColumnAdapter("StringCol", (myRecord, s) -> myRecord.myString = s)
+                                .addCharColumnAdapter("CharCol", (myRecord, s) -> myRecord.myChar = s)
+                                .addByteColumnAdapter("ByteCol", (myRecord, s) -> myRecord.myByte = s)
+                                .addShortColumnAdapter("ShortCol", (myRecord, s) -> myRecord.myShort = s)
+                                .addIntColumnAdapter("IntCol", (myRecord, s) -> myRecord.myInt = s)
+                                .addFloatColumnAdapter("FloatCol", (myRecord, s) -> myRecord.myFloat = s)
+                                .addLongColumnAdapter("LongCol", (myRecord, s) -> myRecord.myLong = s)
+                                .addDoubleColumnAdapter("DoubleCol", (myRecord, s) -> myRecord.myDouble = s)
+                                .addStringColumnAdapter("KeyCol1", (myRecord, s) -> myRecord.myKeyString = s)
+                                .addIntColumnAdapter("KeyCol2", (myRecord, s) -> myRecord.myKeyInt = s)
                                 .build(),
                         "KeyCol1", "KeyCol2");
 

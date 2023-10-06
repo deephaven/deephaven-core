@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.queryutil.dataadapter.rec.RecordUpdater;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
+import io.deephaven.queryutil.dataadapter.rec.updaters.*;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,8 +18,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
-
-import static io.deephaven.queryutil.dataadapter.rec.RecordUpdaters.*;
 
 /**
  * Adapter to convert table data into JSON records.
@@ -75,33 +73,51 @@ public class JsonRecordAdapterUtil {
         return descriptorBuilder.build();
     }
 
-    private static RecordUpdater<ObjectNode, ?> getObjectNodeUpdater(@NotNull final String colName,
-            @NotNull final Class<?> colType) {
+    private static <T> RecordUpdater<ObjectNode, ?> getObjectNodeUpdater(
+            @NotNull final String colName,
+            @NotNull final Class<T> colType) {
         final RecordUpdater<ObjectNode, ?> updater;
 
         final boolean isConvertibleToString =
                 CharSequence.class.isAssignableFrom(colType) || CONVERTIBLE_TO_STRING_CLASSES.contains(colType);
 
-        if (isConvertibleToString) {
-            updater = getReferenceTypeUpdater(colType, (record, v) -> {
-                if (v == null)
-                    record.putNull(colName);
-                else
-                    record.put(colName, v.toString());
-            });
+        if (isConvertibleToString || CharSequence.class.isAssignableFrom(colType)) {
+            updater = new ObjRecordUpdater<ObjectNode, T>() {
+                @Override
+                public void accept(ObjectNode record, T v) {
+                    if (v == null)
+                        record.putNull(colName);
+                    else
+                        record.put(colName, v.toString());
+                }
+
+                @Override
+                public Class<T> getSourceType() {
+                    return colType;
+                }
+            };
+        } else if (Boolean.class.equals(colType)) {
+            updater = new ObjRecordUpdater<ObjectNode, Boolean>() {
+                @Override
+                public void accept(ObjectNode record, Boolean v) {
+                    if (v == null)
+                        record.putNull(colName);
+                    else
+                        record.put(colName, v);
+                }
+
+                @Override
+                public Class<Boolean> getSourceType() {
+                    return Boolean.class;
+                }
+            };
         } else if (!colType.isPrimitive()) {
             // Other reference type are unsupported
             throw new IllegalArgumentException(
                     "Could not update ObjectNode with column \"" + colName + "\", type: " + colType.getCanonicalName());
-        } else if (boolean.class.equals(colType)) {
-            updater = getBooleanUpdater((record, v) -> {
-                if (io.deephaven.function.Basic.isNull(v))
-                    record.putNull(colName);
-                else
-                    record.put(colName, v);
-            });
+
         } else if (char.class.equals(colType)) {
-            updater = getCharUpdater((record, v) -> {
+            updater = (CharRecordUpdater<ObjectNode>) ((record, v) -> {
                 if (io.deephaven.function.Basic.isNull(v))
                     record.putNull(colName);
                 // char must be treated as string
@@ -109,42 +125,42 @@ public class JsonRecordAdapterUtil {
                     record.put(colName, Character.toString(v));
             });
         } else if (byte.class.equals(colType)) {
-            updater = getByteUpdater((record, v) -> {
+            updater = (ByteRecordUpdater<ObjectNode>) ((record, v) -> {
                 if (io.deephaven.function.Basic.isNull(v))
                     record.putNull(colName);
                 else
                     record.put(colName, v);
             });
         } else if (short.class.equals(colType)) {
-            updater = getShortUpdater((record, v) -> {
+            updater = (ShortRecordUpdater<ObjectNode>) ((record, v) -> {
                 if (io.deephaven.function.Basic.isNull(v))
                     record.putNull(colName);
                 else
                     record.put(colName, v);
             });
         } else if (int.class.equals(colType)) {
-            updater = getIntUpdater((record, v) -> {
+            updater = (IntRecordUpdater<ObjectNode>) ((record, v) -> {
                 if (io.deephaven.function.Basic.isNull(v))
                     record.putNull(colName);
                 else
                     record.put(colName, v);
             });
         } else if (float.class.equals(colType)) {
-            updater = getFloatUpdater((record, v) -> {
+            updater = (FloatRecordUpdater<ObjectNode>) ((record, v) -> {
                 if (io.deephaven.function.Basic.isNull(v))
                     record.putNull(colName);
                 else
                     record.put(colName, v);
             });
         } else if (long.class.equals(colType)) {
-            updater = getLongUpdater((record, v) -> {
+            updater = (LongRecordUpdater<ObjectNode>) ((record, v) -> {
                 if (io.deephaven.function.Basic.isNull(v))
                     record.putNull(colName);
                 else
                     record.put(colName, v);
             });
         } else if (double.class.equals(colType)) {
-            updater = getDoubleUpdater((record, v) -> {
+            updater = (DoubleRecordUpdater<ObjectNode>) ((record, v) -> {
                 if (io.deephaven.function.Basic.isNull(v))
                     record.putNull(colName);
                 else
@@ -153,6 +169,7 @@ public class JsonRecordAdapterUtil {
         } else {
             throw Assert.statementNeverExecuted();
         }
+
         return updater;
     }
 

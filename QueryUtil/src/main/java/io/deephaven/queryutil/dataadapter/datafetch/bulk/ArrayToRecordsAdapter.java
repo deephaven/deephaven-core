@@ -1,6 +1,6 @@
 package io.deephaven.queryutil.dataadapter.datafetch.bulk;
 
-import io.deephaven.queryutil.dataadapter.rec.RecordUpdater;
+import io.deephaven.queryutil.dataadapter.rec.updaters.*;
 
 /**
  * Interface for updating a record of type T with data from the give index of an array (or other object).
@@ -9,23 +9,24 @@ interface ArrayToRecordsAdapter<T> {
 
     @SuppressWarnings("unchecked")
     static <R, C> ArrayToRecordsAdapter<R> getArrayToRecordAdapter(final RecordUpdater<R, C> recordUpdater) {
-        final Class<C> colType = recordUpdater.getSourceType();
-        if (byte.class.equals(colType)) {
-            return getByteArrayAdapter((RecordUpdater<R, Byte>) recordUpdater);
-        } else if (char.class.equals(colType)) {
-            return getCharArrayAdapter((RecordUpdater<R, Character>) recordUpdater);
-        } else if (short.class.equals(colType)) {
-            return getShortArrayAdapter((RecordUpdater<R, Short>) recordUpdater);
-        } else if (int.class.equals(colType)) {
-            return getIntArrayAdapter((RecordUpdater<R, Integer>) recordUpdater);
-        } else if (float.class.equals(colType)) {
-            return getFloatArrayAdapter((RecordUpdater<R, Float>) recordUpdater);
-        } else if (long.class.equals(colType)) {
-            return getLongArrayAdapter((RecordUpdater<R, Long>) recordUpdater);
-        } else if (double.class.equals(colType)) {
-            return getDoubleArrayAdapter((RecordUpdater<R, Double>) recordUpdater);
+        if (recordUpdater instanceof ByteRecordUpdater) {
+            return getByteArrayAdapter((ByteRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof CharRecordUpdater) {
+            return getCharArrayAdapter((CharRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof ShortRecordUpdater) {
+            return getShortArrayAdapter((ShortRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof IntRecordUpdater) {
+            return getIntArrayAdapter((IntRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof FloatRecordUpdater) {
+            return getFloatArrayAdapter((FloatRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof LongRecordUpdater) {
+            return getLongArrayAdapter((LongRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof DoubleRecordUpdater) {
+            return getDoubleArrayAdapter((DoubleRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof ObjRecordUpdater) {
+            return getObjArrayAdapter((ObjRecordUpdater<R, ?>) recordUpdater);
         } else {
-            return getObjArrayAdapter(recordUpdater);
+            throw new IllegalStateException("Unexpected updater type: " + recordUpdater.getClass());
         }
     }
 
@@ -37,93 +38,87 @@ interface ArrayToRecordsAdapter<T> {
      */
     void updateRecordsFromArr(int nRecords, T[] records, Object arr);
 
-    static <T> ArrayToRecordsAdapter<T> getByteArrayAdapter(RecordUpdater<T, Byte> colAdapter) {
+    static <R> ArrayToRecordsAdapter<R> getByteArrayAdapter(ByteRecordUpdater<R> colAdapter) {
         return (nRecords, records, arr) -> {
             byte[] arr2 = ((byte[]) arr);
             for (int idx = 0; idx < nRecords; idx++) {
                 final byte colValue = arr2[idx];
-                colAdapter.updateRecordWithByte(records[idx], colValue);
+                colAdapter.accept(records[idx], colValue);
             }
         };
     }
 
-    static <T> ArrayToRecordsAdapter<T> getCharArrayAdapter(RecordUpdater<T, Character> colAdapter) {
+    static <R> ArrayToRecordsAdapter<R> getCharArrayAdapter(CharRecordUpdater<R> colAdapter) {
         return (nRecords, records, arr) -> {
             char[] arr2 = ((char[]) arr);
             for (int idx = 0; idx < nRecords; idx++) {
                 final char colValue = arr2[idx];
-                colAdapter.updateRecordWithChar(records[idx], colValue);
+                colAdapter.accept(records[idx], colValue);
             }
         };
     }
 
-    static <T> ArrayToRecordsAdapter<T> getShortArrayAdapter(RecordUpdater<T, Short> colAdapter) {
+    static <R> ArrayToRecordsAdapter<R> getShortArrayAdapter(ShortRecordUpdater<R> colAdapter) {
         return (nRecords, records, arr) -> {
             short[] arr2 = ((short[]) arr);
             for (int idx = 0; idx < nRecords; idx++) {
                 final short colValue = arr2[idx];
-                colAdapter.updateRecordWithShort(records[idx], colValue);
+                colAdapter.accept(records[idx], colValue);
             }
         };
     }
 
-    static <T> ArrayToRecordsAdapter<T> getFloatArrayAdapter(RecordUpdater<T, Float> colAdapter) {
+    static <R> ArrayToRecordsAdapter<R> getFloatArrayAdapter(FloatRecordUpdater<R> colAdapter) {
         return (nRecords, records, arr) -> {
             float[] arr2 = ((float[]) arr);
             for (int idx = 0; idx < nRecords; idx++) {
                 final float colValue = arr2[idx];
-                colAdapter.updateRecordWithFloat(records[idx], colValue);
+                colAdapter.accept(records[idx], colValue);
             }
         };
     }
 
-    static <T> ArrayToRecordsAdapter<T> getIntArrayAdapter(RecordUpdater<T, Integer> colAdapter) {
+    static <R> ArrayToRecordsAdapter<R> getIntArrayAdapter(IntRecordUpdater<R> colAdapter) {
         return (nRecords, records, arr) -> {
             int[] arr2 = ((int[]) arr);
             for (int idx = 0; idx < nRecords; idx++) {
                 final int colValue = arr2[idx];
-                colAdapter.updateRecordWithInt(records[idx], colValue);
+                colAdapter.accept(records[idx], colValue);
             }
         };
     }
 
-    static <T> ArrayToRecordsAdapter<T> getLongArrayAdapter(RecordUpdater<T, Long> colAdapter) {
+    static <R> ArrayToRecordsAdapter<R> getLongArrayAdapter(LongRecordUpdater<R> colAdapter) {
         return (nRecords, records, arr) -> {
             long[] arr2 = ((long[]) arr);
             for (int idx = 0; idx < nRecords; idx++) {
                 final long colValue = arr2[idx];
-                colAdapter.updateRecordWithLong(records[idx], colValue);
+                colAdapter.accept(records[idx], colValue);
             }
         };
     }
 
-    static <T> ArrayToRecordsAdapter<T> getDoubleArrayAdapter(RecordUpdater<T, Double> colAdapter) {
+    static <R> ArrayToRecordsAdapter<R> getDoubleArrayAdapter(DoubleRecordUpdater<R> colAdapter) {
         return (nRecords, records, arr) -> {
             double[] arr2 = ((double[]) arr);
             for (int idx = 0; idx < nRecords; idx++) {
                 final double colValue = arr2[idx];
-                colAdapter.updateRecordWithDouble(records[idx], colValue);
+                colAdapter.accept(records[idx], colValue);
             }
         };
     }
 
-    static <T> ArrayToRecordsAdapter<T> getBooleanArrayAdapter(RecordUpdater<T, Boolean> colAdapter) {
-        return (nRecords, records, arr) -> {
-            Boolean[] arr2 = ((Boolean[]) arr);
-            for (int idx = 0; idx < nRecords; idx++) {
-                final Boolean colValue = arr2[idx];
-                colAdapter.updateRecord(records[idx], colValue);
-            }
-        };
+    static <R> ArrayToRecordsAdapter<R> getBooleanArrayAdapter(ObjRecordUpdater<R, Boolean> colAdapter) {
+        return getObjArrayAdapter(colAdapter);
     }
 
-    static <T, C> ArrayToRecordsAdapter<T> getObjArrayAdapter(RecordUpdater<T, C> colAdapter) {
+    static <R, T> ArrayToRecordsAdapter<R> getObjArrayAdapter(ObjRecordUpdater<R, T> colAdapter) {
         return (nRecords, records, arr) -> {
             // noinspection unchecked
-            C[] arr2 = ((C[]) arr);
+            T[] arr2 = ((T[]) arr);
             for (int idx = 0; idx < nRecords; idx++) {
-                final C colValue = arr2[idx];
-                colAdapter.updateRecord(records[idx], colValue);
+                final T colValue = arr2[idx];
+                colAdapter.accept(records[idx], colValue);
             }
         };
     }

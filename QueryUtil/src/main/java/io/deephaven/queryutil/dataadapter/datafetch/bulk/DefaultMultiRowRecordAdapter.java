@@ -2,8 +2,8 @@ package io.deephaven.queryutil.dataadapter.datafetch.bulk;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.queryutil.dataadapter.rec.RecordUpdater;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
+import io.deephaven.queryutil.dataadapter.rec.updaters.RecordUpdater;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;

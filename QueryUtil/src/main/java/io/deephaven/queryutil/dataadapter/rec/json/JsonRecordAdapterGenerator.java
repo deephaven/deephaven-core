@@ -10,8 +10,8 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
-import io.deephaven.queryutil.dataadapter.rec.RecordUpdater;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
+import io.deephaven.queryutil.dataadapter.rec.updaters.RecordUpdater;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.queryutil.dataadapter.rec.json.JsonRecordAdapterUtil.CONVERTIBLE_TO_STRING_CLASSES;

@@ -13,13 +13,14 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.util.ToMapListener;
+import io.deephaven.queryutil.dataadapter.consumers.*;
 import io.deephaven.queryutil.dataadapter.datafetch.single.SingleRowRecordAdapter;
 import io.deephaven.queryutil.dataadapter.locking.GetDataLockType;
 import io.deephaven.queryutil.dataadapter.locking.QueryDataRetrievalOperation;
 import io.deephaven.queryutil.dataadapter.rec.MultiRowRecordAdapter;
-import io.deephaven.queryutil.dataadapter.rec.RecordUpdater;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
+import io.deephaven.queryutil.dataadapter.rec.updaters.*;
 import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -252,64 +253,80 @@ public class KeyedRecordAdapter<K, T> {
         }
     }
 
-    private static <T, K> BiConsumer<T, K> getSingleKeyRecordUpdater(RecordUpdater<T, K> keyColRecordUpdater) {
-        final Class<?> type = keyColRecordUpdater.getSourceType();
-        BiConsumer<T, ?> result;
-        if (byte.class.equals(type)) {
-            result = (T record, Byte v) -> keyColRecordUpdater.updateRecordWithByte(record, TypeUtils.unbox(v));
-        } else if (char.class.equals(type)) {
-            result = (T record, Character v) -> keyColRecordUpdater.updateRecordWithChar(record, TypeUtils.unbox(v));
-        } else if (short.class.equals(type)) {
-            result = (T record, Short v) -> keyColRecordUpdater.updateRecordWithShort(record, TypeUtils.unbox(v));
-        } else if (int.class.equals(type)) {
-            result = (T record, Integer v) -> keyColRecordUpdater.updateRecordWithInt(record, TypeUtils.unbox(v));
-        } else if (float.class.equals(type)) {
-            result = (T record, Float v) -> keyColRecordUpdater.updateRecordWithFloat(record, TypeUtils.unbox(v));
-        } else if (long.class.equals(type)) {
-            result = (T record, Long v) -> keyColRecordUpdater.updateRecordWithLong(record, TypeUtils.unbox(v));
-        } else if (double.class.equals(type)) {
-            result = (T record, Double v) -> keyColRecordUpdater.updateRecordWithDouble(record, TypeUtils.unbox(v));
+    @SuppressWarnings("unchecked")
+    private static <R, K> BiConsumer<R, K> getSingleKeyRecordUpdater(RecordUpdater<R, K> keyColRecordUpdater) {
+        BiConsumer<R, ?> result;
+        if (keyColRecordUpdater instanceof ByteRecordUpdater) {
+            ObjByteConsumer<R> keyColRecordUpdaterCast = (ObjByteConsumer<R>) keyColRecordUpdater;
+            result = (R record, Byte v) -> keyColRecordUpdaterCast.accept(record, TypeUtils.unbox(v));
+        } else if (keyColRecordUpdater instanceof CharRecordUpdater) {
+            ObjCharConsumer<R> keyColRecordUpdaterCast = (ObjCharConsumer<R>) keyColRecordUpdater;
+            result = (R record, Character v) -> keyColRecordUpdaterCast.accept(record, TypeUtils.unbox(v));
+        } else if (keyColRecordUpdater instanceof ShortRecordUpdater) {
+            ObjShortConsumer<R> keyColRecordUpdaterCast = (ObjShortConsumer<R>) keyColRecordUpdater;
+            result = (R record, Short v) -> keyColRecordUpdaterCast.accept(record, TypeUtils.unbox(v));
+        } else if (keyColRecordUpdater instanceof IntRecordUpdater) {
+            ObjIntConsumer<R> keyColRecordUpdaterCast = (ObjIntConsumer<R>) keyColRecordUpdater;
+            result = (R record, Integer v) -> keyColRecordUpdaterCast.accept(record, TypeUtils.unbox(v));
+        } else if (keyColRecordUpdater instanceof FloatRecordUpdater) {
+            ObjFloatConsumer<R> keyColRecordUpdaterCast = (ObjFloatConsumer<R>) keyColRecordUpdater;
+            result = (R record, Float v) -> keyColRecordUpdaterCast.accept(record, TypeUtils.unbox(v));
+        } else if (keyColRecordUpdater instanceof LongRecordUpdater) {
+            ObjLongConsumer<R> keyColRecordUpdaterCast = (ObjLongConsumer<R>) keyColRecordUpdater;
+            result = (R record, Long v) -> keyColRecordUpdaterCast.accept(record, TypeUtils.unbox(v));
+        } else if (keyColRecordUpdater instanceof DoubleRecordUpdater) {
+            ObjDoubleConsumer<R> keyColRecordUpdaterCast = (ObjDoubleConsumer<R>) keyColRecordUpdater;
+            result = (R record, Double v) -> keyColRecordUpdaterCast.accept(record, TypeUtils.unbox(v));
+        } else if (keyColRecordUpdater instanceof ObjRecordUpdater) {
+            result = ((BiConsumer<R, Object>) keyColRecordUpdater);
         } else {
-            // noinspection unchecked
-            result = (T record, Object v) -> ((RecordUpdater<T, Object>) keyColRecordUpdater).updateRecord(record, v);
+            throw new IllegalStateException("Unexpected updater type: " + keyColRecordUpdater.getClass());
         }
 
-        // noinspection unchecked
-        return (BiConsumer<T, K>) result;
+        return (BiConsumer<R, K>) result;
     }
 
     /**
      * @param keyIndex RowSet of composite key component (corresponding to the {@link #keyColumns})
      * @param keyColRecordUpdater The record updater for the key columns at index {@code keyIndex}
      */
-    private static <T> BiConsumer<T, List<?>> getCompositeKeyRecordUpdater(int keyIndex,
-            RecordUpdater<T, ?> keyColRecordUpdater) {
-        final Class<?> type = keyColRecordUpdater.getSourceType();
-        if (byte.class.equals(type)) {
-            return (T record, List<?> v) -> keyColRecordUpdater.updateRecordWithByte(record,
+    @SuppressWarnings("unchecked")
+    private static <R> BiConsumer<R, List<?>> getCompositeKeyRecordUpdater(int keyIndex,
+            RecordUpdater<R, ?> keyColRecordUpdater) {
+        if (keyColRecordUpdater instanceof ByteRecordUpdater) {
+            ByteRecordUpdater<R> keyColRecordUpdaterCast = (ByteRecordUpdater<R>) keyColRecordUpdater;
+            return (R record, List<?> v) -> keyColRecordUpdaterCast.accept(record,
                     TypeUtils.unbox((Byte) v.get(keyIndex)));
-        } else if (char.class.equals(type)) {
-            return (T record, List<?> v) -> keyColRecordUpdater.updateRecordWithChar(record,
+        } else if (keyColRecordUpdater instanceof CharRecordUpdater) {
+            CharRecordUpdater<R> keyColRecordUpdaterCast = (CharRecordUpdater<R>) keyColRecordUpdater;
+            return (R record, List<?> v) -> keyColRecordUpdaterCast.accept(record,
                     TypeUtils.unbox((Character) v.get(keyIndex)));
-        } else if (short.class.equals(type)) {
-            return (T record, List<?> v) -> keyColRecordUpdater.updateRecordWithShort(record,
+        } else if (keyColRecordUpdater instanceof ShortRecordUpdater) {
+            ShortRecordUpdater<R> keyColRecordUpdaterCast = (ShortRecordUpdater<R>) keyColRecordUpdater;
+            return (R record, List<?> v) -> keyColRecordUpdaterCast.accept(record,
                     TypeUtils.unbox((Short) v.get(keyIndex)));
-        } else if (int.class.equals(type)) {
-            return (T record, List<?> v) -> keyColRecordUpdater.updateRecordWithInt(record,
+        } else if (keyColRecordUpdater instanceof IntRecordUpdater) {
+            IntRecordUpdater<R> keyColRecordUpdaterCast = (IntRecordUpdater<R>) keyColRecordUpdater;
+            return (R record, List<?> v) -> keyColRecordUpdaterCast.accept(record,
                     TypeUtils.unbox((Integer) v.get(keyIndex)));
-        } else if (float.class.equals(type)) {
-            return (T record, List<?> v) -> keyColRecordUpdater.updateRecordWithFloat(record,
+        } else if (keyColRecordUpdater instanceof FloatRecordUpdater) {
+            FloatRecordUpdater<R> keyColRecordUpdaterCast = (FloatRecordUpdater<R>) keyColRecordUpdater;
+            return (R record, List<?> v) -> keyColRecordUpdaterCast.accept(record,
                     TypeUtils.unbox((Float) v.get(keyIndex)));
-        } else if (long.class.equals(type)) {
-            return (T record, List<?> v) -> keyColRecordUpdater.updateRecordWithLong(record,
+        } else if (keyColRecordUpdater instanceof LongRecordUpdater) {
+            LongRecordUpdater<R> keyColRecordUpdaterCast = (LongRecordUpdater<R>) keyColRecordUpdater;
+            return (R record, List<?> v) -> keyColRecordUpdaterCast.accept(record,
                     TypeUtils.unbox((Long) v.get(keyIndex)));
-        } else if (double.class.equals(type)) {
-            return (T record, List<?> v) -> keyColRecordUpdater.updateRecordWithDouble(record,
+        } else if (keyColRecordUpdater instanceof DoubleRecordUpdater) {
+            DoubleRecordUpdater<R> keyColRecordUpdaterCast = (DoubleRecordUpdater<R>) keyColRecordUpdater;
+            return (R record, List<?> v) -> keyColRecordUpdaterCast.accept(record,
                     TypeUtils.unbox((Double) v.get(keyIndex)));
-        } else {
+        } else if (keyColRecordUpdater instanceof ObjRecordUpdater) {
             // noinspection unchecked
-            return (T record, List<?> v) -> ((RecordUpdater<T, Object>) keyColRecordUpdater).updateRecord(record,
+            return (R record, List<?> v) -> ((ObjRecordUpdater<R, Object>) keyColRecordUpdater).accept(record,
                     v.get(keyIndex));
+        } else {
+            throw new IllegalStateException("Unexpected updater type: " + keyColRecordUpdater.getClass());
         }
     }
 

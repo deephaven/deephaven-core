@@ -5,8 +5,9 @@ import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.map.TLongIntMap;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
-import io.deephaven.queryutil.dataadapter.rec.RecordUpdater;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
+import io.deephaven.queryutil.dataadapter.rec.updaters.ObjRecordUpdater;
+import io.deephaven.queryutil.dataadapter.rec.updaters.RecordUpdater;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -41,13 +42,13 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
                 for (String colName : ArrayUtils.addAll(keyColumns, dataColumns)) {
                     final Class<Object> colType = sourceTable.getColumnSource(colName).getType();
 
-                    // no-op record updater -- only returns appropriate type, does not implement other methods
-                    final RecordUpdater<Object, Object> noOpRecordUpdater = new RecordUpdater<>() {
-                        @Override
-                        public Class<Object> getSourceType() {
-                            return colType;
-                        }
-                    };
+                    // no-op record updater -- only returns appropriate type, does not populate anything
+                    final RecordUpdater<Object, ?> noOpRecordUpdater =
+                            ObjRecordUpdater.getBoxingUpdater(
+                                    colType,
+                                    ObjRecordUpdater.getObjectUpdater((r, t) -> {
+                                        throw new IllegalStateException();
+                                    }));
 
                     if (map.put(colName, noOpRecordUpdater) != null) {
                         throw new IllegalStateException("Duplicate column name: \"" + colName + '"');

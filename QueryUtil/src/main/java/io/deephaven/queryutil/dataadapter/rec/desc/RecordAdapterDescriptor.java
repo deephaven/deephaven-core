@@ -5,7 +5,8 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.queryutil.dataadapter.datafetch.bulk.DefaultMultiRowRecordAdapter;
 import io.deephaven.queryutil.dataadapter.datafetch.single.SingleRowRecordAdapter;
 import io.deephaven.queryutil.dataadapter.rec.MultiRowRecordAdapter;
-import io.deephaven.queryutil.dataadapter.rec.RecordUpdater;
+import io.deephaven.queryutil.dataadapter.rec.updaters.RecordUpdater;
+import io.deephaven.queryutil.dataadapter.rec.updaters.ObjRecordUpdater;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -13,8 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
-
-import static io.deephaven.queryutil.dataadapter.rec.RecordUpdaters.getObjectUpdater;
 
 /**
  * Object that describes how to map data from Deephaven table columns into instances of {@code T}.
@@ -38,9 +37,9 @@ public interface RecordAdapterDescriptor<T> {
         for (String colName : columns) {
             final ColumnSource<?> colSource = sourceTable.getColumnSource(colName);
             final Class<?> colType = colSource.getType();
-            final RecordUpdater<Map<String, Object>, ?> updater = getObjectUpdater(
+            final RecordUpdater<Map<String, Object>, ?> updater = ObjRecordUpdater.getBoxingUpdater(
                     colType,
-                    (map, val) -> map.put(colName, val));
+                    ObjRecordUpdater.getObjectUpdater((map, val) -> map.put(colName, val)));
 
             descriptorBuilder.addColumnAdapter(colName, updater);
         }

@@ -1,7 +1,7 @@
 package io.deephaven.queryutil.dataadapter.datafetch.single;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.queryutil.dataadapter.rec.RecordUpdater;
+import io.deephaven.queryutil.dataadapter.rec.updaters.*;
 
 /**
  * Interface for updating a record of type {@code T} with data from the given index of a ColumnSource.
@@ -9,82 +9,86 @@ import io.deephaven.queryutil.dataadapter.rec.RecordUpdater;
 interface ColSourceToRecordAdapter<T, C> {
 
     @SuppressWarnings("unchecked")
-    static <R, C> ColSourceToRecordAdapter<R, C> getColSourceToRecordAdapter(final RecordUpdater<R, C> recordUpdater) {
-        final Class<C> colType = recordUpdater.getSourceType();
-        if (byte.class.equals(colType)) {
-            return (ColSourceToRecordAdapter<R, C>) getByteColAdapter((RecordUpdater<R, Byte>) recordUpdater);
-        } else if (char.class.equals(colType)) {
-            return (ColSourceToRecordAdapter<R, C>) getCharColAdapter((RecordUpdater<R, Character>) recordUpdater);
-        } else if (short.class.equals(colType)) {
-            return (ColSourceToRecordAdapter<R, C>) getShortColAdapter((RecordUpdater<R, Short>) recordUpdater);
-        } else if (int.class.equals(colType)) {
-            return (ColSourceToRecordAdapter<R, C>) getIntColAdapter((RecordUpdater<R, Integer>) recordUpdater);
-        } else if (float.class.equals(colType)) {
-            return (ColSourceToRecordAdapter<R, C>) getFloatColAdapter((RecordUpdater<R, Float>) recordUpdater);
-        } else if (long.class.equals(colType)) {
-            return (ColSourceToRecordAdapter<R, C>) getLongColAdapter((RecordUpdater<R, Long>) recordUpdater);
-        } else if (double.class.equals(colType)) {
-            return (ColSourceToRecordAdapter<R, C>) getDoubleColAdapter((RecordUpdater<R, Double>) recordUpdater);
+    static <R, C> ColSourceToRecordAdapter<R, C> getColSourceToRecordAdapter(
+            final RecordUpdater<R, C> recordUpdater) {
+        if (recordUpdater instanceof ByteRecordUpdater) {
+            return (ColSourceToRecordAdapter<R, C>) getByteColAdapter((ByteRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof CharRecordUpdater) {
+            return (ColSourceToRecordAdapter<R, C>) getCharColAdapter((CharRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof ShortRecordUpdater) {
+            return (ColSourceToRecordAdapter<R, C>) getShortColAdapter((ShortRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof IntRecordUpdater) {
+            return (ColSourceToRecordAdapter<R, C>) getIntColAdapter((IntRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof FloatRecordUpdater) {
+            return (ColSourceToRecordAdapter<R, C>) getFloatColAdapter((FloatRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof LongRecordUpdater) {
+            return (ColSourceToRecordAdapter<R, C>) getLongColAdapter((LongRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof DoubleRecordUpdater) {
+            return (ColSourceToRecordAdapter<R, C>) getDoubleColAdapter((DoubleRecordUpdater<R>) recordUpdater);
+        } else if (recordUpdater instanceof ObjRecordUpdater) {
+            return getObjColAdapter((ObjRecordUpdater<R, C>) recordUpdater);
         } else {
-            return getObjColAdapter(recordUpdater);
+            throw new IllegalStateException("Unexpected updater type: " + recordUpdater.getClass());
         }
     }
 
     void updateRecordFromColumn(final ColumnSource<C> colSource, long k, boolean usePrev, T record);
 
-    static <T> ColSourceToRecordAdapter<T, Byte> getByteColAdapter(RecordUpdater<T, Byte> recordUpdater) {
+    // Utility methods for getting ColSourceToRecordAdapters:
+
+    static <R> ColSourceToRecordAdapter<R, Byte> getByteColAdapter(ByteRecordUpdater<R> recordUpdater) {
         return (colSource, k, usePrev, record) -> {
             final byte colValue = usePrev ? colSource.getPrevByte(k) : colSource.getByte(k);
-            recordUpdater.updateRecordWithByte(record, colValue);
+            recordUpdater.accept(record, colValue);
         };
     }
 
-    static <T> ColSourceToRecordAdapter<T, Character> getCharColAdapter(RecordUpdater<T, Character> recordUpdater) {
+    static <R> ColSourceToRecordAdapter<R, Character> getCharColAdapter(CharRecordUpdater<R> recordUpdater) {
         return (colSource, k, usePrev, record) -> {
             final char colValue = usePrev ? colSource.getPrevChar(k) : colSource.getChar(k);
-            recordUpdater.updateRecordWithChar(record, colValue);
+            recordUpdater.accept(record, colValue);
         };
     }
 
-    static <T> ColSourceToRecordAdapter<T, Short> getShortColAdapter(RecordUpdater<T, Short> recordUpdater) {
+    static <R> ColSourceToRecordAdapter<R, Short> getShortColAdapter(ShortRecordUpdater<R> recordUpdater) {
         return (colSource, k, usePrev, record) -> {
             final short colValue = usePrev ? colSource.getPrevShort(k) : colSource.getShort(k);
-            recordUpdater.updateRecordWithShort(record, colValue);
+            recordUpdater.accept(record, colValue);
         };
     }
 
-    static <T> ColSourceToRecordAdapter<T, Float> getFloatColAdapter(RecordUpdater<T, Float> recordUpdater) {
+    static <R> ColSourceToRecordAdapter<R, Float> getFloatColAdapter(FloatRecordUpdater<R> recordUpdater) {
         return (colSource, k, usePrev, record) -> {
             final float colValue = usePrev ? colSource.getPrevFloat(k) : colSource.getFloat(k);
-            recordUpdater.updateRecordWithFloat(record, colValue);
+            recordUpdater.accept(record, colValue);
         };
     }
 
-    static <T> ColSourceToRecordAdapter<T, Integer> getIntColAdapter(RecordUpdater<T, Integer> recordUpdater) {
+    static <R> ColSourceToRecordAdapter<R, Integer> getIntColAdapter(IntRecordUpdater<R> recordUpdater) {
         return (colSource, k, usePrev, record) -> {
             final int colValue = usePrev ? colSource.getPrevInt(k) : colSource.getInt(k);
-            recordUpdater.updateRecordWithInt(record, colValue);
+            recordUpdater.accept(record, colValue);
         };
     }
 
-    static <T> ColSourceToRecordAdapter<T, Long> getLongColAdapter(RecordUpdater<T, Long> recordUpdater) {
+    static <R> ColSourceToRecordAdapter<R, Long> getLongColAdapter(LongRecordUpdater<R> recordUpdater) {
         return (colSource, k, usePrev, record) -> {
             final long colValue = usePrev ? colSource.getPrevLong(k) : colSource.getLong(k);
-            recordUpdater.updateRecordWithLong(record, colValue);
+            recordUpdater.accept(record, colValue);
         };
     }
 
-    static <T> ColSourceToRecordAdapter<T, Double> getDoubleColAdapter(RecordUpdater<T, Double> recordUpdater) {
+    static <R> ColSourceToRecordAdapter<R, Double> getDoubleColAdapter(DoubleRecordUpdater<R> recordUpdater) {
         return (colSource, k, usePrev, record) -> {
             final double colValue = usePrev ? colSource.getPrevDouble(k) : colSource.getDouble(k);
-            recordUpdater.updateRecordWithDouble(record, colValue);
+            recordUpdater.accept(record, colValue);
         };
     }
 
-    static <T, C> ColSourceToRecordAdapter<T, C> getObjColAdapter(RecordUpdater<T, C> recordUpdater) {
+    static <R, T> ColSourceToRecordAdapter<R, T> getObjColAdapter(ObjRecordUpdater<R, T> recordUpdater) {
         return (colSource, k, usePrev, record) -> {
-            final C colValue = usePrev ? colSource.getPrev(k) : colSource.get(k);
-            recordUpdater.updateRecord(record, colValue);
+            final T colValue = usePrev ? colSource.getPrev(k) : colSource.get(k);
+            recordUpdater.accept(record, colValue);
         };
     }
 }
