@@ -70,7 +70,7 @@ def _push(scope: _JLivenessScope):
     _JLivenessScopeStack.push(scope)
 
 
-def _pop(scope: _JLivenessScope):
+def _pop(scope: _JLivenessScope) -> None:
     try:
         _JLivenessScopeStack.pop(scope)
     except Exception as e:
