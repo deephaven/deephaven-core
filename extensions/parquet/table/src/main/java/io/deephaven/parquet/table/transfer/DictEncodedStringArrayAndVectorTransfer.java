@@ -16,25 +16,27 @@ import java.util.function.Supplier;
  * {@link PrimitiveArrayAndVectorTransfer} to manage the dictionary positions in an {@link IntBuffer} similar to an Int
  * array/vector column.
  */
-abstract public class DictEncodedStringTransferBase<T>
+abstract public class DictEncodedStringArrayAndVectorTransfer<T>
         extends PrimitiveArrayAndVectorTransfer<T, IntBuffer, IntBuffer> {
-    private boolean pageHasNull;
     private final StringDictionary dictionary;
     private final int nullValue; // The value to store in buffer for null strings
+
+    private boolean pageHasNull;
     private IntBuffer dictEncodedValues;
 
-    DictEncodedStringTransferBase(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,
+    DictEncodedStringArrayAndVectorTransfer(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,
             int targetPageSize, @NotNull StringDictionary dictionary, final int nullValue) {
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
-                IntBuffer.allocate(targetPageSize / Integer.BYTES));
-        this.pageHasNull = false;
+                IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
         this.dictionary = dictionary;
         this.nullValue = nullValue;
+
         this.dictEncodedValues = IntBuffer.allocate(targetPageSize);
+        this.pageHasNull = false;
     }
 
     @Override
-    final public int transferOnePageToBuffer() {
+    public final int transferOnePageToBuffer() {
         // Reset state before transferring each page
         pageHasNull = false;
         return super.transferOnePageToBuffer();
@@ -77,12 +79,7 @@ abstract public class DictEncodedStringTransferBase<T>
         buffer.put(data);
     }
 
-    @Override
-    final int getNumBytesBuffered() {
-        return buffer.position() * Integer.BYTES;
-    }
-
-    final public boolean pageHasNull() {
+    public final boolean pageHasNull() {
         return pageHasNull;
     }
 }

@@ -1,8 +1,14 @@
 /**
  * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit IntVectorTransfer and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.parquet.table.transfer;
 
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.vector.LongVector;
@@ -24,6 +30,8 @@ final class LongVectorTransfer extends PrimitiveVectorTransfer<LongVector, LongB
 
     @Override
     void copyToBuffer(@NotNull final LongVector data) {
-        data.iterator().forEachRemaining((long value) -> buffer.put(value));
+        try (final CloseablePrimitiveIteratorOfLong dataIterator = data.iterator()) {
+            dataIterator.forEachRemaining((long value) -> buffer.put(value));
+        }
     }
 }

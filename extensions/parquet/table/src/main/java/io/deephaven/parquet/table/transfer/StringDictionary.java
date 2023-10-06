@@ -16,23 +16,29 @@ import java.util.Arrays;
  * Stores a dictionary of strings and returns their position in the dictionary, useful for encoding string columns.
  */
 final public class StringDictionary {
+
     private static final int INITIAL_DICTIONARY_SIZE = 1 << 8;
-    private Binary[] encodedKeys;
-    private int keyCount;
-    private int dictSize;
+    private static final int NULL_KEY_POS = -1;
+
     private final int maxKeys;
     private final int maxDictSize;
     private final Statistics<?> statistics;
+
     private final TObjectIntHashMap<String> keyToPos;
-    private static final int NULL_KEY_POS = -1;
+
+    private Binary[] encodedKeys;
+    private int keyCount;
+    private int dictSize;
 
     public StringDictionary(final int maxKeys, final int maxDictSize, final Statistics<?> statistics) {
-        this.dictSize = this.keyCount = 0;
         this.maxKeys = maxKeys;
         this.maxDictSize = maxDictSize;
-        this.encodedKeys = new Binary[Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)];
         this.statistics = statistics;
+
         this.keyToPos = new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
+
+        this.encodedKeys = new Binary[Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)];
+        this.dictSize = this.keyCount = 0;
     }
 
     public int getKeyCount() {
@@ -44,8 +50,10 @@ final public class StringDictionary {
     }
 
     /**
-     * Add a string key to the dictionary and return its position in the dictionary. The function returns the value
-     * {@link #NULL_KEY_POS} if the key is null.
+     * Add a string key to the dictionary if it's not already present.
+     *
+     * @param key The key to add and/or find the position for
+     * @return {@code key}'s position in the dictionary, or {@value #NULL_KEY_POS} is {@code key == null}
      */
     public int add(final String key) {
         if (key == null) {

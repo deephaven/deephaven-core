@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table.transfer;
 
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.vector.CharVector;
@@ -13,7 +14,7 @@ import java.nio.IntBuffer;
 final class CharVectorTransfer extends PrimitiveVectorTransfer<CharVector, IntBuffer> {
     CharVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
                        final int targetPageSize) {
-        // We encode characters as integers
+        // We encode primitive chars as primitive ints
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
                 IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
     }
@@ -25,6 +26,8 @@ final class CharVectorTransfer extends PrimitiveVectorTransfer<CharVector, IntBu
 
     @Override
     void copyToBuffer(@NotNull final CharVector data) {
-        data.iterator().forEachRemaining((char value) -> buffer.put((int) value));
+        try (final CloseablePrimitiveIteratorOfChar dataIterator = data.iterator()) {
+            dataIterator.forEachRemaining((char value) -> buffer.put(value));
+        }
     }
 }

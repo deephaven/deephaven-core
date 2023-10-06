@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.IntBuffer;
 import java.util.function.Supplier;
 
-final class DictEncodedStringArrayTransfer extends DictEncodedStringTransferBase<String[]> {
+final class DictEncodedStringArrayTransfer extends DictEncodedStringArrayAndVectorTransfer<String[]> {
     private final StringArrayDataSupplier supplier;
 
     DictEncodedStringArrayTransfer(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,

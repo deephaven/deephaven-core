@@ -12,27 +12,27 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.LongBuffer;
+import java.nio.FloatBuffer;
 
-final class LongArrayTransfer extends PrimitiveArrayAndVectorTransfer<long[], long[], LongBuffer> {
-    LongArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+final class FloatArrayTransfer extends PrimitiveArrayAndVectorTransfer<float[], float[], FloatBuffer> {
+    FloatArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
                      final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize / Long.BYTES, targetPageSize,
-                LongBuffer.allocate(targetPageSize / Long.BYTES), Long.BYTES);
+        super(columnSource, tableRowSet, targetPageSize / Float.BYTES, targetPageSize,
+                FloatBuffer.allocate(targetPageSize / Float.BYTES), Float.BYTES);
     }
 
     @Override
-    int getSize(final long @NotNull [] data) {
+    int getSize(final float @NotNull [] data) {
         return data.length;
     }
 
     @Override
     void resizeBuffer(final int length) {
-        buffer = LongBuffer.allocate(length);
+        buffer = FloatBuffer.allocate(length);
     }
 
     @Override
-    void copyToBuffer(final long @NotNull [] data) {
+    void copyToBuffer(final float @NotNull [] data) {
         buffer.put(data);
     }
 }

@@ -14,9 +14,13 @@ import java.nio.Buffer;
  * Used as a base class of transfer objects for arrays/vectors of primitive types.
  */
 abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends ArrayAndVectorTransfer<T, E, B> {
+
+    private final int numBytesPerValue;
+
     PrimitiveArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-            final int maxValuesPerPage, final int targetPageSize, @NotNull final B buffer) {
+            final int maxValuesPerPage, final int targetPageSize, @NotNull final B buffer, final int numBytesPerValue) {
         super(columnSource, tableRowSet, maxValuesPerPage, targetPageSize, buffer);
+        this.numBytesPerValue = numBytesPerValue;
     }
 
     @Override
@@ -32,14 +36,44 @@ abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends A
         return buffer.limit();
     }
 
+    @Override
+    void encodeDataForBuffering(@NotNull final T data, @NotNull final EncodedData<E> encodedData) {
+        // No encoding needed here because we can calculate how many bytes will be needed per encoded value.
+        // So we store the reference to data as is and do any required encoding later while copying to buffer.
+        // This is done to avoid creating a temporary copy of encoded values here.
+        int numValues = getSize(data);
+        // noinspection unchecked
+        encodedData.fillRepeated((E) data, numValues * numBytesPerValue, numValues);
+    }
+
+    /**
+     * Get the size of primitive array/vector, called from inside {@link #encodeDataForBuffering}. Not needed for
+     * classes which override the method and do their own encoding, like dictionary encoded strings.
+     *
+     * @param data the array/vector
+     */
+    int getSize(@NotNull final T data) {
+        throw new UnsupportedOperationException("getSize() not implemented for " + getClass().getSimpleName());
+    }
+
+    @Override
+    final int getNumBytesBuffered() {
+        return buffer.position() * numBytesPerValue;
+    }
+
     final boolean addEncodedDataToBuffer(@NotNull final EncodedData<E> data, boolean force) {
-        if (!repeatCounts.hasRemaining()) {
-            Assert.eqFalse(force, "force");
+        if (force && (!repeatCounts.hasRemaining() || buffer.position() != 0)) {
+            // This should never happen, because "force" set by caller when adding the very first array/vector
+            // noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted();
             return false;
         }
-        if (data.numValues > buffer.remaining()) {
+        if (buffer.position() + data.numValues > maxValuesPerPage) {
             if (force) {
-                resizeBuffer(data.numValues);
+                // Assuming buffer is empty here, verified earlier
+                if (buffer.limit() < data.numValues) {
+                    resizeBuffer(data.numValues);
+                }
             } else {
                 return false;
             }

@@ -16,13 +16,17 @@ package io.deephaven.parquet.table.transfer;
  * specialized encoding.
  */
 abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T, Binary[], Binary[]> {
-    private int bufferSize;
+    /**
+     * Number of values added to the buffer
+     */
     private int bufferedDataCount;
+    /**
+     * Total number of bytes buffered
+     */
     private int numBytesBuffered;
 
     ObjectArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize, targetPageSize, new Binary[targetPageSize]);
-        bufferSize = targetPageSize;
         bufferedDataCount = 0;
         numBytesBuffered = 0;
     }
@@ -48,16 +52,19 @@ abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T,
     }
 
     final boolean addEncodedDataToBuffer(@NotNull final EncodedData<Binary[]> data, final boolean force) {
-        if (!repeatCounts.hasRemaining()) {
-            Assert.eqFalse(force, "force");
+        if (force && (!repeatCounts.hasRemaining() || bufferedDataCount != 0)) {
+            // This should never happen, because "force" set by caller when adding the very first array/vector
+            //noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted();
             return false;
         }
         final int numEncodedValues = data.numValues;
-        if (numEncodedValues > bufferSize - bufferedDataCount) {
+        if (bufferedDataCount + numEncodedValues > maxValuesPerPage) {
             if (force) {
-                // Resize the buffer
-                bufferSize = numEncodedValues + bufferedDataCount;
-                buffer = new Binary[bufferSize];
+                // Resize the buffer, if needed. Assuming the buffer is empty, verified earlier
+                if (buffer.length < numEncodedValues) {
+                    buffer = new Binary[numEncodedValues];
+                }
             } else {
                 return false;
             }

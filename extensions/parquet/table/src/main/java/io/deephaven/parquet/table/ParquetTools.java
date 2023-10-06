@@ -711,11 +711,6 @@ public class ParquetTools {
             null, CharVector.class, ByteVector.class, ShortVector.class, IntVector.class, LongVector.class,
             FloatVector.class, DoubleVector.class, ObjectVector.class);
 
-    private static final SimpleTypeMap<Class<?>> VECTOR_DIRECT_TYPE_MAP = SimpleTypeMap.create(
-            null, CharVectorDirect.class, ByteVectorDirect.class, ShortVectorDirect.class, IntVectorDirect.class,
-            LongVectorDirect.class, FloatVectorDirect.class, DoubleVectorDirect.class, ObjectVectorDirect.class);
-
-
     private static Class<?> loadClass(final String colName, final String desc, final String className) {
         try {
             return ClassUtil.lookupClass(className);
@@ -751,14 +746,6 @@ public class ParquetTools {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, vectorType, baseType);
                     } else {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, ObjectVector.class, baseType);
-                    }
-                } else if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.VectorDirect) {
-                    final Class<?> vectorDirectType = VECTOR_DIRECT_TYPE_MAP.get(baseType);
-                    if (vectorDirectType != null) {
-                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, vectorDirectType, baseType);
-                    } else {
-                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, ObjectVectorDirect.class,
-                                baseType);
                     }
                 } else {
                     throw new UncheckedDeephavenException("Unhandled dbSpecialType=" + parquetColDef.dhSpecialType);

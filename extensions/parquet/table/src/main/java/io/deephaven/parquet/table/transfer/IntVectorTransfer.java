@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table.transfer;
 
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.vector.IntVector;
@@ -24,6 +25,8 @@ final class IntVectorTransfer extends PrimitiveVectorTransfer<IntVector, IntBuff
 
     @Override
     void copyToBuffer(@NotNull final IntVector data) {
-        data.iterator().forEachRemaining((int value) -> buffer.put(value));
+        try (final CloseablePrimitiveIteratorOfInt dataIterator = data.iterator()) {
+            dataIterator.forEachRemaining((int value) -> buffer.put(value));
+        }
     }
 }

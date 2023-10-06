@@ -23,11 +23,9 @@ import org.jetbrains.annotations.Nullable;
  */
 abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
     private ObjectChunk<T, Values> chunk;
-    protected B buffer; // Not final because we might need to resize it in case of overflow
     private final ColumnSource<?> columnSource;
     private final RowSequence.Iterator tableRowSetIt;
     private final ChunkSource.GetContext context;
-    private final int maxValuesPerPage;
     private final int targetPageSize;
     private int currentChunkIdx;
     /**
@@ -40,6 +38,12 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
      */
     @Nullable
     private boolean cached;
+
+    /**
+     * The buffer to be written out to the Parquet file. This buffer is reused across pages and is resized if needed.
+     */
+    B buffer;
+    final int maxValuesPerPage;
 
     VariableWidthTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int maxValuesPerPage, final int targetPageSize, @NotNull final B buffer) {
@@ -78,7 +82,7 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
         int numBytes;
 
         /**
-         * Construct an empty object to be filled later using {@link #fillSingle} method
+         * Construct an empty object to be filled later using {@link #fillSingle} or {@link #fillRepeated} methods
          */
         EncodedData() {}
 
@@ -86,16 +90,19 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
          * Used for non vector/array types where we have a single value in each row
          */
         void fillSingle(@NotNull final E encodedValues, final int numBytes) {
-            this.encodedValues = encodedValues;
-            this.numBytes = numBytes;
-            this.numValues = 1;
+            fillInternal(encodedValues, numBytes, 1);
         }
 
         /**
          * Used for vector/array types where we can have a more than one value in each row
          */
         void fillRepeated(@NotNull final E data, final int numBytes, final int numValues) {
-            fillSingle(data, numBytes);
+            fillInternal(data, numBytes, numValues);
+        }
+
+        private void fillInternal(@NotNull final E encodedValues, final int numBytes, final int numValues) {
+            this.encodedValues = encodedValues;
+            this.numBytes = numBytes;
             this.numValues = numValues;
         }
     }

@@ -420,50 +420,30 @@ public class ParquetTableReadWriteTest {
         }
     }
 
-    // TODO Delete this
-    private static Table getTableFlatTemp(int size, boolean includeSerializable, boolean includeBigDecimal) {
-        ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
-        ArrayList<String> columns =
-                new ArrayList<>(Arrays.asList(
-                        "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
-                        "nonNullString = `` + (i % 60)",
-                        "nonNullPolyString = `` + (i % 600)",
-                        "someIntColumn = i",
-                        "someLongColumn = ii",
-                        // "someDoubleColumn = i*1.1",
-                        // "someFloatColumn = (float)(i*1.1)",
-                        // "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
-                        // "someShortColumn = (short)i",
-                        // "someByteColumn = (byte)i",
-                        "someCharColumn = (char)i",
-                        "someTime = DateTimeUtils.now() + i",
-                        "biColumn = java.math.BigInteger.valueOf(ii)",
-                        "someKey = `` + (int)(i /100)",
-                        "nullString = (String) null",
-                        "nullKey = i < -1?`123`:null",
-                        "nullIntColumn = (int)null",
-                        "nullLongColumn = (long)null",
-                        // "nullDoubleColumn = (double)null",
-                        // "nullFloatColumn = (float)null",
-                        // "nullBoolColumn = (Boolean)null",
-                        // "nullShortColumn = (short)null",
-                        // "nullByteColumn = (byte)null",
-                        "nullCharColumn = (char)null",
-                        "nullTime = (Instant)null",
-                        "nullBiColumn = (java.math.BigInteger)null"));
-        if (includeBigDecimal) {
-            columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
-        }
-        if (includeSerializable) {
-            columns.add("someSerializable = new SomeSillyTest(i)");
-        }
-        return TableTools.emptyTable(size).select(
-                Selectable.from(columns));
+    /**
+     * Encoding bigDecimal is tricky -- the writer will try to pick the precision and scale automatically. Because of
+     * that tableTools.assertTableEquals will fail because, even though the numbers are identical, the representation
+     * may not be so we have to coerce the expected values to the same precision and scale value. We know how it should
+     * be doing it, so we can use the same pattern of encoding/decoding with the codec.
+     *
+     * @param toFix
+     * @return
+     */
+    private Table maybeFixBigDecimal(Table toFix) {
+        final BigDecimalUtils.PrecisionAndScale pas = BigDecimalUtils.computePrecisionAndScale(toFix, "bdColumn");
+        final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale, -1);
+
+        ExecutionContext.getContext()
+                .getQueryScope()
+                .putParam("__codec", codec);
+        return toFix
+                .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
+                .dropColumns("bdColE");
     }
 
     @Test
     public void testVectorColumns() {
-        final Table table = getTableFlatTemp(10000, true, false);
+        final Table table = getTableFlat(10000, true, false);
         // Take a groupBy to create vector columns containing null values
         Table vectorTable = table.groupBy().select();
 
@@ -515,23 +495,23 @@ public class ParquetTableReadWriteTest {
                 new ArrayList<>(Arrays.asList(
                         "someStringArrayColumn = new String[] {i % 10 == 0 ? null : (`` + (i % 101))}",
                         "someIntArrayColumn = new int[] {i % 10 == 0 ? null : i}",
-                        // "someLongArrayColumn = new long[] {i % 10 == 0 ? null : i}",
-                        // "someDoubleArrayColumn = new double[] {i % 10 == 0 ? null : i*1.1}",
-                        // "someFloatArrayColumn = new float[] {i % 10 == 0 ? null : (float)i*1.1}",
-                        // "someBoolArrayColumn = new Boolean[] {i % 3 == 0 ? true :i % 3 == 1 ? false : null}",
-                        // "someShorArrayColumn = new short[] {i % 10 == 0 ? null : (shor)i}",
-                        // "someByteArrayColumn = new byte[] {i % 10 == 0 ? null : (byte)i}",
+                        "someLongArrayColumn = new long[] {i % 10 == 0 ? null : i}",
+                        "someDoubleArrayColumn = new double[] {i % 10 == 0 ? null : i*1.1}",
+                        "someFloatArrayColumn = new float[] {i % 10 == 0 ? null : (float)(i*1.1)}",
+                        "someBoolArrayColumn = new Boolean[] {i % 3 == 0 ? true :i % 3 == 1 ? false : null}",
+                        "someShorArrayColumn = new short[] {i % 10 == 0 ? null : (short)i}",
+                        "someByteArrayColumn = new byte[] {i % 10 == 0 ? null : (byte)i}",
                         "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
                         "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
                         "someBiColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
                         "nullStringArrayColumn = new String[] {(String)null}",
                         "nullIntArrayColumn = new int[] {(int)null}",
-                        // "nullLongArrayColumn = new long[] {(long)null}",
-                        // "nullDoubleArrayColumn = new double[] {(double)null}",
-                        // "nullFloatArrayColumn = new float[] {(float)null}",
-                        // "nullBoolArrayColumn = new Boolean[] {(Boolean)null}",
-                        // "nullShorArrayColumn = new short[] {(short)null}",
-                        // "nullByteArrayColumn = new byte[] {(byte)null}",
+                        "nullLongArrayColumn = new long[] {(long)null}",
+                        "nullDoubleArrayColumn = new double[] {(double)null}",
+                        "nullFloatArrayColumn = new float[] {(float)null}",
+                        "nullBoolArrayColumn = new Boolean[] {(Boolean)null}",
+                        "nullShorArrayColumn = new short[] {(short)null}",
+                        "nullByteArrayColumn = new byte[] {(byte)null}",
                         "nullCharArrayColumn = new char[] {(char)null}",
                         "nullTimeArrayColumn = new Instant[] {(Instant)null}",
                         "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"));
@@ -547,27 +527,6 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTable(vectorTable, dest);
         fromDisk = ParquetTools.readTable(dest);
         assertTableEquals(vectorTable, fromDisk);
-    }
-
-    /**
-     * Encoding bigDecimal is tricky -- the writer will try to pick the precision and scale automatically. Because of
-     * that tableTools.assertTableEquals will fail because, even though the numbers are identical, the representation
-     * may not be so we have to coerce the expected values to the same precision and scale value. We know how it should
-     * be doing it, so we can use the same pattern of encoding/decoding with the codec.
-     *
-     * @param toFix
-     * @return
-     */
-    private Table maybeFixBigDecimal(Table toFix) {
-        final BigDecimalUtils.PrecisionAndScale pas = BigDecimalUtils.computePrecisionAndScale(toFix, "bdColumn");
-        final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale, -1);
-
-        ExecutionContext.getContext()
-                .getQueryScope()
-                .putParam("__codec", codec);
-        return toFix
-                .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
-                .dropColumns("bdColE");
     }
 
     // Following is used for testing both writing APIs for parquet tables
@@ -696,6 +655,137 @@ public class ParquetTableReadWriteTest {
         assertTrue(parentDir.list().length == 0);
     }
 
+    // // TODO Remove all these
+    // @Test
+    // public void benchmarkByteArrays() {
+    // final long ARRAY_SIZE = 512;
+    // final long NUM_ROWS = 400_000_000;
+    // final long NUM_RUNS = 1;
+    //
+    // // for (long NUM_ROWS = 1_000_000; NUM_ROWS <= 10_000_000; NUM_ROWS += 1_000_000) {
+    // ArrayList<String> columns = new ArrayList<>(Arrays.asList("someByteColumn = (byte)i"));
+    // Table table = TableTools.emptyTable(ARRAY_SIZE).select(Selectable.from(columns));
+    // table = table.groupBy();
+    //
+    // // Take join with empty table to repeat the rows
+    // table = table.join(TableTools.emptyTable(NUM_ROWS));
+    //
+    // // Convert the table from vector to array column
+    // table = table.updateView(table.getColumnSourceMap().keySet().stream()
+    // .map(name -> name + " = " + name + ".toArray()")
+    // .toArray(String[]::new));
+    //
+    // final File dest = new File(rootFile + File.separator + "benchmarkByteArrays.parquet");
+    // long totalTime = 0;
+    // for (long i = 0; i < NUM_RUNS; i++) {
+    // final long start1 = System.nanoTime();
+    // ParquetTools.writeTable(table, dest, ParquetTools.UNCOMPRESSED);
+    // final long end1 = System.nanoTime();
+    // System.out.println(
+    // "Execution time for run " + (i + 1) + " is: " + (double) (end1 - start1) / 1000_000_000.0 + " sec");
+    // totalTime += (end1 - start1);
+    // }
+    // System.out.println(
+    // "Average execution time: " + (double) (totalTime) / ((double) NUM_RUNS * 1000_000_000.0) + " sec");
+    //
+    // ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+    // ColumnChunkMetaData columnMetadataDH = metadata.getBlocks().get(0).getColumns().get(0);
+    // int numPages = columnMetadataDH.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
+    // System.out.println("Number of pages = " + numPages);
+    // dest.delete();
+    // // }
+    // }
+
+    // @Test
+    // public void generateByteArrayFile() {
+    // final int ARRAY_SIZE = 1;
+    // final int NUM_ROWS = 100_000_000;
+    //
+    // ArrayList<String> columns = new ArrayList<>(Arrays.asList("someByteColumn = (byte)i"));
+    // Table table = TableTools.emptyTable(ARRAY_SIZE).select(Selectable.from(columns));
+    // table = table.groupBy();
+    //
+    // // Take join with self to repeat the rows
+    // table = table.join(TableTools.emptyTable(NUM_ROWS));
+    //
+    // // Convert the table from vector to array column
+    // table = table.updateView(table.getColumnSourceMap().keySet().stream()
+    // .map(name -> name + " = " + name + ".toArray()")
+    // .toArray(String[]::new));
+    //
+    // final File dest = new File(rootFile + File.separator + "byteArrays2HundredMillionRows.parquet");
+    // ParquetTools.writeTable(table, dest, ParquetTools.UNCOMPRESSED);
+    //
+    // ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+    // ColumnChunkMetaData columnMetadataDH = metadata.getBlocks().get(0).getColumns().get(0);
+    // int numPages = columnMetadataDH.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
+    // System.out.println("Number of pages: " + numPages);
+    // }
+    //
+    // @Test
+    // public void randomTest() {
+    // File destDH = new File(
+    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_dh.parquet");
+    // ParquetMetadata metadataDH = new ParquetTableLocationKey(destDH, 0, null).getMetadata();
+    // ColumnChunkMetaData columnMetadataDH = metadataDH.getBlocks().get(0).getColumns().get(0);
+    // int numPagesDH = columnMetadataDH.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
+    // System.out.println("Number of DH pages: " + numPagesDH);
+    //
+    // File destPA1 = new File(
+    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa_8192.parquet");
+    // ParquetMetadata metadataPA1 = new ParquetTableLocationKey(destPA1, 0, null).getMetadata();
+    // ColumnChunkMetaData columnMetadataPA1 = metadataPA1.getBlocks().get(0).getColumns().get(0);
+    // int numPagesPA1 = columnMetadataPA1.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
+    // System.out.println("Number of PA pages for 8192 size page: " + numPagesPA1);
+    //
+    // File destPA2 = new File(
+    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa_1048675.parquet");
+    // ParquetMetadata metadataPA2 = new ParquetTableLocationKey(destPA2, 0, null).getMetadata();
+    // ColumnChunkMetaData columnMetadataPA2 = metadataPA2.getBlocks().get(0).getColumns().get(0);
+    // int numPagesPA2 = columnMetadataPA2.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
+    // System.out.println("Number of PA pages for 1048675 size page: " + numPagesPA2);
+    // }
+    //
+    // @Test
+    // public void profilingTest() {
+    // ArrayList<String> columns =
+    // new ArrayList<>(Arrays.asList(
+    // "someStringArrayColumn = new String[] {i % 10 == 0 ? null : (`` + (i % 101))}",
+    // "someIntArrayColumn = new int[] {i}",
+    // "someCharArrayColumn = new char[] {(char)i}",
+    // "someBiColumn = new java.math.BigInteger[] {java.math.BigInteger.valueOf(ii)}",
+    // "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
+    // "someLongArrayColumn = new long[] {i % 10 == 0 ? null : i}",
+    // "someBoolArrayColumn = new Boolean[] {i % 3 == 0 ? true :i % 3 == 1 ? false : null}",
+    // "nullBoolArrayColumn = new Boolean[] {(Boolean)null}",
+    // "nullLongArrayColumn = new long[] {(long)null}",
+    // "nullStringArrayColumn = new String[] {(String)null}",
+    // "nullIntArrayColumn = new int[] {(int)null}",
+    // "nullCharArrayColumn = new char[] {(char)null}",
+    // "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}",
+    // "nullTimeArrayColumn = new Instant[] {(Instant)null}"));
+    //
+    // final Table arrayTable = TableTools.emptyTable(10000).select(
+    // Selectable.from(columns));
+    // final File dest = new File(rootFile + File.separator + "testArrayColumns.parquet");
+    //
+    // final int NUM_RUNS = 1000;
+    // final long start1 = System.currentTimeMillis();
+    // for (int i = 0; i < NUM_RUNS; i++) {
+    // ParquetTools.writeTable(arrayTable, dest);
+    // }
+    // final long end1 = System.currentTimeMillis();
+    // System.out.println("Total execution time for arrays: " + (end1 - start1) / NUM_RUNS + " msec");
+    //
+    // // Convert array table to vector
+    // final Table vectorTable = arrayToVectorTable(arrayTable);
+    // final long start2 = System.currentTimeMillis();
+    // for (int i = 0; i < NUM_RUNS; i++) {
+    // ParquetTools.writeTable(vectorTable, dest);
+    // }
+    // final long end2 = System.currentTimeMillis();
+    // System.out.println("Total execution time for vectors: " + (end2 - start2) / NUM_RUNS + " msec");
+    // }
 
     /**
      * These are tests for writing to a table with grouping columns to a parquet file and making sure there are no
@@ -989,11 +1079,11 @@ public class ParquetTableReadWriteTest {
         // We will have 10 pages each containing 1 row.
         assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 10);
 
-        // Table with null rows
+        // Table with rows of null alternating with strings exceeding the page size
         columns = new ArrayList<>(Arrays.asList("someStringColumn =  ii % 2 == 0 ? null : `" + someString + "` + ii"));
         columnMetadata = overflowingStringsTestHelper(columns, numRows, pageSize);
-        // We will have 5 pages containing 3, 2, 2, 2, 1 rows.
-        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 5);
+        // We will have 6 pages containing 1, 2, 2, 2, 2, 1 rows.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 6);
     }
 
     private static ColumnChunkMetaData overflowingStringsTestHelper(final Collection<String> columns,

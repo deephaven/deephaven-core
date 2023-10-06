@@ -38,34 +38,45 @@ public interface TransferObject<B> extends SafeCloseable {
         Class<DATA_TYPE> columnType = columnSource.getType();
         if (int.class.equals(columnType)) {
             return IntTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
-        } else if (long.class.equals(columnType)) {
+        }
+        if (long.class.equals(columnType)) {
             return LongTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
-        } else if (Instant.class.equals(columnType)) {
+        }
+        if (Instant.class.equals(columnType)) {
             // noinspection unchecked
             final ColumnSource<DATA_TYPE> longColumnSource =
                     (ColumnSource<DATA_TYPE>) ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) columnSource);
             return LongTransfer.create(longColumnSource, tableRowSet, instructions.getTargetPageSize());
-        } else if (double.class.equals(columnType)) {
+        }
+        if (double.class.equals(columnType)) {
             return DoubleTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
-        } else if (float.class.equals(columnType)) {
+        }
+        if (float.class.equals(columnType)) {
             return FloatTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
-        } else if (Boolean.class.equals(columnType)) {
+        }
+        if (Boolean.class.equals(columnType)) {
             // noinspection unchecked
             final ColumnSource<DATA_TYPE> byteColumnSource =
                     (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource((ColumnSource<Boolean>) columnSource);
             return BooleanTransfer.create(byteColumnSource, tableRowSet, instructions.getTargetPageSize());
-        } else if (short.class.equals(columnType)) {
+        }
+        if (short.class.equals(columnType)) {
             return new ShortTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-        } else if (char.class.equals(columnType)) {
+        }
+        if (char.class.equals(columnType)) {
             return new CharTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-        } else if (byte.class.equals(columnType)) {
+        }
+        if (byte.class.equals(columnType)) {
             return new ByteTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-        } else if (String.class.equals(columnType)) {
+        }
+        if (String.class.equals(columnType)) {
             return new StringTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-        } else if (CodecLookup.explicitCodecPresent(instructions.getCodecName(columnDefinition.getName()))) {
+        }
+        if (CodecLookup.explicitCodecPresent(instructions.getCodecName(columnDefinition.getName()))) {
             final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
             return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
-        } else if (BigDecimal.class.equals(columnType)) {
+        }
+        if (BigDecimal.class.equals(columnType)) {
                 // noinspection unchecked
                 final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
                 final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
@@ -73,7 +84,8 @@ public interface TransferObject<B> extends SafeCloseable {
                 final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
                         precisionAndScale.precision, precisionAndScale.scale, -1);
                 return new CodecTransfer<>(bigDecimalColumnSource, codec, tableRowSet, instructions.getTargetPageSize());
-        } else if (BigInteger.class.equals(columnType)) {
+        }
+        if (BigInteger.class.equals(columnType)) {
             return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
                     instructions.getTargetPageSize());
         }
@@ -82,56 +94,78 @@ public interface TransferObject<B> extends SafeCloseable {
         if (columnType.isArray()) {
             if (int.class.equals(componentType)) {
                 return new IntArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-            } else if (long.class.equals(componentType)) {
+            }
+            if (long.class.equals(componentType)) {
                 return new LongArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-            } else if (double.class.equals(componentType)) {
+            }
+            if (double.class.equals(componentType)) {
                 return new DoubleArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-//            } else if (float.class.equals(componentType)) {
-//                return new FloatArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-//            } else if (Boolean.class.equals(componentType)) {
-//                return new BooleanArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-//            } else if (short.class.equals(componentType)) {
-//                return new ShortArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-            } else if (char.class.equals(componentType)) {
+            }
+          if (float.class.equals(componentType)) {
+                return new FloatArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+          }
+            if (Boolean.class.equals(componentType)) {
+                return new BooleanArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            }
+            if (short.class.equals(componentType)) {
+                return new ShortArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            }
+            if (char.class.equals(componentType)) {
                 return new CharArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-            } else if (byte.class.equals(componentType)) {
+            }
+            if (byte.class.equals(componentType)) {
                 return new ByteArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-            } else if (String.class.equals(componentType)) {
+            }
+            if (String.class.equals(componentType)) {
                 return new StringArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-            } else if (BigInteger.class.equals(componentType)) {
+            }
+            if (BigInteger.class.equals(componentType)) {
                 return new CodecArrayTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1),
                         tableRowSet, instructions.getTargetPageSize());
-            } else if (Instant.class.equals(componentType)) {
+            }
+            if (Instant.class.equals(componentType)) {
                 return new InstantArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
+            // TODO Add a issue for this
             // else if (explicit codec provided)
             // else if (big decimal)
         }
         if (Vector.class.isAssignableFrom(columnType)) {
             if (int.class.equals(componentType)) {
                 return new IntVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-            } else if (long.class.equals(componentType)) {
+            }
+            if (long.class.equals(componentType)) {
                 return new LongVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-//            } else if (double.class.equals(componentType)) {
-//                return new DoubleVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-//            } else if (float.class.equals(componentType)) {
-//                return new FloatVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-//            } else if (Boolean.class.equals(componentType)) {
-//                return new BooleanVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-//            } else if (short.class.equals(componentType)) {
-//                return new ShortVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-            } else if (char.class.equals(componentType)) {
+            }
+          if (double.class.equals(componentType)) {
+                return new DoubleVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+          }
+          if (float.class.equals(componentType)) {
+                return new FloatVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+          }
+            if (Boolean.class.equals(componentType)) {
+                return new BooleanVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            }
+          if (short.class.equals(componentType)) {
+                return new ShortVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+          }
+            if (char.class.equals(componentType)) {
                 return new CharVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-//            } else if (byte.class.equals(componentType)) {
-//                return new ByteVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-            } else if (String.class.equals(componentType)) {
+            }
+          if (byte.class.equals(componentType)) {
+                return new ByteVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+          }
+            if (String.class.equals(componentType)) {
                 return new StringVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-            } else if (BigInteger.class.equals(componentType)) {
+            }
+            if (BigInteger.class.equals(componentType)) {
                 return new CodecVectorTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1),
                         tableRowSet, instructions.getTargetPageSize());
-            } else if (Instant.class.equals(componentType)) {
+            }
+            if (Instant.class.equals(componentType)) {
                 return new InstantVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
+            // TODO Add a issue for this
             // else if (explicit codec provided)
             // else if (big decimal)
         }
@@ -141,7 +175,7 @@ public interface TransferObject<B> extends SafeCloseable {
         return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
     }
 
-    static <DATA_TYPE> @Nullable TransferObject<IntBuffer> createDictEncodedStringTransfer(
+    static <DATA_TYPE> @NotNull TransferObject<IntBuffer> createDictEncodedStringTransfer(
             @NotNull final ColumnSource<DATA_TYPE> columnSource,
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
             @NotNull final RowSet tableRowSet, final int targetPageSize,
@@ -158,7 +192,7 @@ public interface TransferObject<B> extends SafeCloseable {
                 return new DictEncodedStringVectorTransfer(columnSource, tableRowSet, targetPageSize, dictionary, nullPos);
         }
         // Dictionary encoding not supported for other types
-        return null;
+        throw new UnsupportedOperationException("Dictionary encoding not supported for type " + dataType.getName());
     }
 
     /**

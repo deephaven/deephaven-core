@@ -12,13 +12,11 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.NullSelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.parquet.base.ColumnWriter;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.RowGroupWriter;
@@ -32,14 +30,12 @@ import io.deephaven.stringset.StringSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.vector.CharVectorDirect;
-import io.deephaven.vector.IntVectorDirect;
-import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
-import org.apache.parquet.column.statistics.IntStatistics;
 import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.schema.PrimitiveType;
+import org.apache.parquet.schema.Types;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -47,14 +43,12 @@ import java.io.IOException;
 import java.nio.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.*;
 
 /**
  * API for writing DH tables in parquet format
  */
 public class ParquetTableWriter {
-    private static final int INITIAL_DICTIONARY_SIZE = 1 << 8;
     public static final String METADATA_KEY = "deephaven";
     public static final String BEGIN_POS = "dh_begin_pos";
     public static final String END_POS = "dh_end_pos";
@@ -255,13 +249,6 @@ public class ParquetTableWriter {
         return transformed;
     }
 
-    private static boolean isVectorDirectType(Class<?> type) {
-        // TODO Would need to add more types, check with Ryan if this seems okay
-        return type.equals(ObjectVectorDirect.class) ||
-                type.equals(IntVectorDirect.class) ||
-                type.equals(CharVectorDirect.class);
-    }
-
     /**
      * Create a {@link ParquetFileWriter} for writing the table to disk.
      *
@@ -316,11 +303,7 @@ public class ParquetTableWriter {
                 columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.StringSet);
                 usedColumnInfo = true;
             } else if (Vector.class.isAssignableFrom(column.getDataType())) {
-                if (isVectorDirectType(column.getDataType())) {
-                    columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.VectorDirect);
-                } else {
-                    columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.Vector);
-                }
+                columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.Vector);
                 usedColumnInfo = true;
             }
 
@@ -361,9 +344,10 @@ public class ParquetTableWriter {
         }
     }
 
-    // TODO Is it okay to keep this method here? Its only called inside tryEncodeDictionary. I can also make it an
-    // anonymous class inside the method but this seemed cleaner.
-    private static IntBuffer copy(IntBuffer orig) {
+    /**
+     * Makes a copy of the given buffer
+     */
+    private static IntBuffer makeCopy(IntBuffer orig) {
         IntBuffer copy = IntBuffer.allocate(orig.capacity());
         copy.put(orig).flip();
         return copy;
@@ -384,14 +368,13 @@ public class ParquetTableWriter {
         final List<IntBuffer> pageBuffers = new ArrayList<>();
         final List<IntBuffer> lengthsBuffers = new ArrayList<>();
         final BitSet pageBufferHasNull = new BitSet();
-        boolean isArrayOrVector = (columnSourceIn.getComponentType() != null);
-        boolean hasNulls = false;
-        StringDictionary dictionary = new StringDictionary(maxKeys, maxDictSize, statistics);
+        final boolean isArrayOrVector = (columnSourceIn.getComponentType() != null);
+        final StringDictionary dictionary = new StringDictionary(maxKeys, maxDictSize, statistics);
         int curPage = 0;
         try (final TransferObject<IntBuffer> transferObject = TransferObject.createDictEncodedStringTransfer(
                 columnSourceIn, columnDefinition, tableRowSet,
                 writeInstructions.getTargetPageSize(), dictionary, NULL_POS)) {
-            boolean done = false;
+            boolean done;
             do {
                 // Paginate the data and prepare the dictionary. Then add the dictionary page followed by all data pages
                 transferObject.transferOnePageToBuffer();
@@ -404,14 +387,14 @@ public class ParquetTableWriter {
                         lengthsBuffers.add(transferObject.getRepeatCount());
                     }
                 } else {
-                    pageBuffers.add(copy(transferObject.getBuffer()));
+                    pageBuffers.add(makeCopy(transferObject.getBuffer()));
                     if (isArrayOrVector) {
-                        lengthsBuffers.add(copy(transferObject.getRepeatCount()));
+                        lengthsBuffers.add(makeCopy(transferObject.getRepeatCount()));
                     }
                 }
-                boolean pageHasNulls = transferObject.pageHasNull();
-                hasNulls = hasNulls || pageHasNulls;
-                pageBufferHasNull.set(curPage++, pageHasNulls);
+                if (transferObject.pageHasNull()) {
+                    pageBufferHasNull.set(curPage++);
+                }
             } while (!done);
         } catch (final DictionarySizeExceededException ignored) {
             // Reset the stats because we will re-encode these in PLAIN encoding.
@@ -422,16 +405,19 @@ public class ParquetTableWriter {
             return false;
         }
 
-        if (dictionary.getKeyCount() == 0 && hasNulls) {
+        if (dictionary.getKeyCount() == 0 && !pageBufferHasNull.isEmpty()) {
             // Reset the stats because we will re-encode these in PLAIN encoding.
             columnWriter.resetStats();
             return false;
         }
         columnWriter.addDictionaryPage(dictionary.getEncodedKeys(), dictionary.getKeyCount());
-        // We've already determined min/max statistics while building the dictionary. Now use an integer statistics
-        // object to track the number of nulls that will be written.
-        Statistics<Integer> tmpStats = new IntStatistics();
-        int numPages = pageBuffers.size();
+        // We've already determined min/max statistics for the strings while building the dictionary. The buffer now
+        // stores only the offsets in the dictionary, and we don't need statistics for offsets. Therefore, we create a
+        // temporary integer stats object just to track the number of nulls and pass it to lower layers.
+        // We use the following fake type object to create proper statistics object
+        final PrimitiveType fakeObject = Types.optional(PrimitiveType.PrimitiveTypeName.INT32).named("fake");
+        final Statistics<?> tmpStats = Statistics.createStats(fakeObject);
+        final int numPages = pageBuffers.size();
         for (int i = 0; i < numPages; ++i) {
             final IntBuffer pageBuffer = pageBuffers.get(i);
             if (isArrayOrVector) {

@@ -29,6 +29,7 @@ import java.nio.IntBuffer;
 public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Double.BYTES;
     private final ByteBufferAllocator allocator;
+
     private DoubleBuffer targetBuffer;
     private ByteBuffer innerBuffer;
     private IntBuffer nullOffsets;

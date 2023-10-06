@@ -39,7 +39,7 @@ public abstract class ColumnTypeInfo {
      * Values for the {@link #specialType()} field.
      */
     public enum SpecialType {
-        StringSet, Vector, VectorDirect
+        StringSet, Vector
     }
 
     /**

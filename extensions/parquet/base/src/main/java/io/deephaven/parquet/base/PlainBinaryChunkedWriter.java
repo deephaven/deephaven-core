@@ -22,9 +22,12 @@ import java.nio.IntBuffer;
  * Plain encoding except for binary values
  */
 public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]> {
+
     private static final int MAXIMUM_TOTAL_CAPACITY = ArrayUtil.MAX_ARRAY_SIZE;
+
     private final ByteBufferAllocator allocator;
-    ByteBuffer innerBuffer;
+
+    private ByteBuffer innerBuffer;
     private IntBuffer nullOffsets;
 
     PlainBinaryChunkedWriter(final int pageSize, @NotNull final ByteBufferAllocator allocator) {

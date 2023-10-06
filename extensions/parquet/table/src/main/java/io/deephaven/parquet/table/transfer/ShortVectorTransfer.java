@@ -3,28 +3,25 @@
  */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharArrayTransfer and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharVectorTransfer and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.parquet.table.transfer;
 
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.vector.ShortVector;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
 
-final class ByteArrayTransfer extends PrimitiveArrayAndVectorTransfer<byte[], byte[], IntBuffer> {
-    ByteArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                      final int targetPageSize) {
-        // We encode primitive bytes as primitive ints
+final class ShortVectorTransfer extends PrimitiveVectorTransfer<ShortVector, IntBuffer> {
+    ShortVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+                       final int targetPageSize) {
+        // We encode primitive shorts as primitive ints
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
                 IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
-    }
-
-    @Override
-    int getSize(final byte @NotNull [] data) {
-        return data.length;
     }
 
     @Override
@@ -33,9 +30,9 @@ final class ByteArrayTransfer extends PrimitiveArrayAndVectorTransfer<byte[], by
     }
 
     @Override
-    void copyToBuffer(final byte @NotNull [] data) {
-        for (byte value : data) {
-            buffer.put(value);
+    void copyToBuffer(@NotNull final ShortVector data) {
+        try (final CloseablePrimitiveIteratorOfShort dataIterator = data.iterator()) {
+            dataIterator.forEachRemaining((short value) -> buffer.put(value));
         }
     }
 }

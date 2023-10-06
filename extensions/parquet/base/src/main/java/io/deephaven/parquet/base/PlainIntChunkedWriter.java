@@ -28,7 +28,9 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
      * Short data types which are written as primitive ints but have a different definition of {@code null}.
      */
     private final int nullValue;
+
     private final ByteBufferAllocator allocator;
+
     private IntBuffer targetBuffer;
     private ByteBuffer innerBuffer;
     private IntBuffer nullOffsets;

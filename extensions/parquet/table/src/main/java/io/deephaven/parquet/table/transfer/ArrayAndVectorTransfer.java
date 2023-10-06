@@ -38,7 +38,7 @@ public abstract class ArrayAndVectorTransfer<T, E, B> extends VariableWidthTrans
 
     @Override
     final boolean isBufferEmpty() {
-        return getNumBytesBuffered() == 0 && repeatCounts.position() == 0;
+        return repeatCounts.position() == 0;
     }
 }
 

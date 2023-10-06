@@ -29,6 +29,7 @@ import java.nio.IntBuffer;
 public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Float.BYTES;
     private final ByteBufferAllocator allocator;
+
     private FloatBuffer targetBuffer;
     private ByteBuffer innerBuffer;
     private IntBuffer nullOffsets;

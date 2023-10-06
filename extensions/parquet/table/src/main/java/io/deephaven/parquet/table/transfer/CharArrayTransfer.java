@@ -12,19 +12,14 @@ import java.nio.IntBuffer;
 final class CharArrayTransfer extends PrimitiveArrayAndVectorTransfer<char[], char[], IntBuffer> {
     CharArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
                       final int targetPageSize) {
-        // We encode characters as integers
+        // We encode primitive chars as primitive ints
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
-                IntBuffer.allocate(targetPageSize / Integer.BYTES));
+                IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
     }
 
     @Override
-    void encodeDataForBuffering(final char @NotNull [] data, @NotNull final EncodedData<char[]> encodedData) {
-        encodedData.fillRepeated(data, data.length * Integer.BYTES, data.length);
-    }
-
-    @Override
-    int getNumBytesBuffered() {
-        return buffer.position() * Integer.BYTES;
+    int getSize(final char @NotNull [] data) {
+        return data.length;
     }
 
     @Override
@@ -34,8 +29,8 @@ final class CharArrayTransfer extends PrimitiveArrayAndVectorTransfer<char[], ch
 
     @Override
     void copyToBuffer(final char @NotNull [] data) {
-        for (char c : data) {
-            buffer.put((int) c);
+        for (char value : data) {
+            buffer.put(value);
         }
     }
 }

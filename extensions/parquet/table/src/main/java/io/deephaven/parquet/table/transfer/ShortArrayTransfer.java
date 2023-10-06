@@ -14,16 +14,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
 
-final class ByteArrayTransfer extends PrimitiveArrayAndVectorTransfer<byte[], byte[], IntBuffer> {
-    ByteArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+final class ShortArrayTransfer extends PrimitiveArrayAndVectorTransfer<short[], short[], IntBuffer> {
+    ShortArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
                       final int targetPageSize) {
-        // We encode primitive bytes as primitive ints
+        // We encode primitive shorts as primitive ints
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
                 IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
     }
 
     @Override
-    int getSize(final byte @NotNull [] data) {
+    int getSize(final short @NotNull [] data) {
         return data.length;
     }
 
@@ -33,8 +33,8 @@ final class ByteArrayTransfer extends PrimitiveArrayAndVectorTransfer<byte[], by
     }
 
     @Override
-    void copyToBuffer(final byte @NotNull [] data) {
-        for (byte value : data) {
+    void copyToBuffer(final short @NotNull [] data) {
+        for (short value : data) {
             buffer.put(value);
         }
     }

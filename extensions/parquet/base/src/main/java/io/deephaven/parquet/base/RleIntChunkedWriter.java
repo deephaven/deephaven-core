@@ -26,6 +26,7 @@ import static org.apache.parquet.bytes.BytesInput.concat;
  */
 public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     private static final Logger LOG = LoggerFactory.getLogger(org.apache.parquet.column.values.plain.PlainValuesWriter.class);
+
     private final RunLengthBitPackingHybridEncoder encoder;
     private final byte bitWidth;
     private IntBuffer nullOffsets;

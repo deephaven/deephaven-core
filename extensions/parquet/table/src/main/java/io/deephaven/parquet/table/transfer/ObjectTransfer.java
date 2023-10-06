@@ -15,14 +15,18 @@ import java.util.Arrays;
  * Used as a base class of transfer objects for types like strings or big integers that need specialized encoding.
  */
 abstract class ObjectTransfer<T> extends VariableWidthTransfer<T, Binary, Binary[]> {
-    private final int bufferSize;
+    /**
+     * Number of values (null or non-null) added to the buffer
+     */
     private int bufferedDataCount;
+    /**
+     * Total number of bytes buffered
+     */
     private int numBytesBuffered;
 
     ObjectTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
                    final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize, targetPageSize, new Binary[targetPageSize]);
-        bufferSize = targetPageSize;
         bufferedDataCount = 0;
         numBytesBuffered = 0;
     }
@@ -47,12 +51,12 @@ abstract class ObjectTransfer<T> extends VariableWidthTransfer<T, Binary, Binary
 
     @Override
     final boolean isBufferEmpty() {
-        return numBytesBuffered == 0;
+        return bufferedDataCount == 0;
     }
 
     @Override
     final boolean addNullToBuffer() {
-        if (bufferedDataCount == bufferSize) {
+        if (bufferedDataCount == maxValuesPerPage) {
             return false;
         }
         buffer[bufferedDataCount++] = null;
@@ -60,13 +64,13 @@ abstract class ObjectTransfer<T> extends VariableWidthTransfer<T, Binary, Binary
     }
 
     final boolean addEncodedDataToBuffer(@NotNull final EncodedData<Binary> data, final boolean force) {
-        if (force && numBytesBuffered != 0) {
-            // This should never happen, because numBytesBuffered should be zero if bufferedDataCount is zero
+        if (force && bufferedDataCount != 0) {
+            // This should never happen, because "force" set by caller when adding the very first object
             //noinspection ThrowableNotThrown
             Assert.statementNeverExecuted();
             return false;
         }
-        if (bufferedDataCount == bufferSize) {
+        if (bufferedDataCount == maxValuesPerPage) {
             return false;
         }
         buffer[bufferedDataCount++] = data.encodedValues;

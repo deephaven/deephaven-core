@@ -3,28 +3,25 @@
  */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharArrayTransfer and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharVectorTransfer and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.parquet.table.transfer;
 
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.vector.ByteVector;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
 
-final class ByteArrayTransfer extends PrimitiveArrayAndVectorTransfer<byte[], byte[], IntBuffer> {
-    ByteArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                      final int targetPageSize) {
+final class ByteVectorTransfer extends PrimitiveVectorTransfer<ByteVector, IntBuffer> {
+    ByteVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+                       final int targetPageSize) {
         // We encode primitive bytes as primitive ints
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
                 IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
-    }
-
-    @Override
-    int getSize(final byte @NotNull [] data) {
-        return data.length;
     }
 
     @Override
@@ -33,9 +30,9 @@ final class ByteArrayTransfer extends PrimitiveArrayAndVectorTransfer<byte[], by
     }
 
     @Override
-    void copyToBuffer(final byte @NotNull [] data) {
-        for (byte value : data) {
-            buffer.put(value);
+    void copyToBuffer(@NotNull final ByteVector data) {
+        try (final CloseablePrimitiveIteratorOfByte dataIterator = data.iterator()) {
+            dataIterator.forEachRemaining((byte value) -> buffer.put(value));
         }
     }
 }

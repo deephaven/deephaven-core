@@ -15,22 +15,14 @@ import java.nio.Buffer;
  */
 abstract class PrimitiveVectorTransfer<T extends Vector<?>, B extends Buffer>
         extends PrimitiveArrayAndVectorTransfer<T, T, B> {
-    private final int numBytesPerValue;
 
     PrimitiveVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int maxValuesPerPage, final int targetPageSize, @NotNull final B buffer, final int numBytesPerValue) {
-        super(columnSource, tableRowSet, maxValuesPerPage, targetPageSize, buffer);
-        this.numBytesPerValue = numBytesPerValue;
+        super(columnSource, tableRowSet, maxValuesPerPage, targetPageSize, buffer, numBytesPerValue);
     }
 
     @Override
-    final void encodeDataForBuffering(@NotNull final T data, @NotNull final EncodedData<T> encodedData) {
-        int numValues = data.intSize();
-        encodedData.fillRepeated(data, numValues * numBytesPerValue, numValues);
-    }
-
-    @Override
-    final int getNumBytesBuffered() {
-        return buffer.position() * numBytesPerValue;
+    final int getSize(@NotNull final T data) {
+        return data.intSize();
     }
 }

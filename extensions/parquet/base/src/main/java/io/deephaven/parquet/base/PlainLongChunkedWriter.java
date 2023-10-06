@@ -29,6 +29,7 @@ import java.nio.LongBuffer;
 public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Long.BYTES;
     private final ByteBufferAllocator allocator;
+
     private LongBuffer targetBuffer;
     private ByteBuffer innerBuffer;
     private IntBuffer nullOffsets;

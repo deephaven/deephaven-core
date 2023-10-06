@@ -297,8 +297,7 @@ public class ParquetSchemaReader {
                     if (specialType == ColumnTypeInfo.SpecialType.StringSet) {
                         return Optional.of(StringSet.class);
                     }
-                    if (specialType != ColumnTypeInfo.SpecialType.Vector &&
-                            specialType != ColumnTypeInfo.SpecialType.VectorDirect) {
+                    if (specialType != ColumnTypeInfo.SpecialType.Vector) {
                         throw new UncheckedDeephavenException("Type " + column.getPrimitiveType()
                                 + " for column " + Arrays.toString(column.getPath())
                                 + " with unknown or incompatible special type " + specialType);

@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table.transfer;
 
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.time.DateTimeUtils;
@@ -13,10 +14,11 @@ import java.nio.LongBuffer;
 import java.time.Instant;
 
 final class InstantVectorTransfer extends PrimitiveVectorTransfer<ObjectVector<Instant>, LongBuffer> {
+    // We encode Instants as primitive longs
     InstantVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
-                LongBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
+        super(columnSource, tableRowSet, targetPageSize / Long.BYTES, targetPageSize,
+                LongBuffer.allocate(targetPageSize / Long.BYTES), Long.BYTES);
     }
 
     @Override
@@ -26,6 +28,8 @@ final class InstantVectorTransfer extends PrimitiveVectorTransfer<ObjectVector<I
 
     @Override
     void copyToBuffer(@NotNull final ObjectVector<Instant> data) {
-        data.iterator().forEachRemaining((Instant value) -> buffer.put(DateTimeUtils.epochNanos(value)));
+        try (final CloseableIterator<Instant> dataIterator = data.iterator()) {
+            dataIterator.forEachRemaining((Instant t) -> buffer.put(DateTimeUtils.epochNanos(t)));
+        }
     }
 }

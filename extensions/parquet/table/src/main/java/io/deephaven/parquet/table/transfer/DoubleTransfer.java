@@ -35,6 +35,6 @@ final class DoubleTransfer extends PrimitiveTransfer<WritableDoubleChunk<Values>
             @NotNull final WritableDoubleChunk<Values> chunk,
             @NotNull final DoubleBuffer buffer,
             final int maxValuesPerPage) {
-        super(columnSource, tableRowSet,chunk, buffer, maxValuesPerPage);
+        super(columnSource, tableRowSet, chunk, buffer, maxValuesPerPage);
     }
 }
