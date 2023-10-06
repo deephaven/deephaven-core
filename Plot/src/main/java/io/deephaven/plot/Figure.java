@@ -10,7 +10,7 @@ package io.deephaven.plot;
 
 /** An interface for constructing plots.  A Figure is immutable, and all function calls return a new immutable Figure instance.*/
 @SuppressWarnings({"unused", "RedundantCast", "SameParameterValue"})
-public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigure, io.deephaven.plot.Chart, io.deephaven.plot.Axes, io.deephaven.plot.Axis, io.deephaven.plot.datasets.DataSeries, io.deephaven.plot.datasets.category.CategoryDataSeries, io.deephaven.plot.datasets.interval.IntervalXYDataSeries, io.deephaven.plot.datasets.ohlc.OHLCDataSeries, io.deephaven.plot.datasets.xy.XYDataSeries, io.deephaven.plot.datasets.multiseries.MultiSeries, io.deephaven.plot.datasets.xy.XYDataSeriesFunction, io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeries, io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeries {
+public interface Figure extends io.deephaven.plot.BaseFigure, io.deephaven.plot.Chart, io.deephaven.plot.Axes, io.deephaven.plot.Axis, io.deephaven.plot.datasets.DataSeries, io.deephaven.plot.datasets.category.CategoryDataSeries, io.deephaven.plot.datasets.interval.IntervalXYDataSeries, io.deephaven.plot.datasets.ohlc.OHLCDataSeries, io.deephaven.plot.datasets.xy.XYDataSeries, io.deephaven.plot.datasets.multiseries.MultiSeries, io.deephaven.plot.datasets.xy.XYDataSeriesFunction, io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeries, io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeries {
 
 
     /**
