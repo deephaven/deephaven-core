@@ -368,7 +368,7 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
         component_type = t.__args__[0]
 
     # np.ndarray as a generic alias is only supported in Python 3.9+
-    if sys.version_info.minor > 8:
+    if not component_type and sys.version_info.minor > 8:
         import types
         if isinstance(t, types.GenericAlias) and (issubclass(t.__origin__, Sequence) or t.__origin__ == np.ndarray):
             component_type = t.__args__[0]

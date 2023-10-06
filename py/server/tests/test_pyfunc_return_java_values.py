@@ -3,7 +3,7 @@
 #
 import time
 import unittest
-from typing import List, Tuple, Sequence
+from typing import List, Tuple, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -126,15 +126,16 @@ foo = Foo()
             "np_array",
         ]
 
+        # we are capable of mapping all datetime array (Sequence, np.ndarray) to instant array, so even if the actual
+        # return value of the function doesn't match its type hint (which will be caught by a static type checker. we
+        # still can convert it to instant array
         for np_dtype in dt_dtypes:
             for data in dt_data:
                 with self.subTest(np_dtype=np_dtype, data=data):
                     func_decl_str = f"""def fn(col) -> {np_dtype}:"""
-                    # func_body_str_1 = f"""    nonlocal {data}"""
-                    func_body_str_1 = """"""
-                    func_body_str_2 = f"""    return {data}"""
-                    exec("\n".join([func_decl_str, func_body_str_1, func_body_str_2]), globals().update(
-                        {"dt_list": dt_list, "np_array": np_array}));
+                    func_body_str = f"""    return {data}"""
+                    exec("\n".join([func_decl_str, func_body_str]), globals().update(
+                        {"dt_list": dt_list, "np_array": np_array}))
 
                     t = empty_table(10).update("X = i").update(f"Y= fn(X + 1)")
                     self.assertEqual(t.columns[1].data_type, dtypes.instant_array)
@@ -149,6 +150,9 @@ foo = Foo()
         def fn2(col):
             return col
 
+        def fn3(col) -> List[Union[datetime.datetime, int]]:
+            return [col]
+
         with self.subTest(fn):
             t = empty_table(1).update("X = i").update(f"Y= fn(X + 1)")
             self.assertEqual(t.columns[1].data_type, dtypes.JObject)
@@ -159,6 +163,10 @@ foo = Foo()
 
         with self.subTest(fn2):
             t = empty_table(1).update("X = i").update(f"Y= fn2(X + 1)")
+            self.assertEqual(t.columns[1].data_type, dtypes.JObject)
+
+        with self.subTest(fn3):
+            t = empty_table(1).update("X = i").update(f"Y= fn3(X + 1)")
             self.assertEqual(t.columns[1].data_type, dtypes.JObject)
 
 
