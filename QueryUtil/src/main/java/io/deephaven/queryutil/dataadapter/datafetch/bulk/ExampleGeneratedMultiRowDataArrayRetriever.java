@@ -10,8 +10,6 @@ import io.deephaven.time.DateTime;
 
 /**
  * Example expected output of io.deephaven.queryutil.dataadapter.generator.TableDataRetrieverGenerator.
- * <p>
- * Created by rbasralian on 3/7/22
  */
 class ExampleGeneratedMultiRowDataArrayRetriever extends AbstractGeneratedTableDataArrayRetriever {
 

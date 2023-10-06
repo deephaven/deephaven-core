@@ -18,9 +18,6 @@ import java.util.function.LongConsumer;
  * <li><i>While holding the LTM lock</i> (or using {@link io.deephaven.engine.table.impl.remote.ConstructSnapshot
  * ConstructSnapshot}), {@link #fillDataArrays fill the arrays} with data.</li>
  * </ol>
- *
- * <p>
- * Created by rbasralian on 3/7/22
  */
 public interface TableDataArrayRetriever {
 

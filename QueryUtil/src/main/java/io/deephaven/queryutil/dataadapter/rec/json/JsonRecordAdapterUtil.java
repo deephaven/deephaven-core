@@ -22,7 +22,7 @@ import java.util.*;
 import static io.deephaven.queryutil.dataadapter.rec.RecordUpdaters.*;
 
 /**
- * Created by rbasralian on 3/8/22
+ * Adapter to convert table data into JSON records.
  */
 public class JsonRecordAdapterUtil {
     static final Set<Class<?>> CONVERTIBLE_TO_STRING_CLASSES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(

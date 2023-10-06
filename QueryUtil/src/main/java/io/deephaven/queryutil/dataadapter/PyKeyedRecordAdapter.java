@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Created by rbasralian on 9/12/22
+ * Python-facing interface to {@code KeyedRecordAdapter}.
  */
 @SuppressWarnings("unused")
 public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {

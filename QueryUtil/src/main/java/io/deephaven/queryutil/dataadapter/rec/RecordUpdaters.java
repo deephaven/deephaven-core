@@ -7,7 +7,7 @@ import io.deephaven.util.type.TypeUtils;
 import java.util.function.BiConsumer;
 
 /**
- * Created by rbasralian on 3/7/22
+ * Utility for producing type-specific
  */
 public class RecordUpdaters {
 
@@ -54,7 +54,7 @@ public class RecordUpdaters {
     }
 
     public static <R, C> RecordUpdater<R, C> getReferenceTypeUpdater(Class<C> type, BiConsumer<R, C> recordUpdater) {
-        return new RecordUpdater<R, C>() {
+        return new RecordUpdater<>() {
             @Override
             public Class<C> getSourceType() {
                 return type;
@@ -76,7 +76,7 @@ public class RecordUpdaters {
     }
 
     public static <R> RecordUpdater<R, Character> getCharUpdater(ObjCharConsumer<R> recordUpdater) {
-        return new RecordUpdater<R, Character>() {
+        return new RecordUpdater<>() {
             @Override
             public Class<Character> getSourceType() {
                 return char.class;
@@ -90,7 +90,7 @@ public class RecordUpdaters {
     }
 
     public static <R> RecordUpdater<R, Byte> getByteUpdater(ObjByteConsumer<R> recordUpdater) {
-        return new RecordUpdater<R, Byte>() {
+        return new RecordUpdater<>() {
             @Override
             public Class<Byte> getSourceType() {
                 return byte.class;
@@ -104,7 +104,7 @@ public class RecordUpdaters {
     }
 
     public static <R> RecordUpdater<R, Short> getShortUpdater(ObjShortConsumer<R> recordUpdater) {
-        return new RecordUpdater<R, Short>() {
+        return new RecordUpdater<>() {
             @Override
             public Class<Short> getSourceType() {
                 return short.class;
@@ -118,7 +118,7 @@ public class RecordUpdaters {
     }
 
     public static <R> RecordUpdater<R, Integer> getIntUpdater(ObjIntConsumer<R> recordUpdater) {
-        return new RecordUpdater<R, Integer>() {
+        return new RecordUpdater<>() {
             @Override
             public Class<Integer> getSourceType() {
                 return int.class;
@@ -132,7 +132,7 @@ public class RecordUpdaters {
     }
 
     public static <R> RecordUpdater<R, Float> getFloatUpdater(ObjFloatConsumer<R> recordUpdater) {
-        return new RecordUpdater<R, Float>() {
+        return new RecordUpdater<>() {
             @Override
             public Class<Float> getSourceType() {
                 return float.class;
@@ -146,7 +146,7 @@ public class RecordUpdaters {
     }
 
     public static <R> RecordUpdater<R, Long> getLongUpdater(ObjLongConsumer<R> recordUpdater) {
-        return new RecordUpdater<R, Long>() {
+        return new RecordUpdater<>() {
             @Override
             public Class<Long> getSourceType() {
                 return long.class;
@@ -160,7 +160,7 @@ public class RecordUpdaters {
     }
 
     public static <R> RecordUpdater<R, Double> getDoubleUpdater(ObjDoubleConsumer<R> recordUpdater) {
-        return new RecordUpdater<R, Double>() {
+        return new RecordUpdater<>() {
             @Override
             public Class<Double> getSourceType() {
                 return double.class;

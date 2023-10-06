@@ -11,9 +11,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.LongConsumer;
 
-/**
- * Created by rbasralian on 3/7/22
- */
 public abstract class AbstractTableDataArrayRetriever implements TableDataArrayRetriever {
 
     private static final int MAX_CHUNK_SIZE = 4096;

@@ -11,8 +11,6 @@ import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 
 /**
  * Generates a class that efficiently retrieves data from column sources.
- * <p>
- * Created by rbasralian on 3/7/22
  */
 class TableDataRetrieverGenerator {
 
