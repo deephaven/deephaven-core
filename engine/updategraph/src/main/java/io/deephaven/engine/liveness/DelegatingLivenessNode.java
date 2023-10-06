@@ -12,8 +12,8 @@ import java.util.stream.Stream;
 public interface DelegatingLivenessNode extends LivenessNode {
     /**
      * Returns the "real" {@link LivenessNode} instance. When implementing this, care should be taken to match lifecycle
-     * of the {@code DelegatingLivenessNode} instance with this instance, as the returned {@code LivenessNode} behaves as a
-     * proxy for {@code this}.
+     * of the {@code DelegatingLivenessNode} instance with this instance, as the returned {@code LivenessNode} behaves
+     * as a proxy for {@code this}.
      *
      * @return a LivenessNode to use to manage this object's liveness.
      */
