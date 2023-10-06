@@ -4,7 +4,7 @@
 package io.deephaven.plot;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.liveness.IsLivenessNode;
+import io.deephaven.engine.liveness.DelegatingLivenessNode;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -21,7 +21,7 @@ import java.util.*;
  * Displayable version of a Figure.
  */
 public class FigureWidget extends FigureImpl
-        implements LiveWidget, LiveWidgetVisibilityProvider, FigureWidgetMarker, IsLivenessNode {
+        implements LiveWidget, LiveWidgetVisibilityProvider, FigureWidgetMarker, DelegatingLivenessNode {
 
     private static final long serialVersionUID = 763409998768966385L;
     private String[] validGroups;
