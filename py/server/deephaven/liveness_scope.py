@@ -66,7 +66,7 @@ _JLivenessScope = jpy.get_type("io.deephaven.engine.liveness.LivenessScope")
 _JLivenessReferent = jpy.get_type("io.deephaven.engine.liveness.LivenessReferent")
 
 
-def _push(scope: _JLivenessScope):
+def _push(scope: _JLivenessScope) -> None:
     _JLivenessScopeStack.push(scope)
 
 
