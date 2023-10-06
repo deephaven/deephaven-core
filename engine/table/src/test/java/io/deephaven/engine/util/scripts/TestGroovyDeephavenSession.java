@@ -101,6 +101,18 @@ public class TestGroovyDeephavenSession {
     }
 
     @Test
+    public void testImportedScriptDefinedClass() {
+        session.evaluateScript("import io.deephaven.engine.util.scripts.MainScript").throwIfError();
+        session.evaluateScript("t = MainScript.makeTheData(100).update('X = Data.getX()', 'Y = Data.getY()')")
+                .throwIfError();
+        Table result = fetchTable("t");
+        assertEquals(100, result.size());
+        assertEquals(3, result.numColumns());
+        assertEquals(double.class, result.getColumnSource("X").getType());
+        assertEquals(double.class, result.getColumnSource("Y").getType());
+    }
+
+    @Test
     public void testScriptResultOrder() {
         final ScriptSession.Changes changes = session.evaluateScript("x=emptyTable(10)\n" +
                 "z=emptyTable(10)\n" +

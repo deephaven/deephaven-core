@@ -16,7 +16,6 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
-import io.deephaven.base.string.cache.CompressedString;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.configuration.Configuration;
@@ -168,11 +167,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         // Specify a classloader to read from the classpath, with script imports
         CompilerConfiguration scriptConfig = new CompilerConfiguration();
         scriptConfig.getCompilationCustomizers().add(loadedGroovyScriptImports);
+        scriptConfig.setTargetDirectory(executionContext.getQueryCompiler().getFakeClassDestination());
         GroovyClassLoader scriptClassLoader = new GroovyClassLoader(STATIC_LOADER, scriptConfig);
 
         // Specify a configuration for compiling/running console commands for custom imports
         CompilerConfiguration consoleConfig = new CompilerConfiguration();
         consoleConfig.getCompilationCustomizers().add(consoleImports);
+        consoleConfig.setTargetDirectory(executionContext.getQueryCompiler().getFakeClassDestination());
 
 
         groovyShell = new GroovyShell(scriptClassLoader, consoleConfig) {
@@ -663,6 +664,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String name = getNextScriptClassName();
 
         CompilerConfiguration config = new CompilerConfiguration(CompilerConfiguration.DEFAULT);
+        config.setTargetDirectory(executionContext.getQueryCompiler().getFakeClassDestination());
         config.getCompilationCustomizers().add(consoleImports);
         final CompilationUnit cu = new CompilationUnit(config, null, groovyShell.getClassLoader());
         cu.addSource(name, currentCommand);
