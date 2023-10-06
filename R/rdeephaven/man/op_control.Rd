@@ -24,14 +24,14 @@ Creates an OperationControl that controls behavior on special values in \verb{ub
 An OperationControl defines the control parameters of some UpdateByOps used in an update_by table operation.
 The UpdateBy operations that can use OperationControl to handle erroneous data are:
 \itemize{
-\item \code{\link[=ema_tick]{ema_tick()}}
-\item \code{\link[=ema_time]{ema_time()}}
-\item \code{\link[=ems_tick]{ems_tick()}}
-\item \code{\link[=ems_time]{ems_time()}}
-\item \code{\link[=emmin_tick]{emmin_tick()}}
-\item \code{\link[=emmin_time]{emmin_time()}}
-\item \code{\link[=emmax_tick]{emmax_tick()}}
-\item \code{\link[=emmax_time]{emmax_time()}}
+\item \code{\link[=uby_ema_tick]{uby_ema_tick()}}
+\item \code{\link[=uby_ema_time]{uby_ema_time()}}
+\item \code{\link[=uby_ems_tick]{uby_ems_tick()}}
+\item \code{\link[=uby_ems_time]{uby_ems_time()}}
+\item \code{\link[=uby_emmin_tick]{uby_emmin_tick()}}
+\item \code{\link[=uby_emmin_time]{uby_emmin_time()}}
+\item \code{\link[=uby_emmax_tick]{uby_emmax_tick()}}
+\item \code{\link[=uby_emmax_time]{uby_emmax_time()}}
 }
 
 The arguments \code{on_null} and \code{on_nan} can take the following values:

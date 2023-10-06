@@ -29,14 +29,14 @@ OperationControl <- R6Class("OperationControl",
 #' An OperationControl defines the control parameters of some UpdateByOps used in an update_by table operation.
 #' The UpdateBy operations that can use OperationControl to handle erroneous data are:
 #'
-#' - [`ema_tick()`][ema_tick]
-#' - [`ema_time()`][ema_time]
-#' - [`ems_tick()`][ems_tick]
-#' - [`ems_time()`][ems_time]
-#' - [`emmin_tick()`][emmin_tick]
-#' - [`emmin_time()`][emmin_time]
-#' - [`emmax_tick()`][emmax_tick]
-#' - [`emmax_time()`][emmax_time]
+#' - [`uby_ema_tick()`][uby_ema_tick]
+#' - [`uby_ema_time()`][uby_ema_time]
+#' - [`uby_ems_tick()`][uby_ems_tick]
+#' - [`uby_ems_time()`][uby_ems_time]
+#' - [`uby_emmin_tick()`][uby_emmin_tick]
+#' - [`uby_emmin_time()`][uby_emmin_time]
+#' - [`uby_emmax_tick()`][uby_emmax_tick]
+#' - [`uby_emmax_time()`][uby_emmax_time]
 #'
 #' The arguments `on_null` and `on_nan` can take the following values:
 #'

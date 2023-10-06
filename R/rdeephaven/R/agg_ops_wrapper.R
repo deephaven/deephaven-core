@@ -501,10 +501,10 @@ agg_percentile <- function(percentile, cols = character()) {
 #' Creates a Count aggregation that counts the number of rows in each aggregation group.
 #'
 #' @details
-#' The aggregation groups that this function acts on are defined with the `by` parameter of the `agg_by()` or
-#' `agg_all_by()` caller function. The aggregation groups are defined by the unique combinations of values in the `by`
-#' columns. For example, if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of
-#' values in the `A` and `B` columns.
+#' The aggregation groups that this function acts on are defined with the `by` parameter of the `agg_by()` caller
+#' function. The aggregation groups are defined by the unique combinations of values in the `by` columns. For example,
+#' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the `A` and
+#' `B` columns.
 #'
 #' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
 #' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
@@ -513,8 +513,9 @@ agg_percentile <- function(percentile, cols = character()) {
 #' unexpected.
 #'
 #' Note that this operation is not supported in `agg_all_by()`.
+#'
 #' @param col String denoting the name of the new column to hold the counts of each aggregation group.
-#' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
+#' @return Aggregation function to be used in `agg_by()`.
 #'
 #' @examples
 #' print("hello!")

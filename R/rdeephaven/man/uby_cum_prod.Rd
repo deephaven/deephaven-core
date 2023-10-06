@@ -22,7 +22,7 @@ if \code{by = c("A", "B")}, then the aggregation groups are defined by the uniqu
 This function, like the other Deephaven \verb{uby_*} functions, is a generator function. That is, its output is another
 function that is intended to be used in a call to \code{update_by()}. This detail is typically hidden from the user by
 \code{update_by()}, which calls the generated functions internally. However, it is important to understand this detail
-for debugging purposes, as the output of an \verb{agg_*} function can otherwise seem expected.
+for debugging purposes, as the output of a \verb{uby_*} function can otherwise seem unexpected.
 }
 \examples{
 print("hello!")

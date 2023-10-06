@@ -7,16 +7,16 @@
 \item{col}{String denoting the name of the new column to hold the counts of each aggregation group.}
 }
 \value{
-Aggregation function to be used in \code{agg_by()} or \code{agg_all_by()}.
+Aggregation function to be used in \code{agg_by()}.
 }
 \description{
 Creates a Count aggregation that counts the number of rows in each aggregation group.
 }
 \details{
-The aggregation groups that this function acts on are defined with the \code{by} parameter of the \code{agg_by()} or
-\code{agg_all_by()} caller function. The aggregation groups are defined by the unique combinations of values in the \code{by}
-columns. For example, if \code{by = c("A", "B")}, then the aggregation groups are defined by the unique combinations of
-values in the \code{A} and \code{B} columns.
+The aggregation groups that this function acts on are defined with the \code{by} parameter of the \code{agg_by()} caller
+function. The aggregation groups are defined by the unique combinations of values in the \code{by} columns. For example,
+if \code{by = c("A", "B")}, then the aggregation groups are defined by the unique combinations of values in the \code{A} and
+\code{B} columns.
 
 This function, like the other Deephaven \verb{agg_*} functions, is a generator function. That is, its output is another
 function that is intended to be used in a call to \code{agg_by()} or \code{agg_all_by()}. This detail is typically hidden from
