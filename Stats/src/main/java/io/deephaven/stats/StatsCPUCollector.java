@@ -14,6 +14,7 @@ import io.deephaven.hash.KeyedLongObjectKey;
 
 import java.io.FileInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.lang.management.*;
 
 /**
@@ -24,6 +25,8 @@ public class StatsCPUCollector {
 
     public static final boolean MEASURE_PER_THREAD_CPU =
             Configuration.getInstance().getBoolean("measurement.per_thread_cpu");
+    private static final String PROC_STAT_PSEUDOFILE = "/proc/stat";
+    private static final String PROC_SELF_STAT_PSEUDOFILE = "/proc/self/stat";
 
     private static final long NANOS = 1000000000;
     private static final long MILLIS = 1000;
@@ -71,8 +74,8 @@ public class StatsCPUCollector {
         this.getFdStats = getFdStats;
         long seconds = interval / MILLIS;
         this.divisor = NANOS / (seconds * 10);
-        Stats.makeGroup("Kernel", "Unix kernel statistics, as read from /proc/stat");
-        Stats.makeGroup("Proc", "Unix process statistics, as read from /proc/self/stat and /proc/self/fd");
+        Stats.makeGroup("Kernel", "Unix kernel statistics, as read from " + PROC_STAT_PSEUDOFILE);
+        Stats.makeGroup("Proc", "Unix process statistics, as read from " + PROC_SELF_STAT_PSEUDOFILE + " and /proc/self/fd");
         Stats.makeGroup("CPU", "JMX CPU usage data, per-thread and for the entire process");
 
         if (OSUtil.runningMacOS() || OSUtil.runningWindows()) {
@@ -145,7 +148,8 @@ public class StatsCPUCollector {
 
     private boolean startsWith(String match, int nb) {
         for (int i = 0; i < match.length(); i++) {
-            if (i + statBufferIndex < nb && statBuffer[i + statBufferIndex] != match.charAt(i)) {
+            final int nextIdx = i + statBufferIndex;
+            if (nextIdx == statBuffer.length || (nextIdx < nb && statBuffer[nextIdx] != match.charAt(i))) {
                 return false;
             }
         }
@@ -153,7 +157,7 @@ public class StatsCPUCollector {
     }
 
     private boolean skipWhiteSpace(int nb) {
-        while (statBuffer[statBufferIndex] == ' ') {
+        while (statBufferIndex < statBuffer.length && statBuffer[statBufferIndex] == ' ') {
             if (statBufferIndex >= nb || statBuffer[statBufferIndex] == '\n') {
                 return false;
             }
@@ -163,7 +167,7 @@ public class StatsCPUCollector {
     }
 
     private boolean skipNextField(int nb) {
-        while (statBuffer[statBufferIndex] != ' ') {
+        while (statBufferIndex < statBuffer.length && statBuffer[statBufferIndex] != ' ') {
             if (statBufferIndex >= nb || statBuffer[statBufferIndex] == '\n') {
                 return false;
             }
@@ -194,7 +198,7 @@ public class StatsCPUCollector {
 
     private long getNextFieldLong(int nb) {
         long result = 0;
-        while (statBufferIndex < nb && statBuffer[statBufferIndex] >= '0' && statBuffer[statBufferIndex] <= '9') {
+        while (peekNextLong(nb)) {
             result *= 10;
             result += statBuffer[statBufferIndex] - '0';
             statBufferIndex++;
@@ -203,7 +207,32 @@ public class StatsCPUCollector {
     }
 
     private boolean peekNextLong(int nb) {
-        return statBufferIndex < nb && statBuffer[statBufferIndex] >= '0' && statBuffer[statBufferIndex] <= '9';
+        return statBufferIndex < nb && statBufferIndex < statBuffer.length && statBuffer[statBufferIndex] >= '0' && statBuffer[statBufferIndex] <= '9';
+    }
+
+    /**
+     * Attempt to read the entire contents of an already-opened file to a pre-defined buffer. If the buffer is not large
+     * enough for the entire contents of the file, then the caller should re-allocate the buffer, and try again
+     *
+     * @param inFile a file whose bytes we intend to read
+     * @param buffer an array of bytes, which will be populates with the contents of the file
+     *
+     * @return the number of bytes successfully read into the buffer
+     */
+    private static int readToSizedBuffer(final FileInputStream inFile, final byte[] buffer) throws IOException {
+        int nb = 0;
+
+        while (nb < buffer.length) {
+            final int thisNb = inFile.read(buffer, nb, buffer.length - nb);
+
+            if (thisNb == -1) {
+                break;
+            } else {
+                nb += thisNb;
+            }
+        }
+
+        return nb;
     }
 
     /**
@@ -216,10 +245,26 @@ public class StatsCPUCollector {
         if (hasProcStat) {
             try {
                 if (statFile == null) {
-                    statFile = new FileInputStream("/proc/stat");
+                    statFile = new FileInputStream(PROC_STAT_PSEUDOFILE);
                 }
-                int nb = statFile.read(statBuffer, 0, statBuffer.length);
-                statFile.getChannel().position(0);
+
+                int nb;
+                while (true) {
+                    statFile.getChannel().position(0);
+                    nb = readToSizedBuffer(statFile, statBuffer);
+
+                    if (nb == statBuffer.length) {
+                        // allocate larger read-buffer, and try again
+                        statBuffer = new byte[statBuffer.length * 2];
+
+                        statFile.close();
+                        statFile = new FileInputStream(PROC_STAT_PSEUDOFILE);
+                    } else if (nb == 0) {
+                        throw new RuntimeException(PROC_STAT_PSEUDOFILE + " zero read");
+                    } else {
+                        break;
+                    }
+                }
 
                 statBufferIndex = 0;
                 while (statBufferIndex < nb) {
@@ -296,9 +341,16 @@ public class StatsCPUCollector {
                     }
                 }
             } catch (Exception x) {
+                if (statFile != null) {
+                    try {
+                        statFile.close();
+                    } catch (final IOException ignore) { }
+                    statFile = null;
+                }
+
                 // if we get any exception, don't try to read it again
                 if (hasProcStat) {
-                    log.error().append("got an exception reading /proc/stat: ").append(x).endl();
+                    log.error("got an exception reading " + PROC_STAT_PSEUDOFILE + ": " + x);
                 }
                 hasProcStat = false;
             }
@@ -314,9 +366,8 @@ public class StatsCPUCollector {
         if (hasProcPidStat) {
             try {
                 if (procFile == null) {
-                    procFile = new FileInputStream("/proc/self/stat");
+                    procFile = new FileInputStream(PROC_SELF_STAT_PSEUDOFILE);
                 }
-                procFile.getChannel().position(0);
                 if (statProcMinorFaults == null) {
                     statProcMinorFaults = Stats
                             .makeItem("Proc", "MinorFaults", Counter.FACTORY, "Minor faults the process has incurred")
@@ -336,7 +387,25 @@ public class StatsCPUCollector {
                                     .getValue();
                 }
                 statBufferIndex = 0;
-                int nb = procFile.read(statBuffer, 0, statBuffer.length);
+
+                int nb;
+                while (true) {
+                    procFile.getChannel().position(0);
+                    nb = readToSizedBuffer(procFile, statBuffer);
+
+                    if (nb == statBuffer.length) {
+                        // allocate larger read-buffer, and try again
+                        statBuffer = new byte[statBuffer.length*2];
+
+                        procFile.close();
+                        procFile = new FileInputStream(PROC_SELF_STAT_PSEUDOFILE);
+                    } else if (nb == 0) {
+                        throw new RuntimeException(PROC_SELF_STAT_PSEUDOFILE + " zero read");
+                    } else {
+                        break;
+                    }
+                }
+
                 for (int i = 0; i < 9; i++) {
                     skipNextField(nb);
                 }
@@ -352,7 +421,17 @@ public class StatsCPUCollector {
                 getNextFieldSampleKilobytes(statProcVSZ, nb);
                 getNextFieldSample(statProcRSS, nb);
             } catch (Exception x) {
+                if (procFile != null) {
+                    try {
+                        procFile.close();
+                    } catch (final IOException ignore) { }
+                    procFile = null;
+                }
+
                 // if we get any exception, don't try to read it again
+                if ( hasProcPidStat ) {
+                    log.error("got an exception reading " + PROC_SELF_STAT_PSEUDOFILE + ": " + x);
+                }
                 hasProcPidStat = false;
             }
         }
