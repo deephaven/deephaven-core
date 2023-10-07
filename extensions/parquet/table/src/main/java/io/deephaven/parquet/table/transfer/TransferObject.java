@@ -101,9 +101,9 @@ public interface TransferObject<B> extends SafeCloseable {
             if (double.class.equals(componentType)) {
                 return new DoubleArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-          if (float.class.equals(componentType)) {
+            if (float.class.equals(componentType)) {
                 return new FloatArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-          }
+            }
             if (Boolean.class.equals(componentType)) {
                 return new BooleanArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
@@ -137,24 +137,24 @@ public interface TransferObject<B> extends SafeCloseable {
             if (long.class.equals(componentType)) {
                 return new LongVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-          if (double.class.equals(componentType)) {
+            if (double.class.equals(componentType)) {
                 return new DoubleVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-          }
-          if (float.class.equals(componentType)) {
+            }
+            if (float.class.equals(componentType)) {
                 return new FloatVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-          }
+            }
             if (Boolean.class.equals(componentType)) {
                 return new BooleanVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-          if (short.class.equals(componentType)) {
+            if (short.class.equals(componentType)) {
                 return new ShortVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-          }
+            }
             if (char.class.equals(componentType)) {
                 return new CharVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-          if (byte.class.equals(componentType)) {
+            if (byte.class.equals(componentType)) {
                 return new ByteVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
-          }
+            }
             if (String.class.equals(componentType)) {
                 return new StringVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }

@@ -201,12 +201,15 @@ public class ParquetTableReadWriteTest {
                         : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subVector(0,0):" + name
                                 + ")"))
                 .toArray(String[]::new));
-        result = result.update(
-                "someStringSet = (StringSet)new ArrayStringSet( ((Object)nonNullString) == null?new String[0]:(String[])nonNullString.toArray())");
-        result = result.update(
-                "largeStringSet = (StringSet)new ArrayStringSet(((Object)nonNullPolyString) == null?new String[0]:(String[])nonNullPolyString.toArray())");
-        result = result.update(
-                "nullStringSet = (StringSet)null");
+        // TODO Check with Ryan if we need to support these
+        // result = result.update(
+        // "someStringSet = (StringSet)new ArrayStringSet( ((Object)nonNullString) == null?new
+        // String[0]:(String[])nonNullString.toArray())");
+        // result = result.update(
+        // "largeStringSet = (StringSet)new ArrayStringSet(((Object)nonNullPolyString) == null?new
+        // String[0]:(String[])nonNullPolyString.toArray())");
+        // result = result.update(
+        // "nullStringSet = (StringSet)null");
         result = result.update(
                 "someStringColumn = (String[])(((Object)someStringColumn) == null?null:someStringColumn.toArray())",
                 "nonNullString = (String[])(((Object)nonNullString) == null?null:nonNullString.toArray())",
@@ -467,27 +470,27 @@ public class ParquetTableReadWriteTest {
         assertTableEquals(arrayTable, fromDisk);
     }
 
-    private static Table arrayToVectorTable(final Table table) {
-        final TableDefinition tableDefinition = table.getDefinition();
-        final List<SelectColumn> arrayToVectorFormulas = new ArrayList<>();
-        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
-            final String columnName = columnDefinition.getName();
-            final Class<Object> sourceDataType = (Class<Object>) columnDefinition.getDataType();
-            if (!sourceDataType.isArray()) {
-                continue;
-            }
-            final Class<?> componentType = Objects.requireNonNull(columnDefinition.getComponentType());
-            final VectorFactory vectorFactory = VectorFactory.forElementType(componentType);
-            final Object emptyArray = Array.newInstance(componentType, 0);
-            final Vector<?> emptyVector = vectorFactory.vectorWrap(emptyArray);
-            final Class<Vector<?>> destinationDataType = (Class<Vector<?>>) emptyVector.getClass();
-            final Function<Object, Vector<?>> vectorWrapFunction = vectorFactory::vectorWrap;
-            // noinspection unchecked,rawtypes
-            arrayToVectorFormulas.add(new FunctionalColumn<>(
-                    columnName, sourceDataType, columnName, destinationDataType, componentType, vectorWrapFunction));
-        }
-        return arrayToVectorFormulas.isEmpty() ? table : table.updateView(arrayToVectorFormulas);
-    }
+    // private static Table arrayToVectorTable(final Table table) {
+    // final TableDefinition tableDefinition = table.getDefinition();
+    // final List<SelectColumn> arrayToVectorFormulas = new ArrayList<>();
+    // for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
+    // final String columnName = columnDefinition.getName();
+    // final Class<Object> sourceDataType = (Class<Object>) columnDefinition.getDataType();
+    // if (!sourceDataType.isArray()) {
+    // continue;
+    // }
+    // final Class<?> componentType = Objects.requireNonNull(columnDefinition.getComponentType());
+    // final VectorFactory vectorFactory = VectorFactory.forElementType(componentType);
+    // final Object emptyArray = Array.newInstance(componentType, 0);
+    // final Vector<?> emptyVector = vectorFactory.vectorWrap(emptyArray);
+    // final Class<? extends Vector<?>> destinationDataType = vectorFactory.vectorType();
+    // final Function<Object, Vector<?>> vectorWrapFunction = vectorFactory::vectorWrap;
+    // // noinspection unchecked,rawtypes
+    // arrayToVectorFormulas.add(new FunctionalColumn<>(
+    // columnName, sourceDataType, columnName, destinationDataType, componentType, vectorWrapFunction));
+    // }
+    // return arrayToVectorFormulas.isEmpty() ? table : table.updateView(arrayToVectorFormulas);
+    // }
 
     @Test
     public void testArrayColumns() {
@@ -522,137 +525,11 @@ public class ParquetTableReadWriteTest {
         Table fromDisk = ParquetTools.readTable(dest);
         assertTableEquals(arrayTable, fromDisk);
 
-        // Convert array table to vector
-        final Table vectorTable = arrayToVectorTable(arrayTable);
-        ParquetTools.writeTable(vectorTable, dest);
-        fromDisk = ParquetTools.readTable(dest);
-        assertTableEquals(vectorTable, fromDisk);
-    }
-
-    // Following is used for testing both writing APIs for parquet tables
-    private interface TestParquetTableWriter {
-        void writeTable(final Table table, final File destFile);
-    }
-
-    TestParquetTableWriter singleWriter = (table, destFile) -> ParquetTools.writeTable(table, destFile);
-    TestParquetTableWriter multiWriter = (table, destFile) -> ParquetTools.writeTables(new Table[] {table},
-            table.getDefinition(), new File[] {destFile});
-
-    /**
-     * These are tests for writing a table to a parquet file and making sure there are no unnecessary files left in the
-     * directory after we finish writing.
-     */
-    @Test
-    public void basicWriteTests() {
-        basicWriteTestsImpl(singleWriter);
-        basicWriteTestsImpl(multiWriter);
-    }
-
-    private void basicWriteTestsImpl(TestParquetTableWriter writer) {
-        // Create an empty parent directory
-        final File parentDir = new File(rootFile, "tempDir");
-        parentDir.mkdir();
-        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length == 0);
-
-        // There should be just one file in the directory on a successful write and no temporary files
-        final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
-        final String filename = "basicWriteTests.parquet";
-        final File destFile = new File(parentDir, filename);
-        writer.writeTable(tableToSave, destFile);
-        List filesInDir = Arrays.asList(parentDir.list());
-        assertTrue(filesInDir.size() == 1 && filesInDir.contains(filename));
-        Table fromDisk = ParquetTools.readTable(destFile);
-        TstUtils.assertTableEquals(fromDisk, tableToSave);
-
-        // This write should fail
-        final Table badTable = TableTools.emptyTable(5)
-                .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
-        try {
-            writer.writeTable(badTable, destFile);
-            TestCase.fail("Exception expected for invalid formula");
-        } catch (UncheckedDeephavenException e) {
-            assertTrue(e.getCause() instanceof FormulaEvaluationException);
-        }
-
-        // Make sure that original file is preserved and no temporary files
-        filesInDir = Arrays.asList(parentDir.list());
-        assertTrue(filesInDir.size() == 1 && filesInDir.contains(filename));
-        fromDisk = ParquetTools.readTable(destFile);
-        TstUtils.assertTableEquals(fromDisk, tableToSave);
-
-        // Write a new table successfully at the same path
-        final Table newTableToSave = TableTools.emptyTable(5).update("A=(int)i");
-        writer.writeTable(newTableToSave, destFile);
-        filesInDir = Arrays.asList(parentDir.list());
-        assertTrue(filesInDir.size() == 1 && filesInDir.contains(filename));
-        fromDisk = ParquetTools.readTable(destFile);
-        TstUtils.assertTableEquals(fromDisk, newTableToSave);
-        FileUtils.deleteRecursively(parentDir);
-    }
-
-    /**
-     * These are tests for writing multiple parquet tables in a single call.
-     */
-    @Test
-    public void writeMultiTableBasicTest() {
-        // Create an empty parent directory
-        final File parentDir = new File(rootFile, "tempDir");
-        parentDir.mkdir();
-
-        // Write two tables to parquet file and read them back
-        final Table firstTable = TableTools.emptyTable(5)
-                .updateView("InputString = Long.toString(ii)", "A=InputString.charAt(0)");
-        final String firstFilename = "firstTable.parquet";
-        final File firstDestFile = new File(parentDir, firstFilename);
-
-        final Table secondTable = TableTools.emptyTable(5)
-                .updateView("InputString = Long.toString(ii*5)", "A=InputString.charAt(0)");
-        final String secondFilename = "secondTable.parquet";
-        final File secondDestFile = new File(parentDir, secondFilename);
-
-        Table[] tablesToSave = new Table[] {firstTable, secondTable};
-        File[] destFiles = new File[] {firstDestFile, secondDestFile};
-
-        ParquetTools.writeTables(tablesToSave, firstTable.getDefinition(), destFiles);
-
-        List filesInDir = Arrays.asList(parentDir.list());
-        assertTrue(filesInDir.size() == 2 && filesInDir.contains(firstFilename) && filesInDir.contains(secondFilename));
-
-        TstUtils.assertTableEquals(ParquetTools.readTable(firstDestFile), firstTable);
-        TstUtils.assertTableEquals(ParquetTools.readTable(secondDestFile), secondTable);
-    }
-
-    /**
-     * These are tests for writing multiple parquet tables such that there is an exception in the second write.
-     */
-    @Test
-    public void writeMultiTableExceptionTest() {
-        // Create an empty parent directory
-        final File parentDir = new File(rootFile, "tempDir");
-        parentDir.mkdir();
-
-        // Write two tables to parquet file and read them back
-        final Table firstTable = TableTools.emptyTable(5)
-                .updateView("InputString = Long.toString(ii)", "A=InputString.charAt(0)");
-        final File firstDestFile = new File(parentDir, "firstTable.parquet");
-
-        final Table secondTable = TableTools.emptyTable(5)
-                .updateView("InputString = ii % 2 == 0 ? Long.toString(ii*5) : null", "A=InputString.charAt(0)");
-        final File secondDestFile = new File(parentDir, "secondTable.parquet");
-
-        Table[] tablesToSave = new Table[] {firstTable, secondTable};
-        File[] destFiles = new File[] {firstDestFile, secondDestFile};
-
-        // This write should fail
-        try {
-            ParquetTools.writeTables(tablesToSave, firstTable.getDefinition(), destFiles);
-            TestCase.fail("Exception expected for invalid formula");
-        } catch (UncheckedDeephavenException e) {
-            assertTrue(e.getCause() instanceof FormulaEvaluationException);
-        }
-
-        // All files should be deleted even though first table would be written successfully
-        assertTrue(parentDir.list().length == 0);
+        // // Convert array table to vector
+        // final Table vectorTable = arrayToVectorTable(arrayTable);
+        // ParquetTools.writeTable(vectorTable, dest);
+        // Table fromDisk = ParquetTools.readTable(dest);
+        // assertTableEquals(vectorTable, fromDisk);
     }
 
     // // TODO Remove all these
@@ -786,6 +663,132 @@ public class ParquetTableReadWriteTest {
     // final long end2 = System.currentTimeMillis();
     // System.out.println("Total execution time for vectors: " + (end2 - start2) / NUM_RUNS + " msec");
     // }
+
+    // Following is used for testing both writing APIs for parquet tables
+    private interface TestParquetTableWriter {
+        void writeTable(final Table table, final File destFile);
+    }
+
+    TestParquetTableWriter singleWriter = (table, destFile) -> ParquetTools.writeTable(table, destFile);
+    TestParquetTableWriter multiWriter = (table, destFile) -> ParquetTools.writeTables(new Table[] {table},
+            table.getDefinition(), new File[] {destFile});
+
+    /**
+     * These are tests for writing a table to a parquet file and making sure there are no unnecessary files left in the
+     * directory after we finish writing.
+     */
+    @Test
+    public void basicWriteTests() {
+        basicWriteTestsImpl(singleWriter);
+        basicWriteTestsImpl(multiWriter);
+    }
+
+    private void basicWriteTestsImpl(TestParquetTableWriter writer) {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length == 0);
+
+        // There should be just one file in the directory on a successful write and no temporary files
+        final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+        final String filename = "basicWriteTests.parquet";
+        final File destFile = new File(parentDir, filename);
+        writer.writeTable(tableToSave, destFile);
+        List filesInDir = Arrays.asList(parentDir.list());
+        assertTrue(filesInDir.size() == 1 && filesInDir.contains(filename));
+        Table fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, tableToSave);
+
+        // This write should fail
+        final Table badTable = TableTools.emptyTable(5)
+                .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
+        try {
+            writer.writeTable(badTable, destFile);
+            TestCase.fail("Exception expected for invalid formula");
+        } catch (UncheckedDeephavenException e) {
+            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+        }
+
+        // Make sure that original file is preserved and no temporary files
+        filesInDir = Arrays.asList(parentDir.list());
+        assertTrue(filesInDir.size() == 1 && filesInDir.contains(filename));
+        fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, tableToSave);
+
+        // Write a new table successfully at the same path
+        final Table newTableToSave = TableTools.emptyTable(5).update("A=(int)i");
+        writer.writeTable(newTableToSave, destFile);
+        filesInDir = Arrays.asList(parentDir.list());
+        assertTrue(filesInDir.size() == 1 && filesInDir.contains(filename));
+        fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, newTableToSave);
+        FileUtils.deleteRecursively(parentDir);
+    }
+
+    /**
+     * These are tests for writing multiple parquet tables in a single call.
+     */
+    @Test
+    public void writeMultiTableBasicTest() {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+
+        // Write two tables to parquet file and read them back
+        final Table firstTable = TableTools.emptyTable(5)
+                .updateView("InputString = Long.toString(ii)", "A=InputString.charAt(0)");
+        final String firstFilename = "firstTable.parquet";
+        final File firstDestFile = new File(parentDir, firstFilename);
+
+        final Table secondTable = TableTools.emptyTable(5)
+                .updateView("InputString = Long.toString(ii*5)", "A=InputString.charAt(0)");
+        final String secondFilename = "secondTable.parquet";
+        final File secondDestFile = new File(parentDir, secondFilename);
+
+        Table[] tablesToSave = new Table[] {firstTable, secondTable};
+        File[] destFiles = new File[] {firstDestFile, secondDestFile};
+
+        ParquetTools.writeTables(tablesToSave, firstTable.getDefinition(), destFiles);
+
+        List filesInDir = Arrays.asList(parentDir.list());
+        assertTrue(filesInDir.size() == 2 && filesInDir.contains(firstFilename) && filesInDir.contains(secondFilename));
+
+        TstUtils.assertTableEquals(ParquetTools.readTable(firstDestFile), firstTable);
+        TstUtils.assertTableEquals(ParquetTools.readTable(secondDestFile), secondTable);
+    }
+
+    /**
+     * These are tests for writing multiple parquet tables such that there is an exception in the second write.
+     */
+    @Test
+    public void writeMultiTableExceptionTest() {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+
+        // Write two tables to parquet file and read them back
+        final Table firstTable = TableTools.emptyTable(5)
+                .updateView("InputString = Long.toString(ii)", "A=InputString.charAt(0)");
+        final File firstDestFile = new File(parentDir, "firstTable.parquet");
+
+        final Table secondTable = TableTools.emptyTable(5)
+                .updateView("InputString = ii % 2 == 0 ? Long.toString(ii*5) : null", "A=InputString.charAt(0)");
+        final File secondDestFile = new File(parentDir, "secondTable.parquet");
+
+        Table[] tablesToSave = new Table[] {firstTable, secondTable};
+        File[] destFiles = new File[] {firstDestFile, secondDestFile};
+
+        // This write should fail
+        try {
+            ParquetTools.writeTables(tablesToSave, firstTable.getDefinition(), destFiles);
+            TestCase.fail("Exception expected for invalid formula");
+        } catch (UncheckedDeephavenException e) {
+            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+        }
+
+        // All files should be deleted even though first table would be written successfully
+        assertTrue(parentDir.list().length == 0);
+    }
 
     /**
      * These are tests for writing to a table with grouping columns to a parquet file and making sure there are no

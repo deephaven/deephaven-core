@@ -35,7 +35,9 @@ final public class StringDictionary {
         this.maxDictSize = maxDictSize;
         this.statistics = statistics;
 
-        this.keyToPos = new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
+        final int NO_ENTRY_VALUE = -1;
+        this.keyToPos =
+                new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NO_ENTRY_VALUE);
 
         this.encodedKeys = new Binary[Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)];
         this.dictSize = this.keyCount = 0;

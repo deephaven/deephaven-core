@@ -58,6 +58,9 @@ abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T,
             Assert.statementNeverExecuted();
             return false;
         }
+        if (!repeatCounts.hasRemaining()) {
+            return false;
+        }
         final int numEncodedValues = data.numValues;
         if (bufferedDataCount + numEncodedValues > maxValuesPerPage) {
             if (force) {

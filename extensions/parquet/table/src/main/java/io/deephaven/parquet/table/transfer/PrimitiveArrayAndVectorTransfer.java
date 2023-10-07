@@ -68,6 +68,9 @@ abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends A
             Assert.statementNeverExecuted();
             return false;
         }
+        if (!repeatCounts.hasRemaining()) {
+            return false;
+        }
         if (buffer.position() + data.numValues > maxValuesPerPage) {
             if (force) {
                 // Assuming buffer is empty here, verified earlier
