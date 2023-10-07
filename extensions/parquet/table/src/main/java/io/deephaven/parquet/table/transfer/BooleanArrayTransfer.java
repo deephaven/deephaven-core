@@ -34,8 +34,8 @@ final class BooleanArrayTransfer extends PrimitiveArrayAndVectorTransfer<Boolean
     }
 
     @Override
-    void copyToBuffer(final Boolean @NotNull [] data) {
-        for (Boolean b : data) {
+    void copyToBuffer(final @NotNull EncodedData<Boolean[]> data) {
+        for (Boolean b : data.encodedValues) {
             buffer.put(BooleanUtils.booleanAsByte(b));
         }
     }

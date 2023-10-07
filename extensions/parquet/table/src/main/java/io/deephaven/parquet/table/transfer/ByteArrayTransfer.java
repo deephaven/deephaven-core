@@ -33,8 +33,8 @@ final class ByteArrayTransfer extends PrimitiveArrayAndVectorTransfer<byte[], by
     }
 
     @Override
-    void copyToBuffer(final byte @NotNull [] data) {
-        for (byte value : data) {
+    void copyToBuffer(@NotNull final EncodedData<byte[]> data) {
+        for (byte value : data.encodedValues) {
             buffer.put(value);
         }
     }

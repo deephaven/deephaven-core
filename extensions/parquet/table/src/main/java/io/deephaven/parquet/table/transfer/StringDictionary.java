@@ -18,11 +18,15 @@ import java.util.Arrays;
 final public class StringDictionary {
 
     private static final int INITIAL_DICTIONARY_SIZE = 1 << 8;
-    private static final int NULL_KEY_POS = -1;
 
     private final int maxKeys;
     private final int maxDictSize;
     private final Statistics<?> statistics;
+    /**
+     * {@code null} is not added to the dictionary. This class will return the following position value on encountering
+     * a {@code null}.
+     */
+    private final int nullPos;
 
     private final TObjectIntHashMap<String> keyToPos;
 
@@ -30,11 +34,14 @@ final public class StringDictionary {
     private int keyCount;
     private int dictSize;
 
-    public StringDictionary(final int maxKeys, final int maxDictSize, final Statistics<?> statistics) {
+    public StringDictionary(final int maxKeys, final int maxDictSize, final Statistics<?> statistics,
+            final int nullPos) {
         this.maxKeys = maxKeys;
         this.maxDictSize = maxDictSize;
         this.statistics = statistics;
+        this.nullPos = nullPos;
 
+        // Kept as a negative value since 0 is a valid position in the dictionary.
         final int NO_ENTRY_VALUE = -1;
         this.keyToPos =
                 new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NO_ENTRY_VALUE);
@@ -55,12 +62,12 @@ final public class StringDictionary {
      * Add a string key to the dictionary if it's not already present.
      *
      * @param key The key to add and/or find the position for
-     * @return {@code key}'s position in the dictionary, or {@value #NULL_KEY_POS} is {@code key == null}
+     * @return {@code key}'s position in the dictionary, or special null key position (passed in constructor) is
+     *         {@code key == null}
      */
     public int add(final String key) {
         if (key == null) {
-            // Nulls are not added to the dictionary
-            return NULL_KEY_POS;
+            return nullPos;
         }
         int posInDictionary = keyToPos.get(key);
         if (posInDictionary == keyToPos.getNoEntryValue()) {

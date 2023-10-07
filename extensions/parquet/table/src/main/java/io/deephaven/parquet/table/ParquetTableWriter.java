@@ -166,10 +166,9 @@ public class ParquetTableWriter {
             // An example is the necessary precision and scale for a BigDecimal column writen as decimal logical type.
             final Map<String, Map<ParquetCacheTags, Object>> computedCache = new HashMap<>();
             final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, tableRowSet,
-                    columnSourceMap, path, writeInstructions, tableMeta,
-                    tableInfoBuilder);
-
-            write(t, definition, writeInstructions, parquetFileWriter, computedCache);
+                    columnSourceMap, path, writeInstructions, tableMeta, tableInfoBuilder);
+            // Given the transformation, do not use the original table's "definition" for writing
+            write(t, writeInstructions, parquetFileWriter, computedCache);
         }
     }
 
@@ -179,14 +178,12 @@ public class ParquetTableWriter {
      * tables created are properly cleaned up.
      *
      * @param table The table to write
-     * @param definition The table definition
      * @param writeInstructions Write instructions for customizations while writing
      * @param parquetFileWriter the writer
      * @throws IOException For file writing related errors
      */
     private static void write(
             @NotNull final Table table,
-            @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final ParquetFileWriter parquetFileWriter,
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) throws IOException {
@@ -196,13 +193,13 @@ public class ParquetTableWriter {
         if (nRows > 0) {
             final RowGroupWriter rowGroupWriter = parquetFileWriter.addRowGroup(nRows);
             for (final Map.Entry<String, ? extends ColumnSource<?>> nameToSource : columnSourceMap.entrySet()) {
-                final String name = nameToSource.getKey();
+                final String columnName = nameToSource.getKey();
                 final ColumnSource<?> columnSource = nameToSource.getValue();
                 try {
-                    writeColumnSource(computedCache, tableRowSet, rowGroupWriter, name, columnSource,
-                            definition.getColumn(name), writeInstructions);
+                    writeColumnSource(tableRowSet, writeInstructions, rowGroupWriter, computedCache, columnName,
+                            columnSource);
                 } catch (IllegalAccessException e) {
-                    throw new RuntimeException("Failed to write column " + name, e);
+                    throw new RuntimeException("Failed to write column " + columnName, e);
                 }
             }
         }
@@ -216,7 +213,8 @@ public class ParquetTableWriter {
      *
      * @param table the input table
      * @param definition the table definition being written
-     * @return a transformed view of the input table.
+     * @return a transformed view of the input table. The table definition for the transformed view can be different
+     *         from the definition of the input table.
      */
     @NotNull
     private static Table pretransformTable(@NotNull final Table table, @NotNull final TableDefinition definition) {
@@ -322,24 +320,21 @@ public class ParquetTableWriter {
 
     @VisibleForTesting
     static <DATA_TYPE> void writeColumnSource(
-            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final RowSet tableRowSet,
+            @NotNull final ParquetInstructions writeInstructions,
             @NotNull final RowGroupWriter rowGroupWriter,
-            @NotNull final String name,
-            @NotNull ColumnSource<DATA_TYPE> columnSource,
-            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
-            @NotNull final ParquetInstructions writeInstructions) throws IllegalAccessException, IOException {
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
+            @NotNull final String columnName,
+            @NotNull ColumnSource<DATA_TYPE> columnSource) throws IllegalAccessException, IOException {
         try (final ColumnWriter columnWriter = rowGroupWriter.addColumn(
-                writeInstructions.getParquetColumnNameFromColumnNameOrDefault(name))) {
+                writeInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName))) {
             boolean usedDictionary = false;
-            if (String.class.equals(columnDefinition.getDataType())
-                    || String.class.equals(columnDefinition.getComponentType())) {
-                usedDictionary = tryEncodeDictionary(writeInstructions, tableRowSet, columnDefinition, columnWriter,
-                        columnSource);
+            if (String.class.equals(columnSource.getType()) || String.class.equals(columnSource.getComponentType())) {
+                usedDictionary =
+                        tryEncodeDictionary(tableRowSet, writeInstructions, columnWriter, columnName, columnSource);
             }
             if (!usedDictionary) {
-                encodePlain(writeInstructions, tableRowSet, columnDefinition, columnWriter, columnSource,
-                        computedCache);
+                encodePlain(tableRowSet, writeInstructions, columnWriter, computedCache, columnName, columnSource);
             }
         }
     }
@@ -354,12 +349,12 @@ public class ParquetTableWriter {
     }
 
     private static <DATA_TYPE> boolean tryEncodeDictionary(
-            @NotNull final ParquetInstructions writeInstructions,
             @NotNull final RowSet tableRowSet,
-            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
+            @NotNull final ParquetInstructions writeInstructions,
             @NotNull final ColumnWriter columnWriter,
-            @NotNull final ColumnSource<DATA_TYPE> columnSourceIn) throws IOException {
-        final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
+            @NotNull final String columnName,
+            @NotNull final ColumnSource<DATA_TYPE> columnSource) throws IOException {
+        final boolean useDictionaryHint = writeInstructions.useDictionary(columnName);
         final int maxKeys = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionaryKeys();
         final int maxDictSize = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionarySize();
         // We encode dictionary positions as integers, therefore for a null string, we use NULL_INT as the position
@@ -368,12 +363,11 @@ public class ParquetTableWriter {
         final List<IntBuffer> pageBuffers = new ArrayList<>();
         final List<IntBuffer> lengthsBuffers = new ArrayList<>();
         final BitSet pageBufferHasNull = new BitSet();
-        final boolean isArrayOrVector = (columnSourceIn.getComponentType() != null);
-        final StringDictionary dictionary = new StringDictionary(maxKeys, maxDictSize, statistics);
+        final boolean isArrayOrVector = (columnSource.getComponentType() != null);
+        final StringDictionary dictionary = new StringDictionary(maxKeys, maxDictSize, statistics, NULL_POS);
         int curPage = 0;
         try (final TransferObject<IntBuffer> transferObject = TransferObject.createDictEncodedStringTransfer(
-                columnSourceIn, columnDefinition, tableRowSet,
-                writeInstructions.getTargetPageSize(), dictionary, NULL_POS)) {
+                tableRowSet, columnSource, writeInstructions.getTargetPageSize(), dictionary)) {
             boolean done;
             do {
                 // Paginate the data and prepare the dictionary. Then add the dictionary page followed by all data pages
@@ -436,17 +430,15 @@ public class ParquetTableWriter {
         return true;
     }
 
-    private static <DATA_TYPE> void encodePlain(@NotNull final ParquetInstructions writeInstructions,
+    private static <DATA_TYPE> void encodePlain(
             @NotNull final RowSet tableRowSet,
-            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
+            @NotNull final ParquetInstructions writeInstructions,
             @NotNull final ColumnWriter columnWriter,
-            @NotNull final ColumnSource<DATA_TYPE> columnSource,
-            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) throws IOException {
-        try (final TransferObject<?> transferObject = TransferObject.create(computedCache,
-                tableRowSet,
-                columnSource,
-                columnDefinition,
-                writeInstructions)) {
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
+            @NotNull final String columnName,
+            @NotNull final ColumnSource<DATA_TYPE> columnSource) throws IOException {
+        try (final TransferObject<?> transferObject = TransferObject.create(
+                tableRowSet, writeInstructions, computedCache, columnName, columnSource)) {
             final Statistics<?> statistics = columnWriter.getStats();
             boolean writeVectorPages = (transferObject instanceof ArrayAndVectorTransfer);
             do {

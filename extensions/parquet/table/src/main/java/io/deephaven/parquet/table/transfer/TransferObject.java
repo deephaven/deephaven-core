@@ -4,7 +4,6 @@
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -30,11 +29,11 @@ import java.util.Map;
  */
 public interface TransferObject<B> extends SafeCloseable {
     static <DATA_TYPE> TransferObject<?> create(
-            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final RowSet tableRowSet,
-            @NotNull final ColumnSource<DATA_TYPE> columnSource,
-            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
-            @NotNull final ParquetInstructions instructions) {
+            @NotNull final ParquetInstructions instructions,
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
+            @NotNull final String columnName,
+            @NotNull final ColumnSource<DATA_TYPE> columnSource) {
         Class<DATA_TYPE> columnType = columnSource.getType();
         if (int.class.equals(columnType)) {
             return IntTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
@@ -72,15 +71,16 @@ public interface TransferObject<B> extends SafeCloseable {
         if (String.class.equals(columnType)) {
             return new StringTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
-        if (CodecLookup.explicitCodecPresent(instructions.getCodecName(columnDefinition.getName()))) {
-            final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
+        if (CodecLookup.explicitCodecPresent(instructions.getCodecName(columnName))) {
+            final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(
+                    columnType, instructions.getCodecName(columnName), instructions.getCodecArgs(columnName));
             return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
         }
         if (BigDecimal.class.equals(columnType)) {
                 // noinspection unchecked
                 final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
                 final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
-                        computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
+                        computedCache, columnName, tableRowSet, () -> bigDecimalColumnSource);
                 final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
                         precisionAndScale.precision, precisionAndScale.scale, -1);
                 return new CodecTransfer<>(bigDecimalColumnSource, codec, tableRowSet, instructions.getTargetPageSize());
@@ -90,7 +90,7 @@ public interface TransferObject<B> extends SafeCloseable {
                     instructions.getTargetPageSize());
         }
 
-        @Nullable final Class<?> componentType = columnDefinition.getComponentType();
+        @Nullable final Class<?> componentType = columnSource.getComponentType();
         if (columnType.isArray()) {
             if (int.class.equals(componentType)) {
                 return new IntArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
@@ -176,20 +176,18 @@ public interface TransferObject<B> extends SafeCloseable {
     }
 
     static <DATA_TYPE> @NotNull TransferObject<IntBuffer> createDictEncodedStringTransfer(
-            @NotNull final ColumnSource<DATA_TYPE> columnSource,
-            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
-            @NotNull final RowSet tableRowSet, final int targetPageSize,
-            @NotNull final StringDictionary dictionary, final int nullPos) {
-        @Nullable final Class<?> dataType = columnDefinition.getDataType();
-        @Nullable final Class<?> componentType = columnDefinition.getComponentType();
+            @NotNull final RowSet tableRowSet, @NotNull final ColumnSource<DATA_TYPE> columnSource,
+            final int targetPageSize, @NotNull final StringDictionary dictionary) {
+        @Nullable final Class<?> dataType = columnSource.getType();
+        @Nullable final Class<?> componentType = columnSource.getComponentType();
         if (String.class.equals(dataType)) {
-            return new DictEncodedStringTransfer(columnSource, tableRowSet, targetPageSize, dictionary, nullPos);
+            return new DictEncodedStringTransfer(columnSource, tableRowSet, targetPageSize, dictionary);
         }
         if (dataType.isArray() && String.class.equals(componentType)) {
-            return new DictEncodedStringArrayTransfer(columnSource, tableRowSet, targetPageSize, dictionary, nullPos);
+            return new DictEncodedStringArrayTransfer(columnSource, tableRowSet, targetPageSize, dictionary);
         }
         if (Vector.class.isAssignableFrom(dataType) && String.class.equals(componentType)) {
-                return new DictEncodedStringVectorTransfer(columnSource, tableRowSet, targetPageSize, dictionary, nullPos);
+            return new DictEncodedStringVectorTransfer(columnSource, tableRowSet, targetPageSize, dictionary);
         }
         // Dictionary encoding not supported for other types
         throw new UnsupportedOperationException("Dictionary encoding not supported for type " + dataType.getName());

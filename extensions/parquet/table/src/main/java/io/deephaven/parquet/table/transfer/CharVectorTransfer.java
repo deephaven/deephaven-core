@@ -25,8 +25,8 @@ final class CharVectorTransfer extends PrimitiveVectorTransfer<CharVector, IntBu
     }
 
     @Override
-    void copyToBuffer(@NotNull final CharVector data) {
-        try (final CloseablePrimitiveIteratorOfChar dataIterator = data.iterator()) {
+    void copyToBuffer(@NotNull final EncodedData<CharVector> data) {
+        try (final CloseablePrimitiveIteratorOfChar dataIterator = data.encodedValues.iterator()) {
             dataIterator.forEachRemaining((char value) -> buffer.put(value));
         }
     }

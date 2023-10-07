@@ -32,7 +32,7 @@ final class DoubleArrayTransfer extends PrimitiveArrayAndVectorTransfer<double[]
     }
 
     @Override
-    void copyToBuffer(final double @NotNull [] data) {
-        buffer.put(data);
+    void copyToBuffer(@NotNull final EncodedData<double[]> data) {
+        buffer.put(data.encodedValues);
     }
 }

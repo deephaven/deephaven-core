@@ -32,7 +32,7 @@ final class LongArrayTransfer extends PrimitiveArrayAndVectorTransfer<long[], lo
     }
 
     @Override
-    void copyToBuffer(final long @NotNull [] data) {
-        buffer.put(data);
+    void copyToBuffer(@NotNull final EncodedData<long[]> data) {
+        buffer.put(data.encodedValues);
     }
 }

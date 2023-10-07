@@ -29,8 +29,8 @@ final class DoubleVectorTransfer extends PrimitiveVectorTransfer<DoubleVector, D
     }
 
     @Override
-    void copyToBuffer(@NotNull final DoubleVector data) {
-        try (final CloseablePrimitiveIteratorOfDouble dataIterator = data.iterator()) {
+    void copyToBuffer(@NotNull final EncodedData<DoubleVector> data) {
+        try (final CloseablePrimitiveIteratorOfDouble dataIterator = data.encodedValues.iterator()) {
             dataIterator.forEachRemaining((double value) -> buffer.put(value));
         }
     }

@@ -29,8 +29,8 @@ final class LongVectorTransfer extends PrimitiveVectorTransfer<LongVector, LongB
     }
 
     @Override
-    void copyToBuffer(@NotNull final LongVector data) {
-        try (final CloseablePrimitiveIteratorOfLong dataIterator = data.iterator()) {
+    void copyToBuffer(@NotNull final EncodedData<LongVector> data) {
+        try (final CloseablePrimitiveIteratorOfLong dataIterator = data.encodedValues.iterator()) {
             dataIterator.forEachRemaining((long value) -> buffer.put(value));
         }
     }

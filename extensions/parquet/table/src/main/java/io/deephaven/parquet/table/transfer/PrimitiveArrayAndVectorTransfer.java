@@ -81,7 +81,7 @@ abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends A
                 return false;
             }
         }
-        copyToBuffer(data.encodedValues);
+        copyToBuffer(data);
         repeatCounts.put(data.numValues);
         return true;
     }
@@ -90,7 +90,7 @@ abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends A
      * Copy the encoded values to the buffer. This function should be called after checking that there is enough space
      * in the buffer.
      */
-    abstract void copyToBuffer(@NotNull final E data);
+    abstract void copyToBuffer(@NotNull final EncodedData<E> data);
 
     /**
      * Resize the underlying page buffer, needed in case of overflow when transferring the first array/vector.

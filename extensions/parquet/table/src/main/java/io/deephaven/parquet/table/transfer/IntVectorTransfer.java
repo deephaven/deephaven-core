@@ -24,8 +24,8 @@ final class IntVectorTransfer extends PrimitiveVectorTransfer<IntVector, IntBuff
     }
 
     @Override
-    void copyToBuffer(@NotNull final IntVector data) {
-        try (final CloseablePrimitiveIteratorOfInt dataIterator = data.iterator()) {
+    void copyToBuffer(@NotNull final EncodedData<IntVector> data) {
+        try (final CloseablePrimitiveIteratorOfInt dataIterator = data.encodedValues.iterator()) {
             dataIterator.forEachRemaining((int value) -> buffer.put(value));
         }
     }

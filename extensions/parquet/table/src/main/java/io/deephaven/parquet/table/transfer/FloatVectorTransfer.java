@@ -29,8 +29,8 @@ final class FloatVectorTransfer extends PrimitiveVectorTransfer<FloatVector, Flo
     }
 
     @Override
-    void copyToBuffer(@NotNull final FloatVector data) {
-        try (final CloseablePrimitiveIteratorOfFloat dataIterator = data.iterator()) {
+    void copyToBuffer(@NotNull final EncodedData<FloatVector> data) {
+        try (final CloseablePrimitiveIteratorOfFloat dataIterator = data.encodedValues.iterator()) {
             dataIterator.forEachRemaining((float value) -> buffer.put(value));
         }
     }

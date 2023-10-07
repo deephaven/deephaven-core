@@ -13,26 +13,25 @@ import java.util.function.Supplier;
 /**
  * Base class for reading dictionary-encoded string arrays and vectors. This class updates the {@link StringDictionary}
  * with all the strings it encounters and generates an IntBuffer of dictionary position values. This class extends
- * {@link PrimitiveArrayAndVectorTransfer} to manage the dictionary positions in an {@link IntBuffer} similar to an Int
- * array/vector column.
+ * {@link PrimitiveArrayAndVectorTransfer} to manage the dictionary positions similar to an Int array/vector column.
  */
 abstract public class DictEncodedStringArrayAndVectorTransfer<T>
-        extends PrimitiveArrayAndVectorTransfer<T, IntBuffer, IntBuffer> {
+        extends PrimitiveArrayAndVectorTransfer<T, int[], IntBuffer> {
     private final StringDictionary dictionary;
-    private final int nullValue; // The value to store in buffer for null strings
 
     private boolean pageHasNull;
-    private IntBuffer dictEncodedValues;
+    private int[] dictEncodedValues;
+    private int numDictEncodedValues;
 
     DictEncodedStringArrayAndVectorTransfer(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,
-            int targetPageSize, @NotNull StringDictionary dictionary, final int nullValue) {
+            int targetPageSize, @NotNull StringDictionary dictionary) {
         super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
                 IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
         this.dictionary = dictionary;
-        this.nullValue = nullValue;
 
-        this.dictEncodedValues = IntBuffer.allocate(targetPageSize);
         this.pageHasNull = false;
+        this.dictEncodedValues = new int[targetPageSize];
+        this.numDictEncodedValues = 0;
     }
 
     @Override
@@ -47,25 +46,24 @@ abstract public class DictEncodedStringArrayAndVectorTransfer<T>
      * fetches that many strings from the supplier, adds them to the dictionary and populates an IntBuffer with
      * dictionary position values.
      */
-    final void dictEncodingHelper(@NotNull Supplier<String> strSupplier, int numStrings,
-            @NotNull final EncodedData<IntBuffer> encodedData) {
-        dictEncodedValues.clear();
-        if (numStrings > dictEncodedValues.limit()) {
-            dictEncodedValues = IntBuffer.allocate(numStrings);
+    final void dictEncodingHelper(@NotNull Supplier<String> strSupplier, final int numStrings,
+            @NotNull final EncodedData<int[]> encodedData) {
+        numDictEncodedValues = 0;
+        if (numStrings > dictEncodedValues.length) {
+            dictEncodedValues = new int[numStrings];
         }
         int numBytesEncoded = 0;
         for (int i = 0; i < numStrings; i++) {
             String value = strSupplier.get();
             if (value == null) {
-                dictEncodedValues.put(nullValue);
                 pageHasNull = true;
-                numBytesEncoded += Integer.BYTES;
             } else {
-                int posInDictionary = dictionary.add(value);
-                dictEncodedValues.put(posInDictionary);
+                numBytesEncoded += Integer.BYTES;
             }
+            int posInDictionary = dictionary.add(value);
+            dictEncodedValues[numDictEncodedValues++] = posInDictionary;
         }
-        encodedData.fillRepeated(dictEncodedValues, numBytesEncoded, numStrings);
+        encodedData.fillRepeated(dictEncodedValues, numBytesEncoded, numDictEncodedValues);
     }
 
     @Override
@@ -74,9 +72,8 @@ abstract public class DictEncodedStringArrayAndVectorTransfer<T>
     }
 
     @Override
-    final void copyToBuffer(@NotNull final IntBuffer data) {
-        data.flip();
-        buffer.put(data);
+    final void copyToBuffer(@NotNull final EncodedData<int[]> data) {
+        buffer.put(data.encodedValues, 0, data.numValues);
     }
 
     public final boolean pageHasNull() {

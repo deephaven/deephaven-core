@@ -28,8 +28,8 @@ final class CharArrayTransfer extends PrimitiveArrayAndVectorTransfer<char[], ch
     }
 
     @Override
-    void copyToBuffer(final char @NotNull [] data) {
-        for (char value : data) {
+    void copyToBuffer(@NotNull final EncodedData<char[]> data) {
+        for (char value : data.encodedValues) {
             buffer.put(value);
         }
     }

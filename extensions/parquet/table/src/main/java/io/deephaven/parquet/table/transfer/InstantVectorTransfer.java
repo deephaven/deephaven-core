@@ -27,8 +27,8 @@ final class InstantVectorTransfer extends PrimitiveVectorTransfer<ObjectVector<I
     }
 
     @Override
-    void copyToBuffer(@NotNull final ObjectVector<Instant> data) {
-        try (final CloseableIterator<Instant> dataIterator = data.iterator()) {
+    void copyToBuffer(@NotNull final EncodedData<ObjectVector<Instant>> data) {
+        try (final CloseableIterator<Instant> dataIterator = data.encodedValues.iterator()) {
             dataIterator.forEachRemaining((Instant t) -> buffer.put(DateTimeUtils.epochNanos(t)));
         }
     }

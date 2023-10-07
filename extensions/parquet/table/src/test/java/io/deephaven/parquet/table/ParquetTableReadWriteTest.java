@@ -53,7 +53,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -201,15 +200,12 @@ public class ParquetTableReadWriteTest {
                         : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subVector(0,0):" + name
                                 + ")"))
                 .toArray(String[]::new));
-        // TODO Check with Ryan if we need to support these
-        // result = result.update(
-        // "someStringSet = (StringSet)new ArrayStringSet( ((Object)nonNullString) == null?new
-        // String[0]:(String[])nonNullString.toArray())");
-        // result = result.update(
-        // "largeStringSet = (StringSet)new ArrayStringSet(((Object)nonNullPolyString) == null?new
-        // String[0]:(String[])nonNullPolyString.toArray())");
-        // result = result.update(
-        // "nullStringSet = (StringSet)null");
+        result = result.update(
+                "someStringSet = (StringSet)new ArrayStringSet( ((Object)nonNullString) == null?new String[0]:(String[])nonNullString.toArray())");
+        result = result.update(
+                "largeStringSet = (StringSet)new ArrayStringSet(((Object)nonNullPolyString) == null?new String[0]:(String[])nonNullPolyString.toArray())");
+        result = result.update(
+                "nullStringSet = (StringSet)null");
         result = result.update(
                 "someStringColumn = (String[])(((Object)someStringColumn) == null?null:someStringColumn.toArray())",
                 "nonNullString = (String[])(((Object)nonNullString) == null?null:nonNullString.toArray())",
@@ -470,27 +466,25 @@ public class ParquetTableReadWriteTest {
         assertTableEquals(arrayTable, fromDisk);
     }
 
-    // private static Table arrayToVectorTable(final Table table) {
-    // final TableDefinition tableDefinition = table.getDefinition();
-    // final List<SelectColumn> arrayToVectorFormulas = new ArrayList<>();
-    // for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
-    // final String columnName = columnDefinition.getName();
-    // final Class<Object> sourceDataType = (Class<Object>) columnDefinition.getDataType();
-    // if (!sourceDataType.isArray()) {
-    // continue;
-    // }
-    // final Class<?> componentType = Objects.requireNonNull(columnDefinition.getComponentType());
-    // final VectorFactory vectorFactory = VectorFactory.forElementType(componentType);
-    // final Object emptyArray = Array.newInstance(componentType, 0);
-    // final Vector<?> emptyVector = vectorFactory.vectorWrap(emptyArray);
-    // final Class<? extends Vector<?>> destinationDataType = vectorFactory.vectorType();
-    // final Function<Object, Vector<?>> vectorWrapFunction = vectorFactory::vectorWrap;
-    // // noinspection unchecked,rawtypes
-    // arrayToVectorFormulas.add(new FunctionalColumn<>(
-    // columnName, sourceDataType, columnName, destinationDataType, componentType, vectorWrapFunction));
-    // }
-    // return arrayToVectorFormulas.isEmpty() ? table : table.updateView(arrayToVectorFormulas);
-    // }
+    private static Table arrayToVectorTable(final Table table) {
+        final TableDefinition tableDefinition = table.getDefinition();
+        final Collection<SelectColumn> arrayToVectorFormulas = new ArrayList<>();
+        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
+            final String columnName = columnDefinition.getName();
+            final Class<Object> sourceDataType = (Class<Object>) columnDefinition.getDataType();
+            if (!sourceDataType.isArray()) {
+                continue;
+            }
+            final Class<?> componentType = Objects.requireNonNull(columnDefinition.getComponentType());
+            final VectorFactory vectorFactory = VectorFactory.forElementType(componentType);
+            final Class<? extends Vector<?>> destinationDataType = vectorFactory.vectorType();
+            final Function<Object, Vector<?>> vectorWrapFunction = vectorFactory::vectorWrap;
+            // noinspection unchecked,rawtypes
+            arrayToVectorFormulas.add(new FunctionalColumn(
+                    columnName, sourceDataType, columnName, destinationDataType, componentType, vectorWrapFunction));
+        }
+        return arrayToVectorFormulas.isEmpty() ? table : table.updateView(arrayToVectorFormulas);
+    }
 
     @Test
     public void testArrayColumns() {
@@ -525,11 +519,11 @@ public class ParquetTableReadWriteTest {
         Table fromDisk = ParquetTools.readTable(dest);
         assertTableEquals(arrayTable, fromDisk);
 
-        // // Convert array table to vector
-        // final Table vectorTable = arrayToVectorTable(arrayTable);
-        // ParquetTools.writeTable(vectorTable, dest);
-        // Table fromDisk = ParquetTools.readTable(dest);
-        // assertTableEquals(vectorTable, fromDisk);
+        // Convert array table to vector
+        final Table vectorTable = arrayToVectorTable(arrayTable);
+        ParquetTools.writeTable(vectorTable, dest);
+        fromDisk = ParquetTools.readTable(dest);
+        assertTableEquals(vectorTable, fromDisk);
     }
 
     // // TODO Remove all these

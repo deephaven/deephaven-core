@@ -10,12 +10,15 @@ package io.deephaven.parquet.table.transfer;
  import org.jetbrains.annotations.NotNull;
 
  import java.util.Arrays;
+ import java.util.function.Supplier;
 
 /**
  * Used as a base class of arrays/vectors of transfer objects for types like strings or big integers that need
  * specialized encoding.
+ * @param <T> The type of the data in the column, could be an array/vector
+ * @param <V> The type of the values in the array/vector
  */
-abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T, Binary[], Binary[]> {
+abstract class ObjectArrayAndVectorTransfer<T, V> extends ArrayAndVectorTransfer<T, Binary[], Binary[]> {
     /**
      * Number of values added to the buffer
      */
@@ -24,11 +27,17 @@ abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T,
      * Total number of bytes buffered
      */
     private int numBytesBuffered;
+    /**
+     * Used as a temporary buffer for storing encoded data for a single row before it is copied to the main buffer.
+     * Allocated lazily because of the high cost of construction of Binary objects.
+     */
+    private Binary[] encodedDataBuf;
 
     ObjectArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize, targetPageSize, new Binary[targetPageSize]);
         bufferedDataCount = 0;
         numBytesBuffered = 0;
+        encodedDataBuf = null;
     }
 
     @Override
@@ -50,6 +59,31 @@ abstract class ObjectArrayAndVectorTransfer<T> extends ArrayAndVectorTransfer<T,
     final int getNumBytesBuffered() {
         return numBytesBuffered;
     }
+
+    final void objectEncodingHelper(@NotNull final Supplier<V> objectSupplier, final int numObjects, @NotNull final EncodedData<Binary[]> encodedData) {
+        // Allocate a new buffer if needed, or clear the existing one
+        if (encodedDataBuf == null || numObjects > encodedDataBuf.length) {
+            encodedDataBuf = new Binary[numObjects];
+        } else {
+            Arrays.fill(encodedDataBuf, null);
+        }
+        int numBytesEncoded = 0;
+        for (int i = 0; i < numObjects; i++) {
+            V value = objectSupplier.get();
+            if (value == null) {
+                encodedDataBuf[i] = null;
+            } else {
+                encodedDataBuf[i] = encodeToBinary(value);
+                numBytesEncoded += encodedDataBuf[i].length();
+            }
+        }
+        encodedData.fillRepeated(encodedDataBuf, numBytesEncoded, numObjects);
+    }
+
+    /**
+     * Encode a single value to binary
+     */
+    abstract Binary encodeToBinary(V value);
 
     final boolean addEncodedDataToBuffer(@NotNull final EncodedData<Binary[]> data, final boolean force) {
         if (force && (!repeatCounts.hasRemaining() || bufferedDataCount != 0)) {

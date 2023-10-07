@@ -30,8 +30,8 @@ final class ShortVectorTransfer extends PrimitiveVectorTransfer<ShortVector, Int
     }
 
     @Override
-    void copyToBuffer(@NotNull final ShortVector data) {
-        try (final CloseablePrimitiveIteratorOfShort dataIterator = data.iterator()) {
+    void copyToBuffer(@NotNull final EncodedData<ShortVector> data) {
+        try (final CloseablePrimitiveIteratorOfShort dataIterator = data.encodedValues.iterator()) {
             dataIterator.forEachRemaining((short value) -> buffer.put(value));
         }
     }

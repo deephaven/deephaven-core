@@ -9,26 +9,19 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.IntBuffer;
-
 /**
  * Transfer object for dictionary encoded string columns. This class updates the {@link StringDictionary} with all the
  * strings it encounters and generates an IntBuffer of dictionary position values. The class extends from
- * {@link IntCastablePrimitiveTransfer} to manage the dictionary position {@link IntBuffer} similar to an Int column.
+ * {@link IntCastablePrimitiveTransfer} to manage the dictionary positions similar to an Int column.
  */
 
 final class DictEncodedStringTransfer extends IntCastablePrimitiveTransfer<ObjectChunk<String, Values>> {
-    /**
-     * The position of the null value in the dictionary encoded strings.
-     */
-    private final int nullPos;
     private final StringDictionary dictionary;
     private boolean pageHasNull;
 
     DictEncodedStringTransfer(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,
-            int targetPageSize, StringDictionary dictionary, final int nullPos) {
+            int targetPageSize, StringDictionary dictionary) {
         super(columnSource, tableRowSet, targetPageSize);
-        this.nullPos = nullPos;
         this.dictionary = dictionary;
         this.pageHasNull = false;
     }
@@ -46,12 +39,10 @@ final class DictEncodedStringTransfer extends IntCastablePrimitiveTransfer<Objec
         for (int i = 0; i < chunkSize; i++) {
             String value = chunk.get(i);
             if (value == null) {
-                buffer.put(nullPos);
                 pageHasNull = true;
-            } else {
-                int posInDictionary = dictionary.add(value);
-                buffer.put(posInDictionary);
             }
+            int posInDictionary = dictionary.add(value);
+            buffer.put(posInDictionary);
         }
     }
 

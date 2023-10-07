@@ -27,7 +27,7 @@ final class IntArrayTransfer extends PrimitiveArrayAndVectorTransfer<int[], int[
     }
 
     @Override
-    void copyToBuffer(final int @NotNull [] data) {
-        buffer.put(data);
+    void copyToBuffer(@NotNull final EncodedData<int[]> data) {
+        buffer.put(data.encodedValues);
     }
 }

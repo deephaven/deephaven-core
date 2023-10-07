@@ -31,8 +31,8 @@ final class BooleanVectorTransfer extends PrimitiveVectorTransfer<ObjectVector<B
     }
 
     @Override
-    void copyToBuffer(@NotNull final ObjectVector<Boolean> data) {
-        try (final CloseableIterator<Boolean> dataIterator = data.iterator()) {
+    void copyToBuffer(@NotNull final EncodedData<ObjectVector<Boolean>> data) {
+        try (final CloseableIterator<Boolean> dataIterator = data.encodedValues.iterator()) {
             dataIterator.forEachRemaining((Boolean b) -> buffer.put(BooleanUtils.booleanAsByte(b)));
         }
     }

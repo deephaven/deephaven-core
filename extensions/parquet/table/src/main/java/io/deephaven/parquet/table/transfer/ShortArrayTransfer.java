@@ -33,8 +33,8 @@ final class ShortArrayTransfer extends PrimitiveArrayAndVectorTransfer<short[], 
     }
 
     @Override
-    void copyToBuffer(final short @NotNull [] data) {
-        for (short value : data) {
+    void copyToBuffer(@NotNull final EncodedData<short[]> data) {
+        for (short value : data.encodedValues) {
             buffer.put(value);
         }
     }

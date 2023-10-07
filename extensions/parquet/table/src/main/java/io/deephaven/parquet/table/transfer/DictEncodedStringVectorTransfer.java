@@ -9,17 +9,16 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.IntBuffer;
 import java.util.function.Supplier;
 
 final class DictEncodedStringVectorTransfer extends DictEncodedStringArrayAndVectorTransfer<ObjectVector<String>> {
     DictEncodedStringVectorTransfer(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,
-            int targetPageSize, StringDictionary dictionary, final int nullPos) {
-        super(columnSource, tableRowSet, targetPageSize, dictionary, nullPos);
+            int targetPageSize, StringDictionary dictionary) {
+        super(columnSource, tableRowSet, targetPageSize, dictionary);
     }
 
     @Override
-    void encodeDataForBuffering(@NotNull ObjectVector<String> data, @NotNull final EncodedData<IntBuffer> encodedData) {
+    void encodeDataForBuffering(@NotNull ObjectVector<String> data, @NotNull final EncodedData<int[]> encodedData) {
         try (CloseableIterator<String> iter = data.iterator()) {
             Supplier<String> supplier = iter::next;
             dictEncodingHelper(supplier, data.intSize(), encodedData);

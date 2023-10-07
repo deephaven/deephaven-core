@@ -9,6 +9,7 @@ import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
+import java.util.function.Supplier;
 
 /**
  * Base class for all array and vector transfer objects
@@ -39,6 +40,26 @@ public abstract class ArrayAndVectorTransfer<T, E, B> extends VariableWidthTrans
     @Override
     final boolean isBufferEmpty() {
         return repeatCounts.position() == 0;
+    }
+
+    /**
+     * Helper class for creating a supplier of array data
+     * 
+     * @param <A> The type of the array
+     */
+    static final class ArrayDataSupplier<A> implements Supplier<A> {
+        private A[] data;
+        private int pos = 0;
+
+        void fill(final @NotNull A @NotNull [] data) {
+            this.data = data;
+            this.pos = 0;
+        }
+
+        @Override
+        public A get() {
+            return data[pos++];
+        }
     }
 }
 

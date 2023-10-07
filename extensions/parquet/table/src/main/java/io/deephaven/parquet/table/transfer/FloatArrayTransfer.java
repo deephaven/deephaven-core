@@ -32,7 +32,7 @@ final class FloatArrayTransfer extends PrimitiveArrayAndVectorTransfer<float[], 
     }
 
     @Override
-    void copyToBuffer(final float @NotNull [] data) {
-        buffer.put(data);
+    void copyToBuffer(@NotNull final EncodedData<float[]> data) {
+        buffer.put(data.encodedValues);
     }
 }

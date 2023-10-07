@@ -30,8 +30,8 @@ final class ByteVectorTransfer extends PrimitiveVectorTransfer<ByteVector, IntBu
     }
 
     @Override
-    void copyToBuffer(@NotNull final ByteVector data) {
-        try (final CloseablePrimitiveIteratorOfByte dataIterator = data.iterator()) {
+    void copyToBuffer(@NotNull final EncodedData<ByteVector> data) {
+        try (final CloseablePrimitiveIteratorOfByte dataIterator = data.encodedValues.iterator()) {
             dataIterator.forEachRemaining((byte value) -> buffer.put(value));
         }
     }
