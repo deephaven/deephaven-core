@@ -75,7 +75,8 @@ public class StatsCPUCollector {
         long seconds = interval / MILLIS;
         this.divisor = NANOS / (seconds * 10);
         Stats.makeGroup("Kernel", "Unix kernel statistics, as read from " + PROC_STAT_PSEUDOFILE);
-        Stats.makeGroup("Proc", "Unix process statistics, as read from " + PROC_SELF_STAT_PSEUDOFILE + " and /proc/self/fd");
+        Stats.makeGroup("Proc",
+                "Unix process statistics, as read from " + PROC_SELF_STAT_PSEUDOFILE + " and /proc/self/fd");
         Stats.makeGroup("CPU", "JMX CPU usage data, per-thread and for the entire process");
 
         if (OSUtil.runningMacOS() || OSUtil.runningWindows()) {
@@ -207,7 +208,8 @@ public class StatsCPUCollector {
     }
 
     private boolean peekNextLong(int nb) {
-        return statBufferIndex < nb && statBufferIndex < statBuffer.length && statBuffer[statBufferIndex] >= '0' && statBuffer[statBufferIndex] <= '9';
+        return statBufferIndex < nb && statBufferIndex < statBuffer.length && statBuffer[statBufferIndex] >= '0'
+                && statBuffer[statBufferIndex] <= '9';
     }
 
     /**
@@ -344,7 +346,8 @@ public class StatsCPUCollector {
                 if (statFile != null) {
                     try {
                         statFile.close();
-                    } catch (final IOException ignore) { }
+                    } catch (final IOException ignore) {
+                    }
                     statFile = null;
                 }
 
@@ -395,7 +398,7 @@ public class StatsCPUCollector {
 
                     if (nb == statBuffer.length) {
                         // allocate larger read-buffer, and try again
-                        statBuffer = new byte[statBuffer.length*2];
+                        statBuffer = new byte[statBuffer.length * 2];
 
                         procFile.close();
                         procFile = new FileInputStream(PROC_SELF_STAT_PSEUDOFILE);
@@ -424,12 +427,13 @@ public class StatsCPUCollector {
                 if (procFile != null) {
                     try {
                         procFile.close();
-                    } catch (final IOException ignore) { }
+                    } catch (final IOException ignore) {
+                    }
                     procFile = null;
                 }
 
                 // if we get any exception, don't try to read it again
-                if ( hasProcPidStat ) {
+                if (hasProcPidStat) {
                     log.error("got an exception reading " + PROC_SELF_STAT_PSEUDOFILE + ": " + x);
                 }
                 hasProcPidStat = false;
