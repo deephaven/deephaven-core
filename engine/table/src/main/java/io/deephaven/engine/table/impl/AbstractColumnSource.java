@@ -134,7 +134,11 @@ public abstract class AbstractColumnSource<T> implements
     }
 
     @Override
-    public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
+    public WritableRowSet match(
+            final boolean invertMatch,
+            final boolean usePrev,
+            final boolean caseInsensitive,
+            @NotNull final RowSet mapper,
             final Object... keys) {
         final Map<T, RowSet> groupToRange = (isImmutable() || !usePrev) ? getGroupToRange(mapper) : null;
         if (groupToRange != null) {

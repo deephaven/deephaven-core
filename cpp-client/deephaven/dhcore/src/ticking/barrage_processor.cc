@@ -235,7 +235,7 @@ BarrageProcessorImpl::ProcessNextChunk(const std::vector<std::shared_ptr<ColumnS
       return buildingResult_.ProcessNextChunk(this, sources, begins, ends, metadata, metadata_size);
     default: {
       auto message = Stringf("Unknown state %o", static_cast<int>(state_));
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
   }
 }
@@ -251,7 +251,7 @@ std::optional<TickingUpdate> AwaitingMetadata::ProcessNextChunk(BarrageProcessor
     const std::vector<size_t> &ends, const void *metadata, size_t /*metadata_size*/) {
   if (metadata == nullptr) {
     const char *message = "Metadata was required here, but none was received";
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
   // This metadata buffer comes from code like flightStreamChunk_->app_metadata->data()
   const auto *barrage_wrapper = flatbuffers::GetRoot<BarrageMessageWrapper>(metadata);
@@ -260,14 +260,14 @@ std::optional<TickingUpdate> AwaitingMetadata::ProcessNextChunk(BarrageProcessor
     auto message = Stringf("Expected magic number %o, got %o",
         BarrageProcessor::kDeephavenMagicNumber,
         barrage_wrapper->magic());
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   if (barrage_wrapper->msg_type() !=
       BarrageMessageType::BarrageMessageType_BarrageUpdateMetadata) {
     auto message = Stringf("Expected Barrage Message Type %o, got %o",
         BarrageMessageType::BarrageMessageType_BarrageUpdateMetadata, barrage_wrapper->msg_type());
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   const auto *bmw_raw = barrage_wrapper->msg_payload()->data();
@@ -368,7 +368,7 @@ std::optional<TickingUpdate> AwaitingAdds::ProcessNextChunk(BarrageProcessorImpl
     }
 
     if (owner->awaitingMetadata_.num_cols_ == 0) {
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("!AddedRows.Empty() but numCols == 0"));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR("!AddedRows.Empty() but numCols == 0"));
     }
 
     // Working copy that is consumed in the iterations of the loop.
@@ -380,7 +380,7 @@ std::optional<TickingUpdate> AwaitingAdds::ProcessNextChunk(BarrageProcessorImpl
   auto num_sources = sources.size();
 
   if (added_rows_remaining_->Empty()) {
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Impossible: addedRowsRemaining is Empty"));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Impossible: addedRowsRemaining is Empty"));
   }
 
   if (begins == ends) {
@@ -393,13 +393,13 @@ std::optional<TickingUpdate> AwaitingAdds::ProcessNextChunk(BarrageProcessorImpl
     auto this_size = ends[i] - begins[i];
     if (this_size != chunk_size) {
       auto message = Stringf("Chunks have inconsistent sizes: %o vs %o", this_size, chunk_size);
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
   }
 
   if (added_rows_remaining_->Size() < chunk_size) {
     const char *message = "There is excess data in the chunk";
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   auto index_rows_this_time = added_rows_remaining_->Take(chunk_size);
@@ -464,7 +464,7 @@ std::optional<TickingUpdate> AwaitingModifies::ProcessNextChunk(BarrageProcessor
   }
 
   if (AllEmpty(modified_rows_remaining_)) {
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Impossible: modifiedRowsRemaining is empty"));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Impossible: modifiedRowsRemaining is empty"));
   }
   auto &begins = *beginsp;
 
@@ -487,7 +487,7 @@ std::optional<TickingUpdate> AwaitingModifies::ProcessNextChunk(BarrageProcessor
     if (num_rows_available > num_rows_remaining) {
       auto message = Stringf("col %o: numRowsAvailable > numRowsRemaining (%o > %o)",
                              i, num_rows_available, num_rows_remaining);
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
 
     if (num_rows_available == 0) {
@@ -537,7 +537,7 @@ std::optional<TickingUpdate> BuildingResult::ProcessNextChunk(BarrageProcessorIm
     auto message = Stringf(
         "Barrage logic is done processing but there is leftover caller-provided data. begins = [%o]. ends=[%o]",
         separatedList(beginsp->begin(), beginsp->end()), separatedList(ends.begin(), ends.end()));
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
   auto *aa = &owner->awaitingAdds_;
   auto *am = &owner->awaitingModifies_;
@@ -559,7 +559,7 @@ bool AllEmpty(const std::vector<std::shared_ptr<RowSequence>> &row_sequences) {
 void AssertAllSame(size_t val0, size_t val1, size_t val2) {
   if (val0 != val1 || val0 != val2) {
     auto message = Stringf("Sizes differ: %o vs %o vs %o", val0, val1, val2);
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 }
 }  // namespace

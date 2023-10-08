@@ -15,7 +15,7 @@ configurations {
 dependencies {
     cpp project(path: ':proto:proto-backplane-grpc', configuration: 'cpp')
 }
-def protoSourceDir = layout.projectDirectory.dir('deephaven/client/proto')
+def protoSourceDir = layout.projectDirectory.dir('deephaven/dhclient/proto')
 def compare = tasks.register('compareProtobuf', DiffTask) {
     expectedContents.set configurations.cpp
     actualContents.set protoSourceDir
@@ -39,10 +39,10 @@ license {
     ignoreFailures true
 }
 tasks.getByName('license').dependsOn(tasks.create("licensePy", com.hierynomus.gradle.license.tasks.LicenseCheck) {
-    source = ['deephaven', 'tests', '../cpp-examples']
+    source = ['deephaven']
 })
 tasks.getByName('licenseFormat').dependsOn(tasks.create("licenseFormatPy", com.hierynomus.gradle.license.tasks.LicenseFormat) {
-    source = ['deephaven', 'tests', '../cpp-examples']
+    source = ['deephaven']
 })
 
 project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')
@@ -58,71 +58,69 @@ deephavenDocker {
 }
 
 def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
-    // Only tested on x86, and we only build dependencies for x86
+    // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
 
     copyIn {
         from(layout.projectDirectory) {
             include 'cpp-tests-to-junit.sh'
             include 'deephaven/CMakeLists.txt'
-            include 'deephaven/client/**'
             include 'deephaven/dhcore/**'
-            include 'tests/CMakeLists.txt'
-            include 'tests/*.cc'
-            include 'tests/*.h'
-            include 'tests/third_party/**'
+            include 'deephaven/dhclient/**'
+            include 'deephaven/examples/**'
+            include 'deephaven/tests/**'
         }
     }
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }
+    def prefix = '/opt/deephaven'
     dockerfile {
         from('deephaven/cpp-client-base:local-build')
         //
-        // Build client library.
+        // Build and install client.
         //
-        runCommand('mkdir -p /cpp-client/deephaven/client /cpp-client/deephaven/dhcore /cpp-client/deephaven/build')
-        copyFile('deephaven/CMakeLists.txt', '/cpp-client/deephaven')
-        copyFile('deephaven/client', '/cpp-client/deephaven/client/')
-        copyFile('deephaven/dhcore', '/cpp-client/deephaven/dhcore/')
-        runCommand('''set -eux; \\
-                      cd /cpp-client/deephaven/build; \\
-                      . /cpp-client/deps/env.sh; \\
-                      cmake -DCMAKE_INSTALL_PREFIX=/cpp-client/install ..; \\
-                      make -j\$NCPUS install; \\
+        runCommand("""mkdir -p \\
+                        /out \\
+                        ${prefix}/bin/dhcpp \\
+                        ${prefix}/log \\
+                        ${prefix}/src/deephaven/{dhcore,dhclient,examples,tests}
+                   """)
+        copyFile('deephaven/CMakeLists.txt',  "${prefix}/src/deephaven/")
+        copyFile('deephaven/dhcore/',  "${prefix}/src/deephaven/dhcore/")
+        copyFile('deephaven/dhclient/', "${prefix}/src/deephaven/dhclient/")
+        copyFile('deephaven/examples/', "${prefix}/src/deephaven/examples/")
+        copyFile('deephaven/tests/', "${prefix}/src/deephaven/tests/")
+        copyFile('cpp-tests-to-junit.sh', "${prefix}/bin/dhcpp")
+        runCommand("PREFIX=\"" + prefix + "\"; \\\n" +
+                   '''set -eux; \\
+                      rm -fr ${PREFIX}/src/deephaven/build; \\
+                      mkdir -p ${PREFIX}/src/deephaven/build; \\
+                      cd ${PREFIX}/src/deephaven/build; \\
+                      . ${PREFIX}/env.sh; \\
+                      cmake \\
+                        -DCMAKE_INSTALL_PREFIX=${PREFIX} \\
+                        -DCMAKE_BUILD_TYPE=Release \\
+                        -DBUILD_SHARED_LIBS=ON \\
+                        .. ; \\
+                      make -j${NCPUS} install 2>&1 | gzip > ${PREFIX}/log/make-install.log.gz; \\
+                      cp -f ${PREFIX}/src/deephaven/build/tests/tests ${PREFIX}/bin/dhcpp/tests; \\
                       cd ..; \\
-                      rm -fr /cpp-client/deephaven/build
-                   ''')
-        //
-        // Build tests.
-        //
-        runCommand('mkdir -p /cpp-client/tests/build /cpp-client/install/bin /out')
-        copyFile('cpp-tests-to-junit.sh', '/cpp-client/install/bin')
-        copyFile('tests/*.cc', '/cpp-client/tests/')
-        copyFile('tests/*.h', '/cpp-client/tests/')
-        copyFile('tests/CMakeLists.txt', '/cpp-client/tests/')
-        copyFile('tests/third_party', '/cpp-client/tests/third_party/')
-        runCommand('''set -eux; \\
-                      cd /cpp-client/tests/build; \\
-                      . /cpp-client/deps/env.sh; \\
-                      cmake -DCMAKE_PREFIX_PATH=/cpp-client/install:$CMAKE_PREFIX_PATH ..; \\
-                      make -j\$NCPUS; \\
-                      mkdir -p /cpp-client/install/bin; \\
-                      cp -f /cpp-client/tests/build/tests /cpp-client/install/bin; \
-                      cd ..; \\
-                      rm -fr /cpp-client/tests/build
+                      rm -fr ${PREFIX}/src/deephaven/build
                    ''')
         //
         // Setup for test run.
         //
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
+        environmentVariable 'DH_PREFIX', prefix
+        environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
     parentContainers = [ Docker.registryTask(project, 'cpp-client-base') ]
-    entrypoint = ['/cpp-client/install/bin/cpp-tests-to-junit.sh', '/out/cpp-test.xml', '/out/cpp-test.log']
+    entrypoint = ["${prefix}/bin/dhcpp/cpp-tests-to-junit.sh", '/out/cpp-test.xml', '/out/cpp-test.log']
 }
 deephavenDocker.shouldLogIfTaskFails testCppClient
 tasks.check.dependsOn(testCppClient)

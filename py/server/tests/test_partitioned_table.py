@@ -10,7 +10,7 @@ from deephaven.table import Table, PartitionedTable
 
 from deephaven.filters import Filter
 
-from deephaven import read_csv, DHError, new_table, update_graph, time_table
+from deephaven import read_csv, DHError, new_table, update_graph, time_table, empty_table
 from tests.testbase import BaseTestCase
 from deephaven.execution_context import get_exec_ctx
 
@@ -220,6 +220,11 @@ class PartitionedTableTestCase(BaseTestCase):
         keys_table = pt.keys()
         select_distinct_table = test_table.select_distinct(["Y"])
         self.assertEqual(keys_table.size, select_distinct_table.size)
+
+    def test_falsy_key(self):
+        pt = empty_table(100).update("X=i % 7").partition_by("X")
+        x0 = pt.get_constituent(0)
+        self.assertIsNotNone(x0)
 
 
 if __name__ == '__main__':

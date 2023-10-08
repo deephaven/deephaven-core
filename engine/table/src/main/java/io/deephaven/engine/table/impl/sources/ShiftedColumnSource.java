@@ -80,8 +80,8 @@ public class ShiftedColumnSource<T> extends AbstractColumnSource<T>
     @NotNull
     public RowSet buildRedirectedKeys(
             boolean usePrev,
-            final @NotNull RowSequence toRedirect,
-            final @NotNull MutableInt nullAtBeginningOrEnd) {
+            @NotNull final RowSequence toRedirect,
+            @NotNull final MutableInt nullAtBeginningOrEnd) {
         final RowSet useRowSet = usePrev ? rowSet.copyPrev() : rowSet;
         try (final RowSet ignored = useRowSet != rowSet ? useRowSet : null;
                 final RowSet toRedirectKeys = toRedirect.asRowSet();

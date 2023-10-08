@@ -13,8 +13,11 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.ColumnSource;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -23,7 +26,9 @@ import java.util.List;
 /**
  * This will filter a table for the most recent N nanoseconds (must be on a date time column).
  */
-public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements Runnable {
+public class TimeSeriesFilter
+        extends WhereFilterLivenessArtifactImpl
+        implements Runnable, NotificationQueue.Dependency {
     protected final String columnName;
     protected final long nanos;
     private RecomputeListener listener;
@@ -52,13 +57,17 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
     @Override
     public void init(TableDefinition tableDefinition) {}
 
+    @NotNull
     @Override
-    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(
+            @NotNull final RowSet selection,
+            @NotNull final RowSet fullSet,
+            @NotNull final Table table,
+            final boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
 
-        @SuppressWarnings("unchecked")
         ColumnSource<Instant> dateColumn = table.getColumnSource(columnName);
         if (!Instant.class.isAssignableFrom(dateColumn.getType())) {
             throw new RuntimeException(columnName + " is not an Instant column!");
@@ -95,6 +104,16 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
         this.listener = listener;
         listener.setIsRefreshing(true);
         updateGraph.addSource(this);
+    }
+
+    @Override
+    public boolean satisfied(long step) {
+        return updateGraph.satisfied(step);
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateGraph;
     }
 
     @Override

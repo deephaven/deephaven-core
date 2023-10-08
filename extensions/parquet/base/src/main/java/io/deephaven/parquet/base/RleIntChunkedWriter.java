@@ -8,8 +8,10 @@ import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +28,7 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     private static final Logger LOG = LoggerFactory.getLogger(org.apache.parquet.column.values.plain.PlainValuesWriter.class);
 
     private final RunLengthBitPackingHybridEncoder encoder;
-    private byte bitWidth;
+    private final byte bitWidth;
 
     RleIntChunkedWriter(int pageSize, ByteBufferAllocator allocator, byte bitWidth) {
         encoder = new RunLengthBitPackingHybridEncoder(bitWidth, pageSize, pageSize, allocator);
@@ -95,22 +97,31 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     }
 
     @Override
-    public void writeBulk(@NotNull IntBuffer bulkValues, int rowCount) {
-
+    public void writeBulk(@NotNull IntBuffer bulkValues,
+                          final int rowCount,
+                          @Nullable final Statistics<?> statistics) {
+        // Track statistics while we write the values.
         for (int i = 0; i < rowCount; i++) {
-            writeInteger(bulkValues.get());
+            final int v = bulkValues.get();
+            writeInteger(v);
+            statistics.updateStats(v);
         }
     }
 
     @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(@NotNull IntBuffer bulkValues, @NotNull RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
+    public WriteResult writeBulkFilterNulls(@NotNull IntBuffer bulkValues,
+                                            @NotNull RunLengthBitPackingHybridEncoder dlEncoder,
+                                            final int rowCount,
+                                            @NotNull final Statistics<?> statistics) throws IOException {
         while (bulkValues.hasRemaining()) {
-            int next = bulkValues.get();
-            if (next != QueryConstants.NULL_INT) {
-                writeInteger(next);
+            int v = bulkValues.get();
+            if (v != QueryConstants.NULL_INT) {
+                writeInteger(v);
+                statistics.updateStats(v);
                 dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
+                statistics.incrementNumNulls();
                 dlEncoder.writeInt(DL_ITEM_NULL);
             }
         }
@@ -118,16 +129,20 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     }
 
     @Override
-    public @NotNull WriteResult writeBulkFilterNulls(@NotNull IntBuffer bulkValues, int rowCount) {
+    public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull IntBuffer bulkValues,
+                                                           final int rowCount,
+                                                           @NotNull final Statistics<?> statistics) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         int i = 0;
         while (bulkValues.hasRemaining()) {
-            int next = bulkValues.get();
-            if (next != QueryConstants.NULL_INT) {
-                writeInteger(next);
+            int v = bulkValues.get();
+            if (v != QueryConstants.NULL_INT) {
+                writeInteger(v);
+                statistics.updateStats(v);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
+                statistics.incrementNumNulls();
             }
             i++;
         }

@@ -52,10 +52,6 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
     @Override
     public void setUp() throws Exception {
-        if (null == ProcessEnvironment.tryGet()) {
-            ProcessEnvironment.basicServerInitialization(Configuration.getInstance(),
-                    "TestTransformablePartitionedTableThenMerge", new StreamLoggerImpl());
-        }
         super.setUp();
         setExpectError(false);
     }

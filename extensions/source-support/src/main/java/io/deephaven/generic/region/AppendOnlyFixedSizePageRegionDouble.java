@@ -44,11 +44,6 @@ public class AppendOnlyFixedSizePageRegionDouble<ATTR extends Any>
     }
 
     @Override
-    public final ChunkType getChunkType() {
-        return ChunkType.Double;
-    }
-
-    @Override
     public double getDouble(final long rowKey) {
         final ChunkHolderPageDouble<ATTR> page = getPageContaining(rowKey);
         try {
@@ -69,6 +64,7 @@ public class AppendOnlyFixedSizePageRegionDouble<ATTR extends Any>
 
     @NotNull
     private ChunkHolderPageDouble<ATTR> getPageContaining(final long rowKey) {
+        throwIfInvalidated();
         final long firstRowPosition = rowKey & mask();
         final int pageIndex = Math.toIntExact(firstRowPosition / pageSize);
         if (pageIndex >= MAX_ARRAY_SIZE) {

@@ -56,7 +56,7 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
         return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), scheduler,
                 adaptStartTime(request),
                 adaptPeriod(request),
-                false);
+                request.getBlinkTable());
     }
 
     private static Instant adaptStartTime(@SuppressWarnings("unused") final TimeTableRequest request) {

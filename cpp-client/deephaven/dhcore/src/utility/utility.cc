@@ -243,7 +243,7 @@ std::string demangle(const char* name) {
 
 std::string ObjectId(const std::string &class_short_name, void *this_ptr) {
   SimpleOstringstream s;
-  s << class_short_name << '[' << this_ptr << ']';
+  s << class_short_name << '(' << this_ptr << ')';
   return std::move(s.str());
 }
 

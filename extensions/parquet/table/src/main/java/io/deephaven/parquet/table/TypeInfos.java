@@ -34,7 +34,7 @@ import static io.deephaven.engine.util.BigDecimalUtils.computePrecisionAndScale;
  * Contains the necessary information to convert a Deephaven table into a Parquet table. Both the schema translation,
  * and the data translation.
  */
-class TypeInfos {
+public class TypeInfos {
     private static final TypeInfo[] TYPE_INFOS = new TypeInfo[] {
             IntType.INSTANCE,
             LongType.INSTANCE,
@@ -105,14 +105,14 @@ class TypeInfos {
         return new ImmutablePair<>(SerializableCodec.class.getName(), null);
     }
 
-    static PrecisionAndScale getPrecisionAndScale(
-            @NotNull final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
+    public static PrecisionAndScale getPrecisionAndScale(
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final String columnName,
             @NotNull final RowSet rowSet,
             @NotNull Supplier<ColumnSource<BigDecimal>> columnSourceSupplier) {
         return (PrecisionAndScale) computedCache
                 .computeIfAbsent(columnName, unusedColumnName -> new HashMap<>())
-                .computeIfAbsent(ParquetTableWriter.CacheTags.DECIMAL_ARGS,
+                .computeIfAbsent(ParquetCacheTags.DECIMAL_ARGS,
                         uct -> parquetCompatible(computePrecisionAndScale(rowSet, columnSourceSupplier.get())));
     }
 
@@ -130,7 +130,7 @@ class TypeInfos {
     }
 
     static TypeInfo bigDecimalTypeInfo(
-            final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
+            final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final ColumnDefinition<?> column,
             final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap) {
@@ -157,7 +157,7 @@ class TypeInfos {
     }
 
     static TypeInfo getTypeInfo(
-            final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
+            final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final ColumnDefinition<?> column,
             final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,

@@ -68,7 +68,10 @@ public interface ThreadProfiler {
             return NullThreadProfiler.INSTANCE;
         }
         final String vendor = System.getProperty("java.vendor");
-        if (vendor.contains("Sun") || vendor.contains("Oracle") || vendor.contains("OpenJDK")) {
+        if (vendor.contains("Sun")
+                || vendor.contains("Oracle")
+                || vendor.contains("OpenJDK")
+                || vendor.contains("Adoptium")) {
             return new SunThreadMXBeanThreadProfiler();
         }
         return new BaselineThreadMXBeanThreadProfiler();

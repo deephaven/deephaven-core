@@ -102,9 +102,9 @@ public class FormulaKernelSample implements io.deephaven.engine.table.impl.selec
 
     private long applyFormulaPerItem(long II, long ii, int I, int i) {
         try {
-            return plus(plus(multiply(I, II), multiply(q.intValue(), ii)), II_.get(minus(i, 1)));
+            return plus(plus(multiply(I, II), multiply(q.intValue(), ii)), II_.get(longCast(minus(i, 1))));
         } catch (java.lang.Exception __e) {
-            throw new io.deephaven.engine.table.impl.select.FormulaEvaluationException("In formula: " + "plus(plus(multiply(I, II), multiply(q.intValue(), ii)), II_.get(minus(i, 1)))", __e);
+            throw new io.deephaven.engine.table.impl.select.FormulaEvaluationException("In formula: " + "plus(plus(multiply(I, II), multiply(q.intValue(), ii)), II_.get(longCast(minus(i, 1))))", __e);
         }
     }
 

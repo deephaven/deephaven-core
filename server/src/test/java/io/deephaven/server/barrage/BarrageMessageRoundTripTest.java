@@ -1199,8 +1199,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         final BitSet allColumns = new BitSet(1);
         allColumns.set(0);
 
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(0).toTracking(), col("intCol", 0));
-        TstUtils.removeRows(queryTable, i(0));
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(i().toTracking());
+        final Table queryTable = sourceTable.updateView("data = (short) k");
 
         final RemoteNugget remoteNugget = new RemoteNugget(() -> queryTable);
 
@@ -1226,15 +1226,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         final int numDeltas = 4;
         for (int ii = 0; ii < numDeltas; ++ii) {
             final RowSetBuilderSequential newRowsBuilder = RowSetFactory.builderSequential();
-            final Integer[] values = new Integer[sz / numDeltas];
             for (int jj = ii; jj < sz; jj += numDeltas) {
                 newRowsBuilder.appendKey(jj);
-                values[jj / numDeltas] = ii;
             }
-            final RowSet newRows = newRowsBuilder.build();
             updateGraph.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(queryTable, newRows, col("intCol", values));
-                queryTable.notifyListeners(new TableUpdateImpl(
+                final RowSet newRows = newRowsBuilder.build();
+                TstUtils.addToTable(sourceTable, newRows);
+                sourceTable.notifyListeners(new TableUpdateImpl(
                         newRows,
                         RowSetFactory.empty(),
                         RowSetFactory.empty(),
@@ -1251,18 +1249,14 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         // Modify all of our rows spread over multiple deltas.
         for (int ii = 0; ii < numDeltas; ++ii) {
             final RowSetBuilderSequential modRowsBuilder = RowSetFactory.builderSequential();
-            final Integer[] values = new Integer[sz / numDeltas];
             for (int jj = ii; jj < sz; jj += numDeltas) {
                 modRowsBuilder.appendKey(jj);
-                values[jj / numDeltas] = numDeltas + ii;
             }
-            final RowSet modRows = modRowsBuilder.build();
             updateGraph.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(queryTable, modRows, col("intCol", values));
-                queryTable.notifyListeners(new TableUpdateImpl(
+                sourceTable.notifyListeners(new TableUpdateImpl(
                         RowSetFactory.empty(),
                         RowSetFactory.empty(),
-                        modRows,
+                        modRowsBuilder.build(),
                         RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
             });
         }

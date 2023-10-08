@@ -11,10 +11,12 @@ import contextlib
 import inspect
 from enum import Enum
 from enum import auto
+from functools import wraps
 from typing import Any, Optional, Callable, Dict
 from typing import Sequence, List, Union, Protocol
 
 import jpy
+import numba
 import numpy as np
 
 from deephaven import DHError
@@ -29,6 +31,8 @@ from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict
 from deephaven.jcompat import to_sequence, j_array_list
 from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
+from deephaven.dtypes import _BUILDABLE_ARRAY_DTYPE_MAP, _scalar, _np_dtype_char, \
+    _component_np_dtype_char
 
 # Table
 _J_Table = jpy.get_type("io.deephaven.engine.table.Table")
@@ -42,6 +46,7 @@ _JPair = jpy.get_type("io.deephaven.api.Pair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
 _JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
+_JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
 
 # PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
@@ -69,6 +74,11 @@ _JNodeType = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable$No
 _JFormatOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.FormatOperationsRecorder")
 _JSortOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.SortOperationsRecorder")
 _JFilterOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.FilterOperationsRecorder")
+
+# MultiJoin Table and input
+_JMultiJoinInput = jpy.get_type("io.deephaven.engine.table.MultiJoinInput")
+_JMultiJoinTable = jpy.get_type("io.deephaven.engine.table.MultiJoinTable")
+_JMultiJoinFactory = jpy.get_type("io.deephaven.engine.table.MultiJoinFactory")
 
 # For unittest vectorization
 _test_vectorization = False
@@ -353,38 +363,91 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return None
 
 
-_numpy_type_codes = ["i", "l", "h", "f", "d", "b", "?", "U", "O"]
+_SUPPORTED_NP_TYPE_CODES = ["i", "l", "h", "f", "d", "b", "?", "U", "M", "O"]
 
 
 def _encode_signature(fn: Callable) -> str:
     """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
-    type to numpy dtype chars (i,l,h,f,d,b,?,U,O), and pack them into a string with parameter type chars first,
+    type to numpy dtype chars (i,l,h,f,d,b,?,U,M,O), and pack them into a string with parameter type chars first,
     in their original order, followed by the delimiter string '->', then the return type_char.
 
     If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
     """
     sig = inspect.signature(fn)
 
-    parameter_types = []
+    np_type_codes = []
     for n, p in sig.parameters.items():
-        try:
-            np_dtype = np.dtype(p.annotation if p.annotation else "object")
-            parameter_types.append(np_dtype)
-        except TypeError:
-            parameter_types.append(np.dtype("object"))
+        np_type_codes.append(_np_dtype_char(p.annotation))
 
-    try:
-        return_type = np.dtype(sig.return_annotation if sig.return_annotation else "object")
-    except TypeError:
-        return_type = np.dtype("object")
-
-    np_type_codes = [np.dtype(p).char for p in parameter_types]
-    np_type_codes = [c if c in _numpy_type_codes else "O" for c in np_type_codes]
-    return_type_code = np.dtype(return_type).char
-    return_type_code = return_type_code if return_type_code in _numpy_type_codes else "O"
+    return_type_code = _np_dtype_char(sig.return_annotation)
+    np_type_codes = [c if c in _SUPPORTED_NP_TYPE_CODES else "O" for c in np_type_codes]
+    return_type_code = return_type_code if return_type_code in _SUPPORTED_NP_TYPE_CODES else "O"
 
     np_type_codes.extend(["-", ">", return_type_code])
     return "".join(np_type_codes)
+
+
+def _py_udf(fn: Callable):
+    """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
+    Python and Java. This decorator is intended for use by the Deephaven query engine and should not be used by
+    users.
+
+    For now, this decorator is only capable of converting Python function return values to Java values. It
+    does not yet convert Java values in arguments to usable Python object (e.g. numpy arrays) or properly translate
+    Deephaven primitive null values.
+
+    For properly annotated functions, including numba vectorized and guvectorized ones, this decorator inspects the
+    signature of the function and determines its return type, including supported primitive types and arrays of
+    the supported primitive types. It then converts the return value of the function to the corresponding Java value
+    of the same type. For unsupported types, the decorator returns the original Python value which appears as
+    org.jpy.PyObject in Java.
+    """
+
+    if hasattr(fn, "return_type"):
+        return fn
+
+    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
+        dh_dtype = dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
+    else:
+        dh_dtype = dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
+
+    return_array = False
+
+    # If the function is a numba guvectorized function, examine the signature of the function to determine if it
+    # returns an array.
+    if isinstance(fn, numba.np.ufunc.gufunc.GUFunc):
+        sig = fn.signature
+        rtype = sig.split("->")[-1].strip("()")
+        if rtype:
+            return_array = True
+    else:
+        component_type = _component_np_dtype_char(inspect.signature(fn).return_annotation)
+        if component_type:
+            dh_dtype = dtypes.from_np_dtype(np.dtype(component_type))
+            if dh_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
+                return_array = True
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        ret = fn(*args, **kwargs)
+        if return_array:
+            return dtypes.array(dh_dtype, ret)
+        elif dh_dtype == dtypes.PyObject:
+            return ret
+        else:
+            return _scalar(ret)
+
+    wrapper.j_name = dh_dtype.j_name
+    ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(dh_dtype) if return_array else dh_dtype
+
+    if hasattr(dh_dtype.j_type, 'jclass'):
+        j_class = ret_dtype.j_type.jclass
+    else:
+        j_class = ret_dtype.qst_type.clazz()
+
+    wrapper.return_type = j_class
+
+    return wrapper
 
 
 def dh_vectorize(fn):
@@ -404,6 +467,7 @@ def dh_vectorize(fn):
     """
     signature = _encode_signature(fn)
 
+    @wraps(fn)
     def wrapper(*args):
         if len(args) != len(signature) - len("->?") + 2:
             raise ValueError(
@@ -417,7 +481,7 @@ def dh_vectorize(fn):
             vectorized_args = zip(*args[2:])
             for i in range(chunk_size):
                 scalar_args = next(vectorized_args)
-                chunk_result[i] = fn(*scalar_args)
+                chunk_result[i] = _scalar(fn(*scalar_args))
         else:
             for i in range(chunk_size):
                 chunk_result[i] = fn()
@@ -537,6 +601,11 @@ class Table(JObjectWrapper):
         if self._is_refreshing is None:
             self._is_refreshing = self.j_table.isRefreshing()
         return self._is_refreshing
+
+    @property
+    def is_blink(self) -> bool:
+        """Whether this table is a blink table."""
+        return _JBlinkTableTools.isBlink(self.j_table)
 
     @property
     def update_graph(self) -> UpdateGraph:
@@ -2282,7 +2351,7 @@ class PartitionedTable(JObjectWrapper):
             unique_keys: False
             constituent_column: the name of the first column with a Table data type
             constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
-                column. Consequently the constituent column can't be empty
+                column. Consequently, the constituent column can't be empty
             constituent_changes_permitted: the value of table.is_refreshing
 
 
@@ -2291,7 +2360,7 @@ class PartitionedTable(JObjectWrapper):
             key_cols (Union[str, List[str]]): the key column name(s) of 'table'
             unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
             constituent_column (str): the constituent column name in 'table'
-            constituent_table_columns (list[Column]): the column definitions of the constituent table
+            constituent_table_columns (List[Column]): the column definitions of the constituent table
             constituent_changes_permitted (bool): whether the values of the constituent column can change
 
         Returns:
@@ -3555,3 +3624,105 @@ class PartitionedTableProxy(JObjectWrapper):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateBy(j_array_list(ops), *by))
         except Exception as e:
             raise DHError(e, "update-by operation on the PartitionedTableProxy failed.") from e
+
+class MultiJoinInput(JObjectWrapper):
+    """A MultiJoinInput represents the input tables, key columns and additional columns to be used in the multi-table
+    natural join. """
+    j_object_type = _JMultiJoinInput
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_multijoininput
+
+    def __init__(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None):
+        """Creates a new MultiJoinInput containing the table to include for the join, the key columns from the table to
+        match with other table keys plus additional columns containing data from the table. Rows containing unique keys
+        will be added to the output table, otherwise the data from these columns will be added to the existing output
+        rows.
+
+        Args:
+            table (Table): the right table to include in the join
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+                i.e. "col_a = col_b" for different column names
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the this table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
+
+        Raises:
+            DHError
+        """
+        try:
+            self.table = table
+            on = to_sequence(on)
+            joins = to_sequence(joins)
+            self.j_multijoininput = _JMultiJoinInput.of(table.j_table, on, joins)
+        except Exception as e:
+            raise DHError(e, "failed to build a MultiJoinInput object.") from e
+
+
+class MultiJoinTable(JObjectWrapper):
+    """A MultiJoinTable is an object that contains the result of a multi-table natural join. To retrieve the underlying
+    result Table, use the table() method. """
+    j_object_type = _JMultiJoinTable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_multijointable
+
+    def table(self) -> Table:
+        """Returns the Table containing the multi-table natural join output. """
+        return Table(j_table=self.j_multijointable.table())
+
+    def __init__(self, input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
+                 on: Union[str, Sequence[str]] = None):
+        """Creates a new MultiJoinTable. The join can be specified in terms of either tables or MultiJoinInputs.
+
+        Args:
+            input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects
+                specifying the tables and columns to include in the join.
+            on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality
+                expression that matches every input table, i.e. "col_a = col_b" to rename output column names. Note:
+                When MultiJoinInput objects are supplied, this parameter must be omitted.
+
+        Raises:
+            DHError
+        """
+        try:
+            if isinstance(input, Table) or (isinstance(input, Sequence) and all(isinstance(t, Table) for t in input)):
+                tables = to_sequence(input, wrapped=True)
+                with auto_locking_ctx(*tables):
+                    j_tables = to_sequence(input)
+                    self.j_multijointable = _JMultiJoinFactory.of(on, *j_tables)
+            elif isinstance(input, MultiJoinInput) or (isinstance(input, Sequence) and all(isinstance(ji, MultiJoinInput) for ji in input)):
+                if on is not None:
+                    raise DHError(message="on parameter is not permitted when MultiJoinInput objects are provided.")
+                wrapped_input = to_sequence(input, wrapped=True)
+                tables = [ji.table for ji in wrapped_input]
+                with auto_locking_ctx(*tables):
+                    input = to_sequence(input)
+                    self.j_multijointable = _JMultiJoinFactory.of(*input)
+            else:
+                raise DHError(message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs.")
+
+        except Exception as e:
+            raise DHError(e, "failed to build a MultiJoinTable object.") from e
+
+
+
+def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
+               on: Union[str, Sequence[str]] = None) -> MultiJoinTable:
+    """ The multi_join method creates a new table by performing a multi-table natural join on the input tables.  The result
+    consists of the set of distinct keys from the input tables natural joined to each input table. Input tables need not
+    have a matching row for each key, but they may not have multiple matching rows for a given key.
+
+    Args:
+        input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying the
+            tables and columns to include in the join.
+        on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality expression
+            that matches every input table, i.e. "col_a = col_b" to rename output column names. Note: When
+            MultiJoinInput objects are supplied, this parameter must be omitted.
+
+    Returns:
+        MultiJoinTable: the result of the multi-table natural join operation. To access the underlying Table, use the
+            table() method.
+    """
+    return MultiJoinTable(input, on)

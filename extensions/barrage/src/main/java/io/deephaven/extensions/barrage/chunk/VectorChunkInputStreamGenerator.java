@@ -79,7 +79,7 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
 
     @Override
     public DrainableColumn getInputStream(final StreamReaderOptions options,
-                                          final @Nullable RowSet subset) throws IOException {
+                                          @Nullable final RowSet subset) throws IOException {
         computePayload();
         return new VarListInputStream(options, subset);
     }

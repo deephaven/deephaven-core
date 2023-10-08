@@ -111,6 +111,7 @@ _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDee
 py_dh_session = _JPythonScriptSession(docs_update_graph, py_scope_jpy)
 py_dh_session.getExecutionContext().open()
 
+pygments_style = 'sphinx'
 
 import deephaven
 docs_title = "Deephaven python modules."

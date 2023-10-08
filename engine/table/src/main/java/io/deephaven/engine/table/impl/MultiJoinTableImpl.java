@@ -153,10 +153,11 @@ public class MultiJoinTableImpl implements MultiJoinTable {
     @VisibleForTesting
     static MultiJoinTableImpl of(@NotNull final JoinControl joinControl,
             @NotNull final MultiJoinInput... multiJoinInputs) {
-
         final Table[] tables = Arrays.stream(multiJoinInputs).map(MultiJoinInput::inputTable).toArray(Table[]::new);
         final UpdateGraph updateGraph = tables[0].getUpdateGraph(tables);
-        if (updateGraph != null) {
+
+        final boolean refreshing = Arrays.stream(multiJoinInputs).anyMatch(ih -> ih.inputTable().isRefreshing());
+        if (refreshing) {
             updateGraph.checkInitiateSerialTableOperation();
         }
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {

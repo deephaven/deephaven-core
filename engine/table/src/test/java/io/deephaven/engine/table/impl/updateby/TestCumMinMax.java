@@ -204,7 +204,7 @@ public class TestCumMinMax extends BaseUpdateByTest {
         return result;
     }
 
-    final void assertWithCumMin(final @NotNull Object expected, final @NotNull Object actual) {
+    final void assertWithCumMin(@NotNull final Object expected, @NotNull final Object actual) {
         if (expected instanceof byte[]) {
             assertArrayEquals(Numeric.cummin((byte[]) expected), (byte[]) actual);
         } else if (expected instanceof short[]) {
@@ -222,7 +222,7 @@ public class TestCumMinMax extends BaseUpdateByTest {
         }
     }
 
-    final void assertWithCumMax(final @NotNull Object expected, final @NotNull Object actual) {
+    final void assertWithCumMax(@NotNull final Object expected, @NotNull final Object actual) {
         if (expected instanceof byte[]) {
             assertArrayEquals(Numeric.cummax((byte[]) expected), (byte[]) actual);
         } else if (expected instanceof short[]) {
