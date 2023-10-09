@@ -284,14 +284,14 @@ class ProtobufProtocol(JObjectWrapper):
     j_object_type = jpy.get_type("io.deephaven.kafka.protobuf.Protocol")
 
     @staticmethod
-    def serdes():
+    def serdes() -> ProtobufProtocol:
         """The Kafka Protobuf serdes protocol. The payload's first byte is the serdes magic byte, the next 4-bytes are
         the schema ID, the next variable-sized bytes are the message indexes, followed by the normal binary encoding of
         the Protobuf data."""
         return ProtobufProtocol(ProtobufProtocol.j_object_type.serdes())
 
     @staticmethod
-    def raw():
+    def raw() -> ProtobufProtocol:
         """The raw Protobuf protocol. The full payload is the normal binary encoding of the Protobuf data."""
         return ProtobufProtocol(ProtobufProtocol.j_object_type.raw())
 
@@ -309,9 +309,11 @@ def protobuf_spec(
         schema_message_name: Optional[str] = None,
         message_class: Optional[str] = None,
         include: Optional[List[str]] = None,
-        protocol: ProtobufProtocol = ProtobufProtocol.serdes(),
+        protocol: Optional[ProtobufProtocol] = None,
 ) -> KeyValueSpec:
-    """Creates a spec parsing a Kafka protobuf stream into a Deephaven table.
+    """Creates a spec for parsing a Kafka protobuf stream into a Deephaven table. Uses the schema, schema_version, and
+    schema_message_name to fetch the schema from the schema registry; or uses message_class to to get the schema from
+    the classpath.
 
     Args:
         schema (Optional[str]): the schema subject name. When set, this will fetch the protobuf message descriptor from
@@ -333,7 +335,9 @@ def protobuf_spec(
             name paths that start with ["foo", "bar"]:  ["foo", "bar", "baz"],  ["foo", "bar", "baz", "zap"], etc. When
             multiple includes are specified, the fields will be included when any of the components matches. Default is
             None, which includes all paths.
-        protocol (ProtobufProtocol): the wire protocol for this payload. By default, is ProtobufProtocol.serdes().
+        protocol (Optional[ProtobufProtocol]): the wire protocol for this payload. When schema is set,
+            ProtobufProtocol.serdes() will be used by default. When message_class is set, ProtobufProtocol.raw() will
+            be used by default.
     Returns:
         a KeyValueSpec
     """
@@ -361,7 +365,8 @@ def protobuf_spec(
         pb_consume_builder.descriptorProvider(dsr.build())
     else:
         raise DHError("Must set schema or message_class")
-    pb_consume_builder.protocol(protocol.j_object)
+    if protocol:
+        pb_consume_builder.protocol(protocol.j_object)
     return KeyValueSpec(
         j_spec=_JKafkaTools_Consume.protobufSpec(pb_consume_builder.build())
     )

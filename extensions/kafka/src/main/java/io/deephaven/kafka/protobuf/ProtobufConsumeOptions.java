@@ -12,13 +12,9 @@ import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.function.Function;
-
 /**
  * The kafka protobuf options. This will get the {@link com.google.protobuf.Descriptors.Descriptor protobuf descriptor}
- * according to the the {@link #descriptorProvider()} and create {@link com.google.protobuf.Message message} parsing
+ * according to the {@link #descriptorProvider()} and create {@link com.google.protobuf.Message message} parsing
  * functions according to
  * {@link io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)}.
  *
@@ -67,21 +63,31 @@ public abstract class ProtobufConsumeOptions {
     }
 
     /**
-     * The protocol for decoding the payload. By default, is {@link Protocol#serdes()}.
-     *
-     * @return the payload protocol
-     */
-    @Default
-    public Protocol protocol() {
-        return Protocol.serdes();
-    }
-
-    /**
      * The descriptor provider.
      *
      * @return the descriptor provider
      */
     public abstract DescriptorProvider descriptorProvider();
+
+    /**
+     * The protocol for decoding the payload. When {@link #descriptorProvider()} is a {@link DescriptorSchemaRegistry},
+     * {@link Protocol#serdes()} will be used by default; when {@link #descriptorProvider()} is a
+     * {@link DescriptorMessageClass}, {@link Protocol#raw()} will be used by default.
+     *
+     * @return the payload protocol
+     */
+    @Default
+    public Protocol protocol() {
+        final DescriptorProvider dp = descriptorProvider();
+        if (dp instanceof DescriptorSchemaRegistry) {
+            return Protocol.serdes();
+        }
+        if (dp instanceof DescriptorMessageClass) {
+            return Protocol.raw();
+        }
+        throw new IllegalStateException(String.format("Unexpected %s class: %s",
+                DescriptorProvider.class.getSimpleName(), dp.getClass().getName()));
+    }
 
     /**
      * The descriptor parsing options. By default, is {@link ProtobufDescriptorParserOptions#defaults()}.
