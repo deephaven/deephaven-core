@@ -121,7 +121,7 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
                 intCol(intCol, 123),
                 shortCol(shortCol, (short) 6),
                 longCol(longCol, 123456789),
-                byteCol(byteCol, (byte) 51), // ASCII value of character '3' is the byte value 51
+                byteCol(byteCol, (byte) 3),
                 floatCol(floatColName, (float) 98765.4321),
                 col(boolColName, true),
                 col(charColName, 'c')
@@ -240,7 +240,7 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
                 intCol(intCol, 123),
                 shortCol(shortCol, (short) 6),
                 longCol(longCol, 123456789),
-                byteCol(byteCol, (byte) 51), // ASCII value of character '3' is the byte value 51
+                byteCol(byteCol, (byte) 3),
                 floatCol(floatColName, (float) 98765.4321),
                 col(boolColName, true),
                 col(charColName, 'c'),
@@ -571,7 +571,7 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
         adapter = factory.apply(writer);
 
         injectJson(
-                "{\"toExpand\": \"expanded\", \"byte\": [\"\\u0001\", null, \"\\u0002\"], \"char\": [\"A\", null, \"B\"], \"short\": [3, null, 4], \"int\": [5, null, 6], \"long\": [7, null, 8], \"float\": [9.9, null, 10.1], \"double\": [11.11, null, 12.12], \"str\":  [null, \"Billy\", \"Willy\"], \"bool\": [true, false, null], \"dt\": [ 1600348073000, 1600348077000, null ] }",
+                "{\"toExpand\": \"expanded\", \"byte\": [1, null, 2], \"char\": [\"A\", null, \"B\"], \"short\": [3, null, 4], \"int\": [5, null, 6], \"long\": [7, null, 8], \"float\": [9.9, null, 10.1], \"double\": [11.11, null, 12.12], \"str\":  [null, \"Billy\", \"Willy\"], \"bool\": [true, false, null], \"dt\": [ 1600348073000, 1600348077000, null ] }",
                 "id", result);
 
         final Table expected = newTable(
