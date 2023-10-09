@@ -161,7 +161,12 @@ this means that the C++ compiler does not know where to find the relevant header
 
 ## Running the unit tests
 
-The Deephaven R client utilizes R's `testthat` package to perform unit tests. In order to run these unit tests, install `testthat` via `install.packages("testthat")`. Then, from an R session with `rdeephaven` installed, run the unit tests:
+The Deephaven R client utilizes R's `testthat` package to perform unit tests. In order to run these unit tests, install `testthat` and the other dependent packages:
+```r
+install.packages(c('testthat', 'lubridate', 'zoo'))
+```
+
+Then, from an R session with `rdeephaven` installed, run the unit tests:
 ```r
 library(testthat)
 test_package("rdeephaven")

@@ -13,7 +13,6 @@
 #include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/dhcore/ticking/ticking.h"
-#include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/dhcore/ticking/barrage_processor.h"
 
@@ -22,7 +21,6 @@ using deephaven::dhcore::chunk::AnyChunk;
 using deephaven::dhcore::clienttable::Schema;
 using deephaven::dhcore::ticking::BarrageProcessor;
 using deephaven::dhcore::ticking::TickingCallback;
-using deephaven::dhcore::utility::Callback;
 using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::dhcore::utility::separatedList;
 using deephaven::dhcore::utility::Streamf;
@@ -45,14 +43,14 @@ using arrow::flight::FlightStreamWriter;
 namespace deephaven::client::subscription {
 namespace {
 // This class manages just enough state to serve as a Callback to the ... [TODO: finish this comment]
-class SubscribeState final : public Callback<> {
+class SubscribeState final {
   using Server = deephaven::client::server::Server;
 
 public:
   SubscribeState(std::shared_ptr<Server> server, std::vector<int8_t> ticket_bytes,
       std::shared_ptr<Schema> schema, std::promise<std::shared_ptr<SubscriptionHandle>> promise,
       std::shared_ptr <TickingCallback> callback);
-  void Invoke() final;
+  void Invoke();
 
 private:
   [[nodiscard]]
@@ -116,7 +114,7 @@ std::shared_ptr<SubscriptionHandle> SubscriptionThread::Start(std::shared_ptr<Se
   std::vector<int8_t> ticket_bytes(ticket.ticket().begin(), ticket.ticket().end());
   auto ss = std::make_shared<SubscribeState>(std::move(server), std::move(ticket_bytes),
       std::move(schema), std::move(promise), std::move(callback));
-  flight_executor->Invoke(std::move(ss));
+  flight_executor->Invoke([ss]() { ss->Invoke(); });
   return future.get();
 }
 

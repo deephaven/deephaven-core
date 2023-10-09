@@ -11,7 +11,6 @@
 #include "deephaven/client/utility/misc_types.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
-#include "deephaven/dhcore/utility/callbacks.h"
 
 /**
  * Arrow-related classes, used by TableHandleManager::newTableHandleAndFlightDescriptor() and
@@ -70,9 +69,6 @@ namespace deephaven::client {
  * This class is move-only.
  */
 class TableHandleManager {
-  template<typename... Args>
-  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
-
   using DurationSpecifier = deephaven::client::utility::DurationSpecifier;
   using TimePointSpecifier = deephaven::client::utility::TimePointSpecifier;
 
@@ -168,12 +164,6 @@ public:
    * the language of the script (typically either "python" or "groovy") and that the code matches that language.
    */
   void RunScript(std::string code) const;
-  /**
-   * The async version of RunScript(std::string variable) code.
-   * @param code The script to run on the server.
-   * @param callback The asynchronous callback.
-   */
-  void RunScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback) const;
 
   /**
    * Creates a FlightWrapper that is used for Arrow Flight integration. Arrow Flight is the primary
@@ -195,9 +185,6 @@ private:
  * the server and to get a TableHandleManager.
  */
 class Client {
-  template<typename... Args>
-  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
-
 public:
   /*
    * Default constructor. Creates a (useless) empty client object.
@@ -749,9 +736,6 @@ class TableHandle {
   using SortPair = deephaven::client::SortPair;
   using StrCol = deephaven::client::StrCol;
   using SubscriptionHandle = deephaven::client::subscription::SubscriptionHandle;
-
-  template<typename... Args>
-  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
 
 public:
   TableHandle();
@@ -1539,12 +1523,6 @@ public:
    * @param variable The QueryScope variable to bind to.
    */
   void BindToVariable(std::string variable) const;
-  /**
-   * The async version of BindToVariable(std::string variable) const.
-   * @param variable The QueryScope variable to bind to.
-   * @param callback The asynchronous callback.
-   */
-  void BindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback) const;
 
   /**
    * Get all the table's columns.
@@ -1615,11 +1593,6 @@ public:
    */
   [[nodiscard]]
   std::string ToString(bool want_headers) const;
-
-  /**
-   * Used internally, for debugging.
-   */
-  void Observe() const;
 
   /**
    * A specialized operation to Release the state of this TableHandle. This operation is normally done By the
