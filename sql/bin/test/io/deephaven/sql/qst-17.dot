@@ -1,0 +1,21 @@
+digraph {
+"op_0" ["label"="ticketTable(scan/time_3)"]
+"op_1" ["label"="ticketTable(scan/time_1)"]
+"op_2" ["label"="ticketTable(scan/time_2)"]
+"op_3" ["label"="view(__p_0_6=Timestamp,__p_0_7=I,__p_0_8=R)"]
+"op_4" ["label"="view(__p_0_0=Timestamp,__p_0_1=I,__p_0_2=R)"]
+"op_5" ["label"="view(__p_0_3=Timestamp,__p_0_4=I,__p_0_5=R)"]
+"op_6" ["label"="join([],[])"]
+"op_7" ["label"="join([],[])"]
+"op_8" ["label"="where((__p_0_1 == __p_0_4) && (__p_0_4 == __p_0_7) && (__p_0_2 <= __p_0_5) && (__p_0_5 <= __p_0_8))"]
+"op_9" ["label"="view(Timestamp=__p_0_0,I=__p_0_1,R=__p_0_2,Timestamp0=__p_0_3,I0=__p_0_4,R0=__p_0_5,Timestamp1=__p_0_6,I1=__p_0_7,R1=__p_0_8)"]
+"op_3" -> "op_0"
+"op_4" -> "op_1"
+"op_5" -> "op_2"
+"op_6" -> "op_4" ["label"="left"]
+"op_6" -> "op_5" ["label"="right"]
+"op_7" -> "op_6" ["label"="left"]
+"op_7" -> "op_3" ["label"="right"]
+"op_8" -> "op_7"
+"op_9" -> "op_8"
+}

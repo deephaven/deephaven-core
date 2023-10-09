@@ -23,7 +23,7 @@ _JPattern = jpy.get_type("java.util.regex.Pattern")
 
 
 class Filter(JObjectWrapper):
-    """A Filter object represents a filter that can be used in Table's filtering(where) operations."""
+    """A Filter object represents a filter that can be used in ``Table``'s filtering(where) operations."""
 
     j_object_type = _JFilter
 
@@ -111,7 +111,7 @@ def not_(filter_: Filter) -> Filter:
 
 
 def is_null(col: str) -> Filter:
-    """Creates a new filter that evaluates to true when the col is null, and evaluates to false when col is not null.
+    """Creates a new filter that evaluates to ``true`` when the ``col`` is ``null``, and evaluates to ``fals``e when ``col`` is not ``null``.
 
     Args:
         col (str): the column name
@@ -123,7 +123,7 @@ def is_null(col: str) -> Filter:
 
 
 def is_not_null(col: str) -> Filter:
-    """Creates a new filter that evaluates to true when the col is not null, and evaluates to false when col is null.
+    """Creates a new filter that evaluates to ``true`` when the ``col`` is not ``null``, and evaluates to ``false`` when ``col`` is ``null``.
 
     Args:
         col (str): the column name
@@ -155,7 +155,7 @@ def pattern(
     See https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/regex/Pattern.html for documentation on
     the regex pattern.
 
-    This filter will never match {@code null} values.
+    This filter will never match ``null`` values.
 
     Args:
         mode (PatternMode): the mode

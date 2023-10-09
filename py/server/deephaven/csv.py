@@ -37,27 +37,27 @@ def read(
     """Read the CSV data specified by the path parameter as a table.
 
     Args:
-        path (str): a file path or a URL string
-        header (Dict[str, DType]): a dict to define the table columns with key being the name, value being the data type
-        headless (bool): whether the csv file doesn't have a header row, default is False
-        header_row (int): the header row number, all the rows before it will be skipped, default is 0. Must be 0 if
-            headless is True, otherwise an exception will be raised
+        path (str): a file path or a URL string.
+        header (Dict[str, DType]): a dict to define the table columns with key being the name, value being the data type.
+        headless (bool): whether the csv file doesn't have a header row. Default is False.
+        header_row (int): the header row number. All the rows before it will be skipped. Default is 0. Must be 0 if
+            headless is True, otherwise an exception will be raised.
         skip_rows (long): number of data rows to skip before processing data. This is useful when you want to parse
-            data in chunks. Defaults to 0
+            data in chunks. Defaults to 0.
         num_rows (long): max number of rows to process. This is useful when you want to parse data in chunks.
-            Defaults to {@link Long#MAX_VALUE}
-        ignore_empty_lines (bool): whether to ignore empty lines, default is False
+            Defaults to `Long.MAX_VALUE <https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Long.html#MAX_VALUE>`_.
+        ignore_empty_lines (bool): whether to ignore empty lines. Default is False.
         allow_missing_columns (bool): whether the library should allow missing columns in the input. If this flag is
             set, then rows that are too short (that have fewer columns than the header row) will be interpreted as if
-            the missing columns contained the empty string. Defaults to false.
+            the missing columns contained the empty string. Default is False.
         ignore_excess_columns (bool): whether the library should allow excess columns in the input. If this flag is
             set, then rows that are too long (that have more columns than the header row) will have those excess columns
-            dropped. Defaults to false.
-        delimiter (str): the delimiter used by the CSV, default is the comma
-        quote (str): the quote character for the CSV, default is double quote
+            dropped. Default is False.
+        delimiter (str): the delimiter used by the CSV. Default is comma.
+        quote (str): the quote character for the CSV. Default is double quote.
         ignore_surrounding_spaces (bool): Indicates whether surrounding white space should be ignored for unquoted
-            text fields, default is True
-        trim (bool): indicates whether to trim white space inside a quoted string, default is False
+            text fields. Default is True.
+        trim (bool): indicates whether to trim white space inside a quoted string. Default is False.
 
     Returns:
         a table
@@ -111,9 +111,9 @@ def write(table: Table, path: str, cols: List[str] = []) -> None:
     """Write a table to a standard CSV file.
 
     Args:
-        table (Table): the source table
-        path (str): the path of the CSV file
-        cols (List[str]): the names of the columns to be written out
+        table (Table): the source table.
+        path (str): the path of the CSV file.
+        cols (List[str]): the names of the columns to be written out.
 
     Raises:
         DHError

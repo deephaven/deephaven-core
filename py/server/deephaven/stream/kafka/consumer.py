@@ -337,8 +337,8 @@ def avro_spec(
 
     Args:
         schema (str): Either a JSON encoded Avro schema definition string, or
-            the name for a schema registered in a Confluent compatible Schema Server.
-             If the name for a schema in Schema Server, the associated
+            the name for a schema registered in a Confluent compatible Schema Server. 
+            If the name for a schema in Schema Server, the associated 
             'kafka_config' parameter in the call to consume() should include the key 'schema.registry.url' with
             the value of the Schema Server URL for fetching the schema definition
         schema_version (str): the schema version to fetch from schema service, default is 'latest'

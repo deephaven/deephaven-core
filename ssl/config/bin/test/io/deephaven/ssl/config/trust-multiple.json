@@ -1,0 +1,19 @@
+{
+  "trust": {
+    "type": "list",
+    "values": [
+      {
+        "type": "certs",
+        "path": [
+          "ca-1.crt",
+          "ca-2.crt"
+        ]
+      },
+      {
+        "type": "truststore",
+        "path": "ca-3.p12",
+        "password": "secret"
+      }
+    ]
+  }
+}

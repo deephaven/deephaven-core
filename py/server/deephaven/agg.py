@@ -49,8 +49,8 @@ def sum_(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a Sum aggregation.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -62,8 +62,8 @@ def abs_sum(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates an Absolute-sum aggregation.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -75,8 +75,8 @@ def group(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a Group aggregation.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -88,8 +88,8 @@ def avg(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates an Average aggregation.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -101,7 +101,7 @@ def count_(col: str) -> Aggregation:
     """Creates a Count aggregation. This is not supported in 'Table.agg_all_by'.
 
     Args:
-        col (str): the column to hold the counts of each distinct group
+        col (str): the column to hold the counts of each distinct group.
 
     Returns:
         an aggregation
@@ -115,8 +115,8 @@ def partition(col: str, include_by_columns: bool = True) -> Aggregation:
     """Creates a Partition aggregation. This is not supported in 'Table.agg_all_by'.
 
     Args:
-        col (str): the column to hold the sub tables
-        include_by_columns (bool): whether to include the group by columns in the result, default is True
+        col (str): the column to hold the sub tables.
+        include_by_columns (bool): whether to include the group by columns in the result. Default is True.
 
     Returns:
         an aggregation
@@ -131,9 +131,9 @@ def count_distinct(cols: Union[str, List[str]] = None, count_nulls: bool = False
     each of the given columns.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
-        count_nulls (bool): whether null values should be counted, default is False
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
+        count_nulls (bool): whether null values should be counted. Default is False.
 
     Returns:
         an aggregation
@@ -145,8 +145,8 @@ def first(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a First aggregation.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -155,13 +155,13 @@ def first(cols: Union[str, List[str]] = None) -> Aggregation:
 
 
 def formula(formula: str, formula_param: str, cols: Union[str, List[str]] = None) -> Aggregation:
-    """Creates a user defined formula aggregation.
+    """Creates a user-defined formula aggregation.
 
     Args:
-        formula (str): the user defined formula to apply to each group
-        formula_param (str): the parameter name within the formula
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        formula (str): the user-defined formula to apply to each group.
+        formula_param (str): the parameter name within the formula.
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -170,11 +170,11 @@ def formula(formula: str, formula_param: str, cols: Union[str, List[str]] = None
 
 
 def last(cols: Union[str, List[str]] = None) -> Aggregation:
-    """Creates Last aggregation.
+    """Creates a Last aggregation.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -186,8 +186,8 @@ def min_(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a Min aggregation.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -199,8 +199,8 @@ def max_(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a Max aggregation to the ComboAggregation object.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -213,8 +213,8 @@ def median(cols: Union[str, List[str]] = None, average_evenly_divided: bool = Tr
     given columns.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
         average_evenly_divided (bool): when the group size is an even number, whether to average the two middle values
             for the output value. When set to True, average the two middle values. When set to False, use the smaller
             value. The default is True. This flag is only valid for numeric types.
@@ -230,9 +230,9 @@ def pct(percentile: float, cols: Union[str, List[str]] = None, average_evenly_di
     the given columns.
 
     Args:
-        percentile (float): the percentile used for calculation
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        percentile (float): the percentile used for calculation.
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
         average_evenly_divided (bool): when the percentile splits the group into two halves, whether to average the two
             middle values for the output value. When set to True, average the two middle values. When set to False, use
             the smaller value. The default is False. This flag is only valid for numeric types.
@@ -248,8 +248,8 @@ def sorted_first(order_by: str, cols: Union[str, List[str]] = None) -> Aggregati
 
     Args:
         order_by (str): the column to sort by
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -261,9 +261,9 @@ def sorted_last(order_by: str, cols: Union[str, List[str]] = None) -> Aggregatio
     """Creates a SortedLast aggregation.
 
     Args:
-        order_by (str): the column to sort by
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        order_by (str): the column to sort by.
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -275,8 +275,8 @@ def std(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a Std aggregation.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -290,11 +290,11 @@ def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False, non_
     result is null or the specified non_unique_sentinel value.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
         include_nulls (bool): whether null is treated as a value for the purpose of determining if the values in the
-            aggregation group are unique, default is False.
-        non_unique_sentinel (Any): the non-null sentinel value when no unique value exists, default is None. Must be
+            aggregation group are unique. Default is False.
+        non_unique_sentinel (Any): the non-null sentinel value when no unique value exists. Default is None. Must be
             a non-None value when include_nulls is True.
 
     Returns:
@@ -315,8 +315,8 @@ def var(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a Var aggregation.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -328,9 +328,9 @@ def weighted_avg(wcol: str, cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a Weighted-avg aggregation.
 
     Args:
-        wcol (str): the name of the weight column
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        wcol (str): the name of the weight column.
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -342,9 +342,9 @@ def weighted_sum(wcol: str, cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a Weighted-sum aggregation.
 
     Args:
-        wcol (str): the name of the weight column
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        wcol (str): the name of the weight column.
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
 
     Returns:
         an aggregation
@@ -357,9 +357,9 @@ def distinct(cols: Union[str, List[str]] = None, include_nulls: bool = False) ->
     given columns and stores them as vectors.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
-        include_nulls (bool): whether nulls should be included as distinct values, default is False
+        cols (Union[str, List[str]]): the column(s) to aggregate on. Can include renaming expressions, i.e. "new_col = col".
+            Default is None, which is only valid when used in Table agg_all_by operation.
+        include_nulls (bool): whether nulls should be included as distinct values. Default is False.
 
     Returns:
         an aggregation

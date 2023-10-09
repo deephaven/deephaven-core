@@ -25,7 +25,7 @@ def read_cursor(cursor: adbc_driver_manager.dbapi.Cursor) -> Table:
 
     Args:
         cursor (adbc_driver_manager.dbapi.Cursor): an ADBC DB-API cursor. Prior to it being passed in, its execute()
-            method must be called to run a query operation that produces an Arrow table
+            method must be called to run a query operation that produces an Arrow table.
 
     Returns:
         a new Table

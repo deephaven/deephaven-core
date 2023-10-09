@@ -40,12 +40,12 @@ class DType:
                  np_type: Any = np.object_):
         """
         Args:
-             j_name (str): the full qualified name of the Java class
-             j_type (Type): the mapped Python class created by JPY
-             qst_type (JType): the JPY wrapped object for a instance of QST Type
-             is_primitive (bool): whether this instance represents a primitive Java type
-             np_type (Any): an instance of numpy dtype (dtype("int64") or numpy class (e.g. np.int16), default is
-                np.object_
+             j_name (str): the full qualified name of the Java class.
+             j_type (Type): the mapped Python class created by JPY.
+             qst_type (JType): the JPY wrapped object for a instance of QST Type.
+             is_primitive (bool): whether this instance represents a primitive Java type.
+             np_type (Any): an instance of numpy dtype (dtype("int64") or numpy class (e.g. np.int16). Default is
+                np.object_.
         """
         self.j_name = j_name
         self.j_type = j_type if j_type else jpy.get_type(j_name)
@@ -69,47 +69,47 @@ class DType:
 
 
 bool_ = DType(j_name="java.lang.Boolean", qst_type=_JQstType.booleanType(), np_type=np.bool_)
-"""Boolean type"""
+"""Boolean type."""
 byte = DType(j_name="byte", qst_type=_JQstType.byteType(), is_primitive=True, np_type=np.int8)
-"""Signed byte integer type"""
+"""Signed byte integer type."""
 int8 = byte
-"""Signed byte integer type"""
+"""Signed byte integer type."""
 short = DType(j_name="short", qst_type=_JQstType.shortType(), is_primitive=True, np_type=np.int16)
-"""Signed short integer type"""
+"""Signed short integer type."""
 int16 = short
-"""Signed short integer type"""
+"""Signed short integer type."""
 char = DType(j_name="char", qst_type=_JQstType.charType(), is_primitive=True, np_type=np.dtype('uint16'))
-"""Character type"""
+"""Character type."""
 int32 = DType(j_name="int", qst_type=_JQstType.intType(), is_primitive=True, np_type=np.int32)
-"""Signed 32bit integer type"""
+"""Signed 32-bit integer type."""
 long = DType(j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np_type=np.int64)
-"""Signed 64bit integer type"""
+"""Signed 64-bit integer type."""
 int64 = long
-"""Signed 64bit integer type"""
+"""Signed 64-bit integer type."""
 int_ = long
-"""Signed 64bit integer type"""
+"""Signed 64-bit integer type."""
 float32 = DType(j_name="float", qst_type=_JQstType.floatType(), is_primitive=True, np_type=np.float32)
-"""Single-precision floating-point number type"""
+"""Single-precision floating-point number type."""
 single = float32
-"""Single-precision floating-point number type"""
+"""Single-precision floating-point number type."""
 float64 = DType(j_name="double", qst_type=_JQstType.doubleType(), is_primitive=True, np_type=np.float64)
-"""Double-precision floating-point number type"""
+"""Double-precision floating-point number type."""
 double = float64
-"""Double-precision floating-point number type"""
+"""Double-precision floating-point number type."""
 float_ = float64
-"""Double-precision floating-point number type"""
+"""Double-precision floating-point number type."""
 string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType(), np_type=np.str_)
-"""String type"""
+"""String type."""
 BigDecimal = DType(j_name="java.math.BigDecimal")
-"""Java BigDecimal type"""
+"""Java BigDecimal type."""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
-"""Deephaven StringSet type"""
+"""Deephaven StringSet type."""
 Instant = DType(j_name="java.time.Instant", np_type=np.dtype("datetime64[ns]"))
-"""Instant date time type"""
+"""Instant date-time type."""
 LocalDate = DType(j_name="java.time.LocalDate")
-"""Local date type"""
+"""Local date type."""
 LocalTime = DType(j_name="java.time.LocalTime")
-"""Local time type"""
+"""Local time type."""
 ZonedDateTime = DType(j_name="java.time.ZonedDateTime")
 """Zoned date time type"""
 Duration = DType(j_name="java.time.Duration")

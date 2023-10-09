@@ -36,7 +36,7 @@ class Color(JObjectWrapper):
 
         Colors are specified by name or hex value.
         Hex values are parsed as follows: first two digits set the Red component of the color; second two digits set the
-        Green component; third two the Blue. Hex values must have a "#" in front, e.g. "#001122"
+        Green component; third two the Blue. Hex values must have a "#" in front, e.g. "#001122".
 
         Args:
             name (str): the name of the color
@@ -98,8 +98,7 @@ class Color(JObjectWrapper):
 
     @staticmethod
     def of_hsl(h: float, s: float, l: float, alpha: float = 1.0) -> Color:
-        """ Creates a Color with the specified hue, saturation, lightness, and alpha. The lower the alpha, the more
-         transparent the color.
+        """Creates a Color with the specified hue, saturation, lightness, and alpha. The lower the alpha, the more transparent the color.
 
         Args:
             h (float): the hue component, as a degree on the color wheel in the range (0.0 - 360.0)

@@ -59,7 +59,7 @@ class Column:
 
 @dataclass
 class InputColumn(Column):
-    """ An InputColumn represents a user defined column with some input data. """
+    """ An InputColumn represents a user-defined column with some input data. """
     input_data: Any = field(default=None)
 
     def __post_init__(self):
@@ -80,7 +80,7 @@ def bool_col(name: str, data: Sequence) -> InputColumn:
     """ Creates an input column containing Boolean data.
 
     Args:
-        name (str): the column name
+        name (str): the column name.
         data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
@@ -93,7 +93,7 @@ def byte_col(name: str, data: Sequence) -> InputColumn:
     """ Creates an input column containing primitive byte data.
 
     Args:
-        name (str): the column name
+        name (str): the column name.
         data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
@@ -106,7 +106,7 @@ def char_col(name: str, data: Sequence) -> InputColumn:
     """ Creates an input column containing primitive char data.
 
     Args:
-        name (str): the column name
+        name (str): the column name.
         data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
@@ -119,7 +119,7 @@ def short_col(name: str, data: Sequence) -> InputColumn:
     """ Creates an input column containing primitive short data.
 
     Args:
-        name (str): the column name
+        name (str): the column name.
         data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
@@ -132,7 +132,7 @@ def int_col(name: str, data: Sequence) -> InputColumn:
     """ Creates an input column containing primitive int data.
 
     Args:
-        name (str): the column name
+        name (str): the column name.
         data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
@@ -145,8 +145,8 @@ def long_col(name: str, data: Sequence) -> InputColumn:
     """ Creates an input column containing primitive long data.
 
     Args:
-        name (str): the column name
-        data (Any): a python sequence of compatible data, could be numpy array or Pandas series
+        name (str): the column name.
+        data (Any): a python sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -158,7 +158,7 @@ def float_col(name: str, data: Sequence) -> InputColumn:
     """ Creates an input column containing primitive float data.
 
     Args:
-        name (str): the column name
+        name (str): the column name.
         data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
@@ -171,7 +171,7 @@ def double_col(name: str, data: Sequence) -> InputColumn:
     """ Creates an input column containing primitive double data.
 
     Args:
-        name (str): the column name
+        name (str): the column name.
         data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
@@ -184,7 +184,7 @@ def string_col(name: str, data: Sequence) -> InputColumn:
     """ Creates an input column containing string data.
 
     Args:
-        name (str): the column name
+        name (str): the column name.
         data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
@@ -194,11 +194,11 @@ def string_col(name: str, data: Sequence) -> InputColumn:
 
 
 def datetime_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Deephaven Datetime instances.
+    """ Creates an input column containing Deephaven date-time instances.
 
     Args:
-        name (str): the column name
-        data (Any): a sequence of Datetime instances or values that can be converted to Datetime instances
+        name (str): the column name.
+        data (Any): a sequence of date-time instances, or values that can be converted to date-time instances
             (e.g. Instant, int nanoseconds since the Epoch, str, datetime.datetime, numpy.datetime64, pandas.Timestamp).
 
     Returns:
@@ -211,9 +211,9 @@ def datetime_col(name: str, data: Sequence) -> InputColumn:
 def pyobj_col(name: str, data: Sequence) -> InputColumn:
     """ Creates an input column containing complex, non-primitive-like Python objects.
 
-        name (str): the column name
+        name (str): the column name.
     Args:
-        data (Any): a sequence of Python objects
+        data (Any): a sequence of Python objects.
 
     Returns:
         a new input column
@@ -225,8 +225,8 @@ def jobj_col(name: str, data: Sequence) -> InputColumn:
     """ Creates an input column containing Java objects.
 
     Args:
-        name (str): the column name
-        data (Any): a sequence of Java objects
+        name (str): the column name.
+        data (Any): a sequence of Java objects.
 
     Returns:
         a new input column

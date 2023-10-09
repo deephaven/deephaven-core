@@ -1,0 +1,18 @@
+{
+  "identity": {
+    "type": "list",
+    "values": [
+      {
+        "type": "privatekey",
+        "certChainPath": "ca.crt",
+        "privateKeyPath": "key.pem",
+        "alias": "alias-1"
+      },
+      {
+        "type": "keystore",
+        "path": "path.p12",
+        "password": "secret"
+      }
+    ]
+  }
+}
