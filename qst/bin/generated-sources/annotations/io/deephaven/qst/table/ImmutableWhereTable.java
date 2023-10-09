@@ -1,9 +1,12 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.filter.Filter;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.WeakHashMap;
 import org.immutables.value.Generated;
 
 /**
@@ -17,15 +20,17 @@ import org.immutables.value.Generated;
 @Generated(from = "WhereTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-public final class ImmutableWhereTable extends WhereTable {
+final class ImmutableWhereTable extends WhereTable {
   private transient final int depth;
   private final TableSpec parent;
   private final Filter filter;
+  private transient final int hashCode;
 
   private ImmutableWhereTable(TableSpec parent, Filter filter) {
     this.parent = Objects.requireNonNull(parent, "parent");
     this.filter = Objects.requireNonNull(filter, "filter");
     this.depth = super.depth();
+    this.hashCode = computeHashCode();
   }
 
   private ImmutableWhereTable(
@@ -35,12 +40,11 @@ public final class ImmutableWhereTable extends WhereTable {
     this.parent = parent;
     this.filter = filter;
     this.depth = super.depth();
+    this.hashCode = computeHashCode();
   }
 
   /**
-   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
-   * depth of zero.
-   * @return the depth
+   * @return The computed-at-construction value of the {@code depth} attribute
    */
   @Override
   public int depth() {
@@ -72,7 +76,7 @@ public final class ImmutableWhereTable extends WhereTable {
   public final ImmutableWhereTable withParent(TableSpec value) {
     if (this.parent == value) return this;
     TableSpec newValue = Objects.requireNonNull(value, "parent");
-    return new ImmutableWhereTable(this, newValue, this.filter);
+    return validate(new ImmutableWhereTable(this, newValue, this.filter));
   }
 
   /**
@@ -84,7 +88,7 @@ public final class ImmutableWhereTable extends WhereTable {
   public final ImmutableWhereTable withFilter(Filter value) {
     if (this.filter == value) return this;
     Filter newValue = Objects.requireNonNull(value, "filter");
-    return new ImmutableWhereTable(this, this.parent, newValue);
+    return validate(new ImmutableWhereTable(this, this.parent, newValue));
   }
 
   /**
@@ -99,22 +103,33 @@ public final class ImmutableWhereTable extends WhereTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableWhereTable another) {
+    if (hashCode != another.hashCode) return false;
     return depth == another.depth
         && parent.equals(another.parent)
         && filter.equals(another.filter);
   }
 
   /**
-   * Computes a hash code from attributes: {@code depth}, {@code parent}, {@code filter}.
+   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code parent}, {@code filter}.
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+    return hashCode;
+  }
+
+  private int computeHashCode() {
     int h = 5381;
+    h += (h << 5) + getClass().hashCode();
     h += (h << 5) + depth;
     h += (h << 5) + parent.hashCode();
     h += (h << 5) + filter.hashCode();
     return h;
+  }
+
+  private static final class InternerHolder {
+    static final Map<ImmutableWhereTable, WeakReference<ImmutableWhereTable>> INTERNER =
+        new WeakHashMap<>();
   }
 
   /**
@@ -124,7 +139,19 @@ public final class ImmutableWhereTable extends WhereTable {
    * @return An immutable WhereTable instance
    */
   public static ImmutableWhereTable of(TableSpec parent, Filter filter) {
-    return new ImmutableWhereTable(parent, filter);
+    return validate(new ImmutableWhereTable(parent, filter));
+  }
+
+  private static ImmutableWhereTable validate(ImmutableWhereTable instance) {
+    synchronized (InternerHolder.INTERNER) {
+      WeakReference<ImmutableWhereTable> reference = InternerHolder.INTERNER.get(instance);
+      ImmutableWhereTable interned = reference != null ? reference.get() : null;
+      if (interned == null) {
+        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
+        interned = instance;
+      }
+      return interned;
+    }
   }
 
   /**
@@ -139,7 +166,8 @@ public final class ImmutableWhereTable extends WhereTable {
       return (ImmutableWhereTable) instance;
     }
     return ImmutableWhereTable.builder()
-        .from(instance)
+        .parent(instance.parent())
+        .filter(instance.filter())
         .build();
   }
 
@@ -177,52 +205,12 @@ public final class ImmutableWhereTable extends WhereTable {
     }
 
     /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.WhereTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(WhereTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.SingleParentTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(SingleParentTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    private void from(Object object) {
-      long bits = 0;
-      if (object instanceof WhereTable) {
-        WhereTable instance = (WhereTable) object;
-        filter(instance.filter());
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-      }
-      if (object instanceof SingleParentTable) {
-        SingleParentTable instance = (SingleParentTable) object;
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-      }
-    }
-
-    /**
      * Initializes the value for the {@link WhereTable#parent() parent} attribute.
      * @param parent The value for parent 
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder parent(TableSpec parent) {
+      checkNotIsSet(parentIsSet(), "parent");
       this.parent = Objects.requireNonNull(parent, "parent");
       initBits &= ~INIT_BIT_PARENT;
       return this;
@@ -234,6 +222,7 @@ public final class ImmutableWhereTable extends WhereTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder filter(Filter filter) {
+      checkNotIsSet(filterIsSet(), "filter");
       this.filter = Objects.requireNonNull(filter, "filter");
       initBits &= ~INIT_BIT_FILTER;
       return this;
@@ -245,16 +234,32 @@ public final class ImmutableWhereTable extends WhereTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableWhereTable build() {
+      checkRequiredAttributes();
+      return ImmutableWhereTable.validate(new ImmutableWhereTable(null, parent, filter));
+    }
+
+    private boolean parentIsSet() {
+      return (initBits & INIT_BIT_PARENT) == 0;
+    }
+
+    private boolean filterIsSet() {
+      return (initBits & INIT_BIT_FILTER) == 0;
+    }
+
+    private static void checkNotIsSet(boolean isSet, String name) {
+      if (isSet) throw new IllegalStateException("Builder of WhereTable is strict, attribute is already set: ".concat(name));
+    }
+
+    private void checkRequiredAttributes() {
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
-      return new ImmutableWhereTable(null, parent, filter);
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-      if ((initBits & INIT_BIT_PARENT) != 0) attributes.add("parent");
-      if ((initBits & INIT_BIT_FILTER) != 0) attributes.add("filter");
+      if (!parentIsSet()) attributes.add("parent");
+      if (!filterIsSet()) attributes.add("filter");
       return "Cannot build WhereTable, some of required attributes are not set " + attributes;
     }
   }

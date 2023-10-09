@@ -1,1 +1,0 @@
-Note: this is meant to be accessible from py-server. In the future, it may be better to separate this into a separate source set.

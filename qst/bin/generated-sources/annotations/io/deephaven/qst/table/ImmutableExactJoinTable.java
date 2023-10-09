@@ -2,12 +2,15 @@ package io.deephaven.qst.table;
 
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.WeakHashMap;
 import org.immutables.value.Generated;
 
 /**
@@ -19,12 +22,13 @@ import org.immutables.value.Generated;
 @Generated(from = "ExactJoinTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-public final class ImmutableExactJoinTable extends ExactJoinTable {
+final class ImmutableExactJoinTable extends ExactJoinTable {
   private transient final int depth;
   private final TableSpec left;
   private final TableSpec right;
   private final List<JoinMatch> matches;
   private final List<JoinAddition> additions;
+  private transient final int hashCode;
 
   private ImmutableExactJoinTable(
       TableSpec left,
@@ -36,12 +40,11 @@ public final class ImmutableExactJoinTable extends ExactJoinTable {
     this.matches = matches;
     this.additions = additions;
     this.depth = super.depth();
+    this.hashCode = computeHashCode();
   }
 
   /**
-   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
-   * depth of zero.
-   * @return the depth
+   * @return The computed-at-construction value of the {@code depth} attribute
    */
   @Override
   public int depth() {
@@ -160,6 +163,7 @@ public final class ImmutableExactJoinTable extends ExactJoinTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableExactJoinTable another) {
+    if (hashCode != another.hashCode) return false;
     return depth == another.depth
         && left.equals(another.left)
         && right.equals(another.right)
@@ -168,12 +172,17 @@ public final class ImmutableExactJoinTable extends ExactJoinTable {
   }
 
   /**
-   * Computes a hash code from attributes: {@code depth}, {@code left}, {@code right}, {@code matches}, {@code additions}.
+   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code left}, {@code right}, {@code matches}, {@code additions}.
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+    return hashCode;
+  }
+
+  private int computeHashCode() {
     int h = 5381;
+    h += (h << 5) + getClass().hashCode();
     h += (h << 5) + depth;
     h += (h << 5) + left.hashCode();
     h += (h << 5) + right.hashCode();
@@ -182,9 +191,22 @@ public final class ImmutableExactJoinTable extends ExactJoinTable {
     return h;
   }
 
+  private static final class InternerHolder {
+    static final Map<ImmutableExactJoinTable, WeakReference<ImmutableExactJoinTable>> INTERNER =
+        new WeakHashMap<>();
+  }
+
   private static ImmutableExactJoinTable validate(ImmutableExactJoinTable instance) {
     instance.checkAdditions();
-    return instance;
+    synchronized (InternerHolder.INTERNER) {
+      WeakReference<ImmutableExactJoinTable> reference = InternerHolder.INTERNER.get(instance);
+      ImmutableExactJoinTable interned = reference != null ? reference.get() : null;
+      if (interned == null) {
+        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
+        interned = instance;
+      }
+      return interned;
+    }
   }
 
   /**
@@ -199,7 +221,10 @@ public final class ImmutableExactJoinTable extends ExactJoinTable {
       return (ImmutableExactJoinTable) instance;
     }
     return ImmutableExactJoinTable.builder()
-        .from(instance)
+        .left(instance.left())
+        .right(instance.right())
+        .addAllMatches(instance.matches())
+        .addAllAdditions(instance.additions())
         .build();
   }
 
@@ -234,104 +259,10 @@ public final class ImmutableExactJoinTable extends ExactJoinTable {
 
     private TableSpec left;
     private TableSpec right;
-    private List<JoinMatch> matches = new ArrayList<JoinMatch>();
-    private List<JoinAddition> additions = new ArrayList<JoinAddition>();
+    private final List<JoinMatch> matches = new ArrayList<JoinMatch>();
+    private final List<JoinAddition> additions = new ArrayList<JoinAddition>();
 
     private Builder() {
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.Join} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(Join instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.ExactJoinTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(ExactJoinTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.JoinBase} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(JoinBase instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    private void from(Object object) {
-      long bits = 0;
-      if (object instanceof Join) {
-        Join instance = (Join) object;
-        if ((bits & 0x4L) == 0) {
-          right(instance.right());
-          bits |= 0x4L;
-        }
-        if ((bits & 0x1L) == 0) {
-          addAllAdditions(instance.additions());
-          bits |= 0x1L;
-        }
-        if ((bits & 0x2L) == 0) {
-          left(instance.left());
-          bits |= 0x2L;
-        }
-        if ((bits & 0x8L) == 0) {
-          addAllMatches(instance.matches());
-          bits |= 0x8L;
-        }
-      }
-      if (object instanceof ExactJoinTable) {
-        ExactJoinTable instance = (ExactJoinTable) object;
-        if ((bits & 0x4L) == 0) {
-          right(instance.right());
-          bits |= 0x4L;
-        }
-        if ((bits & 0x1L) == 0) {
-          addAllAdditions(instance.additions());
-          bits |= 0x1L;
-        }
-        if ((bits & 0x2L) == 0) {
-          left(instance.left());
-          bits |= 0x2L;
-        }
-        if ((bits & 0x8L) == 0) {
-          addAllMatches(instance.matches());
-          bits |= 0x8L;
-        }
-      }
-      if (object instanceof JoinBase) {
-        JoinBase instance = (JoinBase) object;
-        if ((bits & 0x4L) == 0) {
-          right(instance.right());
-          bits |= 0x4L;
-        }
-        if ((bits & 0x1L) == 0) {
-          addAllAdditions(instance.additions());
-          bits |= 0x1L;
-        }
-        if ((bits & 0x2L) == 0) {
-          left(instance.left());
-          bits |= 0x2L;
-        }
-        if ((bits & 0x8L) == 0) {
-          addAllMatches(instance.matches());
-          bits |= 0x8L;
-        }
-      }
     }
 
     /**
@@ -340,6 +271,7 @@ public final class ImmutableExactJoinTable extends ExactJoinTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder left(TableSpec left) {
+      checkNotIsSet(leftIsSet(), "left");
       this.left = Objects.requireNonNull(left, "left");
       initBits &= ~INIT_BIT_LEFT;
       return this;
@@ -351,6 +283,7 @@ public final class ImmutableExactJoinTable extends ExactJoinTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder right(TableSpec right) {
+      checkNotIsSet(rightIsSet(), "right");
       this.right = Objects.requireNonNull(right, "right");
       initBits &= ~INIT_BIT_RIGHT;
       return this;
@@ -378,16 +311,6 @@ public final class ImmutableExactJoinTable extends ExactJoinTable {
       return this;
     }
 
-
-    /**
-     * Sets or replaces all elements for {@link ExactJoinTable#matches() matches} list.
-     * @param elements An iterable of matches elements
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder matches(Iterable<? extends JoinMatch> elements) {
-      this.matches.clear();
-      return addAllMatches(elements);
-    }
 
     /**
      * Adds elements to {@link ExactJoinTable#matches() matches} list.
@@ -425,16 +348,6 @@ public final class ImmutableExactJoinTable extends ExactJoinTable {
 
 
     /**
-     * Sets or replaces all elements for {@link ExactJoinTable#additions() additions} list.
-     * @param elements An iterable of additions elements
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder additions(Iterable<? extends JoinAddition> elements) {
-      this.additions.clear();
-      return addAllAdditions(elements);
-    }
-
-    /**
      * Adds elements to {@link ExactJoinTable#additions() additions} list.
      * @param elements An iterable of additions elements
      * @return {@code this} builder for use in a chained invocation
@@ -452,16 +365,32 @@ public final class ImmutableExactJoinTable extends ExactJoinTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableExactJoinTable build() {
+      checkRequiredAttributes();
+      return ImmutableExactJoinTable.validate(new ImmutableExactJoinTable(left, right, createUnmodifiableList(true, matches), createUnmodifiableList(true, additions)));
+    }
+
+    private boolean leftIsSet() {
+      return (initBits & INIT_BIT_LEFT) == 0;
+    }
+
+    private boolean rightIsSet() {
+      return (initBits & INIT_BIT_RIGHT) == 0;
+    }
+
+    private static void checkNotIsSet(boolean isSet, String name) {
+      if (isSet) throw new IllegalStateException("Builder of ExactJoinTable is strict, attribute is already set: ".concat(name));
+    }
+
+    private void checkRequiredAttributes() {
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
-      return ImmutableExactJoinTable.validate(new ImmutableExactJoinTable(left, right, createUnmodifiableList(true, matches), createUnmodifiableList(true, additions)));
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-      if ((initBits & INIT_BIT_LEFT) != 0) attributes.add("left");
-      if ((initBits & INIT_BIT_RIGHT) != 0) attributes.add("right");
+      if (!leftIsSet()) attributes.add("left");
+      if (!rightIsSet()) attributes.add("right");
       return "Cannot build ExactJoinTable, some of required attributes are not set " + attributes;
     }
   }

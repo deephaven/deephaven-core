@@ -1,9 +1,12 @@
 package io.deephaven.qst.table;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import org.immutables.value.Generated;
 
 /**
@@ -17,16 +20,18 @@ import org.immutables.value.Generated;
 @Generated(from = "InMemoryAppendOnlyInputTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-public final class ImmutableInMemoryAppendOnlyInputTable
+final class ImmutableInMemoryAppendOnlyInputTable
     extends InMemoryAppendOnlyInputTable {
   private transient final int depth;
   private final TableSchema schema;
   private final UUID id;
+  private transient final int hashCode;
 
   private ImmutableInMemoryAppendOnlyInputTable(TableSchema schema, UUID id) {
     this.schema = Objects.requireNonNull(schema, "schema");
     this.id = Objects.requireNonNull(id, "id");
     this.depth = super.depth();
+    this.hashCode = computeHashCode();
   }
 
   private ImmutableInMemoryAppendOnlyInputTable(
@@ -36,12 +41,11 @@ public final class ImmutableInMemoryAppendOnlyInputTable
     this.schema = schema;
     this.id = id;
     this.depth = super.depth();
+    this.hashCode = computeHashCode();
   }
 
   /**
-   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
-   * depth of zero.
-   * @return the depth
+   * @return The computed-at-construction value of the {@code depth} attribute
    */
   @Override
   public int depth() {
@@ -73,7 +77,7 @@ public final class ImmutableInMemoryAppendOnlyInputTable
   public final ImmutableInMemoryAppendOnlyInputTable withSchema(TableSchema value) {
     if (this.schema == value) return this;
     TableSchema newValue = Objects.requireNonNull(value, "schema");
-    return new ImmutableInMemoryAppendOnlyInputTable(this, newValue, this.id);
+    return validate(new ImmutableInMemoryAppendOnlyInputTable(this, newValue, this.id));
   }
 
   /**
@@ -85,7 +89,7 @@ public final class ImmutableInMemoryAppendOnlyInputTable
   public final ImmutableInMemoryAppendOnlyInputTable withId(UUID value) {
     if (this.id == value) return this;
     UUID newValue = Objects.requireNonNull(value, "id");
-    return new ImmutableInMemoryAppendOnlyInputTable(this, this.schema, newValue);
+    return validate(new ImmutableInMemoryAppendOnlyInputTable(this, this.schema, newValue));
   }
 
   /**
@@ -100,22 +104,33 @@ public final class ImmutableInMemoryAppendOnlyInputTable
   }
 
   private boolean equalTo(int synthetic, ImmutableInMemoryAppendOnlyInputTable another) {
+    if (hashCode != another.hashCode) return false;
     return depth == another.depth
         && schema.equals(another.schema)
         && id.equals(another.id);
   }
 
   /**
-   * Computes a hash code from attributes: {@code depth}, {@code schema}, {@code id}.
+   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code schema}, {@code id}.
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+    return hashCode;
+  }
+
+  private int computeHashCode() {
     int h = 5381;
+    h += (h << 5) + getClass().hashCode();
     h += (h << 5) + depth;
     h += (h << 5) + schema.hashCode();
     h += (h << 5) + id.hashCode();
     return h;
+  }
+
+  private static final class InternerHolder {
+    static final Map<ImmutableInMemoryAppendOnlyInputTable, WeakReference<ImmutableInMemoryAppendOnlyInputTable>> INTERNER =
+        new WeakHashMap<>();
   }
 
   /**
@@ -125,7 +140,19 @@ public final class ImmutableInMemoryAppendOnlyInputTable
    * @return An immutable InMemoryAppendOnlyInputTable instance
    */
   public static ImmutableInMemoryAppendOnlyInputTable of(TableSchema schema, UUID id) {
-    return new ImmutableInMemoryAppendOnlyInputTable(schema, id);
+    return validate(new ImmutableInMemoryAppendOnlyInputTable(schema, id));
+  }
+
+  private static ImmutableInMemoryAppendOnlyInputTable validate(ImmutableInMemoryAppendOnlyInputTable instance) {
+    synchronized (InternerHolder.INTERNER) {
+      WeakReference<ImmutableInMemoryAppendOnlyInputTable> reference = InternerHolder.INTERNER.get(instance);
+      ImmutableInMemoryAppendOnlyInputTable interned = reference != null ? reference.get() : null;
+      if (interned == null) {
+        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
+        interned = instance;
+      }
+      return interned;
+    }
   }
 
   /**
@@ -140,7 +167,8 @@ public final class ImmutableInMemoryAppendOnlyInputTable
       return (ImmutableInMemoryAppendOnlyInputTable) instance;
     }
     return ImmutableInMemoryAppendOnlyInputTable.builder()
-        .from(instance)
+        .schema(instance.schema())
+        .id(instance.id())
         .build();
   }
 
@@ -178,77 +206,12 @@ public final class ImmutableInMemoryAppendOnlyInputTable
     }
 
     /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.InputTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(InputTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.InputTableBase} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(InputTableBase instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.InMemoryAppendOnlyInputTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(InMemoryAppendOnlyInputTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    private void from(Object object) {
-      long bits = 0;
-      if (object instanceof InputTable) {
-        InputTable instance = (InputTable) object;
-        if ((bits & 0x1L) == 0) {
-          schema(instance.schema());
-          bits |= 0x1L;
-        }
-      }
-      if (object instanceof InputTableBase) {
-        InputTableBase instance = (InputTableBase) object;
-        if ((bits & 0x1L) == 0) {
-          schema(instance.schema());
-          bits |= 0x1L;
-        }
-        if ((bits & 0x2L) == 0) {
-          id(instance.id());
-          bits |= 0x2L;
-        }
-      }
-      if (object instanceof InMemoryAppendOnlyInputTable) {
-        InMemoryAppendOnlyInputTable instance = (InMemoryAppendOnlyInputTable) object;
-        if ((bits & 0x1L) == 0) {
-          schema(instance.schema());
-          bits |= 0x1L;
-        }
-        if ((bits & 0x2L) == 0) {
-          id(instance.id());
-          bits |= 0x2L;
-        }
-      }
-    }
-
-    /**
      * Initializes the value for the {@link InMemoryAppendOnlyInputTable#schema() schema} attribute.
      * @param schema The value for schema 
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder schema(TableSchema schema) {
+      checkNotIsSet(schemaIsSet(), "schema");
       this.schema = Objects.requireNonNull(schema, "schema");
       initBits &= ~INIT_BIT_SCHEMA;
       return this;
@@ -260,6 +223,7 @@ public final class ImmutableInMemoryAppendOnlyInputTable
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder id(UUID id) {
+      checkNotIsSet(idIsSet(), "id");
       this.id = Objects.requireNonNull(id, "id");
       initBits &= ~INIT_BIT_ID;
       return this;
@@ -271,16 +235,32 @@ public final class ImmutableInMemoryAppendOnlyInputTable
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableInMemoryAppendOnlyInputTable build() {
+      checkRequiredAttributes();
+      return ImmutableInMemoryAppendOnlyInputTable.validate(new ImmutableInMemoryAppendOnlyInputTable(null, schema, id));
+    }
+
+    private boolean schemaIsSet() {
+      return (initBits & INIT_BIT_SCHEMA) == 0;
+    }
+
+    private boolean idIsSet() {
+      return (initBits & INIT_BIT_ID) == 0;
+    }
+
+    private static void checkNotIsSet(boolean isSet, String name) {
+      if (isSet) throw new IllegalStateException("Builder of InMemoryAppendOnlyInputTable is strict, attribute is already set: ".concat(name));
+    }
+
+    private void checkRequiredAttributes() {
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
-      return new ImmutableInMemoryAppendOnlyInputTable(null, schema, id);
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-      if ((initBits & INIT_BIT_SCHEMA) != 0) attributes.add("schema");
-      if ((initBits & INIT_BIT_ID) != 0) attributes.add("id");
+      if (!schemaIsSet()) attributes.add("schema");
+      if (!idIsSet()) attributes.add("id");
       return "Cannot build InMemoryAppendOnlyInputTable, some of required attributes are not set " + attributes;
     }
   }

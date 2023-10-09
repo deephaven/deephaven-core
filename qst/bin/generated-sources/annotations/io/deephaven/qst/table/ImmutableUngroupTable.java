@@ -1,12 +1,15 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.ColumnName;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.WeakHashMap;
 import org.immutables.value.Generated;
 
 /**
@@ -18,11 +21,12 @@ import org.immutables.value.Generated;
 @Generated(from = "UngroupTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-public final class ImmutableUngroupTable extends UngroupTable {
+final class ImmutableUngroupTable extends UngroupTable {
   private transient final int depth;
   private final TableSpec parent;
   private final List<ColumnName> ungroupColumns;
   private final boolean nullFill;
+  private transient final int hashCode;
 
   private ImmutableUngroupTable(ImmutableUngroupTable.Builder builder) {
     this.parent = builder.parent;
@@ -32,6 +36,7 @@ public final class ImmutableUngroupTable extends UngroupTable {
     }
     this.depth = initShim.depth();
     this.nullFill = initShim.nullFill();
+    this.hashCode = computeHashCode();
     this.initShim = null;
   }
 
@@ -44,6 +49,7 @@ public final class ImmutableUngroupTable extends UngroupTable {
     initShim.nullFill(nullFill);
     this.depth = initShim.depth();
     this.nullFill = initShim.nullFill();
+    this.hashCode = computeHashCode();
     this.initShim = null;
   }
 
@@ -94,9 +100,7 @@ public final class ImmutableUngroupTable extends UngroupTable {
   }
 
   /**
-   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
-   * depth of zero.
-   * @return the depth
+   * @return The computed-at-construction value of the {@code depth} attribute
    */
   @Override
   public int depth() {
@@ -142,7 +146,7 @@ public final class ImmutableUngroupTable extends UngroupTable {
   public final ImmutableUngroupTable withParent(TableSpec value) {
     if (this.parent == value) return this;
     TableSpec newValue = Objects.requireNonNull(value, "parent");
-    return new ImmutableUngroupTable(newValue, this.ungroupColumns, this.nullFill);
+    return validate(new ImmutableUngroupTable(newValue, this.ungroupColumns, this.nullFill));
   }
 
   /**
@@ -152,7 +156,7 @@ public final class ImmutableUngroupTable extends UngroupTable {
    */
   public final ImmutableUngroupTable withUngroupColumns(ColumnName... elements) {
     List<ColumnName> newValue = createUnmodifiableList(false, createSafeList(Arrays.asList(elements), true, false));
-    return new ImmutableUngroupTable(this.parent, newValue, this.nullFill);
+    return validate(new ImmutableUngroupTable(this.parent, newValue, this.nullFill));
   }
 
   /**
@@ -164,7 +168,7 @@ public final class ImmutableUngroupTable extends UngroupTable {
   public final ImmutableUngroupTable withUngroupColumns(Iterable<? extends ColumnName> elements) {
     if (this.ungroupColumns == elements) return this;
     List<ColumnName> newValue = createUnmodifiableList(false, createSafeList(elements, true, false));
-    return new ImmutableUngroupTable(this.parent, newValue, this.nullFill);
+    return validate(new ImmutableUngroupTable(this.parent, newValue, this.nullFill));
   }
 
   /**
@@ -175,7 +179,7 @@ public final class ImmutableUngroupTable extends UngroupTable {
    */
   public final ImmutableUngroupTable withNullFill(boolean value) {
     if (this.nullFill == value) return this;
-    return new ImmutableUngroupTable(this.parent, this.ungroupColumns, value);
+    return validate(new ImmutableUngroupTable(this.parent, this.ungroupColumns, value));
   }
 
   /**
@@ -190,6 +194,7 @@ public final class ImmutableUngroupTable extends UngroupTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableUngroupTable another) {
+    if (hashCode != another.hashCode) return false;
     return depth == another.depth
         && parent.equals(another.parent)
         && ungroupColumns.equals(another.ungroupColumns)
@@ -197,17 +202,39 @@ public final class ImmutableUngroupTable extends UngroupTable {
   }
 
   /**
-   * Computes a hash code from attributes: {@code depth}, {@code parent}, {@code ungroupColumns}, {@code nullFill}.
+   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code parent}, {@code ungroupColumns}, {@code nullFill}.
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+    return hashCode;
+  }
+
+  private int computeHashCode() {
     int h = 5381;
+    h += (h << 5) + getClass().hashCode();
     h += (h << 5) + depth;
     h += (h << 5) + parent.hashCode();
     h += (h << 5) + ungroupColumns.hashCode();
     h += (h << 5) + Boolean.hashCode(nullFill);
     return h;
+  }
+
+  private static final class InternerHolder {
+    static final Map<ImmutableUngroupTable, WeakReference<ImmutableUngroupTable>> INTERNER =
+        new WeakHashMap<>();
+  }
+
+  private static ImmutableUngroupTable validate(ImmutableUngroupTable instance) {
+    synchronized (InternerHolder.INTERNER) {
+      WeakReference<ImmutableUngroupTable> reference = InternerHolder.INTERNER.get(instance);
+      ImmutableUngroupTable interned = reference != null ? reference.get() : null;
+      if (interned == null) {
+        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
+        interned = instance;
+      }
+      return interned;
+    }
   }
 
   /**
@@ -222,7 +249,9 @@ public final class ImmutableUngroupTable extends UngroupTable {
       return (ImmutableUngroupTable) instance;
     }
     return ImmutableUngroupTable.builder()
-        .from(instance)
+        .parent(instance.parent())
+        .addAllUngroupColumns(instance.ungroupColumns())
+        .nullFill(instance.nullFill())
         .build();
   }
 
@@ -256,52 +285,10 @@ public final class ImmutableUngroupTable extends UngroupTable {
     private long optBits;
 
     private TableSpec parent;
-    private List<ColumnName> ungroupColumns = new ArrayList<ColumnName>();
+    private final List<ColumnName> ungroupColumns = new ArrayList<ColumnName>();
     private boolean nullFill;
 
     private Builder() {
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.SingleParentTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(SingleParentTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.UngroupTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(UngroupTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    private void from(Object object) {
-      long bits = 0;
-      if (object instanceof SingleParentTable) {
-        SingleParentTable instance = (SingleParentTable) object;
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-      }
-      if (object instanceof UngroupTable) {
-        UngroupTable instance = (UngroupTable) object;
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-        addAllUngroupColumns(instance.ungroupColumns());
-        nullFill(instance.nullFill());
-      }
     }
 
     /**
@@ -310,6 +297,7 @@ public final class ImmutableUngroupTable extends UngroupTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder parent(TableSpec parent) {
+      checkNotIsSet(parentIsSet(), "parent");
       this.parent = Objects.requireNonNull(parent, "parent");
       initBits &= ~INIT_BIT_PARENT;
       return this;
@@ -339,16 +327,6 @@ public final class ImmutableUngroupTable extends UngroupTable {
 
 
     /**
-     * Sets or replaces all elements for {@link UngroupTable#ungroupColumns() ungroupColumns} list.
-     * @param elements An iterable of ungroupColumns elements
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder ungroupColumns(Iterable<? extends ColumnName> elements) {
-      this.ungroupColumns.clear();
-      return addAllUngroupColumns(elements);
-    }
-
-    /**
      * Adds elements to {@link UngroupTable#ungroupColumns() ungroupColumns} list.
      * @param elements An iterable of ungroupColumns elements
      * @return {@code this} builder for use in a chained invocation
@@ -367,6 +345,7 @@ public final class ImmutableUngroupTable extends UngroupTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder nullFill(boolean nullFill) {
+      checkNotIsSet(nullFillIsSet(), "nullFill");
       this.nullFill = nullFill;
       optBits |= OPT_BIT_NULL_FILL;
       return this;
@@ -378,19 +357,31 @@ public final class ImmutableUngroupTable extends UngroupTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableUngroupTable build() {
-      if (initBits != 0) {
-        throw new IllegalStateException(formatRequiredAttributesMessage());
-      }
-      return new ImmutableUngroupTable(this);
+      checkRequiredAttributes();
+      return ImmutableUngroupTable.validate(new ImmutableUngroupTable(this));
     }
 
     private boolean nullFillIsSet() {
       return (optBits & OPT_BIT_NULL_FILL) != 0;
     }
 
+    private boolean parentIsSet() {
+      return (initBits & INIT_BIT_PARENT) == 0;
+    }
+
+    private static void checkNotIsSet(boolean isSet, String name) {
+      if (isSet) throw new IllegalStateException("Builder of UngroupTable is strict, attribute is already set: ".concat(name));
+    }
+
+    private void checkRequiredAttributes() {
+      if (initBits != 0) {
+        throw new IllegalStateException(formatRequiredAttributesMessage());
+      }
+    }
+
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-      if ((initBits & INIT_BIT_PARENT) != 0) attributes.add("parent");
+      if (!parentIsSet()) attributes.add("parent");
       return "Cannot build UngroupTable, some of required attributes are not set " + attributes;
     }
   }

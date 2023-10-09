@@ -18,21 +18,19 @@ import org.immutables.value.Generated;
 @Generated(from = "NewTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-public final class ImmutableNewTable extends NewTable {
+final class ImmutableNewTable extends NewTable {
   private transient final int depth;
   private final Map<String, Array<?>> columns;
   private final int size;
 
-  private ImmutableNewTable(Map<String, Array<?>> columns, int size) {
-    this.columns = columns;
-    this.size = size;
+  private ImmutableNewTable(ImmutableNewTable.Builder builder) {
+    this.columns = createUnmodifiableMap(false, false, builder.columns);
+    this.size = builder.size;
     this.depth = super.depth();
   }
 
   /**
-   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
-   * depth of zero.
-   * @return the depth
+   * @return The computed-at-construction value of the {@code depth} attribute
    */
   @Override
   public int depth() {
@@ -53,30 +51,6 @@ public final class ImmutableNewTable extends NewTable {
   @Override
   public int size() {
     return size;
-  }
-
-  /**
-   * Copy the current immutable object by replacing the {@link NewTable#columns() columns} map with the specified map.
-   * Nulls are not permitted as keys or values.
-   * A shallow reference equality check is used to prevent copying of the same value by returning {@code this}.
-   * @param entries The entries to be added to the columns map
-   * @return A modified copy of {@code this} object
-   */
-  public final ImmutableNewTable withColumns(Map<String, ? extends Array<?>> entries) {
-    if (this.columns == entries) return this;
-    Map<String, Array<?>> newValue = createUnmodifiableMap(true, false, entries);
-    return validate(new ImmutableNewTable(newValue, this.size));
-  }
-
-  /**
-   * Copy the current immutable object by setting a value for the {@link NewTable#size() size} attribute.
-   * A value equality check is used to prevent copying of the same value by returning {@code this}.
-   * @param value A new value for size
-   * @return A modified copy of the {@code this} object
-   */
-  public final ImmutableNewTable withSize(int value) {
-    if (this.size == value) return this;
-    return validate(new ImmutableNewTable(this.columns, value));
   }
 
   /**
@@ -103,6 +77,7 @@ public final class ImmutableNewTable extends NewTable {
   @Override
   public int hashCode() {
     int h = 5381;
+    h += (h << 5) + getClass().hashCode();
     h += (h << 5) + depth;
     h += (h << 5) + columns.hashCode();
     h += (h << 5) + size;
@@ -113,22 +88,6 @@ public final class ImmutableNewTable extends NewTable {
     instance.checkNames();
     instance.checkColumnsSizes();
     return instance;
-  }
-
-  /**
-   * Creates an immutable copy of a {@link NewTable} value.
-   * Uses accessors to get values to initialize the new immutable instance.
-   * If an instance is already immutable, it is returned as is.
-   * @param instance The instance to copy
-   * @return A copied immutable NewTable instance
-   */
-  public static ImmutableNewTable copyOf(NewTable instance) {
-    if (instance instanceof ImmutableNewTable) {
-      return (ImmutableNewTable) instance;
-    }
-    return ImmutableNewTable.builder()
-        .from(instance)
-        .build();
   }
 
   /**
@@ -157,25 +116,10 @@ public final class ImmutableNewTable extends NewTable {
     private static final long INIT_BIT_SIZE = 0x1L;
     private long initBits = 0x1L;
 
-    private Map<String, Array<?>> columns = new LinkedHashMap<String, Array<?>>();
+    private final Map<String, Array<?>> columns = new LinkedHashMap<String, Array<?>>();
     private int size;
 
     private Builder() {
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code NewTable} instance.
-     * Regular attribute values will be replaced with those from the given instance.
-     * Absent optional values will not replace present values.
-     * Collection elements and entries will be added, not replaced.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(NewTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      putAllColumns(instance.columns());
-      size(instance.size());
-      return this;
     }
 
     /**
@@ -206,16 +150,6 @@ public final class ImmutableNewTable extends NewTable {
     }
 
     /**
-     * Sets or replaces all mappings from the specified map as entries for the {@link NewTable#columns() columns} map. Nulls are not permitted
-     * @param entries The entries that will be added to the columns map
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder columns(Map<String, ? extends Array<?>> entries) {
-      this.columns.clear();
-      return putAllColumns(entries);
-    }
-
-    /**
      * Put all mappings from the specified map as entries to {@link NewTable#columns() columns} map. Nulls are not permitted
      * @param entries The entries that will be added to the columns map
      * @return {@code this} builder for use in a chained invocation
@@ -237,6 +171,7 @@ public final class ImmutableNewTable extends NewTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder size(int size) {
+      checkNotIsSet(sizeIsSet(), "size");
       this.size = size;
       initBits &= ~INIT_BIT_SIZE;
       return this;
@@ -248,15 +183,27 @@ public final class ImmutableNewTable extends NewTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableNewTable build() {
+      checkRequiredAttributes();
+      return ImmutableNewTable.validate(new ImmutableNewTable(this));
+    }
+
+    private boolean sizeIsSet() {
+      return (initBits & INIT_BIT_SIZE) == 0;
+    }
+
+    private static void checkNotIsSet(boolean isSet, String name) {
+      if (isSet) throw new IllegalStateException("Builder of NewTable is strict, attribute is already set: ".concat(name));
+    }
+
+    private void checkRequiredAttributes() {
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
-      return ImmutableNewTable.validate(new ImmutableNewTable(createUnmodifiableMap(false, false, columns), size));
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-      if ((initBits & INIT_BIT_SIZE) != 0) attributes.add("size");
+      if (!sizeIsSet()) attributes.add("size");
       return "Cannot build NewTable, some of required attributes are not set " + attributes;
     }
   }

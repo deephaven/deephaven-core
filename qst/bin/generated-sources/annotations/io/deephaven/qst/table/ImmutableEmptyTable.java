@@ -2,7 +2,6 @@ package io.deephaven.qst.table;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import org.immutables.value.Generated;
 
 /**
@@ -16,7 +15,7 @@ import org.immutables.value.Generated;
 @Generated(from = "EmptyTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-public final class ImmutableEmptyTable extends EmptyTable {
+final class ImmutableEmptyTable extends EmptyTable {
   private transient final int depth;
   private final long size;
 
@@ -25,10 +24,13 @@ public final class ImmutableEmptyTable extends EmptyTable {
     this.depth = super.depth();
   }
 
+  private ImmutableEmptyTable(ImmutableEmptyTable.Builder builder) {
+    this.size = builder.size;
+    this.depth = super.depth();
+  }
+
   /**
-   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
-   * depth of zero.
-   * @return the depth
+   * @return The computed-at-construction value of the {@code depth} attribute
    */
   @Override
   public int depth() {
@@ -41,17 +43,6 @@ public final class ImmutableEmptyTable extends EmptyTable {
   @Override
   public long size() {
     return size;
-  }
-
-  /**
-   * Copy the current immutable object by setting a value for the {@link EmptyTable#size() size} attribute.
-   * A value equality check is used to prevent copying of the same value by returning {@code this}.
-   * @param value A new value for size
-   * @return A modified copy of the {@code this} object
-   */
-  public final ImmutableEmptyTable withSize(long value) {
-    if (this.size == value) return this;
-    return validate(new ImmutableEmptyTable(value));
   }
 
   /**
@@ -77,6 +68,7 @@ public final class ImmutableEmptyTable extends EmptyTable {
   @Override
   public int hashCode() {
     int h = 5381;
+    h += (h << 5) + getClass().hashCode();
     h += (h << 5) + depth;
     h += (h << 5) + Long.hashCode(size);
     return h;
@@ -94,22 +86,6 @@ public final class ImmutableEmptyTable extends EmptyTable {
   private static ImmutableEmptyTable validate(ImmutableEmptyTable instance) {
     instance.checkSize();
     return instance;
-  }
-
-  /**
-   * Creates an immutable copy of a {@link EmptyTable} value.
-   * Uses accessors to get values to initialize the new immutable instance.
-   * If an instance is already immutable, it is returned as is.
-   * @param instance The instance to copy
-   * @return A copied immutable EmptyTable instance
-   */
-  public static ImmutableEmptyTable copyOf(EmptyTable instance) {
-    if (instance instanceof ImmutableEmptyTable) {
-      return (ImmutableEmptyTable) instance;
-    }
-    return ImmutableEmptyTable.builder()
-        .from(instance)
-        .build();
   }
 
   /**
@@ -143,24 +119,12 @@ public final class ImmutableEmptyTable extends EmptyTable {
     }
 
     /**
-     * Fill a builder with attribute values from the provided {@code EmptyTable} instance.
-     * Regular attribute values will be replaced with those from the given instance.
-     * Absent optional values will not replace present values.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(EmptyTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      size(instance.size());
-      return this;
-    }
-
-    /**
      * Initializes the value for the {@link EmptyTable#size() size} attribute.
      * @param size The value for size 
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder size(long size) {
+      checkNotIsSet(sizeIsSet(), "size");
       this.size = size;
       initBits &= ~INIT_BIT_SIZE;
       return this;
@@ -172,15 +136,27 @@ public final class ImmutableEmptyTable extends EmptyTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableEmptyTable build() {
+      checkRequiredAttributes();
+      return ImmutableEmptyTable.validate(new ImmutableEmptyTable(this));
+    }
+
+    private boolean sizeIsSet() {
+      return (initBits & INIT_BIT_SIZE) == 0;
+    }
+
+    private static void checkNotIsSet(boolean isSet, String name) {
+      if (isSet) throw new IllegalStateException("Builder of EmptyTable is strict, attribute is already set: ".concat(name));
+    }
+
+    private void checkRequiredAttributes() {
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
-      return ImmutableEmptyTable.validate(new ImmutableEmptyTable(size));
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-      if ((initBits & INIT_BIT_SIZE) != 0) attributes.add("size");
+      if (!sizeIsSet()) attributes.add("size");
       return "Cannot build EmptyTable, some of required attributes are not set " + attributes;
     }
   }

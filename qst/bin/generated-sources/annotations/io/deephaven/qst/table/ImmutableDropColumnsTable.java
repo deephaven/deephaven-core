@@ -1,12 +1,15 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.ColumnName;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.WeakHashMap;
 import org.immutables.value.Generated;
 
 /**
@@ -18,21 +21,21 @@ import org.immutables.value.Generated;
 @Generated(from = "DropColumnsTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-public final class ImmutableDropColumnsTable extends DropColumnsTable {
+final class ImmutableDropColumnsTable extends DropColumnsTable {
   private transient final int depth;
   private final TableSpec parent;
   private final List<ColumnName> dropColumns;
+  private transient final int hashCode;
 
   private ImmutableDropColumnsTable(TableSpec parent, List<ColumnName> dropColumns) {
     this.parent = parent;
     this.dropColumns = dropColumns;
     this.depth = super.depth();
+    this.hashCode = computeHashCode();
   }
 
   /**
-   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
-   * depth of zero.
-   * @return the depth
+   * @return The computed-at-construction value of the {@code depth} attribute
    */
   @Override
   public int depth() {
@@ -64,7 +67,7 @@ public final class ImmutableDropColumnsTable extends DropColumnsTable {
   public final ImmutableDropColumnsTable withParent(TableSpec value) {
     if (this.parent == value) return this;
     TableSpec newValue = Objects.requireNonNull(value, "parent");
-    return new ImmutableDropColumnsTable(newValue, this.dropColumns);
+    return validate(new ImmutableDropColumnsTable(newValue, this.dropColumns));
   }
 
   /**
@@ -74,7 +77,7 @@ public final class ImmutableDropColumnsTable extends DropColumnsTable {
    */
   public final ImmutableDropColumnsTable withDropColumns(ColumnName... elements) {
     List<ColumnName> newValue = createUnmodifiableList(false, createSafeList(Arrays.asList(elements), true, false));
-    return new ImmutableDropColumnsTable(this.parent, newValue);
+    return validate(new ImmutableDropColumnsTable(this.parent, newValue));
   }
 
   /**
@@ -86,7 +89,7 @@ public final class ImmutableDropColumnsTable extends DropColumnsTable {
   public final ImmutableDropColumnsTable withDropColumns(Iterable<? extends ColumnName> elements) {
     if (this.dropColumns == elements) return this;
     List<ColumnName> newValue = createUnmodifiableList(false, createSafeList(elements, true, false));
-    return new ImmutableDropColumnsTable(this.parent, newValue);
+    return validate(new ImmutableDropColumnsTable(this.parent, newValue));
   }
 
   /**
@@ -101,22 +104,45 @@ public final class ImmutableDropColumnsTable extends DropColumnsTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableDropColumnsTable another) {
+    if (hashCode != another.hashCode) return false;
     return depth == another.depth
         && parent.equals(another.parent)
         && dropColumns.equals(another.dropColumns);
   }
 
   /**
-   * Computes a hash code from attributes: {@code depth}, {@code parent}, {@code dropColumns}.
+   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code parent}, {@code dropColumns}.
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+    return hashCode;
+  }
+
+  private int computeHashCode() {
     int h = 5381;
+    h += (h << 5) + getClass().hashCode();
     h += (h << 5) + depth;
     h += (h << 5) + parent.hashCode();
     h += (h << 5) + dropColumns.hashCode();
     return h;
+  }
+
+  private static final class InternerHolder {
+    static final Map<ImmutableDropColumnsTable, WeakReference<ImmutableDropColumnsTable>> INTERNER =
+        new WeakHashMap<>();
+  }
+
+  private static ImmutableDropColumnsTable validate(ImmutableDropColumnsTable instance) {
+    synchronized (InternerHolder.INTERNER) {
+      WeakReference<ImmutableDropColumnsTable> reference = InternerHolder.INTERNER.get(instance);
+      ImmutableDropColumnsTable interned = reference != null ? reference.get() : null;
+      if (interned == null) {
+        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
+        interned = instance;
+      }
+      return interned;
+    }
   }
 
   /**
@@ -131,7 +157,8 @@ public final class ImmutableDropColumnsTable extends DropColumnsTable {
       return (ImmutableDropColumnsTable) instance;
     }
     return ImmutableDropColumnsTable.builder()
-        .from(instance)
+        .parent(instance.parent())
+        .addAllDropColumns(instance.dropColumns())
         .build();
   }
 
@@ -162,50 +189,9 @@ public final class ImmutableDropColumnsTable extends DropColumnsTable {
     private long initBits = 0x1L;
 
     private TableSpec parent;
-    private List<ColumnName> dropColumns = new ArrayList<ColumnName>();
+    private final List<ColumnName> dropColumns = new ArrayList<ColumnName>();
 
     private Builder() {
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.SingleParentTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(SingleParentTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.DropColumnsTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(DropColumnsTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    private void from(Object object) {
-      long bits = 0;
-      if (object instanceof SingleParentTable) {
-        SingleParentTable instance = (SingleParentTable) object;
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-      }
-      if (object instanceof DropColumnsTable) {
-        DropColumnsTable instance = (DropColumnsTable) object;
-        addAllDropColumns(instance.dropColumns());
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-      }
     }
 
     /**
@@ -214,6 +200,7 @@ public final class ImmutableDropColumnsTable extends DropColumnsTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder parent(TableSpec parent) {
+      checkNotIsSet(parentIsSet(), "parent");
       this.parent = Objects.requireNonNull(parent, "parent");
       initBits &= ~INIT_BIT_PARENT;
       return this;
@@ -243,16 +230,6 @@ public final class ImmutableDropColumnsTable extends DropColumnsTable {
 
 
     /**
-     * Sets or replaces all elements for {@link DropColumnsTable#dropColumns() dropColumns} list.
-     * @param elements An iterable of dropColumns elements
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder dropColumns(Iterable<? extends ColumnName> elements) {
-      this.dropColumns.clear();
-      return addAllDropColumns(elements);
-    }
-
-    /**
      * Adds elements to {@link DropColumnsTable#dropColumns() dropColumns} list.
      * @param elements An iterable of dropColumns elements
      * @return {@code this} builder for use in a chained invocation
@@ -270,15 +247,27 @@ public final class ImmutableDropColumnsTable extends DropColumnsTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableDropColumnsTable build() {
+      checkRequiredAttributes();
+      return ImmutableDropColumnsTable.validate(new ImmutableDropColumnsTable(parent, createUnmodifiableList(true, dropColumns)));
+    }
+
+    private boolean parentIsSet() {
+      return (initBits & INIT_BIT_PARENT) == 0;
+    }
+
+    private static void checkNotIsSet(boolean isSet, String name) {
+      if (isSet) throw new IllegalStateException("Builder of DropColumnsTable is strict, attribute is already set: ".concat(name));
+    }
+
+    private void checkRequiredAttributes() {
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
-      return new ImmutableDropColumnsTable(parent, createUnmodifiableList(true, dropColumns));
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-      if ((initBits & INIT_BIT_PARENT) != 0) attributes.add("parent");
+      if (!parentIsSet()) attributes.add("parent");
       return "Cannot build DropColumnsTable, some of required attributes are not set " + attributes;
     }
   }

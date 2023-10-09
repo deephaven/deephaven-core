@@ -2,13 +2,16 @@ package io.deephaven.qst.table;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.WeakHashMap;
 import org.immutables.value.Generated;
 
 /**
@@ -20,13 +23,14 @@ import org.immutables.value.Generated;
 @Generated(from = "AggregateTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-public final class ImmutableAggregateTable extends AggregateTable {
+final class ImmutableAggregateTable extends AggregateTable {
   private transient final int depth;
   private final TableSpec parent;
   private final List<ColumnName> groupByColumns;
   private final List<Aggregation> aggregations;
   private final boolean preserveEmpty;
   private final TableSpec initialGroups;
+  private transient final int hashCode;
 
   private ImmutableAggregateTable(ImmutableAggregateTable.Builder builder) {
     this.parent = builder.parent;
@@ -38,6 +42,7 @@ public final class ImmutableAggregateTable extends AggregateTable {
     }
     this.depth = initShim.depth();
     this.preserveEmpty = initShim.preserveEmpty();
+    this.hashCode = computeHashCode();
     this.initShim = null;
   }
 
@@ -54,6 +59,7 @@ public final class ImmutableAggregateTable extends AggregateTable {
     this.initialGroups = initialGroups;
     this.depth = initShim.depth();
     this.preserveEmpty = initShim.preserveEmpty();
+    this.hashCode = computeHashCode();
     this.initShim = null;
   }
 
@@ -104,9 +110,7 @@ public final class ImmutableAggregateTable extends AggregateTable {
   }
 
   /**
-   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
-   * depth of zero.
-   * @return the depth
+   * @return The computed-at-construction value of the {@code depth} attribute
    */
   @Override
   public int depth() {
@@ -262,6 +266,7 @@ public final class ImmutableAggregateTable extends AggregateTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableAggregateTable another) {
+    if (hashCode != another.hashCode) return false;
     return depth == another.depth
         && parent.equals(another.parent)
         && groupByColumns.equals(another.groupByColumns)
@@ -271,12 +276,17 @@ public final class ImmutableAggregateTable extends AggregateTable {
   }
 
   /**
-   * Computes a hash code from attributes: {@code depth}, {@code parent}, {@code groupByColumns}, {@code aggregations}, {@code preserveEmpty}, {@code initialGroups}.
+   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code parent}, {@code groupByColumns}, {@code aggregations}, {@code preserveEmpty}, {@code initialGroups}.
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+    return hashCode;
+  }
+
+  private int computeHashCode() {
     int h = 5381;
+    h += (h << 5) + getClass().hashCode();
     h += (h << 5) + depth;
     h += (h << 5) + parent.hashCode();
     h += (h << 5) + groupByColumns.hashCode();
@@ -286,10 +296,23 @@ public final class ImmutableAggregateTable extends AggregateTable {
     return h;
   }
 
+  private static final class InternerHolder {
+    static final Map<ImmutableAggregateTable, WeakReference<ImmutableAggregateTable>> INTERNER =
+        new WeakHashMap<>();
+  }
+
   private static ImmutableAggregateTable validate(ImmutableAggregateTable instance) {
     instance.checkInitialGroups();
     instance.checkNumAggs();
-    return instance;
+    synchronized (InternerHolder.INTERNER) {
+      WeakReference<ImmutableAggregateTable> reference = InternerHolder.INTERNER.get(instance);
+      ImmutableAggregateTable interned = reference != null ? reference.get() : null;
+      if (interned == null) {
+        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
+        interned = instance;
+      }
+      return interned;
+    }
   }
 
   /**
@@ -304,7 +327,11 @@ public final class ImmutableAggregateTable extends AggregateTable {
       return (ImmutableAggregateTable) instance;
     }
     return ImmutableAggregateTable.builder()
-        .from(instance)
+        .parent(instance.parent())
+        .addAllGroupByColumns(instance.groupByColumns())
+        .addAllAggregations(instance.aggregations())
+        .preserveEmpty(instance.preserveEmpty())
+        .initialGroups(instance.initialGroups())
         .build();
   }
 
@@ -336,70 +363,17 @@ public final class ImmutableAggregateTable extends AggregateTable {
   public static final class Builder implements AggregateTable.Builder {
     private static final long INIT_BIT_PARENT = 0x1L;
     private static final long OPT_BIT_PRESERVE_EMPTY = 0x1L;
+    private static final long OPT_BIT_INITIAL_GROUPS = 0x2L;
     private long initBits = 0x1L;
     private long optBits;
 
     private TableSpec parent;
-    private List<ColumnName> groupByColumns = new ArrayList<ColumnName>();
-    private List<Aggregation> aggregations = new ArrayList<Aggregation>();
+    private final List<ColumnName> groupByColumns = new ArrayList<ColumnName>();
+    private final List<Aggregation> aggregations = new ArrayList<Aggregation>();
     private boolean preserveEmpty;
     private TableSpec initialGroups;
 
     private Builder() {
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.ByTableBase} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(ByTableBase instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.AggregateTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(AggregateTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    private void from(Object object) {
-      long bits = 0;
-      if (object instanceof ByTableBase) {
-        ByTableBase instance = (ByTableBase) object;
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-        if ((bits & 0x2L) == 0) {
-          addAllGroupByColumns(instance.groupByColumns());
-          bits |= 0x2L;
-        }
-      }
-      if (object instanceof AggregateTable) {
-        AggregateTable instance = (AggregateTable) object;
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-        preserveEmpty(instance.preserveEmpty());
-        addAllAggregations(instance.aggregations());
-        Optional<TableSpec> initialGroupsOptional = instance.initialGroups();
-        if (initialGroupsOptional.isPresent()) {
-          initialGroups(initialGroupsOptional);
-        }
-        if ((bits & 0x2L) == 0) {
-          addAllGroupByColumns(instance.groupByColumns());
-          bits |= 0x2L;
-        }
-      }
     }
 
     /**
@@ -408,6 +382,7 @@ public final class ImmutableAggregateTable extends AggregateTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder parent(TableSpec parent) {
+      checkNotIsSet(parentIsSet(), "parent");
       this.parent = Objects.requireNonNull(parent, "parent");
       initBits &= ~INIT_BIT_PARENT;
       return this;
@@ -435,16 +410,6 @@ public final class ImmutableAggregateTable extends AggregateTable {
       return this;
     }
 
-
-    /**
-     * Sets or replaces all elements for {@link AggregateTable#groupByColumns() groupByColumns} list.
-     * @param elements An iterable of groupByColumns elements
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder groupByColumns(Iterable<? extends ColumnName> elements) {
-      this.groupByColumns.clear();
-      return addAllGroupByColumns(elements);
-    }
 
     /**
      * Adds elements to {@link AggregateTable#groupByColumns() groupByColumns} list.
@@ -482,16 +447,6 @@ public final class ImmutableAggregateTable extends AggregateTable {
 
 
     /**
-     * Sets or replaces all elements for {@link AggregateTable#aggregations() aggregations} list.
-     * @param elements An iterable of aggregations elements
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder aggregations(Iterable<? extends Aggregation> elements) {
-      this.aggregations.clear();
-      return addAllAggregations(elements);
-    }
-
-    /**
      * Adds elements to {@link AggregateTable#aggregations() aggregations} list.
      * @param elements An iterable of aggregations elements
      * @return {@code this} builder for use in a chained invocation
@@ -510,6 +465,7 @@ public final class ImmutableAggregateTable extends AggregateTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder preserveEmpty(boolean preserveEmpty) {
+      checkNotIsSet(preserveEmptyIsSet(), "preserveEmpty");
       this.preserveEmpty = preserveEmpty;
       optBits |= OPT_BIT_PRESERVE_EMPTY;
       return this;
@@ -521,7 +477,9 @@ public final class ImmutableAggregateTable extends AggregateTable {
      * @return {@code this} builder for chained invocation
      */
     public final Builder initialGroups(TableSpec initialGroups) {
+      checkNotIsSet(initialGroupsIsSet(), "initialGroups");
       this.initialGroups = Objects.requireNonNull(initialGroups, "initialGroups");
+      optBits |= OPT_BIT_INITIAL_GROUPS;
       return this;
     }
 
@@ -531,7 +489,9 @@ public final class ImmutableAggregateTable extends AggregateTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder initialGroups(Optional<? extends TableSpec> initialGroups) {
+      checkNotIsSet(initialGroupsIsSet(), "initialGroups");
       this.initialGroups = initialGroups.orElse(null);
+      optBits |= OPT_BIT_INITIAL_GROUPS;
       return this;
     }
 
@@ -541,9 +501,7 @@ public final class ImmutableAggregateTable extends AggregateTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableAggregateTable build() {
-      if (initBits != 0) {
-        throw new IllegalStateException(formatRequiredAttributesMessage());
-      }
+      checkRequiredAttributes();
       return ImmutableAggregateTable.validate(new ImmutableAggregateTable(this));
     }
 
@@ -551,9 +509,27 @@ public final class ImmutableAggregateTable extends AggregateTable {
       return (optBits & OPT_BIT_PRESERVE_EMPTY) != 0;
     }
 
+    private boolean initialGroupsIsSet() {
+      return (optBits & OPT_BIT_INITIAL_GROUPS) != 0;
+    }
+
+    private boolean parentIsSet() {
+      return (initBits & INIT_BIT_PARENT) == 0;
+    }
+
+    private static void checkNotIsSet(boolean isSet, String name) {
+      if (isSet) throw new IllegalStateException("Builder of AggregateTable is strict, attribute is already set: ".concat(name));
+    }
+
+    private void checkRequiredAttributes() {
+      if (initBits != 0) {
+        throw new IllegalStateException(formatRequiredAttributesMessage());
+      }
+    }
+
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-      if ((initBits & INIT_BIT_PARENT) != 0) attributes.add("parent");
+      if (!parentIsSet()) attributes.add("parent");
       return "Cannot build AggregateTable, some of required attributes are not set " + attributes;
     }
   }

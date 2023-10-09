@@ -1,12 +1,15 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.Selectable;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.WeakHashMap;
 import org.immutables.value.Generated;
 
 /**
@@ -18,21 +21,21 @@ import org.immutables.value.Generated;
 @Generated(from = "ViewTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-public final class ImmutableViewTable extends ViewTable {
+final class ImmutableViewTable extends ViewTable {
   private transient final int depth;
   private final TableSpec parent;
   private final List<Selectable> columns;
+  private transient final int hashCode;
 
   private ImmutableViewTable(TableSpec parent, List<Selectable> columns) {
     this.parent = parent;
     this.columns = columns;
     this.depth = super.depth();
+    this.hashCode = computeHashCode();
   }
 
   /**
-   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
-   * depth of zero.
-   * @return the depth
+   * @return The computed-at-construction value of the {@code depth} attribute
    */
   @Override
   public int depth() {
@@ -64,7 +67,7 @@ public final class ImmutableViewTable extends ViewTable {
   public final ImmutableViewTable withParent(TableSpec value) {
     if (this.parent == value) return this;
     TableSpec newValue = Objects.requireNonNull(value, "parent");
-    return new ImmutableViewTable(newValue, this.columns);
+    return validate(new ImmutableViewTable(newValue, this.columns));
   }
 
   /**
@@ -74,7 +77,7 @@ public final class ImmutableViewTable extends ViewTable {
    */
   public final ImmutableViewTable withColumns(Selectable... elements) {
     List<Selectable> newValue = createUnmodifiableList(false, createSafeList(Arrays.asList(elements), true, false));
-    return new ImmutableViewTable(this.parent, newValue);
+    return validate(new ImmutableViewTable(this.parent, newValue));
   }
 
   /**
@@ -86,7 +89,7 @@ public final class ImmutableViewTable extends ViewTable {
   public final ImmutableViewTable withColumns(Iterable<? extends Selectable> elements) {
     if (this.columns == elements) return this;
     List<Selectable> newValue = createUnmodifiableList(false, createSafeList(elements, true, false));
-    return new ImmutableViewTable(this.parent, newValue);
+    return validate(new ImmutableViewTable(this.parent, newValue));
   }
 
   /**
@@ -101,22 +104,45 @@ public final class ImmutableViewTable extends ViewTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableViewTable another) {
+    if (hashCode != another.hashCode) return false;
     return depth == another.depth
         && parent.equals(another.parent)
         && columns.equals(another.columns);
   }
 
   /**
-   * Computes a hash code from attributes: {@code depth}, {@code parent}, {@code columns}.
+   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code parent}, {@code columns}.
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+    return hashCode;
+  }
+
+  private int computeHashCode() {
     int h = 5381;
+    h += (h << 5) + getClass().hashCode();
     h += (h << 5) + depth;
     h += (h << 5) + parent.hashCode();
     h += (h << 5) + columns.hashCode();
     return h;
+  }
+
+  private static final class InternerHolder {
+    static final Map<ImmutableViewTable, WeakReference<ImmutableViewTable>> INTERNER =
+        new WeakHashMap<>();
+  }
+
+  private static ImmutableViewTable validate(ImmutableViewTable instance) {
+    synchronized (InternerHolder.INTERNER) {
+      WeakReference<ImmutableViewTable> reference = InternerHolder.INTERNER.get(instance);
+      ImmutableViewTable interned = reference != null ? reference.get() : null;
+      if (interned == null) {
+        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
+        interned = instance;
+      }
+      return interned;
+    }
   }
 
   /**
@@ -131,7 +157,8 @@ public final class ImmutableViewTable extends ViewTable {
       return (ImmutableViewTable) instance;
     }
     return ImmutableViewTable.builder()
-        .from(instance)
+        .parent(instance.parent())
+        .addAllColumns(instance.columns())
         .build();
   }
 
@@ -162,75 +189,9 @@ public final class ImmutableViewTable extends ViewTable {
     private long initBits = 0x1L;
 
     private TableSpec parent;
-    private List<Selectable> columns = new ArrayList<Selectable>();
+    private final List<Selectable> columns = new ArrayList<Selectable>();
 
     private Builder() {
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.ViewTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(ViewTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.SelectableTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(SelectableTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.SingleParentTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(SingleParentTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    private void from(Object object) {
-      long bits = 0;
-      if (object instanceof ViewTable) {
-        ViewTable instance = (ViewTable) object;
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-        if ((bits & 0x2L) == 0) {
-          addAllColumns(instance.columns());
-          bits |= 0x2L;
-        }
-      }
-      if (object instanceof SelectableTable) {
-        SelectableTable instance = (SelectableTable) object;
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-        if ((bits & 0x2L) == 0) {
-          addAllColumns(instance.columns());
-          bits |= 0x2L;
-        }
-      }
-      if (object instanceof SingleParentTable) {
-        SingleParentTable instance = (SingleParentTable) object;
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-      }
     }
 
     /**
@@ -239,6 +200,7 @@ public final class ImmutableViewTable extends ViewTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder parent(TableSpec parent) {
+      checkNotIsSet(parentIsSet(), "parent");
       this.parent = Objects.requireNonNull(parent, "parent");
       initBits &= ~INIT_BIT_PARENT;
       return this;
@@ -268,16 +230,6 @@ public final class ImmutableViewTable extends ViewTable {
 
 
     /**
-     * Sets or replaces all elements for {@link ViewTable#columns() columns} list.
-     * @param elements An iterable of columns elements
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder columns(Iterable<? extends Selectable> elements) {
-      this.columns.clear();
-      return addAllColumns(elements);
-    }
-
-    /**
      * Adds elements to {@link ViewTable#columns() columns} list.
      * @param elements An iterable of columns elements
      * @return {@code this} builder for use in a chained invocation
@@ -295,15 +247,27 @@ public final class ImmutableViewTable extends ViewTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableViewTable build() {
+      checkRequiredAttributes();
+      return ImmutableViewTable.validate(new ImmutableViewTable(parent, createUnmodifiableList(true, columns)));
+    }
+
+    private boolean parentIsSet() {
+      return (initBits & INIT_BIT_PARENT) == 0;
+    }
+
+    private static void checkNotIsSet(boolean isSet, String name) {
+      if (isSet) throw new IllegalStateException("Builder of ViewTable is strict, attribute is already set: ".concat(name));
+    }
+
+    private void checkRequiredAttributes() {
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
-      return new ImmutableViewTable(parent, createUnmodifiableList(true, columns));
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-      if ((initBits & INIT_BIT_PARENT) != 0) attributes.add("parent");
+      if (!parentIsSet()) attributes.add("parent");
       return "Cannot build ViewTable, some of required attributes are not set " + attributes;
     }
   }

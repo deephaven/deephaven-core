@@ -1,9 +1,12 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.WeakHashMap;
 import org.immutables.value.Generated;
 
 /**
@@ -17,11 +20,12 @@ import org.immutables.value.Generated;
 @Generated(from = "SnapshotWhenTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
+final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
   private transient final int depth;
   private final TableSpec base;
   private final TableSpec trigger;
   private final SnapshotWhenOptions options;
+  private transient final int hashCode;
 
   private ImmutableSnapshotWhenTable(
       TableSpec base,
@@ -31,6 +35,7 @@ public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
     this.trigger = Objects.requireNonNull(trigger, "trigger");
     this.options = Objects.requireNonNull(options, "options");
     this.depth = super.depth();
+    this.hashCode = computeHashCode();
   }
 
   private ImmutableSnapshotWhenTable(
@@ -42,12 +47,11 @@ public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
     this.trigger = trigger;
     this.options = options;
     this.depth = super.depth();
+    this.hashCode = computeHashCode();
   }
 
   /**
-   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
-   * depth of zero.
-   * @return the depth
+   * @return The computed-at-construction value of the {@code depth} attribute
    */
   @Override
   public int depth() {
@@ -87,7 +91,7 @@ public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
   public final ImmutableSnapshotWhenTable withBase(TableSpec value) {
     if (this.base == value) return this;
     TableSpec newValue = Objects.requireNonNull(value, "base");
-    return new ImmutableSnapshotWhenTable(this, newValue, this.trigger, this.options);
+    return validate(new ImmutableSnapshotWhenTable(this, newValue, this.trigger, this.options));
   }
 
   /**
@@ -99,7 +103,7 @@ public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
   public final ImmutableSnapshotWhenTable withTrigger(TableSpec value) {
     if (this.trigger == value) return this;
     TableSpec newValue = Objects.requireNonNull(value, "trigger");
-    return new ImmutableSnapshotWhenTable(this, this.base, newValue, this.options);
+    return validate(new ImmutableSnapshotWhenTable(this, this.base, newValue, this.options));
   }
 
   /**
@@ -111,7 +115,7 @@ public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
   public final ImmutableSnapshotWhenTable withOptions(SnapshotWhenOptions value) {
     if (this.options == value) return this;
     SnapshotWhenOptions newValue = Objects.requireNonNull(value, "options");
-    return new ImmutableSnapshotWhenTable(this, this.base, this.trigger, newValue);
+    return validate(new ImmutableSnapshotWhenTable(this, this.base, this.trigger, newValue));
   }
 
   /**
@@ -126,6 +130,7 @@ public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableSnapshotWhenTable another) {
+    if (hashCode != another.hashCode) return false;
     return depth == another.depth
         && base.equals(another.base)
         && trigger.equals(another.trigger)
@@ -133,17 +138,27 @@ public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
   }
 
   /**
-   * Computes a hash code from attributes: {@code depth}, {@code base}, {@code trigger}, {@code options}.
+   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code base}, {@code trigger}, {@code options}.
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+    return hashCode;
+  }
+
+  private int computeHashCode() {
     int h = 5381;
+    h += (h << 5) + getClass().hashCode();
     h += (h << 5) + depth;
     h += (h << 5) + base.hashCode();
     h += (h << 5) + trigger.hashCode();
     h += (h << 5) + options.hashCode();
     return h;
+  }
+
+  private static final class InternerHolder {
+    static final Map<ImmutableSnapshotWhenTable, WeakReference<ImmutableSnapshotWhenTable>> INTERNER =
+        new WeakHashMap<>();
   }
 
   /**
@@ -154,7 +169,19 @@ public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
    * @return An immutable SnapshotWhenTable instance
    */
   public static ImmutableSnapshotWhenTable of(TableSpec base, TableSpec trigger, SnapshotWhenOptions options) {
-    return new ImmutableSnapshotWhenTable(base, trigger, options);
+    return validate(new ImmutableSnapshotWhenTable(base, trigger, options));
+  }
+
+  private static ImmutableSnapshotWhenTable validate(ImmutableSnapshotWhenTable instance) {
+    synchronized (InternerHolder.INTERNER) {
+      WeakReference<ImmutableSnapshotWhenTable> reference = InternerHolder.INTERNER.get(instance);
+      ImmutableSnapshotWhenTable interned = reference != null ? reference.get() : null;
+      if (interned == null) {
+        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
+        interned = instance;
+      }
+      return interned;
+    }
   }
 
   /**
@@ -169,7 +196,9 @@ public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
       return (ImmutableSnapshotWhenTable) instance;
     }
     return ImmutableSnapshotWhenTable.builder()
-        .from(instance)
+        .base(instance.base())
+        .trigger(instance.trigger())
+        .options(instance.options())
         .build();
   }
 
@@ -210,26 +239,12 @@ public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
     }
 
     /**
-     * Fill a builder with attribute values from the provided {@code SnapshotWhenTable} instance.
-     * Regular attribute values will be replaced with those from the given instance.
-     * Absent optional values will not replace present values.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(SnapshotWhenTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      base(instance.base());
-      trigger(instance.trigger());
-      options(instance.options());
-      return this;
-    }
-
-    /**
      * Initializes the value for the {@link SnapshotWhenTable#base() base} attribute.
      * @param base The value for base 
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder base(TableSpec base) {
+      checkNotIsSet(baseIsSet(), "base");
       this.base = Objects.requireNonNull(base, "base");
       initBits &= ~INIT_BIT_BASE;
       return this;
@@ -241,6 +256,7 @@ public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder trigger(TableSpec trigger) {
+      checkNotIsSet(triggerIsSet(), "trigger");
       this.trigger = Objects.requireNonNull(trigger, "trigger");
       initBits &= ~INIT_BIT_TRIGGER;
       return this;
@@ -252,6 +268,7 @@ public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder options(SnapshotWhenOptions options) {
+      checkNotIsSet(optionsIsSet(), "options");
       this.options = Objects.requireNonNull(options, "options");
       initBits &= ~INIT_BIT_OPTIONS;
       return this;
@@ -263,17 +280,37 @@ public final class ImmutableSnapshotWhenTable extends SnapshotWhenTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableSnapshotWhenTable build() {
+      checkRequiredAttributes();
+      return ImmutableSnapshotWhenTable.validate(new ImmutableSnapshotWhenTable(null, base, trigger, options));
+    }
+
+    private boolean baseIsSet() {
+      return (initBits & INIT_BIT_BASE) == 0;
+    }
+
+    private boolean triggerIsSet() {
+      return (initBits & INIT_BIT_TRIGGER) == 0;
+    }
+
+    private boolean optionsIsSet() {
+      return (initBits & INIT_BIT_OPTIONS) == 0;
+    }
+
+    private static void checkNotIsSet(boolean isSet, String name) {
+      if (isSet) throw new IllegalStateException("Builder of SnapshotWhenTable is strict, attribute is already set: ".concat(name));
+    }
+
+    private void checkRequiredAttributes() {
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
-      return new ImmutableSnapshotWhenTable(null, base, trigger, options);
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-      if ((initBits & INIT_BIT_BASE) != 0) attributes.add("base");
-      if ((initBits & INIT_BIT_TRIGGER) != 0) attributes.add("trigger");
-      if ((initBits & INIT_BIT_OPTIONS) != 0) attributes.add("options");
+      if (!baseIsSet()) attributes.add("base");
+      if (!triggerIsSet()) attributes.add("trigger");
+      if (!optionsIsSet()) attributes.add("options");
       return "Cannot build SnapshotWhenTable, some of required attributes are not set " + attributes;
     }
   }

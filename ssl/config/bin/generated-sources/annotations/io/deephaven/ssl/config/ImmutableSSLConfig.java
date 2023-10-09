@@ -369,17 +369,10 @@ public final class ImmutableSSLConfig extends SSLConfig {
    * Creates a builder for {@link ImmutableSSLConfig ImmutableSSLConfig}.
    * <pre>
    * ImmutableSSLConfig.builder()
-<<<<<<< HEAD
    *    .identity(io.deephaven.ssl.config.Identity) // optional {@link SSLConfig#identity() identity}
    *    .trust(io.deephaven.ssl.config.Trust) // optional {@link SSLConfig#trust() trust}
    *    .protocols(io.deephaven.ssl.config.Protocols) // optional {@link SSLConfig#protocols() protocols}
    *    .ciphers(io.deephaven.ssl.config.Ciphers) // optional {@link SSLConfig#ciphers() ciphers}
-=======
-   *    .identity(Identity) // optional {@link SSLConfig#identity() identity}
-   *    .trust(Trust) // optional {@link SSLConfig#trust() trust}
-   *    .protocols(Protocols) // optional {@link SSLConfig#protocols() protocols}
-   *    .ciphers(Ciphers) // optional {@link SSLConfig#ciphers() ciphers}
->>>>>>> main
    *    .clientAuthentication(io.deephaven.ssl.config.SSLConfig.ClientAuth) // optional {@link SSLConfig#clientAuthentication() clientAuthentication}
    *    .build();
    * </pre>

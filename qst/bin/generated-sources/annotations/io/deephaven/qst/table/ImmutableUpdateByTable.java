@@ -3,13 +3,16 @@ package io.deephaven.qst.table;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.WeakHashMap;
 import org.immutables.value.Generated;
 
 /**
@@ -21,12 +24,13 @@ import org.immutables.value.Generated;
 @Generated(from = "UpdateByTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-public final class ImmutableUpdateByTable extends UpdateByTable {
+final class ImmutableUpdateByTable extends UpdateByTable {
   private transient final int depth;
   private final TableSpec parent;
   private final List<ColumnName> groupByColumns;
   private final UpdateByControl control;
   private final List<UpdateByOperation> operations;
+  private transient final int hashCode;
 
   private ImmutableUpdateByTable(
       TableSpec parent,
@@ -38,12 +42,11 @@ public final class ImmutableUpdateByTable extends UpdateByTable {
     this.control = control;
     this.operations = operations;
     this.depth = super.depth();
+    this.hashCode = computeHashCode();
   }
 
   /**
-   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
-   * depth of zero.
-   * @return the depth
+   * @return The computed-at-construction value of the {@code depth} attribute
    */
   @Override
   public int depth() {
@@ -174,6 +177,7 @@ public final class ImmutableUpdateByTable extends UpdateByTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableUpdateByTable another) {
+    if (hashCode != another.hashCode) return false;
     return depth == another.depth
         && parent.equals(another.parent)
         && groupByColumns.equals(another.groupByColumns)
@@ -182,12 +186,17 @@ public final class ImmutableUpdateByTable extends UpdateByTable {
   }
 
   /**
-   * Computes a hash code from attributes: {@code depth}, {@code parent}, {@code groupByColumns}, {@code control}, {@code operations}.
+   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code parent}, {@code groupByColumns}, {@code control}, {@code operations}.
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+    return hashCode;
+  }
+
+  private int computeHashCode() {
     int h = 5381;
+    h += (h << 5) + getClass().hashCode();
     h += (h << 5) + depth;
     h += (h << 5) + parent.hashCode();
     h += (h << 5) + groupByColumns.hashCode();
@@ -196,9 +205,22 @@ public final class ImmutableUpdateByTable extends UpdateByTable {
     return h;
   }
 
+  private static final class InternerHolder {
+    static final Map<ImmutableUpdateByTable, WeakReference<ImmutableUpdateByTable>> INTERNER =
+        new WeakHashMap<>();
+  }
+
   private static ImmutableUpdateByTable validate(ImmutableUpdateByTable instance) {
     instance.checkNumOperations();
-    return instance;
+    synchronized (InternerHolder.INTERNER) {
+      WeakReference<ImmutableUpdateByTable> reference = InternerHolder.INTERNER.get(instance);
+      ImmutableUpdateByTable interned = reference != null ? reference.get() : null;
+      if (interned == null) {
+        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
+        interned = instance;
+      }
+      return interned;
+    }
   }
 
   /**
@@ -213,7 +235,10 @@ public final class ImmutableUpdateByTable extends UpdateByTable {
       return (ImmutableUpdateByTable) instance;
     }
     return ImmutableUpdateByTable.builder()
-        .from(instance)
+        .parent(instance.parent())
+        .addAllGroupByColumns(instance.groupByColumns())
+        .control(instance.control())
+        .addAllOperations(instance.operations())
         .build();
   }
 
@@ -243,85 +268,16 @@ public final class ImmutableUpdateByTable extends UpdateByTable {
   @Generated(from = "UpdateByTable", generator = "Immutables")
   public static final class Builder implements UpdateByTable.Builder {
     private static final long INIT_BIT_PARENT = 0x1L;
+    private static final long OPT_BIT_CONTROL = 0x1L;
     private long initBits = 0x1L;
+    private long optBits;
 
     private TableSpec parent;
-    private List<ColumnName> groupByColumns = new ArrayList<ColumnName>();
+    private final List<ColumnName> groupByColumns = new ArrayList<ColumnName>();
     private UpdateByControl control;
-    private List<UpdateByOperation> operations = new ArrayList<UpdateByOperation>();
+    private final List<UpdateByOperation> operations = new ArrayList<UpdateByOperation>();
 
     private Builder() {
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.ByTableBase} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(ByTableBase instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.SingleParentTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(SingleParentTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.UpdateByTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(UpdateByTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    private void from(Object object) {
-      long bits = 0;
-      if (object instanceof ByTableBase) {
-        ByTableBase instance = (ByTableBase) object;
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-        if ((bits & 0x2L) == 0) {
-          addAllGroupByColumns(instance.groupByColumns());
-          bits |= 0x2L;
-        }
-      }
-      if (object instanceof SingleParentTable) {
-        SingleParentTable instance = (SingleParentTable) object;
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-      }
-      if (object instanceof UpdateByTable) {
-        UpdateByTable instance = (UpdateByTable) object;
-        if ((bits & 0x1L) == 0) {
-          parent(instance.parent());
-          bits |= 0x1L;
-        }
-        Optional<UpdateByControl> controlOptional = instance.control();
-        if (controlOptional.isPresent()) {
-          control(controlOptional);
-        }
-        addAllOperations(instance.operations());
-        if ((bits & 0x2L) == 0) {
-          addAllGroupByColumns(instance.groupByColumns());
-          bits |= 0x2L;
-        }
-      }
     }
 
     /**
@@ -330,6 +286,7 @@ public final class ImmutableUpdateByTable extends UpdateByTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder parent(TableSpec parent) {
+      checkNotIsSet(parentIsSet(), "parent");
       this.parent = Objects.requireNonNull(parent, "parent");
       initBits &= ~INIT_BIT_PARENT;
       return this;
@@ -359,16 +316,6 @@ public final class ImmutableUpdateByTable extends UpdateByTable {
 
 
     /**
-     * Sets or replaces all elements for {@link UpdateByTable#groupByColumns() groupByColumns} list.
-     * @param elements An iterable of groupByColumns elements
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder groupByColumns(Iterable<? extends ColumnName> elements) {
-      this.groupByColumns.clear();
-      return addAllGroupByColumns(elements);
-    }
-
-    /**
      * Adds elements to {@link UpdateByTable#groupByColumns() groupByColumns} list.
      * @param elements An iterable of groupByColumns elements
      * @return {@code this} builder for use in a chained invocation
@@ -386,7 +333,9 @@ public final class ImmutableUpdateByTable extends UpdateByTable {
      * @return {@code this} builder for chained invocation
      */
     public final Builder control(UpdateByControl control) {
+      checkNotIsSet(controlIsSet(), "control");
       this.control = Objects.requireNonNull(control, "control");
+      optBits |= OPT_BIT_CONTROL;
       return this;
     }
 
@@ -396,7 +345,9 @@ public final class ImmutableUpdateByTable extends UpdateByTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder control(Optional<? extends UpdateByControl> control) {
+      checkNotIsSet(controlIsSet(), "control");
       this.control = control.orElse(null);
+      optBits |= OPT_BIT_CONTROL;
       return this;
     }
 
@@ -424,16 +375,6 @@ public final class ImmutableUpdateByTable extends UpdateByTable {
 
 
     /**
-     * Sets or replaces all elements for {@link UpdateByTable#operations() operations} list.
-     * @param elements An iterable of operations elements
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder operations(Iterable<? extends UpdateByOperation> elements) {
-      this.operations.clear();
-      return addAllOperations(elements);
-    }
-
-    /**
      * Adds elements to {@link UpdateByTable#operations() operations} list.
      * @param elements An iterable of operations elements
      * @return {@code this} builder for use in a chained invocation
@@ -451,9 +392,7 @@ public final class ImmutableUpdateByTable extends UpdateByTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableUpdateByTable build() {
-      if (initBits != 0) {
-        throw new IllegalStateException(formatRequiredAttributesMessage());
-      }
+      checkRequiredAttributes();
       return ImmutableUpdateByTable.validate(new ImmutableUpdateByTable(
           parent,
           createUnmodifiableList(true, groupByColumns),
@@ -461,9 +400,27 @@ public final class ImmutableUpdateByTable extends UpdateByTable {
           createUnmodifiableList(true, operations)));
     }
 
+    private boolean controlIsSet() {
+      return (optBits & OPT_BIT_CONTROL) != 0;
+    }
+
+    private boolean parentIsSet() {
+      return (initBits & INIT_BIT_PARENT) == 0;
+    }
+
+    private static void checkNotIsSet(boolean isSet, String name) {
+      if (isSet) throw new IllegalStateException("Builder of UpdateByTable is strict, attribute is already set: ".concat(name));
+    }
+
+    private void checkRequiredAttributes() {
+      if (initBits != 0) {
+        throw new IllegalStateException(formatRequiredAttributesMessage());
+      }
+    }
+
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-      if ((initBits & INIT_BIT_PARENT) != 0) attributes.add("parent");
+      if (!parentIsSet()) attributes.add("parent");
       return "Cannot build UpdateByTable, some of required attributes are not set " + attributes;
     }
   }

@@ -3,12 +3,15 @@ package io.deephaven.qst.table;
 import io.deephaven.api.AsOfJoinMatch;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.WeakHashMap;
 import org.immutables.value.Generated;
 
 /**
@@ -20,13 +23,14 @@ import org.immutables.value.Generated;
 @Generated(from = "AsOfJoinTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
+final class ImmutableAsOfJoinTable extends AsOfJoinTable {
   private transient final int depth;
   private final TableSpec left;
   private final TableSpec right;
   private final List<JoinMatch> matches;
   private final List<JoinAddition> additions;
   private final AsOfJoinMatch joinMatch;
+  private transient final int hashCode;
 
   private ImmutableAsOfJoinTable(
       TableSpec left,
@@ -40,12 +44,11 @@ public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
     this.additions = additions;
     this.joinMatch = joinMatch;
     this.depth = super.depth();
+    this.hashCode = computeHashCode();
   }
 
   /**
-   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
-   * depth of zero.
-   * @return the depth
+   * @return The computed-at-construction value of the {@code depth} attribute
    */
   @Override
   public int depth() {
@@ -184,6 +187,7 @@ public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
   }
 
   private boolean equalTo(int synthetic, ImmutableAsOfJoinTable another) {
+    if (hashCode != another.hashCode) return false;
     return depth == another.depth
         && left.equals(another.left)
         && right.equals(another.right)
@@ -193,12 +197,17 @@ public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
   }
 
   /**
-   * Computes a hash code from attributes: {@code depth}, {@code left}, {@code right}, {@code matches}, {@code additions}, {@code joinMatch}.
+   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code left}, {@code right}, {@code matches}, {@code additions}, {@code joinMatch}.
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+    return hashCode;
+  }
+
+  private int computeHashCode() {
     int h = 5381;
+    h += (h << 5) + getClass().hashCode();
     h += (h << 5) + depth;
     h += (h << 5) + left.hashCode();
     h += (h << 5) + right.hashCode();
@@ -208,9 +217,22 @@ public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
     return h;
   }
 
+  private static final class InternerHolder {
+    static final Map<ImmutableAsOfJoinTable, WeakReference<ImmutableAsOfJoinTable>> INTERNER =
+        new WeakHashMap<>();
+  }
+
   private static ImmutableAsOfJoinTable validate(ImmutableAsOfJoinTable instance) {
     instance.checkAdditions();
-    return instance;
+    synchronized (InternerHolder.INTERNER) {
+      WeakReference<ImmutableAsOfJoinTable> reference = InternerHolder.INTERNER.get(instance);
+      ImmutableAsOfJoinTable interned = reference != null ? reference.get() : null;
+      if (interned == null) {
+        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
+        interned = instance;
+      }
+      return interned;
+    }
   }
 
   /**
@@ -225,7 +247,11 @@ public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
       return (ImmutableAsOfJoinTable) instance;
     }
     return ImmutableAsOfJoinTable.builder()
-        .from(instance)
+        .left(instance.left())
+        .right(instance.right())
+        .addAllMatches(instance.matches())
+        .addAllAdditions(instance.additions())
+        .joinMatch(instance.joinMatch())
         .build();
   }
 
@@ -262,106 +288,11 @@ public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
 
     private TableSpec left;
     private TableSpec right;
-    private List<JoinMatch> matches = new ArrayList<JoinMatch>();
-    private List<JoinAddition> additions = new ArrayList<JoinAddition>();
+    private final List<JoinMatch> matches = new ArrayList<JoinMatch>();
+    private final List<JoinAddition> additions = new ArrayList<JoinAddition>();
     private AsOfJoinMatch joinMatch;
 
     private Builder() {
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.AsOfJoinTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(AsOfJoinTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.Join} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(Join instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.JoinBase} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(JoinBase instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    private void from(Object object) {
-      long bits = 0;
-      if (object instanceof AsOfJoinTable) {
-        AsOfJoinTable instance = (AsOfJoinTable) object;
-        if ((bits & 0x4L) == 0) {
-          right(instance.right());
-          bits |= 0x4L;
-        }
-        if ((bits & 0x1L) == 0) {
-          addAllAdditions(instance.additions());
-          bits |= 0x1L;
-        }
-        if ((bits & 0x2L) == 0) {
-          left(instance.left());
-          bits |= 0x2L;
-        }
-        if ((bits & 0x8L) == 0) {
-          addAllMatches(instance.matches());
-          bits |= 0x8L;
-        }
-        joinMatch(instance.joinMatch());
-      }
-      if (object instanceof Join) {
-        Join instance = (Join) object;
-        if ((bits & 0x4L) == 0) {
-          right(instance.right());
-          bits |= 0x4L;
-        }
-        if ((bits & 0x1L) == 0) {
-          addAllAdditions(instance.additions());
-          bits |= 0x1L;
-        }
-        if ((bits & 0x2L) == 0) {
-          left(instance.left());
-          bits |= 0x2L;
-        }
-        if ((bits & 0x8L) == 0) {
-          addAllMatches(instance.matches());
-          bits |= 0x8L;
-        }
-      }
-      if (object instanceof JoinBase) {
-        JoinBase instance = (JoinBase) object;
-        if ((bits & 0x4L) == 0) {
-          right(instance.right());
-          bits |= 0x4L;
-        }
-        if ((bits & 0x1L) == 0) {
-          addAllAdditions(instance.additions());
-          bits |= 0x1L;
-        }
-        if ((bits & 0x2L) == 0) {
-          left(instance.left());
-          bits |= 0x2L;
-        }
-        if ((bits & 0x8L) == 0) {
-          addAllMatches(instance.matches());
-          bits |= 0x8L;
-        }
-      }
     }
 
     /**
@@ -370,6 +301,7 @@ public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder left(TableSpec left) {
+      checkNotIsSet(leftIsSet(), "left");
       this.left = Objects.requireNonNull(left, "left");
       initBits &= ~INIT_BIT_LEFT;
       return this;
@@ -381,6 +313,7 @@ public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder right(TableSpec right) {
+      checkNotIsSet(rightIsSet(), "right");
       this.right = Objects.requireNonNull(right, "right");
       initBits &= ~INIT_BIT_RIGHT;
       return this;
@@ -408,16 +341,6 @@ public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
       return this;
     }
 
-
-    /**
-     * Sets or replaces all elements for {@link AsOfJoinTable#matches() matches} list.
-     * @param elements An iterable of matches elements
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder matches(Iterable<? extends JoinMatch> elements) {
-      this.matches.clear();
-      return addAllMatches(elements);
-    }
 
     /**
      * Adds elements to {@link AsOfJoinTable#matches() matches} list.
@@ -455,16 +378,6 @@ public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
 
 
     /**
-     * Sets or replaces all elements for {@link AsOfJoinTable#additions() additions} list.
-     * @param elements An iterable of additions elements
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder additions(Iterable<? extends JoinAddition> elements) {
-      this.additions.clear();
-      return addAllAdditions(elements);
-    }
-
-    /**
      * Adds elements to {@link AsOfJoinTable#additions() additions} list.
      * @param elements An iterable of additions elements
      * @return {@code this} builder for use in a chained invocation
@@ -482,6 +395,7 @@ public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder joinMatch(AsOfJoinMatch joinMatch) {
+      checkNotIsSet(joinMatchIsSet(), "joinMatch");
       this.joinMatch = Objects.requireNonNull(joinMatch, "joinMatch");
       initBits &= ~INIT_BIT_JOIN_MATCH;
       return this;
@@ -493,9 +407,7 @@ public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableAsOfJoinTable build() {
-      if (initBits != 0) {
-        throw new IllegalStateException(formatRequiredAttributesMessage());
-      }
+      checkRequiredAttributes();
       return ImmutableAsOfJoinTable.validate(new ImmutableAsOfJoinTable(
           left,
           right,
@@ -504,11 +416,33 @@ public final class ImmutableAsOfJoinTable extends AsOfJoinTable {
           joinMatch));
     }
 
+    private boolean leftIsSet() {
+      return (initBits & INIT_BIT_LEFT) == 0;
+    }
+
+    private boolean rightIsSet() {
+      return (initBits & INIT_BIT_RIGHT) == 0;
+    }
+
+    private boolean joinMatchIsSet() {
+      return (initBits & INIT_BIT_JOIN_MATCH) == 0;
+    }
+
+    private static void checkNotIsSet(boolean isSet, String name) {
+      if (isSet) throw new IllegalStateException("Builder of AsOfJoinTable is strict, attribute is already set: ".concat(name));
+    }
+
+    private void checkRequiredAttributes() {
+      if (initBits != 0) {
+        throw new IllegalStateException(formatRequiredAttributesMessage());
+      }
+    }
+
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-      if ((initBits & INIT_BIT_LEFT) != 0) attributes.add("left");
-      if ((initBits & INIT_BIT_RIGHT) != 0) attributes.add("right");
-      if ((initBits & INIT_BIT_JOIN_MATCH) != 0) attributes.add("joinMatch");
+      if (!leftIsSet()) attributes.add("left");
+      if (!rightIsSet()) attributes.add("right");
+      if (!joinMatchIsSet()) attributes.add("joinMatch");
       return "Cannot build AsOfJoinTable, some of required attributes are not set " + attributes;
     }
   }

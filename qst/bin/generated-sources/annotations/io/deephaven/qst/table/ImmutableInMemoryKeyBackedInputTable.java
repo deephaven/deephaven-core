@@ -1,12 +1,15 @@
 package io.deephaven.qst.table;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import org.immutables.value.Generated;
 
 /**
@@ -18,21 +21,23 @@ import org.immutables.value.Generated;
 @Generated(from = "InMemoryKeyBackedInputTable", generator = "Immutables")
 @SuppressWarnings({"all"})
 @javax.annotation.processing.Generated("org.immutables.processor.ProxyProcessor")
-public final class ImmutableInMemoryKeyBackedInputTable
+final class ImmutableInMemoryKeyBackedInputTable
     extends InMemoryKeyBackedInputTable {
   private transient final int depth;
   private final TableSchema schema;
   private final List<String> keys;
   private final UUID id;
+  private transient final int hashCode;
 
   private ImmutableInMemoryKeyBackedInputTable(ImmutableInMemoryKeyBackedInputTable.Builder builder) {
     this.schema = builder.schema;
     this.keys = createUnmodifiableList(true, builder.keys);
-    if (builder.id != null) {
+    if (builder.idIsSet()) {
       initShim.id(builder.id);
     }
     this.depth = initShim.depth();
     this.id = initShim.id();
+    this.hashCode = computeHashCode();
     this.initShim = null;
   }
 
@@ -42,6 +47,7 @@ public final class ImmutableInMemoryKeyBackedInputTable
     initShim.id(id);
     this.depth = initShim.depth();
     this.id = initShim.id();
+    this.hashCode = computeHashCode();
     this.initShim = null;
   }
 
@@ -92,9 +98,7 @@ public final class ImmutableInMemoryKeyBackedInputTable
   }
 
   /**
-   * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
-   * depth of zero.
-   * @return the depth
+   * @return The computed-at-construction value of the {@code depth} attribute
    */
   @Override
   public int depth() {
@@ -113,8 +117,7 @@ public final class ImmutableInMemoryKeyBackedInputTable
   }
 
   /**
-   * The keys that make up the "key" for the input table. May be empty.
-   * @return the keys
+   * @return The value of the {@code keys} attribute
    */
   @Override
   public List<String> keys() {
@@ -141,7 +144,7 @@ public final class ImmutableInMemoryKeyBackedInputTable
   public final ImmutableInMemoryKeyBackedInputTable withSchema(TableSchema value) {
     if (this.schema == value) return this;
     TableSchema newValue = Objects.requireNonNull(value, "schema");
-    return new ImmutableInMemoryKeyBackedInputTable(newValue, this.keys, this.id);
+    return validate(new ImmutableInMemoryKeyBackedInputTable(newValue, this.keys, this.id));
   }
 
   /**
@@ -151,7 +154,7 @@ public final class ImmutableInMemoryKeyBackedInputTable
    */
   public final ImmutableInMemoryKeyBackedInputTable withKeys(String... elements) {
     List<String> newValue = createUnmodifiableList(false, createSafeList(Arrays.asList(elements), true, false));
-    return new ImmutableInMemoryKeyBackedInputTable(this.schema, newValue, this.id);
+    return validate(new ImmutableInMemoryKeyBackedInputTable(this.schema, newValue, this.id));
   }
 
   /**
@@ -163,7 +166,7 @@ public final class ImmutableInMemoryKeyBackedInputTable
   public final ImmutableInMemoryKeyBackedInputTable withKeys(Iterable<String> elements) {
     if (this.keys == elements) return this;
     List<String> newValue = createUnmodifiableList(false, createSafeList(elements, true, false));
-    return new ImmutableInMemoryKeyBackedInputTable(this.schema, newValue, this.id);
+    return validate(new ImmutableInMemoryKeyBackedInputTable(this.schema, newValue, this.id));
   }
 
   /**
@@ -175,7 +178,7 @@ public final class ImmutableInMemoryKeyBackedInputTable
   public final ImmutableInMemoryKeyBackedInputTable withId(UUID value) {
     if (this.id == value) return this;
     UUID newValue = Objects.requireNonNull(value, "id");
-    return new ImmutableInMemoryKeyBackedInputTable(this.schema, this.keys, newValue);
+    return validate(new ImmutableInMemoryKeyBackedInputTable(this.schema, this.keys, newValue));
   }
 
   /**
@@ -190,6 +193,7 @@ public final class ImmutableInMemoryKeyBackedInputTable
   }
 
   private boolean equalTo(int synthetic, ImmutableInMemoryKeyBackedInputTable another) {
+    if (hashCode != another.hashCode) return false;
     return depth == another.depth
         && schema.equals(another.schema)
         && keys.equals(another.keys)
@@ -197,17 +201,39 @@ public final class ImmutableInMemoryKeyBackedInputTable
   }
 
   /**
-   * Computes a hash code from attributes: {@code depth}, {@code schema}, {@code keys}, {@code id}.
+   * Returns a precomputed-on-construction hash code from attributes: {@code depth}, {@code schema}, {@code keys}, {@code id}.
    * @return hashCode value
    */
   @Override
   public int hashCode() {
+    return hashCode;
+  }
+
+  private int computeHashCode() {
     int h = 5381;
+    h += (h << 5) + getClass().hashCode();
     h += (h << 5) + depth;
     h += (h << 5) + schema.hashCode();
     h += (h << 5) + keys.hashCode();
     h += (h << 5) + id.hashCode();
     return h;
+  }
+
+  private static final class InternerHolder {
+    static final Map<ImmutableInMemoryKeyBackedInputTable, WeakReference<ImmutableInMemoryKeyBackedInputTable>> INTERNER =
+        new WeakHashMap<>();
+  }
+
+  private static ImmutableInMemoryKeyBackedInputTable validate(ImmutableInMemoryKeyBackedInputTable instance) {
+    synchronized (InternerHolder.INTERNER) {
+      WeakReference<ImmutableInMemoryKeyBackedInputTable> reference = InternerHolder.INTERNER.get(instance);
+      ImmutableInMemoryKeyBackedInputTable interned = reference != null ? reference.get() : null;
+      if (interned == null) {
+        InternerHolder.INTERNER.put(instance, new WeakReference<>(instance));
+        interned = instance;
+      }
+      return interned;
+    }
   }
 
   /**
@@ -222,7 +248,9 @@ public final class ImmutableInMemoryKeyBackedInputTable
       return (ImmutableInMemoryKeyBackedInputTable) instance;
     }
     return ImmutableInMemoryKeyBackedInputTable.builder()
-        .from(instance)
+        .schema(instance.schema())
+        .addAllKeys(instance.keys())
+        .id(instance.id())
         .build();
   }
 
@@ -251,80 +279,15 @@ public final class ImmutableInMemoryKeyBackedInputTable
   @Generated(from = "InMemoryKeyBackedInputTable", generator = "Immutables")
   public static final class Builder {
     private static final long INIT_BIT_SCHEMA = 0x1L;
+    private static final long OPT_BIT_ID = 0x1L;
     private long initBits = 0x1L;
+    private long optBits;
 
     private TableSchema schema;
-    private List<String> keys = new ArrayList<String>();
+    private final List<String> keys = new ArrayList<String>();
     private UUID id;
 
     private Builder() {
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.InputTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(InputTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.InputTableBase} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(InputTableBase instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    /**
-     * Fill a builder with attribute values from the provided {@code io.deephaven.qst.table.InMemoryKeyBackedInputTable} instance.
-     * @param instance The instance from which to copy values
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder from(InMemoryKeyBackedInputTable instance) {
-      Objects.requireNonNull(instance, "instance");
-      from((Object) instance);
-      return this;
-    }
-
-    private void from(Object object) {
-      long bits = 0;
-      if (object instanceof InputTable) {
-        InputTable instance = (InputTable) object;
-        if ((bits & 0x1L) == 0) {
-          schema(instance.schema());
-          bits |= 0x1L;
-        }
-      }
-      if (object instanceof InputTableBase) {
-        InputTableBase instance = (InputTableBase) object;
-        if ((bits & 0x1L) == 0) {
-          schema(instance.schema());
-          bits |= 0x1L;
-        }
-        if ((bits & 0x2L) == 0) {
-          id(instance.id());
-          bits |= 0x2L;
-        }
-      }
-      if (object instanceof InMemoryKeyBackedInputTable) {
-        InMemoryKeyBackedInputTable instance = (InMemoryKeyBackedInputTable) object;
-        if ((bits & 0x1L) == 0) {
-          schema(instance.schema());
-          bits |= 0x1L;
-        }
-        addAllKeys(instance.keys());
-        if ((bits & 0x2L) == 0) {
-          id(instance.id());
-          bits |= 0x2L;
-        }
-      }
     }
 
     /**
@@ -333,6 +296,7 @@ public final class ImmutableInMemoryKeyBackedInputTable
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder schema(TableSchema schema) {
+      checkNotIsSet(schemaIsSet(), "schema");
       this.schema = Objects.requireNonNull(schema, "schema");
       initBits &= ~INIT_BIT_SCHEMA;
       return this;
@@ -362,16 +326,6 @@ public final class ImmutableInMemoryKeyBackedInputTable
 
 
     /**
-     * Sets or replaces all elements for {@link InMemoryKeyBackedInputTable#keys() keys} list.
-     * @param elements An iterable of keys elements
-     * @return {@code this} builder for use in a chained invocation
-     */
-    public final Builder keys(Iterable<String> elements) {
-      this.keys.clear();
-      return addAllKeys(elements);
-    }
-
-    /**
      * Adds elements to {@link InMemoryKeyBackedInputTable#keys() keys} list.
      * @param elements An iterable of keys elements
      * @return {@code this} builder for use in a chained invocation
@@ -390,7 +344,9 @@ public final class ImmutableInMemoryKeyBackedInputTable
      * @return {@code this} builder for use in a chained invocation
      */
     public final Builder id(UUID id) {
+      checkNotIsSet(idIsSet(), "id");
       this.id = Objects.requireNonNull(id, "id");
+      optBits |= OPT_BIT_ID;
       return this;
     }
 
@@ -400,15 +356,31 @@ public final class ImmutableInMemoryKeyBackedInputTable
      * @throws java.lang.IllegalStateException if any required attributes are missing
      */
     public ImmutableInMemoryKeyBackedInputTable build() {
+      checkRequiredAttributes();
+      return ImmutableInMemoryKeyBackedInputTable.validate(new ImmutableInMemoryKeyBackedInputTable(this));
+    }
+
+    private boolean idIsSet() {
+      return (optBits & OPT_BIT_ID) != 0;
+    }
+
+    private boolean schemaIsSet() {
+      return (initBits & INIT_BIT_SCHEMA) == 0;
+    }
+
+    private static void checkNotIsSet(boolean isSet, String name) {
+      if (isSet) throw new IllegalStateException("Builder of InMemoryKeyBackedInputTable is strict, attribute is already set: ".concat(name));
+    }
+
+    private void checkRequiredAttributes() {
       if (initBits != 0) {
         throw new IllegalStateException(formatRequiredAttributesMessage());
       }
-      return new ImmutableInMemoryKeyBackedInputTable(this);
     }
 
     private String formatRequiredAttributesMessage() {
       List<String> attributes = new ArrayList<>();
-      if ((initBits & INIT_BIT_SCHEMA) != 0) attributes.add("schema");
+      if (!schemaIsSet()) attributes.add("schema");
       return "Cannot build InMemoryKeyBackedInputTable, some of required attributes are not set " + attributes;
     }
   }
