@@ -284,14 +284,14 @@ class ProtobufProtocol(JObjectWrapper):
     j_object_type = jpy.get_type("io.deephaven.kafka.protobuf.Protocol")
 
     @staticmethod
-    def serdes() -> ProtobufProtocol:
+    def serdes():
         """The Kafka Protobuf serdes protocol. The payload's first byte is the serdes magic byte, the next 4-bytes are
         the schema ID, the next variable-sized bytes are the message indexes, followed by the normal binary encoding of
         the Protobuf data."""
         return ProtobufProtocol(ProtobufProtocol.j_object_type.serdes())
 
     @staticmethod
-    def raw() -> ProtobufProtocol:
+    def raw():
         """The raw Protobuf protocol. The full payload is the normal binary encoding of the Protobuf data."""
         return ProtobufProtocol(ProtobufProtocol.j_object_type.raw())
 
