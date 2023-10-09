@@ -803,7 +803,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             if (isRoutedTable) {
                 subtableFieldValue = record;
             } else {
-                subtableFieldValue = JsonNodeUtil.getNode(record, fieldName, allowMissingKeys, allowNullValues);
+                subtableFieldValue = JsonNodeUtil.checkAllowMissingOrNull(record, fieldName, allowMissingKeys, allowNullValues);
             }
 
             // store the idx in the rowSetter (later, the fieldSetter will add it to the table)

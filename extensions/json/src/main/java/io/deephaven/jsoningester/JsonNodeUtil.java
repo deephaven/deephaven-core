@@ -50,7 +50,9 @@ public class JsonNodeUtil {
         }
     }
 
-    private static JsonNode checkAllowMissingOrNull(
+    // TODO: should we just call this something like 'getNode()'?
+    public static JsonNode checkAllowMissingOrNull(
+
             final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = node == null ? null : node.get(key);
