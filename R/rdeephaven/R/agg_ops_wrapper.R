@@ -1,7 +1,7 @@
 #' @name
 #' AggBy
 #' @title
-#' AggBy
+#' Aggregations in Deephaven
 #' @md
 #' @usage NULL
 #' @format NULL
@@ -54,7 +54,7 @@
 #' by running `?agg_first`, `?agg_last`, etc.
 #'
 #' @section
-#' Usage:
+#' Examples:
 #'
 #' ```
 #' NULL

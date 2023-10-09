@@ -1,8 +1,9 @@
 #' @title Deephaven TableHandles
+#' @md
 #' @description
 #' A TableHandle holds a reference to a Deephaven Table on the server, and provides methods for operating on that table.
 #' Note that TableHandles should not be instantiated directly by user code, but rather by server calls accessible from
-#' the `Client` class. See `?Client` for more information.
+#' the [`Client`][Client] class. See `?Client` for more information.
 #'
 #' @usage NULL
 #' @format NULL
@@ -74,7 +75,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Gets the dimensions of the table referenced by this TableHandle. Equivalent to c(nrow, ncol).
+    #' Gets the dimensions of the table referenced by this TableHandle. Equivalent to `c(nrow, ncol)`.
     #' @return A vector of length 2, where the first element is the number of rows in the table and the second
     #' element is the number of columns in the table.
     dim = function() {
@@ -216,7 +217,7 @@ TableHandle <- R6Class("TableHandle",
     #' The aggregations are defined by the provided operations, which support incremental aggregations over the
     #' corresponding rows in the table. The aggregations will apply position or time-based windowing and compute the
     #' results over the entire table or each row group as identified by the provided key columns.
-    #' See `?UpdateBy` for more information.
+    #' See the documentation on UpdateBy operations [here][UpdateBy] or by running `?UpdateBy` for more information.
     #' @param ops UpdateByOp or list of UpdateByOps to perform on non-grouping columns.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
@@ -230,7 +231,7 @@ TableHandle <- R6Class("TableHandle",
 
     #' @description
     #' Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
-    #' aggregation(s) specified. See `?Aggregations` for more information.
+    #' aggregation(s) specified. See the documentation on aggregations [here][AggBy] or by running `?AggBy` for more information.
     #' @param aggs AggOp or list of AggOps to perform on non-grouping columns.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
@@ -249,7 +250,7 @@ TableHandle <- R6Class("TableHandle",
 
     #' @description
     #' Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
-    #' aggregation(s) specified. See `?Aggregations` for more information.
+    #' aggregation(s) specified. See the documentation on aggregations [here][AggBy] or by running `?AggBy` for more information.
     #' This method applies the aggregation to all columns of the table, so it can only
     #' accept one aggregation at a time.
     #' @param agg Aggregation to perform on non-grouping columns.
@@ -506,11 +507,23 @@ dim.TableHandle <- function(x) {
   return(x$dim())
 }
 
+
+#' @name
+#' merge_tables
+#' @title
+#' Merge tables with the same schema
+#' @md
+#'
 #' @description
-#' Merges several tables into one table on the server. The tables must have the same schema, and can
+#' Merges several tables into one table on the server. The tables must all have the same schema, and can
 #' be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
-#' @param ... Arbitrary number of TableHandles or vectors of TableHandles with a uniform schema.
+#'
+#' @param ... Arbitrary number of TableHandles or vectors of TableHandles with a schema matching this table.
 #' @return A TableHandle referencing the new table.
+#'
+#' @examples
+#' print("hello!")
+#'
 #' @export
 merge_tables <- function(...) {
   table_list <- unlist(c(...))

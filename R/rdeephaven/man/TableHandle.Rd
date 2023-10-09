@@ -7,7 +7,7 @@
 \description{
 A TableHandle holds a reference to a Deephaven Table on the server, and provides methods for operating on that table.
 Note that TableHandles should not be instantiated directly by user code, but rather by server calls accessible from
-the `Client` class. See `?Client` for more information.
+the \code{\link{Client}} class. See \code{?Client} for more information.
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -108,7 +108,7 @@ Binds the table referenced by this TableHandle to a variable on the server, so t
 \if{html}{\out{<a id="method-TableHandle-head"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-head}{}}}
 \subsection{Method \code{head()}}{
-Creates a new table containing the first `n` rows of this table.
+Creates a new table containing the first \code{n} rows of this table.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$head(n)}\if{html}{\out{</div>}}
 }
@@ -128,7 +128,7 @@ A TableHandle referencing the new table.
 \if{html}{\out{<a id="method-TableHandle-tail"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-tail}{}}}
 \subsection{Method \code{tail()}}{
-Creates a new table containing the last `n` rows of this table.
+Creates a new table containing the last \code{n} rows of this table.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$tail(n)}\if{html}{\out{</div>}}
 }
@@ -174,7 +174,7 @@ The number of columns in the table.
 \if{html}{\out{<a id="method-TableHandle-dim"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-dim}{}}}
 \subsection{Method \code{dim()}}{
-Gets the dimensions of the table referenced by this TableHandle. Equivalent to c(nrow, ncol).
+Gets the dimensions of the table referenced by this TableHandle. Equivalent to \code{c(nrow, ncol)}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$dim()}\if{html}{\out{</div>}}
 }
@@ -343,7 +343,7 @@ A TableHandle referencing the new table.
 \if{latex}{\out{\hypertarget{method-TableHandle-drop_columns}{}}}
 \subsection{Method \code{drop_columns()}}{
 Creates a new table that has the same number of rows as this table,
-but omits the columns specified in `cols`.
+but omits the columns specified in \code{cols}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$drop_columns(cols = character())}\if{html}{\out{</div>}}
 }
@@ -429,7 +429,7 @@ Creates a table with additional columns calculated from window-based aggregation
 The aggregations are defined by the provided operations, which support incremental aggregations over the
 corresponding rows in the table. The aggregations will apply position or time-based windowing and compute the
 results over the entire table or each row group as identified by the provided key columns.
-See `?UpdateBy` for more information.
+See the documentation on UpdateBy operations \link[=UpdateBy]{here} or by running \code{?UpdateBy} for more information.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$update_by(ops, by = character())}\if{html}{\out{</div>}}
 }
@@ -452,7 +452,7 @@ A TableHandle referencing the new table.
 \if{latex}{\out{\hypertarget{method-TableHandle-agg_by}{}}}
 \subsection{Method \code{agg_by()}}{
 Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
-aggregation(s) specified. See `?Aggregations` for more information.
+aggregation(s) specified. See the documentation on aggregations \link[=AggBy]{here} or by running \code{?AggBy} for more information.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$agg_by(aggs, by = character())}\if{html}{\out{</div>}}
 }
@@ -475,7 +475,7 @@ A TableHandle referencing the new table.
 \if{latex}{\out{\hypertarget{method-TableHandle-agg_all_by}{}}}
 \subsection{Method \code{agg_all_by()}}{
 Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
-aggregation(s) specified. See `?Aggregations` for more information.
+aggregation(s) specified. See the documentation on aggregations \link[=AggBy]{here} or by running \code{?AggBy} for more information.
 This method applies the aggregation to all columns of the table, so it can only
 accept one aggregation at a time.
 \subsection{Usage}{
@@ -539,7 +539,7 @@ A TableHandle referencing the new table.
 \if{html}{\out{<a id="method-TableHandle-head_by"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-head_by}{}}}
 \subsection{Method \code{head_by()}}{
-Creates a new table containing the first `num_rows` rows of each group.
+Creates a new table containing the first \code{num_rows} rows of each group.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$head_by(num_rows, by = character())}\if{html}{\out{</div>}}
 }
@@ -561,7 +561,7 @@ A TableHandle referencing the new table.
 \if{html}{\out{<a id="method-TableHandle-tail_by"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-tail_by}{}}}
 \subsection{Method \code{tail_by()}}{
-Creates a new table containing the last `num_rows` rows of each group.
+Creates a new table containing the last \code{num_rows} rows of each group.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$tail_by(num_rows, by = character())}\if{html}{\out{</div>}}
 }
@@ -824,7 +824,7 @@ specified, every combination of left and right table rows is included.
 
 \item{\code{on}}{String or list of strings denoting the names of the columns to join on.}
 
-\item{\code{joins}}{String or list of strings denoting the names of the columns to add from `table`.}
+\item{\code{joins}}{String or list of strings denoting the names of the columns to add from \code{table}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -851,7 +851,7 @@ If there is no matching key in the right table, appended row values are NULL.
 
 \item{\code{on}}{String or list of strings denoting the names of the columns to join on.}
 
-\item{\code{joins}}{String or list of strings denoting the names of the columns to add from `table`.}
+\item{\code{joins}}{String or list of strings denoting the names of the columns to add from \code{table}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -877,7 +877,7 @@ right table where the key values in the left and right tables are equal.
 
 \item{\code{on}}{String or list of strings denoting the names of the columns to join on.}
 
-\item{\code{joins}}{String or list of strings denoting the names of the columns to add from `table`.}
+\item{\code{joins}}{String or list of strings denoting the names of the columns to add from \code{table}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -900,10 +900,10 @@ Creates a new table containing all the rows and columns of this table, sorted by
 \item{\code{order_by}}{String or list of strings denoting the names of the columns to sort by.}
 
 \item{\code{descending}}{Boolean or list of booleans denoting whether to sort in descending order.
-If a list is supplied, it must be the same length as `order_by`.}
+If a list is supplied, it must be the same length as \code{order_by}.}
 
 \item{\code{abs_sort}}{Boolean or list of booleans denoting whether to sort by absolute value.
-If a list is supplied, it must be the same length as `order_by`.}
+If a list is supplied, it must be the same length as \code{order_by}.}
 }
 \if{html}{\out{</div>}}
 }

@@ -1,4 +1,5 @@
 #' @title The Deephaven Client
+#' @md
 #' @description
 #' A Client is the entry point for interacting with the Deephaven server. It is used to create new tables,
 #' import data to and export data from the server, and run queries on the server.
@@ -13,10 +14,10 @@ Client <- R6Class("Client",
     .internal_rcpp_object = NULL,
 
     #' @description
-    #' Calls `initialize_for_xptr` if the first argument is an external pointer, and `initialize_for_target` if the
-    #' first argument is a string. In the latter case, the remaining keyword arguments are passed to `initialize_for_target`.
+    #' Calls `initialize_for_xptr()` if the first argument is an external pointer, and `initialize_for_target()` if the
+    #' first argument is a string. In the latter case, the remaining keyword arguments are passed to `initialize_for_target()`.
     #' @param ... Either an external pointer to an existing client connection, or a string denoting the address
-    #' of a running Deephaven server followed by keyword arguments to `initialize_from_target`.
+    #' of a running Deephaven server followed by keyword arguments to `initialize_from_target()`.
     initialize = function(...) {
       args <- list(...)
       if (length(args) == 1) {
@@ -45,20 +46,19 @@ Client <- R6Class("Client",
     #' @description
     #' Initializes a Client object and connects to a Deephaven server.
     #' @param target String denoting the address of a Deephaven server, formatted as `"ip:port"`.
-    #' @param auth_type String denoting the authentication type. Can be `"anonymous"`, `"basic"`,
-    #' or any custom-built authenticator supported by the server, such as `"io.deephaven.authentication.psk.PskAuthenticationHandler"`.
-    #' Default is `anonymous`.
-    #' @param username String denoting the username, which only applies if `auth_type` is `basic`.
+    #' @param auth_type String denoting the authentication type. Can be `"anonymous"`, `"basic"`, `"psk"`,
+    #' or any custom-built authenticator supported by the server. Default is `"anonymous"`.
+    #' @param username String denoting the username, which only applies if `auth_type` is `"basic"`.
     #' Username and password should not be used in conjunction with `auth_token`. Defaults to an empty string.
-    #' @param password String denoting the password, which only applies if `auth_type` is `basic`.
+    #' @param password String denoting the password, which only applies if `auth_type` is `"basic"`.
     #' Username and password should not be used in conjunction with `auth_token`. Defaults to an empty string.
     #' @param auth_token String denoting the authentication token. When `auth_type`
-    #' is `anonymous`, it will be ignored; when `auth_type` is `basic`, it must be
-    #' `"user:password"` or left blank; when `auth_type` is a custom-built authenticator, it must
-    #' conform to the specific requirement of that authenticator. This should not be used
-    #' in conjunction with `username` and `password`. Defaults to an empty string.
+    #' is `"anonymous"`, it will be ignored; when `auth_type` is `"basic"`, it must be
+    #' `"user:password"` or left blank; when `auth_type` `"psk"`, it must be the pre-shared key, when `auth_type`
+    #' is a custom-built authenticator, it must conform to the specific requirement of that authenticator.
+    #' This should not be used in conjunction with `username` and `password`. Defaults to an empty string.
     #' @param session_type String denoting the session type supported on the server.
-    #' Currently, `python` and `groovy` are supported. Defaults to `python`.
+    #' Currently, `"python"` and `"groovy"` are supported. Defaults to `"python"`.
     #' @param use_tls Whether or not to use a TLS connection. Defaults to `FALSE`.
     #' @param tls_root_certs String denoting PEM encoded root certificates to use for TLS connection,
     #' or `""` to use system defaults. Only used if `use_tls == TRUE`. Defaults to system defaults.
@@ -185,7 +185,7 @@ Client <- R6Class("Client",
     },
 
     #' @description
-    #' Creates an empty table on the server with 'size' rows and no columns.
+    #' Creates an empty table on the server with `size` rows and no columns.
     #' @param size Non-negative integer specifying the number of rows for the new table.
     #' @return TableHandle reference to the new table.
     empty_table = function(size) {

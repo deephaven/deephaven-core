@@ -3,7 +3,7 @@
 \docType{class}
 \name{AggBy}
 \alias{AggBy}
-\title{AggBy}
+\title{Aggregations in Deephaven}
 \description{
 Table aggregations are a quintessential feature of Deephaven. You can apply as many aggregations as
 needed to static tables \emph{or} streaming tables, and if the parent tables are streaming, the resulting aggregated
@@ -54,7 +54,7 @@ For more details on each aggregation function, click on one of the methods above
 by running \code{?agg_first}, \code{?agg_last}, etc.
 }
 
-\section{Usage}{
+\section{Examples}{
 
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{NULL

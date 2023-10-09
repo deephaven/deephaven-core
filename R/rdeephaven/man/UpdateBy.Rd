@@ -3,7 +3,7 @@
 \docType{class}
 \name{UpdateBy}
 \alias{UpdateBy}
-\title{UpdateBy}
+\title{Deephaven's UpdateBy operations}
 \description{
 Deephaven's \code{update_by()} table method and suite of UpdateBy functions enable cumulative and moving calculations
 on static \emph{and} streaming tables. Complex operations like cumulative minima and maxima, exponential moving averages,
@@ -68,7 +68,7 @@ For more details on each aggregation function, click on one of the methods above
 by running \code{?uby_cum_min}, \code{?uby_delta}, etc.
 }
 
-\section{Usage}{
+\section{Examples}{
 
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{NULL

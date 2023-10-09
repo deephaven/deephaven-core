@@ -1,7 +1,7 @@
 #' @name
 #' UpdateBy
 #' @title
-#' UpdateBy
+#' Deephaven's UpdateBy operations
 #' @md
 #' @usage NULL
 #' @format NULL
@@ -69,7 +69,7 @@
 #' by running `?uby_cum_min`, `?uby_delta`, etc.
 #'
 #' @section
-#' Usage:
+#' Examples:
 #'
 #' ```
 #' NULL
