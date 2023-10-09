@@ -122,5 +122,6 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
     parentContainers = [ Docker.registryTask(project, 'cpp-client-base') ]
     entrypoint = ["${prefix}/bin/dhcpp/cpp-tests-to-junit.sh", '/out/cpp-test.xml', '/out/cpp-test.log']
 }
+
 deephavenDocker.shouldLogIfTaskFails testCppClient
 tasks.check.dependsOn(testCppClient)

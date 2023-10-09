@@ -1,0 +1,88 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+    id 'io.deephaven.deephaven-in-docker'
+}
+
+evaluationDependsOn Docker.registryProject('r-client-base')
+
+configurations {
+    cpp {}
+}
+
+// start a grpc-api server
+String randomSuffix = UUID.randomUUID().toString();
+deephavenDocker {
+    envVars.set([
+            'START_OPTS':'-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler'
+    ])
+    containerName.set "dh-server-for-r-${randomSuffix}"
+    networkName.set "r-test-network-${randomSuffix}"
+}
+
+def testRClient = Docker.registerDockerTask(project, 'testRClient') {
+    // Only tested on x86-64, and we only build dependencies for x86-64
+    platform = 'linux/amd64'
+
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'rdeephaven/DESCRIPTION'
+            include 'rdeephaven/LICENSE'
+            include 'rdeephaven/NAMESPACE'
+            include 'rdeephaven/README.md'
+            include 'rdeephaven/inst/**'
+            include 'rdeephaven/man/**'
+            include 'rdeephaven/etc/**'
+            include 'rdeephaven/R/**'
+            include 'rdeephaven/src/*.cpp'
+            include 'rdeephaven/src/Makevars'
+        }
+    }
+    copyOut {
+        into layout.buildDirectory.dir('test-results')
+    }
+    def prefix = '/opt/deephaven'
+    dockerfile {
+        from('deephaven/r-client-base:local-build')
+        //
+        // Build and install client.
+        //
+        runCommand("""mkdir -p \\
+                        /out \\
+                        ${prefix}/log \\
+                        ${prefix}/src/rdeephaven/{inst,man,etc,src,R}
+                   """)
+        copyFile('rdeephaven/DESCRIPTION',  "${prefix}/src/rdeephaven/")
+        copyFile('rdeephaven/LICENSE',  "${prefix}/src/rdeephaven/")
+        copyFile('rdeephaven/NAMESPACE',  "${prefix}/src/rdeephaven/")
+        copyFile('rdeephaven/README.md',  "${prefix}/src/rdeephaven/")
+        copyFile('rdeephaven/inst/',  "${prefix}/src/rdeephaven/inst/")
+        copyFile('rdeephaven/man/', "${prefix}/src/deephaven/man/")
+        copyFile('rdeephaven/etc/', "${prefix}/src/deephaven/etc/")
+        copyFile('rdeephaven/R/', "${prefix}/src/deephaven/R/")
+        copyFile('rdeephaven/src/*.cpp', "${prefix}/src/deephaven/src/")
+        copyFile('rdeephaven/src/Makevars', "${prefix}/src/deephaven/src/")
+        runCommand("PREFIX=\"" + prefix + "\"; \\\n" +
+                  '''set -eux ; \
+                     cd "${PREFIX}/src/rdeephaven"; \
+                     . "${PREFIX}/env.sh"; \
+                     echo 'install.packages(".", repos=NULL, type="source")' | \
+                       MAKEFLAGS="${NCPUS}" R --no-save; \
+                     rm -f src/*.o src/*.so
+                   ''')
+        //
+        // Setup for test run.
+        //
+        environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
+        environmentVariable 'DH_PORT', '10000'
+        environmentVariable 'DH_PREFIX', prefix
+        environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
+    }
+    containerDependencies.dependsOn = [deephavenDocker.healthyTask]
+    containerDependencies.finalizedBy = deephavenDocker.endTask
+    network = deephavenDocker.networkName.get()
+    parentContainers = [ Docker.registryTask(project, 'r-client-base') ]
+    entrypoint = ["${prefix}/bin/dhcpp/r-tests.sh", '/out/r-test.xml', '/out/r-test.log']
+}
+deephavenDocker.shouldLogIfTaskFails testCppClient
+tasks.check.dependsOn(testCppClient)
