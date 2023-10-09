@@ -19,6 +19,6 @@ final class DictEncodedStringArrayTransfer extends DictEncodedStringArrayAndVect
     @Override
     void encodeDataForBuffering(@NotNull final String @NotNull [] data, @NotNull final EncodedData<int[]> encodedData) {
         supplier.fill(data);
-        dictEncodingHelper(supplier, data.length, encodedData);
+        encodeDataForBufferingHelper(supplier, data.length, encodedData);
     }
 }

@@ -27,17 +27,21 @@ abstract class ObjectArrayAndVectorTransfer<T, V> extends ArrayAndVectorTransfer
      * Total number of bytes buffered
      */
     private int numBytesBuffered;
+
     /**
      * Used as a temporary buffer for storing encoded data for a single row before it is copied to the main buffer.
      * Allocated lazily because of the high cost of construction of Binary objects.
      */
     private Binary[] encodedDataBuf;
+    private int encodedDataBufLen;
 
     ObjectArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize, targetPageSize, new Binary[targetPageSize]);
         bufferedDataCount = 0;
         numBytesBuffered = 0;
+
         encodedDataBuf = null;
+        encodedDataBufLen = 0;
     }
 
     @Override
@@ -60,12 +64,14 @@ abstract class ObjectArrayAndVectorTransfer<T, V> extends ArrayAndVectorTransfer
         return numBytesBuffered;
     }
 
-    final void objectEncodingHelper(@NotNull final Supplier<V> objectSupplier, final int numObjects, @NotNull final EncodedData<Binary[]> encodedData) {
+    final void encodeDataForBufferingHelper(@NotNull final Supplier<V> objectSupplier, final int numObjects,
+                                            @NotNull final EncodedData<Binary[]> encodedData) {
         // Allocate a new buffer if needed, or clear the existing one
         if (encodedDataBuf == null || numObjects > encodedDataBuf.length) {
             encodedDataBuf = new Binary[numObjects];
         } else {
-            Arrays.fill(encodedDataBuf, null);
+            Arrays.fill(encodedDataBuf, 0, encodedDataBufLen, null);
+            encodedDataBufLen = 0;
         }
         int numBytesEncoded = 0;
         for (int i = 0; i < numObjects; i++) {
@@ -77,6 +83,7 @@ abstract class ObjectArrayAndVectorTransfer<T, V> extends ArrayAndVectorTransfer
                 numBytesEncoded += encodedDataBuf[i].length();
             }
         }
+        encodedDataBufLen = numObjects;
         encodedData.fillRepeated(encodedDataBuf, numBytesEncoded, numObjects);
     }
 

@@ -21,7 +21,7 @@ final class DictEncodedStringVectorTransfer extends DictEncodedStringArrayAndVec
     void encodeDataForBuffering(@NotNull ObjectVector<String> data, @NotNull final EncodedData<int[]> encodedData) {
         try (CloseableIterator<String> iter = data.iterator()) {
             Supplier<String> supplier = iter::next;
-            dictEncodingHelper(supplier, data.intSize(), encodedData);
+            encodeDataForBufferingHelper(supplier, data.intSize(), encodedData);
         }
     }
 }

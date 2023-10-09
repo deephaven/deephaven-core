@@ -8,6 +8,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.primitive.function.ByteConsumer;
 import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.primitive.function.FloatConsumer;
@@ -25,7 +26,9 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
+import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.parquet.table.transfer.StringDictionary;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -58,8 +61,10 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
@@ -419,27 +424,6 @@ public class ParquetTableReadWriteTest {
         }
     }
 
-    /**
-     * Encoding bigDecimal is tricky -- the writer will try to pick the precision and scale automatically. Because of
-     * that tableTools.assertTableEquals will fail because, even though the numbers are identical, the representation
-     * may not be so we have to coerce the expected values to the same precision and scale value. We know how it should
-     * be doing it, so we can use the same pattern of encoding/decoding with the codec.
-     *
-     * @param toFix
-     * @return
-     */
-    private Table maybeFixBigDecimal(Table toFix) {
-        final BigDecimalUtils.PrecisionAndScale pas = BigDecimalUtils.computePrecisionAndScale(toFix, "bdColumn");
-        final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale, -1);
-
-        ExecutionContext.getContext()
-                .getQueryScope()
-                .putParam("__codec", codec);
-        return toFix
-                .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
-                .dropColumns("bdColE");
-    }
-
     @Test
     public void testVectorColumns() {
         final Table table = getTableFlat(10000, true, false);
@@ -526,65 +510,57 @@ public class ParquetTableReadWriteTest {
         assertTableEquals(vectorTable, fromDisk);
     }
 
-    // // TODO Remove all these
-    // @Test
-    // public void benchmarkByteArrays() {
-    // final long ARRAY_SIZE = 512;
-    // final long NUM_ROWS = 400_000_000;
-    // final long NUM_RUNS = 1;
-    //
-    // // for (long NUM_ROWS = 1_000_000; NUM_ROWS <= 10_000_000; NUM_ROWS += 1_000_000) {
-    // ArrayList<String> columns = new ArrayList<>(Arrays.asList("someByteColumn = (byte)i"));
-    // Table table = TableTools.emptyTable(ARRAY_SIZE).select(Selectable.from(columns));
-    // table = table.groupBy();
-    //
-    // // Take join with empty table to repeat the rows
-    // table = table.join(TableTools.emptyTable(NUM_ROWS));
-    //
-    // // Convert the table from vector to array column
-    // table = table.updateView(table.getColumnSourceMap().keySet().stream()
-    // .map(name -> name + " = " + name + ".toArray()")
-    // .toArray(String[]::new));
-    //
-    // final File dest = new File(rootFile + File.separator + "benchmarkByteArrays.parquet");
-    // long totalTime = 0;
-    // for (long i = 0; i < NUM_RUNS; i++) {
-    // final long start1 = System.nanoTime();
-    // ParquetTools.writeTable(table, dest, ParquetTools.UNCOMPRESSED);
-    // final long end1 = System.nanoTime();
-    // System.out.println(
-    // "Execution time for run " + (i + 1) + " is: " + (double) (end1 - start1) / 1000_000_000.0 + " sec");
-    // totalTime += (end1 - start1);
-    // }
-    // System.out.println(
-    // "Average execution time: " + (double) (totalTime) / ((double) NUM_RUNS * 1000_000_000.0) + " sec");
-    //
-    // ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
-    // ColumnChunkMetaData columnMetadataDH = metadata.getBlocks().get(0).getColumns().get(0);
-    // int numPages = columnMetadataDH.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
-    // System.out.println("Number of pages = " + numPages);
-    // dest.delete();
-    // // }
-    // }
+    @Test
+    public void stringDictionaryTest() {
+        final int nullPos = -5;
+        final int maxKeys = 10;
+        final int maxDictSize = 100;
+        final Statistics<?> stats = NullStatistics.INSTANCE;
+        StringDictionary dict = new StringDictionary(maxKeys, maxDictSize, NullStatistics.INSTANCE, nullPos);
+        assertEquals(0, dict.getKeyCount());
+        assertEquals(nullPos, dict.add(null));
 
+        final String[] keys = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"};
+        final Map<String, Integer> keyToPos = new HashMap<>();
+        for (int ii = 0; ii <= 6 * keys.length; ii += 3) {
+            final String key = keys[ii % keys.length];
+            final int dictPos = dict.add(key);
+            if (keyToPos.containsKey(key)) {
+                assertEquals(keyToPos.get(key).intValue(), dictPos);
+            } else {
+                keyToPos.put(key, dictPos);
+                assertEquals(dictPos, dict.getKeyCount() - 1);
+            }
+        }
+        assertEquals(keys.length, dict.getKeyCount());
+        assertEquals(keys.length, keyToPos.size());
+        final Binary[] encodedKeys = dict.getEncodedKeys();
+        for (int i = 0; i < keys.length; i++) {
+            final String decodedKey = encodedKeys[i].toStringUsingUTF8();
+            final int expectedPos = keyToPos.get(decodedKey).intValue();
+            assertEquals(i, expectedPos);
+        }
+        assertEquals(nullPos, dict.add(null));
+        try {
+            dict.add("Never before seen key which should take us over the allowed dictionary size");
+            TestCase.fail("Exception expected for exceeding dictionary size");
+        } catch (DictionarySizeExceededException expected) {
+        }
+    }
+
+    // TODO Remove all these
     // @Test
     // public void generateByteArrayFile() {
-    // final int ARRAY_SIZE = 1;
+    // final int ARRAY_SIZE = 512;
     // final int NUM_ROWS = 100_000_000;
     //
-    // ArrayList<String> columns = new ArrayList<>(Arrays.asList("someByteColumn = (byte)i"));
-    // Table table = TableTools.emptyTable(ARRAY_SIZE).select(Selectable.from(columns));
-    // table = table.groupBy();
-    //
-    // // Take join with self to repeat the rows
-    // table = table.join(TableTools.emptyTable(NUM_ROWS));
-    //
-    // // Convert the table from vector to array column
-    // table = table.updateView(table.getColumnSourceMap().keySet().stream()
-    // .map(name -> name + " = " + name + ".toArray()")
-    // .toArray(String[]::new));
-    //
-    // final File dest = new File(rootFile + File.separator + "byteArrays2HundredMillionRows.parquet");
+    // final byte[] b = new byte[ARRAY_SIZE];
+    // for (int ii = 0; ii < b.length; ++ii) {
+    // b[ii] = (byte) ii;
+    // }
+    // QueryScope.addParam("b", b);
+    // final Table table = TableTools.emptyTable(NUM_ROWS).view("B = b");
+    // final File dest = new File(rootFile + File.separator + "byteArrays512HundredMillionRows.parquet");
     // ParquetTools.writeTable(table, dest, ParquetTools.UNCOMPRESSED);
     //
     // ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
@@ -594,27 +570,148 @@ public class ParquetTableReadWriteTest {
     // }
     //
     // @Test
+    // public void benchmarkWritingByteArrays() {
+    // final long NUM_RUNS = 5;
+    // final int MIN_PAGE_SIZE = 1 << 13; // 8 KB
+    // final int MAX_PAGE_SIZE = 1 << 20; // 1 MB
+    //
+    // final File disk = new File("/Users/shivammalhotra/Documents/byteArrays512FourMillionRows.parquet");
+    // final Table table = ParquetTools.readTable(disk).select();
+    //
+    // final File dest = new File(rootFile + File.separator + "benchmarkByteArrays.parquet");
+    // dest.delete();
+    // for (int pageSize = MIN_PAGE_SIZE; pageSize <= MAX_PAGE_SIZE; pageSize <<= 1) {
+    // final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+    // .setTargetPageSize(pageSize)
+    // .setCompressionCodecName("UNCOMPRESSED")
+    // .build();
+    // long totalTime = 0;
+    // for (long i = 0L; i < NUM_RUNS; i++) {
+    //
+    // final long start1 = System.nanoTime();
+    // ParquetTools.writeTable(table, dest, writeInstructions);
+    // final long end1 = System.nanoTime();
+    //
+    // if (i == 0) {
+    // ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+    // ColumnChunkMetaData columnMetadataDH = metadata.getBlocks().get(0).getColumns().get(0);
+    // int numPages = columnMetadataDH.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
+    // System.out.println("Number of pages written for page size " + pageSize + " is " + numPages);
+    // }
+    // System.out.println("Execution time for page size " + pageSize + " and run " + (i + 1) + " is: "
+    // + (double) (end1 - start1) / 1000_000_000.0 + " sec");
+    // totalTime += (end1 - start1);
+    // dest.delete();
+    // }
+    // System.out.println("Average execution time for page size " + pageSize + " is "
+    // + (double) (totalTime) / ((double) NUM_RUNS * 1000_000_000.0) + " sec");
+    // }
+    // }
+    //
+    // @Test
+    // public void benchmarkReadingAllRowsParquet() {
+    // final long NUM_ROWS = 100_000_000;
+    // final long NUM_RUNS = 5;
+    // final int MIN_PAGE_SIZE = 1 << 13; // 8 KB = 1 << 13
+    // final int MAX_PAGE_SIZE = 1 << 20; // 1 MB = 1 << 20
+    //
+    // final Table table = TableTools.emptyTable(NUM_ROWS).update("A=(long)ii", "B=(long)(ii*2)");
+    // final File dest = new File(rootFile + File.separator + "benchmarkByteArrays.parquet");
+    // for (int pageSize = MIN_PAGE_SIZE; pageSize <= MAX_PAGE_SIZE; pageSize <<= 1) {
+    // final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+    // .setTargetPageSize(pageSize)
+    // .setCompressionCodecName("UNCOMPRESSED")
+    // .build();
+    // ParquetTools.writeTable(table, dest, writeInstructions);
+    // ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+    // ColumnChunkMetaData columnMetadataDH = metadata.getBlocks().get(0).getColumns().get(0);
+    // int numPages = columnMetadataDH.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
+    // System.out.println("Number of pages written for page size " + pageSize + " is " + numPages);
+    //
+    // long totalTime = 0;
+    // for (long i = 0L; i < NUM_RUNS; i++) {
+    // final Table fromDisk = ParquetTools.readTable(dest);
+    //
+    // final long start1 = System.nanoTime();
+    // final Table sumTable = fromDisk.sumBy().select();
+    // final long end1 = System.nanoTime();
+    //
+    // System.out.println("Execution time for page size " + pageSize + " and run " + (i + 1) + " is: "
+    // + (double) (end1 - start1) / 1000_000_000.0 + " sec");
+    // totalTime += (end1 - start1);
+    // }
+    // System.out.println("Average execution time for sumBy for page size " + pageSize + " is "
+    // + (double) (totalTime) / ((double) NUM_RUNS * 1000_000_000.0) + " sec");
+    // }
+    // }
+    //
+    // @Test
+    // public void benchmarkReadingRowsSparselyParquet() {
+    // final long NUM_ROWS = 100_000_000;
+    // final long NUM_RUNS = 5;
+    // final long STRIDE = 100_000;
+    // final int MIN_PAGE_SIZE = 1 << 13; // 8 KB = 1 << 13
+    // final int MAX_PAGE_SIZE = 1 << 20; // 1 MB = 1 << 20
+    //
+    // final Table table = TableTools.emptyTable(NUM_ROWS).update("A=(long)ii", "B=(long)(ii*2)");
+    // final File dest = new File(rootFile + File.separator + "benchmarkByteArrays.parquet");
+    // for (int pageSize = MIN_PAGE_SIZE; pageSize <= MAX_PAGE_SIZE; pageSize <<= 1) {
+    // final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+    // .setTargetPageSize(pageSize)
+    // .setCompressionCodecName("UNCOMPRESSED")
+    // .build();
+    // ParquetTools.writeTable(table, dest, writeInstructions);
+    // ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+    // ColumnChunkMetaData columnMetadataDH = metadata.getBlocks().get(0).getColumns().get(0);
+    // int numPages = columnMetadataDH.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
+    // System.out.println("Number of pages written for page size " + pageSize + " is " + numPages);
+    //
+    // long totalTime = 0;
+    //
+    // final String filterStr = "A%" + STRIDE + " == 0";
+    // for (long i = 0L; i < NUM_RUNS; i++) {
+    // final Table sparseTable = ParquetTools.readTable(dest).where(filterStr);
+    // if (i == 0L && pageSize == MIN_PAGE_SIZE) {
+    // System.out.println("Number of rows selected for stride " + STRIDE + " and page size " + pageSize +
+    // " is: " + sparseTable.size());
+    // }
+    //
+    // final long start1 = System.nanoTime();
+    // final Table sumTable = sparseTable.sumBy().select();
+    // final long end1 = System.nanoTime();
+    //
+    // System.out.println("Execution time for page size " + pageSize + " and run " + (i + 1) + " is: "
+    // + (double) (end1 - start1) / 1000_000.0 + " msec");
+    // totalTime += (end1 - start1);
+    // }
+    // System.out.println("Average execution time for sparse sumBy for page size " + pageSize + " is "
+    // + (double) (totalTime) / ((double) NUM_RUNS * 1000_000.0) + " msec");
+    // }
+    // }
+    //
+    // @Test
     // public void randomTest() {
-    // File destDH = new File(
-    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_dh.parquet");
+    // final String[] filePaths = {
+    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_dh.parquet",
+    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa_8192.parquet",
+    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa_16384.parquet",
+    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa_32768.parquet",
+    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa_65536.parquet",
+    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa_131072.parquet",
+    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa_262144.parquet",
+    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa_524288.parquet",
+    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa_1048576.parquet"
+    // };
+    //
+    // for (final String filePath: filePaths) {
+    // try {
+    // File destDH = new File(filePath);
     // ParquetMetadata metadataDH = new ParquetTableLocationKey(destDH, 0, null).getMetadata();
     // ColumnChunkMetaData columnMetadataDH = metadataDH.getBlocks().get(0).getColumns().get(0);
     // int numPagesDH = columnMetadataDH.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
-    // System.out.println("Number of DH pages: " + numPagesDH);
-    //
-    // File destPA1 = new File(
-    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa_8192.parquet");
-    // ParquetMetadata metadataPA1 = new ParquetTableLocationKey(destPA1, 0, null).getMetadata();
-    // ColumnChunkMetaData columnMetadataPA1 = metadataPA1.getBlocks().get(0).getColumns().get(0);
-    // int numPagesPA1 = columnMetadataPA1.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
-    // System.out.println("Number of PA pages for 8192 size page: " + numPagesPA1);
-    //
-    // File destPA2 = new File(
-    // "/Users/shivammalhotra/deephaven/projects/deephaven-core/server/jetty-app/data_from_pa_1048675.parquet");
-    // ParquetMetadata metadataPA2 = new ParquetTableLocationKey(destPA2, 0, null).getMetadata();
-    // ColumnChunkMetaData columnMetadataPA2 = metadataPA2.getBlocks().get(0).getColumns().get(0);
-    // int numPagesPA2 = columnMetadataPA2.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN);
-    // System.out.println("Number of PA pages for 1048675 size page: " + numPagesPA2);
+    // System.out.println("Number of pages for " + filePath + " is " + numPagesDH);
+    // } catch (Exception ignored) {}
+    // }
     // }
     //
     // @Test
@@ -657,6 +754,27 @@ public class ParquetTableReadWriteTest {
     // final long end2 = System.currentTimeMillis();
     // System.out.println("Total execution time for vectors: " + (end2 - start2) / NUM_RUNS + " msec");
     // }
+
+    /**
+     * Encoding bigDecimal is tricky -- the writer will try to pick the precision and scale automatically. Because of
+     * that tableTools.assertTableEquals will fail because, even though the numbers are identical, the representation
+     * may not be, so we have to coerce the expected values to the same precision and scale value. We know how it should
+     * be doing it, so we can use the same pattern of encoding/decoding with the codec.
+     *
+     * @param toFix
+     * @return
+     */
+    private Table maybeFixBigDecimal(Table toFix) {
+        final BigDecimalUtils.PrecisionAndScale pas = BigDecimalUtils.computePrecisionAndScale(toFix, "bdColumn");
+        final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale, -1);
+
+        ExecutionContext.getContext()
+                .getQueryScope()
+                .putParam("__codec", codec);
+        return toFix
+                .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
+                .dropColumns("bdColE");
+    }
 
     // Following is used for testing both writing APIs for parquet tables
     private interface TestParquetTableWriter {

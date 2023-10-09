@@ -46,7 +46,7 @@ abstract public class DictEncodedStringArrayAndVectorTransfer<T>
      * fetches that many strings from the supplier, adds them to the dictionary and populates an IntBuffer with
      * dictionary position values.
      */
-    final void dictEncodingHelper(@NotNull Supplier<String> strSupplier, final int numStrings,
+    final void encodeDataForBufferingHelper(@NotNull Supplier<String> strSupplier, final int numStrings,
             @NotNull final EncodedData<int[]> encodedData) {
         numDictEncodedValues = 0;
         if (numStrings > dictEncodedValues.length) {

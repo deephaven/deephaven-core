@@ -126,9 +126,7 @@ public interface TransferObject<B> extends SafeCloseable {
             if (Instant.class.equals(componentType)) {
                 return new InstantArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            // TODO Add a issue for this
-            // else if (explicit codec provided)
-            // else if (big decimal)
+            // TODO(deephaven-core#4612): Handle arrays of BigDecimal and if explicit codec provided
         }
         if (Vector.class.isAssignableFrom(columnType)) {
             if (int.class.equals(componentType)) {
@@ -165,13 +163,11 @@ public interface TransferObject<B> extends SafeCloseable {
             if (Instant.class.equals(componentType)) {
                 return new InstantVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            // TODO Add a issue for this
-            // else if (explicit codec provided)
-            // else if (big decimal)
+            // TODO(deephaven-core#4612): Handle vectors of BigDecimal and if explicit codec provided
         }
 
         // Go with the default
-        final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.getDefaultCodec(columnType);;
+        final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.getDefaultCodec(columnType);
         return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
     }
 

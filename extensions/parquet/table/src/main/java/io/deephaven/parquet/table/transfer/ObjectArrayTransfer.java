@@ -24,6 +24,6 @@ abstract class ObjectArrayTransfer<T> extends ObjectArrayAndVectorTransfer<T[], 
     @Override
     final void encodeDataForBuffering(final T @NotNull [] data, @NotNull final EncodedData<Binary[]> encodedData) {
         supplier.fill(data);
-        objectEncodingHelper(supplier, data.length, encodedData);
+        encodeDataForBufferingHelper(supplier, data.length, encodedData);
     }
 }

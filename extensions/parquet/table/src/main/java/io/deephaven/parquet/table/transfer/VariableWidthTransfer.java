@@ -72,7 +72,7 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
     }
 
     /**
-     * We pull each row from the column and encode it before adding it to the buffer. This class is ued to store the
+     * We pull each row from the column and encode it before adding it to the buffer. This class is used to store the
      * encoded data, the number of values encoded (which can be more than 1 in case of array/vector columns) and the
      * number of bytes encoded.
      */
@@ -162,7 +162,7 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
 
     /**
      * This method is called when we fetch a non-null row entry from the column and need to encode it before adding it
-     * to the buffer. This method assumes the data is non-null. The encoded data is stored in the paramater
+     * to the buffer. This method assumes the data is non-null. The encoded data is stored in the parameter
      * {@code encodedData}
      *
      * @param data The fetched value to be encoded, can be an array/vector or a single value

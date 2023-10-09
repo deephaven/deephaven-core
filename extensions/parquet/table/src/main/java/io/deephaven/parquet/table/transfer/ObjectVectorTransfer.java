@@ -26,7 +26,7 @@ abstract class ObjectVectorTransfer<V> extends ObjectArrayAndVectorTransfer<Obje
     final void encodeDataForBuffering(final @NotNull ObjectVector<V> data, @NotNull final EncodedData<Binary[]> encodedData) {
         try (CloseableIterator<V> iter = data.iterator()) {
             Supplier<V> supplier = iter::next;
-            objectEncodingHelper(supplier, data.intSize(), encodedData);
+            encodeDataForBufferingHelper(supplier, data.intSize(), encodedData);
         }
     }
 }
