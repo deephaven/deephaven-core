@@ -10,6 +10,8 @@ import org.junit.Test;
 @SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase", "UnnecessaryBoxing"})
 public class TestOpenAddressedCanonicalizationCache extends TestCase {
 
+    private static final int MAX_SPIN_CLEANUP_COUNT = 10_000;
+
     @Test
     public void testDefaultAdapter() {
         final OpenAddressedCanonicalizationCache SUT = new OpenAddressedCanonicalizationCache(1, 0.9f);
@@ -69,9 +71,10 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
         assertTrue(3 * cachedIntegers.length / 2 <= SUT.getOccupiedSlots());
         assertTrue(3 * cachedIntegers.length >= SUT.getOccupiedSlots());
         System.gc();
-        while (SUT.getOccupiedSlots() != 3 * cachedIntegers.length / 2) {
+        for (int i = 0; i < MAX_SPIN_CLEANUP_COUNT && SUT.getOccupiedSlots() != 3 * cachedIntegers.length / 2; ++i) {
             assertSame(cachedIntegers[0], SUT.getCachedItem(cachedIntegers[0])); // Force cleanup
         }
+        assertEquals(SUT.getOccupiedSlots(), 3 * cachedIntegers.length / 2);
         assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
         assertEquals(3 * cachedIntegers.length / 2, SUT.getOccupiedSlots());
 
@@ -183,9 +186,10 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
         assertTrue(cachedStrings.length / 2 <= SUT.getOccupiedSlots());
         assertTrue(cachedStrings.length >= SUT.getOccupiedSlots());
         System.gc();
-        while (SUT.getOccupiedSlots() != cachedStrings.length / 2) {
+        for (int i = 0; i < MAX_SPIN_CLEANUP_COUNT && SUT.getOccupiedSlots() != cachedStrings.length / 2; ++i) {
             assertSame(cachedStrings[0], SUT.getCachedItem(cachedStrings[0])); // Force cleanup
         }
+        assertEquals(SUT.getOccupiedSlots(), cachedStrings.length / 2);
         assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
         assertEquals(cachedStrings.length / 2, SUT.getOccupiedSlots());
 
