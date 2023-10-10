@@ -2347,13 +2347,12 @@ class PartitionedTable(JObjectWrapper):
         Note: key_cols, unique_keys, constituent_column, constituent_table_columns,
         constituent_changes_permitted must either be all None or all have values. When they are None, their values will
         be inferred as follows:
-
-        key_cols: the names of all columns with a non-Table data type
-        unique_keys: False
-        constituent_column: the name of the first column with a Table data type
-        constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
-        column. Consequently, the constituent column can't be empty
-        constituent_changes_permitted: the value of table.is_refreshing
+            * key_cols: the names of all columns with a non-Table data type
+            * unique_keys: False
+            * constituent_column: the name of the first column with a Table data type
+            * constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
+            column. Consequently, the constituent column can't be empty
+            * constituent_changes_permitted: the value of table.is_refreshing
 
 
         Args:
