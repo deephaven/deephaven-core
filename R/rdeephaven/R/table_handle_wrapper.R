@@ -5,6 +5,48 @@
 #' Note that TableHandles should not be instantiated directly by user code, but rather by server calls accessible from
 #' the [`Client`][Client] class. See `?Client` for more information.
 #'
+#' @section
+#' Naming tables on the server:
+#' When a TableHandle is created, it is not automatically bound to a variable name on the server. This means that the
+#' TableHandle that gets created is _the only_ reference to the table that's been created. Importantly, the variable
+#' name given to the TableHandle is purely a _local_ variable, and has no relationship to that table's name on the server.
+#' For this reason, code like the following:
+#' ```r
+#' client <- Client$new(...)
+#' df1 <- data.frame(x = 1:10, y = 11:20)
+#' t1 <- client$import_table(df1)
+#' client$run_script("t2 = t1.update('z = x + y')")
+#' ```
+#' will not run, because the table referenced by the local variable `t1` is not actually named `t1` on the server. To
+#' make the table referenced by `t1` accessible by name on the server (e.g., from within query strings), you must
+#' _bind it to a variable_ with the method `bind_to_variable()`. We also adopt the convention of calling
+#' _local TableHandles_ `th1`, `th2`, etc., and _server-side tables_ `t1`, `t2`, etc., to help distinguish between the
+#' two. So, the above code should be written as:
+#' ```r
+#' client <- Client$new(...)
+#' df1 <- data.frame(x = 1:10, y = 11:20)
+#' th1 <- client$import_table(df1)
+#' th1$bind_to_variable("t1")
+#' client$run_script("t2 = t1.update('z = x + y')")
+#' ```
+#' You can then create a local TableHandle to reference `t2` as follows:
+#' ```r
+#' th2 <- client$open_table("t2")
+#' ```
+#' The above code is not best practice, and it would be preferred to call `update()` directly on `th1` rather than
+#' running a script to accomplish the same. It is, however, more illustriative of the relationship between local
+#' TableHandles and server-side tables. The best way to accomplish the above would be the following:
+#' ```r
+#' client <- Client$new(...)
+#' df1 <- data.frame(x = 1:10, y = 11:20)
+#' th1 <- client$import_table(df1)
+#' th2 <- th1$update("z = x + y")
+#'
+#' # this is necessary to access the tables from within query strings
+#' th1$bind_to_variable("t1")
+#' th2$bind_to_variable("t2")
+#' ```
+#'
 #' @usage NULL
 #' @format NULL
 #' @docType class

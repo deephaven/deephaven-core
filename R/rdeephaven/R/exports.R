@@ -66,7 +66,3 @@
 NULL
 
 loadModule("DeephavenInternalModule", TRUE)
-
-.onAttach <- function(libname, pkgname) {
-  help("rdeephaven")
-}
