@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Descriptors.Descriptor;
 import gnu.trove.map.hash.TIntLongHashMap;
 import io.confluent.kafka.schemaregistry.SchemaProvider;
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientFactory;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
@@ -1258,11 +1258,14 @@ public class KafkaTools {
     }
 
     static SchemaRegistryClient newSchemaRegistryClient(Map<String, ?> configs, List<SchemaProvider> providers) {
+        // Note: choosing to not use the constructor with doLog which is a newer API; this is in support of downstream
+        // users _potentially_ being able to replace kafka jars with previous versions.
         final AbstractKafkaSchemaSerDeConfig config = new AbstractKafkaSchemaSerDeConfig(
                 AbstractKafkaSchemaSerDeConfig.baseConfigDef(),
-                configs,
-                false);
-        return SchemaRegistryClientFactory.newClient(
+                configs);
+        // Note: choosing to not use SchemaRegistryClientFactory.newClient which is a newer API; this is in support of
+        // downstream users _potentially_ being able to replace kafka jars with previous versions.
+        return new CachedSchemaRegistryClient(
                 config.getSchemaRegistryUrls(),
                 config.getMaxSchemasPerSubject(),
                 List.copyOf(providers),
