@@ -447,7 +447,7 @@ public class TestConfiguration extends TestCase {
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n",
                     history.get(0).fileName);
-        } else if ("18".equals(javaVersion)) {
+        } else if ("21".equals(javaVersion)) {
             assertEquals(
                     "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:428)\n"
                             +
