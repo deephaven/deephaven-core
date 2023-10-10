@@ -13,7 +13,7 @@ merge_tables(...)
 A TableHandle referencing the new table.
 }
 \description{
-Merges several tables into one table on the server. The tables must all have the same schema, and can
+Merges several tables into one table on the server. All tables must have the same schema, and can
 be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
 }
 \examples{

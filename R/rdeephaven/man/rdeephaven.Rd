@@ -15,25 +15,69 @@ we published on the topic.
 There are two primary R classes that make up the Deephaven R Client, the \code{\link{Client}} class and the
 \code{\link{TableHandle}} class. The \code{Client} class is used to establish a connection to the Deephaven server with
 its constructor \code{Client$new()}, and to send server requests, such as running a script via \code{run_script()}, or pushing
-local data to the server via \code{open_table()}. Many of these server requests end up creating or modifying tables that
-live on the server. To keep track of these tables, the R client retrieves references to them, and wraps these references
-in \code{TableHandle} objects. These TableHandles have a host of methods that mirror server-side table operations, such as
-\code{head()}, \code{tail()}, \code{update_by()}, and so on. So, you can typically use TableHandles \emph{as if} they are tables themselves,
-and all of the corresponding methods that you call on them will be executed on the server. TableHandles also support
-common functional methods for converting server-side Deephaven tables to R objects stored in local memory such as
-\code{as.data.frame()}, \code{as_tibble()}, and \code{as_arrow_table()}. For more information on these classes and all of their methods,
-see the reference documentation for \code{\link{Client}} and \code{\link{TableHandle}} by clicking on their class names,
-or by running \code{?Client} or \code{?TableHandle}.
+local data to the server via \code{import_table()}. Basic usage of the \code{Client} class may look something like this:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{library(rdeephaven)
+
+client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+}\if{html}{\out{</div>}}
+
+Many of these server requests end up creating or modifying tables that live on the server. To keep track of these
+tables, the R client retrieves references to them, and wraps these references in \code{TableHandle} objects. These
+TableHandles have a host of methods that mirror server-side table operations, such as \code{head()}, \code{tail()}, \code{update()},
+and so on. So, you can typically use TableHandles \emph{as if} they are tables themselves, and all of the corresponding
+methods that you call on them will be executed on the server. Here is a simple example of pushing data to the server,
+retrieving a TableHandle to the resulting table, and applying some basic table operations to the table:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{df1 <- data.frame(x=1:10, y=11:20)
+th1 <- client$import_table(df1)
+
+th2 <- th1$
+  update("z = x + y")$
+  where("z \% 4 == 0")
+}\if{html}{\out{</div>}}
+
+TableHandles also support common functional methods for converting server-side Deephaven tables to R objects stored in
+local memory such as \code{as.data.frame()}, \code{as_tibble()}, and \code{as_arrow_table()}. Here's an example of converting the
+table created above to an R data frame and verifying that other functional methods work as expected:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{df2 <- as.data.frame(th2)
+
+print(nrow(th2) == nrow(df2))
+print(ncol(th2) == ncol(df2))
+print(dim(th2) == dim(df2))
+print(all(as.data.frame(head(th2, 2)) == head(df2, 2)))
+print(all(as.data.frame(tail(th2, 2)) == tail(df2, 2)))
+}\if{html}{\out{</div>}}
+
+For more information on these classes and all of their methods, see the reference documentation for \code{\link{Client}}
+and \code{\link{TableHandle}} by clicking on their class names, or by running \code{?Client} or \code{?TableHandle}.
 }
 
 \section{Real-time data analysis}{
 
 Since TableHandles are references to tables living on the Deephaven server, they may refer to streaming tables, or
-or tables that are receiving new data every second. R objects like data frames or Dplyr tibbles do not have this property -
-they are always static objects stored in memory. However, a TableHandle referring to a streaming table may be converted
-to a data frame or tibble at any time, and the resulting object will be a snapshot of the table at the time of conversion.
-This means that you can use the Deephaven R Client to perform real-time data analysis on streaming data! Of course,
-there are performance and memory considerations when pulling data from the server, so it is best to use the provided
+tables that are receiving new data periodically (typically once per second). Here's a simple example of creating a
+table that adds a new row every second:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{th3 <- client$time_table("PT1s")$
+  update(c("X = ii", "Y = sin(X)"))
+}\if{html}{\out{</div>}}
+
+R objects like data frames or Dplyr tibbles do not have this streaming property - they are always static objects
+stored in memory. However, a TableHandle referring to a streaming table may be converted to a data frame or tibble at
+any time, and the resulting object will be a snapshot of the table at the time of conversion. This means that you can
+use the Deephaven R Client to perform real-time data analysis on streaming data! Here, we make a simple plot of the
+ticking table, and call it three times to demonstrate the dynamic nature of the table:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{plot(as.data.frame(th3)$X, as.data.frame(th3)$Y, type="l")
+Sys.sleep(5)
+plot(as.data.frame(th3)$X, as.data.frame(th3)$Y, type="l")
+Sys.sleep(5)
+plot(as.data.frame(th3)$X, as.data.frame(th3)$Y, type="l")
+}\if{html}{\out{</div>}}
+
+There are performance and memory considerations when pulling data from the server, so it is best to use the provided
 TableHandle methods to perform as much of your analysis as possible on the server, and to only pull the data when
 something \emph{must} be done in R, like plotting or writing to a local file.
 }
@@ -51,9 +95,9 @@ with them.
 \section{Getting help}{
 
 While we've done our best to provide good documentation for this package, you may find you need more help than what
-this documentation has to offer. If this is the case, please visit the official Deephaven Community Core
-\href{https://deephaven.io/core/docs/tutorials/quickstart/}{documentation} to learn more about Deephaven and to find examples
-that may help you. If this is not sufficient, feel free to reach out to us on the Deephaven \href{https://deephaven.io/slack}{Community Slack channel}.
+this documentation has to offer. Please visit the official Deephaven Community Core \href{https://deephaven.io/core/docs/tutorials/quickstart/}{documentation}
+to learn more about Deephaven and to find examples that may help you. Additionally, feel free to reach out to us on
+the Deephaven \href{https://deephaven.io/slack}{Community Slack channel} with any questions.
 We hope you find real-time data analysis in R to be as easy as possible.
 }
 

@@ -17,11 +17,11 @@
 #' t1 <- client$import_table(df1)
 #' client$run_script("t2 = t1.update('z = x + y')")
 #' ```
-#' will not run, because the table referenced by the local variable `t1` is not actually named `t1` on the server. To
+#' will not run, because the table referenced by the local variable `t1` is not named on the server at all. To
 #' make the table referenced by `t1` accessible by name on the server (e.g., from within query strings), you must
-#' _bind it to a variable_ with the method `bind_to_variable()`. We also adopt the convention of calling
-#' _local TableHandles_ `th1`, `th2`, etc., and _server-side tables_ `t1`, `t2`, etc., to help distinguish between the
-#' two. So, the above code should be written as:
+#' _bind it to a variable_ with the method `bind_to_variable()`. We adopt the convention of calling _local TableHandles_
+#' `th1`, `th2`, etc., and _server-side tables_ `t1`, `t2`, etc., to help distinguish between the two. So, the above
+#' code should be written as:
 #' ```r
 #' client <- Client$new(...)
 #' df1 <- data.frame(x = 1:10, y = 11:20)
@@ -33,9 +33,9 @@
 #' ```r
 #' th2 <- client$open_table("t2")
 #' ```
-#' The above code is not best practice, and it would be preferred to call `update()` directly on `th1` rather than
-#' running a script to accomplish the same. It is, however, more illustriative of the relationship between local
-#' TableHandles and server-side tables. The best way to accomplish the above would be the following:
+#' The above code is not best practice; calling `update()` directly on `t1` would be preferred to running a script.
+#' It is, however, more illustriative of the relationship between local TableHandles and server-side tables. The best
+#' way to accomplish the above would be the following:
 #' ```r
 #' client <- Client$new(...)
 #' df1 <- data.frame(x = 1:10, y = 11:20)
@@ -125,7 +125,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Merges several tables into one table on the server. The tables must have the same schema as this table, and can
+    #' Merges several tables into one table on the server. All tables must have the same schema as this table, and can
     #' be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
     #' @param ... Arbitrary number of TableHandles or vectors of TableHandles with a schema matching this table.
     #' @return A TableHandle referencing the new table.
@@ -259,8 +259,8 @@ TableHandle <- R6Class("TableHandle",
     #' The aggregations are defined by the provided operations, which support incremental aggregations over the
     #' corresponding rows in the table. The aggregations will apply position or time-based windowing and compute the
     #' results over the entire table or each row group as identified by the provided key columns.
-    #' See the documentation on UpdateBy operations [here][UpdateBy] or by running `?UpdateBy` for more information.
-    #' @param ops UpdateByOp or list of UpdateByOps to perform on non-grouping columns.
+    #' See more detailed documentation [here][UpdateBy] or run `?UpdateBy`.
+    #' @param ops `UpdateByOp` or list of `UpdateByOp`s to perform on non-grouping columns.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     update_by = function(ops, by = character()) {
@@ -273,8 +273,8 @@ TableHandle <- R6Class("TableHandle",
 
     #' @description
     #' Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
-    #' aggregation(s) specified. See the documentation on aggregations [here][AggBy] or by running `?AggBy` for more information.
-    #' @param aggs AggOp or list of AggOps to perform on non-grouping columns.
+    #' aggregation(s) specified. See more detailed documentation [here][AggBy] or run `?AggBy`.
+    #' @param aggs `AggOp` or list of `AggOp`s to perform on non-grouping columns.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     agg_by = function(aggs, by = character()) {
@@ -292,10 +292,10 @@ TableHandle <- R6Class("TableHandle",
 
     #' @description
     #' Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
-    #' aggregation(s) specified. See the documentation on aggregations [here][AggBy] or by running `?AggBy` for more information.
+    #' aggregation(s) specified. See more detailed documentation [here][AggBy] or run `?AggBy`.
     #' This method applies the aggregation to all columns of the table, so it can only
     #' accept one aggregation at a time.
-    #' @param agg Aggregation to perform on non-grouping columns.
+    #' @param agg `AggOp` to perform on non-grouping columns.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     agg_all_by = function(agg, by = character()) {
@@ -557,7 +557,7 @@ dim.TableHandle <- function(x) {
 #' @md
 #'
 #' @description
-#' Merges several tables into one table on the server. The tables must all have the same schema, and can
+#' Merges several tables into one table on the server. All tables must have the same schema, and can
 #' be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
 #'
 #' @param ... Arbitrary number of TableHandles or vectors of TableHandles with a schema matching this table.

@@ -1,6 +1,6 @@
 # An OperationControl defines the control parameters of some UpdateByOps used in an update_by table operation.
 # This is the return type of op_control(). It is a wrapper around an Rcpp_INTERNAL_OperationControl, which itself is a
-# wrapper around a C++ OperationControl. See rdeephaven/src/client.cpp for details.
+# wrapper around a C++ OperationControl. See `rdeephaven/src/client.cpp` for details.
 # Note that OperationControl should not be instantiated directly by user code, but rather by op_control().
 OperationControl <- R6Class("OperationControl",
   cloneable = FALSE,
@@ -18,15 +18,16 @@ OperationControl <- R6Class("OperationControl",
 #' @name
 #' op_control
 #' @title
-#' Handling special values in some `update_by()` operations
+#' Handling special values in some UpdateBy operations
 #' @md
 #'
 #' @description
-#' Creates an OperationControl that controls behavior on special values in `uby_em*` operations.
+#' Creates an `OperationControl` that controls behavior on special values in some UpdateBy operations. This function is
+#' the only way to properly create an `OperationControl` object.
 #'
 #' @details
-#' An OperationControl defines the control parameters of some UpdateByOps used in an update_by table operation.
-#' The UpdateBy operations that can use OperationControl to handle erroneous data are:
+#' An `OperationControl` defines the control parameters of some `uby` functions used in an `update_by()` call.
+#' The `uby` functions that can use an `OperationControl` to handle erroneous data are:
 #'
 #' - [`uby_ema_tick()`][uby_ema_tick]
 #' - [`uby_ema_time()`][uby_ema_time]
@@ -39,7 +40,8 @@ OperationControl <- R6Class("OperationControl",
 #'
 #' The arguments `on_null` and `on_nan` can take the following values:
 #'
-#' - `'poison'`: Allow bad data to poison the result. This is only valid for use with NaN.
+#' - `'poison'`: Allow bad data to poison the result, meaning that any calculation involving at least one NaN will yield
+#'   NaN. This is only valid for use with NaN.
 #' - `'reset'`: Reset the state for the bucket to NULL when invalid data is encountered.
 #' - `'skip'`: Skip and do not process the invalid data without changing state.
 #' - `'throw'`: Throw an exception and abort processing when bad data is encountered.
@@ -51,16 +53,16 @@ OperationControl <- R6Class("OperationControl",
 #' - `'decimal64'`: IEEE 754R Decimal64 format. 16 digits and rounding is half-even.
 #' - `'unlimited'`: Unlimited precision arithmetic. Rounding is half-up.
 #'
-#' This function is a generator function. That is, its output is another function that is intended to be used in a call
-#' to one of the above `update_by()` methods. This detail is typically hidden from the user by `update_by()`, which calls
-#' the generated functions internally. However, it is important to understand this detail for debugging purposes, as the
-#' output of a call to `op_control()` can otherwise seem unexpected.
+#' This function is a generator function. That is, its output is another function called an `OperationControl` intended
+#' to be used in a call to one of the above `uby` functions. This detail is typically hidden from the user by the `uby`
+#' function, which calls the `OperationControl` internally. However, it is important to understand this detail for
+#' debugging purposes, as the output of a call to `op_control()` can otherwise seem unexpected.
 #'
-#' @param on_null Defines how an UpdateByOp handles null values it encounters. `'skip'` is the default.
-#' @param on_nan Defines how an UpdateByOp handles NaN values it encounters. `'skip'` is the default.
-#' @param big_value_context Defines how an UpdateByOp handles exceptionally large values it encounters.
+#' @param on_null Defines how a `uby` function handles null values it encounters. `'skip'` is the default.
+#' @param on_nan Defines how a `uby` function handles NaN values it encounters. `'skip'` is the default.
+#' @param big_value_context Defines how a `uby` function handles exceptionally large values it encounters.
 #' `'decimal128'` is the default.
-#' @return OperationControl to be used in `uby_em*`.
+#' @return `OperationControl` to be used in a `uby` function.
 #'
 #' @examples
 #' print("hello!")

@@ -27,14 +27,16 @@
 #'   columns of the table, so it can only accept one aggregation at a time.
 #'
 #' The `agg_by()` and `agg_all_by()` methods themselves do not know anything about the columns you want to perform
-#' aggregations on. Rather, the desired columns are passed to individual Aggregation functions, enabling you to apply
+#' aggregations on. Rather, the desired columns are passed to individual `agg` functions, enabling you to apply
 #' various kinds of aggregations to different columns or groups of columns as needed.
 #'
 #' @section
-#' Aggregation functions:
-#' Aggregation functions are used to perform aggregation calculations on grouped data by passing them to `agg_by()`
-#' or `agg_all_by()`. These functions are _generators_, meaning they return _functions_ that the Deephaven engine knows
-#' how to interpret. Here is a list of all aggregation functions available in Deephaven:
+#' `agg` functions:
+#' `agg` functions are used to perform aggregation calculations on grouped data by passing them to `agg_by()` or
+#' `agg_all_by()`. These functions are _generators_, meaning they return _functions_ that the Deephaven engine knows
+#' how to interpret. We call the functions that they return `AggOp`s. These `AggOp`s are not R-level functions, but
+#' wrappers around C++ functions that perform all of the intensive calculations. Here is a list of all `agg` functions
+#' available in Deephaven:
 #'
 #' - [`agg_first()`][agg_first]
 #' - [`agg_last()`][agg_last]
@@ -63,9 +65,9 @@
 NULL
 
 # An AggOp represents an aggregation operator that can be passed to agg_by() or agg_all_by(). This is the return type
-# of all of the agg_* functions. It is a wrapper around an Rcpp_INTERNAL_AggOp, which itself is a wrapper around a
+# of all of the `agg` functions. It is a wrapper around an Rcpp_INTERNAL_AggOp, which itself is a wrapper around a
 # C++ AggregateWrapper, which is finally a wrapper around a C++ Aggregate. See rdeephaven/src/client.cpp for details.
-# Note that AggOps should not be instantiated directly by user code, but rather by provided agg_* functions.
+# Note that AggOps should not be instantiated directly by user code, but rather by provided `agg` functions.
 AggOp <- R6Class("AggOp",
   cloneable = FALSE,
   public = list(
@@ -99,15 +101,15 @@ AggOp <- R6Class("AggOp",
 #' columns. For example, if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of
 #' values in the `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
-#' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
-#' the user by the `agg_by()` and `agg_all_by()` functions, which call the generated functions internally. However, it is
-#' important to understand this detail for debugging purposes, as the output of an `agg_*` function can otherwise seem
-#' unexpected.
+#' This function, like the other Deephaven `agg` functions, is a generator function. That is, its output is another
+#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
+#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
+#' otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
+#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' print("hello!")
@@ -133,15 +135,15 @@ agg_first <- function(cols = character()) {
 #' columns. For example, if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of
 #' values in the `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
-#' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
-#' the user by the `agg_by()` and `agg_all_by()` functions, which call the generated functions internally. However, it is
-#' important to understand this detail for debugging purposes, as the output of an `agg_*` function can otherwise seem
-#' unexpected.
+#' This function, like the other Deephaven `agg` functions, is a generator function. That is, its output is another
+#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
+#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
+#' otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
+#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' print("hello!")
@@ -167,15 +169,15 @@ agg_last <- function(cols = character()) {
 #' columns. For example, if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of
 #' values in the `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
-#' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
-#' the user by the `agg_by()` and `agg_all_by()` functions, which call the generated functions internally. However, it is
-#' important to understand this detail for debugging purposes, as the output of an `agg_*` function can otherwise seem
-#' unexpected.
+#' This function, like the other Deephaven `agg` functions, is a generator function. That is, its output is another
+#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
+#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
+#' otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
+#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' print("hello!")
@@ -201,15 +203,15 @@ agg_min <- function(cols = character()) {
 #' columns. For example, if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of
 #' values in the `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
-#' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
-#' the user by the `agg_by()` and `agg_all_by()` functions, which call the generated functions internally. However, it is
-#' important to understand this detail for debugging purposes, as the output of an `agg_*` function can otherwise seem
-#' unexpected.
+#' This function, like the other Deephaven `agg` functions, is a generator function. That is, its output is another
+#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
+#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
+#' otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
+#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' print("hello!")
@@ -235,15 +237,15 @@ agg_max <- function(cols = character()) {
 #' columns. For example, if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of
 #' values in the `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
-#' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
-#' the user by the `agg_by()` and `agg_all_by()` functions, which call the generated functions internally. However, it is
-#' important to understand this detail for debugging purposes, as the output of an `agg_*` function can otherwise seem
-#' unexpected.
+#' This function, like the other Deephaven `agg` functions, is a generator function. That is, its output is another
+#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
+#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
+#' otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
+#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' print("hello!")
@@ -269,15 +271,15 @@ agg_sum <- function(cols = character()) {
 #' columns. For example, if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of
 #' values in the `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
-#' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
-#' the user by the `agg_by()` and `agg_all_by()` functions, which call the generated functions internally. However, it is
-#' important to understand this detail for debugging purposes, as the output of an `agg_*` function can otherwise seem
-#' unexpected.
+#' This function, like the other Deephaven `agg` functions, is a generator function. That is, its output is another
+#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
+#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
+#' otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
+#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' print("hello!")
@@ -303,15 +305,15 @@ agg_abs_sum <- function(cols = character()) {
 #' columns. For example, if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of
 #' values in the `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
-#' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
-#' the user by the `agg_by()` and `agg_all_by()` functions, which call the generated functions internally. However, it is
-#' important to understand this detail for debugging purposes, as the output of an `agg_*` function can otherwise seem
-#' unexpected.
+#' This function, like the other Deephaven `agg` functions, is a generator function. That is, its output is another
+#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
+#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
+#' otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
+#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' print("hello!")
@@ -337,16 +339,16 @@ agg_avg <- function(cols = character()) {
 #' columns. For example, if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of
 #' values in the `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
-#' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
-#' the user by the `agg_by()` and `agg_all_by()` functions, which call the generated functions internally. However, it is
-#' important to understand this detail for debugging purposes, as the output of an `agg_*` function can otherwise seem
-#' unexpected.
+#' This function, like the other Deephaven `agg` functions, is a generator function. That is, its output is another
+#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
+#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
+#' otherwise seem unexpected.
 #'
 #' @param wcol String denoting the column to use for weights. This must be a numeric column.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
+#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' print("hello!")
@@ -373,15 +375,15 @@ agg_w_avg <- function(wcol, cols = character()) {
 #' columns. For example, if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of
 #' values in the `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
-#' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
-#' the user by the `agg_by()` and `agg_all_by()` functions, which call the generated functions internally. However, it is
-#' important to understand this detail for debugging purposes, as the output of an `agg_*` function can otherwise seem
-#' unexpected.
+#' This function, like the other Deephaven `agg` functions, is a generator function. That is, its output is another
+#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
+#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
+#' otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
+#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' print("hello!")
@@ -407,15 +409,15 @@ agg_median <- function(cols = character()) {
 #' columns. For example, if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of
 #' values in the `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
-#' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
-#' the user by the `agg_by()` and `agg_all_by()` functions, which call the generated functions internally. However, it is
-#' important to understand this detail for debugging purposes, as the output of an `agg_*` function can otherwise seem
-#' unexpected.
+#' This function, like the other Deephaven `agg` functions, is a generator function. That is, its output is another
+#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
+#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
+#' otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
+#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' print("hello!")
@@ -441,15 +443,15 @@ agg_var <- function(cols = character()) {
 #' columns. For example, if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of
 #' values in the `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
-#' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
-#' the user by the `agg_by()` and `agg_all_by()` functions, which call the generated functions internally. However, it is
-#' important to understand this detail for debugging purposes, as the output of an `agg_*` function can otherwise seem
-#' unexpected.
+#' This function, like the other Deephaven `agg` functions, is a generator function. That is, its output is another
+#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
+#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
+#' otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
+#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' print("hello!")
@@ -475,16 +477,16 @@ agg_std <- function(cols = character()) {
 #' columns. For example, if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of
 #' values in the `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
-#' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
-#' the user by the `agg_by()` and `agg_all_by()` functions, which call the generated functions internally. However, it is
-#' important to understand this detail for debugging purposes, as the output of an `agg_*` function can otherwise seem
-#' unexpected.
+#' This function, like the other Deephaven `agg` functions, is a generator function. That is, its output is another
+#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
+#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
+#' otherwise seem unexpected.
 #'
 #' @param percentile Numeric scalar between 0 and 1 denoting the percentile to compute.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return Aggregation function to be used in `agg_by()` or `agg_all_by()`.
+#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' print("hello!")
@@ -511,16 +513,16 @@ agg_percentile <- function(percentile, cols = character()) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the `A` and
 #' `B` columns.
 #'
-#' This function, like the other Deephaven `agg_*` functions, is a generator function. That is, its output is another
-#' function that is intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is typically hidden from
-#' the user by the `agg_by()` and `agg_all_by()` functions, which call the generated functions internally. However, it is
-#' important to understand this detail for debugging purposes, as the output of an `agg_*` function can otherwise seem
-#' unexpected.
+#' This function, like the other Deephaven `agg` functions, is a generator function. That is, its output is another
+#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
+#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
+#' otherwise seem unexpected.
 #'
 #' Note that this operation is not supported in `agg_all_by()`.
 #'
 #' @param col String denoting the name of the new column to hold the counts of each aggregation group.
-#' @return Aggregation function to be used in `agg_by()`.
+#' @return `AggOp` to be used in a call to `agg_by()`.
 #'
 #' @examples
 #' print("hello!")

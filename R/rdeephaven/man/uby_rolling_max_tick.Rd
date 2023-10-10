@@ -12,7 +12,7 @@ Default is to compute the rolling sum for all non-grouping columns.}
 \item{fwd_ticks}{Integer scalar denoting the look-ahead window size in number of rows. Default is 0.}
 }
 \value{
-UpdateByOp to be used in \code{update_by()}.
+\code{UpdateByOp} to be used in a call to \code{update_by()}.
 }
 \description{
 Creates a rolling maximum UpdateByOp for each column in \code{cols}, using ticks as the windowing unit.
@@ -35,15 +35,15 @@ the current row (inclusive)
 the current row (inclusive)
 }
 
-The aggregation groups that this function acts on are defined with the \code{by} parameter of the \code{update_by()} caller
-function. The aggregation groups are defined by the unique combinations of values in the \code{by} columns. For example,
+This function acts on aggregation groups specified with the \code{by} parameter of the \code{update_by()} caller function.
+The aggregation groups are defined by the unique combinations of values in the \code{by} columns. For example,
 if \code{by = c("A", "B")}, then the aggregation groups are defined by the unique combinations of values in the
 \code{A} and \code{B} columns.
 
-This function, like the other Deephaven \verb{uby_*} functions, is a generator function. That is, its output is another
-function that is intended to be used in a call to \code{update_by()}. This detail is typically hidden from the user by
-\code{update_by()}, which calls the generated functions internally. However, it is important to understand this detail
-for debugging purposes, as the output of a \verb{uby_*} function can otherwise seem unexpected.
+This function, like the other Deephaven \code{uby} functions, is a generator function. That is, its output is another
+function called an \code{UpdateByOp} intended to be used in a call to \code{update_by()}. This detail is typically
+hidden from the user by \code{update_by()}, which calls the \code{UpdateByOp} internally. However, it is important to
+understand this detail for debugging purposes as the output of a \code{uby} function can otherwise seem unexpected.
 }
 \examples{
 print("hello!")

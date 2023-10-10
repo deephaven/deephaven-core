@@ -2,27 +2,28 @@
 % Please edit documentation in R/operation_control.R
 \name{op_control}
 \alias{op_control}
-\title{Handling special values in some \code{update_by()} operations}
+\title{Handling special values in some UpdateBy operations}
 \usage{
 op_control(on_null = "skip", on_nan = "skip", big_value_context = "decimal128")
 }
 \arguments{
-\item{on_null}{Defines how an UpdateByOp handles null values it encounters. \code{'skip'} is the default.}
+\item{on_null}{Defines how a \code{uby} function handles null values it encounters. \code{'skip'} is the default.}
 
-\item{on_nan}{Defines how an UpdateByOp handles NaN values it encounters. \code{'skip'} is the default.}
+\item{on_nan}{Defines how a \code{uby} function handles NaN values it encounters. \code{'skip'} is the default.}
 
-\item{big_value_context}{Defines how an UpdateByOp handles exceptionally large values it encounters.
+\item{big_value_context}{Defines how a \code{uby} function handles exceptionally large values it encounters.
 \code{'decimal128'} is the default.}
 }
 \value{
-OperationControl to be used in \verb{uby_em*}.
+\code{OperationControl} to be used in a \code{uby} function.
 }
 \description{
-Creates an OperationControl that controls behavior on special values in \verb{uby_em*} operations.
+Creates an \code{OperationControl} that controls behavior on special values in some UpdateBy operations. This function is
+the only way to properly create an \code{OperationControl} object.
 }
 \details{
-An OperationControl defines the control parameters of some UpdateByOps used in an update_by table operation.
-The UpdateBy operations that can use OperationControl to handle erroneous data are:
+An \code{OperationControl} defines the control parameters of some \code{uby} functions used in an \code{update_by()} call.
+The \code{uby} functions that can use an \code{OperationControl} to handle erroneous data are:
 \itemize{
 \item \code{\link[=uby_ema_tick]{uby_ema_tick()}}
 \item \code{\link[=uby_ema_time]{uby_ema_time()}}
@@ -36,7 +37,8 @@ The UpdateBy operations that can use OperationControl to handle erroneous data a
 
 The arguments \code{on_null} and \code{on_nan} can take the following values:
 \itemize{
-\item \code{'poison'}: Allow bad data to poison the result. This is only valid for use with NaN.
+\item \code{'poison'}: Allow bad data to poison the result, meaning that any calculation involving at least one NaN will yield
+NaN. This is only valid for use with NaN.
 \item \code{'reset'}: Reset the state for the bucket to NULL when invalid data is encountered.
 \item \code{'skip'}: Skip and do not process the invalid data without changing state.
 \item \code{'throw'}: Throw an exception and abort processing when bad data is encountered.
@@ -50,10 +52,10 @@ The argument \code{big_value_context} can take the following values:
 \item \code{'unlimited'}: Unlimited precision arithmetic. Rounding is half-up.
 }
 
-This function is a generator function. That is, its output is another function that is intended to be used in a call
-to one of the above \code{update_by()} methods. This detail is typically hidden from the user by \code{update_by()}, which calls
-the generated functions internally. However, it is important to understand this detail for debugging purposes, as the
-output of a call to \code{op_control()} can otherwise seem unexpected.
+This function is a generator function. That is, its output is another function called an \code{OperationControl} intended
+to be used in a call to one of the above \code{uby} functions. This detail is typically hidden from the user by the \code{uby}
+function, which calls the \code{OperationControl} internally. However, it is important to understand this detail for
+debugging purposes, as the output of a call to \code{op_control()} can otherwise seem unexpected.
 }
 \examples{
 print("hello!")

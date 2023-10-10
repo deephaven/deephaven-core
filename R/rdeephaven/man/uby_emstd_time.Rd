@@ -12,7 +12,7 @@ Default is to compute the exponential moving standard deviation for all non-grou
 \item{operation_control}{OperationControl that defines how special cases will behave. See \code{?op_control} for more information.}
 }
 \value{
-UpdateByOp to be used in \code{update_by()}.
+\code{UpdateByOp} to be used in a call to \code{update_by()}.
 }
 \description{
 Creates an exponential moving standard deviation (EMSTD) UpdateByOp for each column in \code{cols}, using time as the decay unit.
@@ -37,15 +37,15 @@ Where:
 Note that in the above formula, \eqn{s^2_0 = 0} yields the correct results for subsequent calculations. However,
 sample variance for fewer than two data points is undefined, so the first element of an EMSTD calculation will always be \code{NaN}.
 
-The aggregation groups that this function acts on are defined with the \code{by} parameter of the \code{update_by()} caller
-function. The aggregation groups are defined by the unique combinations of values in the \code{by} columns. For example,
+This function acts on aggregation groups specified with the \code{by} parameter of the \code{update_by()} caller function.
+The aggregation groups are defined by the unique combinations of values in the \code{by} columns. For example,
 if \code{by = c("A", "B")}, then the aggregation groups are defined by the unique combinations of values in the
 \code{A} and \code{B} columns.
 
-This function, like the other Deephaven \verb{uby_*} functions, is a generator function. That is, its output is another
-function that is intended to be used in a call to \code{update_by()}. This detail is typically hidden from the user by
-\code{update_by()}, which calls the generated functions internally. However, it is important to understand this detail
-for debugging purposes, as the output of a \verb{uby_*} function can otherwise seem unexpected.
+This function, like the other Deephaven \code{uby} functions, is a generator function. That is, its output is another
+function called an \code{UpdateByOp} intended to be used in a call to \code{update_by()}. This detail is typically
+hidden from the user by \code{update_by()}, which calls the \code{UpdateByOp} internally. However, it is important to
+understand this detail for debugging purposes as the output of a \code{uby} function can otherwise seem unexpected.
 }
 \examples{
 print("hello!")

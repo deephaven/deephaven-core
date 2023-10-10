@@ -22,11 +22,11 @@ t1 <- client$import_table(df1)
 client$run_script("t2 = t1.update('z = x + y')")
 }\if{html}{\out{</div>}}
 
-will not run, because the table referenced by the local variable \code{t1} is not actually named \code{t1} on the server. To
+will not run, because the table referenced by the local variable \code{t1} is not named on the server at all. To
 make the table referenced by \code{t1} accessible by name on the server (e.g., from within query strings), you must
-\emph{bind it to a variable} with the method \code{bind_to_variable()}. We also adopt the convention of calling
-\emph{local TableHandles} \code{th1}, \code{th2}, etc., and \emph{server-side tables} \code{t1}, \code{t2}, etc., to help distinguish between the
-two. So, the above code should be written as:
+\emph{bind it to a variable} with the method \code{bind_to_variable()}. We adopt the convention of calling \emph{local TableHandles}
+\code{th1}, \code{th2}, etc., and \emph{server-side tables} \code{t1}, \code{t2}, etc., to help distinguish between the two. So, the above
+code should be written as:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{client <- Client$new(...)
 df1 <- data.frame(x = 1:10, y = 11:20)
@@ -40,9 +40,9 @@ You can then create a local TableHandle to reference \code{t2} as follows:
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{th2 <- client$open_table("t2")
 }\if{html}{\out{</div>}}
 
-The above code is not best practice, and it would be preferred to call \code{update()} directly on \code{th1} rather than
-running a script to accomplish the same. It is, however, more illustriative of the relationship between local
-TableHandles and server-side tables. The best way to accomplish the above would be the following:
+The above code is not best practice; calling \code{update()} directly on \code{t1} would be preferred to running a script.
+It is, however, more illustriative of the relationship between local TableHandles and server-side tables. The best
+way to accomplish the above would be the following:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{client <- Client$new(...)
 df1 <- data.frame(x = 1:10, y = 11:20)
@@ -234,7 +234,7 @@ element is the number of columns in the table.
 \if{html}{\out{<a id="method-TableHandle-merge"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-merge}{}}}
 \subsection{Method \code{merge()}}{
-Merges several tables into one table on the server. The tables must have the same schema as this table, and can
+Merges several tables into one table on the server. All tables must have the same schema as this table, and can
 be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$merge(...)}\if{html}{\out{</div>}}
@@ -475,7 +475,7 @@ Creates a table with additional columns calculated from window-based aggregation
 The aggregations are defined by the provided operations, which support incremental aggregations over the
 corresponding rows in the table. The aggregations will apply position or time-based windowing and compute the
 results over the entire table or each row group as identified by the provided key columns.
-See the documentation on UpdateBy operations \link[=UpdateBy]{here} or by running \code{?UpdateBy} for more information.
+See more detailed documentation \link[=UpdateBy]{here} or run \code{?UpdateBy}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$update_by(ops, by = character())}\if{html}{\out{</div>}}
 }
@@ -483,7 +483,7 @@ See the documentation on UpdateBy operations \link[=UpdateBy]{here} or by runnin
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{ops}}{UpdateByOp or list of UpdateByOps to perform on non-grouping columns.}
+\item{\code{ops}}{\code{UpdateByOp} or list of \code{UpdateByOp}s to perform on non-grouping columns.}
 
 \item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
 }
@@ -498,7 +498,7 @@ A TableHandle referencing the new table.
 \if{latex}{\out{\hypertarget{method-TableHandle-agg_by}{}}}
 \subsection{Method \code{agg_by()}}{
 Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
-aggregation(s) specified. See the documentation on aggregations \link[=AggBy]{here} or by running \code{?AggBy} for more information.
+aggregation(s) specified. See more detailed documentation \link[=AggBy]{here} or run \code{?AggBy}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$agg_by(aggs, by = character())}\if{html}{\out{</div>}}
 }
@@ -506,7 +506,7 @@ aggregation(s) specified. See the documentation on aggregations \link[=AggBy]{he
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{aggs}}{AggOp or list of AggOps to perform on non-grouping columns.}
+\item{\code{aggs}}{\code{AggOp} or list of \code{AggOp}s to perform on non-grouping columns.}
 
 \item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
 }
@@ -521,7 +521,7 @@ A TableHandle referencing the new table.
 \if{latex}{\out{\hypertarget{method-TableHandle-agg_all_by}{}}}
 \subsection{Method \code{agg_all_by()}}{
 Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
-aggregation(s) specified. See the documentation on aggregations \link[=AggBy]{here} or by running \code{?AggBy} for more information.
+aggregation(s) specified. See more detailed documentation \link[=AggBy]{here} or run \code{?AggBy}.
 This method applies the aggregation to all columns of the table, so it can only
 accept one aggregation at a time.
 \subsection{Usage}{
@@ -531,7 +531,7 @@ accept one aggregation at a time.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{agg}}{Aggregation to perform on non-grouping columns.}
+\item{\code{agg}}{\code{AggOp} to perform on non-grouping columns.}
 
 \item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
 }

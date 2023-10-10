@@ -25,15 +25,17 @@ columns of the table, so it can only accept one aggregation at a time.
 }
 
 The \code{agg_by()} and \code{agg_all_by()} methods themselves do not know anything about the columns you want to perform
-aggregations on. Rather, the desired columns are passed to individual Aggregation functions, enabling you to apply
+aggregations on. Rather, the desired columns are passed to individual \code{agg} functions, enabling you to apply
 various kinds of aggregations to different columns or groups of columns as needed.
 }
 
-\section{Aggregation functions}{
+\section{\code{agg} functions}{
 
-Aggregation functions are used to perform aggregation calculations on grouped data by passing them to \code{agg_by()}
-or \code{agg_all_by()}. These functions are \emph{generators}, meaning they return \emph{functions} that the Deephaven engine knows
-how to interpret. Here is a list of all aggregation functions available in Deephaven:
+\code{agg} functions are used to perform aggregation calculations on grouped data by passing them to \code{agg_by()} or
+\code{agg_all_by()}. These functions are \emph{generators}, meaning they return \emph{functions} that the Deephaven engine knows
+how to interpret. We call the functions that they return \code{AggOp}s. These \code{AggOp}s are not R-level functions, but
+wrappers around C++ functions that perform all of the intensive calculations. Here is a list of all \code{agg} functions
+available in Deephaven:
 \itemize{
 \item \code{\link[=agg_first]{agg_first()}}
 \item \code{\link[=agg_last]{agg_last()}}
