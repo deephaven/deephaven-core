@@ -20,6 +20,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.plot.util.PlotGeneratorUtils.indent;
 
@@ -30,14 +32,14 @@ import static io.deephaven.plot.util.PlotGeneratorUtils.indent;
 public class GenerateFigureImmutable {
     // See also GroovyStaticImportGenerator
 
-    private static Logger log = Logger.getLogger(GenerateFigureImmutable.class.toString());
+    private static final Logger log = Logger.getLogger(GenerateFigureImmutable.class.toString());
 
     private static final String CLASS_NAME_INTERFACE = "io.deephaven.plot.Figure";
     private static final String CLASS_NAME_IMPLEMENTATION = "io.deephaven.plot.FigureImpl";
 
     private final String outputClass;
     private final String outputClassNameShort;
-    private boolean isInterface;
+    private final boolean isInterface;
     private final String[] imports;
     private final String[] interfaces;
     private final String[] seriesInterfaces;
@@ -109,7 +111,7 @@ public class GenerateFigureImmutable {
         boolean skip = skip(f);
 
         if (skip) {
-            log.warning("*** Skipping function: " + f);
+            log.info("*** Skipping function: " + f);
             return;
         }
 
@@ -194,16 +196,10 @@ public class GenerateFigureImmutable {
         final StringBuilder sb = new StringBuilder();
 
         if (isInterface) {
-            sb.append(" extends ");
-            sb.append("java.io.Serializable");
-
-            for (final String[] ii : new String[][] {interfaces, seriesInterfaces}) {
-                for (final String iface : ii) {
-                    // final String[] siface = iface.split("[.]");
-                    // final String name = siface[siface.length - 1];
-                    sb.append(", ").append(iface);
-                }
-            }
+            sb.append(" extends ").append(
+                    Stream.concat(
+                            Stream.of(interfaces),
+                            Stream.of(seriesInterfaces)).collect(Collectors.joining(", ")));
         } else {
             sb.append(" implements " + CLASS_NAME_INTERFACE);
         }
@@ -247,7 +243,7 @@ public class GenerateFigureImmutable {
             final boolean skip = skip(f);
 
             if (skip) {
-                log.warning("*** Skipping function: " + f);
+                log.info("*** Skipping function: " + f);
                 continue;
             }
 
@@ -262,7 +258,7 @@ public class GenerateFigureImmutable {
             final boolean skip = skip(f);
 
             if (skip) {
-                log.warning("*** Skipping function: " + f);
+                log.info("*** Skipping function: " + f);
                 continue;
             }
 
@@ -941,7 +937,7 @@ public class GenerateFigureImmutable {
             throws ClassNotFoundException, IOException {
 
         log.setLevel(Level.WARNING);
-        log.warning("Running GenerateFigureImmutable assertNoChange=" + assertNoChange);
+        log.info("Running GenerateFigureImmutable assertNoChange=" + assertNoChange);
 
         final String[] imports = {
                 "io.deephaven.plot.datasets.DataSeriesInternal",
@@ -1019,7 +1015,7 @@ public class GenerateFigureImmutable {
             out.print(code);
             out.close();
 
-            log.warning(gen.outputClass + " written to: " + file);
+            log.info(gen.outputClass + " written to: " + file);
         }
     }
 

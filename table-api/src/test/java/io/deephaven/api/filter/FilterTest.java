@@ -13,6 +13,7 @@ import io.deephaven.api.literal.Literal;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -170,6 +171,20 @@ public class FilterTest {
     void examplesStringsOf() {
         for (Filter filter : Examples.of()) {
             of(filter);
+        }
+    }
+
+    @Test
+    void extractAnds() {
+        for (Filter filter : Examples.of()) {
+            final Collection<Filter> results = ExtractAnds.of(filter);
+            if (filter instanceof FilterAnd) {
+                assertThat(results).isEqualTo(((FilterAnd) filter).filters());
+            } else if (Filter.ofTrue().equals(filter)) {
+                assertThat(results).isEmpty();
+            } else {
+                assertThat(results).containsExactly(filter);
+            }
         }
     }
 

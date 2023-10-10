@@ -1053,6 +1053,16 @@ class TableTestCase(BaseTestCase):
         self.assertFalse(t.has_columns("D"))
         self.assertFalse(t.has_columns(["D", "C"]))
 
+    def test_agg_count_and_partition_error(self):
+        t = empty_table(1).update(["A=i", "B=i", "C=i"])
+        with self.assertRaises(DHError) as cm:
+            t.agg_by(aggs=count_(["A"]), by=["B"])
+        self.assertIn("string value", str(cm.exception))
+
+        with self.assertRaises(DHError) as cm:
+            t.agg_by(aggs=[partition(["A"])], by=["B"])
+        self.assertIn("string value", str(cm.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

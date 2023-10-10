@@ -673,10 +673,9 @@ public:
      * @return Boolean indicating whether table_name exists on the server or not.
     */
     bool CheckForTable(std::string table_name) {
-        // we have to first fetchTable to check existence, fetchTable does not fail on its own, but .observe() will fail if table doesn't exist
-        deephaven::client::TableHandle table_handle = internal_tbl_hdl_mngr.FetchTable(table_name);
+        // we have to fetchTable to check existence.
         try {
-            table_handle.Observe();
+            deephaven::client::TableHandle table_handle = internal_tbl_hdl_mngr.FetchTable(table_name);
         } catch(...) {
             return false;
         }

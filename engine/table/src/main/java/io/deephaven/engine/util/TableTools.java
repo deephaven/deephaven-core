@@ -665,8 +665,11 @@ public class TableTools {
      * @return a Deephaven Table with no columns.
      */
     public static Table emptyTable(long size) {
-        return new QueryTable(RowSetFactory.flat(size).toTracking(),
-                Collections.emptyMap());
+        return new QueryTable(RowSetFactory.flat(size).toTracking(), Collections.emptyMap()) {
+            {
+                setFlat();
+            }
+        };
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -712,8 +715,11 @@ public class TableTools {
                 throw new ArgumentException("Column source for " + columnName + " is null");
             }
         }
-
-        return new QueryTable(RowSetFactory.flat(size).toTracking(), columns);
+        return new QueryTable(RowSetFactory.flat(size).toTracking(), columns) {
+            {
+                setFlat();
+            }
+        };
     }
 
     /**
@@ -728,7 +734,11 @@ public class TableTools {
             columns.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(0,
                     columnDefinition.getDataType(), columnDefinition.getComponentType()));
         }
-        return new QueryTable(definition, RowSetFactory.empty().toTracking(), columns);
+        return new QueryTable(definition, RowSetFactory.empty().toTracking(), columns) {
+            {
+                setFlat();
+            }
+        };
     }
 
     /**
@@ -741,14 +751,22 @@ public class TableTools {
         checkSizes(columnHolders);
         WritableRowSet rowSet = getRowSet(columnHolders);
         Map<String, ColumnSource<?>> columns = Arrays.stream(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
-        return new QueryTable(rowSet.toTracking(), columns);
+        return new QueryTable(rowSet.toTracking(), columns) {
+            {
+                setFlat();
+            }
+        };
     }
 
     public static Table newTable(TableDefinition definition, ColumnHolder<?>... columnHolders) {
         checkSizes(columnHolders);
         WritableRowSet rowSet = getRowSet(columnHolders);
         Map<String, ColumnSource<?>> columns = Arrays.stream(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
-        return new QueryTable(definition, rowSet.toTracking(), columns);
+        return new QueryTable(definition, rowSet.toTracking(), columns) {
+            {
+                setFlat();
+            }
+        };
     }
 
     private static void checkSizes(ColumnHolder<?>[] columnHolders) {

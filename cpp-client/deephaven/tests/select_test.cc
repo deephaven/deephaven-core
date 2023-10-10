@@ -187,17 +187,25 @@ TEST_CASE("New columns", "[select]") {
       .Select((volume * close).as("MV1"), (volume + 12).as("V_plus_12"));
   std::cout << t2.Stream(true) << '\n';
 
-  std::vector<double> mv1Data = {2350000, 6050000, 507300};
-  std::vector<int64_t> mv2Data = {100012, 250012, 19012};
+  std::vector<double> mv1_data = {2350000, 6050000, 507300};
+  std::vector<int64_t> mv2_data = {100012, 250012, 19012};
 
   const TableHandle *tables[] = {&t1, &t2};
   for (const auto *t : tables) {
     CompareTable(
         *t,
-        "MV1", mv1Data,
-        "V_plus_12", mv2Data
+        "MV1", mv1_data,
+        "V_plus_12", mv2_data
     );
   }
+}
+
+TEST_CASE("Drop columns", "[select]") {
+  auto tm = TableMakerForTests::Create();
+  auto table = tm.Table();
+
+  auto t1 = table.DropColumns({"ImportDate", "Open", "Close"});
+  CHECK(2 == t1.Schema()->NumCols());
 }
 
 TEST_CASE("Simple Where", "[select]") {
