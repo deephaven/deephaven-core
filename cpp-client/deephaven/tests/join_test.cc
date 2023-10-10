@@ -49,7 +49,7 @@ TEST_CASE("Aj", "[join]") {
   auto q = arrow::timestamp(arrow::TimeUnit::NANO, "UTC");
   arrow::TimestampBuilder tb(q, arrow::default_memory_pool());
   // tb.Append(DateTime::Parse("2021-04-05T09:10:00-0500"));
-  tb.Finish();
+  (void) tb.Finish();
 
   TableHandle trades;
   {
@@ -148,7 +148,7 @@ TEST_CASE("Raj", "[join]") {
   auto q = arrow::timestamp(arrow::TimeUnit::NANO, "UTC");
   arrow::TimestampBuilder tb(q, arrow::default_memory_pool());
   // tb.Append(DateTime::Parse("2021-04-05T09:10:00-0500"));
-  tb.Finish();
+  (void) tb.Finish();
 
   TableHandle trades;
   {

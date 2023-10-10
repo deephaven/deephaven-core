@@ -191,7 +191,7 @@ void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
     const auto l_item = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(l_chunk->GetScalar(l_chunk_index)));
     const auto r_item = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(r_chunk->GetScalar(r_chunk_index)));
 
-    if (!l_item->Equals(r_item)) {
+    if (!l_item->Equals(*r_item)) {
       auto message = Stringf("Column %o: Columns differ at element %o: %o vs %o",
           depth, element_index, l_item->ToString(), r_item->ToString());
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
