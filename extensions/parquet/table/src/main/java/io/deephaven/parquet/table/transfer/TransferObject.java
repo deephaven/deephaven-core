@@ -35,40 +35,40 @@ public interface TransferObject<B> extends SafeCloseable {
             @NotNull final String columnName,
             @NotNull final ColumnSource<DATA_TYPE> columnSource) {
         Class<DATA_TYPE> columnType = columnSource.getType();
-        if (int.class.equals(columnType)) {
+        if (columnType == int.class) {
             return IntTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
-        if (long.class.equals(columnType)) {
+        if (columnType == long.class) {
             return LongTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
-        if (Instant.class.equals(columnType)) {
+        if (columnType == Instant.class) {
             // noinspection unchecked
             final ColumnSource<DATA_TYPE> longColumnSource =
                     (ColumnSource<DATA_TYPE>) ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) columnSource);
             return LongTransfer.create(longColumnSource, tableRowSet, instructions.getTargetPageSize());
         }
-        if (double.class.equals(columnType)) {
+        if (columnType == double.class) {
             return DoubleTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
-        if (float.class.equals(columnType)) {
+        if (columnType == float.class) {
             return FloatTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
-        if (Boolean.class.equals(columnType)) {
+        if (columnType == Boolean.class) {
             // noinspection unchecked
             final ColumnSource<DATA_TYPE> byteColumnSource =
                     (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource((ColumnSource<Boolean>) columnSource);
             return BooleanTransfer.create(byteColumnSource, tableRowSet, instructions.getTargetPageSize());
         }
-        if (short.class.equals(columnType)) {
+        if (columnType == short.class) {
             return new ShortTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
-        if (char.class.equals(columnType)) {
+        if (columnType == char.class) {
             return new CharTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
-        if (byte.class.equals(columnType)) {
+        if (columnType == byte.class) {
             return new ByteTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
-        if (String.class.equals(columnType)) {
+        if (columnType == String.class) {
             return new StringTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
         if (CodecLookup.explicitCodecPresent(instructions.getCodecName(columnName))) {
@@ -76,7 +76,7 @@ public interface TransferObject<B> extends SafeCloseable {
                     columnType, instructions.getCodecName(columnName), instructions.getCodecArgs(columnName));
             return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
         }
-        if (BigDecimal.class.equals(columnType)) {
+        if (columnType == BigDecimal.class) {
                 // noinspection unchecked
                 final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
                 final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
@@ -85,82 +85,82 @@ public interface TransferObject<B> extends SafeCloseable {
                         precisionAndScale.precision, precisionAndScale.scale, -1);
                 return new CodecTransfer<>(bigDecimalColumnSource, codec, tableRowSet, instructions.getTargetPageSize());
         }
-        if (BigInteger.class.equals(columnType)) {
+        if (columnType == BigInteger.class) {
             return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
                     instructions.getTargetPageSize());
         }
 
         @Nullable final Class<?> componentType = columnSource.getComponentType();
         if (columnType.isArray()) {
-            if (int.class.equals(componentType)) {
+            if (componentType == int.class) {
                 return new IntArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (long.class.equals(componentType)) {
+            if (componentType == long.class) {
                 return new LongArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (double.class.equals(componentType)) {
+            if (componentType == double.class) {
                 return new DoubleArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (float.class.equals(componentType)) {
+            if (componentType == float.class) {
                 return new FloatArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (Boolean.class.equals(componentType)) {
+            if (componentType == Boolean.class) {
                 return new BooleanArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (short.class.equals(componentType)) {
+            if (componentType == short.class) {
                 return new ShortArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (char.class.equals(componentType)) {
+            if (componentType == char.class) {
                 return new CharArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (byte.class.equals(componentType)) {
+            if (componentType == byte.class) {
                 return new ByteArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (String.class.equals(componentType)) {
+            if (componentType == String.class) {
                 return new StringArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (BigInteger.class.equals(componentType)) {
+            if (componentType == BigInteger.class) {
                 return new CodecArrayTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1),
                         tableRowSet, instructions.getTargetPageSize());
             }
-            if (Instant.class.equals(componentType)) {
+            if (componentType == Instant.class) {
                 return new InstantArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
             // TODO(deephaven-core#4612): Handle arrays of BigDecimal and if explicit codec provided
         }
         if (Vector.class.isAssignableFrom(columnType)) {
-            if (int.class.equals(componentType)) {
+            if (componentType == int.class) {
                 return new IntVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (long.class.equals(componentType)) {
+            if (componentType ==long.class) {
                 return new LongVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (double.class.equals(componentType)) {
+            if (componentType == double.class) {
                 return new DoubleVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (float.class.equals(componentType)) {
+            if (componentType == float.class) {
                 return new FloatVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (Boolean.class.equals(componentType)) {
+            if (componentType == Boolean.class) {
                 return new BooleanVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (short.class.equals(componentType)) {
+            if (componentType == short.class) {
                 return new ShortVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (char.class.equals(componentType)) {
+            if (componentType == char.class) {
                 return new CharVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (byte.class.equals(componentType)) {
+            if (componentType == byte.class) {
                 return new ByteVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (String.class.equals(componentType)) {
+            if (componentType == String.class) {
                 return new StringVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (BigInteger.class.equals(componentType)) {
+            if (componentType == BigInteger.class) {
                 return new CodecVectorTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1),
                         tableRowSet, instructions.getTargetPageSize());
             }
-            if (Instant.class.equals(componentType)) {
+            if (componentType == Instant.class) {
                 return new InstantVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
             // TODO(deephaven-core#4612): Handle vectors of BigDecimal and if explicit codec provided
@@ -176,13 +176,13 @@ public interface TransferObject<B> extends SafeCloseable {
             final int targetPageSize, @NotNull final StringDictionary dictionary) {
         @Nullable final Class<?> dataType = columnSource.getType();
         @Nullable final Class<?> componentType = columnSource.getComponentType();
-        if (String.class.equals(dataType)) {
+        if (dataType == String.class) {
             return new DictEncodedStringTransfer(columnSource, tableRowSet, targetPageSize, dictionary);
         }
-        if (dataType.isArray() && String.class.equals(componentType)) {
+        if (dataType.isArray() && componentType == String.class) {
             return new DictEncodedStringArrayTransfer(columnSource, tableRowSet, targetPageSize, dictionary);
         }
-        if (Vector.class.isAssignableFrom(dataType) && String.class.equals(componentType)) {
+        if (Vector.class.isAssignableFrom(dataType) && componentType == String.class) {
             return new DictEncodedStringVectorTransfer(columnSource, tableRowSet, targetPageSize, dictionary);
         }
         // Dictionary encoding not supported for other types

@@ -12,8 +12,8 @@ import org.jetbrains.annotations.NotNull;
  * Used as a base class of transfer objects for arrays of types like strings or big integers that need specialized
  * encoding.
  */
-abstract class ObjectArrayTransfer<T> extends ObjectArrayAndVectorTransfer<T[], T> {
-    private final ArrayDataSupplier<T> supplier;
+abstract class ObjectArrayTransfer<VALUE_TYPE> extends ObjectArrayAndVectorTransfer<VALUE_TYPE[], VALUE_TYPE> {
+    private final ArrayDataSupplier<VALUE_TYPE> supplier;
 
     ObjectArrayTransfer(final @NotNull ColumnSource<?> columnSource, final @NotNull RowSequence tableRowSet,
                         final int targetPageSize) {
@@ -22,7 +22,7 @@ abstract class ObjectArrayTransfer<T> extends ObjectArrayAndVectorTransfer<T[], 
     }
 
     @Override
-    final void encodeDataForBuffering(final T @NotNull [] data, @NotNull final EncodedData<Binary[]> encodedData) {
+    final void encodeDataForBuffering(final VALUE_TYPE @NotNull [] data, @NotNull final EncodedData<Binary[]> encodedData) {
         supplier.fill(data);
         encodeDataForBufferingHelper(supplier, data.length, encodedData);
     }

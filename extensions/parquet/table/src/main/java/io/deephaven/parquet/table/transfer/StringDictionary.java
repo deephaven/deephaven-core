@@ -62,7 +62,7 @@ final public class StringDictionary {
      * Add a string key to the dictionary if it's not already present.
      *
      * @param key The key to add and/or find the position for
-     * @return {@code key}'s position in the dictionary, or special null key position (passed in constructor) is
+     * @return {@code key}'s position in the dictionary, or special null key position (passed in constructor) if
      *         {@code key == null}
      */
     public int add(final String key) {

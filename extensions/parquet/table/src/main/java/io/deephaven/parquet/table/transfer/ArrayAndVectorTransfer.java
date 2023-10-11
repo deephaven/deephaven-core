@@ -14,11 +14,12 @@ import java.util.function.Supplier;
 /**
  * Base class for all array and vector transfer objects
  */
-public abstract class ArrayAndVectorTransfer<T, E, B> extends VariableWidthTransfer<T, E, B> {
+public abstract class ArrayAndVectorTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TYPE>
+        extends VariableWidthTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TYPE> {
     final IntBuffer repeatCounts; // Stores the lengths of arrays/vectors
 
     ArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-            final int maxValuesPerPage, final int targetPageSize, @NotNull final B buffer) {
+            final int maxValuesPerPage, final int targetPageSize, @NotNull final BUFFER_TYPE buffer) {
         super(columnSource, tableRowSet, maxValuesPerPage, targetPageSize, buffer);
         this.repeatCounts = IntBuffer.allocate(maxValuesPerPage);
     }

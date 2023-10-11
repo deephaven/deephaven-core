@@ -14,7 +14,7 @@ import java.util.Arrays;
 /**
  * Used as a base class of transfer objects for types like strings or big integers that need specialized encoding.
  */
-abstract class ObjectTransfer<T> extends VariableWidthTransfer<T, Binary, Binary[]> {
+abstract class ObjectTransfer<COLUMN_TYPE> extends VariableWidthTransfer<COLUMN_TYPE, Binary, Binary[]> {
     /**
      * Number of values (null or non-null) added to the buffer
      */
@@ -65,7 +65,7 @@ abstract class ObjectTransfer<T> extends VariableWidthTransfer<T, Binary, Binary
 
     final boolean addEncodedDataToBuffer(@NotNull final EncodedData<Binary> data, final boolean force) {
         if (force && bufferedDataCount != 0) {
-            // This should never happen, because "force" set by caller when adding the very first object
+            // This should never happen, because "force" is only set by the caller when adding the very first object
             //noinspection ThrowableNotThrown
             Assert.statementNeverExecuted();
             return false;

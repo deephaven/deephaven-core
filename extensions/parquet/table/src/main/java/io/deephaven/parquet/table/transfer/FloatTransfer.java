@@ -18,8 +18,9 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.FloatBuffer;
 
 final class FloatTransfer extends PrimitiveTransfer<WritableFloatChunk<Values>, FloatBuffer> {
-    static FloatTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, final int targetPageSize) {
-        final int maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize / Float.BYTES));
+    static FloatTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,
+                              final int targetPageSize) {
+        final int maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), (long) (targetPageSize / Float.BYTES)));
         final float[] backingArray = new float[maxValuesPerPage];
         return new FloatTransfer(
                 columnSource,

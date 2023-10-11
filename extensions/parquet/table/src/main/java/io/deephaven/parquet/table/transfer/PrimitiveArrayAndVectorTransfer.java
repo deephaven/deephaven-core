@@ -13,12 +13,14 @@ import java.nio.Buffer;
 /**
  * Used as a base class of transfer objects for arrays/vectors of primitive types.
  */
-abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends ArrayAndVectorTransfer<T, E, B> {
+abstract class PrimitiveArrayAndVectorTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TYPE extends Buffer>
+        extends ArrayAndVectorTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TYPE> {
 
     private final int numBytesPerValue;
 
     PrimitiveArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-            final int maxValuesPerPage, final int targetPageSize, @NotNull final B buffer, final int numBytesPerValue) {
+            final int maxValuesPerPage, final int targetPageSize,
+            @NotNull final BUFFER_TYPE buffer, final int numBytesPerValue) {
         super(columnSource, tableRowSet, maxValuesPerPage, targetPageSize, buffer);
         this.numBytesPerValue = numBytesPerValue;
     }
@@ -37,13 +39,14 @@ abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends A
     }
 
     @Override
-    void encodeDataForBuffering(@NotNull final T data, @NotNull final EncodedData<E> encodedData) {
+    void encodeDataForBuffering(@NotNull final COLUMN_TYPE data,
+            @NotNull final EncodedData<ENCODED_COLUMN_TYPE> encodedData) {
         // No encoding needed here because we can calculate how many bytes will be needed per encoded value.
         // So we store the reference to data as is and do any required encoding later while copying to buffer.
         // This is done to avoid creating a temporary copy of encoded values here.
         int numValues = getSize(data);
         // noinspection unchecked
-        encodedData.fillRepeated((E) data, numValues * numBytesPerValue, numValues);
+        encodedData.fillRepeated((ENCODED_COLUMN_TYPE) data, numValues * numBytesPerValue, numValues);
     }
 
     /**
@@ -52,7 +55,7 @@ abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends A
      *
      * @param data the array/vector
      */
-    int getSize(@NotNull final T data) {
+    int getSize(@NotNull final COLUMN_TYPE data) {
         throw new UnsupportedOperationException("getSize() not implemented for " + getClass().getSimpleName());
     }
 
@@ -61,9 +64,10 @@ abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends A
         return buffer.position() * numBytesPerValue;
     }
 
-    final boolean addEncodedDataToBuffer(@NotNull final EncodedData<E> data, boolean force) {
-        if (force && (!repeatCounts.hasRemaining() || buffer.position() != 0)) {
-            // This should never happen, because "force" set by caller when adding the very first array/vector
+    final boolean addEncodedDataToBuffer(@NotNull final EncodedData<ENCODED_COLUMN_TYPE> data, boolean force) {
+        if (force && (repeatCounts.position() != 0 || buffer.position() != 0)) {
+            // This should never happen, because "force" is only set by the caller when adding the very first
+            // array/vector
             // noinspection ThrowableNotThrown
             Assert.statementNeverExecuted();
             return false;
@@ -90,7 +94,7 @@ abstract class PrimitiveArrayAndVectorTransfer<T, E, B extends Buffer> extends A
      * Copy the encoded values to the buffer. This function should be called after checking that there is enough space
      * in the buffer.
      */
-    abstract void copyToBuffer(@NotNull final EncodedData<E> data);
+    abstract void copyToBuffer(@NotNull final EncodedData<ENCODED_COLUMN_TYPE> data);
 
     /**
      * Resize the underlying page buffer, needed in case of overflow when transferring the first array/vector.

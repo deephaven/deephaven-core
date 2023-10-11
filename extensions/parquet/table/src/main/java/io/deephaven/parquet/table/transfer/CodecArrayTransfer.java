@@ -14,17 +14,18 @@ import org.jetbrains.annotations.NotNull;
  * {@link CodecTransfer} is that this class encodes each element of the array individually whereas {@link CodecTransfer}
  * will encode the entire array as a single value.
  */
-final class CodecArrayTransfer<T> extends ObjectArrayTransfer<T> {
-    private final ObjectCodec<? super T> codec;
+final class CodecArrayTransfer<VALUE_TYPE> extends ObjectArrayTransfer<VALUE_TYPE> {
+    private final ObjectCodec<? super VALUE_TYPE> codec;
 
-    CodecArrayTransfer(final @NotNull ColumnSource<?> columnSource, @NotNull final ObjectCodec<? super T> codec,
+    CodecArrayTransfer(final @NotNull ColumnSource<?> columnSource,
+            @NotNull final ObjectCodec<? super VALUE_TYPE> codec,
             final @NotNull RowSequence tableRowSet, final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize);
         this.codec = codec;
     }
 
     @Override
-    Binary encodeToBinary(T value) {
+    Binary encodeToBinary(VALUE_TYPE value) {
         return Binary.fromConstantByteArray(codec.encode(value));
     }
 }

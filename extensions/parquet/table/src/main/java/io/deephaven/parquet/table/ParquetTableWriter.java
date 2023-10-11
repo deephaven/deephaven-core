@@ -387,8 +387,9 @@ public class ParquetTableWriter {
                     }
                 }
                 if (transferObject.pageHasNull()) {
-                    pageBufferHasNull.set(curPage++);
+                    pageBufferHasNull.set(curPage);
                 }
+                curPage++;
             } while (!done);
         } catch (final DictionarySizeExceededException ignored) {
             // Reset the stats because we will re-encode these in PLAIN encoding.

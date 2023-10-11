@@ -12,8 +12,8 @@ import java.util.function.Supplier;
 
 /**
  * Base class for reading dictionary-encoded string arrays and vectors. This class updates the {@link StringDictionary}
- * with all the strings it encounters and generates an IntBuffer of dictionary position values. This class extends
- * {@link PrimitiveArrayAndVectorTransfer} to manage the dictionary positions similar to an Int array/vector column.
+ * with all the strings it encounters and generates an integer array of dictionary position values. This class extends
+ * {@link PrimitiveArrayAndVectorTransfer} to manage the dictionary positions similar to an integer array column.
  */
 abstract public class DictEncodedStringArrayAndVectorTransfer<T>
         extends PrimitiveArrayAndVectorTransfer<T, int[], IntBuffer> {

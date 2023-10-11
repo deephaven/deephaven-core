@@ -16,16 +16,18 @@ import java.util.function.Supplier;
  * Used as a base class of transfer objects for vectors of types like strings or big integers that need specialized
  * encoding.
  */
-abstract class ObjectVectorTransfer<V> extends ObjectArrayAndVectorTransfer<ObjectVector<V>, V> {
+abstract class ObjectVectorTransfer<VALUE_TYPE>
+        extends ObjectArrayAndVectorTransfer<ObjectVector<VALUE_TYPE>, VALUE_TYPE> {
     ObjectVectorTransfer(final @NotNull ColumnSource<?> columnSource, final @NotNull RowSequence tableRowSet,
                          final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize);
     }
 
     @Override
-    final void encodeDataForBuffering(final @NotNull ObjectVector<V> data, @NotNull final EncodedData<Binary[]> encodedData) {
-        try (CloseableIterator<V> iter = data.iterator()) {
-            Supplier<V> supplier = iter::next;
+    final void encodeDataForBuffering(final @NotNull ObjectVector<VALUE_TYPE> data,
+                                      @NotNull final EncodedData<Binary[]> encodedData) {
+        try (CloseableIterator<VALUE_TYPE> iter = data.iterator()) {
+            Supplier<VALUE_TYPE> supplier = iter::next;
             encodeDataForBufferingHelper(supplier, data.intSize(), encodedData);
         }
     }

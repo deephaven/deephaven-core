@@ -15,10 +15,11 @@ package io.deephaven.parquet.table.transfer;
 /**
  * Used as a base class of arrays/vectors of transfer objects for types like strings or big integers that need
  * specialized encoding.
- * @param <T> The type of the data in the column, could be an array/vector
- * @param <V> The type of the values in the array/vector
+ * @param <COLUMN_TYPE> The type of the data in the column, could be an array/vector
+ * @param <VALUE_TYPE> The type of the values in the array/vector
  */
-abstract class ObjectArrayAndVectorTransfer<T, V> extends ArrayAndVectorTransfer<T, Binary[], Binary[]> {
+abstract class ObjectArrayAndVectorTransfer<COLUMN_TYPE, VALUE_TYPE>
+        extends ArrayAndVectorTransfer<COLUMN_TYPE, Binary[], Binary[]> {
     /**
      * Number of values added to the buffer
      */
@@ -29,18 +30,19 @@ abstract class ObjectArrayAndVectorTransfer<T, V> extends ArrayAndVectorTransfer
     private int numBytesBuffered;
 
     /**
-     * Used as a temporary buffer for storing encoded data for a single row before it is copied to the main buffer.
-     * Allocated lazily because of the high cost of construction of Binary objects.
+     * Used as a temporary buffer for storing references to binary encoded values for a single row before it is copied
+     * to the main buffer.
      */
     private Binary[] encodedDataBuf;
     private int encodedDataBufLen;
 
-    ObjectArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet, final int targetPageSize) {
+    ObjectArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+                                 final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize, targetPageSize, new Binary[targetPageSize]);
         bufferedDataCount = 0;
         numBytesBuffered = 0;
 
-        encodedDataBuf = null;
+        encodedDataBuf = new Binary[targetPageSize];
         encodedDataBufLen = 0;
     }
 
@@ -64,10 +66,10 @@ abstract class ObjectArrayAndVectorTransfer<T, V> extends ArrayAndVectorTransfer
         return numBytesBuffered;
     }
 
-    final void encodeDataForBufferingHelper(@NotNull final Supplier<V> objectSupplier, final int numObjects,
+    final void encodeDataForBufferingHelper(@NotNull final Supplier<VALUE_TYPE> objectSupplier, final int numObjects,
                                             @NotNull final EncodedData<Binary[]> encodedData) {
         // Allocate a new buffer if needed, or clear the existing one
-        if (encodedDataBuf == null || numObjects > encodedDataBuf.length) {
+        if (numObjects > encodedDataBuf.length) {
             encodedDataBuf = new Binary[numObjects];
         } else {
             Arrays.fill(encodedDataBuf, 0, encodedDataBufLen, null);
@@ -75,7 +77,7 @@ abstract class ObjectArrayAndVectorTransfer<T, V> extends ArrayAndVectorTransfer
         }
         int numBytesEncoded = 0;
         for (int i = 0; i < numObjects; i++) {
-            V value = objectSupplier.get();
+            VALUE_TYPE value = objectSupplier.get();
             if (value == null) {
                 encodedDataBuf[i] = null;
             } else {
@@ -90,11 +92,12 @@ abstract class ObjectArrayAndVectorTransfer<T, V> extends ArrayAndVectorTransfer
     /**
      * Encode a single value to binary
      */
-    abstract Binary encodeToBinary(V value);
+    abstract Binary encodeToBinary(VALUE_TYPE value);
 
     final boolean addEncodedDataToBuffer(@NotNull final EncodedData<Binary[]> data, final boolean force) {
-        if (force && (!repeatCounts.hasRemaining() || bufferedDataCount != 0)) {
-            // This should never happen, because "force" set by caller when adding the very first array/vector
+        if (force && (repeatCounts.position() != 0 || bufferedDataCount != 0)) {
+            // This should never happen, because "force" is only set by the caller when adding the very first
+            // array/vector
             //noinspection ThrowableNotThrown
             Assert.statementNeverExecuted();
             return false;
@@ -113,8 +116,8 @@ abstract class ObjectArrayAndVectorTransfer<T, V> extends ArrayAndVectorTransfer
                 return false;
             }
         }
-        for (final Binary val : data.encodedValues) {
-            buffer[bufferedDataCount++] = val;
+        for (int i = 0; i < numEncodedValues; i++) {
+            buffer[bufferedDataCount++] = data.encodedValues[i];
         }
         numBytesBuffered += data.numBytes;
         repeatCounts.put(numEncodedValues);

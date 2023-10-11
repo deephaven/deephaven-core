@@ -17,12 +17,13 @@ import org.jetbrains.annotations.Nullable;
  * includes strings, codec encoded objects, arrays and vectors. This class provides methods to iterate over the column,
  * fetch the data, encode it and add it to buffer while enforcing page size constraints and handling overflow.
  *
- * @param <T> The type of the data in the column
- * @param <E> The type of the encoded data to be added to the buffer
- * @param <B> The type of the buffer to be written out to the Parquet file
+ * @param <COLUMN_TYPE> The type of the data in the column
+ * @param <ENCODED_COLUMN_TYPE> The type of the encoded data to be added to the buffer
+ * @param <BUFFER_TYPE> The type of the buffer to be written out to the Parquet file
  */
-abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
-    private ObjectChunk<T, Values> chunk;
+abstract class VariableWidthTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TYPE>
+        implements TransferObject<BUFFER_TYPE> {
+    private ObjectChunk<COLUMN_TYPE, Values> chunk;
     private final ColumnSource<?> columnSource;
     private final RowSequence.Iterator tableRowSetIt;
     private final ChunkSource.GetContext context;
@@ -31,7 +32,7 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
     /**
      * The reusable field used to store the output from {@link #encodeDataForBuffering}.
      */
-    private final EncodedData<E> encodedData;
+    private final EncodedData<ENCODED_COLUMN_TYPE> encodedData;
     /**
      * Whether {@link #encodedData} stores the encoded value corresponding to {@link #currentChunkIdx}. This is useful
      * to cache the value which took us beyond the page size limit. We cache it to avoid re-encoding.
@@ -42,11 +43,11 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
     /**
      * The buffer to be written out to the Parquet file. This buffer is reused across pages and is resized if needed.
      */
-    B buffer;
+    BUFFER_TYPE buffer;
     final int maxValuesPerPage;
 
     VariableWidthTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-            final int maxValuesPerPage, final int targetPageSize, @NotNull final B buffer) {
+            final int maxValuesPerPage, final int targetPageSize, @NotNull final BUFFER_TYPE buffer) {
         this.columnSource = columnSource;
         this.tableRowSetIt = tableRowSet.getRowSequenceIterator();
         this.targetPageSize = targetPageSize;
@@ -56,12 +57,12 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
         this.context = columnSource.makeGetContext(Math.toIntExact(Math.min(maxValuesPerPage, tableRowSet.size())));
         this.currentChunkIdx = 0;
         this.buffer = buffer;
-        this.encodedData = new EncodedData<E>();
+        this.encodedData = new EncodedData<ENCODED_COLUMN_TYPE>();
         this.cached = false;
     }
 
     @Override
-    public final B getBuffer() {
+    public final BUFFER_TYPE getBuffer() {
         return buffer;
     }
 
@@ -117,12 +118,12 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
                 // Fetch a chunk of data from the table
                 final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(maxValuesPerPage);
                 // noinspection unchecked
-                chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
+                chunk = (ObjectChunk<COLUMN_TYPE, Values>) columnSource.getChunk(context, rs);
                 currentChunkIdx = 0;
             }
             final int chunkSize = chunk.size();
             while (currentChunkIdx < chunkSize) {
-                final T data = chunk.get(currentChunkIdx);
+                final COLUMN_TYPE data = chunk.get(currentChunkIdx);
                 if (data == null) {
                     if (!addNullToBuffer()) {
                         // Reattempt adding null to the buffer in the next iteration
@@ -168,7 +169,8 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
      * @param data The fetched value to be encoded, can be an array/vector or a single value
      * @param encodedData The object to be filled with the encoded data
      */
-    abstract void encodeDataForBuffering(@NotNull final T data, @NotNull final EncodedData<E> encodedData);
+    abstract void encodeDataForBuffering(@NotNull final COLUMN_TYPE data,
+            @NotNull final EncodedData<ENCODED_COLUMN_TYPE> encodedData);
 
     /**
      * This method is called for adding the encoded data to the buffer.
@@ -180,7 +182,7 @@ abstract class VariableWidthTransfer<T, E, B> implements TransferObject<B> {
      * @return Whether we succeeded in adding the data to the buffer. A false value indicates overflow of underlying
      *         buffer and that we should stop reading more data from the column and return the buffer as-is.
      */
-    abstract boolean addEncodedDataToBuffer(@NotNull final EncodedData<E> data, final boolean force);
+    abstract boolean addEncodedDataToBuffer(@NotNull final EncodedData<ENCODED_COLUMN_TYPE> data, final boolean force);
 
     /**
      * The total number of encoded bytes corresponding to non-null values. Useful for adding page size constraints.
