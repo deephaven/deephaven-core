@@ -112,7 +112,7 @@ UpdateByOp <- R6Class("UpdateByOp",
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -145,7 +145,7 @@ uby_cum_sum <- function(cols = character()) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -178,7 +178,7 @@ uby_cum_prod <- function(cols = character()) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -211,7 +211,7 @@ uby_cum_min <- function(cols = character()) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -245,7 +245,7 @@ uby_cum_max <- function(cols = character()) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -286,7 +286,7 @@ uby_forward_fill <- function(cols = character()) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -334,7 +334,7 @@ uby_delta <- function(cols = character(), delta_control = "null_dominates") {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -383,7 +383,7 @@ uby_ema_tick <- function(decay_ticks, cols = character(), operation_control = op
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -433,7 +433,7 @@ uby_ema_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -482,7 +482,7 @@ uby_ems_tick <- function(decay_ticks, cols = character(), operation_control = op
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -531,7 +531,7 @@ uby_ems_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -580,7 +580,7 @@ uby_emmin_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -629,7 +629,7 @@ uby_emmin_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -678,7 +678,7 @@ uby_emmax_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -732,7 +732,7 @@ uby_emmax_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -786,7 +786,7 @@ uby_emstd_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -839,7 +839,7 @@ uby_emstd_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -871,7 +871,7 @@ uby_rolling_sum_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' Creates a rolling sum UpdateByOp for each column in `cols`, using time as the windowing unit.
 #'
 #' @details
-#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' This uses [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) time strings as the reverse and forward window parameters.
 #' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
@@ -888,7 +888,7 @@ uby_rolling_sum_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -942,7 +942,7 @@ uby_rolling_sum_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -974,7 +974,7 @@ uby_rolling_group_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' Creates a rolling group UpdateByOp for each column in `cols`, using time as the windowing unit.
 #'
 #' @details
-#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' This uses [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) time strings as the reverse and forward window parameters.
 #' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
@@ -991,7 +991,7 @@ uby_rolling_group_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1045,7 +1045,7 @@ uby_rolling_group_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1077,7 +1077,7 @@ uby_rolling_avg_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' Creates a simple moving average (SMA) UpdateByOp for each column in `cols`, using time as the windowing unit.
 #'
 #' @details
-#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' This uses [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) time strings as the reverse and forward window parameters.
 #' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
@@ -1094,7 +1094,7 @@ uby_rolling_avg_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1148,7 +1148,7 @@ uby_rolling_avg_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1180,7 +1180,7 @@ uby_rolling_min_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' Creates a rolling minimum UpdateByOp for each column in `cols`, using time as the windowing unit.
 #'
 #' @details
-#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' This uses [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) time strings as the reverse and forward window parameters.
 #' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
@@ -1197,7 +1197,7 @@ uby_rolling_min_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1251,7 +1251,7 @@ uby_rolling_min_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1283,7 +1283,7 @@ uby_rolling_max_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' Creates a rolling maximum UpdateByOp for each column in `cols`, using time as the windowing unit.
 #'
 #' @details
-#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' This uses [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) time strings as the reverse and forward window parameters.
 #' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
@@ -1300,7 +1300,7 @@ uby_rolling_max_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1354,7 +1354,7 @@ uby_rolling_max_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1386,7 +1386,7 @@ uby_rolling_prod_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' Creates a rolling product UpdateByOp for each column in `cols`, using time as the windowing unit.
 #'
 #' @details
-#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' This uses [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) time strings as the reverse and forward window parameters.
 #' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
@@ -1403,7 +1403,7 @@ uby_rolling_prod_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1457,7 +1457,7 @@ uby_rolling_prod_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1489,7 +1489,7 @@ uby_rolling_count_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' Creates a rolling count UpdateByOp for each column in `cols`, using time as the windowing unit.
 #'
 #' @details
-#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' This uses [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) time strings as the reverse and forward window parameters.
 #' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
@@ -1506,7 +1506,7 @@ uby_rolling_count_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1560,7 +1560,7 @@ uby_rolling_count_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1592,7 +1592,7 @@ uby_rolling_std_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' Creates a rolling standard deviation UpdateByOp for each column in `cols`, using time as the windowing unit.
 #'
 #' @details
-#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' This uses [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) time strings as the reverse and forward window parameters.
 #' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
@@ -1609,7 +1609,7 @@ uby_rolling_std_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1663,7 +1663,7 @@ uby_rolling_std_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.
@@ -1697,7 +1697,7 @@ uby_rolling_wavg_tick <- function(wcol, cols, rev_ticks, fwd_ticks = 0) {
 #' Creates a rolling weighted average UpdateByOp for each column in `cols`, using time as the windowing unit.
 #'
 #' @details
-#' This uses ISO-8601 time strings as the reverse and forward window parameters.
+#' This uses [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) time strings as the reverse and forward window parameters.
 #' Negative values are allowed and can be used to generate completely forward or completely reverse windows.
 #' A row containing a null value in the timestamp column belongs to no window and will not be considered
 #' in the windows of other rows; its output will be null.
@@ -1714,7 +1714,7 @@ uby_rolling_wavg_tick <- function(wcol, cols, rev_ticks, fwd_ticks = 0) {
 #' if `by = c("A", "B")`, then the aggregation groups are defined by the unique combinations of values in the
 #' `A` and `B` columns.
 #'
-#' This function, like the other Deephaven `uby` functions, is a generator function. That is, its output is another
+#' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
 #' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user by `update_by()`, which calls the `UpdateByOp` internally. However, it is important to
 #' understand this detail for debugging purposes as the output of a `uby` function can otherwise seem unexpected.

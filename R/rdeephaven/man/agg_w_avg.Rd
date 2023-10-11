@@ -21,7 +21,7 @@ The aggregation groups that this function acts on are defined with the \code{by}
 columns. For example, if \code{by = c("A", "B")}, then the aggregation groups are defined by the unique combinations of
 values in the \code{A} and \code{B} columns.
 
-This function, like the other Deephaven \code{agg} functions, is a generator function. That is, its output is another
+This function, like other Deephaven \code{agg} functions, is a generator function. That is, its output is another
 function called an \code{AggOp} intended to be used in a call to \code{agg_by()} or \code{agg_all_by()}. This detail is
 typically hidden from the user by the \code{agg_by()} and \code{agg_all_by()} functions, which call the \code{AggOp} internally.
 However, it is important to understand this detail for debugging purposes, as the output of an \code{agg} function can
