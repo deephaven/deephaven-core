@@ -10,6 +10,12 @@ configurations {
     cpp {}
 }
 
+dependencies {
+  cpp project(':cpp-client')
+}
+
+def prefix = '/opt/deephaven'
+
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
@@ -41,9 +47,8 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }
-    def prefix = '/opt/deephaven'
     dockerfile {
-        from('deephaven/r-client-base:local-build')
+        from('deephaven/cpp-client:local-build')
         //
         // Build and install client.
         //
@@ -71,12 +76,11 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
                      rm -f src/*.o src/*.so
                    ''')
         //
-        // Setup for test run.
+        // Setup for test run; we should be inheriting other env vars
+        // like LD_LIBRARY_PATH from the cpp-client image.
         //
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
-        environmentVariable 'DH_PREFIX', prefix
-        environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
@@ -84,5 +88,6 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
     parentContainers = [ Docker.registryTask(project, 'r-client-base') ]
     entrypoint = ["${prefix}/bin/dhcpp/r-tests.sh", '/out/r-test.xml', '/out/r-test.log']
 }
-deephavenDocker.shouldLogIfTaskFails testCppClient
-tasks.check.dependsOn(testCppClient)
+
+deephavenDocker.shouldLogIfTaskFails testRClient
+tasks.check.dependsOn(testRClient)
