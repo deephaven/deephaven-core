@@ -60,6 +60,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
@@ -704,7 +705,7 @@ public class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void groupingColumnsBasicReadTests() throws IOException {
+    public void parquetDirectoryWithHiddenFilesTest() throws IOException {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
@@ -721,7 +722,10 @@ public class ParquetTableReadWriteTest {
         final File destFile = new File(parentDir, destFilename);
         ParquetTools.writeTable(tableToSave, destFile);
         String vvvGroupingFilePath = ".dh_metadata/indexes/vvv/index_vvv_data.parquet";
+        // Hidden metadata in parent directory
         verifyFilesInDir(parentDir, new String[] {destFilename}, Map.of("vvv", new String[] {vvvGroupingFilePath}));
+
+        // Call readTable on parent directory
         Table fromDisk = ParquetTools.readTable(parentDir);
         TstUtils.assertTableEquals(fromDisk, tableToSave);
 
@@ -731,7 +735,7 @@ public class ParquetTableReadWriteTest {
         fromDisk = ParquetTools.readTable(parentDir);
         TstUtils.assertTableEquals(fromDisk, tableToSave);
 
-        // Add another table in parent directory in hidden file
+        // Add another table in a hidden file in parent directory
         final Table anotherTable = TableTools.emptyTable(5).update("A=(int)i");
         final File pqDotFile = new File(parentDir, ".hiddenData.parquet");
         ParquetTools.writeTable(anotherTable, pqDotFile);
@@ -739,6 +743,39 @@ public class ParquetTableReadWriteTest {
         TstUtils.assertTableEquals(fromDisk, tableToSave);
     }
 
+    @Test
+    public void partitionedParuetWithHiddenFilesTest() throws IOException {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length == 0);
+
+        final Table someTable = TableTools.emptyTable(5).update("A=(int)i");
+        final File firstPartition = new File(parentDir, "X=A");
+        final File firstDataFile = new File(firstPartition, "data.parquet");
+        final File secondPartition = new File(parentDir, "X=B");
+        final File secondDataFile = new File(secondPartition, "data.parquet");
+
+        ParquetTools.writeTable(someTable, firstDataFile);
+        ParquetTools.writeTable(someTable, secondDataFile);
+
+        Table partitionedTable = ParquetTools.readTable(parentDir).select();
+        final Set<?> columnsSet = partitionedTable.getColumnSourceMap().keySet();
+        assertTrue(columnsSet.size() == 2 && columnsSet.contains("A") && columnsSet.contains("X"));
+
+        // Add an empty dot file in one of the partitions directory
+        final File dotFile = new File(firstPartition, ".hiddenData");
+        assertTrue(dotFile.createNewFile());
+        Table fromDisk = ParquetTools.readTable(parentDir);
+        TstUtils.assertTableEquals(fromDisk, partitionedTable);
+
+        // Add another table in a hidden file in one of the partitions directory
+        final Table anotherTable = TableTools.emptyTable(5).update("B=(int)i");
+        final File pqDotFile = new File(secondPartition, ".hiddenData.parquet");
+        ParquetTools.writeTable(anotherTable, pqDotFile);
+        fromDisk = ParquetTools.readTable(parentDir);
+        TstUtils.assertTableEquals(fromDisk, partitionedTable);
+    }
 
     /**
      * These are tests for writing multiple parquet tables with grouping columns.

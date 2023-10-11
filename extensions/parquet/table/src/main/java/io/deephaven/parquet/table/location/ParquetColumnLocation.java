@@ -158,7 +158,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         try {
             final GroupingColumnInfo groupingColumnInfo = tl().getGroupingColumns().get(parquetColumnName);
             final String groupingFileRelativePath = groupingColumnInfo == null
-                    ? ParquetTools.getRelativeGroupingFilePath(parquetFile, parquetColumnName) // TODO Test this
+                    ? ParquetTools.getRelativeGroupingFilePath(parquetFile, parquetColumnName)
                     : groupingColumnInfo.groupingTablePath();
             final String groupingFilePath =
                     parquetFile.toPath().getParent().resolve(groupingFileRelativePath).toString();

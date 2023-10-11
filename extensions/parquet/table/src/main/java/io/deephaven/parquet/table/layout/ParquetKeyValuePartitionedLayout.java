@@ -25,7 +25,7 @@ public class ParquetKeyValuePartitionedLayout extends KeyValuePartitionLayout<Pa
             @NotNull final File tableRootDirectory,
             @NotNull final TableDefinition tableDefinition) {
         super(tableRootDirectory,
-                ParquetFileHelper::fileNameMatches,
+                ParquetFileHelper::parquetFileFilter,
                 () -> new LocationTableBuilderDefinition(tableDefinition),
                 (path, partitions) -> new ParquetTableLocationKey(path.toFile(), 0, partitions),
                 Math.toIntExact(tableDefinition.getColumnStream().filter(ColumnDefinition::isPartitioning).count()));
@@ -35,7 +35,7 @@ public class ParquetKeyValuePartitionedLayout extends KeyValuePartitionLayout<Pa
             @NotNull final File tableRootDirectory,
             final int maxPartitioningLevels) {
         super(tableRootDirectory,
-                ParquetFileHelper::fileNameMatches,
+                ParquetFileHelper::parquetFileFilter,
                 () -> new LocationTableBuilderCsv(tableRootDirectory),
                 (path, partitions) -> new ParquetTableLocationKey(path.toFile(), 0, partitions),
                 maxPartitioningLevels);
