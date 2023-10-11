@@ -155,7 +155,7 @@ curl -X POST \
         with self.subTest(msg="regular"):
             t = consume(
                 ck.protobuf_spec(
-                    "io/deephaven/example/MySchema.proto",
+                    schema="io/deephaven/example/MySchema.proto",
                     schema_version=1,
                     schema_message_name="io.deephaven.example.SomeMessage",
                 )
@@ -179,7 +179,7 @@ curl -X POST \
         with self.subTest(msg="include /foo /bar"):
             t = consume(
                 ck.protobuf_spec(
-                    "io/deephaven/example/MySchema.proto",
+                    schema="io/deephaven/example/MySchema.proto",
                     schema_version=1,
                     schema_message_name="io.deephaven.example.SomeMessage",
                     include=["/foo", "/bar"],
@@ -197,7 +197,7 @@ curl -X POST \
         with self.subTest(msg="include /ts /sub/*"):
             t = consume(
                 ck.protobuf_spec(
-                    "io/deephaven/example/MySchema.proto",
+                    schema="io/deephaven/example/MySchema.proto",
                     schema_version=1,
                     schema_message_name="io.deephaven.example.SomeMessage",
                     include=["/ts", "/sub/*"],

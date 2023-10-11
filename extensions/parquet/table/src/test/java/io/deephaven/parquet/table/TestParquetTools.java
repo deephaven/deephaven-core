@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
@@ -436,58 +437,83 @@ public class TestParquetTools {
                 t -> t.updateView("Y = Z", "Y = X").where("Y % 2 == 0"));
     }
 
+    private static final String InvalidParquetFileErrorMsgString = "Invalid parquet file detected, please ensure " +
+            "the file is fetched properly from Git LFS. Run commands 'git lfs install; git lfs pull' inside the repo " +
+            "to pull the files from LFS. Check cause of exception for more details.";
+
     @Test
     public void e0() {
-        final Table uncompressed =
-                ParquetTools.readTable(TestParquetTools.class.getResource("/e0/uncompressed.parquet").getFile());
+        try {
+            final Table uncompressed =
+                    ParquetTools.readTable(TestParquetTools.class.getResource("/e0/uncompressed.parquet").getFile());
 
-        final Table gzip = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/gzip.parquet").getFile());
-        assertTableEquals(uncompressed, gzip);
+            final Table gzip = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/gzip.parquet").getFile());
+            assertTableEquals(uncompressed, gzip);
 
-        final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/lz4.parquet").getFile());
-        assertTableEquals(uncompressed, lz4);
+            final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/lz4.parquet").getFile());
+            assertTableEquals(uncompressed, lz4);
 
-        final Table snappy = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/snappy.parquet").getFile());
-        assertTableEquals(uncompressed, snappy);
+            final Table snappy =
+                    ParquetTools.readTable(TestParquetTools.class.getResource("/e0/snappy.parquet").getFile());
+            assertTableEquals(uncompressed, snappy);
 
-        final Table zstd = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/zstd.parquet").getFile());
-        assertTableEquals(uncompressed, zstd);
+            final Table zstd = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/zstd.parquet").getFile());
+            assertTableEquals(uncompressed, zstd);
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof InvalidParquetFileException) {
+                throw new UncheckedDeephavenException(InvalidParquetFileErrorMsgString, e.getCause());
+            }
+        }
     }
 
     @Test
     public void e1() {
-        final Table uncompressed =
-                ParquetTools.readTable(TestParquetTools.class.getResource("/e1/uncompressed.parquet").getFile());
+        try {
+            final Table uncompressed =
+                    ParquetTools.readTable(TestParquetTools.class.getResource("/e1/uncompressed.parquet").getFile());
 
-        final Table gzip = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/gzip.parquet").getFile());
-        assertTableEquals(uncompressed, gzip);
+            final Table gzip = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/gzip.parquet").getFile());
+            assertTableEquals(uncompressed, gzip);
 
-        final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/lz4.parquet").getFile());
-        assertTableEquals(uncompressed, lz4);
+            final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/lz4.parquet").getFile());
+            assertTableEquals(uncompressed, lz4);
 
-        final Table snappy = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/snappy.parquet").getFile());
-        assertTableEquals(uncompressed, snappy);
+            final Table snappy =
+                    ParquetTools.readTable(TestParquetTools.class.getResource("/e1/snappy.parquet").getFile());
+            assertTableEquals(uncompressed, snappy);
 
-        final Table zstd = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/zstd.parquet").getFile());
-        assertTableEquals(uncompressed, zstd);
+            final Table zstd = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/zstd.parquet").getFile());
+            assertTableEquals(uncompressed, zstd);
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof InvalidParquetFileException) {
+                throw new UncheckedDeephavenException(InvalidParquetFileErrorMsgString, e.getCause());
+            }
+        }
     }
 
     @Test
     public void e2() {
-        final Table uncompressed =
-                ParquetTools.readTable(TestParquetTools.class.getResource("/e2/uncompressed.parquet").getFile());
+        try {
+            final Table uncompressed =
+                    ParquetTools.readTable(TestParquetTools.class.getResource("/e2/uncompressed.parquet").getFile());
 
-        final Table gzip = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/gzip.parquet").getFile());
-        assertTableEquals(uncompressed, gzip);
+            final Table gzip = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/gzip.parquet").getFile());
+            assertTableEquals(uncompressed, gzip);
 
-        final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/lz4.parquet").getFile());
-        assertTableEquals(uncompressed, lz4);
+            final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/lz4.parquet").getFile());
+            assertTableEquals(uncompressed, lz4);
 
-        final Table snappy = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/snappy.parquet").getFile());
-        assertTableEquals(uncompressed, snappy);
+            final Table snappy =
+                    ParquetTools.readTable(TestParquetTools.class.getResource("/e2/snappy.parquet").getFile());
+            assertTableEquals(uncompressed, snappy);
 
-        final Table zstd = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/zstd.parquet").getFile());
-        assertTableEquals(uncompressed, zstd);
+            final Table zstd = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/zstd.parquet").getFile());
+            assertTableEquals(uncompressed, zstd);
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof InvalidParquetFileException) {
+                throw new UncheckedDeephavenException(InvalidParquetFileErrorMsgString, e.getCause());
+            }
+        }
     }
 
     private void testWriteRead(Table source, Function<Table, Table> transform) {
