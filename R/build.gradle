@@ -32,6 +32,7 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
 
     copyIn {
         from(layout.projectDirectory) {
+            include 'r-tests.sh'
             include 'rdeephaven/DESCRIPTION'
             include 'rdeephaven/LICENSE'
             include 'rdeephaven/NAMESPACE'
@@ -55,18 +56,20 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
         runCommand("""mkdir -p \\
                         /out \\
                         ${prefix}/log \\
-                        ${prefix}/src/rdeephaven/{inst,man,etc,src,R}
+                        ${prefix}/bin/rdeephaven \\
+                        ${prefix}/src/rdeephaven/{inst,man,etc,src,R,bin}
                    """)
         copyFile('rdeephaven/DESCRIPTION',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/LICENSE',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/NAMESPACE',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/README.md',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/inst/',  "${prefix}/src/rdeephaven/inst/")
-        copyFile('rdeephaven/man/', "${prefix}/src/deephaven/man/")
-        copyFile('rdeephaven/etc/', "${prefix}/src/deephaven/etc/")
-        copyFile('rdeephaven/R/', "${prefix}/src/deephaven/R/")
-        copyFile('rdeephaven/src/*.cpp', "${prefix}/src/deephaven/src/")
-        copyFile('rdeephaven/src/Makevars', "${prefix}/src/deephaven/src/")
+        copyFile('rdeephaven/man/', "${prefix}/src/rdeephaven/man/")
+        copyFile('rdeephaven/etc/', "${prefix}/src/rdeephaven/etc/")
+        copyFile('rdeephaven/R/', "${prefix}/src/rdeephaven/R/")
+        copyFile('rdeephaven/src/*.cpp', "${prefix}/src/rdeephaven/src/")
+        copyFile('rdeephaven/src/Makevars', "${prefix}/src/rdeephaven/src/")
+        copyFile('r-tests.sh', "${prefix}/bin/rdeephaven")
         runCommand("PREFIX=\"" + prefix + "\"; \\\n" +
                   '''set -eux ; \
                      cd "${PREFIX}/src/rdeephaven"; \
@@ -86,7 +89,7 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
     parentContainers = [ Docker.registryTask(project, 'r-client-base') ]
-    entrypoint = ["${prefix}/bin/dhcpp/r-tests.sh", '/out/r-test.xml', '/out/r-test.log']
+    entrypoint = ["${prefix}/bin/rdeephaven/r-tests.sh", '/out/r-test.xml', '/out/r-test.log']
 }
 
 deephavenDocker.shouldLogIfTaskFails testRClient

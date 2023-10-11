@@ -7,6 +7,9 @@ plugins {
     id 'license'
 }
 
+// We use the r-client-base image instead of the cpp-client-base,
+// so that the R client test task in R/build.gradle can in turn use the
+// image we will generate here as a base.
 evaluationDependsOn Docker.registryProject('cpp-client-base')
 
 configurations {
@@ -72,10 +75,9 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
             include 'deephaven/tests/**'
         }
     }
+
     dockerfile {
-        // We use the r-client-base image instead of the cpp-client-base,
-        // so that the R/build.gradle R client test can in turn use the
-        // image we will generate here as a base.
+        // See comment at the beginning of this file for why we use this base image.
         from('deephaven/r-client-base:local-build')
         //
         // Build and install client.
