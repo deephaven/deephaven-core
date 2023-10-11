@@ -26,6 +26,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.parquet.base.NullStatistics;
+import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.transfer.StringDictionary;
 import io.deephaven.stringset.ArrayStringSet;
@@ -1119,8 +1120,18 @@ public class ParquetTableReadWriteTest {
     public void verifyPyArrowStatistics() {
         final String path = ParquetTableReadWriteTest.class.getResource("/e0/pyarrow_stats.parquet").getFile();
         final File pyarrowDest = new File(path);
-        final Table pyarrowFromDisk = ParquetTools.readTable(pyarrowDest);
-
+        final Table pyarrowFromDisk;
+        try {
+            pyarrowFromDisk = ParquetTools.readTable(pyarrowDest);
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof InvalidParquetFileException) {
+                final String InvalidParquetFileErrorMsgString = "Invalid parquet file detected, please ensure the " +
+                        "file is fetched properly from Git LFS. Run commands 'git lfs install; git lfs pull' inside " +
+                        "the repo to pull the files from LFS. Check cause of exception for more details.";
+                throw new UncheckedDeephavenException(InvalidParquetFileErrorMsgString, e.getCause());
+            }
+            throw e;
+        }
         // Verify that our verification code works for a pyarrow generated table.
         assertTableStatistics(pyarrowFromDisk, pyarrowDest);
 

@@ -8,7 +8,6 @@
 #include <mutex>
 #include <optional>
 #include <set>
-#include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/clienttable/client_table.h"
 

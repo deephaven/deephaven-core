@@ -58,7 +58,7 @@ deephavenDocker {
 }
 
 def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
-    // Only tested on x86, and we only build dependencies for x86
+    // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
 
     copyIn {
@@ -74,56 +74,53 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }
+    def prefix = '/opt/deephaven'
     dockerfile {
         from('deephaven/cpp-client-base:local-build')
         //
-        // Build client library.
+        // Build and install client.
         //
-        runCommand('mkdir -p /cpp-client/deephaven/{dhcore,dhclient,examples,tests}')
-        copyFile('deephaven/CMakeLists.txt',  '/cpp-client/deephaven/')
-        copyFile('deephaven/dhcore/',  '/cpp-client/deephaven/dhcore/')
-        copyFile('deephaven/dhclient/', '/cpp-client/deephaven/dhclient/')
-        copyFile('deephaven/examples/', '/cpp-client/deephaven/examples/')
-        copyFile('deephaven/tests/', '/cpp-client/deephaven/tests/')
-        runCommand('''set -eux; \\
-                      mkdir -p /cpp-client/deephaven/build; \\
-                      cd /cpp-client/deephaven/build; \\
-                      . /cpp-client/deps/env.sh; \\
-                      cmake -DCMAKE_INSTALL_PREFIX=/cpp-client/install \\
+        runCommand("""mkdir -p \\
+                        /out \\
+                        ${prefix}/bin/dhcpp \\
+                        ${prefix}/log \\
+                        ${prefix}/src/deephaven/{dhcore,dhclient,examples,tests}
+                   """)
+        copyFile('deephaven/CMakeLists.txt',  "${prefix}/src/deephaven/")
+        copyFile('deephaven/dhcore/',  "${prefix}/src/deephaven/dhcore/")
+        copyFile('deephaven/dhclient/', "${prefix}/src/deephaven/dhclient/")
+        copyFile('deephaven/examples/', "${prefix}/src/deephaven/examples/")
+        copyFile('deephaven/tests/', "${prefix}/src/deephaven/tests/")
+        copyFile('cpp-tests-to-junit.sh', "${prefix}/bin/dhcpp")
+        runCommand("PREFIX=\"" + prefix + "\"; \\\n" +
+                   '''set -eux; \\
+                      rm -fr ${PREFIX}/src/deephaven/build; \\
+                      mkdir -p ${PREFIX}/src/deephaven/build; \\
+                      cd ${PREFIX}/src/deephaven/build; \\
+                      . ${PREFIX}/env.sh; \\
+                      cmake \\
+                        -DCMAKE_INSTALL_PREFIX=${PREFIX} \\
                         -DCMAKE_BUILD_TYPE=Release \\
                         -DBUILD_SHARED_LIBS=ON \\
                         .. ; \\
-                      make -j\$NCPUS install
-                   ''')
-        //
-        // Build tests.
-        //
-        runCommand('mkdir -p /cpp-client/install/bin /out')
-        copyFile('cpp-tests-to-junit.sh', '/cpp-client/install/bin')
-        runCommand('''set -eux; \\
-                      cd /cpp-client/deephaven/build/tests; \\
-                      echo build/tests: ==; ls .; echo ../../tests; ls ../../tests; \\
-                      . /cpp-client/deps/env.sh; \\
-                      make -j\$NCPUS; \\
-                      mkdir -p /cpp-client/install/bin; \\
-                      cp -f /cpp-client/deephaven/build/tests/tests /cpp-client/install/bin; \
+                      make -j${NCPUS} install 2>&1 | gzip > ${PREFIX}/log/make-install.log.gz; \\
+                      cp -f ${PREFIX}/src/deephaven/build/tests/tests ${PREFIX}/bin/dhcpp/tests; \\
                       cd ..; \\
-                      rm -fr /cpp-client/deephaven/build; \\
-                      sed -i \\
-                        2i"LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/cpp-client/install/lib; export LD_LIBRARY_PATH" \\
-                        /cpp-client/install/bin/cpp-tests-to-junit.sh
+                      rm -fr ${PREFIX}/src/deephaven/build
                    ''')
         //
         // Setup for test run.
         //
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
+        environmentVariable 'DH_PREFIX', prefix
+        environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
     parentContainers = [ Docker.registryTask(project, 'cpp-client-base') ]
-    entrypoint = ['/cpp-client/install/bin/cpp-tests-to-junit.sh', '/out/cpp-test.xml', '/out/cpp-test.log']
+    entrypoint = ["${prefix}/bin/dhcpp/cpp-tests-to-junit.sh", '/out/cpp-test.xml', '/out/cpp-test.log']
 }
 deephavenDocker.shouldLogIfTaskFails testCppClient
 tasks.check.dependsOn(testCppClient)

@@ -3,7 +3,7 @@
 \docType{class}
 \name{TableHandle}
 \alias{TableHandle}
-\title{Deephaven Tables}
+\title{Deephaven TableHandles}
 \description{
 A TableHandle holds a reference to a Deephaven Table on the server, and provides methods for operating on that table.
 Note that TableHandles should not be instantiated directly by user code, but rather by server calls accessible from
@@ -50,7 +50,7 @@ the `Client` class. See `?Client` for more information.
 \item \href{#method-TableHandle-std_by}{\code{TableHandle$std_by()}}
 \item \href{#method-TableHandle-percentile_by}{\code{TableHandle$percentile_by()}}
 \item \href{#method-TableHandle-count_by}{\code{TableHandle$count_by()}}
-\item \href{#method-TableHandle-cross_join}{\code{TableHandle$cross_join()}}
+\item \href{#method-TableHandle-join}{\code{TableHandle$join()}}
 \item \href{#method-TableHandle-natural_join}{\code{TableHandle$natural_join()}}
 \item \href{#method-TableHandle-exact_join}{\code{TableHandle$exact_join()}}
 \item \href{#method-TableHandle-sort}{\code{TableHandle$sort()}}
@@ -779,13 +779,31 @@ A TableHandle referencing the new table.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-cross_join"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-cross_join}{}}}
-\subsection{Method \code{cross_join()}}{
+\if{html}{\out{<a id="method-TableHandle-join"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-join}{}}}
+\subsection{Method \code{join()}}{
+Creates a new table containing rows that have matching values in both tables. Rows that do not have matching
+criteria will not be included in the result. If there are multiple matches between a row from the left table
+and rows from the right table, all matching combinations will be included. If no columns to match (on) are
+specified, every combination of left and right table rows is included.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$cross_join(table, on = character(), joins = character())}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$join(table, on = character(), joins = character())}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{table}}{TableHandle referencing the table to join with.}
+
+\item{\code{on}}{String or list of strings denoting the names of the columns to join on.}
+
+\item{\code{joins}}{String or list of strings denoting the names of the columns to add from `table`.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TableHandle-natural_join"></a>}}
@@ -810,6 +828,9 @@ If there is no matching key in the right table, appended row values are NULL.
 }
 \if{html}{\out{</div>}}
 }
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TableHandle-exact_join"></a>}}
@@ -832,6 +853,9 @@ right table where the key values in the left and right tables are equal.
 \item{\code{joins}}{String or list of strings denoting the names of the columns to add from `table`.}
 }
 \if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
 }
 }
 \if{html}{\out{<hr>}}

@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Descriptors.Descriptor;
 import gnu.trove.map.hash.TIntLongHashMap;
 import io.confluent.kafka.schemaregistry.SchemaProvider;
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientFactory;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
@@ -244,7 +244,7 @@ public class KafkaTools {
     /**
      * Enum to specify operations that may apply to either of Kafka KEY or VALUE fields.
      */
-    enum KeyOrValue {
+    public enum KeyOrValue {
         KEY, VALUE
     }
 
@@ -313,19 +313,19 @@ public class KafkaTools {
          */
         public static abstract class KeyOrValueSpec implements SchemaProviderProvider {
 
-            abstract Deserializer<?> getDeserializer(
+            protected abstract Deserializer<?> getDeserializer(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs);
 
-            abstract KeyOrValueIngestData getIngestData(
+            protected abstract KeyOrValueIngestData getIngestData(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs,
                     MutableInt nextColumnIndexMut,
                     List<ColumnDefinition<?>> columnDefinitionsOut);
 
-            abstract KeyOrValueProcessor getProcessor(
+            protected abstract KeyOrValueProcessor getProcessor(
                     TableDefinition tableDef,
                     KeyOrValueIngestData data);
         }
@@ -522,26 +522,15 @@ public class KafkaTools {
 
         /**
          * The kafka protobuf specs. This will fetch the {@link com.google.protobuf.Descriptors.Descriptor protobuf
-         * descriptor} for the {@link ProtobufConsumeOptions#schemaSubject() schema subject} from the schema registry
-         * using version {@link ProtobufConsumeOptions#schemaVersion() schema version} and create
+         * descriptor} based on the {@link ProtobufConsumeOptions#descriptorProvider()} and create the
          * {@link com.google.protobuf.Message message} parsing functions according to
          * {@link io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)}.
          * These functions will be adapted to handle schema changes.
-         *
-         * <p>
-         * For purposes of reproducibility across restarts where schema changes may occur, it is advisable for callers
-         * to set a specific {@link ProtobufConsumeOptions#schemaVersion() schema version}. This will ensure the
-         * resulting {@link io.deephaven.engine.table.TableDefinition table definition} will not change across restarts.
-         * This gives the caller an explicit opportunity to update any downstream consumers when updating
-         * {@link ProtobufConsumeOptions#schemaVersion() schema version} if necessary.
          *
          * @param options the options
          * @return the key or value spec
          * @see io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)
          *      parsing
-         * @see <a href=
-         *      "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-protobuf.html">kafka
-         *      protobuf serdes</a>
          */
         public static KeyOrValueSpec protobufSpec(ProtobufConsumeOptions options) {
             return new ProtobufConsumeImpl(options);
@@ -1258,11 +1247,14 @@ public class KafkaTools {
     }
 
     static SchemaRegistryClient newSchemaRegistryClient(Map<String, ?> configs, List<SchemaProvider> providers) {
+        // Note: choosing to not use the constructor with doLog which is a newer API; this is in support of downstream
+        // users _potentially_ being able to replace kafka jars with previous versions.
         final AbstractKafkaSchemaSerDeConfig config = new AbstractKafkaSchemaSerDeConfig(
                 AbstractKafkaSchemaSerDeConfig.baseConfigDef(),
-                configs,
-                false);
-        return SchemaRegistryClientFactory.newClient(
+                configs);
+        // Note: choosing to not use SchemaRegistryClientFactory.newClient which is a newer API; this is in support of
+        // downstream users _potentially_ being able to replace kafka jars with previous versions.
+        return new CachedSchemaRegistryClient(
                 config.getSchemaRegistryUrls(),
                 config.getMaxSchemasPerSubject(),
                 List.copyOf(providers),
@@ -1502,7 +1494,7 @@ public class KafkaTools {
         }
     }
 
-    static class KeyOrValueIngestData {
+    public static class KeyOrValueIngestData {
         public Map<String, String> fieldPathToColumnName;
         public int simpleColumnIndex = NULL_COLUMN_INDEX;
         public Function<Object, Object> toObjectChunkMapper = Function.identity();

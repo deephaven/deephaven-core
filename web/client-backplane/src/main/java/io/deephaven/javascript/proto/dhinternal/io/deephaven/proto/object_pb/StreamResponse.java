@@ -357,7 +357,7 @@ public class StreamResponse {
 
     public native void clearData();
 
-    public native Data getData();
+    public native ServerData getData();
 
     public native int getMessageCase();
 
@@ -367,7 +367,7 @@ public class StreamResponse {
 
     public native void setData();
 
-    public native void setData(Data value);
+    public native void setData(ServerData value);
 
     public native StreamResponse.ToObjectReturnType0 toObject();
 

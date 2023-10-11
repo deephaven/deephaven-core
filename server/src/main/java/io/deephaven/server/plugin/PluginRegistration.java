@@ -10,6 +10,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.Plugin;
 import io.deephaven.plugin.Registration;
 import io.deephaven.plugin.Registration.Callback;
+import io.deephaven.plugin.js.JsPlugin;
 import io.deephaven.plugin.type.ObjectType;
 
 import javax.inject.Inject;
@@ -45,6 +46,7 @@ public final class PluginRegistration {
     private class Counting implements Registration.Callback, LogOutputAppendable, Plugin.Visitor<Counting> {
 
         private int objectTypeCount = 0;
+        private int jsCount = 0;
 
         @Override
         public void register(Plugin plugin) {
@@ -63,8 +65,16 @@ public final class PluginRegistration {
         }
 
         @Override
+        public Counting visit(JsPlugin jsPlugin) {
+            log.info().append("Registering jsPlugin ").append(jsPlugin.toString()).endl();
+            callback.register(jsPlugin);
+            ++jsCount;
+            return this;
+        }
+
+        @Override
         public LogOutput append(LogOutput logOutput) {
-            return logOutput.append("objectType=").append(objectTypeCount);
+            return logOutput.append("objectType=").append(objectTypeCount).append(",js=").append(jsCount);
         }
     }
 }

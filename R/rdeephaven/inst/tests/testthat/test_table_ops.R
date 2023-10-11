@@ -768,11 +768,11 @@ test_that("sort behaves as expected", {
   data$client$close()
 })
 
-test_that("cross_join behaves as expected", {
+test_that("join behaves as expected", {
   data <- setup()
 
   new_th1 <- data$th5$
-    cross_join(data$th6,
+    join(data$th6,
       on = character(),
       joins = c("X_y = X", "Y_y = Y", "Number1_y = Number1", "Number2_y = Number2")
     )
