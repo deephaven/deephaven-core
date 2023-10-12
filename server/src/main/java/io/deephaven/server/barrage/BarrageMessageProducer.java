@@ -633,7 +633,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     }
                 } catch (Exception err) {
                     // the BMP is failing not the parent table; so we need to remove the BMP from the update graph
-                    parent.removeUpdateListener(this);
+                    forceReferenceCountToZero();
                     pendingError = err;
                     schedulePropagation();
                 }
