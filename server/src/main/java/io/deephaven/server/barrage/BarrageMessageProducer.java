@@ -603,33 +603,39 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         @Override
         public void onUpdate(final TableUpdate upstream) {
             synchronized (BarrageMessageProducer.this) {
-                if (lastUpdateClockStep >= parent.getUpdateGraph().clock().currentStep()) {
-                    throw new IllegalStateException(logPrefix + "lastUpdateClockStep=" + lastUpdateClockStep
-                            + " >= notification on "
-                            + parent.getUpdateGraph().clock().currentStep());
-                }
-
-                final boolean shouldEnqueueDelta = !activeSubscriptions.isEmpty();
-                if (shouldEnqueueDelta) {
-                    final long startTm = System.nanoTime();
-                    enqueueUpdate(upstream);
-                    recordMetric(stats -> stats.enqueue, System.nanoTime() - startTm);
-                    schedulePropagation();
-                }
-                parentTableSize = parent.size();
-
-                // mark when the last indices are from, so that terminal notifications can make use of them if required
-                lastUpdateClockStep = parent.getUpdateGraph().clock().currentStep();
-                if (log.isDebugEnabled()) {
-                    try (final RowSet prevRowSet = parent.getRowSet().copyPrev()) {
-                        log.debug().append(logPrefix)
-                                .append("lastUpdateClockStep=").append(lastUpdateClockStep)
-                                .append(", upstream=").append(upstream).append(", shouldEnqueueDelta=")
-                                .append(shouldEnqueueDelta)
-                                .append(", rowSet=").append(parent.getRowSet()).append(", prevRowSet=")
-                                .append(prevRowSet)
-                                .endl();
+                try {
+                    if (lastUpdateClockStep >= parent.getUpdateGraph().clock().currentStep()) {
+                        throw new IllegalStateException(logPrefix + "lastUpdateClockStep=" + lastUpdateClockStep
+                                + " >= notification on "
+                                + parent.getUpdateGraph().clock().currentStep());
                     }
+
+                    final boolean shouldEnqueueDelta = !activeSubscriptions.isEmpty();
+                    if (shouldEnqueueDelta) {
+                        final long startTm = System.nanoTime();
+                        enqueueUpdate(upstream);
+                        recordMetric(stats -> stats.enqueue, System.nanoTime() - startTm);
+                        schedulePropagation();
+                    }
+                    parentTableSize = parent.size();
+
+                    lastUpdateClockStep = parent.getUpdateGraph().clock().currentStep();
+                    if (log.isDebugEnabled()) {
+                        try (final RowSet prevRowSet = parent.getRowSet().copyPrev()) {
+                            log.debug().append(logPrefix)
+                                    .append("lastUpdateClockStep=").append(lastUpdateClockStep)
+                                    .append(", upstream=").append(upstream).append(", shouldEnqueueDelta=")
+                                    .append(shouldEnqueueDelta)
+                                    .append(", rowSet=").append(parent.getRowSet()).append(", prevRowSet=")
+                                    .append(prevRowSet)
+                                    .endl();
+                        }
+                    }
+                } catch (Exception err) {
+                    // the BMP is failing not the parent table; so we need to remove the BMP from the update graph
+                    parent.removeUpdateListener(this);
+                    pendingError = err;
+                    schedulePropagation();
                 }
             }
         }

@@ -117,8 +117,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 return;
             }
             try (barrageMessage) {
-                final Listener listener = resultTable;
-                if (!connected || listener == null) {
+                final Listener localResultTable = resultTable;
+                if (!connected || localResultTable == null) {
                     return;
                 }
 
@@ -135,7 +135,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
                 rowsReceived += resultSize;
 
-                listener.handleBarrageMessage(barrageMessage);
+                localResultTable.handleBarrageMessage(barrageMessage);
             }
         }
 
@@ -145,11 +145,11 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                     .append(": Error detected in snapshot: ")
                     .append(t).endl();
 
-            final Listener listener = resultTable;
-            if (!connected || listener == null) {
+            final Listener localResultTable = resultTable;
+            if (!connected || localResultTable == null) {
                 return;
             }
-            listener.handleBarrageError(t);
+            localResultTable.handleBarrageError(t);
             handleDisconnect();
         }
 

@@ -10,18 +10,18 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
+import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.updategraph.TerminalNotification;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
@@ -57,12 +57,14 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private final ClientCallStreamObserver<FlightData> observer;
 
     private BarrageTable resultTable;
+    private final UpdateGraph updateGraph;
 
     private volatile Condition completedCondition;
     private volatile boolean completed = false;
-    private volatile long rowsReceived = 0L;
     private volatile Throwable exceptionWhileCompleting = null;
-    private InstrumentedTableUpdateListener listener = null;
+    private volatile RowSet viewport;
+    private volatile boolean reverseViewport;
+    private volatile InstrumentedTableUpdateListener listener = null;
 
     private boolean subscribed = false;
     private volatile boolean connected = true;
@@ -88,7 +90,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         final TableDefinition tableDefinition = schema.tableDef;
         resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, -1);
-        resultTable.addParentReference(this);
+        updateGraph = resultTable.getUpdateGraph();
 
         final MethodDescriptor<FlightData, BarrageMessage> subscribeDescriptor =
                 getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
@@ -125,31 +127,36 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 return;
             }
             try (barrageMessage) {
-                final Listener localResultTable = resultTable;
+                final BarrageTable localResultTable = resultTable;
                 if (!connected || localResultTable == null) {
                     return;
                 }
 
-                long numRows = barrageMessage.rowsIncluded.size();
-                rowsReceived += numRows;
                 localResultTable.handleBarrageMessage(barrageMessage);
-
-                // if the message was empty, then BaseTable prevents propagating the empty update, and our listener was
-                // not invoked, so let's invoke it ourselves
-                if (numRows == 0) {
-                    final TableUpdate emptyUpdate = new TableUpdateImpl(
-                            RowSetFactory.empty(), RowSetFactory.empty(), RowSetFactory.empty(), RowSetShiftData.EMPTY,
-                            ModifiedColumnSet.EMPTY);
-                    listener.onUpdate(emptyUpdate);
-                    emptyUpdate.release();
+                if (!resultTable.isRefreshing()) {
+                    checkIfSubscriptionIsComplete();
+                    return;
                 }
+
+                // must catch the case of no event propagation when a refresh is finalized by an empty update
+                // (e.g. a ticking table could have reduced in size; it does not need to be initially an empty table)
+                if (listener == null || !barrageMessage.isSnapshot || barrageMessage.rowsIncluded.isNonempty()) {
+                    return;
+                }
+
+                updateGraph.addNotification(new TerminalNotification() {
+                    @Override
+                    public void run() {
+                        checkIfSubscriptionIsComplete();
+                    }
+                });
             }
         }
 
         @Override
         public void onError(final Throwable t) {
-            final Listener listener = resultTable;
-            if (!connected || listener == null) {
+            final BarrageTable localResultTable = resultTable;
+            if (!connected || localResultTable == null) {
                 return;
             }
 
@@ -157,7 +164,12 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     .append(": Error detected in subscription: ")
                     .append(t).endl();
 
-            listener.handleBarrageError(t);
+            exceptionWhileCompleting = t;
+            localResultTable.handleBarrageError(t);
+            // we must manually trigger completion if we're not refreshing
+            if (!localResultTable.isRefreshing()) {
+                checkIfSubscriptionIsComplete();
+            }
             handleDisconnect();
         }
 
@@ -170,11 +182,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     @Override
     public boolean isCompleted() {
         return completed;
-    }
-
-    @Override
-    public long getRowsReceived() {
-        return rowsReceived;
     }
 
     @Override
@@ -208,28 +215,33 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         if (subscribed) {
             throw new UncheckedDeephavenException(
                     "BarrageSubscription objects cannot be reused.");
-        } else {
-            // test lock conditions
-            if (resultTable.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
-                throw new UnsupportedOperationException(
-                        "Cannot create subscription while holding the UpdateGraph shared lock");
-            }
+        }
+        subscribed = true;
 
-            if (resultTable.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
-                completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
-            }
+        if (!isSnapshot) {
+            resultTable.addSourceToRegistrar();
+            resultTable.addParentReference(this);
+        }
 
-            // Send the initial subscription:
-            observer.onNext(FlightData.newBuilder()
-                    .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(
-                            viewport, columns, reverseViewport, options, tableHandle.ticketId().bytes())))
-                    .build());
-            subscribed = true;
+        // test lock conditions
+        if (updateGraph.sharedLock().isHeldByCurrentThread()) {
+            throw new UnsupportedOperationException(
+                    "Cannot create subscription while holding the UpdateGraph shared lock");
+        }
 
+        if (updateGraph.exclusiveLock().isHeldByCurrentThread()) {
+            completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
+        }
+
+        this.viewport = viewport;
+        this.reverseViewport = reverseViewport;
+
+        if (resultTable.isRefreshing()) {
             // use a listener to decide when the table is complete
             listener = new InstrumentedTableUpdateListener("completeness-listener") {
                 @ReferentialIntegrity
                 final BarrageTable tableRef = resultTable;
+
                 {
                     // Maintain a liveness ownership relationship with resultTable for the lifetime of the
                     // listener
@@ -245,57 +257,30 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 @Override
                 protected void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
                     exceptionWhileCompleting = originalException;
-                    if (completedCondition != null) {
-                        resultTable.getUpdateGraph().requestSignal(completedCondition);
-                    } else {
-                        synchronized (BarrageSubscriptionImpl.this) {
-                            BarrageSubscriptionImpl.this.notifyAll();
-                        }
-                    }
+                    signalCompletion();
                 }
 
                 @Override
                 public void onUpdate(final TableUpdate upstream) {
-                    boolean isComplete = false;
-
-                    // test to see if the viewport matches the requested
-                    if (viewport == null && resultTable.getServerViewport() == null) {
-                        isComplete = true;
-                    } else if (viewport != null && resultTable.getServerViewport() != null
-                            && reverseViewport == resultTable.getServerReverseViewport()) {
-                        isComplete = viewport.subsetOf(resultTable.getServerViewport());
-                    }
-
-                    if (isComplete) {
-                        if (isSnapshot) {
-                            resultTable.sealTable(() -> {
-                                // signal that we are closing the connection
-                                observer.onCompleted();
-                                signalCompletion();
-                            }, () -> {
-                                exceptionWhileCompleting = new Exception();
-                            });
-                        } else {
-                            signalCompletion();
-                        }
-
-                        // no longer need to listen for completion
-                        resultTable.removeUpdateListener(this);
-                        listener = null;
-                    }
+                    checkIfSubscriptionIsComplete();
                 }
             };
-
             resultTable.addUpdateListener(listener);
+        }
 
-            if (blockUntilComplete) {
-                while (!completed && exceptionWhileCompleting == null) {
-                    // handle the condition where this function may have the exclusive lock
-                    if (completedCondition != null) {
-                        completedCondition.await();
-                    } else {
-                        wait(); // barragesubscriptionimpl lock
-                    }
+        // Send the initial subscription:
+        observer.onNext(FlightData.newBuilder()
+                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(
+                        viewport, columns, reverseViewport, options, tableHandle.ticketId().bytes())))
+                .build());
+
+        if (blockUntilComplete) {
+            while (!completed && exceptionWhileCompleting == null) {
+                // handle the condition where this function may have the exclusive lock
+                if (completedCondition != null) {
+                    completedCondition.await();
+                } else {
+                    wait(); // barragesubscriptionimpl lock
                 }
             }
         }
@@ -307,10 +292,39 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         }
     }
 
+    private void checkIfSubscriptionIsComplete() {
+        if (completed || (resultTable.isRefreshing() && listener == null)) {
+            // we've either already completed or have already scheduled completion
+            return;
+        }
+
+        boolean isComplete = exceptionWhileCompleting != null;
+
+        // test to see if the viewport matches the requested
+        if (viewport == null && resultTable.getServerViewport() == null) {
+            isComplete = true;
+        } else if (viewport != null && resultTable.getServerViewport() != null
+                && reverseViewport == resultTable.getServerReverseViewport()) {
+            isComplete |= viewport.subsetOf(resultTable.getServerViewport());
+        }
+
+        if (isComplete) {
+            if (isSnapshot) {
+                observer.onCompleted();
+            } else {
+                // no longer need to listen; we're caught up
+                resultTable.removeUpdateListener(listener);
+                listener = null;
+            }
+
+            signalCompletion();
+        }
+    }
+
     private void signalCompletion() {
         completed = true;
         if (completedCondition != null) {
-            resultTable.getUpdateGraph().requestSignal(completedCondition);
+            updateGraph.requestSignal(completedCondition);
         } else {
             synchronized (BarrageSubscriptionImpl.this) {
                 BarrageSubscriptionImpl.this.notifyAll();

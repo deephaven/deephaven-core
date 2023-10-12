@@ -46,14 +46,6 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
     boolean isCompleted();
 
     /**
-     * This call will return the number of rows received by the subscription handler. This is the sum of all the
-     * `rowsIncluded` in the BarrageMessages
-     *
-     * @return number of rows received by the subscription handler
-     */
-    long getRowsReceived();
-
-    /**
      * Request a full subscription of the data and populate a {@link BarrageTable} with the incrementally updating data
      * that is received. This call will block until all rows for the subscribed table are available.
      *

@@ -177,6 +177,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
      */
     public void addSourceToRegistrar() {
         setRefreshing(true);
+        maybeEnablePrevTracking();
         registrar.addSource(refresher);
     }
 
@@ -217,16 +218,18 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
      * @param onSealFailure pass a callback that gets invoked if the table fails to finish applying updates
      */
     public synchronized void sealTable(final Runnable onSealRunnable, final Runnable onSealFailure) {
-        // TODO (core#803): sealing of static table data acquired over flight/barrage
+        if (isRefreshing()) {
+            throw new IllegalStateException("Cannot seal a refreshing table!");
+        }
+
         if (stats != null) {
             stats.stop();
         }
-        setRefreshing(false);
         sealed = true;
         this.onSealRunnable = onSealRunnable;
         this.onSealFailure = onSealFailure;
 
-        doWakeup();
+        realRefresh();
     }
 
     @Override
@@ -239,7 +242,12 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         synchronized (pendingUpdatesLock) {
             pendingUpdates.add(update.clone());
         }
-        doWakeup();
+
+        if (!isRefreshing()) {
+            realRefresh();
+        } else {
+            doWakeup();
+        }
     }
 
     @Override
@@ -269,7 +277,9 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     private synchronized void realRefresh() {
         if (pendingError != null) {
-            notifyListenersOnError(pendingError, null);
+            if (isRefreshing()) {
+                notifyListenersOnError(pendingError, null);
+            }
             // once we notify on error we are done, we can not notify any further, we are failed
             cleanup();
             return;
@@ -279,7 +289,9 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
                 // publish one last clear downstream; this data would be stale
                 final RowSet allRows = getRowSet().copy();
                 getRowSet().writableCast().remove(allRows);
-                notifyListeners(RowSetFactory.empty(), allRows, RowSetFactory.empty());
+                if (isRefreshing()) {
+                    notifyListeners(RowSetFactory.empty(), allRows, RowSetFactory.empty());
+                }
             }
             cleanup();
             return;
@@ -301,8 +313,11 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         localPendingUpdates.clear();
 
         if (update != null) {
-            maybeEnablePrevTracking();
-            notifyListeners(update);
+            if (isRefreshing()) {
+                notifyListeners(update);
+            } else {
+                update.release();
+            }
         }
 
         if (sealed) {
@@ -324,7 +339,12 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     private void cleanup() {
         unsubscribed = true;
-        registrar.removeSource(refresher);
+        if (stats != null) {
+            stats.stop();
+        }
+        if (isRefreshing()) {
+            registrar.removeSource(refresher);
+        }
         synchronized (pendingUpdatesLock) {
             // release any pending snapshots, as we will never process them
             pendingUpdates.clear();
@@ -352,6 +372,10 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     private void enqueueError(final Throwable e) {
         synchronized (pendingUpdatesLock) {
             pendingError = e;
+        }
+        if (!isRefreshing()) {
+            realRefresh();
+        } else {
             doWakeup();
         }
     }
@@ -404,11 +428,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
                     registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes,
                     initialViewPortRows);
         }
-
-        // Even if this source table will eventually be static, the data isn't here already. Static tables need to
-        // have refreshing set to false after processing data but prior to publishing the object to consumers.
-        table.setRefreshing(true);
-        table.addSourceToRegistrar();
 
         return table;
     }
