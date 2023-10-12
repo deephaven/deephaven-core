@@ -12,16 +12,11 @@ import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.function.Function;
-
 /**
- * The kafka protobuf options. This will fetch the {@link com.google.protobuf.Descriptors.Descriptor protobuf
- * descriptor} for the {@link #schemaSubject()} from the schema registry using version {@link #schemaVersion()} and
- * create {@link com.google.protobuf.Message message} parsing functions according to
- * {@link io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)}. These
- * functions will be adapted to handle schema changes.
+ * The kafka protobuf options. This will get the {@link com.google.protobuf.Descriptors.Descriptor protobuf descriptor}
+ * according to the {@link #descriptorProvider()} and create {@link com.google.protobuf.Message message} parsing
+ * functions according to
+ * {@link io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)}.
  *
  * @see Consume#protobufSpec(ProtobufConsumeOptions)
  * @see <a href=
@@ -68,37 +63,31 @@ public abstract class ProtobufConsumeOptions {
     }
 
     /**
-     * The schema subject to fetch from the schema registry.
+     * The descriptor provider.
      *
-     * @return the schema subject
+     * @return the descriptor provider
      */
-    public abstract String schemaSubject();
+    public abstract DescriptorProvider descriptorProvider();
 
     /**
-     * The schema version to fetch from the schema registry. When not set, the latest schema will be fetched.
+     * The protocol for decoding the payload. When {@link #descriptorProvider()} is a {@link DescriptorSchemaRegistry},
+     * {@link Protocol#serdes()} will be used by default; when {@link #descriptorProvider()} is a
+     * {@link DescriptorMessageClass}, {@link Protocol#raw()} will be used by default.
      *
-     * <p>
-     * For purposes of reproducibility across restarts where schema changes may occur, it is advisable for callers to
-     * set this. This will ensure the resulting {@link io.deephaven.engine.table.TableDefinition table definition} will
-     * not change across restarts. This gives the caller an explicit opportunity to update any downstream consumers
-     * before bumping schema versions.
-     *
-     * @return the schema version, or none for latest
+     * @return the payload protocol
      */
-    public abstract OptionalInt schemaVersion();
-
-    /**
-     * The fully-qualified protobuf {@link com.google.protobuf.Message} name, for example "com.example.MyMessage". This
-     * message's {@link Descriptor} will be used as the basis for the resulting table's
-     * {@link io.deephaven.engine.table.TableDefinition definition}. When not set, the first message descriptor in the
-     * protobuf schema will be used.
-     *
-     * <p>
-     * It is advisable for callers to explicitly set this.
-     *
-     * @return the schema message name
-     */
-    public abstract Optional<String> schemaMessageName();
+    @Default
+    public Protocol protocol() {
+        final DescriptorProvider dp = descriptorProvider();
+        if (dp instanceof DescriptorSchemaRegistry) {
+            return Protocol.serdes();
+        }
+        if (dp instanceof DescriptorMessageClass) {
+            return Protocol.raw();
+        }
+        throw new IllegalStateException(String.format("Unexpected %s class: %s",
+                DescriptorProvider.class.getSimpleName(), dp.getClass().getName()));
+    }
 
     /**
      * The descriptor parsing options. By default, is {@link ProtobufDescriptorParserOptions#defaults()}.
@@ -122,12 +111,9 @@ public abstract class ProtobufConsumeOptions {
     }
 
     public interface Builder {
+        Builder protocol(Protocol protocol);
 
-        Builder schemaSubject(String schemaSubject);
-
-        Builder schemaVersion(int schemaVersion);
-
-        Builder schemaMessageName(String schemaMessageName);
+        Builder descriptorProvider(DescriptorProvider descriptorProvider);
 
         Builder parserOptions(ProtobufDescriptorParserOptions options);
 

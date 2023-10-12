@@ -29,12 +29,13 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
 
     private final RunLengthBitPackingHybridEncoder encoder;
     private final byte bitWidth;
+    private IntBuffer nullOffsets;
 
     RleIntChunkedWriter(int pageSize, ByteBufferAllocator allocator, byte bitWidth) {
         encoder = new RunLengthBitPackingHybridEncoder(bitWidth, pageSize, pageSize, allocator);
         this.bitWidth = bitWidth;
+        nullOffsets = IntBuffer.allocate(4);
     }
-
 
     @Override
     public final void writeInteger(int v) {
@@ -132,7 +133,7 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull IntBuffer bulkValues,
                                                            final int rowCount,
                                                            @NotNull final Statistics<?> statistics) {
-        IntBuffer nullOffsets = IntBuffer.allocate(4);
+        nullOffsets.clear();
         int i = 0;
         while (bulkValues.hasRemaining()) {
             int v = bulkValues.get();

@@ -21,9 +21,11 @@ import java.nio.IntBuffer;
  */
 public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuffer> {
     private final BooleanPlainValuesWriter writer;
+    private IntBuffer nullOffsets;
 
-    public PlainBooleanChunkedWriter() {
+    PlainBooleanChunkedWriter() {
         writer = new BooleanPlainValuesWriter();
+        nullOffsets = IntBuffer.allocate(4);
     }
 
     @Override
@@ -107,7 +109,7 @@ public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuff
     public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull ByteBuffer bulkValues,
                                                            final int rowCount,
                                                            @NotNull final Statistics<?> statistics) {
-        IntBuffer nullOffsets = IntBuffer.allocate(4);
+        nullOffsets.clear();
         int i = 0;
         while (bulkValues.hasRemaining()) {
             final byte next = bulkValues.get();
