@@ -10,18 +10,19 @@ package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
-class ByteTransfer extends IntCastablePrimitiveTransfer<ByteChunk<Values>> {
-
-    public ByteTransfer(@NotNull final ColumnSource<?> columnSource, final int targetSize) {
-        super(columnSource, targetSize);
+final class ByteTransfer extends IntCastablePrimitiveTransfer<ByteChunk<Values>> {
+    ByteTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, final int targetSize) {
+        super(columnSource, tableRowSet, targetSize);
     }
 
     @Override
     public void copyAllFromChunkToBuffer() {
-        for (int chunkIdx = 0; chunkIdx < chunk.size(); ++chunkIdx) {
+        final int chunkSize = chunk.size();
+        for (int chunkIdx = 0; chunkIdx < chunkSize; ++chunkIdx) {
             buffer.put(chunk.get(chunkIdx));
         }
     }

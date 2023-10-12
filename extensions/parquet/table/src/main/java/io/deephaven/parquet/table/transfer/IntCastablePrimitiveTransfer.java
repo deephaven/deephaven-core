@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table.transfer;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkBase;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -20,33 +21,30 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
     protected T chunk;
     protected final IntBuffer buffer;
     private final ColumnSource<?> columnSource;
+    private final RowSequence.Iterator tableRowSetIt;
     private final ChunkSource.GetContext context;
+    private final int maxValuesPerPage;
 
-    IntCastablePrimitiveTransfer(ColumnSource<?> columnSource, int targetSize) {
+    IntCastablePrimitiveTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+                                 final int targetPageSize) {
         this.columnSource = columnSource;
-        this.buffer = IntBuffer.allocate(targetSize);
-        context = columnSource.makeGetContext(targetSize);
+        this.tableRowSetIt = tableRowSet.getRowSequenceIterator();
+        this.maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize / Integer.BYTES));
+        Assert.gtZero(maxValuesPerPage, "maxValuesPerPage");
+        this.buffer = IntBuffer.allocate(maxValuesPerPage);
+        context = columnSource.makeGetContext(maxValuesPerPage);
     }
 
     @Override
-    final public void fetchData(@NotNull final RowSequence rs) {
-        // noinspection unchecked
-        chunk = (T) columnSource.getChunk(context, rs);
-    }
-
-    @Override
-    final public int transferAllToBuffer() {
-        return transferOnePageToBuffer();
-    }
-
-    @Override
-    final public int transferOnePageToBuffer() {
+    public int transferOnePageToBuffer() {
         if (!hasMoreDataToBuffer()) {
             return 0;
         }
         buffer.clear();
-        // Assuming that all the fetched data will fit in one page. This is because page count is accurately
-        // calculated for non variable-width types. Check ParquetTableWriter.getTargetRowsPerPage for more details.
+        // Fetch one page worth of data from the column source
+        final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength((long) maxValuesPerPage);
+        // noinspection unchecked
+        chunk = (T) columnSource.getChunk(context, rs);
         copyAllFromChunkToBuffer();
         buffer.flip();
         int ret = chunk.size();
@@ -61,17 +59,18 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
     abstract void copyAllFromChunkToBuffer();
 
     @Override
-    final public boolean hasMoreDataToBuffer() {
-        return (chunk != null);
+    public final boolean hasMoreDataToBuffer() {
+        return tableRowSetIt.hasMore();
     }
 
     @Override
-    final public IntBuffer getBuffer() {
+    public final IntBuffer getBuffer() {
         return buffer;
     }
 
     @Override
-    final public void close() {
+    public final void close() {
         context.close();
+        tableRowSetIt.close();
     }
 }

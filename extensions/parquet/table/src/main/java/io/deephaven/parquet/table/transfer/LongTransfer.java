@@ -10,27 +10,32 @@ package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.LongBuffer;
 
-class LongTransfer extends PrimitiveTransfer<WritableLongChunk<Values>, LongBuffer> {
-
-    public static LongTransfer create(@NotNull final ColumnSource<?> columnSource, final int targetSize) {
-        final long[] backingArray = new long[targetSize];
+final class LongTransfer extends PrimitiveTransfer<WritableLongChunk<Values>, LongBuffer> {
+    static LongTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,
+                              final int targetPageSize) {
+        final int maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize / Long.BYTES));
+        final long[] backingArray = new long[maxValuesPerPage];
         return new LongTransfer(
                 columnSource,
+                tableRowSet,
                 WritableLongChunk.writableChunkWrap(backingArray),
                 LongBuffer.wrap(backingArray),
-                targetSize);
+                maxValuesPerPage);
     }
 
     private LongTransfer(
             @NotNull final ColumnSource<?> columnSource,
+            @NotNull final RowSequence tableRowSet,
             @NotNull final WritableLongChunk<Values> chunk,
             @NotNull final LongBuffer buffer,
-            final int targetSize) {
-        super(columnSource, chunk, buffer, targetSize);
+            final int maxValuesPerPage) {
+        super(columnSource, tableRowSet, chunk, buffer, maxValuesPerPage);
     }
 }
