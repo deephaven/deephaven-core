@@ -1,3 +1,9 @@
+# An UpdateByOp represents a window-based operator that can be passed to update_by(). This is the return type of
+# all of the uby functions. It is a wrapper around an Rcpp_INTERNAL_UpdateByOp, which itself is a wrapper around a
+# C++ UpdateByOpWrapper, which is finally a wrapper around a C++ UpdateByOperation. See rdeephaven/src/client.cpp for details.
+# Note that UpdateByOps should not be instantiated directly by user code, but rather by provided uby functions.
+
+
 #' @name
 #' UpdateBy
 #' @title
@@ -17,7 +23,7 @@
 #' @section
 #' Applying UpdateBy operations to a table:
 #' The table method `update_by()` is the entry point for UpdateBy operations. It takes two arguments: the first is an
-#' `UpdateByOp` or a list of `UpdateByOp`s denoting the calculations to perform on specific columns of the
+#' [`UpdateByOp`][UpdateByOp] or a list of `UpdateByOp`s denoting the calculations to perform on specific columns of the
 #' table. Then, it takes a column name or a list of column names that define the groups to perform the calculations on.
 #' If you don't want grouped calculations, this argument can be omitted.
 #'
@@ -28,8 +34,8 @@
 #' `uby` functions:
 #' `uby` functions are the workers that actually execute the complex UpdateBy calculations. These functions are
 #' _generators_, meaning they return _functions_ that the Deephaven engine knows how to interpret. We call the functions
-#' that they return `UpdateByOp`s. These `UpdateByOp`s are not R-level functions, but Deephaven-specific data types that
-#' perform all of the intensive calculations. Here is a list of all `uby` functions available in Deephaven:
+#' that they return [`UpdateByOp`][UpdateByOp]s. These `UpdateByOp`s are not R-level functions, but Deephaven-specific
+#' data types that perform all of the intensive calculations. Here is a list of all `uby` functions available in Deephaven:
 #'
 #' - [`uby_cum_min()`][uby_cum_min]
 #' - [`uby_cum_max()`][uby_cum_max]
@@ -79,10 +85,29 @@
 NULL
 
 
-# An UpdateByOp represents a window-based operator that can be passed to update_by(). This is the return type of
-# all of the uby functions. It is a wrapper around an Rcpp_INTERNAL_UpdateByOp, which itself is a wrapper around a
-# C++ UpdateByOpWrapper, which is finally a wrapper around a C++ UpdateByOperation. See rdeephaven/src/client.cpp for details.
-# Note that UpdateByOps should not be instantiated directly by user code, but rather by provided uby functions.
+#' @name UpdateByOp
+#' @title Deephaven UpdateByOps
+#' @md
+#' @description
+#' An `UpdateByOp` is the return type of one of Deephaven's [`uby`][UpdateBy] functions. It is a function that performs
+#' the computation specified by the `uby` function. These are intended to be passed directly to `update_by()`,
+#' and should never be instantiated directly be user code.
+#'
+#' If multiple tables have the same schema and the same UpdateBy operations need to be applied to each table, saving
+#' these objects directly in a variable may be useful to avoid having to re-create them each time:
+#' ```
+#' operations <- c(uby_rolling_avg_tick("XAvg = X", "YAvg = Y"),
+#'                 uby_rolling_std_tick("XStd = X", "YStd = Y"))
+#'
+#' result1 <- th1$update_by(operations, by="Group")
+#' result2 <- th2$update_by(operations, by="Group")
+#' ```
+#' In this example, `operations` would be a vector of two `UpdateByOp`s that can be reused in multiple calls to `update_by()`.
+#'
+#' @usage NULL
+#' @format NULL
+#' @docType class
+#' @export
 UpdateByOp <- R6Class("UpdateByOp",
   cloneable = FALSE,
   public = list(
@@ -113,7 +138,7 @@ UpdateByOp <- R6Class("UpdateByOp",
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -146,7 +171,7 @@ uby_cum_sum <- function(cols = character()) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -179,7 +204,7 @@ uby_cum_prod <- function(cols = character()) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -212,7 +237,7 @@ uby_cum_min <- function(cols = character()) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -246,7 +271,7 @@ uby_cum_max <- function(cols = character()) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -287,7 +312,7 @@ uby_forward_fill <- function(cols = character()) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -335,7 +360,7 @@ uby_delta <- function(cols = character(), delta_control = "null_dominates") {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -384,7 +409,7 @@ uby_ema_tick <- function(decay_ticks, cols = character(), operation_control = op
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -434,7 +459,7 @@ uby_ema_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -483,7 +508,7 @@ uby_ems_tick <- function(decay_ticks, cols = character(), operation_control = op
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -532,7 +557,7 @@ uby_ems_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -581,7 +606,7 @@ uby_emmin_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -630,7 +655,7 @@ uby_emmin_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -679,7 +704,7 @@ uby_emmax_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -733,7 +758,7 @@ uby_emmax_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -787,7 +812,7 @@ uby_emstd_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -840,7 +865,7 @@ uby_emstd_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -889,7 +914,7 @@ uby_rolling_sum_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -943,7 +968,7 @@ uby_rolling_sum_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -992,7 +1017,7 @@ uby_rolling_group_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1046,7 +1071,7 @@ uby_rolling_group_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1095,7 +1120,7 @@ uby_rolling_avg_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1149,7 +1174,7 @@ uby_rolling_avg_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1198,7 +1223,7 @@ uby_rolling_min_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1252,7 +1277,7 @@ uby_rolling_min_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1301,7 +1326,7 @@ uby_rolling_max_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1355,7 +1380,7 @@ uby_rolling_max_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1404,7 +1429,7 @@ uby_rolling_prod_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1458,7 +1483,7 @@ uby_rolling_prod_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1507,7 +1532,7 @@ uby_rolling_count_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1561,7 +1586,7 @@ uby_rolling_count_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1610,7 +1635,7 @@ uby_rolling_std_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1664,7 +1689,7 @@ uby_rolling_std_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'
@@ -1715,7 +1740,7 @@ uby_rolling_wavg_tick <- function(wcol, cols, rev_ticks, fwd_ticks = 0) {
 #' `A` and `B` columns.
 #'
 #' This function, like other Deephaven `uby` functions, is a generator function. That is, its output is another
-#' function called an `UpdateByOp` intended to be used in a call to `update_by()`. This detail is typically
+#' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
 #'

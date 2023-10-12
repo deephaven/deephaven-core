@@ -14,7 +14,7 @@ to group data by one or more columns, enabling complex group-wise calculations w
 \section{Applying UpdateBy operations to a table}{
 
 The table method \code{update_by()} is the entry point for UpdateBy operations. It takes two arguments: the first is an
-\code{UpdateByOp} or a list of \code{UpdateByOp}s denoting the calculations to perform on specific columns of the
+\code{\link{UpdateByOp}} or a list of \code{UpdateByOp}s denoting the calculations to perform on specific columns of the
 table. Then, it takes a column name or a list of column names that define the groups to perform the calculations on.
 If you don't want grouped calculations, this argument can be omitted.
 
@@ -26,8 +26,8 @@ the desired columns are passed to individual \code{uby} functions, enabling a ma
 
 \code{uby} functions are the workers that actually execute the complex UpdateBy calculations. These functions are
 \emph{generators}, meaning they return \emph{functions} that the Deephaven engine knows how to interpret. We call the functions
-that they return \code{UpdateByOp}s. These \code{UpdateByOp}s are not R-level functions, but Deephaven-specific data types that
-perform all of the intensive calculations. Here is a list of all \code{uby} functions available in Deephaven:
+that they return \code{\link{UpdateByOp}}s. These \code{UpdateByOp}s are not R-level functions, but Deephaven-specific
+data types that perform all of the intensive calculations. Here is a list of all \code{uby} functions available in Deephaven:
 \itemize{
 \item \code{\link[=uby_cum_min]{uby_cum_min()}}
 \item \code{\link[=uby_cum_max]{uby_cum_max()}}

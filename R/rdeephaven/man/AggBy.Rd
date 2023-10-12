@@ -33,8 +33,8 @@ various kinds of aggregations to different columns or groups of columns as neede
 
 \code{agg} functions are used to perform aggregation calculations on grouped data by passing them to \code{agg_by()} or
 \code{agg_all_by()}. These functions are \emph{generators}, meaning they return \emph{functions} that the Deephaven engine knows
-how to interpret. We call the functions that they return \code{AggOp}s. These \code{AggOp}s are not R-level functions, but
-Deephaven-specific data types that perform all of the intensive calculations. Here is a list of all \code{agg} functions
+how to interpret. We call the functions that they return \code{\link{AggOp}}s. These \code{AggOp}s are not R-level functions,
+but Deephaven-specific data types that perform all of the intensive calculations. Here is a list of all \code{agg} functions
 available in Deephaven:
 \itemize{
 \item \code{\link[=agg_first]{agg_first()}}

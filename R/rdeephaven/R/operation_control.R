@@ -2,6 +2,31 @@
 # This is the return type of op_control(). It is a wrapper around an Rcpp_INTERNAL_OperationControl, which itself is a
 # wrapper around a C++ OperationControl. See rdeephaven/src/client.cpp for details.
 # Note that OperationControl should not be instantiated directly by user code, but rather by op_control().
+
+
+#' @name OperationControl
+#' @title Deephaven OperationControl
+#' @md
+#' @description
+#' An `OperationControl` is the return type of Deephaven's [`op_control`][op_control] function. It is a function that
+#' determines how special values will be handled in the context of an [`update_by`][UpdateBy] operation.
+#' An `OperationControl`intended to be passed directly to a `uby` function, and should never be instantiated
+#' directly be user code.
+#'
+#' If you plan to use the same operation control parameters for multiple `uby` functions in one or more `update_by` calls,
+#' consider creating an `OperationControl` object and reusing it. For example:
+#' ```
+#' opc <- op_control(on_null = 'skip', on_nan = 'poison', big_value_context = 'decimal64')
+#'
+#' result <- th$update_by(c(uby_ema_tick(5, c("XEma = X", "YEma = Y"), opc),
+#'                          uby_emstd_tick(5, c("XEmstd = X", "YEmstd = Y"), opc)),
+#'                        by="Group")
+#' ```
+#'
+#' @usage NULL
+#' @format NULL
+#' @docType class
+#' @export
 OperationControl <- R6Class("OperationControl",
   cloneable = FALSE,
   public = list(
@@ -26,7 +51,7 @@ OperationControl <- R6Class("OperationControl",
 #' the only way to properly create an `OperationControl` object.
 #'
 #' @details
-#' An `OperationControl` defines the control parameters of some `uby` functions used in an `update_by()` call.
+#' An [`OperationControl`][OperationControl] defines the control parameters of some `uby` functions used in an `update_by()` call.
 #' The `uby` functions that can use an `OperationControl` to handle erroneous data are:
 #'
 #' - [`uby_ema_tick()`][uby_ema_tick]
@@ -37,6 +62,8 @@ OperationControl <- R6Class("OperationControl",
 #' - [`uby_emmin_time()`][uby_emmin_time]
 #' - [`uby_emmax_tick()`][uby_emmax_tick]
 #' - [`uby_emmax_time()`][uby_emmax_time]
+#' - [`uby_emstd_tick()`][uby_emstd_tick]
+#' - [`uby_emstd_time()`][uby_emstd_time]
 #'
 #' The arguments `on_null` and `on_nan` can take the following values:
 #'
@@ -53,10 +80,9 @@ OperationControl <- R6Class("OperationControl",
 #' - `'decimal64'`: IEEE 754R Decimal64 format. 16 digits and rounding is half-even.
 #' - `'unlimited'`: Unlimited precision arithmetic. Rounding is half-up.
 #'
-#' This function is a generator function. That is, its output is another function called an `OperationControl` intended
-#' to be used in a call to one of the above `uby` functions. This detail is typically hidden from the user by the `uby`
-#' function, which calls the `OperationControl` internally. However, it is important to understand this detail for
-#' debugging purposes, as the output of a call to `op_control()` can otherwise seem unexpected.
+#' This function is a generator function. That is, its output is another function called an [`OperationControl`][OperationControl] intended
+#' to be used in a call to one of the above `uby` functions. This detail is typically hidden from the user. However,
+#' it is important to understand this detail for debugging purposes, as the output of a call to `op_control()` can otherwise seem unexpected.
 #'
 #' @param on_null Defines how a `uby` function handles null values it encounters. `'skip'` is the default.
 #' @param on_nan Defines how a `uby` function handles NaN values it encounters. `'skip'` is the default.

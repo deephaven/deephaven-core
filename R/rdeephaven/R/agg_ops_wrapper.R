@@ -1,3 +1,9 @@
+# An AggOp represents an aggregation operator that can be passed to agg_by() or agg_all_by(). This is the return type
+# of all of the agg functions. It is a wrapper around an Rcpp_INTERNAL_AggOp, which itself is a wrapper around a
+# C++ AggregateWrapper, which is finally a wrapper around a C++ Aggregate. See rdeephaven/src/client.cpp for details.
+# Note that AggOps should not be instantiated directly by user code, but rather by provided agg functions.
+
+
 #' @name
 #' AggBy
 #' @title
@@ -34,8 +40,8 @@
 #' `agg` functions:
 #' `agg` functions are used to perform aggregation calculations on grouped data by passing them to `agg_by()` or
 #' `agg_all_by()`. These functions are _generators_, meaning they return _functions_ that the Deephaven engine knows
-#' how to interpret. We call the functions that they return `AggOp`s. These `AggOp`s are not R-level functions, but
-#' Deephaven-specific data types that perform all of the intensive calculations. Here is a list of all `agg` functions
+#' how to interpret. We call the functions that they return [`AggOp`][AggOp]s. These `AggOp`s are not R-level functions,
+#' but Deephaven-specific data types that perform all of the intensive calculations. Here is a list of all `agg` functions
 #' available in Deephaven:
 #'
 #' - [`agg_first()`][agg_first]
@@ -97,10 +103,30 @@
 #'
 NULL
 
-# An AggOp represents an aggregation operator that can be passed to agg_by() or agg_all_by(). This is the return type
-# of all of the agg functions. It is a wrapper around an Rcpp_INTERNAL_AggOp, which itself is a wrapper around a
-# C++ AggregateWrapper, which is finally a wrapper around a C++ Aggregate. See rdeephaven/src/client.cpp for details.
-# Note that AggOps should not be instantiated directly by user code, but rather by provided agg functions.
+
+#' Name AggOp
+#' @title Deephaven AggOps
+#' @md
+#' @description
+#' An `AggOp` is the return type of one of Deephaven's [`agg`][AggBy] functions. It is a function that performs the
+#' computation specified by the `agg` function. These are intended to be passed directly to `agg_by()` or `agg_all_by()`,
+#' and should never be instantiated directly be user code.
+#'
+#' If multiple tables have the same schema and the same aggregations need to be applied to each table, saving these
+#' objects directly in a variable may be useful to avoid having to re-create them each time:
+#' ```
+#' aggregations <- c(agg_min("XMin = X", "YMin = Y"),
+#'                   agg_max("XMax = X", "YMax = Y"))
+#'
+#' result1 <- th1$agg_by(aggregations, by="Group")
+#' result2 <- th2$agg_by(aggregations, by="Group")
+#' ```
+#' In this example, `aggregations` would be a vector of two `AggOp`s that can be reused in multiple calls to `agg_by()`.
+#'
+#' @usage NULL
+#' @format NULL
+#' @docType class
+#' @export
 AggOp <- R6Class("AggOp",
   cloneable = FALSE,
   public = list(
@@ -135,7 +161,7 @@ AggOp <- R6Class("AggOp",
 #' values in the `A` and `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
@@ -194,7 +220,7 @@ agg_first <- function(cols = character()) {
 #' values in the `A` and `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
@@ -241,7 +267,7 @@ agg_last <- function(cols = character()) {
 #' values in the `A` and `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
@@ -288,7 +314,7 @@ agg_min <- function(cols = character()) {
 #' values in the `A` and `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
@@ -335,7 +361,7 @@ agg_max <- function(cols = character()) {
 #' values in the `A` and `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
@@ -382,7 +408,7 @@ agg_sum <- function(cols = character()) {
 #' values in the `A` and `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
@@ -429,7 +455,7 @@ agg_abs_sum <- function(cols = character()) {
 #' values in the `A` and `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
@@ -476,7 +502,7 @@ agg_avg <- function(cols = character()) {
 #' values in the `A` and `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
@@ -525,7 +551,7 @@ agg_w_avg <- function(wcol, cols = character()) {
 #' values in the `A` and `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
@@ -572,7 +598,7 @@ agg_median <- function(cols = character()) {
 #' values in the `A` and `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
@@ -619,7 +645,7 @@ agg_var <- function(cols = character()) {
 #' values in the `A` and `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
@@ -666,7 +692,7 @@ agg_std <- function(cols = character()) {
 #' values in the `A` and `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
@@ -715,7 +741,7 @@ agg_percentile <- function(percentile, cols = character()) {
 #' `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
