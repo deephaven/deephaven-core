@@ -129,6 +129,8 @@ public class ReplicateUpdateBy {
         for (final String f : files) {
             if (f.contains("Int")) {
                 fixupInteger(f);
+            } else if (f.contains("Float") || f.contains("Double")) {
+                fixupFloatDoubleMinMax(f);
             }
         }
 
@@ -434,6 +436,17 @@ public class ReplicateUpdateBy {
                                 "        }\n" +
                                 "        return Collections.singletonMap(pair.leftColumn, actualOutput);\n" +
                                 "    }"));
+        FileUtils.writeLines(objectFile, lines);
+    }
+
+    private static void fixupFloatDoubleMinMax(String intResult) throws IOException {
+        final File objectFile = new File(intResult);
+        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+
+        // Float and Double.MIN_VALUE are small positive numbers and we want the largest negative values for comparison.
+        lines = ReplicationUtils.globalReplacements(lines,
+                "Float.MIN_VALUE", "NULL_FLOAT",
+                "Double.MIN_VALUE", "NULL_DOUBLE");
         FileUtils.writeLines(objectFile, lines);
     }
 }

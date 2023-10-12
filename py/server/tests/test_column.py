@@ -1,18 +1,20 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-
+import datetime
 import time
 import unittest
 from dataclasses import dataclass
 
-from deephaven import DHError, dtypes, new_table
+import numpy as np
+import pandas as pd
+
+from deephaven import DHError, dtypes, new_table, time as dhtime
 from deephaven import empty_table
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, jobj_col, ColumnType
 from deephaven.constants import MAX_BYTE, MAX_SHORT, MAX_INT, MAX_LONG
 from deephaven.jcompat import j_array_list
-from deephaven.time import epoch_nanos_to_instant
 from tests.testbase import BaseTestCase
 
 
@@ -53,8 +55,8 @@ class ColumnTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             _ = string_col(name="String", data=[1, -1.01])
 
-        with self.assertRaises(DHError) as cm:
-            _ = datetime_col(name="Datetime", data=[epoch_nanos_to_instant(round(time.time())), False])
+        with self.assertRaises(TypeError) as cm:
+            _ = datetime_col(name="Datetime", data=[round(time.time()), False])
 
         with self.assertRaises(DHError) as cm:
             _ = jobj_col(name="JObj", data=[jobj, CustomClass(-1, "-1")])
@@ -62,9 +64,19 @@ class ColumnTestCase(BaseTestCase):
     def test_array_column(self):
         strings = ["Str1", "Str1", "Str2", "Str2"]
         doubles = [1.0, 2.0, 4.0, 8.0]
+        numbers = [1, 2, 3, 4]
+        characters = [65, 66, 67, 68]
+        bools = [True, True, False, False]
         test_table = new_table([
             string_col("StringColumn", strings),
-            double_col("Decimals", doubles)
+            double_col("Decimals", doubles),
+            float_col("Floats", doubles),
+            byte_col("Bytes", numbers),
+            short_col("Shorts", numbers),
+            char_col("Chars", characters),
+            int_col("Ints", numbers),
+            long_col("Longs", numbers),
+            bool_col("Bools", bools)
         ]
         )
 
@@ -72,6 +84,13 @@ class ColumnTestCase(BaseTestCase):
 
         self.assertIsNone(test_table.columns[0].component_type)
         self.assertEqual(test_table.columns[1].component_type, dtypes.double)
+        self.assertEqual(test_table.columns[2].component_type, dtypes.float32)
+        self.assertEqual(test_table.columns[3].component_type, dtypes.byte)
+        self.assertEqual(test_table.columns[4].component_type, dtypes.short)
+        self.assertEqual(test_table.columns[5].component_type, dtypes.char)
+        self.assertEqual(test_table.columns[6].component_type, dtypes.int32)
+        self.assertEqual(test_table.columns[7].component_type, dtypes.long)
+        self.assertEqual(test_table.columns[8].component_type, dtypes.bool_)
 
     def test_vector_column(self):
         t = empty_table(0).update_view("StringColumn=`abc`").group_by()
@@ -113,6 +132,29 @@ class ColumnTestCase(BaseTestCase):
         self.assertEqual(t_list_integers.columns[5].data_type, dtypes.float32)
         self.assertEqual(t_list_integers.columns[6].data_type, dtypes.float64)
 
+    def test_datetime_col(self):
+        inst = dhtime.to_j_instant(round(time.time()))
+        dt = datetime.datetime.now()
+        _ = datetime_col(name="Datetime", data=[inst, dt, None])
+        self.assertEqual(_.data_type, dtypes.Instant)
+
+        ts = pd.Timestamp(dt)
+        np_dt = np.datetime64(dt)
+        data = [ts, np_dt, dt]
+        # test if we can convert to numpy datetime64 array
+        np.array([pd.Timestamp(dt).to_numpy() for dt in data], dtype=np.datetime64)
+        _ = datetime_col(name="Datetime", data=data)
+        self.assertEqual(_.data_type, dtypes.Instant)
+
+        data = np.array(['1970-01-01T00:00:00.000-07:00', '2020-01-01T01:00:00.000+07:00'])
+        np.array([pd.Timestamp(str(dt)).to_numpy() for dt in data], dtype=np.datetime64)
+        _ = datetime_col(name="Datetime", data=data)
+        self.assertEqual(_.data_type, dtypes.Instant)
+
+        data = np.array([1, -1])
+        data = data.astype(np.int64)
+        _ = datetime_col(name="Datetime", data=data)
+        self.assertEqual(_.data_type, dtypes.Instant)
 
 @dataclass
 class CustomClass:

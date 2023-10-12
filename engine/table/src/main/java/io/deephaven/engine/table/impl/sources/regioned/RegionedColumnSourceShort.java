@@ -55,11 +55,6 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
         AsValues() {
             super(ColumnRegionShort.createNull(PARAMETERS.regionMask), DeferredColumnRegionShort::new);
         }
-
-        @Override
-        public boolean isPartitioning() {
-            return false;
-        }
     }
 
     static final class Partitioning extends RegionedColumnSourceShort<Values> {
@@ -81,11 +76,6 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
                         + ": " + partitioningColumnValue + " is not a Short at location " + locationKey);
             }
             return new ColumnRegionShort.Constant<>(regionMask(), unbox((Short) partitioningColumnValue));
-        }
-
-        @Override
-        public boolean isPartitioning() {
-            return true;
         }
     }
 }

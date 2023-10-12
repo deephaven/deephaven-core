@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
 import io.deephaven.util.datastructures.hash.HashMapK4V4;
@@ -52,8 +53,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
         for (int ii = 0; ii < sortColumnNames.length; ++ii) {
             // noinspection unchecked
-            sortColumns[ii] = (ColumnSource<Comparable<?>>) QueryTable
-                    .maybeTransformToPrimitive(parent.getColumnSource(sortColumnNames[ii]));
+            sortColumns[ii] = (ColumnSource<Comparable<?>>) ReinterpretUtils
+                    .maybeConvertToPrimitive(parent.getColumnSource(sortColumnNames[ii]));
 
             Require.requirement(
                     Comparable.class.isAssignableFrom(sortColumns[ii].getType())
@@ -267,8 +268,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             // source
             for (int ii = 0; ii < sortedColumnsToSortBy.length; ++ii) {
                 // noinspection unchecked
-                sortedColumnsToSortBy[ii] =
-                        (ColumnSource<Comparable<?>>) QueryTable.maybeTransformToPrimitive(sortedColumnsToSortBy[ii]);
+                sortedColumnsToSortBy[ii] = (ColumnSource<Comparable<?>>) ReinterpretUtils
+                        .maybeConvertToPrimitive(sortedColumnsToSortBy[ii]);
             }
 
             resultTable = new QueryTable(resultRowSet, resultMap);

@@ -17,8 +17,6 @@ import io.deephaven.engine.util.PythonScope;
 import io.deephaven.engine.util.ScriptFinder;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.integrations.python.PythonDeephavenSession.PythonSnapshot;
-import io.deephaven.engine.util.scripts.ScriptPathLoader;
-import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectTypeLookup;
@@ -45,7 +43,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -62,10 +59,10 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     public static String SCRIPT_TYPE = "Python";
 
-    private final PythonScriptSessionModule module;
-    private final ScriptFinder scriptFinder;
     private final PythonEvaluator evaluator;
     private final PythonScope<PyObject> scope;
+    private final PythonScriptSessionModule module;
+    private final ScriptFinder scriptFinder;
 
     /**
      * Create a Python ScriptSession.
@@ -89,13 +86,12 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         scope = pythonEvaluator.getScope();
         executionContext.getQueryLibrary().importClass(org.jpy.PyObject.class);
         try (final SafeCloseable ignored = executionContext.open()) {
-            this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
+            module = (PythonScriptSessionModule) PyModule.importModule("deephaven_internal.script_session")
                     .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
         }
-        this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
+        scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
         publishInitial();
-
         /*
          * And now the user-defined initialization scripts, if any.
          */
@@ -115,13 +111,16 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     public PythonDeephavenSession(
             final UpdateGraph updateGraph, final PythonScope<?> scope) {
         super(updateGraph, NoOp.INSTANCE, null);
+
+        evaluator = null;
         this.scope = (PythonScope<PyObject>) scope;
         try (final SafeCloseable ignored = executionContext.open()) {
-            this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
+            module = (PythonScriptSessionModule) PyModule.importModule("deephaven_internal.script_session")
                     .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
         }
-        this.evaluator = null;
-        this.scriptFinder = null;
+        scriptFinder = null;
+
+        publishInitial();
     }
 
     @Override
@@ -261,7 +260,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         if (o == null) {
             return null;
         }
-        final Object javaObject = module.unwrap_to_java_type(o);
+        final Object javaObject = module.javaify(o);
         if (javaObject != null) {
             return javaObject;
         }
@@ -280,47 +279,28 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     public synchronized void setVariable(String name, @Nullable Object newValue) {
-        try (PythonSnapshot fromSnapshot = takeSnapshot()) {
-            final PyDictWrapper globals = scope.mainGlobals();
-            if (newValue == null) {
-                try {
-                    globals.delItem(name);
-                } catch (KeyError key) {
-                    // ignore
-                }
-            } else {
-                if (!(newValue instanceof PyObject)) {
-                    newValue = PythonObjectWrapper.wrap(newValue);
-                }
-                globals.setItem(name, newValue);
+        final PyDictWrapper globals = scope.mainGlobals();
+        if (newValue == null) {
+            try {
+                globals.delItem(name);
+            } catch (KeyError key) {
+                // ignore
             }
-            try (PythonSnapshot toSnapshot = takeSnapshot()) {
-                applyDiff(fromSnapshot, toSnapshot, null);
+        } else {
+            if (!(newValue instanceof PyObject)) {
+                newValue = PythonObjectWrapper.wrap(newValue);
             }
+            globals.setItem(name, newValue);
         }
+
+        // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
+        // other threads)
+        observeScopeChanges();
     }
 
     @Override
     public String scriptType() {
         return SCRIPT_TYPE;
-    }
-
-    @Override
-    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
-            ScriptPathLoaderState scriptLoaderState) {}
-
-    @Override
-    public void onApplicationInitializationEnd() {}
-
-    @Override
-    public void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {}
-
-    @Override
-    public void clearScriptPathLoader() {}
-
-    @Override
-    public boolean setUseOriginalScriptLoaderState(boolean useOriginal) {
-        return true;
     }
 
     // TODO core#41 move this logic into the python console instance or scope like this - can go further and move
@@ -329,7 +309,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     public Object unwrapObject(Object object) {
         if (object instanceof PyObject) {
             final PyObject pyObject = (PyObject) object;
-            final Object unwrapped = module.unwrap_to_java_type(pyObject);
+            final Object unwrapped = module.javaify(pyObject);
             if (unwrapped != null) {
                 return unwrapped;
             }
@@ -341,7 +321,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     interface PythonScriptSessionModule extends Closeable {
         PyObject create_change_list(PyObject from, PyObject to);
 
-        Object unwrap_to_java_type(PyObject object);
+        Object javaify(PyObject object);
 
         void close();
     }

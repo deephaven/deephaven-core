@@ -79,13 +79,12 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
 
     @Override
     public final LongType componentType() {
-        return LongType.instance();
+        return LongType.of();
     }
 
     @Override
-    public final <V extends PrimitiveArray.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(PrimitiveArray.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

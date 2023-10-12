@@ -32,7 +32,7 @@ from deephaven.updateby import UpdateByOperation
 
 # Table
 _J_Table = jpy.get_type("io.deephaven.engine.table.Table")
-_JLiveAttributeMap = jpy.get_type("io.deephaven.engine.table.impl.LiveAttributeMap")
+_JAttributeMap = jpy.get_type("io.deephaven.engine.table.AttributeMap")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
@@ -42,6 +42,7 @@ _JPair = jpy.get_type("io.deephaven.api.Pair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
 _JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
+_JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
 
 # PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
@@ -69,6 +70,11 @@ _JNodeType = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable$No
 _JFormatOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.FormatOperationsRecorder")
 _JSortOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.SortOperationsRecorder")
 _JFilterOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.FilterOperationsRecorder")
+
+# MultiJoin Table and input
+_JMultiJoinInput = jpy.get_type("io.deephaven.engine.table.MultiJoinInput")
+_JMultiJoinTable = jpy.get_type("io.deephaven.engine.table.MultiJoinTable")
+_JMultiJoinFactory = jpy.get_type("io.deephaven.engine.table.MultiJoinFactory")
 
 # For unittest vectorization
 _test_vectorization = False
@@ -539,6 +545,11 @@ class Table(JObjectWrapper):
         return self._is_refreshing
 
     @property
+    def is_blink(self) -> bool:
+        """Whether this table is a blink table."""
+        return _JBlinkTableTools.isBlink(self.j_table)
+
+    @property
     def update_graph(self) -> UpdateGraph:
         """The update graph of the table."""
         if self._update_graph is None:
@@ -570,9 +581,22 @@ class Table(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_table
 
+    def has_columns(self, cols: Union[str, Sequence[str]]):
+        """Whether this table contains a column for each of the provided names, return False if any of the columns is
+        not in the table.
+
+        Args:
+            cols (Union[str, Sequence[str]]): the column name(s)
+
+        Returns:
+            bool
+        """
+        cols = to_sequence(cols)
+        return self.j_table.hasColumns(cols)
+
     def attributes(self) -> Dict[str, Any]:
         """Returns all the attributes defined on the table."""
-        j_map = jpy.cast(self.j_table, _JLiveAttributeMap).getAttributes()
+        j_map = jpy.cast(self.j_table, _JAttributeMap).getAttributes()
         return j_map_to_dict(j_map)
 
     def with_attributes(self, attrs: Dict[str, Any]) -> Table:
@@ -594,9 +618,28 @@ class Table(JObjectWrapper):
         """
         try:
             j_map = j_hashmap(attrs)
-            return Table(j_table=jpy.cast(self.j_table, _JLiveAttributeMap).withAttributes(j_map))
+            return Table(j_table=jpy.cast(self.j_table, _JAttributeMap).withAttributes(j_map))
         except Exception as e:
             raise DHError(e, "failed to create a table with attributes.") from e
+
+    def without_attributes(self, attrs: Union[str, Sequence[str]]) -> Table:
+        """Returns a new Table that shares the underlying data and schema with this table but with the specified
+        attributes removed.
+
+        Args:
+            attrs (Union[str, Sequence[str]]): the attribute name(s) to be removed
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            attrs = j_array_list(to_sequence(attrs))
+            return Table(j_table=jpy.cast(self.j_table, _JAttributeMap).withoutAttributes(attrs))
+        except Exception as e:
+            raise DHError(e, "failed to create a table without attributes.") from e
 
     def to_string(self, num_rows: int = 10, cols: Union[str, Sequence[str]] = None) -> str:
         """Returns the first few rows of a table as a pipe-delimited string.
@@ -1078,8 +1121,8 @@ class Table(JObjectWrapper):
             raise DHError(e, "table restrict_sort_to operation failed.") from e
 
     def sort_descending(self, order_by: Union[str, Sequence[str]]) -> Table:
-        """The sort_descending method creates a new table where rows in a table are sorted in a largest to smallest
-        order based on the order_by column(s).
+        """The sort_descending method creates a new table where rows in a table are sorted in descending order based on
+        the order_by column(s).
 
         Args:
             order_by (Union[str, Sequence[str]], optional): the column name(s)
@@ -2084,6 +2127,29 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table slice operation failed.") from e
 
+    def slice_pct(self, start_pct: float, end_pct: float) -> Table:
+        """Extracts a subset of a table by row percentages.
+
+        Returns a subset of table in the range [floor(start_pct * size_of_table), floor(end_pct * size_of_table)).
+        For example, for a table of size 10, slice_pct(0.1, 0.7) will return a subset from the second row to the seventh
+        row. Similarly, slice_pct(0, 1) would return the entire table (because row positions run from 0 to size - 1).
+        The percentage arguments must be in range [0, 1], otherwise the function returns an error.
+
+        Args:
+            start_pct (float): the starting percentage point (inclusive) for rows to include in the result, range [0, 1]
+            end_pct (float): the ending percentage point (exclusive) for rows to include in the result, range [0, 1]
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self.j_table.slicePct(start_pct, end_pct))
+        except Exception as e:
+            raise DHError(e, "table slice_pct operation failed.") from e
+
     def rollup(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]] = None,
                include_constituents: bool = False) -> RollupTable:
         """Creates a rollup table.
@@ -2227,7 +2293,7 @@ class PartitionedTable(JObjectWrapper):
             unique_keys: False
             constituent_column: the name of the first column with a Table data type
             constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
-                column. Consequently the constituent column can't be empty
+                column. Consequently, the constituent column can't be empty
             constituent_changes_permitted: the value of table.is_refreshing
 
 
@@ -2236,7 +2302,7 @@ class PartitionedTable(JObjectWrapper):
             key_cols (Union[str, List[str]]): the key column name(s) of 'table'
             unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
             constituent_column (str): the constituent column name in 'table'
-            constituent_table_columns (list[Column]): the column definitions of the constituent table
+            constituent_table_columns (List[Column]): the column definitions of the constituent table
             constituent_changes_permitted (bool): whether the values of the constituent column can change
 
         Returns:
@@ -2422,17 +2488,17 @@ class PartitionedTable(JObjectWrapper):
         """The sort method creates a new partitioned table where the rows are ordered based on values in a specified
         set of columns. Sort can not use the constituent column.
 
-         Args:
-             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
-             order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
+        Args:
+            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
+            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
                 each sort column, default is None, meaning ascending order for all the sort columns.
 
-         Returns:
-             a new PartitionedTable
+        Returns:
+            a new PartitionedTable
 
-         Raises:
-             DHError
-         """
+        Raises:
+            DHError
+        """
 
         try:
             order_by = to_sequence(order_by)
@@ -3500,3 +3566,105 @@ class PartitionedTableProxy(JObjectWrapper):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateBy(j_array_list(ops), *by))
         except Exception as e:
             raise DHError(e, "update-by operation on the PartitionedTableProxy failed.") from e
+
+class MultiJoinInput(JObjectWrapper):
+    """A MultiJoinInput represents the input tables, key columns and additional columns to be used in the multi-table
+    natural join. """
+    j_object_type = _JMultiJoinInput
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_multijoininput
+
+    def __init__(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None):
+        """Creates a new MultiJoinInput containing the table to include for the join, the key columns from the table to
+        match with other table keys plus additional columns containing data from the table. Rows containing unique keys
+        will be added to the output table, otherwise the data from these columns will be added to the existing output
+        rows.
+
+        Args:
+            table (Table): the right table to include in the join
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+                i.e. "col_a = col_b" for different column names
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the this table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
+
+        Raises:
+            DHError
+        """
+        try:
+            self.table = table
+            on = to_sequence(on)
+            joins = to_sequence(joins)
+            self.j_multijoininput = _JMultiJoinInput.of(table.j_table, on, joins)
+        except Exception as e:
+            raise DHError(e, "failed to build a MultiJoinInput object.") from e
+
+
+class MultiJoinTable(JObjectWrapper):
+    """A MultiJoinTable is an object that contains the result of a multi-table natural join. To retrieve the underlying
+    result Table, use the table() method. """
+    j_object_type = _JMultiJoinTable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_multijointable
+
+    def table(self) -> Table:
+        """Returns the Table containing the multi-table natural join output. """
+        return Table(j_table=self.j_multijointable.table())
+
+    def __init__(self, input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
+                 on: Union[str, Sequence[str]] = None):
+        """Creates a new MultiJoinTable. The join can be specified in terms of either tables or MultiJoinInputs.
+
+        Args:
+            input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects
+                specifying the tables and columns to include in the join.
+            on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality
+                expression that matches every input table, i.e. "col_a = col_b" to rename output column names. Note:
+                When MultiJoinInput objects are supplied, this parameter must be omitted.
+
+        Raises:
+            DHError
+        """
+        try:
+            if isinstance(input, Table) or (isinstance(input, Sequence) and all(isinstance(t, Table) for t in input)):
+                tables = to_sequence(input, wrapped=True)
+                with auto_locking_ctx(*tables):
+                    j_tables = to_sequence(input)
+                    self.j_multijointable = _JMultiJoinFactory.of(on, *j_tables)
+            elif isinstance(input, MultiJoinInput) or (isinstance(input, Sequence) and all(isinstance(ji, MultiJoinInput) for ji in input)):
+                if on is not None:
+                    raise DHError(message="on parameter is not permitted when MultiJoinInput objects are provided.")
+                wrapped_input = to_sequence(input, wrapped=True)
+                tables = [ji.table for ji in wrapped_input]
+                with auto_locking_ctx(*tables):
+                    input = to_sequence(input)
+                    self.j_multijointable = _JMultiJoinFactory.of(*input)
+            else:
+                raise DHError(message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs.")
+
+        except Exception as e:
+            raise DHError(e, "failed to build a MultiJoinTable object.") from e
+
+
+
+def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
+               on: Union[str, Sequence[str]] = None) -> MultiJoinTable:
+    """ The multi_join method creates a new table by performing a multi-table natural join on the input tables.  The result
+    consists of the set of distinct keys from the input tables natural joined to each input table. Input tables need not
+    have a matching row for each key, but they may not have multiple matching rows for a given key.
+
+    Args:
+        input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying the
+            tables and columns to include in the join.
+        on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality expression
+            that matches every input table, i.e. "col_a = col_b" to rename output column names. Note: When
+            MultiJoinInput objects are supplied, this parameter must be omitted.
+
+    Returns:
+        MultiJoinTable: the result of the multi-table natural join operation. To access the underlying Table, use the
+            table() method.
+    """
+    return MultiJoinTable(input, on)

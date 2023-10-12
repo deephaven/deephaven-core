@@ -25,11 +25,21 @@ public class JsHoliday {
         JsObject.freeze(businessPeriods);
     }
 
+    /**
+     * The date of the Holiday.
+     * 
+     * @return {@link LocalDateWrapper}
+     */
     @JsProperty
     public LocalDateWrapper getDate() {
         return date;
     }
 
+    /**
+     * The business periods that are open on the holiday.
+     * 
+     * @return dh.calendar.BusinessPeriod
+     */
     @JsProperty
     public JsArray<JsBusinessPeriod> getBusinessPeriods() {
         return businessPeriods;

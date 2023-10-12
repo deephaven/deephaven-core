@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.impl.ColumnSourceManager;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
@@ -20,6 +21,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
 abstract class RegionedColumnSourceChar<ATTR extends Values>
         extends RegionedColumnSourceArray<Character, ATTR, ColumnRegionChar<ATTR>>
         implements ColumnSourceGetDefaults.ForChar /* MIXIN_INTERFACES */ {
+
 
     RegionedColumnSourceChar(@NotNull final ColumnRegionChar<ATTR> nullRegion,
                              @NotNull final MakeDeferred<ATTR, ColumnRegionChar<ATTR>> makeDeferred) {
@@ -50,11 +52,6 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
         AsValues() {
             super(ColumnRegionChar.createNull(PARAMETERS.regionMask), DeferredColumnRegionChar::new);
         }
-
-        @Override
-        public boolean isPartitioning() {
-            return false;
-        }
     }
 
     static final class Partitioning extends RegionedColumnSourceChar<Values> {
@@ -76,11 +73,6 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
                         + ": " + partitioningColumnValue + " is not a Character at location " + locationKey);
             }
             return new ColumnRegionChar.Constant<>(regionMask(), unbox((Character) partitioningColumnValue));
-        }
-
-        @Override
-        public boolean isPartitioning() {
-            return true;
         }
     }
 }

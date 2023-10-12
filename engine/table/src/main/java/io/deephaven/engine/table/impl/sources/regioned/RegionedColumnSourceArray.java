@@ -9,6 +9,7 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.impl.ColumnSourceManager;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;

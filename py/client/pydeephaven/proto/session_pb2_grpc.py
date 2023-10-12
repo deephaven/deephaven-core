@@ -53,6 +53,11 @@ class SessionServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_session__pb2.ExportRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_session__pb2.ExportResponse.FromString,
                 )
+        self.PublishFromTicket = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.SessionService/PublishFromTicket',
+                request_serializer=deephaven_dot_proto_dot_session__pb2.PublishRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_session__pb2.PublishResponse.FromString,
+                )
         self.ExportNotifications = channel.unary_stream(
                 '/io.deephaven.proto.backplane.grpc.SessionService/ExportNotifications',
                 request_serializer=deephaven_dot_proto_dot_session__pb2.ExportNotificationRequest.SerializeToString,
@@ -133,6 +138,15 @@ class SessionServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def PublishFromTicket(self, request, context):
+        """
+        Makes a copy from a source ticket and publishes to a result ticket. Neither the source ticket, nor the destination
+        ticket, need to be a client managed ticket.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ExportNotifications(self, request, context):
         """
         Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
@@ -181,6 +195,11 @@ def add_SessionServiceServicer_to_server(servicer, server):
                     servicer.ExportFromTicket,
                     request_deserializer=deephaven_dot_proto_dot_session__pb2.ExportRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_session__pb2.ExportResponse.SerializeToString,
+            ),
+            'PublishFromTicket': grpc.unary_unary_rpc_method_handler(
+                    servicer.PublishFromTicket,
+                    request_deserializer=deephaven_dot_proto_dot_session__pb2.PublishRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_session__pb2.PublishResponse.SerializeToString,
             ),
             'ExportNotifications': grpc.unary_stream_rpc_method_handler(
                     servicer.ExportNotifications,
@@ -298,6 +317,23 @@ class SessionService(object):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.SessionService/ExportFromTicket',
             deephaven_dot_proto_dot_session__pb2.ExportRequest.SerializeToString,
             deephaven_dot_proto_dot_session__pb2.ExportResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def PublishFromTicket(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.SessionService/PublishFromTicket',
+            deephaven_dot_proto_dot_session__pb2.PublishRequest.SerializeToString,
+            deephaven_dot_proto_dot_session__pb2.PublishResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

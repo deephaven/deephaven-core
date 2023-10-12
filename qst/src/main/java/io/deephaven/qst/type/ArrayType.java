@@ -21,13 +21,13 @@ public interface ArrayType<T, ComponentType> extends GenericType<T> {
      */
     Type<ComponentType> componentType();
 
-    <V extends Visitor> V walk(V visitor);
+    <R> R walk(Visitor<R> visitor);
 
-    interface Visitor {
-        void visit(NativeArrayType<?, ?> nativeArrayType);
+    interface Visitor<R> {
+        R visit(NativeArrayType<?, ?> nativeArrayType);
 
-        void visit(PrimitiveVectorType<?, ?> vectorPrimitiveType);
+        R visit(PrimitiveVectorType<?, ?> vectorPrimitiveType);
 
-        void visit(GenericVectorType<?, ?> genericVectorType);
+        R visit(GenericVectorType<?, ?> genericVectorType);
     }
 }

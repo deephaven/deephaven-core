@@ -6,9 +6,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.GroupingProvider;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
-import io.deephaven.engine.table.impl.dataindex.PartitionColumnGroupingProvider;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
@@ -71,9 +69,6 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
     private TableLocation duplicateTableLocation0A;
 
-    private PartitionColumnGroupingProvider partitioningColumnGroupingProvider;
-    private KeyRangeGroupingProvider groupingColumnGroupingProvider;
-    private KeyRangeGroupingProvider normalColumnGroupingProvider;
     private TableLocationUpdateSubscriptionBuffer[] subscriptionBuffers;
     private long[] lastSizes;
     private int regionCount;
@@ -102,17 +97,6 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         partitioningColumnSource = columnSources[PARTITIONING_INDEX];
         groupingColumnSource = columnSources[GROUPING_INDEX];
         normalColumnSource = columnSources[NORMAL_INDEX];
-
-        checking(new Expectations() {
-            {
-                allowing(partitioningColumnSource).isPartitioning();
-                will(returnValue(true));
-                allowing(groupingColumnSource).isPartitioning();
-                will(returnValue(false));
-                allowing(normalColumnSource).isPartitioning();
-                will(returnValue(false));
-            }
-        });
 
         checking(new Expectations() {
             {
@@ -234,6 +218,16 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                         return null;
                     }
                 });
+            }
+        });
+    }
+
+    private void expectPoison() {
+        checking(new Expectations() {
+            {
+                exactly(1).of(partitioningColumnSource).invalidateRegion(3);
+                exactly(1).of(groupingColumnSource).invalidateRegion(3);
+                exactly(1).of(normalColumnSource).invalidateRegion(3);
             }
         });
     }
@@ -532,6 +526,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with a size decrease
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
+        expectPoison();
         try {
             checkIndexes(SUT.refresh());
             fail("Expected exception");
@@ -543,6 +538,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with a location truncated
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
+        expectPoison();
         try {
             checkIndexes(SUT.refresh());
             fail("Expected exception");
@@ -565,6 +561,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with an exception
         subscriptionBuffers[3].handleException(new TableDataException("TEST"));
+        expectPoison();
         try {
             checkIndexes(SUT.refresh());
             fail("Expected exception");

@@ -3,9 +3,11 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSource;
@@ -14,6 +16,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InstantArraySource;
 import io.deephaven.engine.table.impl.sources.InstantSparseArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
@@ -23,6 +26,7 @@ import io.deephaven.engine.table.impl.sources.ObjectSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ZonedDateTimeArraySource;
 import io.deephaven.engine.table.impl.sources.ZonedDateTimeSparseArraySource;
 import io.deephaven.engine.table.impl.util.TableTimeConversions;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTimeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -96,6 +100,8 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
         cols.put("I", iSource);
         cols.put("ZDT", zdtSource);
 
+        cols.values().forEach(ColumnSource::startTrackingPrevValues);
+
         return new QueryTable(RowSetFactory.flat(ROW_COUNT).toTracking(), cols);
     }
 
@@ -118,6 +124,8 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
         cols.put("L", longSource);
         cols.put("I", iSource);
         cols.put("ZDT", zdtSource);
+
+        cols.values().forEach(ColumnSource::startTrackingPrevValues);
 
         return new QueryTable(RowSetFactory.flat(ROW_COUNT).toTracking(), cols);
     }
@@ -170,7 +178,7 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
             assertEquals(DateTimeUtils.epochNanos(baseZDT) + tOff, table.getColumnSource(zdtColName).getLong(key));
         }
 
-        // Repeat the same comparisons, but actuate fillChunk instead
+        // Repeat the same comparisons, but actuate getChunk instead
         reinterpLongChunkCheck(table.getColumnSource(lColName), table.getRowSet(), isSorted, baseLongTime);
         reinterpLongChunkCheck(table.getColumnSource(iColName), table.getRowSet(), isSorted,
                 DateTimeUtils.epochNanos(baseInstant));
@@ -184,13 +192,16 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
 
     private void reinterpLongChunkCheck(final ColumnSource<Long> cs, RowSet rowSet, final boolean isSorted,
             final long baseNanos) {
-        try (final ChunkSource.FillContext fc = cs.makeFillContext(64);
-                final WritableLongChunk<Values> chunk = WritableLongChunk.makeWritableChunk(64)) {
-            cs.fillChunk(fc, chunk, rowSet);
+        try (final ChunkSource.GetContext gc = cs.makeGetContext(64)) {
+            for (final boolean usePrev : new boolean[] {false, true}) {
+                final LongChunk<? extends Values> chunk = usePrev
+                        ? cs.getPrevChunk(gc, rowSet).asLongChunk()
+                        : cs.getChunk(gc, rowSet).asLongChunk();
 
-            for (int ii = 0; ii < chunk.size(); ii++) {
-                final long tOff = computeTimeDiff(ii, isSorted);
-                assertEquals(baseNanos + tOff, chunk.get(ii));
+                for (int ii = 0; ii < chunk.size(); ii++) {
+                    final long tOff = computeTimeDiff(ii, isSorted);
+                    assertEquals(baseNanos + tOff, chunk.get(ii));
+                }
             }
         }
     }
@@ -255,7 +266,7 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
             extraCheck.accept((T) table.getColumnSource(zdtColName).get(key));
         }
 
-        // Repeat the same comparisons, but actuate fillChunk instead
+        // Repeat the same comparisons, but actuate getChunk instead
         reinterpBasicChunkCheck(table.getColumnSource(lColName), table.getRowSet(), toNanoFunc, isSorted,
                 baseLongTime, extraCheck);
         reinterpBasicChunkCheck(table.getColumnSource(iColName), table.getRowSet(), toNanoFunc, isSorted,
@@ -272,14 +283,17 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
     private <T> void reinterpBasicChunkCheck(final ColumnSource<T> cs, final RowSet rowSet,
             final Function<T, Long> toNanoFunc, final boolean isSorted, final long baseNanos,
             final Consumer<T> extraCheck) {
-        try (final ChunkSource.FillContext fc = cs.makeFillContext(64);
-                final WritableObjectChunk<T, Values> chunk = WritableObjectChunk.makeWritableChunk(64)) {
-            cs.fillChunk(fc, chunk, rowSet);
+        try (final ChunkSource.GetContext gc = cs.makeGetContext(64)) {
+            for (final boolean usePrev : new boolean[] {false, true}) {
+                final ObjectChunk<T, ? extends Values> chunk = usePrev
+                        ? cs.getPrevChunk(gc, rowSet).asObjectChunk()
+                        : cs.getChunk(gc, rowSet).asObjectChunk();
 
-            for (int ii = 0; ii < chunk.size(); ii++) {
-                final long tOff = computeTimeDiff(ii, isSorted);
-                assertEquals(baseNanos + tOff, (long) toNanoFunc.apply(chunk.get(ii)));
-                extraCheck.accept(chunk.get(ii));
+                for (int ii = 0; ii < chunk.size(); ii++) {
+                    final long tOff = computeTimeDiff(ii, isSorted);
+                    assertEquals(baseNanos + tOff, (long) toNanoFunc.apply(chunk.get(ii)));
+                    extraCheck.accept(chunk.get(ii));
+                }
             }
         }
     }
@@ -317,12 +331,15 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
 
     private <T> void reinterpWrappedChunkCheck(final ColumnSource<T> cs, RowSet rowSet, final boolean isSorted,
             final BiFunction<Integer, Boolean, T> expectedSupplier) {
-        try (final ChunkSource.FillContext fc = cs.makeFillContext(64);
-                final WritableObjectChunk<T, Values> chunk = WritableObjectChunk.makeWritableChunk(64)) {
-            cs.fillChunk(fc, chunk, rowSet);
+        try (final ChunkSource.GetContext gc = cs.makeGetContext(64)) {
+            for (final boolean usePrev : new boolean[] {false, true}) {
+                final ObjectChunk<T, ? extends Values> chunk = usePrev
+                        ? cs.getPrevChunk(gc, rowSet).asObjectChunk()
+                        : cs.getChunk(gc, rowSet).asObjectChunk();
 
-            for (int ii = 0; ii < chunk.size(); ii++) {
-                assertEquals(expectedSupplier.apply(ii, isSorted), chunk.get(ii));
+                for (int ii = 0; ii < chunk.size(); ii++) {
+                    assertEquals(expectedSupplier.apply(ii, isSorted), chunk.get(ii));
+                }
             }
         }
     }
@@ -411,5 +428,50 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
         final int minute = (startIter + 30) % 60;
 
         return LocalTime.of(hour + hourOff, minute, 0);
+    }
+
+    @Test
+    public void testFillPrevOnInstantColumn() {
+        final InstantArraySource source = new InstantArraySource();
+        source.startTrackingPrevValues();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        try (final RowSet latticeRows = RowSetFactory.flat(1024);
+                final RowSet unchangedRows = RowSetFactory.flat(1024).shift(ArrayBackedColumnSource.BLOCK_SIZE)) {
+            source.ensureCapacity(unchangedRows.lastRowKey() + 1);
+            updateGraph.runWithinUnitTestCycle(() -> {
+                latticeRows.forAllRowKeys(row -> {
+                    source.set(row, Instant.ofEpochMilli(row));
+                });
+
+                // create rows that won't change in a separate block for code coverage
+                unchangedRows.forAllRowKeys(row -> {
+                    source.set(row, Instant.ofEpochMilli(row));
+                });
+            });
+
+            updateGraph.runWithinUnitTestCycle(() -> {
+                // change only some rows; for coverage
+                latticeRows.forAllRowKeys(row -> {
+                    if (row % 2 == 0) {
+                        source.set(row, Instant.ofEpochMilli(row + latticeRows.size()));
+                    }
+                });
+
+                try (final RowSet allRows = latticeRows.union(unchangedRows);
+                        final ChunkSource.FillContext context = source.makeFillContext(allRows.intSize());
+                        final WritableObjectChunk<Instant, Values> chunk =
+                                WritableObjectChunk.makeWritableChunk(allRows.intSize())) {
+                    source.fillPrevChunk(context, chunk, allRows);
+                    allRows.forAllRowKeys(row -> {
+                        final long chunkOffset = row + (row < ArrayBackedColumnSource.BLOCK_SIZE
+                                ? 0
+                                : (latticeRows.size() - ArrayBackedColumnSource.BLOCK_SIZE));
+                        assertEquals(Instant.ofEpochMilli(row), chunk.get((int) chunkOffset));
+                    });
+                }
+            });
+        }
     }
 }

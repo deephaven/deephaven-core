@@ -18,6 +18,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.ObjectChunkFilter;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Objects;
@@ -57,14 +58,18 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
         chunkFilterInverseImpl = notFilter();
     }
 
+    @NotNull
     @Override
-    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(
+            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
         final ColumnSource<?> columnSource = table.getColumnSource(columnName());
         return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, chunkFilterImpl);
     }
 
+    @NotNull
     @Override
-    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filterInverse(
+            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
         final ColumnSource<?> columnSource = table.getColumnSource(columnName());
         return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, chunkFilterInverseImpl);
     }

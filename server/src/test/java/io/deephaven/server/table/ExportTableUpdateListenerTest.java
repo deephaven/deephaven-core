@@ -308,8 +308,9 @@ public class ExportTableUpdateListenerTest {
                 throw new UncheckedDeephavenException(ie);
             }
 
+            updateGraph.markSourcesRefreshedForUnitTests();
             src.notifyListeners(update);
-        });
+        }, false);
 
         // we should get both a run and the update in the same flush
         expectSizes(t1.getValue().getExportId(), 42, 84);
@@ -349,7 +350,8 @@ public class ExportTableUpdateListenerTest {
 
     public class TestSessionState extends SessionState {
         public TestSessionState() {
-            super(scheduler, TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
+            super(scheduler, new SessionService.ObfuscatingErrorTransformer(), TestExecutionContext::createForUnitTests,
+                    AUTH_CONTEXT);
             initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
                     DateTimeUtils.epochMillis(DateTimeUtils.epochNanosToInstant(Long.MAX_VALUE)), this));
         }

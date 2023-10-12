@@ -13,8 +13,8 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
-import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
-import io.deephaven.benchmarking.generator.SequentialNumColumnGenerator;
+import io.deephaven.benchmarking.generator.EnumStringGenerator;
+import io.deephaven.benchmarking.generator.SequentialNumberGenerator;
 import io.deephaven.benchmarking.impl.PersistentBenchmarkTableBuilder;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import org.jetbrains.annotations.NotNull;
@@ -101,10 +101,10 @@ public class SumByBenchmark {
 
         builder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
 
-        final EnumStringColumnGenerator stringKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString",
-                keyCount, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
-        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1, keyCount,
-                SequentialNumColumnGenerator.Mode.RollAtLimit);
+        final ColumnGenerator<String> stringKey = BenchmarkTools.stringCol(
+                "KeyString", keyCount, 6, 6, 0xB00FB00FL, EnumStringGenerator.Mode.Rotate);
+        final ColumnGenerator<Integer> intKey = BenchmarkTools.seqNumberCol(
+                "KeyInt", int.class, 0, 1, keyCount, SequentialNumberGenerator.Mode.RollAtLimit);
 
         System.out.println("Key type: " + keyType);
         switch (keyType) {

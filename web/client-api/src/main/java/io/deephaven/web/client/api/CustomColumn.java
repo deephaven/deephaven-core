@@ -89,16 +89,38 @@ public class CustomColumn {
         expression = source.getAsAny("expression").asString();
     }
 
+    /**
+     * The name of the column to use.
+     * 
+     * @return String
+     */
     @JsProperty
     public String getName() {
         return name;
     }
 
+    /**
+     * Type of custom column. One of
+     *
+     * <ul>
+     * <li>FORMAT_COLOR</li>
+     * <li>FORMAT_NUMBER</li>
+     * <li>FORMAT_DATE</li>
+     * <li>NEW</li>
+     * </ul>
+     *
+     * @return String
+     */
     @JsProperty
     public String getType() {
         return type;
     }
 
+    /**
+     * The expression to evaluate this custom column.
+     * 
+     * @return String
+     */
     @JsProperty
     public String getExpression() {
         return expression;

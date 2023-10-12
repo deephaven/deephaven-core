@@ -31,6 +31,7 @@ class UpdateByTestCase(BaseTestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        super().setUpClass()
         cls.em_op_ctrl = OperationControl(on_null=BadDataBehavior.THROW,
                                       on_nan=BadDataBehavior.RESET,
                                       big_value_context=MathContext.UNLIMITED)
@@ -68,13 +69,17 @@ class UpdateByTestCase(BaseTestCase):
                        op_control=cls.em_op_ctrl),
         ]
 
+        simple_op_pairs = ["UA=a", "UB=b"]
         cls.simple_ops = [
-            cum_sum,
-            cum_prod,
-            cum_min,
-            cum_max,
-            forward_fill,
-            delta
+            cum_sum(cols=simple_op_pairs),
+            cum_prod(cols=simple_op_pairs),
+            cum_min(cols=simple_op_pairs),
+            cum_max(cols=simple_op_pairs),
+            forward_fill(cols=simple_op_pairs),
+            delta(cols=simple_op_pairs),
+            delta(cols=simple_op_pairs, delta_control=DeltaControl.NULL_DOMINATES),
+            delta(cols=simple_op_pairs, delta_control=DeltaControl.VALUE_DOMINATES),
+            delta(cols=simple_op_pairs, delta_control=DeltaControl.ZERO_DOMINATES),
         ]
 
         # Rolling Operators list shared with test_rolling_ops / test_rolling_ops_proxy
@@ -85,7 +90,7 @@ class UpdateByTestCase(BaseTestCase):
             rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="PT00:00:10"),
             rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time=10_000_000_000,
                              fwd_time=-10_000_000_00),
-            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="PT00:00:30",
+            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="PT30S",
                              fwd_time="-PT00:00:20"),
             # rolling group
             rolling_group_tick(cols=["rgroup_a = a", "rgroup_d = d"], rev_ticks=10),
@@ -93,7 +98,7 @@ class UpdateByTestCase(BaseTestCase):
             rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="PT00:00:10"),
             rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time=10_000_000_000,
                                fwd_time=-10_000_000_00),
-            rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="PT00:00:30",
+            rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="PT30S",
                                fwd_time="-PT00:00:20"),
             # rolling average
             rolling_avg_tick(cols=["ravg_a = a", "ravg_d = d"], rev_ticks=10),
@@ -101,7 +106,7 @@ class UpdateByTestCase(BaseTestCase):
             rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="PT00:00:10"),
             rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time=10_000_000_000,
                              fwd_time=-10_000_000_00),
-            rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="PT00:00:30",
+            rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="PT30S",
                              fwd_time="-PT00:00:20"),
             # rolling minimum
             rolling_min_tick(cols=["rmin_a = a", "rmin_d = d"], rev_ticks=10),
@@ -109,7 +114,7 @@ class UpdateByTestCase(BaseTestCase):
             rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="PT00:00:10"),
             rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time=10_000_000_000,
                              fwd_time=-10_000_000_00),
-            rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="PT00:00:30",
+            rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="PT30S",
                              fwd_time="-PT00:00:20"),
             # rolling maximum
             rolling_max_tick(cols=["rmax_a = a", "rmax_d = d"], rev_ticks=10),
@@ -117,7 +122,7 @@ class UpdateByTestCase(BaseTestCase):
             rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="PT00:00:10"),
             rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time=10_000_000_000,
                              fwd_time=-10_000_000_00),
-            rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="PT00:00:30",
+            rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="PT30S",
                              fwd_time="-PT00:00:20"),
             # rolling product
             rolling_prod_tick(cols=["rprod_a = a", "rprod_d = d"], rev_ticks=10),
@@ -125,7 +130,7 @@ class UpdateByTestCase(BaseTestCase):
             rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="PT00:00:10"),
             rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time=10_000_000_000,
                               fwd_time=-10_000_000_00),
-            rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="PT00:00:30",
+            rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="PT30S",
                               fwd_time="-PT00:00:20"),
             # rolling count
             rolling_count_tick(cols=["rcount_a = a", "rcount_d = d"], rev_ticks=10),
@@ -133,7 +138,7 @@ class UpdateByTestCase(BaseTestCase):
             rolling_count_time(ts_col="Timestamp", cols=["rcount_b = b", "rcount_e = e"], rev_time="PT00:00:10"),
             rolling_count_time(ts_col="Timestamp", cols=["rcount_b = b", "rcount_e = e"], rev_time=10_000_000_000,
                                fwd_time=-10_000_000_00),
-            rolling_count_time(ts_col="Timestamp", cols=["rcount_b = b", "rcount_e = e"], rev_time="PT00:00:30",
+            rolling_count_time(ts_col="Timestamp", cols=["rcount_b = b", "rcount_e = e"], rev_time="PT30S",
                                fwd_time="-PT00:00:20"),
             # rolling standard deviation
             rolling_std_tick(cols=["rstd_a = a", "rstd_d = d"], rev_ticks=10),
@@ -141,14 +146,14 @@ class UpdateByTestCase(BaseTestCase):
             rolling_std_time(ts_col="Timestamp", cols=["rstd_b = b", "rstd_e = e"], rev_time="PT00:00:10"),
             rolling_std_time(ts_col="Timestamp", cols=["rstd_b = b", "rstd_e = e"], rev_time=10_000_000_000,
                              fwd_time=-10_000_000_00),
-            rolling_std_time(ts_col="Timestamp", cols=["rstd_b = b", "rstd_e = e"], rev_time="PT00:00:30",
+            rolling_std_time(ts_col="Timestamp", cols=["rstd_b = b", "rstd_e = e"], rev_time="PT30S",
                              fwd_time="-PT00:00:20"),
             # rolling weighted average (using "b" as the weight column)
-            rolling_wavg_tick(weight_col="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10),
-            rolling_wavg_tick(weight_col="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_wavg_time(ts_col="Timestamp", weight_col="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time="PT00:00:10"),
-            rolling_wavg_time(ts_col="Timestamp", weight_col="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time=10_000_000_000, fwd_time=-10_000_000_00),
-            rolling_wavg_time(ts_col="Timestamp", weight_col="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time="PT00:00:30", fwd_time="-PT00:00:20"),
+            rolling_wavg_tick(wcol="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10),
+            rolling_wavg_tick(wcol="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10, fwd_ticks=10),
+            rolling_wavg_time(ts_col="Timestamp", wcol="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time="PT00:00:10"),
+            rolling_wavg_time(ts_col="Timestamp", wcol="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time=10_000_000_000, fwd_time=-10_000_000_00),
+            rolling_wavg_time(ts_col="Timestamp", wcol="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time="PT30S", fwd_time="-PT00:00:20"),
         ]
 
     @classmethod
@@ -157,6 +162,7 @@ class UpdateByTestCase(BaseTestCase):
         del cls.em_ops
         del cls.simple_ops
         del cls.rolling_ops
+        super().tearDownClass()
 
     def test_em(self):
         for op in self.em_ops:
@@ -184,19 +190,16 @@ class UpdateByTestCase(BaseTestCase):
                             self.assertEqual(ct.size, rct.size)                        
 
     def test_simple_ops(self):
-        pairs = ["UA=a", "UB=b"]
-
         for op in self.simple_ops:
             with self.subTest(op):
                 for t in (self.static_table, self.ticking_table):
-                    rt = t.update_by(ops=op(pairs), by="e")
+                    rt = t.update_by(ops=op, by="e")
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
                     self.assertEqual(len(rt.columns), 2 + len(t.columns))
                     with update_graph.exclusive_lock(self.test_update_graph):
                         self.assertEqual(rt.size, t.size)
 
     def test_simple_ops_proxy(self):
-        pairs = ["UA=a", "UB=b"]
         pt_proxies = [self.static_table.partition_by("c").proxy(),
                       self.ticking_table.partition_by("c").proxy(),
                       ]
@@ -204,7 +207,7 @@ class UpdateByTestCase(BaseTestCase):
         for op in self.simple_ops:
             with self.subTest(op):
                 for pt_proxy in pt_proxies:
-                    rt_proxy = pt_proxy.update_by(ops=op(pairs), by="e")
+                    rt_proxy = pt_proxy.update_by(ops=op, by="e")
 
                     self.assertTrue(rt_proxy.is_refreshing is pt_proxy.is_refreshing)
                     self.assertEqual(len(rt_proxy.target.constituent_table_columns),
@@ -237,7 +240,21 @@ class UpdateByTestCase(BaseTestCase):
                         self.assertTrue(rct.is_refreshing is ct.is_refreshing)
                         self.assertEqual(len(rct.columns), 2 + len(ct.columns))
                         with update_graph.exclusive_lock(self.test_update_graph):
-                            self.assertEqual(ct.size, rct.size)                       
+                            self.assertEqual(ct.size, rct.size)
+    def test_multiple_ops(self):
+        multiple_ops = [
+            cum_sum(["sum_a=a", "sum_b=b"]),
+            cum_max(["max_a=a", "max_d=d"]),
+            ema_tick(10, ["ema_d=d", "ema_e=e"]),
+            ema_time("Timestamp", "PT00:00:00.1", ["ema_time_d=d", "ema_time_e=e"]),
+            rolling_wavg_tick(wcol="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10),
+        ]
+        for t in (self.static_table, self.ticking_table):
+            rt = t.update_by(ops=multiple_ops, by="c")
+            self.assertTrue(rt.is_refreshing is t.is_refreshing)
+            self.assertEqual(len(rt.columns), 10 + len(t.columns))
+            with update_graph.exclusive_lock(self.test_update_graph):
+                self.assertEqual(rt.size, t.size)
 
 if __name__ == '__main__':
     unittest.main()

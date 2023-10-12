@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @see TableHandleManager
  */
-public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle> implements Closeable, HasExportId {
+public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle> implements HasExportId, Closeable {
 
     public interface Lifecycle {
         void onInit(TableHandle handle);
@@ -147,6 +147,11 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
     @Override
     public TicketId ticketId() {
         return export.ticketId();
+    }
+
+    @Override
+    public TypedTicket typedTicket() {
+        return export.typedTicket();
     }
 
     @Override

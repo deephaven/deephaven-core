@@ -308,7 +308,7 @@ public class TestCumProd extends BaseUpdateByTest {
         return result;
     }
 
-    final void assertWithCumProd(final @NotNull Object expected, final @NotNull Object actual, Class<?> type) {
+    final void assertWithCumProd(@NotNull final Object expected, @NotNull final Object actual, Class<?> type) {
         if (expected instanceof byte[]) {
             assertArrayEquals(cumprod((byte[]) expected), (long[]) actual);
         } else if (expected instanceof short[]) {

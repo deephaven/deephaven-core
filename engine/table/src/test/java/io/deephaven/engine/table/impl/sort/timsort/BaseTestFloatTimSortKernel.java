@@ -49,9 +49,41 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
     public static class FloatSortKernelStuff extends SortKernelStuff<FloatLongTuple> {
 
         private final WritableFloatChunk<Any> floatChunk;
-        private final FloatLongTimsortKernel.FloatLongSortKernelContext context;
+        private final FloatTimsortKernel.FloatSortKernelContext<Any> context;
 
         public FloatSortKernelStuff(List<FloatLongTuple> javaTuples) {
+            super(javaTuples.size());
+            final int size = javaTuples.size();
+            floatChunk = WritableFloatChunk.makeWritableChunk(size);
+            context = FloatTimsortKernel.createContext(size);
+
+            prepareFloatChunks(javaTuples, floatChunk, rowKeys);
+        }
+
+        @Override
+        public void run() {
+            FloatTimsortKernel.sort(context, floatChunk);
+        }
+
+        @Override
+        void check(List<FloatLongTuple> expected) {
+            verify(expected.size(), expected, floatChunk);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            floatChunk.close();
+            context.close();
+        }
+    }
+
+    public static class FloatLongSortKernelStuff extends SortKernelStuff<FloatLongTuple> {
+
+        private final WritableFloatChunk<Any> floatChunk;
+        private final FloatLongTimsortKernel.FloatLongSortKernelContext<Any, RowKeys> context;
+
+        public FloatLongSortKernelStuff(List<FloatLongTuple> javaTuples) {
             super(javaTuples.size());
             final int size = javaTuples.size();
             floatChunk = WritableFloatChunk.makeWritableChunk(size);
@@ -80,7 +112,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
 
     public static class FloatPartitionKernelStuff extends PartitionKernelStuff<FloatLongTuple> {
 
-        private final WritableFloatChunk valuesChunk;
+        private final WritableFloatChunk<Any> valuesChunk;
         private final FloatPartitionKernel.PartitionKernelContext context;
         private final RowSet rowSet;
         private final ColumnSource<Float> columnSource;
@@ -93,7 +125,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
 
             for (int ii = 0; ii < javaTuples.size(); ++ii) {
                 final long indexKey = javaTuples.get(ii).getSecondElement();
-                if (indexKey != ii * 10) {
+                if (indexKey != ii * 10L) {
                     throw new IllegalStateException();
                 }
             }
@@ -138,7 +170,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
 
     public static class FloatMergeStuff extends MergeStuff<FloatLongTuple> {
 
-        private final float arrayValues[];
+        private final float[] arrayValues;
 
         public FloatMergeStuff(List<FloatLongTuple> javaTuples) {
             super(javaTuples);
@@ -187,7 +219,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
 
             prepareMultiFloatChunks(javaTuples, primaryChunk, secondaryChunk, rowKeys);
 
-            secondaryColumnSource = new AbstractColumnSource.DefaultedImmutable<Long>(long.class) {
+            secondaryColumnSource = new AbstractColumnSource.DefaultedImmutable<>(long.class) {
                 @Override
                 public Long get(long rowKey) {
                     final long result = getLong(rowKey);
@@ -353,19 +385,22 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
         return javaTuples;
     }
 
-    static private void verify(int size, List<FloatLongTuple> javaTuples, FloatChunk floatChunk, LongChunk rowKeys) {
-//        System.out.println("Verify: " + javaTuples);
-//        dumpChunk(valuesChunk);
 
+    static private void verify(int size, List<FloatLongTuple> javaTuples, FloatChunk floatChunk) {
+        verify(size, javaTuples, floatChunk, null);
+    }
+
+    static private void verify(int size, List<FloatLongTuple> javaTuples, FloatChunk floatChunk, LongChunk rowKeys) {
         for (int ii = 0; ii < size; ++ii) {
             final float timSorted = floatChunk.get(ii);
             final float javaSorted = javaTuples.get(ii).getFirstElement();
-
-            final long timIndex = rowKeys.get(ii);
-            final long javaIndex = javaTuples.get(ii).getSecondElement();
-
             TestCase.assertEquals("values[" + ii + "]", javaSorted, timSorted);
-            TestCase.assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
+
+            if (rowKeys != null) {
+                final long timIndex = rowKeys.get(ii);
+                final long javaIndex = javaTuples.get(ii).getSecondElement();
+                TestCase.assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
+            }
         }
     }
 

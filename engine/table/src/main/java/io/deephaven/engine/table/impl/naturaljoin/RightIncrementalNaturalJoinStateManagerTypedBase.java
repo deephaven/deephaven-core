@@ -195,8 +195,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     protected abstract void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
     @Override
-    public void convertLeftGroups(int groupingSize, InitialBuildContext ibc,
-            ColumnSource<RowSet> rowSetSource) {
+    public void convertLeftDataIndex(int groupingSize, InitialBuildContext ibc, ColumnSource<RowSet> rowSetSource) {
         for (int ii = 0; ii < tableSize; ++ii) {
             final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
             if (leftRowSet != null) {

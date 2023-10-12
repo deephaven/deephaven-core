@@ -5,6 +5,7 @@ package io.deephaven.api;
 
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,6 +37,10 @@ public interface JoinAddition {
         ColumnName newColumn = ColumnName.parse(x.substring(0, ix));
         ColumnName existingColumn = ColumnName.parse(x.substring(ix + 1));
         return of(newColumn, existingColumn);
+    }
+
+    static List<JoinAddition> from(String... values) {
+        return JoinAddition.from(Arrays.asList(values));
     }
 
     static List<JoinAddition> from(Collection<String> values) {

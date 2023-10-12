@@ -8,6 +8,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
@@ -18,10 +19,9 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.dataindex.StaticGroupingProvider;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.by.*;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
@@ -36,7 +36,10 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.qst.table.AggregateAllTable;
+import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.parquet.table.ParquetTableWriter;
+import io.deephaven.parquet.table.ParquetTools;
+import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -45,14 +48,18 @@ import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -67,6 +74,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class QueryTableAggregationTest {
@@ -88,7 +96,7 @@ public class QueryTableAggregationTest {
     private static AggregationContextFactory makeGroupByACF(
             @NotNull final Table table, @NotNull final String... groupByColumns) {
         return AggregationProcessor.forAggregation(List.of(
-                AggregateAllTable.singleAggregation(AggSpec.group(), ColumnName.from(groupByColumns),
+                QueryTable.singleAggregation(AggSpec.group(), ColumnName.from(groupByColumns),
                         table.getDefinition().getColumnStream().map(ColumnDefinition::getName)
                                 .map(ColumnName::of).collect(Collectors.toList()))
                         .orElseThrow()));
@@ -187,17 +195,34 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testStaticGroupedByWithChunks() {
-        final Table input = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
+        // Create dynamic indexes for the test table.
+        final Table input1 = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
+        DataIndexer indexer1 = DataIndexer.of(input1.getRowSet());
+
         ColumnSource<?> cs;
 
-        cs = input.getColumnSource("A");
-        cs.setGroupingProvider(StaticGroupingProvider.buildFrom(cs, "A", input.getRowSet()));
+        cs = input1.getColumnSource("A");
+        indexer1.createDataIndex((QueryTable) input1, cs);
 
-        cs = input.getColumnSource("B");
-        cs.setGroupingProvider(StaticGroupingProvider.buildFrom(cs, "B", input.getRowSet()));
+        cs = input1.getColumnSource("B");
+        indexer1.createDataIndex((QueryTable) input1, cs);
 
-        individualStaticByTest(input, null, "A");
-        individualStaticByTest(input, null, "B");
+        individualStaticByTest(input1, null, "A");
+        individualStaticByTest(input1, null, "B");
+
+        // Create static indexes for the test table.
+
+        final Table input2 = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
+        DataIndexer indexer2 = DataIndexer.of(input2.getRowSet());
+
+        cs = input2.getColumnSource("A");
+        indexer2.createDataIndex(cs);
+
+        cs = input2.getColumnSource("B");
+        indexer2.createDataIndex(cs);
+
+        individualStaticByTest(input2, null, "A");
+        individualStaticByTest(input2, null, "B");
     }
 
     @Test
@@ -3738,14 +3763,14 @@ public class QueryTableAggregationTest {
         // Tests grouped addition for static tables and static initial groups
 
         final Table data = testTable(col("S", "A", "A", "B", "B"), col("I", 10, 20, 30, 40));
-        final RowSetIndexer dataIndexer = RowSetIndexer.of(data.getRowSet());
-        dataIndexer.getGrouping(data.getColumnSource("S"));
+        final DataIndexer dataIndexer = DataIndexer.of(data.getRowSet());
+        dataIndexer.getDataIndex(data.getColumnSource("S"));
         final Table distinct = data.selectDistinct("S");
         assertTableEquals(testTable(col("S", "A", "B")), distinct);
 
         final Table reversed = data.reverse();
-        final RowSetIndexer reversedIndexer = RowSetIndexer.of(reversed.getRowSet());
-        reversedIndexer.getGrouping(reversed.getColumnSource("S"));
+        final DataIndexer reversedIndexer = DataIndexer.of(reversed.getRowSet());
+        reversedIndexer.getDataIndex(reversed.getColumnSource("S"));
         final Table initializedDistinct =
                 data.aggBy(List.of(Count.of("C")), false, reversed, ColumnName.from("S")).dropColumns("C");
         assertTableEquals(testTable(col("S", "B", "A")), initializedDistinct);
@@ -3827,5 +3852,118 @@ public class QueryTableAggregationTest {
         });
         TestCase.assertEquals(1, aggregated.size());
         assertTableEquals(expectedEmpty, aggregated);
+    }
+
+    @Test
+    public void testMultiPartitionSymbolTableBy() throws IOException {
+        final File testRootFile = Files.createTempDirectory(QueryTableAggregationTest.class.getName()).toFile();
+        try {
+            final Table t1 = new InMemoryTable(
+                    new String[] {"StringKeys", "GroupedInts"},
+                    new Object[] {
+                            new String[] {"key1", "key1", "key2", "key2", "key3", "key2", "key4", "key2", "key1"},
+                            new short[] {1, 1, 2, 2, 3, 2, 4, 2, 1}
+                    });
+            final Table t2 = new InMemoryTable(
+                    new String[] {"StringKeys", "GroupedInts"},
+                    new Object[] {
+                            new String[] {"key4", null, "key3", null, "key1", null, null},
+                            new short[] {4, 0, 3, 0, 1, 0, 0}
+                    });
+            final Table t3 = new InMemoryTable(
+                    new String[] {"StringKeys", "GroupedInts"},
+                    new Object[] {
+                            new String[] {"key5", "key4", "key2", "key5", "key6"},
+                            new short[] {5, 4, 2, 5, 6}
+                    });
+            final Table t4 = new InMemoryTable(
+                    new String[] {"StringKeys", "GroupedInts"},
+                    new Object[] {
+                            new String[] {null, "key6", "key6", "key6", "key6", "key7", null},
+                            new short[] {0, 6, 6, 6, 6, 7, 0}
+                    });
+
+
+            ParquetTools.writeTable(t1, new File(testRootFile,
+                    "Date=2021-07-20" + File.separator + "Num=100" + File.separator + "file1.parquet"));
+            ParquetTools.writeTable(t2, new File(testRootFile,
+                    "Date=2021-07-20" + File.separator + "Num=200" + File.separator + "file2.parquet"));
+            ParquetTools.writeTable(t3, new File(testRootFile,
+                    "Date=2021-07-21" + File.separator + "Num=300" + File.separator + "file3.parquet"));
+            ParquetTools.writeTable(t4, new File(testRootFile,
+                    "Date=2021-07-21" + File.separator + "Num=400" + File.separator + "file4.parquet"));
+
+            final Table merged = TableTools.merge(
+                    t1.updateView("Date=`2021-07-20`", "Num=100"),
+                    t2.updateView("Date=`2021-07-20`", "Num=200"),
+                    t3.updateView("Date=`2021-07-21`", "Num=300"),
+                    t4.updateView("Date=`2021-07-21`", "Num=400")).moveColumnsUp("Date", "Num");
+
+            final Table loaded = ParquetTools.readPartitionedTableInferSchema(
+                    new ParquetKeyValuePartitionedLayout(testRootFile, 2), ParquetInstructions.EMPTY);
+
+            // verify the sources are identical
+            assertTableEquals(merged, loaded);
+
+            final Table merged_summed = merged.aggBy(AggSum("GroupedInts"), "StringKeys");
+            final Table loaded_summed = loaded.aggBy(AggSum("GroupedInts"), "StringKeys");
+
+            TableTools.showWithRowSet(loaded_summed);
+
+            // verify aggregations are identical
+            assertTableEquals(merged_summed, loaded_summed);
+        } finally {
+            FileUtils.deleteRecursively(testRootFile);
+        }
+    }
+
+    @Test
+    public void testSymbolTableBy() throws IOException {
+        diskBackedTestHarness((table) -> {
+            final Table result = table.aggBy(AggSum("Value"), "Symbol");
+            TableTools.showWithRowSet(result);
+
+            final long[] values = new long[result.intSize()];
+            final MutableInt pos = new MutableInt();
+            result.longColumnIterator("Value").forEachRemaining((long value) -> {
+                values[pos.getValue()] = value;
+                pos.increment();
+            });
+            assertArrayEquals(new long[] {0, 5, 17, 23}, values);
+        });
+    }
+
+    private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {
+        final File directory = Files.createTempDirectory("QueryTableAggregationTest").toFile();
+
+        try {
+            final Table table = makeDiskTable(directory);
+
+            testFunction.accept(table);
+
+            table.close();
+        } finally {
+            FileUtils.deleteRecursively(directory);
+        }
+    }
+
+    @NotNull
+    private Table makeDiskTable(File directory) throws IOException {
+        final String[] syms = new String[] {"DragonFruit", "Apple", "Banana", "Cantaloupe",
+                "Apple", "Cantaloupe", "Cantaloupe", "Banana", "Banana", "Cantaloupe"};
+
+        final int[] values = new int[syms.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            values[ii] = ii;
+        }
+
+        final TableDefaults result = testTable(stringCol("Symbol", syms),
+                intCol("Value", values));
+
+        final File outputFile = new File(directory, "disk_table" + ParquetTableWriter.PARQUET_FILE_EXTENSION);
+
+        ParquetTools.writeTable(result, outputFile, result.getDefinition());
+
+        return ParquetTools.readTable(outputFile);
     }
 }

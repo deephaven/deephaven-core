@@ -17,6 +17,7 @@ from deephaven.table import Table
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
 _JDataAccessHelpers = jpy.get_type("io.deephaven.engine.table.impl.DataAccessHelpers")
 
+
 def _to_column_name(name: str) -> str:
     """ Transforms the given name string into a valid table column name. """
     tmp_name = re.sub(r"\W+", " ", str(name)).strip()

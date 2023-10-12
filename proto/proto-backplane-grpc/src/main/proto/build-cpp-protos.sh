@@ -1,9 +1,20 @@
 #!/bin/bash
 
-: ${DHDEPS_HOME:=$HOME/dhcpp}
+set -euxo pipefail
+
+if [ -z "$PROTOC_BIN" ] && [ -z "$DHCPP" ]; then
+    echo "$0: At least one of the environment variables 'PROTOC_BIN' and 'DHCPP' must be defined, aborting." 1>&2
+    exit 1
+fi
+
+: ${PROTOC_BIN:=$DHCPP/bin}
 : ${CPP_PROTO_BUILD_DIR:=build}
 
-set -eux
 mkdir -p "${CPP_PROTO_BUILD_DIR}"
-$DHDEPS_HOME/local/protobuf/bin/protoc `find . -name \*.proto` --cpp_out=${CPP_PROTO_BUILD_DIR} --grpc_out=${CPP_PROTO_BUILD_DIR} --plugin=protoc-gen-grpc=$DHDEPS_HOME/local/grpc/bin/grpc_cpp_plugin
-mv ${CPP_PROTO_BUILD_DIR}/deephaven/proto/*.{h,cc} ../../../../../cpp-client/deephaven/client/proto/deephaven/proto
+$DHCPP/bin/protoc \
+    $(find . -name '*.proto') \
+    --cpp_out=${CPP_PROTO_BUILD_DIR} \
+    --grpc_out=${CPP_PROTO_BUILD_DIR} \
+    --plugin=protoc-gen-grpc=${PROTOC_BIN}/grpc_cpp_plugin
+mv -f ${CPP_PROTO_BUILD_DIR}/deephaven/proto/*.{h,cc} \
+   ../../../../../cpp-client/deephaven/dhclient/proto/deephaven/proto

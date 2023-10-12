@@ -67,6 +67,7 @@ html_theme_options = {
 add_module_names = False
 # if we allow sphinx to generate type hints for signatures (default), it would make the generated doc cluttered and hard to read
 autodoc_typehints = 'none'
+autoclass_content = 'both'
 
 #########################################################################################################################################################################
 
@@ -96,6 +97,7 @@ jvm_options = {
 
 from deephaven_internal import jvm
 jvm.init_jvm(
+    jvm_maxmem='1G',
     jvm_classpath=glob(os.environ.get('DEEPHAVEN_CLASSPATH')),
     jvm_properties=jvm_properties,
     jvm_options=jvm_options,

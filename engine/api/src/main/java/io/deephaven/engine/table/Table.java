@@ -18,6 +18,7 @@ import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -122,7 +123,14 @@ public interface Table extends
     String UNIQUE_KEYS_ATTRIBUTE = "uniqueKeys";
     String FILTERABLE_COLUMNS_ATTRIBUTE = "FilterableColumns";
     String TOTALS_TABLE_ATTRIBUTE = "TotalsTable";
+    /**
+     * If this attribute is set, we can only add new row keys, we can never shift them, modify them, or remove them.
+     */
     String ADD_ONLY_TABLE_ATTRIBUTE = "AddOnly";
+    /**
+     * If this attribute is set, we can only append new row keys to the end of the table. We can never shift them,
+     * modify them, or remove them.
+     */
     String APPEND_ONLY_TABLE_ATTRIBUTE = "AppendOnly";
     String TEST_SOURCE_TABLE_ATTRIBUTE = "TestSource";
     /**
@@ -227,14 +235,28 @@ public interface Table extends
     <T> ColumnSource<T> getColumnSource(String sourceName);
 
     /**
-     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast casts} it to the target class {@code clazz}.
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class) casts} it to the target class {@code clazz}.
      *
      * @param sourceName The name of the column
      * @param clazz The target type
      * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return The column source for {@code sourceName}, parameterized by {@code T}
+     * @see ColumnSource#cast(Class)
      */
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz);
+
+    /**
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class)} casts} it to the target class
+     * {@code clazz} and {@code componentType}.
+     *
+     * @param sourceName The name of the column
+     * @param clazz The target type
+     * @param componentType The target component type, may be null
+     * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
+     * @return The column source for {@code sourceName}, parameterized by {@code T}
+     * @see ColumnSource#cast(Class, Class)
+     */
+    <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz, @Nullable Class<?> componentType);
 
     Map<String, ? extends ColumnSource<?>> getColumnSourceMap();
 
@@ -355,6 +377,11 @@ public interface Table extends
      * <p>
      * If the firstPosition is negative and the lastPosition is negative, they are both counted from the end of the
      * table. For example, slice(-2, -1) returns the second to last row of the table.
+     * <p>
+     * If firstPosition is negative and lastPosition is positive, then firstPosition is counted from the end of the
+     * table, inclusively. The lastPosition is counted from the beginning of the table, exclusively. For example,
+     * slice(-3, 5) returns all rows starting from the third-last row to the fifth row of the table. If there are no
+     * rows between these positions, the function will return an empty table.
      *
      * @param firstPositionInclusive the first position to include in the result
      * @param lastPositionExclusive the last position to include in the result
@@ -364,14 +391,37 @@ public interface Table extends
     Table slice(long firstPositionInclusive, long lastPositionExclusive);
 
     /**
+     * Extracts a subset of a table by row percentages.
+     * <p>
+     * Returns a subset of table in the range [floor(startPercentInclusive * sizeOfTable), floor(endPercentExclusive *
+     * sizeOfTable)). For example, for a table of size 10, slicePct(0.1, 0.7) will return a subset from the second row
+     * to the seventh row. Similarly, slicePct(0, 1) would return the entire table (because row positions run from 0 to
+     * size-1). The percentage arguments must be in range [0,1], otherwise the function returns an error.
+     *
+     * @param startPercentInclusive the starting percentage point for rows to include in the result, range [0, 1]
+     * @param endPercentExclusive the ending percentage point for rows to include in the result, range [0, 1]
+     * @return a new Table, which is the requested subset of rows from the original table
+     */
+    @ConcurrentMethod
+    Table slicePct(double startPercentInclusive, double endPercentExclusive);
+
+    /**
      * Provides a head that selects a dynamic number of rows based on a percent.
      *
-     * @param percent the fraction of the table to return (0..1), the number of rows will be rounded up. For example if
-     *        there are 3 rows, headPct(50) returns the first two rows.
+     * @param percent the fraction of the table to return between [0, 1]. The number of rows will be rounded up. For
+     *        example if there are 3 rows, headPct(50) returns the first two rows. For percent values outside [0, 1],
+     *        the function will throw an exception.
      */
     @ConcurrentMethod
     Table headPct(double percent);
 
+    /**
+     * Provides a tail that selects a dynamic number of rows based on a percent.
+     *
+     * @param percent the fraction of the table to return between [0, 1]. The number of rows will be rounded up. For
+     *        example if there are 3 rows, tailPct(50) returns the last two rows. For percent values outside [0, 1], the
+     *        function will throw an exception.
+     */
     @ConcurrentMethod
     Table tailPct(double percent);
 

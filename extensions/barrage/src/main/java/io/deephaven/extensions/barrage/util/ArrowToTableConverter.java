@@ -170,9 +170,9 @@ public class ArrowToTableConverter {
         resultTable.setFlat();
 
         columnConversionFactors = result.conversionFactors;
-        columnChunkTypes = resultTable.getWireChunkTypes();
-        columnTypes = resultTable.getWireTypes();
-        componentTypes = resultTable.getWireComponentTypes();
+        columnChunkTypes = result.computeWireChunkTypes();
+        columnTypes = result.computeWireTypes();
+        componentTypes = result.computeWireComponentTypes();
 
         // retain reference until the resultTable can be sealed
         resultTable.retainReference();

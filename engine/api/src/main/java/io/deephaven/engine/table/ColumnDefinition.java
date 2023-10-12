@@ -6,26 +6,35 @@ package io.deephaven.engine.table;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.vector.*;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BooleanType;
+import io.deephaven.qst.type.BoxedType;
 import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
-import io.deephaven.qst.type.GenericVectorType;
-import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.qst.type.DoubleType;
 import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.GenericType;
+import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.IntType;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.PrimitiveType;
+import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
+import io.deephaven.vector.ByteVector;
+import io.deephaven.vector.CharVector;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ShortVector;
+import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,19 +109,17 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     }
 
     public static ColumnDefinition<?> of(String name, Type<?> type) {
-        return type.walk(new Adapter(name)).out();
+        return type.walk(new Adapter(name));
     }
 
     public static ColumnDefinition<?> of(String name, PrimitiveType<?> type) {
-        final Adapter adapter = new Adapter(name);
-        type.walk((PrimitiveType.Visitor) adapter);
-        return adapter.out();
+        final PrimitiveType.Visitor<ColumnDefinition<?>> adapter = new Adapter(name);
+        return type.walk(adapter);
     }
 
     public static ColumnDefinition<?> of(String name, GenericType<?> type) {
-        final Adapter adapter = new Adapter(name);
-        type.walk((GenericType.Visitor) adapter);
-        return adapter.out();
+        final GenericType.Visitor<ColumnDefinition<?>> adapter = new Adapter(name);
+        return type.walk(adapter);
     }
 
     public static <T extends Vector<?>> ColumnDefinition<T> ofVector(
@@ -233,107 +240,108 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     }
 
     public static ColumnDefinition<?> from(ColumnHeader<?> header) {
-        return header.componentType().walk(new Adapter(header.name())).out();
+        return header.componentType().walk(new Adapter(header.name()));
     }
 
-    private static class Adapter implements Type.Visitor, PrimitiveType.Visitor, GenericType.Visitor {
+    private static class Adapter implements Type.Visitor<ColumnDefinition<?>>,
+            PrimitiveType.Visitor<ColumnDefinition<?>>, GenericType.Visitor<ColumnDefinition<?>> {
 
         private final String name;
-
-        private ColumnDefinition<?> out;
 
         public Adapter(String name) {
             this.name = Objects.requireNonNull(name);
         }
 
-        public ColumnDefinition<?> out() {
-            return Objects.requireNonNull(out);
+        @Override
+        public ColumnDefinition<?> visit(PrimitiveType<?> primitiveType) {
+            return primitiveType.walk((PrimitiveType.Visitor<ColumnDefinition<?>>) this);
         }
 
         @Override
-        public void visit(PrimitiveType<?> primitiveType) {
-            primitiveType.walk((PrimitiveType.Visitor) this);
+        public ColumnDefinition<?> visit(GenericType<?> genericType) {
+            return genericType.walk((GenericType.Visitor<ColumnDefinition<?>>) this);
         }
 
         @Override
-        public void visit(GenericType<?> genericType) {
-            genericType.walk((GenericType.Visitor) this);
+        public ColumnDefinition<?> visit(BooleanType booleanType) {
+            return ofBoolean(name);
         }
 
         @Override
-        public void visit(BooleanType booleanType) {
-            out = ofBoolean(name);
+        public ColumnDefinition<?> visit(ByteType byteType) {
+            return ofByte(name);
         }
 
         @Override
-        public void visit(ByteType byteType) {
-            out = ofByte(name);
+        public ColumnDefinition<?> visit(CharType charType) {
+            return ofChar(name);
         }
 
         @Override
-        public void visit(CharType charType) {
-            out = ofChar(name);
+        public ColumnDefinition<?> visit(ShortType shortType) {
+            return ofShort(name);
         }
 
         @Override
-        public void visit(ShortType shortType) {
-            out = ofShort(name);
+        public ColumnDefinition<?> visit(IntType intType) {
+            return ofInt(name);
         }
 
         @Override
-        public void visit(IntType intType) {
-            out = ofInt(name);
+        public ColumnDefinition<?> visit(LongType longType) {
+            return ofLong(name);
         }
 
         @Override
-        public void visit(LongType longType) {
-            out = ofLong(name);
+        public ColumnDefinition<?> visit(FloatType floatType) {
+            return ofFloat(name);
         }
 
         @Override
-        public void visit(FloatType floatType) {
-            out = ofFloat(name);
+        public ColumnDefinition<?> visit(DoubleType doubleType) {
+            return ofDouble(name);
         }
 
         @Override
-        public void visit(DoubleType doubleType) {
-            out = ofDouble(name);
+        public ColumnDefinition<?> visit(BoxedType<?> boxedType) {
+            // treat the same as primitive type
+            return visit(boxedType.primitiveType());
         }
 
         @Override
-        public void visit(StringType stringType) {
-            out = ofString(name);
+        public ColumnDefinition<?> visit(StringType stringType) {
+            return ofString(name);
         }
 
         @Override
-        public void visit(InstantType instantType) {
-            out = ofTime(name);
+        public ColumnDefinition<?> visit(InstantType instantType) {
+            return ofTime(name);
         }
 
         @Override
-        public void visit(ArrayType<?, ?> arrayType) {
-            arrayType.walk(new ArrayType.Visitor() {
+        public ColumnDefinition<?> visit(ArrayType<?, ?> arrayType) {
+            return arrayType.walk(new ArrayType.Visitor<>() {
                 @Override
-                public void visit(NativeArrayType<?, ?> nativeArrayType) {
-                    out = fromGenericType(name, nativeArrayType.clazz(), nativeArrayType.componentType().clazz());
+                public ColumnDefinition<?> visit(NativeArrayType<?, ?> nativeArrayType) {
+                    return fromGenericType(name, nativeArrayType.clazz(), nativeArrayType.componentType().clazz());
                 }
 
                 @Override
-                public void visit(PrimitiveVectorType<?, ?> vectorPrimitiveType) {
+                public ColumnDefinition<?> visit(PrimitiveVectorType<?, ?> vectorPrimitiveType) {
                     // noinspection unchecked
-                    out = ofVector(name, (Class<? extends Vector<?>>) vectorPrimitiveType.clazz());
+                    return ofVector(name, (Class<? extends Vector<?>>) vectorPrimitiveType.clazz());
                 }
 
                 @Override
-                public void visit(GenericVectorType<?, ?> genericVectorType) {
-                    out = fromGenericType(name, ObjectVector.class, genericVectorType.componentType().clazz());
+                public ColumnDefinition<?> visit(GenericVectorType<?, ?> genericVectorType) {
+                    return fromGenericType(name, ObjectVector.class, genericVectorType.componentType().clazz());
                 }
             });
         }
 
         @Override
-        public void visit(CustomType<?> customType) {
-            out = fromGenericType(name, customType.clazz());
+        public ColumnDefinition<?> visit(CustomType<?> customType) {
+            return fromGenericType(name, customType.clazz());
         }
     }
 
@@ -355,7 +363,7 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
             @NotNull final Class<TYPE> dataType,
             @Nullable final Class<?> componentType,
             @NotNull final ColumnType columnType) {
-        this.name = Objects.requireNonNull(name);
+        this.name = Objects.requireNonNull(name, "Column names cannot be null");
         this.dataType = Objects.requireNonNull(dataType);
         this.componentType = componentType;
         this.columnType = Objects.requireNonNull(columnType);

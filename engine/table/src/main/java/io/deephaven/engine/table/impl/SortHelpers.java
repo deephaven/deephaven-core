@@ -15,22 +15,19 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.GroupingBuilder;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.chunk.*;
@@ -40,7 +37,6 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -243,9 +239,9 @@ public class SortHelpers {
 
         if (columnsToSortBy.length == 1) {
             if (rowSetToSort.isTracking()
-                    && RowSetIndexer.of(rowSetToSort.trackingCast()).hasGrouping(columnsToSortBy[0])) {
+                    && DataIndexer.of(rowSetToSort.trackingCast()).hasDataIndex(columnsToSortBy)) {
                 if (!usePrev || columnsToSortBy[0].isImmutable()) {
-                    return getSortMappingGrouped(order[0], columnsToSortBy[0], rowSetToSort.trackingCast());
+                    return getSortMappingIndexed(order, columnsToSortBy, rowSetToSort.trackingCast());
                 } else {
                     return getSortMappingOne(order[0], columnsToSortBy[0], rowSetToSort, usePrev);
                 }
@@ -255,6 +251,14 @@ public class SortHelpers {
                     return doSymbolTableMapping(order[0], columnsToSortBy[0], rowSetToSort, usePrev);
                 } else {
                     return getSortMappingOne(order[0], columnsToSortBy[0], rowSetToSort, usePrev);
+                }
+            }
+        } else {
+            // Multi-column data indexes that cover the full column set.
+            if (rowSetToSort.isTracking()) {
+                final DataIndexer dataIndexer = DataIndexer.of(rowSetToSort.trackingCast());
+                if (dataIndexer.hasDataIndex(columnsToSortBy)) {
+                    return getSortMappingIndexed(order, columnsToSortBy, rowSetToSort.trackingCast());
                 }
             }
         }
@@ -510,41 +514,55 @@ public class SortHelpers {
         }
     }
 
-    private static SortMapping getSortMappingGrouped(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-            TrackingRowSet rowSet) {
-        final Map<Object, RowSet> groupToRange = RowSetIndexer.of(rowSet).getGrouping(columnSource);
-        final Object[] keys = groupToRange.keySet().toArray((Object[]) Array.newInstance(
-                io.deephaven.util.type.TypeUtils.getBoxedType(columnSource.getType()), groupToRange.size()));
+    private static SortMapping getSortMappingIndexed(SortingOrder order[], ColumnSource<Comparable<?>>[] columnSources,
+                                                     TrackingRowSet rowSet) {
+        final DataIndex index = DataIndexer.of(rowSet).getDataIndex(columnSources);
+        final Table indexTable = index.table();
+        final Map<ColumnSource<?>, String> map = index.keyColumnMap();
+        final String[] keyColumnNames = Arrays.stream(columnSources).map(col -> map.get(col)).toArray(String[]::new);
+        final String rowSetColumnName = index.rowSetColumnName();
 
-        Arrays.sort((Comparable<?>[]) keys, order.getComparator());
+        // Sort the index table incrementally by the reverse column order.
+        Table sortedIndexTable = indexTable;
+        for (int idx = order.length - 1; idx >= 0; idx--) {
+            sortedIndexTable = order[idx] == SortingOrder.Ascending
+                    ? sortedIndexTable.sort(keyColumnNames[idx])
+                    : sortedIndexTable.sortDescending(keyColumnNames[idx]);
+        }
 
         final boolean fitsIntoArray = rowSet.size() < (long) Integer.MAX_VALUE;
-        final long elementsPerGroup = rowSet.size() / (long) groupToRange.size();
+        final long elementsPerGroup = rowSet.size() / sortedIndexTable.size();
 
         if (fitsIntoArray && (elementsPerGroup < groupedRedirectionThreshold)) {
             final long[] rowKeysArray = new long[rowSet.intSize()];
             final MutableInt outputIdx = new MutableInt(0);
-            for (final Object key : keys) {
-                final RowSet group = groupToRange.get(key).intersect(rowSet);
-                group.forAllRowKeys(rowKey -> {
-                    rowKeysArray[outputIdx.intValue()] = rowKey;
-                    outputIdx.increment();
-                });
+
+            try (final ColumnIterator<?> rsIt = (ColumnIterator<?>) sortedIndexTable.columnIterator(rowSetColumnName)) {
+                while (rsIt.hasNext()) {
+                    final RowSet group = rowSet.intersect((RowSet) rsIt.next());
+                    group.forAllRowKeys(rowKey -> {
+                        rowKeysArray[outputIdx.intValue()] = rowKey;
+                        outputIdx.increment();
+                    });
+                }
             }
 
             return new ArraySortMapping(rowKeysArray);
         } else {
             // create a grouped row redirection
-            final long[] groupSize = new long[groupToRange.size()];
-            final RowSet[] groupRowSet = new RowSet[groupToRange.size()];
+            final int indexSize = sortedIndexTable.intSize();
+            final long[] groupSize = new long[indexSize];
+            final RowSet[] groupRowSet = new RowSet[indexSize];
 
             long outputSize = 0;
             int ii = 0;
-            for (final Object key : keys) {
-                final RowSet group = groupToRange.get(key).intersect(rowSet);
-                outputSize += group.size();
-                groupSize[ii] = outputSize;
-                groupRowSet[ii++] = group;
+            try (final ColumnIterator<?> rsIt = (ColumnIterator<?>) sortedIndexTable.columnIterator(rowSetColumnName)) {
+                while (rsIt.hasNext()) {
+                    final RowSet group = ((RowSet)rsIt.next()).intersect(rowSet);
+                    outputSize += group.size();
+                    groupSize[ii] = outputSize;
+                    groupRowSet[ii++] = group;
+                }
             }
 
             return new GroupedSortMapping(outputSize, groupSize, groupRowSet);
@@ -564,6 +582,7 @@ public class SortHelpers {
 
         ColumnSource<Comparable<?>> columnSource = columnSources[0];
 
+        // Can we utilize existing index on the first caolumn
         if (columnSources[0].hasGrouping()) {
             final GroupingBuilder groupingBuilder = columnSource.getGroupingBuilder();
             Table groupingTable = groupingBuilder

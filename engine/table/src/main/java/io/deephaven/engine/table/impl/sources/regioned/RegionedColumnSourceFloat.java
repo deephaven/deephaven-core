@@ -55,11 +55,6 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
         AsValues() {
             super(ColumnRegionFloat.createNull(PARAMETERS.regionMask), DeferredColumnRegionFloat::new);
         }
-
-        @Override
-        public boolean isPartitioning() {
-            return false;
-        }
     }
 
     static final class Partitioning extends RegionedColumnSourceFloat<Values> {
@@ -81,11 +76,6 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
                         + ": " + partitioningColumnValue + " is not a Float at location " + locationKey);
             }
             return new ColumnRegionFloat.Constant<>(regionMask(), unbox((Float) partitioningColumnValue));
-        }
-
-        @Override
-        public boolean isPartitioning() {
-            return true;
         }
     }
 }

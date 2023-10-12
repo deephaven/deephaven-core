@@ -12,16 +12,15 @@ import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
-import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.WouldMatchPairFactory;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.util.annotations.FinalDefault;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -124,6 +123,16 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         ColumnSource rawColumnSource = getColumnSource(sourceName);
         // noinspection unchecked
         return rawColumnSource.cast(clazz);
+    }
+
+    @Override
+    @FinalDefault
+    default <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz,
+            @Nullable Class<?> componentType) {
+        @SuppressWarnings("rawtypes")
+        ColumnSource rawColumnSource = getColumnSource(sourceName);
+        // noinspection unchecked
+        return rawColumnSource.cast(clazz, componentType);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

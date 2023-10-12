@@ -28,20 +28,21 @@ public class LinkDescriber extends TableVisitorGeneric {
     }
 
     @Override
-    public void accept(TableSpec t) {
+    public Void accept(TableSpec t) {
         Iterator<TableSpec> it = ParentsVisitor.getParents(t).iterator();
         if (!it.hasNext()) {
-            return;
+            return null;
         }
         TableSpec first = it.next();
         if (!it.hasNext()) {
             consumer.link(first);
-            return;
+            return null;
         }
         consumer.link(first, 0);
         for (int i = 1; it.hasNext(); ++i) {
             consumer.link(it.next(), i);
         }
+        return null;
     }
 
     public void join(Join join) {
@@ -50,61 +51,70 @@ public class LinkDescriber extends TableVisitorGeneric {
     }
 
     @Override
-    public void visit(NaturalJoinTable naturalJoinTable) {
+    public Void visit(NaturalJoinTable naturalJoinTable) {
         join(naturalJoinTable);
+        return null;
     }
 
     @Override
-    public void visit(ExactJoinTable exactJoinTable) {
+    public Void visit(ExactJoinTable exactJoinTable) {
         join(exactJoinTable);
+        return null;
     }
 
     @Override
-    public void visit(JoinTable joinTable) {
+    public Void visit(JoinTable joinTable) {
         join(joinTable);
+        return null;
     }
 
     @Override
-    public void visit(AsOfJoinTable aj) {
+    public Void visit(AsOfJoinTable aj) {
         join(aj);
+        return null;
     }
 
     @Override
-    public void visit(RangeJoinTable rangeJoinTable) {
+    public Void visit(RangeJoinTable rangeJoinTable) {
         consumer.link(rangeJoinTable.left(), "left");
         consumer.link(rangeJoinTable.right(), "right");
+        return null;
     }
 
     @Override
-    public void visit(WhereInTable whereInTable) {
+    public Void visit(WhereInTable whereInTable) {
         consumer.link(whereInTable.left(), "left");
         consumer.link(whereInTable.right(), "right");
+        return null;
     }
 
     @Override
-    public void visit(SnapshotTable snapshotTable) {
+    public Void visit(SnapshotTable snapshotTable) {
         consumer.link(snapshotTable.base(), "base");
+        return null;
     }
 
     @Override
-    public void visit(SnapshotWhenTable snapshotWhenTable) {
+    public Void visit(SnapshotWhenTable snapshotWhenTable) {
         consumer.link(snapshotWhenTable.base(), "base");
         consumer.link(snapshotWhenTable.trigger(), "trigger");
+        return null;
     }
 
     @Override
-    public void visit(InputTable inputTable) {
-        inputTable.schema().walk(new Visitor() {
+    public Void visit(InputTable inputTable) {
+        return inputTable.schema().walk(new Visitor<Void>() {
             @Override
-            public void visit(TableSpec spec) {
+            public Void visit(TableSpec spec) {
                 consumer.link(spec, "definition");
+                return null;
             }
 
             @Override
-            public void visit(TableHeader header) {
+            public Void visit(TableHeader header) {
                 // no links
+                return null;
             }
         });
-
     }
 }

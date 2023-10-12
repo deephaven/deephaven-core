@@ -31,7 +31,12 @@ public final class Export implements AutoCloseable, HasExportId {
 
     @Override
     public ExportId exportId() {
-        return new ExportId("Table", state.exportId());
+        return new ExportId(TableObject.TYPE, state.exportId());
+    }
+
+    @Override
+    public TypedTicket typedTicket() {
+        return exportId().typedTicket();
     }
 
     @Override

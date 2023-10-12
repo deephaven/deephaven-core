@@ -9,7 +9,6 @@ import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.StaticAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
-import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class StaticHashedAsOfJoinStateManager extends StaticAsOfJoinStateManager {
@@ -29,5 +28,5 @@ public abstract class StaticHashedAsOfJoinStateManager extends StaticAsOfJoinSta
     public abstract RowSet getRightIndex(int slot);
 
     public abstract void convertRightBuildersToIndex(IntegerArraySource slots, int slotCount);
-    public abstract void convertRightGrouping(IntegerArraySource slots, int slotCount, ColumnSource<RowSet> rowSetSource);
+    public abstract void convertRightIndexTable(IntegerArraySource slots, int slotCount, ColumnSource<RowSet> rowSetSource);
 }

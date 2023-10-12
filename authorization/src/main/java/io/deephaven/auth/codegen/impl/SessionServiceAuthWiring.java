@@ -12,6 +12,7 @@ import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.proto.backplane.grpc.ExportNotificationRequest;
 import io.deephaven.proto.backplane.grpc.ExportRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
+import io.deephaven.proto.backplane.grpc.PublishRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationRequest;
@@ -42,6 +43,8 @@ public interface SessionServiceAuthWiring extends ServiceAuthWiring<SessionServi
                 service, "Release", null, this::onMessageReceivedRelease));
         serviceBuilder.addMethod(ServiceAuthWiring.intercept(
                 service, "ExportFromTicket", null, this::onMessageReceivedExportFromTicket));
+        serviceBuilder.addMethod(ServiceAuthWiring.intercept(
+                service, "PublishFromTicket", null, this::onMessageReceivedPublishFromTicket));
         serviceBuilder.addMethod(ServiceAuthWiring.intercept(
                 service, "ExportNotifications", null, this::onMessageReceivedExportNotifications));
         serviceBuilder.addMethod(ServiceAuthWiring.intercept(
@@ -96,6 +99,15 @@ public interface SessionServiceAuthWiring extends ServiceAuthWiring<SessionServi
     void onMessageReceivedExportFromTicket(AuthContext authContext, ExportRequest request);
 
     /**
+     * Authorize a request to PublishFromTicket.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke PublishFromTicket
+     */
+    void onMessageReceivedPublishFromTicket(AuthContext authContext, PublishRequest request);
+
+    /**
      * Authorize a request to ExportNotifications.
      *
      * @param authContext the authentication context of the request
@@ -127,6 +139,9 @@ public interface SessionServiceAuthWiring extends ServiceAuthWiring<SessionServi
 
         public void onMessageReceivedExportFromTicket(AuthContext authContext, ExportRequest request) {}
 
+        public void onMessageReceivedPublishFromTicket(AuthContext authContext,
+                PublishRequest request) {}
+
         public void onMessageReceivedExportNotifications(AuthContext authContext,
                 ExportNotificationRequest request) {}
 
@@ -153,6 +168,11 @@ public interface SessionServiceAuthWiring extends ServiceAuthWiring<SessionServi
         }
 
         public void onMessageReceivedExportFromTicket(AuthContext authContext, ExportRequest request) {
+            ServiceAuthWiring.operationNotAllowed();
+        }
+
+        public void onMessageReceivedPublishFromTicket(AuthContext authContext,
+                PublishRequest request) {
             ServiceAuthWiring.operationNotAllowed();
         }
 
@@ -198,6 +218,13 @@ public interface SessionServiceAuthWiring extends ServiceAuthWiring<SessionServi
         public void onMessageReceivedExportFromTicket(AuthContext authContext, ExportRequest request) {
             if (delegate != null) {
                 delegate.onMessageReceivedExportFromTicket(authContext, request);
+            }
+        }
+
+        public void onMessageReceivedPublishFromTicket(AuthContext authContext,
+                PublishRequest request) {
+            if (delegate != null) {
+                delegate.onMessageReceivedPublishFromTicket(authContext, request);
             }
         }
 

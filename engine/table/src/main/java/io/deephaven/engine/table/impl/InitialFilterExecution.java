@@ -85,7 +85,7 @@ class InitialFilterExecution extends AbstractFilterExecution {
 
     private void enqueueJobs(Iterable<? extends NotificationQueue.Notification> subFilters) {
         for (NotificationQueue.Notification notification : subFilters) {
-            OperationInitializationThreadPool.executorService.submit(() -> {
+            OperationInitializationThreadPool.executorService().submit(() -> {
                 root.runningChildren.put(Thread.currentThread(), Thread.currentThread());
                 try {
                     if (!root.cancelled.get()) {

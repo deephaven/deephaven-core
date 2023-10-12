@@ -7,26 +7,21 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.impl.dataindex.RowSetCodec;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
+import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.vector.*;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
+import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
+import io.deephaven.engine.table.impl.SimpleSourceTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.*;
@@ -44,11 +39,10 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFac
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ParquetFileReader;
-import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.parquet.base.util.CachedChannelProvider;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
@@ -61,10 +55,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.function.Function;
 
-import static io.deephaven.api.agg.Aggregation.AggFirst;
-import static io.deephaven.api.agg.Aggregation.AggLast;
-import static io.deephaven.engine.table.GroupingProvider.INDEX_COL_NAME;
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
 
@@ -73,9 +65,6 @@ import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
  */
 @SuppressWarnings("WeakerAccess")
 public class ParquetTools {
-    public static final String BEGIN_POS = "dh_begin_pos";
-    public static final String END_POS = "dh_end_pos";
-    public static final String GROUPING_KEY = "dh_key";
 
     private ParquetTools() {}
 
@@ -223,32 +212,83 @@ public class ParquetTools {
      * Write a table to a file.
      *
      * @param sourceTable source table
-     * @param definition table definition to use (instead of the one implied by the table itself)
-     * @param writeInstructions instructions for customizations while writing
-     * @param destFile destination file; its path must end in ".parquet". Any non existing directories in the path are
+     * @param destFile destination file; its path must end in ".parquet". Any non-existing directories in the path are
      *        created If there is an error any intermediate directories previously created are removed; note this makes
      *        this method unsafe for concurrent use
+     * @param definition table definition to use (instead of the one implied by the table itself)
+     * @param writeInstructions instructions for customizations while writing
      */
     public static void writeTable(@NotNull final Table sourceTable,
             @NotNull final File destFile,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions) {
-        if (definition.numColumns() == 0) {
-            throw new TableDataException("Cannot write a parquet table with zero columns");
+        writeTables(new Table[] {sourceTable}, definition, new File[] {destFile}, writeInstructions);
+    }
+
+    private static File getShadowFile(File destFile) {
+        return new File(destFile.getParent(), ".NEW_" + destFile.getName());
+    }
+
+    @VisibleForTesting
+    static File getBackupFile(File destFile) {
+        return new File(destFile.getParent(), ".OLD_" + destFile.getName());
+    }
+
+    public static Function<String[], String> defaultIndexFileName(@NotNull final String path) {
+        final String prefix = minusParquetSuffix(path);
+        return columnNames -> prefix + "_" + String.join(",", columnNames) + "_index.parquet";
+    }
+
+    /**
+     * Delete any old backup files created for this destination, and throw an exception on failure
+     */
+    private static void deleteBackupFile(@NotNull final File destFile) {
+        if (!deleteBackupFileNoExcept(destFile)) {
+            throw new UncheckedDeephavenException(
+                    String.format("Failed to delete backup file at %s", getBackupFile(destFile).getAbsolutePath()));
         }
-        final File firstCreated = prepareDestinationFileLocation(destFile);
-        try {
-            writeParquetTableImpl(
-                    sourceTable, definition, writeInstructions, destFile, definition.getGroupingColumnNamesArray());
-        } catch (Exception e) {
-            if (firstCreated != null) {
-                FileUtils.deleteRecursivelyOnNFS(firstCreated);
-            } else {
-                // noinspection ResultOfMethodCallIgnored
-                destFile.delete();
-            }
-            throw e;
+    }
+
+    /**
+     * Delete any old backup files created for this destination with no exception in case of failure
+     */
+    private static boolean deleteBackupFileNoExcept(@NotNull final File destFile) {
+        final File backupDestFile = getBackupFile(destFile);
+        if (backupDestFile.exists() && !backupDestFile.delete()) {
+            log.error().append("Error in deleting backup file at path ")
+                    .append(backupDestFile.getAbsolutePath())
+                    .endl();
+            return false;
         }
+        return true;
+    }
+
+    /**
+     * Backup any existing files at location destFile and rename the shadow file to destFile
+     */
+    private static void installShadowFile(@NotNull final File destFile, @NotNull final File shadowDestFile) {
+        final File backupDestFile = getBackupFile(destFile);
+        if (destFile.exists() && !destFile.renameTo(backupDestFile)) {
+            throw new UncheckedDeephavenException(
+                    String.format(
+                            "Failed to install shadow file at %s because a file already exists at the path which couldn't be renamed to %s",
+                            destFile.getAbsolutePath(), backupDestFile.getAbsolutePath()));
+        }
+        if (!shadowDestFile.renameTo(destFile)) {
+            throw new UncheckedDeephavenException(String.format(
+                    "Failed to install shadow file at %s because couldn't rename temporary shadow file from %s to %s",
+                    destFile.getAbsolutePath(), shadowDestFile.getAbsolutePath(), destFile.getAbsolutePath()));
+        }
+    }
+
+    /**
+     * Roll back any changes made in the {@link #installShadowFile} in a best effort manner
+     */
+    private static void rollbackFile(@NotNull final File destFile) {
+        final File backupDestFile = getBackupFile(destFile);
+        final File shadowDestFile = getShadowFile(destFile);
+        destFile.renameTo(shadowDestFile);
+        backupDestFile.renameTo(destFile);
     }
 
     /**
@@ -261,14 +301,16 @@ public class ParquetTools {
         destination = destination.getAbsoluteFile();
         if (!destination.getPath().endsWith(PARQUET_FILE_EXTENSION)) {
             throw new UncheckedDeephavenException(
-                    "Destination " + destination + " does not end in " + PARQUET_FILE_EXTENSION + " extension");
+                    String.format("Destination %s does not end in %s extension", destination, PARQUET_FILE_EXTENSION));
         }
         if (destination.exists()) {
             if (destination.isDirectory()) {
-                throw new UncheckedDeephavenException("Destination " + destination + " exists and is a directory");
+                throw new UncheckedDeephavenException(
+                        String.format("Destination %s exists and is a directory", destination));
             }
             if (!destination.canWrite()) {
-                throw new UncheckedDeephavenException("Destination " + destination + " exists but is not writable");
+                throw new UncheckedDeephavenException(
+                        String.format("Destination %s exists but is not writable", destination));
             }
             return null;
         }
@@ -277,7 +319,8 @@ public class ParquetTools {
             if (firstParent.canWrite()) {
                 return null;
             }
-            throw new UncheckedDeephavenException("Destination " + destination + " has non writable parent directory");
+            throw new UncheckedDeephavenException(
+                    String.format("Destination %s has non writable parent directory", destination));
         }
         File firstCreated = firstParent;
         File parent;
@@ -287,11 +330,11 @@ public class ParquetTools {
         }
         if (parent == null) {
             throw new IllegalArgumentException(
-                    "Can't find any existing parent directory for destination path: " + destination);
+                    String.format("Can't find any existing parent directory for destination path: %s", destination));
         }
         if (!parent.isDirectory()) {
             throw new IllegalArgumentException(
-                    "Existing parent file " + parent + " of " + destination + " is not a directory");
+                    String.format("Existing parent file %s of %s is not a directory", parent, destination));
         }
         if (!firstParent.mkdirs()) {
             throw new UncheckedDeephavenException("Couldn't (re)create destination directory " + firstParent);
@@ -300,72 +343,190 @@ public class ParquetTools {
     }
 
     /**
+     * Helper function for building grouping column info for writing and deleting any backup grouping column files
+     *
+     * @param groupingColumnNameArr Names of grouping columns
+     * @param parquetColumnNameArr Names of grouping columns for the parquet file
+     * @param destFile The destination path for the main table containing these grouping columns
+     */
+    private static List<ParquetTableWriter.IndexWritingInfo> indexInfoBuilderHelper(
+            @NotNull final String[][] groupingColumnNameArr,
+            @NotNull final String[][] parquetColumnNameArr,
+            @NotNull final File destFile) {
+        Require.eq(groupingColumnNameArr.length, "groupingColumnNameArr.length", parquetColumnNameArr.length,
+                "parquetColumnNameArr.length");
+        final List<ParquetTableWriter.IndexWritingInfo> gcwim = new ArrayList<>();
+        for (int gci = 0; gci < groupingColumnNameArr.length; gci++) {
+            final String[] groupingColumnNames = groupingColumnNameArr[gci];
+            final String[] parquetColumnNames = parquetColumnNameArr[gci];
+            final String groupingFilePath = defaultIndexFileName(destFile.getPath()).apply(parquetColumnNames);
+            final File groupingFile = new File(groupingFilePath);
+            deleteBackupFile(groupingFile);
+            final File shadowGroupingFile = getShadowFile(groupingFile);
+
+            final ParquetTableWriter.IndexWritingInfo info = new ParquetTableWriter.IndexWritingInfo(
+                    groupingColumnNames,
+                    parquetColumnNames,
+                    groupingFile,
+                    shadowGroupingFile);
+
+            gcwim.add(info);
+        }
+        return gcwim;
+    }
+
+    /**
      * Writes tables to disk in parquet format to a supplied set of destinations. If you specify grouping columns, there
      * must already be grouping information for those columns in the sources. This can be accomplished with
      * {@code .groupBy(<grouping columns>).ungroup()} or {@code .sort(<grouping column>)}.
      *
      * @param sources The tables to write
-     * @param tableDefinition The common schema for all the tables to write
+     * @param definition The common schema for all the tables to write
      * @param writeInstructions Write instructions for customizations while writing
-     * @param destinations The destinations paths. Any non existing directories in the paths provided are created. If
+     * @param destinations The destinations paths. Any non-existing directories in the paths provided are created. If
      *        there is an error any intermediate directories previously created are removed; note this makes this method
      *        unsafe for concurrent use
-     * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping
+     * @param indexColumnArr arrays containing the column names(s) for written indexes (the write operation will
+     *                     store the index info as sidecar tables)
+     * @param indexColumnArr List of columns the tables are grouped by (the write operation will store the grouping
      *        info)
      */
     public static void writeParquetTables(@NotNull final Table[] sources,
-            @NotNull final TableDefinition tableDefinition,
+            @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final File[] destinations,
-            @NotNull final String[] groupingColumns) {
+            @Nullable final String[][] indexColumnArr) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
-        if (tableDefinition.numColumns() == 0) {
+        if (definition.numColumns() == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
         }
-        final File[] absoluteDestinations =
+        Arrays.stream(destinations).forEach(ParquetTools::deleteBackupFile);
+
+        // Write tables at temporary shadow file paths in the same directory to prevent overwriting any existing files
+        final File[] shadowDestFiles =
                 Arrays.stream(destinations)
-                        .map(File::getAbsoluteFile)
+                        .map(ParquetTools::getShadowFile)
                         .toArray(File[]::new);
         final File[] firstCreatedDirs =
-                Arrays.stream(absoluteDestinations)
+                Arrays.stream(shadowDestFiles)
                         .map(ParquetTools::prepareDestinationFileLocation)
                         .toArray(File[]::new);
-        for (int i = 0; i < sources.length; i++) {
-            final Table source = sources[i];
-            try {
-                writeParquetTableImpl(source, tableDefinition, writeInstructions, destinations[i], groupingColumns);
-            } catch (RuntimeException e) {
-                for (final File destination : destinations) {
-                    // noinspection ResultOfMethodCallIgnored
-                    destination.delete();
+
+        // List of shadow files, to clean up in case of exceptions
+        final List<File> shadowFiles = new ArrayList<>();
+        // List of all destination files (including index files), to roll back in case of exceptions
+        final List<File> destFiles = new ArrayList<>();
+        try {
+            final List<List<ParquetTableWriter.IndexWritingInfo>> indexInfoLists;
+            if (indexColumnArr.length == 0) {
+                // Write the tables without any index info
+                indexInfoLists = null;
+                for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
+                    shadowFiles.add(shadowDestFiles[tableIdx]);
+                    final Table source = sources[tableIdx];
+                    ParquetTableWriter.write(source, definition, writeInstructions, shadowDestFiles[tableIdx].getPath(),
+                            Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>)null);
                 }
-                for (final File firstCreatedDir : firstCreatedDirs) {
-                    if (firstCreatedDir == null) {
-                        continue;
-                    }
-                    log.error().append(
-                            "Error in table writing, cleaning up potentially incomplete table destination path starting from ")
-                            .append(firstCreatedDir.getAbsolutePath())
-                            .append(e);
-                    FileUtils.deleteRecursivelyOnNFS(firstCreatedDir);
+            } else {
+                // Create grouping info for each table and write the table and grouping files to shadow path
+                indexInfoLists = new ArrayList<>(sources.length);
+
+                // Shared parquet column names across all tables
+                final String[][] parquetColumnNameArr = Arrays.stream(indexColumnArr)
+                        .map((String[] columns) ->
+                                Arrays.stream(columns).map(writeInstructions::getParquetColumnNameFromColumnNameOrDefault)
+                                        .toArray(String[]::new))
+                        .toArray(String[][]::new);
+
+                for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
+
+                    final File tableDestination = destinations[tableIdx];
+                    final List<ParquetTableWriter.IndexWritingInfo> indexInfoList =
+                            indexInfoBuilderHelper(indexColumnArr, parquetColumnNameArr, tableDestination);
+                    indexInfoLists.add(indexInfoList);
+
+                    shadowFiles.add(shadowDestFiles[tableIdx]);
+                    indexInfoList.forEach(item -> shadowFiles.add(item.destFile));
+
+                    final Table sourceTable = sources[tableIdx];
+                    ParquetTableWriter.write(sourceTable, definition, writeInstructions,
+                            shadowDestFiles[tableIdx].getPath(),
+                            Collections.emptyMap(), indexInfoList);
                 }
-                throw e;
             }
+
+            // Write to shadow files was successful
+            for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
+                destFiles.add(destinations[tableIdx]);
+                installShadowFile(destinations[tableIdx], shadowDestFiles[tableIdx]);
+                if (indexInfoLists != null) {
+                    final List<ParquetTableWriter.IndexWritingInfo> indexInfoList = indexInfoLists.get(tableIdx);
+                    for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
+                        final File groupingDestFile = info.metadataFilePath;
+                        final File shadowGroupingFile = info.destFile;
+                        destFiles.add(groupingDestFile);
+                        installShadowFile(groupingDestFile, shadowGroupingFile);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            for (final File file : destFiles) {
+                rollbackFile(file);
+            }
+            for (final File file : shadowFiles) {
+                file.delete();
+            }
+            for (final File firstCreatedDir : firstCreatedDirs) {
+                if (firstCreatedDir == null) {
+                    continue;
+                }
+                log.error().append(
+                        "Error in table writing, cleaning up potentially incomplete table destination path starting from ")
+                        .append(firstCreatedDir.getAbsolutePath()).append(e).endl();
+                FileUtils.deleteRecursivelyOnNFS(firstCreatedDir);
+            }
+            throw new UncheckedDeephavenException("Error writing parquet tables", e);
         }
+        destFiles.stream().forEach(ParquetTools::deleteBackupFileNoExcept);
     }
 
     /**
      * Write out tables to disk.
      *
      * @param sources source tables
-     * @param tableDefinition table definition
+     * @param definition table definition
      * @param destinations destinations
      */
     public static void writeTables(@NotNull final Table[] sources,
-            @NotNull final TableDefinition tableDefinition,
+            @NotNull final TableDefinition definition,
             @NotNull final File[] destinations) {
-        writeParquetTables(sources, tableDefinition, ParquetInstructions.EMPTY, destinations,
-                tableDefinition.getGroupingColumnNamesArray());
+
+        // Make single-value arrays for the grouping columns
+        String[][] indexColumnArr = Arrays.stream(definition.getGroupingColumnNamesArray())
+                .map(columnName -> new String[] {columnName}).toArray(String[][]::new);
+
+        writeParquetTables(sources, definition, ParquetInstructions.EMPTY, destinations, indexColumnArr);
+    }
+
+    /**
+     * Write out tables to disk.
+     *
+     * @param sources source tables
+     * @param definition table definition
+     * @param destinations destinations
+     * @param writeInstructions instructions for customizations while writing
+     */
+    public static void writeTables(@NotNull final Table[] sources,
+            @NotNull final TableDefinition definition,
+            @NotNull final File[] destinations,
+            @NotNull final ParquetInstructions writeInstructions) {
+
+        // Make single-value arrays for the grouping columns
+        String[][] indexColumnArr = Arrays.stream(definition.getGroupingColumnNamesArray())
+                .map(columnName -> new String[] {columnName}).toArray(String[][]::new);
+
+        writeParquetTables(sources, definition, writeInstructions, destinations,
+                indexColumnArr);
     }
 
     /**
@@ -388,7 +549,8 @@ public class ParquetTools {
      * @param instructions Instructions for reading
      * @return A {@link Table}
      */
-    private static Table readTableInternal(@NotNull final File source,
+    private static Table readTableInternal(
+            @NotNull final File source,
             @NotNull final ParquetInstructions instructions) {
         final Path sourcePath = source.toPath();
         if (!Files.exists(sourcePath)) {
@@ -695,31 +857,9 @@ public class ParquetTools {
                         s -> s.replace(" ", "_"), takenNames)));
     }
 
-    private static void writeParquetTableImpl(
-            final Table sourceTable,
-            final TableDefinition definition,
-            final ParquetInstructions writeInstructions,
-            final File destFile,
-            final String[] groupingColumns) {
-        final String path = destFile.getPath();
-        try {
-            if (groupingColumns.length > 0) {
-                ParquetTableWriter.write(
-                        sourceTable, definition, writeInstructions, path, Collections.emptyMap(),
-                        ParquetTableWriter.defaultGroupingFileName(path), groupingColumns);
-            } else {
-                ParquetTableWriter.write(
-                        sourceTable, definition, writeInstructions, path, Collections.emptyMap());
-            }
-        } catch (Exception e) {
-            throw new UncheckedDeephavenException("Error writing table to " + destFile, e);
-        }
-    }
-
-    // region Grouping
-
+    // region Indexing
     /**
-     * Read a Data Index (or grouping) table from disk. If {@link TableInfo} are provided, it will be used to aid in
+     * Read a Data Index table from disk. If {@link TableInfo} are provided, it will be used to aid in
      * locating the table.
      *
      * @param tableFile The path to the base table
@@ -759,10 +899,8 @@ public class ParquetTools {
                         if (!indexTable.isEmpty() && indexTable.hasColumns(GROUPING_KEY, BEGIN_POS, END_POS)) {
                             // This table will be written like the older style grouping format of Key, start, end so we
                             // have to convert
-                            return indexTable.select(keyColumnNames[0] + "=" + GROUPING_KEY,
-                                    INDEX_COL_NAME
-                                            + "=(io.deephaven.engine.rowset.RowSet)io.deephaven.engine.rowset.RowSetFactory.fromRange("
-                                            + BEGIN_POS + ", " + END_POS + "-1)");
+                            return indexTable.select(String.format("%s=%s", keyColumnNames[0], GROUPING_KEY),
+                                    String.format("%s=(io.deephaven.engine.rowset.RowSet)io.deephaven.engine.rowset.RowSetFactory.fromRange(%s, %s-1)", INDEX_COL_NAME, BEGIN_POS, END_POS));
                         }
                         // There's a table here, but it doesn't look like a grouping table.
                         return null;
@@ -801,140 +939,7 @@ public class ParquetTools {
         }
     }
 
-    /**
-     * Write out the Data Index table for the specified columns. This will place the Data Index in a table adjacent to
-     * the data table in a directory titled "Index-&lt;Column names&gt;".
-     *
-     * @param parentFile the full path of the parent file
-     * @param indexTable the table containing the index
-     * @param indexColumnName the name of the Index column
-     * @param keyColumnNames the ordered names of key columns
-     */
-    public static String writeDataIndexTable(@NotNull final String parentFile,
-            @NotNull final Table indexTable,
-            @NotNull final String indexColumnName,
-            @Nullable final CompressionCodecName compressionCodec,
-            @NotNull final String... keyColumnNames) throws SchemaMappingException, IOException {
-        Assert.neqNull(parentFile, "destinationDir");
-        Assert.neqNull(indexTable, "indexTable");
-        Assert.neqNull(indexColumnName, "indexColumnName");
-        // Ensure we sort by the indexing columns
-        Table tableToWrite = indexTable;
-
-        // Ensure that the index column is consistently named
-        if (!INDEX_COL_NAME.equals(indexColumnName)) {
-            tableToWrite = tableToWrite.renameColumns(INDEX_COL_NAME, indexColumnName);
-        }
-
-        // If we know we're sorted, Great!
-        if (!SortedColumnsAttribute.isSortedBy(tableToWrite, keyColumnNames[0], SortingOrder.Ascending)) {
-            // Otherwise, ensure that the table is sorted ascending
-            tableToWrite = tableToWrite.sort(keyColumnNames);
-        }
-
-        // Make sure we do not write symbols.
-        final ParquetInstructions.Builder instructionsBuilder = ParquetInstructions.builder()
-                .addColumnCodec(INDEX_COL_NAME, RowSetCodec.class.getName());
-
-        if (compressionCodec != null) {
-            instructionsBuilder.setCompressionCodecName(compressionCodec.name());
-        }
-
-        ensureNoDictionary(tableToWrite, keyColumnNames);
-        final String indexTablePath = computeDataIndexTableName(parentFile, keyColumnNames);
-
-        // Send it.
-        ParquetTableWriter.write(tableToWrite,
-                tableToWrite.getDefinition(),
-                instructionsBuilder.build(),
-                indexTablePath,
-                Collections.emptyMap());
-
-        return indexTablePath;
-    }
-
-    @NotNull
-    public static <T> String writeGroupingTable(@NotNull ParquetInstructions instructions,
-            final ColumnDefinition<T> groupingColumnDef,
-            String fullOutputFilePath,
-            Map<T, RowSet> columnGrouping) throws SchemaMappingException, IOException {
-        final Table groupingTable = computeGroupingTable(groupingColumnDef, columnGrouping);
-        final String groupingTablePath = computeDataIndexTableName(fullOutputFilePath, groupingColumnDef.getName());
-        ParquetTableWriter.write(groupingTable, groupingTable.getDefinition(), instructions, groupingTablePath,
-                Collections.emptyMap());
-        return groupingTablePath;
-    }
-
-    private static <T> Table computeGroupingTable(@NotNull final ColumnDefinition<T> groupingColDef,
-            @NotNull final Map<T, RowSet> grouping) {
-        final Class<T> keyType = groupingColDef.getDataType();
-        // noinspection rawtypes
-        final Map<String, ColumnSource<?>> sourceMap = new LinkedHashMap<>();
-
-        if (grouping.values().stream().anyMatch(index -> !index.isContiguous())) {
-            throw new IllegalArgumentException("Parquet tables do not support non-contiguous groupings");
-        }
-
-        final WritableColumnSource<T> keySource =
-                ArrayBackedColumnSource.getMemoryColumnSource(grouping.size(), keyType);
-        final WritableColumnSource<Long> beginSource =
-                ArrayBackedColumnSource.getMemoryColumnSource(grouping.size(), long.class);
-        final WritableColumnSource<Long> endSource =
-                ArrayBackedColumnSource.getMemoryColumnSource(grouping.size(), long.class);
-
-        long pos = 0;
-        for (final Map.Entry<T, RowSet> group : grouping.entrySet()) {
-            keySource.set(pos, group.getKey());
-            beginSource.set(pos, group.getValue().firstRowKey());
-
-            // Note: There is a +1 here because the old grouping code stored ranges in [first, last) (last exclusive)
-            // format, but the new one gives you indices
-            // so the last key in the index is INCLUSIVE, so we must add 1 here to be backwards compatible
-            endSource.set(pos++, group.getValue().lastRowKey() + 1);
-        }
-
-        sourceMap.put(GROUPING_KEY, keySource);
-        sourceMap.put(BEGIN_POS, beginSource);
-        sourceMap.put(END_POS, endSource);
-
-        return ensureNoDictionary(new QueryTable(RowSetFactory.flat(grouping.size()).toTracking(), sourceMap)
-                .sort(GROUPING_KEY), GROUPING_KEY);
-    }
-
-    private static Table computeGroupingTable(@NotNull final Table rawTableToGroup, @NotNull final String columnName) {
-        Table tableToGroup = rawTableToGroup.coalesce();
-        if (tableToGroup instanceof QueryTable && tableToGroup.isRefreshing()) {
-            tableToGroup = ((QueryTable) tableToGroup).silent();
-        }
-
-        final Table grouped = tableToGroup
-                .view(GROUPING_KEY + "=" + columnName,
-                        BEGIN_POS + "= ii", // Range start, inclusive
-                        END_POS + "= ii+1") // Range end, exclusive
-                .aggBy(List.of(AggFirst(BEGIN_POS), AggLast(END_POS)), GROUPING_KEY);
-        final Table invalid = grouped.where(BEGIN_POS + " != 0 && " + BEGIN_POS + " != " + END_POS + "_[ii-1]");
-        if (!invalid.isEmpty()) {
-            throw new UncheckedDeephavenException(
-                    "Range grouping is not possible for column because some indices are not contiguous");
-        }
-        return ensureNoDictionary(grouped.sort(GROUPING_KEY), GROUPING_KEY);
-    }
-
-    private static Table ensureNoDictionary(final Table t, final String... columns) {
-        final TableDefinition tDef = t.getDefinition();
-        // TODO: is there something to do here?
-        // for(String colName : columns) {
-        // final ColumnDefinition<?> resultKeyDef = tDef.getColumn(colName);
-        // if (resultKeyDef.getSymbolTableType() == ColumnDefinition.SymbolTableType.COLUMN_LOCATION) {
-        // // Explicitly disable symbol tables
-        // resultKeyDef.setIsVarSizeString(true);
-        // }
-        // }
-
-        return t;
-    }
-
-    private static String minusParquetSuffix(@NotNull final String s) {
+    public static String minusParquetSuffix(@NotNull final String s) {
         if (s.endsWith(PARQUET_FILE_EXTENSION)) {
             return s.substring(0, s.length() - PARQUET_FILE_EXTENSION.length());
         }
@@ -944,18 +949,31 @@ public class ParquetTools {
     public static String computeDataIndexTableName(@NotNull final String path, @NotNull final String... columnName) {
         final String prefix = minusParquetSuffix(path);
         Arrays.sort(columnName);
+        // Column names with underscores are allowed, so this is not trivially reversible. But we only transform
+        // from columns to filename so this isn't an issue.
         return prefix + "_" + String.join("_", columnName) + "_grouping.parquet";
     }
     // endregion
 
     public static final ParquetInstructions LZ4 = ParquetInstructions.builder().setCompressionCodecName("LZ4").build();
+    public static final ParquetInstructions LZ4_RAW =
+            ParquetInstructions.builder().setCompressionCodecName("LZ4_RAW").build();
     public static final ParquetInstructions LZO = ParquetInstructions.builder().setCompressionCodecName("LZO").build();
     public static final ParquetInstructions GZIP =
             ParquetInstructions.builder().setCompressionCodecName("GZIP").build();
     public static final ParquetInstructions ZSTD =
             ParquetInstructions.builder().setCompressionCodecName("ZSTD").build();
+    public static final ParquetInstructions SNAPPY =
+            ParquetInstructions.builder().setCompressionCodecName("SNAPPY").build();
+    public static final ParquetInstructions BROTLI =
+            ParquetInstructions.builder().setCompressionCodecName("BROTLI").build();
     public static final ParquetInstructions LEGACY = ParquetInstructions.builder().setIsLegacyParquet(true).build();
 
+    /**
+     * @deprecated Do not use this method, instead pass the above codecs as arguments to
+     *             {@link #writeTable(Table, File, ParquetInstructions)} method
+     */
+    @Deprecated
     public static void setDefaultCompressionCodecName(final String compressionCodecName) {
         ParquetInstructions.setDefaultCompressionCodecName(compressionCodecName);
     }

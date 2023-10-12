@@ -14,8 +14,6 @@ from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
 from deephaven.table import Table, SearchDisplayMode
-from deephaven.time import epoch_nanos_to_instant
-from tests.testbase import BaseTestCase
 from tests.testbase import BaseTestCase, table_equals
 
 
@@ -236,6 +234,10 @@ class TableTestCase(BaseTestCase):
             with self.subTest(op=op):
                 result_table = op(self.test_table, pct=0.1)
                 self.assertEqual(result_table.size, self.test_table.size * 0.1)
+
+    def test_slice_pct(self):
+        result_table = self.test_table.slice_pct(start_pct=0.1, end_pct=0.7)
+        self.assertEqual(result_table.size, self.test_table.size * (0.7 - 0.1))
 
     #
     # Table operation category: Sort
@@ -899,10 +901,16 @@ class TableTestCase(BaseTestCase):
         attrs["PluginType"] = "@deephaven/auth-plugin"
         attrs["PluginPrivate"] = True
         attrs["PluginAttrs"] = j_hashmap({1: 2, 3: 4})
+        attrs["BlinkTable"] = True
         rt = self.test_table.with_attributes(attrs)
         rt_attrs = rt.attributes()
         self.assertEqual(attrs, rt_attrs)
         self.assertTrue(rt.j_table is not self.test_table.j_table)
+
+        rt = rt.without_attributes("BlinkTable")
+        rt_attrs = rt.attributes()
+        self.assertEqual(len(attrs), len(rt_attrs) + 1)
+        self.assertIn("BlinkTable", set(attrs.keys()) - set(rt_attrs.keys()))
 
     def test_grouped_column_as_arg(self):
         t1 = empty_table(100).update(
@@ -935,10 +943,9 @@ class TableTestCase(BaseTestCase):
 
     def test_callable_attrs_in_query(self):
         input_cols = [
-            datetime_col(name="DTCol", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(10000000)]),
+            datetime_col(name="DTCol", data=[1,10000000]),
         ]
         test_table = new_table(cols=input_cols)
-        from deephaven.time import year, TimeZone
         rt = test_table.update("Year = (int)year(DTCol, timeZone(`ET`))")
         self.assertEqual(rt.size, test_table.size)
 
@@ -1038,6 +1045,13 @@ class TableTestCase(BaseTestCase):
 
         with self.assertRaises(DHError):
             agg = unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=None)
+
+    def test_has_columns(self):
+        t = empty_table(1).update(["A=i", "B=i", "C=i"])
+        self.assertTrue(t.has_columns("B"))
+        self.assertTrue(t.has_columns(["A", "C"]))
+        self.assertFalse(t.has_columns("D"))
+        self.assertFalse(t.has_columns(["D", "C"]))
 
 
 if __name__ == "__main__":

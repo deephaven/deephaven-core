@@ -36,10 +36,9 @@ TableDataRefreshService.tableLocationsRefreshMillis=10000
 TableDataRefreshService.tableSizeRefreshMillis=1000
 
 ###### Time Zone & Calendars #####
-user.timezone=America/New_York
 timezone.aliases=/test_time_zone_aliases.csv
 Calendar.default=USNYSE
-Calendar.importPath=/default_calendar_imports.txt
+Calendar.importPath=/test_calendar_imports.txt
 
 columnsFile=DeephavenColumns.xml
 
@@ -58,9 +57,9 @@ QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
 
 ########## Deephaven Groovy and Python Session defaults ##########
 
-GroovyDeephavenSession.initScripts=core/deephaven_core_utils.groovy
+GroovyDeephavenSession.initScripts=
 
-PythonDeephavenSession.initScripts=core/deephaven_jpy_init.py
+PythonDeephavenSession.initScripts=
 
 ###### Measurement Options ######
 statsdriver.enabled=false

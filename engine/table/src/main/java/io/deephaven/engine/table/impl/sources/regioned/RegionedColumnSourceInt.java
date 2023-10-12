@@ -55,11 +55,6 @@ abstract class RegionedColumnSourceInt<ATTR extends Values>
         AsValues() {
             super(ColumnRegionInt.createNull(PARAMETERS.regionMask), DeferredColumnRegionInt::new);
         }
-
-        @Override
-        public boolean isPartitioning() {
-            return false;
-        }
     }
 
     static final class Partitioning extends RegionedColumnSourceInt<Values> {
@@ -81,11 +76,6 @@ abstract class RegionedColumnSourceInt<ATTR extends Values>
                         + ": " + partitioningColumnValue + " is not a Integer at location " + locationKey);
             }
             return new ColumnRegionInt.Constant<>(regionMask(), unbox((Integer) partitioningColumnValue));
-        }
-
-        @Override
-        public boolean isPartitioning() {
-            return true;
         }
     }
 }

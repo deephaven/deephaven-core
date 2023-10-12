@@ -11,6 +11,7 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetSchemaReader;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
+import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.chunk.attributes.Values;
@@ -23,6 +24,7 @@ import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.proto.backplane.grpc.Data;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -47,6 +49,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private final RegionedPageStore.Parameters regionParameters;
     private final Map<String, String[]> parquetColumnNameToPath;
     private final Map<String, GroupingColumnInfo> groupingColumns;
+    private final List<DataIndexInfo> dataIndexes;
     private final Map<String, ColumnTypeInfo> columnTypes;
     private final TableInfo tableInfo;
     private volatile RowGroupReader[] rowGroupReaders;
@@ -90,6 +93,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 ParquetSchemaReader.parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData())
                         .orElse(TableInfo.builder().build());
         groupingColumns = tableInfo.groupingColumnMap();
+        dataIndexes = tableInfo.dataIndexes();
         columnTypes = tableInfo.columnTypeMap();
 
         sortingColumns = tableInfo.sortingColumns().stream()
@@ -125,6 +129,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     public Map<String, GroupingColumnInfo> getGroupingColumns() {
         return groupingColumns;
+    }
+
+    public List<DataIndexInfo> getDataIndexes() {
+        return dataIndexes;
     }
 
     public Map<String, ColumnTypeInfo> getColumnTypes() {
@@ -183,7 +191,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     @Override
     public boolean hasDataIndexFor(@NotNull final String... columns) {
-        return columns.length == 1 && getGroupingColumns().containsKey(columns[0]);
+        // Check if the column names match any of the data indexes
+        for (final DataIndexInfo dataIndex : dataIndexes) {
+            if (dataIndex.matchesColumns(columns)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Nullable

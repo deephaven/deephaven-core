@@ -75,13 +75,13 @@ tasks.register('updateProtobuf', Sync) {
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
     envVars.set([
-        'START_OPTS':'-Xmx512m'
+        'START_OPTS':'-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler'
     ])
     containerName.set "pydeephaven-test-container-${randomSuffix}"
     networkName.set "pydeephaven-network-${randomSuffix}"
 }
 
-tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyClient') {
+def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
     copyIn {
         from('pydeephaven') {
             into 'project/pydeephaven'
@@ -90,6 +90,12 @@ tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyCli
             into 'project/tests'
         }
         from ('requirements-dev.txt') {
+            into 'project/'
+        }
+        from ('setup.py') {
+            into 'project/'
+        }
+        from ('README.md') {
             into 'project/'
         }
     }
@@ -104,6 +110,8 @@ tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyCli
                       mkdir -p /out/report; \\
                       pip3 install --upgrade pip; \\
                       pip3 install -r requirements-dev.txt'''
+
+        runCommand 'pip install .'
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
     }
@@ -112,5 +120,7 @@ tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyCli
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }
-})
-deephavenDocker.shouldLogIfTaskFails tasks.named('testPyClientRun')
+}
+
+tasks.getByName('check').dependsOn(testPyClient)
+deephavenDocker.shouldLogIfTaskFails testPyClient

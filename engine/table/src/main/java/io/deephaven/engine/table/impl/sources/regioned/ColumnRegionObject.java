@@ -68,7 +68,8 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
     /**
      * Optional method that should only be used on regions returned by {@link #getDictionaryValuesRegion()}.
-     * Gathers
+     * Gathers row keys representing the dictionary values for this region, excluding those already known to the caller.
+     * This is used to support {@link SymbolTableSource symbol table} access.
      *
      * @param keysToVisit       A search iterator over the enclosing table address space (which must have the same
      *                          regions at the same masks), positioned at a row key in this region. Used to
@@ -225,6 +226,13 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
+        public void invalidate() {
+            for(int ii = 0; ii < getRegionCount(); ii++) {
+                getRegion(ii).invalidate();
+            }
+        }
+
+        @Override
         public DATA_TYPE getObject(final long elementIndex) {
             return lookupRegion(elementIndex).getObject(elementIndex);
         }
@@ -303,6 +311,11 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         private DictionaryKeysWrapper(final long prefixBits, @NotNull final ColumnRegionLong<DictionaryKeys> wrapped) {
             this.prefixBits = prefixBits;
             this.wrapped = wrapped;
+        }
+
+        @Override
+        public void invalidate() {
+            wrapped.invalidate();
         }
 
         @Override

@@ -41,6 +41,7 @@ class SessionTestCase(BaseTestCase):
             token2 = session._auth_token
             self.assertNotEqual(token1, token2)
         session.close()
+        sleep(400)
 
     def test_empty_table(self):
         session = Session()
@@ -49,10 +50,23 @@ class SessionTestCase(BaseTestCase):
         session.close()
 
     def test_time_table(self):
-        session = Session()
-        t = session.time_table(period=100000)
-        self.assertFalse(t.is_static)
-        session.close()
+        with Session() as session:
+            t = session.time_table(period=100000)
+            self.assertFalse(t.is_static)
+            session.bind_table("t", t)
+            session.run_script("""
+from deephaven import empty_table
+t1 = empty_table(0) if t.is_blink else None
+""")
+            self.assertNotIn("t1", session.tables)
+
+            t = session.time_table(period=100000, blink_table=True)
+            session.bind_table("t", t)
+            session.run_script("""
+from deephaven import empty_table
+t1 = empty_table(0) if t.is_blink else None
+""")
+            self.assertIn("t1", session.tables)
 
     def test_merge_tables(self):
         session = Session()
@@ -103,7 +117,6 @@ class SessionTestCase(BaseTestCase):
         pa_table2 = new_table.to_arrow()
         self.assertEqual(pa_table, pa_table2)
 
-    @unittest.skip("GH ticket filed #941.")
     def test_import_table_ints(self):
         types = [pa.int8(), pa.int16(), pa.int32(), pa.int64()]
         exception_list = []
@@ -245,6 +258,12 @@ class SessionTestCase(BaseTestCase):
             self.assertEqual(append_input_t.snapshot().size, dh_table.size * 2)
             with self.assertRaises(PermissionError):
                 append_input_t.delete(dh_table)
+
+    def test_auto_close(self):
+        session = Session()
+        # this should trigger __del__
+        session = None
+        self.assertIsNone(session)
 
 
 if __name__ == '__main__':

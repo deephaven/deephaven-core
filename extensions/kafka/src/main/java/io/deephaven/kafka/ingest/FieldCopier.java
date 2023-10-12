@@ -14,14 +14,19 @@ import io.deephaven.chunk.attributes.Values;
 public interface FieldCopier {
     /**
      * Copy fields from a chunk of Kafka key or value objects to a chunk that will be published to a blink table.
-     * @param inputChunk     the chunk containing Kafka keys or values
+     * 
+     * @param inputChunk the chunk containing Kafka keys or values
      * @param publisherChunk the output chunk for the provided field
-     * @param sourceOffset   the source chunk offset
-     * @param destOffset     the destination chunk offset
-     * @param length
+     * @param sourceOffset the source chunk offset
+     * @param destOffset the destination chunk offset
+     * @param length the length to copy
      */
-    void copyField(ObjectChunk<Object, Values> inputChunk, WritableChunk<Values> publisherChunk,
-                   int sourceOffset, int destOffset, int length);
+    void copyField(
+            ObjectChunk<Object, Values> inputChunk,
+            WritableChunk<Values> publisherChunk,
+            int sourceOffset,
+            int destOffset,
+            int length);
 
     interface Factory {
         FieldCopier make(String fieldName, ChunkType chunkType, Class<?> dataType, Class<?> componentType);

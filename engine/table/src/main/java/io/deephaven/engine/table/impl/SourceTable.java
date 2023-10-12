@@ -8,12 +8,9 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.locations.TableLocation;
+import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
-import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -26,7 +23,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Basic uncoalesced table that only adds keys.
@@ -99,10 +95,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 definition.getColumns() // NB: this is the *re-written* definition passed to the super-class
                                         // constructor.
         );
-        if (isRefreshing) {
-            // NB: There's no reason to start out trying to group, if this is a refreshing table.
-            columnSourceManager.disableGrouping();
-        }
 
         setRefreshing(isRefreshing);
         setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -139,7 +131,11 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 if (isRefreshing()) {
                     final TableLocationSubscriptionBuffer locationBuffer =
                             new TableLocationSubscriptionBuffer(locationProvider);
-                    maybeAddLocations(locationBuffer.processPending());
+                    final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
+                            locationBuffer.processPending();
+
+                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+                    maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                     updateSourceRegistrar.addSource(locationChangePoller = new LocationChangePoller(locationBuffer));
                 } else {
                     locationProvider.refresh();
@@ -156,6 +152,17 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
         filterLocationKeys(locationKeys)
                 .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk)));
+    }
+
+    private ImmutableTableLocationKey[] maybeRemoveLocations(
+            @NotNull final Collection<ImmutableTableLocationKey> removedKeys) {
+        if (removedKeys.isEmpty()) {
+            return ImmutableTableLocationKey.ZERO_LENGTH_IMMUTABLE_TABLE_LOCATION_KEY_ARRAY;
+        }
+
+        return filterLocationKeys(removedKeys).stream()
+                .filter(columnSourceManager::removeLocationKey)
+                .toArray(ImmutableTableLocationKey[]::new);
     }
 
     private void initializeLocationSizes() {
@@ -193,35 +200,47 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     }
 
     private class LocationChangePoller extends InstrumentedUpdateSource {
-
         private final TableLocationSubscriptionBuffer locationBuffer;
 
         private LocationChangePoller(@NotNull final TableLocationSubscriptionBuffer locationBuffer) {
-            super(description + ".rowSetUpdateSource");
+            super(updateGraph, description + ".rowSetUpdateSource");
             this.locationBuffer = locationBuffer;
         }
 
         @Override
         protected void instrumentedRefresh() {
             try {
-                maybeAddLocations(locationBuffer.processPending());
+                final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
+                final ImmutableTableLocationKey[] removedKeys =
+                        maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+                if (removedKeys.length > 0) {
+                    throw new TableLocationRemovedException("Source table does not support removed locations",
+                            removedKeys);
+                }
+                maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
+
                 // NB: This class previously had functionality to notify "location listeners", but it was never used.
                 // Resurrect from git history if needed.
                 if (!locationSizesInitialized) {
                     // We don't want to start polling size changes until the initial RowSet has been computed.
                     return;
                 }
+
                 final RowSet added = refreshLocationSizes();
-                if (added.size() == 0) {
+                if (added.isEmpty()) {
                     return;
                 }
+
                 rowSet.insert(added);
                 notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
             } catch (Exception e) {
+                updateSourceRegistrar.removeSource(this);
+
                 // Notify listeners to the SourceTable when we had an issue refreshing available locations.
                 notifyListenersOnError(e, null);
             }
         }
+
     }
 
     /**
@@ -242,7 +261,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         initialize();
 
         final SwapListener swapListener =
-                createSwapListenerIfRefreshing((final BaseTable parent) -> new SwapListener(parent) {
+                createSwapListenerIfRefreshing((final BaseTable<?> parent) -> new SwapListener(parent) {
 
                     @Override
                     public void destroy() {
@@ -278,22 +297,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                             }
                         };
                 swapListener.setListenerAndResult(listener, resultTable);
-            } else {
-                // Set the DataIndexProvider for downstream if there was one,
-                resultTable.setDataIndexProvider(columnSourceManager.getDataIndexProvider());
-
-                // If we are not live and have a single location, we can take advantage of any
-                // on disk sorting that was done.
-                final Collection<TableLocation> tableLocations = columnSourceManager.allLocations();
-                if (tableLocations.size() == 1) {
-                    final TableLocation location = tableLocations.iterator().next();
-                    final List<SortPair> sortedColumns = location.getSortedColumns();
-                    if (!sortedColumns.isEmpty()) {
-                        final SortPair sortPair = sortedColumns.get(0);
-                        SortedColumnsAttribute.setOrderForColumn(resultTable, sortPair.getColumn(),
-                                sortPair.getOrder());
-                    }
-                }
             }
 
             result.setValue(resultTable);

@@ -10,14 +10,10 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.GroupingProvider;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
-import io.deephaven.engine.table.GroupingBuilder;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.vector.*;
@@ -47,7 +43,6 @@ public abstract class AbstractColumnSource<T> implements
 
     protected final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
 
-    private transient GroupingProvider groupingProvider;
     protected volatile List<ColumnSource<?>> rowSetIndexerKey;
 
     protected AbstractColumnSource(@NotNull final Class<T> type) {
@@ -108,73 +103,26 @@ public abstract class AbstractColumnSource<T> implements
 
     @Override
     public List<ColumnSource<?>> getColumnSources() {
-        List<ColumnSource<?>> localRowSetWritableIndexerKey;
-        if ((localRowSetWritableIndexerKey = rowSetIndexerKey) == null) {
+        List<ColumnSource<?>> localRowSetIndexerKey;
+        if ((localRowSetIndexerKey = rowSetIndexerKey) == null) {
             synchronized (this) {
-                if ((localRowSetWritableIndexerKey = rowSetIndexerKey) == null) {
-                    rowSetIndexerKey = localRowSetWritableIndexerKey = Collections.singletonList(this);
+                if ((localRowSetIndexerKey = rowSetIndexerKey) == null) {
+                    rowSetIndexerKey = localRowSetIndexerKey = Collections.singletonList(this);
                 }
             }
         }
-        return localRowSetWritableIndexerKey;
+        return localRowSetIndexerKey;
     }
 
     @Override
-    public GroupingBuilder getGroupingBuilder() {
-        return groupingProvider == null ? null : groupingProvider.getGroupingBuilder();
-    }
-
-    @Override
-    public boolean hasGrouping() {
-        return groupingProvider != null && groupingProvider.hasGrouping();
-    }
-
-    public GroupingProvider getGroupingProvider() {
-        return groupingProvider;
-    }
-
-    /**
-     * Set a grouping provider for use in lazily-constructing groupings.
-     *
-     * @param groupingProvider The {@link GroupingProvider} to use
-     */
-    public void setGroupingProvider(@Nullable GroupingProvider groupingProvider) {
-        this.groupingProvider = groupingProvider;
-    }
-
-    @Override
-    public WritableRowSet match(boolean invertMatch,
-            boolean usePrev,
-            boolean caseInsensitive,
+    public WritableRowSet match(
+            final boolean invertMatch,
+            final boolean usePrev,
+            final boolean caseInsensitive,
             @NotNull final RowSet startingWritableRowSet,
             final Object... keys) {
-        if (canUseGrouping(usePrev)) {
-            return matchWithGrouping(startingWritableRowSet, caseInsensitive, invertMatch, keys);
-        }
-
         return ChunkFilter.applyChunkFilter(startingWritableRowSet, this, usePrev,
                 ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
-    }
-
-    protected final WritableRowSet matchWithGrouping(RowSet startingWritableRowSet, boolean caseInsensitive,
-            boolean invertMatch, Object... keys) {
-        final GroupingBuilder groupingBuilder = getGroupingBuilder();
-        final Table filteredGroups = getGroupingBuilder()
-                .clampToIndex(startingWritableRowSet)
-                .matching(!caseInsensitive, invertMatch, keys)
-                .buildTable();
-        final RowSetBuilderRandom allInMatchingGroups = RowSetFactory.builderRandom();
-        final ColumnSource<RowSet> indexSource =
-                filteredGroups.getColumnSource(groupingBuilder.getIndexColumnName(), RowSet.class);
-        filteredGroups.getRowSet().forAllRowKeys(key -> allInMatchingGroups.addRowSet(indexSource.get(key)));
-
-        final WritableRowSet result = allInMatchingGroups.build();
-        result.retain(startingWritableRowSet);
-        return result;
-    }
-
-    protected final boolean canUseGrouping(final boolean usePrev) {
-        return (isImmutable() || !usePrev) && groupingProvider != null && groupingProvider.hasGrouping();
     }
 
     private static final class CIStringKey implements KeyedObjectKey<String, String> {

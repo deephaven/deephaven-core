@@ -115,11 +115,6 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
         AsValues() {
             super(ColumnRegionLong.createNull(PARAMETERS.regionMask), DeferredColumnRegionLong::new);
         }
-
-        @Override
-        public boolean isPartitioning() {
-            return false;
-        }
     }
 
     static final class Partitioning extends RegionedColumnSourceLong<Values> {
@@ -141,11 +136,6 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
                         + ": " + partitioningColumnValue + " is not a Long at location " + locationKey);
             }
             return new ColumnRegionLong.Constant<>(regionMask(), unbox((Long) partitioningColumnValue));
-        }
-
-        @Override
-        public boolean isPartitioning() {
-            return true;
         }
     }
 }

@@ -15,6 +15,7 @@ import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -169,7 +170,8 @@ public interface JobScheduler {
                     break;
                 }
                 final TaskInvoker taskInvoker = new TaskInvoker(context, tii, initialTaskIndex);
-                scheduler.submit(executionContext, taskInvoker, description, IterationManager::onUnexpectedJobError);
+                scheduler.submit(executionContext, taskInvoker::execute, description,
+                        IterationManager::onUnexpectedJobError);
             }
         }
 
@@ -190,13 +192,23 @@ public interface JobScheduler {
         protected void onReferenceCountAtZero() {
             final Exception localException = exception.get();
             if (localException != null) {
-                onError.accept(localException);
+                try {
+                    onError.accept(localException);
+                } catch (Exception e) {
+                    e.addSuppressed(localException);
+                    onUnexpectedJobError(e);
+                }
                 return;
             }
             try {
                 onComplete.run();
             } catch (Exception e) {
-                onError.accept(e);
+                try {
+                    onError.accept(e);
+                } catch (Exception e2) {
+                    e2.addSuppressed(e);
+                    onUnexpectedJobError(e2);
+                }
             }
         }
 
@@ -211,19 +223,14 @@ public interface JobScheduler {
                     .append(']');
         }
 
-        @Override
-        public String toString() {
-            return new LogOutputStringImpl().append(this).toString();
-        }
-
-        private class TaskInvoker implements Runnable, Consumer<Exception>, SafeCloseable, LogOutputAppendable {
+        private class TaskInvoker implements LogOutputAppendable {
 
             private final CONTEXT_TYPE context;
-
-            private volatile boolean closed;
-
             private final int invokerIndex;
+
             private int acquiredTaskIndex;
+
+            private boolean closed;
             private boolean running;
 
             /**
@@ -245,8 +252,7 @@ public interface JobScheduler {
                 acquiredTaskIndex = initialTaskIndex;
             }
 
-            @Override
-            public synchronized void run() {
+            private synchronized void execute() {
                 int runningTaskIndex;
                 do {
                     if (exception.get() != null) {
@@ -258,9 +264,21 @@ public interface JobScheduler {
                     runningTaskIndex = acquiredTaskIndex;
                     try {
                         running = true;
-                        action.run(context, runningTaskIndex, this, this::reportTaskCompleteAndResumeIteration);
+                        action.run(
+                                context,
+                                runningTaskIndex,
+                                this::reportError,
+                                this::reportTaskCompleteAndResumeIteration);
                     } catch (Exception e) {
-                        accept(e);
+                        if (closed) {
+                            // The task threw an error while trying to deliver another error or complete the iteration.
+                            // We cannot safely deliver this error, but we don't want to allow incorrect operation, so
+                            // we report it to the global error reporter.
+                            onUnexpectedJobError(e);
+                        } else {
+                            // Something went wrong, but no completion or error was delivered yet. Report the error.
+                            reportError(e);
+                        }
                         return;
                     } finally {
                         running = false;
@@ -281,19 +299,17 @@ public interface JobScheduler {
                         || exception.get() != null) {
                     close();
                 } else if (!running) {
-                    run();
+                    execute();
                 }
             }
 
-            @Override
-            public void accept(@NotNull final Exception e) {
-                try (final SafeCloseable ignored = this) {
-                    onTaskError(e);
+            private synchronized void reportError(@NotNull final Exception e) {
+                try (final SafeCloseable ignored = this::close) {
+                    onTaskError(Objects.requireNonNull(e));
                 }
             }
 
-            @Override
-            public void close() {
+            private void close() {
                 Assert.eqFalse(closed, "closed");
                 try (final SafeCloseable ignored = context) {
                     closed = true;

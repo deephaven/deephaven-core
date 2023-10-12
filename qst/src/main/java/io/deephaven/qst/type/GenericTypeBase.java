@@ -6,13 +6,12 @@ package io.deephaven.qst.type;
 public abstract class GenericTypeBase<T> extends ColumnTypeBase<T> implements GenericType<T> {
 
     @Override
-    public final <V extends Type.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(Type.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override
-    public final NativeArrayType<?, T> arrayType() {
+    public final NativeArrayType<T[], T> arrayType() {
         return NativeArrayType.toArrayType(this);
     }
 }

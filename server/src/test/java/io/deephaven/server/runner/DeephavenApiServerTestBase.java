@@ -10,6 +10,7 @@ import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
@@ -19,6 +20,7 @@ import io.deephaven.server.auth.CommunityAuthorizationProvider;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
+import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -28,6 +30,7 @@ import org.junit.Before;
 import org.junit.Rule;
 
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.time.Duration;
@@ -47,12 +50,15 @@ public abstract class DeephavenApiServerTestBase {
             ServerBuilderInProcessModule.class,
             ExecutionContextUnitTestModule.class,
             ClientDefaultsModule.class,
+            ObfuscatingErrorTransformerModule.class,
     })
     public interface TestComponent {
 
         DeephavenApiServer getServer();
 
         ManagedChannelBuilder<?> channelBuilder();
+
+        Provider<ScriptSession> scriptSessionProvider();
 
         @Component.Builder
         interface Builder {
@@ -78,7 +84,7 @@ public abstract class DeephavenApiServerTestBase {
 
     private SafeCloseable executionContext;
 
-    private TestComponent serverComponent;
+    private TestComponent testComponent;
     private LogBuffer logBuffer;
     private DeephavenApiServer server;
     private SafeCloseable scopeCloseable;
@@ -99,14 +105,14 @@ public abstract class DeephavenApiServerTestBase {
                 .port(-1)
                 .build();
 
-        serverComponent = DaggerDeephavenApiServerTestBase_TestComponent.builder()
+        testComponent = DaggerDeephavenApiServerTestBase_TestComponent.builder()
                 .withServerConfig(config)
                 .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(System.out)
                 .withErr(System.err)
                 .build();
 
-        server = serverComponent.getServer();
+        server = testComponent.getServer();
 
         final PeriodicUpdateGraph updateGraph = server.getUpdateGraph().cast();
         executionContext = TestExecutionContext.createForUnitTests().withUpdateGraph(updateGraph).open();
@@ -146,6 +152,10 @@ public abstract class DeephavenApiServerTestBase {
         return logBuffer;
     }
 
+    public TestComponent testComponent() {
+        return testComponent;
+    }
+
     /**
      * The session token expiration
      *
@@ -158,7 +168,7 @@ public abstract class DeephavenApiServerTestBase {
     }
 
     public ManagedChannelBuilder<?> channelBuilder() {
-        return serverComponent.channelBuilder();
+        return testComponent.channelBuilder();
     }
 
     public void register(ManagedChannel managedChannel) {

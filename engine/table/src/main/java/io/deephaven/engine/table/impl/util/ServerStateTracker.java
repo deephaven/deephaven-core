@@ -5,14 +5,16 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.ServerStateLogLogger;
-import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.stream.StreamToBlinkTableAdapter;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -28,31 +30,45 @@ public class ServerStateTracker {
     private static boolean started = false;
 
     public static ServerStateTracker getInstance() {
-        if (INSTANCE == null) {
+        ServerStateTracker local;
+        if ((local = INSTANCE) == null) {
             synchronized (ServerStateTracker.class) {
-                if (INSTANCE == null) {
-                    INSTANCE = new ServerStateTracker();
+                if ((local = INSTANCE) == null) {
+                    INSTANCE = local = new ServerStateTracker();
                 }
             }
         }
-        return INSTANCE;
+        return local;
     }
 
     private final Logger logger;
 
     private final ServerStateLogLogger processMemLogger;
+
+    private final ServerStateStreamPublisher publisher;
+    // Keep, may eventually want to manage closing
+    @SuppressWarnings("FieldCanBeLocal")
+    private final StreamToBlinkTableAdapter adapter;
+    private final Table blink;
     private final PeriodicUpdateGraph.AccumulatedCycleStats ugpAccumCycleStats;
 
     private ServerStateTracker() {
         logger = LoggerFactory.getLogger(ServerStateTracker.class);
         processMemLogger = EngineTableLoggers.get().serverStateLogLogger();
+        publisher = new ServerStateStreamPublisher();
+        adapter = new StreamToBlinkTableAdapter(
+                ServerStateStreamPublisher.definition(),
+                publisher,
+                ExecutionContext.getContext().getUpdateGraph(),
+                ServerStateTracker.class.getName());
+        blink = adapter.table();
         ugpAccumCycleStats = new PeriodicUpdateGraph.AccumulatedCycleStats();
     }
 
     private void startThread() {
-        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
         Thread driverThread = new Thread(
-                new ServerStateTracker.Driver(updateGraph),
+                new ServerStateTracker.Driver(executionContext),
                 ServerStateTracker.class.getSimpleName() + ".Driver");
         driverThread.setDaemon(true);
         driverThread.start();
@@ -114,10 +130,10 @@ public class ServerStateTracker {
     }
 
     private class Driver implements Runnable {
-        private final PeriodicUpdateGraph updateGraph;
+        private final ExecutionContext executionContext;
 
-        public Driver(@NotNull final UpdateGraph updateGraph) {
-            this.updateGraph = updateGraph.cast();
+        public Driver(@NotNull final ExecutionContext executionContext) {
+            this.executionContext = executionContext;
         }
 
         @Override
@@ -125,7 +141,6 @@ public class ServerStateTracker {
             final RuntimeMemory.Sample memSample = new RuntimeMemory.Sample();
             // noinspection InfiniteLoopStatement
             while (true) {
-                final Stats stats = new Stats();
                 final long intervalStartTimeMillis = System.currentTimeMillis();
                 try {
                     Thread.sleep(REPORT_INTERVAL_MILLIS);
@@ -136,29 +151,32 @@ public class ServerStateTracker {
                 final long prevTotalCollections = memSample.totalCollections;
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
-                updateGraph.takeAccumulatedCycleStats(ugpAccumCycleStats);
+                executionContext.getUpdateGraph().<PeriodicUpdateGraph>cast()
+                        .takeAccumulatedCycleStats(ugpAccumCycleStats);
                 final long endTimeMillis = System.currentTimeMillis();
-                logProcessMem(
-                        intervalStartTimeMillis,
-                        endTimeMillis,
-                        memSample,
-                        prevTotalCollections,
-                        prevTotalCollectionTimeMs,
-                        ugpAccumCycleStats.cycles,
-                        ugpAccumCycleStats.cyclesOnBudget,
-                        ugpAccumCycleStats.cycleTimesMicros,
-                        ugpAccumCycleStats.safePoints,
-                        ugpAccumCycleStats.safePointPauseTimeMillis);
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    logProcessMem(
+                            intervalStartTimeMillis,
+                            endTimeMillis,
+                            memSample,
+                            prevTotalCollections,
+                            prevTotalCollectionTimeMs,
+                            ugpAccumCycleStats.cycles,
+                            ugpAccumCycleStats.cyclesOnBudget,
+                            ugpAccumCycleStats.cycleTimesMicros,
+                            ugpAccumCycleStats.safePoints,
+                            ugpAccumCycleStats.safePointPauseTimeMillis);
+                }
             }
         }
     }
 
-    private int deltaMillisToMicros(final long millis) {
+    private static int deltaMillisToMicros(final long millis) {
         final long result = millis * 1000;
         return (int) result;
     }
 
-    private int bytesToMiB(final long bytes) {
+    private static int bytesToMiB(final long bytes) {
         final long mib = (bytes + 512 * 1024) / (1024 * 1024);
         return (int) mib;
     }
@@ -173,25 +191,43 @@ public class ServerStateTracker {
             final int[] ugpCycleTimes,
             final int ugpSafePoints,
             final long ugpSafePointTimeMillis) {
+        final int intervalDurationMicros = deltaMillisToMicros(endMillis - startMillis);
+        final int totalMemoryMiB = bytesToMiB(sample.totalMemory);
+        final int freeMemoryMiB = bytesToMiB(sample.freeMemory);
+        final short intervalCollections = (short) (sample.totalCollections - prevTotalCollections);
+        final int intervalCollectionTimeMicros =
+                deltaMillisToMicros(sample.totalCollectionTimeMs - prevTotalCollectionTimeMs);
+        final int intervalUGPCyclesSafePointTimeMicros = deltaMillisToMicros(ugpSafePointTimeMillis);
         try {
             processMemLogger.log(
                     startMillis,
-                    deltaMillisToMicros(endMillis - startMillis),
-                    bytesToMiB(sample.totalMemory),
-                    bytesToMiB(sample.freeMemory),
-                    (short) (sample.totalCollections - prevTotalCollections),
-                    deltaMillisToMicros(sample.totalCollectionTimeMs - prevTotalCollectionTimeMs),
+                    intervalDurationMicros,
+                    totalMemoryMiB,
+                    freeMemoryMiB,
+                    intervalCollections,
+                    intervalCollectionTimeMicros,
                     (short) ugpCyclesOnBudget,
                     Arrays.copyOf(ugpCycleTimes, ugpCycles),
                     (short) ugpSafePoints,
-                    deltaMillisToMicros(ugpSafePointTimeMillis));
+                    intervalUGPCyclesSafePointTimeMicros);
         } catch (IOException e) {
             // Don't want to log this more than once in a report
             logger.error().append("Error sending ProcessMemoryLog data to memory").append(e).endl();
         }
+        publisher.add(
+                startMillis,
+                intervalDurationMicros,
+                totalMemoryMiB,
+                freeMemoryMiB,
+                intervalCollections,
+                intervalCollectionTimeMicros,
+                (short) ugpCyclesOnBudget,
+                Arrays.copyOf(ugpCycleTimes, ugpCycles),
+                (short) ugpSafePoints,
+                intervalUGPCyclesSafePointTimeMicros);
     }
 
     public QueryTable getQueryTable() {
-        return MemoryTableLogger.maybeGetQueryTable(processMemLogger);
+        return (QueryTable) BlinkTableTools.blinkToAppendOnly(blink);
     }
 }

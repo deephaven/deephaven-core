@@ -225,10 +225,15 @@ final class ServletServerStream extends AbstractServerStream {
         @Override
         public void writeHeaders(Metadata headers) {
             writeHeadersToServletResponse(headers);
-            resp.setTrailerFields(trailerSupplier);
+            try {
+                resp.setTrailerFields(trailerSupplier);
+            } catch (IllegalStateException e) {
+                logger.log(WARNING, String.format("[{%s}] Exception writing trailers", logId), e);
+                cancel(Status.fromThrowable(e));
+            }
             try {
                 writer.flush();
-            } catch (IOException e) {
+            } catch (IllegalStateException | IOException e) {
                 logger.log(WARNING, String.format("[{%s}] Exception when flushBuffer", logId), e);
                 cancel(Status.fromThrowable(e));
             }
@@ -298,8 +303,14 @@ final class ServletServerStream extends AbstractServerStream {
             close(Status.CANCELLED.withCause(status.asRuntimeException()), new Metadata());
             CountDownLatch countDownLatch = new CountDownLatch(1);
             transportState.runOnTransportThread(() -> {
-                asyncCtx.complete();
-                countDownLatch.countDown();
+                try {
+                    asyncCtx.complete();
+                } catch (final Exception err) {
+                    // this may happen when the async context is already complete; it isn't surprising this may fail as
+                    // we're trying to notify the user of another known error on this stream
+                } finally {
+                    countDownLatch.countDown();
+                }
             });
             try {
                 countDownLatch.await(5, TimeUnit.SECONDS);

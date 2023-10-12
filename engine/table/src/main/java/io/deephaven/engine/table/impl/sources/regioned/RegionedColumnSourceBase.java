@@ -8,6 +8,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.impl.ColumnSourceManager;
+import io.deephaven.engine.table.impl.dataindex.PartitioningIndexProvider;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,6 +20,8 @@ import org.jetbrains.annotations.Nullable;
 abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_TYPE extends ColumnRegion<ATTR>>
         extends AbstractColumnSource<DATA_TYPE>
         implements RegionedPageStore<Values, ATTR, REGION_TYPE>, RegionedColumnSource<DATA_TYPE> {
+
+    ColumnSourceManager columnSourceManager = null;
 
     static final Parameters PARAMETERS;
     static {
@@ -35,6 +39,11 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
 
     RegionedColumnSourceBase(@NotNull final Class<DATA_TYPE> type) {
         this(type, null);
+    }
+
+    @Override
+    public void invalidateRegion(final int regionIndex) {
+        getRegion(regionIndex).invalidate();
     }
 
     @Override
@@ -78,4 +87,14 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
      */
     @NotNull
     abstract REGION_TYPE getNullRegion();
+
+    @Override
+    public ColumnSourceManager getColumnSourceManager() {
+        return columnSourceManager;
+    }
+
+    @Override
+    public void setColumnSourceManager(ColumnSourceManager columnSourceManager) {
+        this.columnSourceManager = columnSourceManager;
+    }
 }

@@ -47,7 +47,7 @@ public abstract class DataIndexInfo {
     @Value.Check
     final void checkIndexTablePath() {
         if (indexTablePath().isEmpty()) {
-            throw new IllegalArgumentException("Empty grouping table path");
+            throw new IllegalArgumentException("Empty index table path");
         }
     }
 

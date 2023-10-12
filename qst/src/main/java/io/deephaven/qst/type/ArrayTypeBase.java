@@ -7,8 +7,7 @@ public abstract class ArrayTypeBase<T, ComponentType> extends GenericTypeBase<T>
         implements ArrayType<T, ComponentType> {
 
     @Override
-    public final <V extends GenericType.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(GenericType.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 }

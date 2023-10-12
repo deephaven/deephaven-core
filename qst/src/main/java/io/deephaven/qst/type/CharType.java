@@ -3,17 +3,17 @@
  */
 package io.deephaven.qst.type;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
- * The {@link Character} type.
+ * The primitive {@link char} type.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class CharType extends PrimitiveTypeBase<Character> {
 
-    public static CharType instance() {
+    public static CharType of() {
         return ImmutableCharType.of();
     }
 
@@ -23,8 +23,8 @@ public abstract class CharType extends PrimitiveTypeBase<Character> {
     }
 
     @Override
-    public final Class<Character> boxedClass() {
-        return Character.class;
+    public final BoxedCharType boxedType() {
+        return BoxedCharType.of();
     }
 
     @Override
@@ -33,9 +33,8 @@ public abstract class CharType extends PrimitiveTypeBase<Character> {
     }
 
     @Override
-    public final <V extends PrimitiveType.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(PrimitiveType.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

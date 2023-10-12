@@ -13,9 +13,10 @@ import pandas as pd
 from deephaven import dtypes
 from deephaven.constants import *
 from deephaven.dtypes import Instant, LocalDate, LocalTime, Duration, Period, TimeZone, ZonedDateTime
-from deephaven.time import now, to_zdt, time_zone
+from deephaven.time import dh_now
 from tests.testbase import BaseTestCase
 
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 def remap_double(v, null_value):
     if v != v or v == NULL_DOUBLE or v == float('inf'):
@@ -100,6 +101,10 @@ class DTypesTestCase(BaseTestCase):
         j_array = dtypes.array(dtypes.int64, [0, 1, 2, 3, 4])
         np_array = np.frombuffer(j_array, dtype=np.int64)
         self.assertTrue(np.array_equal(np_array, expected))
+
+        with self.assertRaises(TypeError) as cm:
+            j_array = dtypes.array("java.lang.String", ["a", "b"])
+        self.assertIn("expects a DType", str(cm.exception))
 
     def test_integer_array(self):
         np_array = np.array([float('nan'), NULL_DOUBLE, np.inf], dtype=np.float64)
@@ -196,8 +201,8 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(expected, py_array)
 
     def test_instant(self):
-        dt1 = Instant.j_type.ofEpochSecond(0,round(time.time()))
-        dt2 = now()
+        dt1 = Instant.j_type.ofEpochSecond(0, round(time.time()))
+        dt2 = dh_now()
         values = [dt1, dt2, None]
         j_array = dtypes.array(Instant, values)
         self.assertTrue(all(x == y for x, y in zip(j_array, values)))
@@ -234,7 +239,7 @@ class DTypesTestCase(BaseTestCase):
 
     def test_zdt(self):
         dt1 = ZonedDateTime.j_type.now()
-        dt2 = to_zdt(now(),time_zone(None))
+        dt2 = _JDateTimeUtils.toZonedDateTime(dh_now(), _JDateTimeUtils.timeZone())
         values = [dt1, dt2, None]
         j_array = dtypes.array(ZonedDateTime, values)
         self.assertTrue(all(x == y for x, y in zip(j_array, values)))

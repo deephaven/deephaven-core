@@ -1,6 +1,6 @@
 module.exports = async ({ github, context }) => {
   const ISSUE_REPO_NAME = "deephaven.io";
-  const ISSUE_TYPES = ["how-to", "conceptual", "reference", "blog"];
+  const ISSUE_TYPES = ["how-to", "reference"];
 
   const body =
     `_This issue was auto-generated_\n\n` +

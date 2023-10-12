@@ -18,7 +18,6 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 ![Docs CI](https://github.com/deephaven/deephaven-core/actions/workflows/docs-ci.yml/badge.svg?branch=main)
 ![Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/check-ci.yml/badge.svg?branch=main)
 ![Nightly Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-check-ci.yml/badge.svg?branch=main)
-![Nightly Benchmarks](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-benchmarks.yml/badge.svg?branch=main)
 
 ## Supported Languages
 
@@ -295,6 +294,6 @@ with any additional questions or comments.
 
 ## License
 
-Copyright (c) Deephaven Data Labs. All rights reserved.
+Copyright © 2016-2023 Deephaven Data Labs and Patent Pending. All rights reserved.
 
 Provided under the [Deephaven Community License](LICENSE.md).

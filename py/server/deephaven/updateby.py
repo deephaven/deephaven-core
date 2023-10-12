@@ -120,8 +120,8 @@ def ema_tick(decay_ticks: float, cols: Union[str, List[str]],
     Args:
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the ema operation on all columns.
-        op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
+            i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -150,13 +150,13 @@ def ema_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str
         a = e^(-dt / decay_time)
         ema_next = a * ema_last + (1 - a) * value
 
-     Args:
+    Args:
         ts_col (str): the column in the source table to use for timestamps
-        decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+        decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time interval
+            string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the ema operation on all columns.
-        op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
+            i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -189,8 +189,8 @@ def ems_tick(decay_ticks: float, cols: Union[str, List[str]],
     Args:
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
-        op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
+            i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -217,15 +217,15 @@ def ems_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str
 
     The formula used is
         a = e^(-dt / decay_time)
-        eems_next = a * ems_last + value
+        ems_next = a * ems_last + value
 
-     Args:
+    Args:
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
-        op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
+            i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
+        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -253,13 +253,13 @@ def emmin_tick(decay_ticks: float, cols: Union[str, List[str]],
 
     The formula used is
         a = e^(-1 / decay_ticks)
-        em_val_next = min(a * em_val_last, value)
+        emmin_next = min(a * emmin_last, value)
 
     Args:
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
-        op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
+            i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
+        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -286,15 +286,15 @@ def emmin_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
 
     The formula used is
         a = e^(-dt / decay_time)
-        em_val_next = min(a * em_val_last, value)
+        emmin_next = min(a * emmin_last, value)
 
-     Args:
+    Args:
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
-        op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
+            i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
+        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -322,13 +322,13 @@ def emmax_tick(decay_ticks: float, cols: Union[str, List[str]],
 
     The formula used is
         a = e^(-1 / decay_ticks)
-        em_val_next = max(a * em_val_last, value)
+        emmax_next = max(a * emmax_last, value)
 
     Args:
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
-        op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
+            i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
+        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -355,16 +355,15 @@ def emmax_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
 
     The formula used is
         a = e^(-dt / decay_time)
-        em_val_next = max(a * em_val_last, value)
+        emmax_next = max(a * emmax_last, value)
 
-     Args:
+    Args:
         ts_col (str): the column in the source table to use for timestamps
-
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
-        op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
+            i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
+        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -391,15 +390,15 @@ def emstd_tick(decay_ticks: float, cols: Union[str, List[str]],
 
     The formula used is
         a = e^(-1 / decay_ticks)
-        variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
-        ema = a * prevEma + x
-        std = sqrt(variance)
+        ema_next = a * ema_last + (1 - a) * value
+        em_variance_next = a * (em_variance_last + (1 − a) * (value − ema_last)^2)
+        emstd_next = sqrt(em_variance_next)
 
     Args:
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
-        op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
+        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -425,18 +424,18 @@ def emstd_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
     time as the decay unit.
 
     The formula used is
-        a = e^(-dt / timeDecay)
-        variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
-        ema = a * prevEma + x
-        std = sqrt(variance)
+        a = e^(-dt / decay_time)
+        ema_next = a * ema_last + (1 - a) * value
+        em_variance_next = a * (em_variance_last + (1 − a) * (value − ema_last)^2)
+        emstd_next = sqrt(em_variance_next)
 
-     Args:
+    Args:
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
-        op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
+        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -575,10 +574,9 @@ def delta(cols: Union[str, List[str]], delta_control: DeltaControl = DeltaContro
     Args:
 
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by performs the cumulative sum operation on all the applicable
+            i.e. "new_col = col"; when empty, update_by performs the delta operation on all the applicable
             columns.
-
-        delta_control (DeltaControl): defines how special cases should behave, when None, the default DeltaControl
+        delta_control (DeltaControl): defines how special cases should behave; when None, the default DeltaControl
             settings of VALUE_DOMINATES will be used
 
     Returns:
@@ -658,9 +656,9 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
         an UpdateByOperation
@@ -740,9 +738,9 @@ def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling group operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
         an UpdateByOperation
@@ -822,9 +820,9 @@ def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling average operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
         an UpdateByOperation
@@ -904,9 +902,9 @@ def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling minimum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
         an UpdateByOperation
@@ -986,9 +984,9 @@ def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling maximum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
         an UpdateByOperation
@@ -1068,9 +1066,9 @@ def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling product operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
         an UpdateByOperation
@@ -1150,9 +1148,9 @@ def rolling_count_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling count operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
         an UpdateByOperation
@@ -1232,9 +1230,9 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling standard deviation operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
         an UpdateByOperation
@@ -1251,7 +1249,7 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         raise DHError(e, "failed to create a rolling standard deviation (time) UpdateByOperation.") from e
 
 
-def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
+def rolling_wavg_tick(wcol: str, cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
     """Creates a rolling weighted average UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
     is considered to belong to the reverse window but not the forward window. Also, negative values are allowed and
@@ -1274,7 +1272,7 @@ def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: i
             i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
-        weight_col (str):  the column containing the weight values
+        wcol (str):  the column containing the weight values
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -1286,12 +1284,12 @@ def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: i
     """
     try:
         cols = to_sequence(cols)
-        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingWAvg(rev_ticks, fwd_ticks, weight_col, *cols))
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingWAvg(rev_ticks, fwd_ticks, wcol, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling weighted average (tick) UpdateByOperation.") from e
 
 
-def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
+def rolling_wavg_time(ts_col: str, wcol: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                       fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling weighted average UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
@@ -1316,11 +1314,11 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
-        weight_col (str):  the column containing the weight values
+        wcol (str):  the column containing the weight values
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001"
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "PT00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
         an UpdateByOperation
@@ -1332,6 +1330,6 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
         cols = to_sequence(cols)
         rev_time = _JDateTimeUtils.parseDurationNanos(rev_time) if isinstance(rev_time, str) else rev_time
         fwd_time = _JDateTimeUtils.parseDurationNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
-        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingWAvg(ts_col, rev_time, fwd_time, weight_col, *cols))
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingWAvg(ts_col, rev_time, fwd_time, wcol, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling weighted average (time) UpdateByOperation.") from e
