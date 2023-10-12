@@ -636,7 +636,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             case SUBSCRIPTION:
                 if (stream != null) {
                     stream.then(stream -> {
-                        stream.end();
                         stream.cancel();
                         return null;
                     });
@@ -704,6 +703,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     subscriptionRequestWrapper.setAppMetadata(
                             WebBarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSubscriptionRequest));
                     doExchange.send(subscriptionRequestWrapper);
+                    doExchange.end();
 
                     String[] columnTypes = Arrays.stream(tableDefinition.getColumns())
                             .map(ColumnDefinition::getType)
