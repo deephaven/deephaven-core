@@ -75,7 +75,7 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
                      cd "${PREFIX}/src/rdeephaven"; \
                      . "${PREFIX}/env.sh"; \
                      echo 'install.packages(".", repos=NULL, type="source")' | \
-                       MAKEFLAGS="${NCPUS}" R --no-save; \
+                       MAKE="make -j${NCPUS}" R --no-save; \
                      rm -f src/*.o src/*.so
                    ''')
         //
