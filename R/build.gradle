@@ -4,6 +4,8 @@ plugins {
     id 'io.deephaven.deephaven-in-docker'
 }
 
+evaluationDependsOn(':cpp-client')
+
 configurations {
     cpp {}
 }
@@ -86,9 +88,10 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
-    parentContainers = [ Docker.registryTask(project, 'r-client-base') ]
+    parentContainers = [ project.tasks.getByPath(':cpp-client:cppClient') ]
     entrypoint = ["${prefix}/bin/rdeephaven/r-tests.sh", '/out/r-test.xml', '/out/r-test.log']
 }
+tasks.getByName('testRClient').dependsOn project.tasks.getByPath(':cpp-client:cppClient')
 
 deephavenDocker.shouldLogIfTaskFails testRClient
 tasks.check.dependsOn(testRClient)
