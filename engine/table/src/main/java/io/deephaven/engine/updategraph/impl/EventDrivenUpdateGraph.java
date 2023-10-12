@@ -5,6 +5,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.net.CommBase;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -20,6 +21,9 @@ public class EventDrivenUpdateGraph extends AbstractUpdateGraph {
     public EventDrivenUpdateGraph(String name, long minimumCycleDurationToLogNanos) {
         super(name, false, log, minimumCycleDurationToLogNanos);
         notificationProcessor = new QueueNotificationProcessor();
+        try (final SafeCloseable ignored = openContextForUpdatePerformanceTracker()) {
+            updatePerformanceTracker.start();
+        }
     }
 
     @Override
@@ -37,6 +41,12 @@ public class EventDrivenUpdateGraph extends AbstractUpdateGraph {
         return 1;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>When a refresh is requested, the EventDrivenUpdateGraph refreshes all source tables and then executes
+     * the resulting notifications synchronously on this thread.</p>
+     */
     @Override
     public void requestRefresh() {
         // do the work to refresh everything, on this thread

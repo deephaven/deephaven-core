@@ -9,6 +9,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -841,11 +842,21 @@ public abstract class AbstractUpdateGraph implements UpdateGraph, LogOutputAppen
         if (checkTime >= nextUpdatePerformanceTrackerFlushTime) {
             nextUpdatePerformanceTrackerFlushTime = now + UpdatePerformanceTracker.REPORT_INTERVAL_MILLIS;
             try {
-                updatePerformanceTracker.flush();
+                try (final SafeCloseable ignored = openContextForUpdatePerformanceTracker()) {
+                    updatePerformanceTracker.flush();
+                }
             } catch (Exception err) {
                 log.error().append("Error flushing UpdatePerformanceTracker: ").append(err).endl();
             }
         }
+    }
+
+    /**
+     * The UpdatePerformanceTracker requires a common update graph for all operations, to avoid spanning update graphs.
+     * @return a context suitable for operating on the updatePerformanceTracker.
+     */
+    static SafeCloseable openContextForUpdatePerformanceTracker() {
+        return ExecutionContext.getContext().withUpdateGraph(PeriodicUpdateGraph.getInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)).open();
     }
 
     /**
