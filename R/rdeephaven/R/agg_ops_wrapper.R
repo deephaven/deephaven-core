@@ -17,14 +17,14 @@
 #' Apply aggregations to a table:
 #' There are two methods for performing aggregations on a table, `agg_by()` and `agg_all_by()`. `agg_by()` allows you to
 #' perform many aggregations on specified columns, while `agg_all_by()` allows you to perform a single aggregation to
-#' every column in the table. Both methods have an optional `by` parameter that is used to specify grouping columns.
+#' every non-grouping column in the table. Both methods have an optional `by` parameter that is used to specify grouping columns.
 #' Here are some details on each method:
 #'
 #' - `TableHandle$agg_by(aggs, by)`: Creates a new table containing grouping columns and grouped data.
 #'   The resulting grouped data is defined by the aggregation(s) specified.
 #' - `TableHandle$agg_all_by(agg, by)`: Creates a new table containing grouping columns and grouped data.
 #'   The resulting grouped data is defined by the aggregation specified. This method applies the aggregation to all
-#'   columns of the table, so it can only accept one aggregation at a time.
+#'   non-grouping columns of the table, so it can only accept one aggregation at a time.
 #'
 #' The `agg_by()` and `agg_all_by()` methods themselves do not know anything about the columns you want to perform
 #' aggregations on. Rather, the desired columns are passed to individual `agg` functions, enabling you to apply
@@ -35,7 +35,7 @@
 #' `agg` functions are used to perform aggregation calculations on grouped data by passing them to `agg_by()` or
 #' `agg_all_by()`. These functions are _generators_, meaning they return _functions_ that the Deephaven engine knows
 #' how to interpret. We call the functions that they return `AggOp`s. These `AggOp`s are not R-level functions, but
-#' wrappers around C++ functions that perform all of the intensive calculations. Here is a list of all `agg` functions
+#' Deephaven-specific data types that perform all of the intensive calculations. Here is a list of all `agg` functions
 #' available in Deephaven:
 #'
 #' - [`agg_first()`][agg_first]
@@ -55,19 +55,52 @@
 #' For more details on each aggregation function, click on one of the methods above or see the reference documentation
 #' by running `?agg_first`, `?agg_last`, etc.
 #'
-#' @section
-#' Examples:
+#' @examples
+#' \dontrun{
+#' library(rdeephaven)
 #'
-#' ```
-#' NULL
-#' ```
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#'
+#' # get first and last elements of each column
+#' th_first_last <- th$
+#'   agg_by(agg_first(c("XFirst = X", "YFirst = Y", "Number1First = Number1", "Number2First = Number2")),
+#'          agg_last(c("XLast = X", "YLast = Y", "Number1Last = Number1", "Number2Last = Number2")))
+#'
+#' # get mean and standard deviation of Number1 and Number2, grouped by X
+#' th_mean_sd_by_x <- th$
+#'   agg_by(
+#'     c(agg_avg(c("Number1Avg = Number1", "Number2Avg = Number2")),
+#'       agg_std(c("Number1Std = Number1", "Number2Std = Number2"))),
+#'     by="X")
+#'
+#' # get maximum of all non-grouping columns, grouped by X and Y
+#' th_max_by_x_y <- th$
+#'   agg_all_by(agg_max(), by=c("X", "Y"))
+#'
+#' # get minimum and maximum of Number1 and Number2 respectively grouped by Y
+#' th_min_max_by_x <- th$
+#'   agg_by(
+#'     c(agg_min("Number1Min = Number1"),
+#'       agg_max("Number2Max = Number2")),
+#'     by="Y")
+#' }
 #'
 NULL
 
 # An AggOp represents an aggregation operator that can be passed to agg_by() or agg_all_by(). This is the return type
-# of all of the `agg` functions. It is a wrapper around an Rcpp_INTERNAL_AggOp, which itself is a wrapper around a
+# of all of the agg functions. It is a wrapper around an Rcpp_INTERNAL_AggOp, which itself is a wrapper around a
 # C++ AggregateWrapper, which is finally a wrapper around a C++ Aggregate. See rdeephaven/src/client.cpp for details.
-# Note that AggOps should not be instantiated directly by user code, but rather by provided `agg` functions.
+# Note that AggOps should not be instantiated directly by user code, but rather by provided agg functions.
 AggOp <- R6Class("AggOp",
   cloneable = FALSE,
   public = list(
@@ -103,16 +136,41 @@ AggOp <- R6Class("AggOp",
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
 #' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
-#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
-#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
-#' otherwise seem unexpected.
+#' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+#' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
-#' print("hello!")
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#'
+#' # get first elements of all columns
+#' th_first <- th$
+#'   agg_by(agg_first(c("X", "Y", "Number1", "Number2")))
+#'
+#' # get first elements of Y, Number1, and Number2 grouped by X
+#' th_first_by_x <- th$
+#'   agg_by(agg_first(c("Y", "Number1", "Number2")), by="X")
+#'
+#' # get first elements of Number1 and Number2 grouped by X and Y
+#' th_first_by_x_and_y <- th
+#'   agg_by(agg_first(c("Number1", "Number2")), by=c("X", "Y"))
+#' }
 #'
 #' @export
 agg_first <- function(cols = character()) {
@@ -137,16 +195,29 @@ agg_first <- function(cols = character()) {
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
 #' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
-#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
-#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
-#' otherwise seem unexpected.
+#' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+#' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
-#' print("hello!")
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#' }
 #'
 #' @export
 agg_last <- function(cols = character()) {
@@ -171,16 +242,29 @@ agg_last <- function(cols = character()) {
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
 #' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
-#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
-#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
-#' otherwise seem unexpected.
+#' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+#' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
-#' print("hello!")
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#' }
 #'
 #' @export
 agg_min <- function(cols = character()) {
@@ -205,16 +289,29 @@ agg_min <- function(cols = character()) {
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
 #' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
-#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
-#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
-#' otherwise seem unexpected.
+#' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+#' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
-#' print("hello!")
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#' }
 #'
 #' @export
 agg_max <- function(cols = character()) {
@@ -239,16 +336,29 @@ agg_max <- function(cols = character()) {
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
 #' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
-#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
-#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
-#' otherwise seem unexpected.
+#' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+#' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
-#' print("hello!")
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#' }
 #'
 #' @export
 agg_sum <- function(cols = character()) {
@@ -273,16 +383,29 @@ agg_sum <- function(cols = character()) {
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
 #' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
-#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
-#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
-#' otherwise seem unexpected.
+#' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+#' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
-#' print("hello!")
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#' }
 #'
 #' @export
 agg_abs_sum <- function(cols = character()) {
@@ -307,16 +430,29 @@ agg_abs_sum <- function(cols = character()) {
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
 #' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
-#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
-#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
-#' otherwise seem unexpected.
+#' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+#' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
-#' print("hello!")
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#' }
 #'
 #' @export
 agg_avg <- function(cols = character()) {
@@ -341,9 +477,8 @@ agg_avg <- function(cols = character()) {
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
 #' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
-#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
-#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
-#' otherwise seem unexpected.
+#' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+#' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' @param wcol String denoting the column to use for weights. This must be a numeric column.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
@@ -351,7 +486,21 @@ agg_avg <- function(cols = character()) {
 #' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
-#' print("hello!")
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#' }
 #'
 #' @export
 agg_w_avg <- function(wcol, cols = character()) {
@@ -377,16 +526,29 @@ agg_w_avg <- function(wcol, cols = character()) {
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
 #' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
-#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
-#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
-#' otherwise seem unexpected.
+#' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+#' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
-#' print("hello!")
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#' }
 #'
 #' @export
 agg_median <- function(cols = character()) {
@@ -411,16 +573,29 @@ agg_median <- function(cols = character()) {
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
 #' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
-#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
-#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
-#' otherwise seem unexpected.
+#' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+#' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
-#' print("hello!")
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#' }
 #'
 #' @export
 agg_var <- function(cols = character()) {
@@ -445,16 +620,29 @@ agg_var <- function(cols = character()) {
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
 #' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
-#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
-#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
-#' otherwise seem unexpected.
+#' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+#' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
 #' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
-#' print("hello!")
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#' }
 #'
 #' @export
 agg_std <- function(cols = character()) {
@@ -479,9 +667,8 @@ agg_std <- function(cols = character()) {
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
 #' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
-#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
-#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
-#' otherwise seem unexpected.
+#' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+#' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' @param percentile Numeric scalar between 0 and 1 denoting the percentile to compute.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
@@ -489,7 +676,21 @@ agg_std <- function(cols = character()) {
 #' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
-#' print("hello!")
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#' }
 #'
 #' @export
 agg_percentile <- function(percentile, cols = character()) {
@@ -515,9 +716,8 @@ agg_percentile <- function(percentile, cols = character()) {
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
 #' function called an `AggOp` intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
-#' typically hidden from the user by the `agg_by()` and `agg_all_by()` functions, which call the `AggOp` internally.
-#' However, it is important to understand this detail for debugging purposes, as the output of an `agg` function can
-#' otherwise seem unexpected.
+#' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+#' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' Note that this operation is not supported in `agg_all_by()`.
 #'
@@ -525,7 +725,21 @@ agg_percentile <- function(percentile, cols = character()) {
 #' @return `AggOp` to be used in a call to `agg_by()`.
 #'
 #' @examples
-#' print("hello!")
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create dataframe, push to server, retrieve TableHandle
+#' df <- data.frame(
+#'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+#'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+#'   Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+#'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+#' )
+#' th <- client$import_table(df)
+#' }
 #'
 #' @export
 agg_count <- function(col) {

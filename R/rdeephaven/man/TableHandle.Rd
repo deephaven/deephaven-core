@@ -522,7 +522,7 @@ A TableHandle referencing the new table.
 \subsection{Method \code{agg_all_by()}}{
 Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
 aggregation(s) specified. See more detailed documentation \link[=AggBy]{here} or run \code{?AggBy}.
-This method applies the aggregation to all columns of the table, so it can only
+This method applies the aggregation to all non-grouping columns of the table, so it can only
 accept one aggregation at a time.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$agg_all_by(agg, by = character())}\if{html}{\out{</div>}}

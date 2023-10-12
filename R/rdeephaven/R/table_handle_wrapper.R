@@ -293,7 +293,7 @@ TableHandle <- R6Class("TableHandle",
     #' @description
     #' Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
     #' aggregation(s) specified. See more detailed documentation [here][AggBy] or run `?AggBy`.
-    #' This method applies the aggregation to all columns of the table, so it can only
+    #' This method applies the aggregation to all non-grouping columns of the table, so it can only
     #' accept one aggregation at a time.
     #' @param agg `AggOp` to perform on non-grouping columns.
     #' @param by String or list of strings denoting the names of the columns to group by.

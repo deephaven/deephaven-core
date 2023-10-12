@@ -20,13 +20,26 @@ if \code{by = c("A", "B")}, then the aggregation groups are defined by the uniqu
 
 This function, like other Deephaven \code{agg} functions, is a generator function. That is, its output is another
 function called an \code{AggOp} intended to be used in a call to \code{agg_by()} or \code{agg_all_by()}. This detail is
-typically hidden from the user by the \code{agg_by()} and \code{agg_all_by()} functions, which call the \code{AggOp} internally.
-However, it is important to understand this detail for debugging purposes, as the output of an \code{agg} function can
-otherwise seem unexpected.
+typically hidden from the user. However, it is important to understand this detail for debugging purposes,
+as the output of an \code{agg} function can otherwise seem unexpected.
 
 Note that this operation is not supported in \code{agg_all_by()}.
 }
 \examples{
-print("hello!")
+\dontrun{
+library(rdeephaven)
+
+# connecting to Deephaven server
+client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+
+# create dataframe, push to server, retrieve TableHandle
+df <- data.frame(
+  X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+  Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+  Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+  Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+)
+th <- client$import_table(df)
+}
 
 }

@@ -14,14 +14,14 @@ allow you to aggregate tables on a per-group basis.
 
 There are two methods for performing aggregations on a table, \code{agg_by()} and \code{agg_all_by()}. \code{agg_by()} allows you to
 perform many aggregations on specified columns, while \code{agg_all_by()} allows you to perform a single aggregation to
-every column in the table. Both methods have an optional \code{by} parameter that is used to specify grouping columns.
+every non-grouping column in the table. Both methods have an optional \code{by} parameter that is used to specify grouping columns.
 Here are some details on each method:
 \itemize{
 \item \code{TableHandle$agg_by(aggs, by)}: Creates a new table containing grouping columns and grouped data.
 The resulting grouped data is defined by the aggregation(s) specified.
 \item \code{TableHandle$agg_all_by(agg, by)}: Creates a new table containing grouping columns and grouped data.
 The resulting grouped data is defined by the aggregation specified. This method applies the aggregation to all
-columns of the table, so it can only accept one aggregation at a time.
+non-grouping columns of the table, so it can only accept one aggregation at a time.
 }
 
 The \code{agg_by()} and \code{agg_all_by()} methods themselves do not know anything about the columns you want to perform
@@ -34,7 +34,7 @@ various kinds of aggregations to different columns or groups of columns as neede
 \code{agg} functions are used to perform aggregation calculations on grouped data by passing them to \code{agg_by()} or
 \code{agg_all_by()}. These functions are \emph{generators}, meaning they return \emph{functions} that the Deephaven engine knows
 how to interpret. We call the functions that they return \code{AggOp}s. These \code{AggOp}s are not R-level functions, but
-wrappers around C++ functions that perform all of the intensive calculations. Here is a list of all \code{agg} functions
+Deephaven-specific data types that perform all of the intensive calculations. Here is a list of all \code{agg} functions
 available in Deephaven:
 \itemize{
 \item \code{\link[=agg_first]{agg_first()}}
@@ -56,10 +56,44 @@ For more details on each aggregation function, click on one of the methods above
 by running \code{?agg_first}, \code{?agg_last}, etc.
 }
 
-\section{Examples}{
+\examples{
+\dontrun{
+library(rdeephaven)
 
+# connecting to Deephaven server
+client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{NULL
-}\if{html}{\out{</div>}}
+# create dataframe, push to server, retrieve TableHandle
+df <- data.frame(
+  X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
+  Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
+  Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
+  Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
+)
+th <- client$import_table(df)
+
+# get first and last elements of each column
+th_first_last <- th$
+  agg_by(agg_first(c("XFirst = X", "YFirst = Y", "Number1First = Number1", "Number2First = Number2")),
+         agg_last(c("XLast = X", "YLast = Y", "Number1Last = Number1", "Number2Last = Number2")))
+
+# get mean and standard deviation of Number1 and Number2, grouped by X
+th_mean_sd_by_x <- th$
+  agg_by(
+    c(agg_avg(c("Number1Avg = Number1", "Number2Avg = Number2")),
+      agg_std(c("Number1Std = Number1", "Number2Std = Number2"))),
+    by="X")
+
+# get maximum of all non-grouping columns, grouped by X and Y
+th_max_by_x_y <- th$
+  agg_all_by(agg_max(), by=c("X", "Y"))
+
+# get minimum and maximum of Number1 and Number2 respectively grouped by Y
+th_min_max_by_x <- th$
+  agg_by(
+    c(agg_min("Number1Min = Number1"),
+      agg_max("Number2Max = Number2")),
+    by="Y")
 }
 
+}

@@ -26,7 +26,7 @@ the desired columns are passed to individual \code{uby} functions, enabling a ma
 
 \code{uby} functions are the workers that actually execute the complex UpdateBy calculations. These functions are
 \emph{generators}, meaning they return \emph{functions} that the Deephaven engine knows how to interpret. We call the functions
-that they return \code{UpdateByOp}s. These \code{UpdateByOp}s are not R-level functions, but wrappers around C++ functions that
+that they return \code{UpdateByOp}s. These \code{UpdateByOp}s are not R-level functions, but Deephaven-specific data types that
 perform all of the intensive calculations. Here is a list of all \code{uby} functions available in Deephaven:
 \itemize{
 \item \code{\link[=uby_cum_min]{uby_cum_min()}}
