@@ -4,8 +4,6 @@ plugins {
     id 'io.deephaven.deephaven-in-docker'
 }
 
-evaluationDependsOn Docker.registryProject('r-client-base')
-
 configurations {
     cpp {}
 }

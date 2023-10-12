@@ -10,7 +10,7 @@ plugins {
 // We use the r-client-base image instead of the cpp-client-base,
 // so that the R client test task in R/build.gradle can in turn use the
 // image we will generate here as a base.
-evaluationDependsOn Docker.registryProject('cpp-client-base')
+evaluationDependsOn Docker.registryProject('r-client-base')
 
 configurations {
     cpp {}
@@ -115,7 +115,7 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
         environmentVariable 'DH_PREFIX', prefix
         environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
     }
-    parentContainers = [ Docker.registryTask(project, 'cpp-client-base') ]
+    parentContainers = [ Docker.registryTask(project, 'r-client-base') ]
 }
 
 def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
