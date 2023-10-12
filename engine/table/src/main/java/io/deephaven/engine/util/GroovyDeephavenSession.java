@@ -108,7 +108,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
                     if (!mapping.containsKey(name)) {
                         try {
-                            if (name.replaceAll("\\$", "\\.").contains(PACKAGE)) {
+                            if (name.replaceAll("\\$", ".").contains(PACKAGE)) {
                                 throw new ClassNotFoundException();
                             }
                             Class<?> aClass = super.loadClass(name, resolve);
@@ -131,7 +131,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private final ScriptFinder scriptFinder;
 
+    /** Contains imports to be applied to commands run in the console */
     private final ImportCustomizer consoleImports = new ImportCustomizer();
+    /** Contains imports to be applied to .groovy files loaded from the classpath */
     private final ImportCustomizer loadedGroovyScriptImports = new ImportCustomizer();
 
     private final Set<String> dynamicClasses = new HashSet<>();
@@ -465,11 +467,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
      */
     @VisibleForTesting
     public Optional<GroovyImport> createImport(String importString) {
-        // look for (ignoring whitespace): optional "import" optional "static" everything_else optional ".*" optional
-        // "as" optional ".*" optional
-        // semicolon
-        // "everything_else" should be a valid java identifier of the form package.class[.class|.method|.field]. This
-        // will be checked later
+        // look for (ignoring whitespace):
+        // "import" optional "static" qualified_name optional ".*" optional "as" optional name optional semicolon
+        //
+        // "qualified_name" should be a valid java qualified name, consisting of "."-separated java identifiers. "name"
+        // should be a valid java identifier. These will be checked later by Groovy.
         Matcher matcher = Pattern
                 .compile(
                         "^\\s*(import\\s+)\\s*(?<static>static\\s+)?\\s*(?<body>.*?)(?<wildcard>\\.\\*)?(\\s+as\\s+(?<alias>.*?))?[\\s;]*$")
@@ -482,103 +484,87 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String body = matcher.group("body");
         @Nullable
         final String alias = matcher.group("alias");
-        if (body == null) {
+        if (body == null || (isWildcard && alias != null)) {
+            // Can't build an import without something to import, and can't alias a wildcard
             return Optional.empty();
         }
-        final Optional<GroovyImport> result;
 
-        boolean okToImport;
         if (isStatic) {
-            final String typeName;
-            @Nullable
-            final String memberName;
-            if (isWildcard) {
-                if (alias != null) {
-                    return Optional.empty();
-                }
-                // import static package.class[.class].*
-                okToImport = classExists(body);
-                typeName = body;
-                memberName = null;
-            } else {
-                // import static package.class.class
-                // import static package.class[.class].method
-                // import static package.class[.class].field
-                final int lastSeparator = body.lastIndexOf(".");
-                if (lastSeparator > 0) {
-                    typeName = body.substring(0, lastSeparator);
-                    memberName = body.substring(lastSeparator + 1);
-                    okToImport = functionExists(typeName, memberName) || fieldExists(typeName, memberName)
-                            || classExists(body);
-                } else {
-                    okToImport = classExists(body);
-                    typeName = body;
-                    memberName = null;
-                }
+            return createStaticImport(isWildcard, body, alias);
+        }
+        return createClassImport(isWildcard, body, alias);
+    }
+
+    private Optional<GroovyImport> createStaticImport(boolean isWildcard, String body, @Nullable String alias) {
+        if (isWildcard) {
+            // import static package.class[.class].*
+            if (!classExists(body)) {
+                return Optional.empty();
             }
-            if (okToImport) {
-                if (isWildcard) {
-                    result = Optional.of(imports -> imports.addStaticStars(body));
-                } else {
-                    if (alias != null) {
-                        result = Optional.of(imports -> imports.addStaticImport(typeName, memberName));
-                    } else {
-                        result = Optional.of(imports -> imports.addStaticImport(alias, typeName, memberName));
-                    }
-                }
-            } else {
+            return Optional.of(imports -> imports.addStaticStars(body));
+        }
+        // import static package.class.class
+        // import static package.class[.class].method
+        // import static package.class[.class].field
+        final int lastSeparator = body.lastIndexOf(".");
+        final String typeName;
+        @Nullable
+        final String memberName;
+        if (lastSeparator > 0) {
+            typeName = body.substring(0, lastSeparator);
+            memberName = body.substring(lastSeparator + 1);
+            if (!functionExists(typeName, memberName) && !fieldExists(typeName, memberName)
+                    && !classExists(body)) {
                 return Optional.empty();
             }
         } else {
-            if (isWildcard) {
-                if (alias != null) {
-                    return Optional.empty();
-                }
-                if (classExists(body) || (groovyShell.getClassLoader().getDefinedPackage(body) != null)
-                        || packageIsVisibleToClassGraph(body)) {
-                    result = Optional.of(imports -> imports.addStarImports(body));
-                } else {
-                    if (ALLOW_UNKNOWN_GROOVY_PACKAGE_IMPORTS) {
-                        // Check for proper form of a package. Pass a package star import that is plausible. Groovy is
-                        // OK with packages that cannot be found, unlike java.
-                        final String javaIdentifierPattern =
-                                "(\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*\\.)+\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*";
-                        if (body.matches(javaIdentifierPattern)) {
-                            log.info().append("Package or class \"").append(body)
-                                    .append("\" could not be verified.")
-                                    .endl();
-                            result = Optional.of(imports -> imports.addStarImports(body));
-                        } else {
-                            log.warn().append("Package or class \"").append(body)
-                                    .append("\" could not be verified and does not appear to be a valid java identifier.")
-                                    .endl();
-                            return Optional.empty();
-                        }
-                    } else {
-                        log.warn().append("Package or class \"").append(body)
-                                .append("\" could not be verified.")
-                                .endl();
-                        return Optional.empty();
-                    }
-                }
-            } else {
-                if (classExists(body)) {
-                    if (alias == null) {
-                        result = Optional.of(imports -> imports.addImports(body));
-                    } else {
-                        result = Optional.of(imports -> imports.addImport(alias, body));
-                    }
-                } else {
-                    return Optional.empty();
-                }
+            if (!classExists(body)) {
+                return Optional.empty();
             }
+            typeName = body;
+            memberName = null;
         }
+        if (alias == null) {
+            return Optional.of(imports -> imports.addStaticImport(typeName, memberName));
+        }
+        return Optional.of(imports -> imports.addStaticImport(alias, typeName, memberName));
+    }
 
-        String fixedImport = "import " + (isStatic ? "static " : "") + body + (isWildcard ? ".*" : "") + ";";
-        log.info().append("Adding persistent import ")
-                .append(isStatic ? "(static/" : "(normal/").append(isWildcard ? "wildcard): \"" : "normal): \"")
-                .append(fixedImport).append("\" from original string: \"").append(importString).append("\"").endl();
-        return result;
+    private Optional<GroovyImport> createClassImport(boolean isWildcard, String body, @Nullable String alias) {
+        if (isWildcard) {
+            if (classExists(body) || (groovyShell.getClassLoader().getDefinedPackage(body) != null)
+                    || packageIsVisibleToClassGraph(body)) {
+                return Optional.of(imports -> imports.addStarImports(body));
+            }
+            if (ALLOW_UNKNOWN_GROOVY_PACKAGE_IMPORTS) {
+                // Check for proper form of a package. Pass a package star import that is plausible. Groovy is
+                // OK with packages that cannot be found, unlike java.
+                final String javaIdentifierPattern =
+                        "(\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*\\.)+\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*";
+                if (body.matches(javaIdentifierPattern)) {
+                    log.info().append("Package or class \"").append(body)
+                            .append("\" could not be verified.")
+                            .endl();
+                    return Optional.of(imports -> imports.addStarImports(body));
+                }
+                log.warn().append("Package or class \"").append(body)
+                        .append("\" could not be verified and does not appear to be a valid java identifier.")
+                        .endl();
+                return Optional.empty();
+            }
+            log.warn().append("Package or class \"").append(body)
+                    .append("\" could not be verified.")
+                    .endl();
+            return Optional.empty();
+        } else {
+            if (!classExists(body)) {
+                return Optional.empty();
+            }
+            if (alias == null) {
+                return Optional.of(imports -> imports.addImports(body));
+            }
+            return Optional.of(imports -> imports.addImport(alias, body));
+        }
     }
 
     private static boolean packageIsVisibleToClassGraph(String packageImport) {
@@ -593,6 +579,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private void updateScriptImports(String importString) {
         Optional<GroovyImport> validated = createImport(importString);
         if (validated.isPresent()) {
+            log.info().append("Adding persistent import \"").append(importString).append("\"").endl();
             validated.get().appendTo(consoleImports);
             if (GroovyDeephavenSession.INCLUDE_CONSOLE_IMPORTS_IN_LOADED_GROOVY) {
                 validated.get().appendTo(loadedGroovyScriptImports);
@@ -633,7 +620,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     /**
      * Creates the full groovy command that we need to evaluate.
-     *
+     * <p>
      * Imports and the package line are added to the beginning; a postfix is added to the end. We return the prefix to
      * enable stack trace rewriting.
      *
