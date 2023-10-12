@@ -34,10 +34,13 @@ class BaseTestCase(unittest.TestCase):
         cls._execution_context.close()
 
     def setUp(self) -> None:
-        self._liveness_scope = liveness_scope()
+        # Note that this is technically not a supported way to use liveness_scope, but we are deliberately leaving
+        # the scope open across separate method calls, which we would normally consider unsafe.
+        self.opened_scope = liveness_scope()
 
     def tearDown(self) -> None:
-        self._liveness_scope.close()
+        with self.opened_scope:
+            ...
 
     def wait_ticking_table_update(self, table: Table, row_count: int, timeout: int):
         """Waits for a ticking table to grow to the specified size or times out.

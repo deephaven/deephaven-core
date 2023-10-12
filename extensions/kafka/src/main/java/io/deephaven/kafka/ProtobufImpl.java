@@ -4,29 +4,21 @@
 package io.deephaven.kafka;
 
 import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Message;
+import com.google.protobuf.Parser;
 import io.confluent.kafka.schemaregistry.SchemaProvider;
 import io.confluent.kafka.schemaregistry.client.SchemaMetadata;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
-import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.functions.ToBooleanFunction;
-import io.deephaven.functions.ToByteFunction;
-import io.deephaven.functions.ToCharFunction;
-import io.deephaven.functions.ToDoubleFunction;
-import io.deephaven.functions.ToFloatFunction;
-import io.deephaven.functions.ToIntFunction;
-import io.deephaven.functions.ToLongFunction;
 import io.deephaven.functions.ToObjectFunction;
 import io.deephaven.functions.ToPrimitiveFunction;
-import io.deephaven.functions.ToShortFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.kafka.KafkaTools.Consume;
 import io.deephaven.kafka.KafkaTools.KeyOrValue;
@@ -35,47 +27,32 @@ import io.deephaven.kafka.ingest.FieldCopier;
 import io.deephaven.kafka.ingest.FieldCopierAdapter;
 import io.deephaven.kafka.ingest.KeyOrValueProcessor;
 import io.deephaven.kafka.ingest.MultiFieldChunkAdapter;
+import io.deephaven.kafka.protobuf.DescriptorMessageClass;
+import io.deephaven.kafka.protobuf.DescriptorProvider;
+import io.deephaven.kafka.protobuf.DescriptorSchemaRegistry;
 import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
 import io.deephaven.kafka.protobuf.ProtobufConsumeOptions.FieldPathToColumnName;
-import io.deephaven.protobuf.FieldNumberPath;
-import io.deephaven.protobuf.FieldOptions;
 import io.deephaven.protobuf.FieldPath;
 import io.deephaven.protobuf.ProtobufDescriptorParser;
 import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import io.deephaven.protobuf.ProtobufFunction;
 import io.deephaven.protobuf.ProtobufFunctions;
 import io.deephaven.protobuf.ProtobufFunctions.Builder;
-import io.deephaven.qst.type.ArrayType;
-import io.deephaven.qst.type.BooleanType;
-import io.deephaven.qst.type.BoxedType;
-import io.deephaven.qst.type.ByteType;
-import io.deephaven.qst.type.CharType;
-import io.deephaven.qst.type.CustomType;
-import io.deephaven.qst.type.DoubleType;
-import io.deephaven.qst.type.FloatType;
-import io.deephaven.qst.type.GenericType;
-import io.deephaven.qst.type.InstantType;
-import io.deephaven.qst.type.IntType;
-import io.deephaven.qst.type.LongType;
-import io.deephaven.qst.type.PrimitiveType;
-import io.deephaven.qst.type.ShortType;
-import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
-import io.deephaven.qst.type.Type.Visitor;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 
 /**
  * This layer builds on top of {@link ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)} by
@@ -88,9 +65,8 @@ import java.util.function.Function;
 class ProtobufImpl {
 
     @VisibleForTesting
-    static ProtobufFunctions schemaChangeAwareFunctions(Descriptor descriptor,
-            ProtobufDescriptorParserOptions options) {
-        return new ParsedStates(descriptor, options).functionsForSchemaChanges();
+    static ProtobufFunctions simple(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        return withMostAppropriateType(ProtobufDescriptorParser.parse(descriptor, options));
     }
 
     static final class ProtobufConsumeImpl extends Consume.KeyOrValueSpec {
@@ -99,6 +75,7 @@ class ProtobufImpl {
                 ToObjectFunction.identity(Type.ofCustom(Message.class));
 
         private final ProtobufConsumeOptions specs;
+        private Descriptor descriptor;
 
         ProtobufConsumeImpl(ProtobufConsumeOptions specs) {
             this.specs = Objects.requireNonNull(specs);
@@ -106,25 +83,70 @@ class ProtobufImpl {
 
         @Override
         public Optional<SchemaProvider> getSchemaProvider() {
-            return Optional.of(new ProtobufSchemaProvider());
+            return specs.descriptorProvider() instanceof DescriptorSchemaRegistry
+                    ? Optional.of(new ProtobufSchemaProvider())
+                    : Optional.empty();
         }
 
         @Override
-        protected Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+        protected Deserializer<? extends Message> getDeserializer(
+                KeyOrValue keyOrValue,
+                SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
-            return new KafkaProtobufDeserializer<>(Objects.requireNonNull(schemaRegistryClient));
+            final DescriptorProvider dp = specs.descriptorProvider();
+            if (dp instanceof DescriptorMessageClass) {
+                setDescriptor((DescriptorMessageClass<?>) dp);
+                return deserializer((DescriptorMessageClass<?>) dp);
+            }
+            if (dp instanceof DescriptorSchemaRegistry) {
+                setDescriptor(schemaRegistryClient, (DescriptorSchemaRegistry) dp);
+                return deserializer((DescriptorSchemaRegistry) dp);
+            }
+            throw new IllegalStateException("Unexpected descriptor provider: " + dp);
         }
 
-        @Override
-        protected KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
-                Map<String, ?> configs, MutableInt nextColumnIndexMut, List<ColumnDefinition<?>> columnDefinitionsOut) {
-            final Descriptor descriptor;
+        private void setDescriptor(DescriptorMessageClass<?> dmc) {
             try {
-                descriptor = getDescriptor(schemaRegistryClient);
+                descriptor = descriptor(dmc.clazz());
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                throw new UncheckedDeephavenException(e);
+            }
+        }
+
+        private void setDescriptor(SchemaRegistryClient schemaRegistryClient, DescriptorSchemaRegistry dsr) {
+            try {
+                descriptor = descriptor(schemaRegistryClient, dsr);
             } catch (RestClientException | IOException e) {
                 throw new UncheckedDeephavenException(e);
             }
-            final ProtobufFunctions functions = schemaChangeAwareFunctions(descriptor, specs.parserOptions());
+        }
+
+        private Deserializer<? extends Message> deserializer(DescriptorMessageClass<?> dmc) {
+            final Parser<? extends Message> parser;
+            try {
+                parser = parser(dmc.clazz());
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                throw new UncheckedDeephavenException(e);
+            }
+            return ProtobufDeserializers.of(specs.protocol(), parser);
+        }
+
+        private Deserializer<DynamicMessage> deserializer(@SuppressWarnings("unused") DescriptorSchemaRegistry dsr) {
+            // Note: taking in an unused DescriptorSchemaRegistry to re-enforce that this path should only be used in
+            // the case where we are getting a the descriptor from the schema registry.
+            return ProtobufDeserializers.of(specs.protocol(), descriptor);
+        }
+
+        @Override
+        protected KeyOrValueIngestData getIngestData(
+                KeyOrValue keyOrValue,
+                SchemaRegistryClient schemaRegistryClient,
+                Map<String, ?> configs,
+                MutableInt nextColumnIndexMut,
+                List<ColumnDefinition<?>> columnDefinitionsOut) {
+            // Given our deserializer setup above, we are guaranteeing that all returned messages will have the exact
+            // same descriptor. This simplifies the logic we need to construct appropriate ProtobufFunctions.
+            final ProtobufFunctions functions = simple(descriptor, specs.parserOptions());
             final List<FieldCopier> fieldCopiers = new ArrayList<>(functions.functions().size());
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.fieldPathToColumnName = new LinkedHashMap<>();
@@ -160,28 +182,7 @@ class ProtobufImpl {
                     MultiFieldChunkAdapter.chunkOffsets(tableDef, data.fieldPathToColumnName),
                     (List<FieldCopier>) data.extra, false);
         }
-
-        private Descriptor getDescriptor(SchemaRegistryClient schemaRegistryClient)
-                throws RestClientException, IOException {
-            final SchemaMetadata metadata = specs.schemaVersion().isPresent()
-                    ? schemaRegistryClient.getSchemaMetadata(specs.schemaSubject(), specs.schemaVersion().getAsInt())
-                    : schemaRegistryClient.getLatestSchemaMetadata(specs.schemaSubject());
-            if (!ProtobufSchema.TYPE.equals(metadata.getSchemaType())) {
-                throw new IllegalStateException(String.format("Expected schema type %s but was %s", ProtobufSchema.TYPE,
-                        metadata.getSchemaType()));
-            }
-            final ProtobufSchema protobufSchema = (ProtobufSchema) schemaRegistryClient
-                    .getSchemaBySubjectAndId(specs.schemaSubject(), metadata.getId());
-            // The potential need to set io.deephaven.kafka.protobuf.ProtobufConsumeOptions#schemaMessageName
-            // seems unfortunate; I'm surprised the information is not part of the kafka serdes protocol.
-            // Maybe it's so that a single schema can be used, and different topics with different root messages can
-            // all share that common schema?
-            return specs.schemaMessageName().isPresent()
-                    ? protobufSchema.toDescriptor(specs.schemaMessageName().get())
-                    : protobufSchema.toDescriptor();
-        }
     }
-
 
     private static ProtobufFunctions withMostAppropriateType(ProtobufFunctions functions) {
         final Builder builder = ProtobufFunctions.builder();
@@ -211,291 +212,36 @@ class ProtobufImpl {
         return unboxed != null ? unboxed : f2;
     }
 
-    private static class ParsedStates {
-        private final Descriptor originalDescriptor;
-        private final ProtobufDescriptorParserOptions options;
-        private final Map<Descriptor, ProtobufFunctions> parsed;
-
-        private ParsedStates(Descriptor originalDescriptor, ProtobufDescriptorParserOptions options) {
-            this.originalDescriptor = Objects.requireNonNull(originalDescriptor);
-            this.options = Objects.requireNonNull(options);
-            this.parsed = new HashMap<>();
-            getOrCreate(originalDescriptor);
-        }
-
-        public ProtobufFunctions functionsForSchemaChanges() {
-            final Builder builder = ProtobufFunctions.builder();
-            for (ProtobufFunction f : getOrCreate(originalDescriptor).functions()) {
-                builder.addFunctions(ProtobufFunction.of(f.path(), new ForPath(f).adaptForSchemaChanges()));
-            }
-            return builder.build();
-        }
-
-        private ProtobufFunctions getOrCreate(Descriptor descriptor) {
-            return parsed.computeIfAbsent(descriptor, this::create);
-        }
-
-        private ProtobufFunctions create(Descriptor newDescriptor) {
-            if (!originalDescriptor.getFullName().equals(newDescriptor.getFullName())) {
-                throw new IllegalArgumentException(String.format(
-                        "Expected descriptor names to match. expected='%s', actual='%s'. You may need to explicitly set schema_message_name.",
-                        originalDescriptor.getFullName(), newDescriptor.getFullName()));
-            }
-            if (newDescriptor == originalDescriptor) {
-                return withMostAppropriateType(ProtobufDescriptorParser.parse(newDescriptor, options));
-            }
-            final Function<FieldPath, FieldOptions> adaptedOptions = fieldPath -> {
-                final FieldPath originalFieldPath = adaptFieldPath(fieldPath).orElse(null);
-                if (originalFieldPath == null) {
-                    // This must be a new field, exclude it.
-                    return FieldOptions.exclude();
-                }
-                return options.fieldOptions().apply(originalFieldPath);
-            };
-            final ProtobufDescriptorParserOptions a = ProtobufDescriptorParserOptions.builder()
-                    .parsers(options.parsers())
-                    .fieldOptions(adaptedOptions)
-                    .build();
-            return withMostAppropriateType(ProtobufDescriptorParser.parse(newDescriptor, a));
-        }
-
-        private Optional<FieldPath> adaptFieldPath(FieldPath path) {
-            if (path.path().isEmpty()) {
-                return Optional.of(path);
-            }
-            final List<FieldDescriptor> originalFds = new ArrayList<>(path.path().size());
-            Descriptor descriptor = originalDescriptor;
-            final Iterator<FieldDescriptor> it = path.path().iterator();
-            while (true) {
-                final FieldDescriptor currentFd = it.next();
-                final FieldDescriptor originalFd = descriptor.findFieldByNumber(currentFd.getNumber());
-                if (originalFd == null) {
-                    // originalFd does not exist
-                    return Optional.empty();
-                }
-                originalFds.add(originalFd);
-                if (!it.hasNext()) {
-                    break;
-                }
-                descriptor = originalFd.getMessageType();
-            }
-            return Optional.of(FieldPath.of(originalFds));
-        }
-
-        private class ForPath {
-            private final ProtobufFunction originalFunction;
-            private final Map<Descriptor, TypedFunction<Message>> functions;
-
-            public ForPath(ProtobufFunction originalFunction) {
-                this.originalFunction = Objects.requireNonNull(originalFunction);
-                this.functions = new HashMap<>();
-            }
-
-            public TypedFunction<Message> adaptForSchemaChanges() {
-                final Type<?> originalReturnType = originalReturnType();
-                final TypedFunction<Message> out = originalReturnType.walk(new AdaptForSchemaChanges());
-                if (!originalReturnType.equals(out.returnType())) {
-                    throw new IllegalStateException(String.format(
-                            "AdaptForSchemaChanges error, mismatched types for %s. expected=%s, actual=%s",
-                            originalFunction.path().namePath(), originalReturnType, out.returnType()));
-                }
-                return out;
-            }
-
-            private Type<?> originalReturnType() {
-                return originalFunction.function().returnType();
-            }
-
-            private boolean test(Message message) {
-                return ((ToBooleanFunction<Message>) getOrCreateForType(message)).test(message);
-            }
-
-            private char applyAsChar(Message message) {
-                return ((ToCharFunction<Message>) getOrCreateForType(message)).applyAsChar(message);
-            }
-
-            private byte applyAsByte(Message message) {
-                return ((ToByteFunction<Message>) getOrCreateForType(message)).applyAsByte(message);
-            }
-
-            private short applyAsShort(Message message) {
-                return ((ToShortFunction<Message>) getOrCreateForType(message)).applyAsShort(message);
-            }
-
-            private int applyAsInt(Message message) {
-                return ((ToIntFunction<Message>) getOrCreateForType(message)).applyAsInt(message);
-            }
-
-            private long applyAsLong(Message message) {
-                return ((ToLongFunction<Message>) getOrCreateForType(message)).applyAsLong(message);
-            }
-
-            private float applyAsFloat(Message message) {
-                return ((ToFloatFunction<Message>) getOrCreateForType(message)).applyAsFloat(message);
-            }
-
-            private double applyAsDouble(Message message) {
-                return ((ToDoubleFunction<Message>) getOrCreateForType(message)).applyAsDouble(message);
-            }
-
-            private <T> T applyAsObject(Message message) {
-                return ((ToObjectFunction<Message, T>) getOrCreateForType(message)).apply(message);
-            }
-
-            private TypedFunction<Message> getOrCreateForType(Message message) {
-                return getOrCreate(message.getDescriptorForType());
-            }
-
-            private TypedFunction<Message> getOrCreate(Descriptor descriptor) {
-                return functions.computeIfAbsent(descriptor, this::createFunctionFor);
-            }
-
-            private TypedFunction<Message> createFunctionFor(Descriptor descriptor) {
-                final Type<?> originalReturnType = originalReturnType();
-                final TypedFunction<Message> newFunction =
-                        find(ParsedStates.this.getOrCreate(descriptor), originalFunction.path().numberPath())
-                                .map(ProtobufFunction::function)
-                                .orElse(null);
-                final TypedFunction<Message> adaptedFunction =
-                        SchemaChangeAdaptFunction.of(newFunction, originalReturnType).orElse(null);
-                if (adaptedFunction == null) {
-                    throw new UncheckedDeephavenException(
-                            String.format("Incompatible schema change for %s, originalType=%s, newType=%s",
-                                    originalFunction.path().namePath(), originalReturnType,
-                                    newFunction == null ? null : newFunction.returnType()));
-                }
-                if (!originalReturnType.equals(adaptedFunction.returnType())) {
-                    // If this happens, must be a logical error in SchemaChangeAdaptFunction
-                    throw new IllegalStateException(String.format(
-                            "Expected adapted return types to be equal for %s, originalType=%s, adaptedType=%s",
-                            originalFunction.path().namePath(), originalReturnType, adaptedFunction.returnType()));
-                }
-                return adaptedFunction;
-            }
-
-            class AdaptForSchemaChanges
-                    implements Visitor<TypedFunction<Message>>, PrimitiveType.Visitor<TypedFunction<Message>> {
-
-                @Override
-                public TypedFunction<Message> visit(PrimitiveType<?> primitiveType) {
-                    return primitiveType.walk((PrimitiveType.Visitor<TypedFunction<Message>>) this);
-                }
-
-                @Override
-                public ToObjectFunction<Message, Object> visit(GenericType<?> genericType) {
-                    // noinspection unchecked
-                    return ToObjectFunction.of(ForPath.this::applyAsObject, (GenericType<Object>) genericType);
-                }
-
-                @Override
-                public ToBooleanFunction<Message> visit(BooleanType booleanType) {
-                    return ForPath.this::test;
-                }
-
-                @Override
-                public ToByteFunction<Message> visit(ByteType byteType) {
-                    return ForPath.this::applyAsByte;
-                }
-
-                @Override
-                public ToCharFunction<Message> visit(CharType charType) {
-                    return ForPath.this::applyAsChar;
-                }
-
-                @Override
-                public ToShortFunction<Message> visit(ShortType shortType) {
-                    return ForPath.this::applyAsShort;
-                }
-
-                @Override
-                public ToIntFunction<Message> visit(IntType intType) {
-                    return ForPath.this::applyAsInt;
-                }
-
-                @Override
-                public ToLongFunction<Message> visit(LongType longType) {
-                    return ForPath.this::applyAsLong;
-                }
-
-                @Override
-                public ToFloatFunction<Message> visit(FloatType floatType) {
-                    return ForPath.this::applyAsFloat;
-                }
-
-                @Override
-                public ToDoubleFunction<Message> visit(DoubleType doubleType) {
-                    return ForPath.this::applyAsDouble;
-                }
-            }
-        }
+    private static Descriptor descriptor(Class<? extends Message> clazz)
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        final Method getDescriptor = clazz.getMethod("getDescriptor");
+        return (Descriptor) getDescriptor.invoke(null);
     }
 
-    private static class SchemaChangeAdaptFunction<T> implements TypedFunction.Visitor<T, TypedFunction<T>> {
-
-        public static <T> Optional<TypedFunction<T>> of(TypedFunction<T> f, Type<?> desiredReturnType) {
-            if (f == null) {
-                return NullFunctions.of(desiredReturnType);
-            }
-            if (desiredReturnType.equals(f.returnType())) {
-                return Optional.of(f);
-            }
-            return Optional.ofNullable(f.walk(new SchemaChangeAdaptFunction<>(desiredReturnType)));
+    private static Descriptor descriptor(SchemaRegistryClient registry, DescriptorSchemaRegistry dsr)
+            throws RestClientException, IOException {
+        final SchemaMetadata metadata = dsr.version().isPresent()
+                ? registry.getSchemaMetadata(dsr.subject(), dsr.version().getAsInt())
+                : registry.getLatestSchemaMetadata(dsr.subject());
+        if (!ProtobufSchema.TYPE.equals(metadata.getSchemaType())) {
+            throw new IllegalStateException(String.format("Expected schema type %s but was %s", ProtobufSchema.TYPE,
+                    metadata.getSchemaType()));
         }
-
-        private final Type<?> desiredReturnType;
-
-        public SchemaChangeAdaptFunction(Type<?> desiredReturnType) {
-            this.desiredReturnType = Objects.requireNonNull(desiredReturnType);
-        }
-
-        @Override
-        public TypedFunction<T> visit(ToPrimitiveFunction<T> f) {
-            if (desiredReturnType.equals(f.returnType().boxedType())) {
-                return BoxTransform.of(f);
-            }
-            return null;
-        }
-
-        @Override
-        public TypedFunction<T> visit(ToObjectFunction<T, ?> f) {
-            return f.returnType().walk(new GenericType.Visitor<>() {
-                @Override
-                public TypedFunction<T> visit(BoxedType<?> boxedType) {
-                    if (desiredReturnType.equals(boxedType.primitiveType())) {
-                        return UnboxTransform.of(f).orElse(null);
-                    }
-                    return null;
-                }
-
-                @Override
-                public TypedFunction<T> visit(StringType stringType) {
-                    return null;
-                }
-
-                @Override
-                public TypedFunction<T> visit(InstantType instantType) {
-                    return null;
-                }
-
-                @Override
-                public TypedFunction<T> visit(ArrayType<?, ?> arrayType) {
-                    return null;
-                }
-
-                @Override
-                public TypedFunction<T> visit(CustomType<?> customType) {
-                    return null;
-                }
-            });
-        }
+        final ProtobufSchema protobufSchema = (ProtobufSchema) registry
+                .getSchemaBySubjectAndId(dsr.subject(), metadata.getId());
+        // The potential need to set io.deephaven.kafka.protobuf.DescriptorSchemaRegistry#messageName
+        // seems unfortunate; I'm surprised the information is not part of the kafka serdes protocol.
+        // Maybe it's so that a single schema can be used, and different topics with different root messages can
+        // all share that common schema?
+        return dsr.messageName().isPresent()
+                ? protobufSchema.toDescriptor(dsr.messageName().get())
+                : protobufSchema.toDescriptor();
     }
 
-    private static Optional<ProtobufFunction> find(ProtobufFunctions f, FieldNumberPath numberPath) {
-        for (ProtobufFunction function : f.functions()) {
-            if (numberPath.equals(function.path().numberPath())) {
-                return Optional.of(function);
-            }
-        }
-        return Optional.empty();
+    private static <T extends Message> Parser<T> parser(Class<T> clazz)
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        final Method parser = clazz.getMethod("parser");
+        // noinspection unchecked
+        return (Parser<T>) parser.invoke(null);
     }
 }

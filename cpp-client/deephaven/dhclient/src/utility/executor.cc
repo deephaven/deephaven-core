@@ -9,6 +9,7 @@
 
 #include <grpc/support/log.h>
 
+using deephaven::dhcore::utility::GetWhat;
 using deephaven::dhcore::utility::Streamf;
 using deephaven::dhcore::utility::Stringf;
 
@@ -16,7 +17,7 @@ namespace deephaven::client::utility {
 std::shared_ptr<Executor> Executor::Create(std::string id) {
   auto result = std::make_shared<Executor>(Private(), std::move(id));
   result->executorThread_ = std::thread(&ThreadStart, result);
-  gpr_log(GPR_DEBUG, "%s: Created.", id.c_str());
+  gpr_log(GPR_DEBUG, "%s: Created.", result->id_.c_str());
   return result;
 }
 
@@ -40,18 +41,17 @@ void Executor::Shutdown() {
   executorThread_.join();
 }
 
-void Executor::Invoke(std::shared_ptr<callback_t> f) {
+void Executor::Invoke(std::function<void()> f) {
   std::unique_lock guard(mutex_);
-  auto needsNotify = todo_.empty();
+  auto needs_notify = todo_.empty();
   if (cancelled_) {
     auto message = Stringf("Executor '%o' is cancelled: ignoring Invoke()\n", id_);
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-  } else {
-    todo_.push_back(std::move(f));
   }
+  todo_.push_back(std::move(f));
   guard.unlock();
 
-  if (needsNotify) {
+  if (needs_notify) {
     condvar_.notify_all();
   }
 }
@@ -74,19 +74,17 @@ void Executor::RunUntilCancelled() {
       }
       condvar_.wait(lock);
     }
-    std::vector<std::shared_ptr<callback_t>> localCallbacks(
-        std::make_move_iterator(todo_.begin()), std::make_move_iterator(todo_.end()));
+    std::vector<std::function<void()>> local_callbacks(std::move(todo_));
     todo_.clear();
     lock.unlock();
 
-    // invoke callback while not under lock
-    for (const auto &cb: localCallbacks) {
+    // invoke callbacks while not under lock
+    for (const auto &cb: local_callbacks) {
       try {
-        cb->Invoke();
-      } catch (const std::exception &e) {
-        gpr_log(GPR_ERROR, "%s: Executor ignored exception: %s.", id_.c_str(), e.what());
+        cb();
       } catch (...) {
-        gpr_log(GPR_ERROR, "%s: Executor ignored nonstandard exception.", id_.c_str());
+        auto what = GetWhat(std::current_exception());
+        gpr_log(GPR_ERROR, "%s: Executor ignored exception: %s.", id_.c_str(), what.c_str());
       }
     }
 

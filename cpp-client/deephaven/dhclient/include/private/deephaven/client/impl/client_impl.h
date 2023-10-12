@@ -9,7 +9,6 @@
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/utility/executor.h"
-#include "deephaven/dhcore/utility/callbacks.h"
 
 namespace deephaven::client::impl {
 class ClientImpl {
@@ -18,13 +17,11 @@ class ClientImpl {
   using Server = deephaven::client::server::Server;
   using Executor = deephaven::client::utility::Executor;
 
-  template<typename... Args>
-  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
-
 public:
   [[nodiscard]]
   static std::shared_ptr<ClientImpl> Create(std::shared_ptr<Server> server,
-      std::shared_ptr<Executor> executor, std::shared_ptr<Executor> flight_executor, const std::string &session_type);
+      std::shared_ptr<Executor> executor, std::shared_ptr<Executor> flight_executor,
+      std::string session_type);
 
   ClientImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&manager_impl);
   ~ClientImpl();

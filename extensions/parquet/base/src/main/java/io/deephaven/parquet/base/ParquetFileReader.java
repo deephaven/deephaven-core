@@ -46,7 +46,7 @@ public class ParquetFileReader {
             final long fileLen = readChannel.size();
             if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
                 // footerIndex + MAGIC
-                throw new ParquetFileReaderException(
+                throw new InvalidParquetFileException(
                         filePath + " is not a Parquet file (too small length: " + fileLen + ")");
             }
 
@@ -57,13 +57,13 @@ public class ParquetFileReader {
             final byte[] magic = new byte[MAGIC.length];
             Helpers.readBytes(readChannel, magic);
             if (!Arrays.equals(MAGIC, magic)) {
-                throw new ParquetFileReaderException(
+                throw new InvalidParquetFileException(
                         filePath + " is not a Parquet file. expected magic number at tail "
                                 + Arrays.toString(MAGIC) + " but found " + Arrays.toString(magic));
             }
             final long footerIndex = footerLengthIndex - footerLength;
             if (footerIndex < MAGIC.length || footerIndex >= footerLengthIndex) {
-                throw new ParquetFileReaderException(
+                throw new InvalidParquetFileException(
                         "corrupted file: the footer index is not within the file: " + footerIndex);
             }
             readChannel.position(footerIndex);

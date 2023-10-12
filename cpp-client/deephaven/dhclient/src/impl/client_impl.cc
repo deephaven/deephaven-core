@@ -8,9 +8,9 @@
 #include <optional>
 #include <stdexcept>
 #include "deephaven/client/impl/table_handle_manager_impl.h"
-#include "deephaven/dhcore/utility/callbacks.h"
 
 using io::deephaven::proto::backplane::grpc::Ticket;
+using io::deephaven::proto::backplane::script::grpc::StartConsoleRequest;
 using io::deephaven::proto::backplane::script::grpc::StartConsoleResponse;
 
 using deephaven::client::impl::TableHandleManagerImpl;
@@ -23,13 +23,17 @@ std::shared_ptr<ClientImpl> ClientImpl::Create(
     std::shared_ptr<Server> server,
     std::shared_ptr<Executor> executor,
     std::shared_ptr<Executor> flight_executor,
-    const std::string &session_type) {
+    std::string session_type) {
   std::optional<Ticket> console_ticket;
   if (!session_type.empty()) {
-    auto cb = SFCallback<StartConsoleResponse>::CreateForFuture();
-    server->StartConsoleAsync(session_type, std::move(cb.first));
-    StartConsoleResponse scr = std::move(std::get<0>(cb.second.get()));
-    console_ticket = std::move(*scr.mutable_result_id());
+    StartConsoleRequest req;
+    *req.mutable_result_id() = server->NewTicket();
+    *req.mutable_session_type() = std::move(session_type);
+    StartConsoleResponse resp;
+    server->SendRpc([&](grpc::ClientContext *ctx) {
+      return server->ConsoleStub()->StartConsole(ctx, req, &resp);
+    });
+    console_ticket = std::move(*resp.mutable_result_id());
   }
 
   auto thmi = TableHandleManagerImpl::Create(

@@ -976,22 +976,13 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     public static class FilteredTable extends QueryTable implements WhereFilter.RecomputeListener {
         private final QueryTable source;
-        @ReferentialIntegrity
-        private final WhereFilter[] filters;
         private boolean refilterMatchedRequested = false;
         private boolean refilterUnmatchedRequested = false;
         private MergedListener whereListener;
 
-        public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source,
-                final WhereFilter[] filters) {
+        public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source) {
             super(source.getDefinition(), currentMapping, source.columns, null, null);
             this.source = source;
-            this.filters = filters;
-            for (final WhereFilter f : filters) {
-                if (f instanceof LivenessReferent && f.isRefreshing()) {
-                    manage((LivenessReferent) f);
-                }
-            }
         }
 
         @Override
@@ -1288,8 +1279,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     }
                                     currentMapping.initializePreviousValue();
 
-                                    final FilteredTable filteredTable =
-                                            new FilteredTable(currentMapping, this, filters);
+                                    final FilteredTable filteredTable = new FilteredTable(currentMapping, this);
 
                                     for (final WhereFilter filter : filters) {
                                         filter.setRecomputeListener(filteredTable);
@@ -1307,29 +1297,19 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         }
                                     }
 
-                                    final List<NotificationQueue.Dependency> dependencies = Stream.concat(
-                                            Stream.of(filters)
-                                                    .filter(f -> f instanceof NotificationQueue.Dependency)
-                                                    .map(f -> (NotificationQueue.Dependency) f),
-                                            Stream.of(filters)
-                                                    .filter(f -> f instanceof DependencyStreamProvider)
-                                                    .flatMap(f -> ((DependencyStreamProvider) f)
-                                                            .getDependencyStream()))
-                                            .collect(Collectors.toList());
                                     if (swapListener != null) {
                                         final ListenerRecorder recorder = new ListenerRecorder(
                                                 "where(" + Arrays.toString(filters) + ")", QueryTable.this,
                                                 filteredTable);
                                         final WhereListener whereListener = new WhereListener(
-                                                log, this, recorder, dependencies, filteredTable, filters);
+                                                log, this, recorder, filteredTable, filters);
                                         filteredTable.setWhereListener(whereListener);
                                         recorder.setMergedListener(whereListener);
                                         swapListener.setListenerAndResult(recorder, filteredTable);
-                                        filteredTable.addParentReference(swapListener);
                                         filteredTable.addParentReference(whereListener);
                                     } else if (refreshingFilters) {
                                         final WhereListener whereListener = new WhereListener(
-                                                log, this, null, dependencies, filteredTable, filters);
+                                                log, this, null, filteredTable, filters);
                                         filteredTable.setWhereListener(whereListener);
                                         filteredTable.addParentReference(whereListener);
                                     }
@@ -1387,18 +1367,17 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table flatten() {
+        if (!flat && !isRefreshing() && rowSet.isFlat()) {
+            // We're already flat, and we'll never update; so we can just return a flat copy
+            final QueryTable copyWithFlat = copy();
+            copyWithFlat.setFlat();
+            return copyWithFlat;
+        }
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            if (!isFlat() && !isRefreshing() && rowSet.size() - 1 == rowSet.lastRowKey()) {
-                // We're already flat, and we'll never update; so we can just return ourselves, after setting ourselves
-                // flat
-                setFlat();
-            }
-
             if (isFlat()) {
                 return prepareReturnThis();
             }
-
             return getResult(new FlattenOperation(this));
         }
     }
@@ -1410,9 +1389,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public boolean isFlat() {
         if (flat) {
-            Assert.assertion(rowSet.lastRowKey() == rowSet.size() - 1, "rowSet.lastRowKey() == rowSet.size() - 1",
-                    rowSet,
-                    "rowSet");
+            Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()", rowSet, "rowSet");
         }
         return flat;
     }

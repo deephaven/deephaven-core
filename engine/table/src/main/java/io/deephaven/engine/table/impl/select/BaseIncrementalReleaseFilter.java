@@ -8,6 +8,8 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
@@ -21,7 +23,10 @@ import java.util.List;
  * The use case is for benchmarks that want to replay a table in order to better understand incremental processing
  * capacity.
  */
-public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessArtifactImpl implements Runnable {
+public abstract class BaseIncrementalReleaseFilter
+        extends WhereFilterLivenessArtifactImpl
+        implements Runnable, NotificationQueue.Dependency {
+
     private final long initialSize;
     private long releasedSize;
     private long expectedSize;
@@ -185,6 +190,16 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
         if (initialized) {
             addToUpdateGraph();
         }
+    }
+
+    @Override
+    public boolean satisfied(long step) {
+        return updateGraph.satisfied(step);
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateGraph;
     }
 
     public long getInitialSize() {
