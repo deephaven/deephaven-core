@@ -104,7 +104,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    use the following commands:
    ```bash
     export NCPUS=`getconf _NPROCESSORS_ONLN`
-    export MAKEFLAGS="-j$NCPUS"
+    export MAKE="make -j$NCPUS"
    ```
 
 4. Start an R console inside the rdeephaven directory. In that console, install the dephaven client dependencies
