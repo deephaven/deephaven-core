@@ -424,30 +424,41 @@ public class ParquetTableReadWriteTest {
         }
     }
 
+    private static void writeReadTableTest(final Table table, final File dest) {
+        writeReadTableTest(table, dest, ParquetInstructions.EMPTY);
+    }
+
+    private static void writeReadTableTest(final Table table, final File dest, ParquetInstructions writeInstructions) {
+        ParquetTools.writeTable(table, dest, writeInstructions);
+        final Table fromDisk = ParquetTools.readTable(dest);
+        TstUtils.assertTableEquals(table, fromDisk);
+    }
+
     @Test
     public void testVectorColumns() {
-        final Table table = getTableFlat(10000, true, false);
+        final Table table = getTableFlat(20000, true, false);
         // Take a groupBy to create vector columns containing null values
         Table vectorTable = table.groupBy().select();
 
         final File dest = new File(rootFile + File.separator + "testVectorColumns.parquet");
-        ParquetTools.writeTable(vectorTable, dest);
-        Table fromDisk = ParquetTools.readTable(dest);
-        assertTableEquals(vectorTable, fromDisk);
+        writeReadTableTest(vectorTable, dest);
 
         // Take a join with empty table to repeat the same row multiple times
         vectorTable = vectorTable.join(TableTools.emptyTable(100)).select();
-        ParquetTools.writeTable(vectorTable, dest);
-        fromDisk = ParquetTools.readTable(dest);
-        assertTableEquals(vectorTable, fromDisk);
+        writeReadTableTest(vectorTable, dest);
 
         // Convert the table from vector to array column
         final Table arrayTable = vectorTable.updateView(vectorTable.getColumnSourceMap().keySet().stream()
                 .map(name -> name + " = " + name + ".toArray()")
                 .toArray(String[]::new));
-        ParquetTools.writeTable(arrayTable, dest);
-        fromDisk = ParquetTools.readTable(dest);
-        assertTableEquals(arrayTable, fromDisk);
+        writeReadTableTest(arrayTable, dest);
+
+        // Enforce a smaller page size to overflow the page
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setTargetPageSize(ParquetInstructions.MIN_TARGET_PAGE_SIZE)
+                .build();
+        writeReadTableTest(arrayTable, dest, writeInstructions);
+        writeReadTableTest(vectorTable, dest, writeInstructions);
     }
 
     private static Table arrayToVectorTable(final Table table) {
@@ -497,17 +508,35 @@ public class ParquetTableReadWriteTest {
                         "nullTimeArrayColumn = new Instant[] {(Instant)null}",
                         "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"));
 
-        final Table arrayTable = TableTools.emptyTable(10000).select(Selectable.from(columns));
+        Table arrayTable = TableTools.emptyTable(10000).select(Selectable.from(columns));
         final File dest = new File(rootFile + File.separator + "testArrayColumns.parquet");
-        ParquetTools.writeTable(arrayTable, dest);
-        Table fromDisk = ParquetTools.readTable(dest);
-        assertTableEquals(arrayTable, fromDisk);
+        writeReadTableTest(arrayTable, dest);
 
         // Convert array table to vector
-        final Table vectorTable = arrayToVectorTable(arrayTable);
-        ParquetTools.writeTable(vectorTable, dest);
-        fromDisk = ParquetTools.readTable(dest);
-        assertTableEquals(vectorTable, fromDisk);
+        Table vectorTable = arrayToVectorTable(arrayTable);
+        writeReadTableTest(vectorTable, dest);
+
+        // Enforce a smaller dictionary size to overflow the dictionary and test plain encoding
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setMaximumDictionarySize(20)
+                .build();
+        arrayTable = arrayTable.select("someStringArrayColumn", "nullStringArrayColumn");
+        writeReadTableTest(arrayTable, dest, writeInstructions);
+
+        // Make sure the column didn't use dictionary encoding
+        ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+        String firstColumnMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
+        assertTrue(firstColumnMetadata.contains("someStringArrayColumn")
+                && !firstColumnMetadata.contains("RLE_DICTIONARY"));
+
+        vectorTable = vectorTable.select("someStringArrayColumn", "nullStringArrayColumn");
+        writeReadTableTest(vectorTable, dest, writeInstructions);
+
+        // Make sure the column didn't use dictionary encoding
+        metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+        firstColumnMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
+        assertTrue(firstColumnMetadata.contains("someStringArrayColumn")
+                && !firstColumnMetadata.contains("RLE_DICTIONARY"));
     }
 
     @Test
