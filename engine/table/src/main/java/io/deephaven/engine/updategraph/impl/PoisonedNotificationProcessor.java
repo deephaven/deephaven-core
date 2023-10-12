@@ -4,6 +4,10 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * The poisoned notification processor is used when an update graph has not yet been started, throwing an
+ * IllegalStateException on all operations.
+ */
 final class PoisonedNotificationProcessor implements AbstractUpdateGraph.NotificationProcessor {
 
     static final AbstractUpdateGraph.NotificationProcessor INSTANCE = new PoisonedNotificationProcessor();
