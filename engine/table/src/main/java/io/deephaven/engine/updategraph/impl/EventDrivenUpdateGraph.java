@@ -4,7 +4,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.io.sched.Scheduler;
 import io.deephaven.net.CommBase;
 import org.jetbrains.annotations.NotNull;
 
