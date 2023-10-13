@@ -41,6 +41,18 @@ df <- data.frame(
   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 )
 th <- client$import_table(df)
+
+# get 20th percentile of Number1 and Number2
+th_pct <- th$
+  agg_by(agg_percentile(percentile=0.2, cols=c("Number1", "Number2")))
+
+# get 50th percentile of Number1 and Number2 grouped by X
+th_pct_by_x <- th$
+  agg_by(agg_percentile(percentile=0.5, cols=c("Number1", "Number2")), by="X")
+
+# get 75th percentile of Number1 and Number2 grouped by X and Y
+th_pct_by_x_and_y <- th$
+  agg_by(agg_percentile(percentile=0.75, cols=c("Number1", "Number2")), by=c("X", "Y"))
 }
 
 }

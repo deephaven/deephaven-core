@@ -41,6 +41,18 @@ df <- data.frame(
   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 )
 th <- client$import_table(df)
+
+# get weighted average of Number1, weighted by Number2
+th_wavg <- th$
+  agg_by(agg_w_avg(wcol="Number2", cols="Number1"))
+
+# get weighted average of Number1, weighted by Number2, grouped by X
+th_wavg_by_x <- th$
+  agg_by(agg_w_avg(wcol="Number2", cols="Number1", by="X"))
+
+# get weighted average of Number1, weighted by Number2, grouped by X and Y
+th_wavg_by_x_and_y <- th$
+  agg_by(agg_w_avg(wcol="Number2", cols="Number1", by=c("X", "Y")))
 }
 
 }

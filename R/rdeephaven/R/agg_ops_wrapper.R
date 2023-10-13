@@ -243,6 +243,18 @@ agg_first <- function(cols = character()) {
 #'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 #' )
 #' th <- client$import_table(df)
+#'
+#' # get last elements of all columns
+#' th_last <- th$
+#'   agg_by(agg_last(c("X", "Y", "Number1", "Number2")))
+#'
+#' # get last elements of Y, Number1, and Number2 grouped by X
+#' th_last_by_x <- th$
+#'   agg_by(agg_last(c("Y", "Number1", "Number2")), by="X")
+#'
+#' # get last elements of Number1 and Number2 grouped by X and Y
+#' th_last_by_x_and_y <- th$
+#'   agg_by(agg_last(c("Number1", "Number2")), by=c("X", "Y"))
 #' }
 #'
 #' @export
@@ -290,6 +302,18 @@ agg_last <- function(cols = character()) {
 #'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 #' )
 #' th <- client$import_table(df)
+#'
+#' # get minimum elements of Number1 and Number2
+#' th_min <- th$
+#'   agg_by(agg_min(c("Number1", "Number2")))
+#'
+#' # get minimum elements of Number1 and Number2 grouped by X
+#' th_min_by_x <- th$
+#'   agg_by(agg_min(c("Number1", "Number2")), by="X")
+#'
+#' # get minimum elements of Number1 and Number2 grouped by X and Y
+#' th_min_by_x_and_y <- th$
+#'   agg_by(agg_min(c("Number1", "Number2")), by=c("X", "Y"))
 #' }
 #'
 #' @export
@@ -337,6 +361,18 @@ agg_min <- function(cols = character()) {
 #'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 #' )
 #' th <- client$import_table(df)
+#'
+#' # get maximum elements of Number1 and Number2
+#' th_max <- th$
+#'   agg_by(agg_max(c("Number1", "Number2")))
+#'
+#' # get maximum elements of Number1 and Number2 grouped by X
+#' th_max_by_x <- th$
+#'   agg_by(agg_max(c("Number1", "Number2")), by="X")
+#'
+#' # get maximum elements of Number1 and Number2 grouped by X and Y
+#' th_max_by_x_and_y <- th$
+#'   agg_by(agg_max(c("Number1", "Number2")), by=c("X", "Y"))
 #' }
 #'
 #' @export
@@ -384,6 +420,18 @@ agg_max <- function(cols = character()) {
 #'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 #' )
 #' th <- client$import_table(df)
+#'
+#' # get sum of Number1 and Number2
+#' th_sum <- th$
+#'   agg_by(agg_sum(c("Number1", "Number2")))
+#'
+#' # get sum of Number1 and Number2 grouped by X
+#' th_sum_by_x <- th$
+#'   agg_by(agg_sum(c("Number1", "Number2")), by="X")
+#'
+#' # get sum of Number1 and Number2 grouped by X and Y
+#' th_sum_by_x_and_y <- th$
+#'   agg_by(agg_sum(c("Number1", "Number2")), by=c("X", "Y"))
 #' }
 #'
 #' @export
@@ -431,6 +479,18 @@ agg_sum <- function(cols = character()) {
 #'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 #' )
 #' th <- client$import_table(df)
+#'
+#' # get absolute sum of Number1 and Number2
+#' th_abs_sum <- th$
+#'   agg_by(agg_abs_sum(c("Number1", "Number2")))
+#'
+#' # get absolute sum of Number1 and Number2 grouped by X
+#' th_abs_sum_by_x <- th$
+#'   agg_by(agg_abs_sum(c("Number1", "Number2")), by="X")
+#'
+#' # get absolute sum of Number1 and Number2 grouped by X and Y
+#' th_abs_sum_by_x_and_y <- th$
+#'   agg_by(agg_abs_sum(c("Number1", "Number2")), by=c("X", "Y"))
 #' }
 #'
 #' @export
@@ -478,6 +538,18 @@ agg_abs_sum <- function(cols = character()) {
 #'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 #' )
 #' th <- client$import_table(df)
+#'
+#' # get average of Number1 and Number2
+#' th_avg <- th$
+#'   agg_by(agg_avg(c("Number1", "Number2")))
+#'
+#' # get average of Number1 and Number2 grouped by X
+#' th_avg_by_x <- th$
+#'   agg_by(agg_avg(c("Number1", "Number2")), by="X")
+#'
+#' # get average of Number1 and Number2 grouped by X and Y
+#' th_avg_by_x_and_y <- th$
+#'   agg_by(agg_avg(c("Number1", "Number2")), by=c("X", "Y"))
 #' }
 #'
 #' @export
@@ -526,6 +598,18 @@ agg_avg <- function(cols = character()) {
 #'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 #' )
 #' th <- client$import_table(df)
+#'
+#' # get weighted average of Number1, weighted by Number2
+#' th_wavg <- th$
+#'   agg_by(agg_w_avg(wcol="Number2", cols="Number1"))
+#'
+#' # get weighted average of Number1, weighted by Number2, grouped by X
+#' th_wavg_by_x <- th$
+#'   agg_by(agg_w_avg(wcol="Number2", cols="Number1", by="X"))
+#'
+#' # get weighted average of Number1, weighted by Number2, grouped by X and Y
+#' th_wavg_by_x_and_y <- th$
+#'   agg_by(agg_w_avg(wcol="Number2", cols="Number1", by=c("X", "Y")))
 #' }
 #'
 #' @export
@@ -574,6 +658,18 @@ agg_w_avg <- function(wcol, cols = character()) {
 #'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 #' )
 #' th <- client$import_table(df)
+#'
+#' # get median of Number1 and Number2
+#' th_med <- th$
+#'   agg_by(agg_median(c("Number1", "Number2")))
+#'
+#' # get median of Number1 and Number2 grouped by X
+#' th_med_by_x <- th$
+#'   agg_by(agg_median(c("Number1", "Number2")), by="X")
+#'
+#' # get median of Number1 and Number2 grouped by X and Y
+#' th_med_by_x_and_y <- th$
+#'   agg_by(agg_median(c("Number1", "Number2")), by=c("X", "Y"))
 #' }
 #'
 #' @export
@@ -621,6 +717,18 @@ agg_median <- function(cols = character()) {
 #'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 #' )
 #' th <- client$import_table(df)
+#'
+#' # get variance of Number1 and Number2
+#' th_var <- th$
+#'   agg_by(agg_var(c("Number1", "Number2")))
+#'
+#' # get variance of Number1 and Number2 grouped by X
+#' th_var_by_x <- th$
+#'   agg_by(agg_var(c("Number1", "Number2")), by="X")
+#'
+#' # get variance of Number1 and Number2 grouped by X and Y
+#' th_var_by_x_and_y <- th$
+#'   agg_by(agg_var(c("Number1", "Number2")), by=c("X", "Y"))
 #' }
 #'
 #' @export
@@ -668,6 +776,18 @@ agg_var <- function(cols = character()) {
 #'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 #' )
 #' th <- client$import_table(df)
+#'
+#' # get standard deviation of Number1 and Number2
+#' th_std <- th$
+#'   agg_by(agg_std(c("Number1", "Number2")))
+#'
+#' # get standard deviation of Number1 and Number2 grouped by X
+#' th_std_by_x <- th$
+#'   agg_by(agg_std(c("Number1", "Number2")), by="X")
+#'
+#' # get standard deviation of Number1 and Number2 grouped by X and Y
+#' th_std_by_x_and_y <- th$
+#'   agg_by(agg_std(c("Number1", "Number2")), by=c("X", "Y"))
 #' }
 #'
 #' @export
@@ -716,6 +836,18 @@ agg_std <- function(cols = character()) {
 #'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 #' )
 #' th <- client$import_table(df)
+#'
+#' # get 20th percentile of Number1 and Number2
+#' th_pct <- th$
+#'   agg_by(agg_percentile(percentile=0.2, cols=c("Number1", "Number2")))
+#'
+#' # get 50th percentile of Number1 and Number2 grouped by X
+#' th_pct_by_x <- th$
+#'   agg_by(agg_percentile(percentile=0.5, cols=c("Number1", "Number2")), by="X")
+#'
+#' # get 75th percentile of Number1 and Number2 grouped by X and Y
+#' th_pct_by_x_and_y <- th$
+#'   agg_by(agg_percentile(percentile=0.75, cols=c("Number1", "Number2")), by=c("X", "Y"))
 #' }
 #'
 #' @export
@@ -765,6 +897,14 @@ agg_percentile <- function(percentile, cols = character()) {
 #'   Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214)
 #' )
 #' th <- client$import_table(df)
+#'
+#' # count number of elements in each group when grouped by X, name resulting column "count"
+#' th_count_by_x <- th$
+#'   agg_by(agg_count("count"), by="X")
+#'
+#' # count number of elements in each group when grouped by X and Y, name resulting column "CountingCol"
+#' th_count_by_x_and_y <- th$
+#'   agg_by(agg_count("CountingCol"), by=c("X", "Y"))
 #' }
 #'
 #' @export
