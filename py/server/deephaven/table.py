@@ -11,12 +11,10 @@ import contextlib
 import inspect
 from enum import Enum
 from enum import auto
-from functools import wraps
 from typing import Any, Optional, Callable, Dict
 from typing import Sequence, List, Union, Protocol
 
 import jpy
-import numba
 import numpy as np
 
 from deephaven import DHError
@@ -31,8 +29,6 @@ from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict
 from deephaven.jcompat import to_sequence, j_array_list
 from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
-from deephaven.dtypes import _BUILDABLE_ARRAY_DTYPE_MAP, _scalar, _np_dtype_char, \
-    _component_np_dtype_char
 
 # Table
 _J_Table = jpy.get_type("io.deephaven.engine.table.Table")
@@ -363,91 +359,38 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return None
 
 
-_SUPPORTED_NP_TYPE_CODES = ["i", "l", "h", "f", "d", "b", "?", "U", "M", "O"]
+_numpy_type_codes = ["i", "l", "h", "f", "d", "b", "?", "U", "O"]
 
 
 def _encode_signature(fn: Callable) -> str:
     """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
-    type to numpy dtype chars (i,l,h,f,d,b,?,U,M,O), and pack them into a string with parameter type chars first,
+    type to numpy dtype chars (i,l,h,f,d,b,?,U,O), and pack them into a string with parameter type chars first,
     in their original order, followed by the delimiter string '->', then the return type_char.
 
     If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
     """
     sig = inspect.signature(fn)
 
-    np_type_codes = []
+    parameter_types = []
     for n, p in sig.parameters.items():
-        np_type_codes.append(_np_dtype_char(p.annotation))
+        try:
+            np_dtype = np.dtype(p.annotation if p.annotation else "object")
+            parameter_types.append(np_dtype)
+        except TypeError:
+            parameter_types.append(np.dtype("object"))
 
-    return_type_code = _np_dtype_char(sig.return_annotation)
-    np_type_codes = [c if c in _SUPPORTED_NP_TYPE_CODES else "O" for c in np_type_codes]
-    return_type_code = return_type_code if return_type_code in _SUPPORTED_NP_TYPE_CODES else "O"
+    try:
+        return_type = np.dtype(sig.return_annotation if sig.return_annotation else "object")
+    except TypeError:
+        return_type = np.dtype("object")
+
+    np_type_codes = [np.dtype(p).char for p in parameter_types]
+    np_type_codes = [c if c in _numpy_type_codes else "O" for c in np_type_codes]
+    return_type_code = np.dtype(return_type).char
+    return_type_code = return_type_code if return_type_code in _numpy_type_codes else "O"
 
     np_type_codes.extend(["-", ">", return_type_code])
     return "".join(np_type_codes)
-
-
-def _py_udf(fn: Callable):
-    """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
-    Python and Java. This decorator is intended for use by the Deephaven query engine and should not be used by
-    users.
-
-    For now, this decorator is only capable of converting Python function return values to Java values. It
-    does not yet convert Java values in arguments to usable Python object (e.g. numpy arrays) or properly translate
-    Deephaven primitive null values.
-
-    For properly annotated functions, including numba vectorized and guvectorized ones, this decorator inspects the
-    signature of the function and determines its return type, including supported primitive types and arrays of
-    the supported primitive types. It then converts the return value of the function to the corresponding Java value
-    of the same type. For unsupported types, the decorator returns the original Python value which appears as
-    org.jpy.PyObject in Java.
-    """
-
-    if hasattr(fn, "return_type"):
-        return fn
-
-    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
-        dh_dtype = dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
-    else:
-        dh_dtype = dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
-
-    return_array = False
-
-    # If the function is a numba guvectorized function, examine the signature of the function to determine if it
-    # returns an array.
-    if isinstance(fn, numba.np.ufunc.gufunc.GUFunc):
-        sig = fn.signature
-        rtype = sig.split("->")[-1].strip("()")
-        if rtype:
-            return_array = True
-    else:
-        component_type = _component_np_dtype_char(inspect.signature(fn).return_annotation)
-        if component_type:
-            dh_dtype = dtypes.from_np_dtype(np.dtype(component_type))
-            if dh_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
-                return_array = True
-
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        ret = fn(*args, **kwargs)
-        if return_array:
-            return dtypes.array(dh_dtype, ret)
-        elif dh_dtype == dtypes.PyObject:
-            return ret
-        else:
-            return _scalar(ret)
-
-    wrapper.j_name = dh_dtype.j_name
-    ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(dh_dtype) if return_array else dh_dtype
-
-    if hasattr(dh_dtype.j_type, 'jclass'):
-        j_class = ret_dtype.j_type.jclass
-    else:
-        j_class = ret_dtype.qst_type.clazz()
-
-    wrapper.return_type = j_class
-
-    return wrapper
 
 
 def dh_vectorize(fn):
@@ -467,7 +410,6 @@ def dh_vectorize(fn):
     """
     signature = _encode_signature(fn)
 
-    @wraps(fn)
     def wrapper(*args):
         if len(args) != len(signature) - len("->?") + 2:
             raise ValueError(
@@ -481,7 +423,7 @@ def dh_vectorize(fn):
             vectorized_args = zip(*args[2:])
             for i in range(chunk_size):
                 scalar_args = next(vectorized_args)
-                chunk_result[i] = _scalar(fn(*scalar_args))
+                chunk_result[i] = fn(*scalar_args)
         else:
             for i in range(chunk_size):
                 chunk_result[i] = fn()

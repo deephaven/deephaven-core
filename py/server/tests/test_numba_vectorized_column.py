@@ -16,7 +16,7 @@ def vectorized_func(x, y):
     return x % 3 + y
 
 
-class NumbaVectorizedColumnTestCase(BaseTestCase):
+class TestNumbaVectorizedColumnClass(BaseTestCase):
 
     def test_part_of_expr(self):
         with self.assertRaises(Exception):
