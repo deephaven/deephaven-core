@@ -201,6 +201,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
                 .build());
 
+        observer.onCompleted();
+
         while (!completed && exceptionWhileCompleting == null) {
             // handle the condition where this function may have the exclusive lock
             if (completedCondition != null) {
@@ -209,8 +211,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 wait(); // barragesnapshotimpl lock
             }
         }
-
-        observer.onCompleted();
 
         if (exceptionWhileCompleting == null) {
             return resultTable;
