@@ -185,28 +185,36 @@ public class FunctionGeneratedTableFactory {
         }
 
         private void doRefresh() {
-            long size = rowSet.size();
+            try {
+                long size = rowSet.size();
 
-            long newSize = updateTable();
+                long newSize = updateTable();
 
-            if (newSize < size) {
-                final RowSet removed = RowSetFactory.fromRange(newSize, size - 1);
-                rowSet.remove(removed);
-                final RowSet modified = rowSet.copy();
-                notifyListeners(RowSetFactory.empty(), removed, modified);
-                return;
-            }
-            if (newSize > size) {
-                final RowSet added = RowSetFactory.fromRange(size, newSize - 1);
-                final RowSet modified = rowSet.copy();
-                rowSet.insert(added);
-                notifyListeners(added, RowSetFactory.empty(), modified);
-                return;
-            }
-            if (size > 0) {
-                // no size change, just modified
-                final RowSet modified = rowSet.copy();
-                notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(), modified);
+                if (newSize < size) {
+                    final RowSet removed = RowSetFactory.fromRange(newSize, size - 1);
+                    rowSet.remove(removed);
+                    final RowSet modified = rowSet.copy();
+                    notifyListeners(RowSetFactory.empty(), removed, modified);
+                    return;
+                }
+                if (newSize > size) {
+                    final RowSet added = RowSetFactory.fromRange(size, newSize - 1);
+                    final RowSet modified = rowSet.copy();
+                    rowSet.insert(added);
+                    notifyListeners(added, RowSetFactory.empty(), modified);
+                    return;
+                }
+                if (size > 0) {
+                    // no size change, just modified
+                    final RowSet modified = rowSet.copy();
+                    notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(), modified);
+                }
+            } catch (Exception e) {
+                // Remove this failed table from the update graph.
+                updateGraph.removeSource(this);
+
+                // Notify listeners that we had an issue refreshing the table.
+                notifyListenersOnError(e, null);
             }
         }
 
