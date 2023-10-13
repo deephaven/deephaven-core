@@ -69,6 +69,6 @@ public class PyCallableWrapperDummyImpl implements PyCallableWrapper {
 
     @Override
     public Class<?> getReturnType() {
-        return Object.class;
+        throw new UnsupportedOperationException();
     }
 }
