@@ -299,15 +299,15 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             return;
         }
 
-        boolean isComplete = exceptionWhileCompleting != null;
-
-        // test to see if the viewport matches the requested
-        if (viewport == null && resultTable.getServerViewport() == null) {
-            isComplete = true;
-        } else if (viewport != null && resultTable.getServerViewport() != null
-                && reverseViewport == resultTable.getServerReverseViewport()) {
-            isComplete |= viewport.subsetOf(resultTable.getServerViewport());
-        }
+        // @formatter:off
+        final boolean isComplete = exceptionWhileCompleting != null
+                // Full subscription is completed
+                || (viewport == null && resultTable.getServerViewport() == null)
+                // Viewport subscription is completed
+                || (viewport != null && resultTable.getServerViewport() != null
+                    && reverseViewport == resultTable.getServerReverseViewport()
+                    && viewport.subsetOf(resultTable.getServerViewport()));
+        // @formatter:on
 
         if (isComplete) {
             if (isSnapshot) {
