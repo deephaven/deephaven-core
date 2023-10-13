@@ -138,8 +138,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     return;
                 }
 
-                // must catch the case of no event propagation when a refresh is finalized by an empty update
-                // (e.g. a ticking table could have reduced in size; it does not need to be initially an empty table)
+                // Must catch the case of no event propagation when an initial snapshot is finalized by an empty update
+                // (e.g. a refreshing table could have reduced in size; it does not need to be initially an empty table).
+                // This applies to "growing viewport" subscriptions when client side viewport finally matches the server-side viewport.
                 if (listener == null || !barrageMessage.isSnapshot || barrageMessage.rowsIncluded.isNonempty()) {
                     return;
                 }
