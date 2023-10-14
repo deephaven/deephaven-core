@@ -17,7 +17,7 @@ public class GrpcUtil {
     private static final Logger log = LoggerFactory.getLogger(GrpcUtil.class);
 
     public static StatusRuntimeException securelyWrapError(final Logger log, final Throwable err) {
-        return securelyWrapError(log, err, Code.ABORTED);
+        return securelyWrapError(log, err, Code.INVALID_ARGUMENT);
     }
 
     public static StatusRuntimeException securelyWrapError(final Logger log, final Throwable err,

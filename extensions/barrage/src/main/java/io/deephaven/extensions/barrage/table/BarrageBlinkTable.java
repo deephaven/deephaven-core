@@ -48,8 +48,8 @@ public class BarrageBlinkTable extends BarrageTable {
             final LinkedHashMap<String, ColumnSource<?>> columns,
             final WritableColumnSource<?>[] writableSources,
             final Map<String, Object> attributes,
-            final long initialViewPortRows) {
-        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, initialViewPortRows);
+            @Nullable final ViewportChangedCallback vpCallback) {
+        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, vpCallback);
     }
 
     private void processUpdate(final BarrageMessage update) {
@@ -73,9 +73,10 @@ public class BarrageBlinkTable extends BarrageTable {
         }
 
         if (update.isSnapshot) {
-            serverViewport = update.snapshotRowSet == null ? null : update.snapshotRowSet.copy();
-            serverReverseViewport = update.snapshotRowSetIsReversed;
-            serverColumns = update.snapshotColumns == null ? null : (BitSet) update.snapshotColumns.clone();
+            updateServerViewport(
+                    update.snapshotRowSet == null ? null : update.snapshotRowSet.copy(),
+                    update.snapshotColumns == null ? null : (BitSet) update.snapshotColumns.clone(),
+                    update.snapshotRowSetIsReversed);
         }
 
         if (update.shifted.nonempty()) {
@@ -125,10 +126,6 @@ public class BarrageBlinkTable extends BarrageTable {
                 }
             }
         }
-    }
-
-    private boolean isSubscribedColumn(int i) {
-        return serverColumns == null || serverColumns.get(i);
     }
 
     private void ensureCapacity(long size) {

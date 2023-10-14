@@ -77,7 +77,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         final TableDefinition tableDefinition = schema.tableDef;
-        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, -1);
+        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, null);
         resultTable.addParentReference(this);
 
         final MethodDescriptor<FlightData, BarrageMessage> snapshotDescriptor =
@@ -230,24 +230,17 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             return;
         }
 
-        resultTable.sealTable(() -> {
-            completed = true;
-            signalCompletion();
-        }, () -> {
-            exceptionWhileCompleting = new Exception();
-            signalCompletion();
-        });
+        completed = true;
+        signalCompletion();
         cleanup();
     }
 
-    private void signalCompletion() {
+    private synchronized void signalCompletion() {
         if (completedCondition != null) {
             resultTable.getUpdateGraph().requestSignal(completedCondition);
-        } else {
-            synchronized (BarrageSnapshotImpl.this) {
-                BarrageSnapshotImpl.this.notifyAll();
-            }
         }
+
+        BarrageSnapshotImpl.this.notifyAll();
     }
 
     @Override
