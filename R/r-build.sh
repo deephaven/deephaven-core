@@ -24,7 +24,8 @@ status = tryCatch(
      install.packages(".", repos=NULL, type="source")
      0
   },
-  error=function(e) 1
+  error=function(e) 1,
+  warning=function(w) 2
 )
 print(paste0('status=', status))
 quit(save='no', status=status)
