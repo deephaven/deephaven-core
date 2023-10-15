@@ -26,12 +26,13 @@ deephavenDocker {
     networkName.set "r-test-network-${randomSuffix}"
 }
 
-def testRClient = Docker.registerDockerTask(project, 'testRClient') {
+def buildRClient = Docker.registerDockerTask(project, 'rClient') {
     // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
 
     copyIn {
         from(layout.projectDirectory) {
+            include 'r-build.sh'
             include 'r-tests.sh'
             include 'rdeephaven/DESCRIPTION'
             include 'rdeephaven/LICENSE'
@@ -44,9 +45,6 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
             include 'rdeephaven/src/*.cpp'
             include 'rdeephaven/src/Makevars'
         }
-    }
-    copyOut {
-        into layout.buildDirectory.dir('test-results')
     }
     dockerfile {
         from('deephaven/cpp-client:local-build')
@@ -70,14 +68,27 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
         copyFile('rdeephaven/src/*.cpp', "${prefix}/src/rdeephaven/src/")
         copyFile('rdeephaven/src/Makevars', "${prefix}/src/rdeephaven/src/")
         copyFile('r-tests.sh', "${prefix}/bin/rdeephaven")
+        copyFile('r-build.sh', "${prefix}/bin/rdeephaven")
         runCommand("PREFIX=\"" + prefix + "\"; \\\n" +
                   '''set -eux ; \
                      cd "${PREFIX}/src/rdeephaven"; \
                      . "${PREFIX}/env.sh"; \
-                     echo 'install.packages(".", repos=NULL, type="source")' | \
-                       MAKE="make -j${NCPUS}" R --no-save; \
-                     rm -f src/*.o src/*.so
+                     ${PREFIX}/bin/rdeephaven/r-build.sh
                    ''')
+    }
+    parentContainers = [ project.tasks.getByPath(':cpp-client:cppClient') ]
+}
+tasks.getByName('rClient').dependsOn project.tasks.getByPath(':cpp-client:cppClient')
+
+def testRClient = Docker.registerDockerTask(project, 'testRClient') {
+    // Only tested on x86-64, and we only build dependencies for x86-64
+    platform = 'linux/amd64'
+    copyIn {}
+    copyOut {
+        into layout.buildDirectory.dir('test-results')
+    }
+    dockerfile {
+        from('deephaven/r-client:local-build')
         //
         // Setup for test run; we should be inheriting other env vars
         // like LD_LIBRARY_PATH from the cpp-client image.
@@ -88,10 +99,9 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
-    parentContainers = [ project.tasks.getByPath(':cpp-client:cppClient') ]
+    parentContainers = [ project.tasks.getByName('rClient') ]
     entrypoint = ["${prefix}/bin/rdeephaven/r-tests.sh", '/out/r-test.xml', '/out/r-test.log']
 }
-tasks.getByName('testRClient').dependsOn project.tasks.getByPath(':cpp-client:cppClient')
 
 deephavenDocker.shouldLogIfTaskFails testRClient
 tasks.check.dependsOn(testRClient)
