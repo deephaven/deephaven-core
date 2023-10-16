@@ -1,7 +1,7 @@
 library(testthat)
 library(rdeephaven)
 
-target <- "localhost:10000"
+target <- get_dh_target()
 
 setup <- function() {
   df1 <- data.frame(
@@ -31,7 +31,6 @@ setup <- function() {
 
 test_that("client dhConnection works in the simple case of anonymous authentication", {
 
-  # TODO: assumes server is actually running on localhost:10000, this is probably bad for CI
   expect_no_error(client <- Client$new(target = target))
   
 })

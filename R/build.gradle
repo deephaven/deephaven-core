@@ -1,0 +1,111 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+    id 'io.deephaven.deephaven-in-docker'
+}
+
+evaluationDependsOn(':cpp-client')
+
+configurations {
+    cpp {}
+}
+
+dependencies {
+  cpp project(':cpp-client')
+}
+
+def prefix = '/opt/deephaven'
+
+// start a grpc-api server
+String randomSuffix = UUID.randomUUID().toString();
+deephavenDocker {
+    envVars.set([
+            'START_OPTS':'-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler'
+    ])
+    containerName.set "dh-server-for-r-${randomSuffix}"
+    networkName.set "r-test-network-${randomSuffix}"
+}
+
+def buildRClient = Docker.registerDockerTask(project, 'rClient') {
+    // Only tested on x86-64, and we only build dependencies for x86-64
+    platform = 'linux/amd64'
+
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'r-build.sh'
+            include 'r-tests.sh'
+            include 'rdeephaven/DESCRIPTION'
+            include 'rdeephaven/LICENSE'
+            include 'rdeephaven/NAMESPACE'
+            include 'rdeephaven/README.md'
+            include 'rdeephaven/inst/**'
+            include 'rdeephaven/man/**'
+            include 'rdeephaven/etc/**'
+            include 'rdeephaven/R/**'
+            include 'rdeephaven/src/*.cpp'
+            include 'rdeephaven/src/Makevars'
+        }
+    }
+    dockerfile {
+        from('deephaven/cpp-client:local-build')
+        //
+        // Build and install client.
+        //
+        runCommand("""mkdir -p \\
+                        /out \\
+                        ${prefix}/log \\
+                        ${prefix}/bin/rdeephaven \\
+                        ${prefix}/src/rdeephaven/{inst,man,etc,src,R,bin}
+                   """)
+        copyFile('rdeephaven/DESCRIPTION',  "${prefix}/src/rdeephaven/")
+        copyFile('rdeephaven/LICENSE',  "${prefix}/src/rdeephaven/")
+        copyFile('rdeephaven/NAMESPACE',  "${prefix}/src/rdeephaven/")
+        copyFile('rdeephaven/README.md',  "${prefix}/src/rdeephaven/")
+        copyFile('rdeephaven/inst/',  "${prefix}/src/rdeephaven/inst/")
+        copyFile('rdeephaven/man/', "${prefix}/src/rdeephaven/man/")
+        copyFile('rdeephaven/etc/', "${prefix}/src/rdeephaven/etc/")
+        copyFile('rdeephaven/R/', "${prefix}/src/rdeephaven/R/")
+        copyFile('rdeephaven/src/*.cpp', "${prefix}/src/rdeephaven/src/")
+        copyFile('rdeephaven/src/Makevars', "${prefix}/src/rdeephaven/src/")
+        copyFile('r-tests.sh', "${prefix}/bin/rdeephaven")
+        copyFile('r-build.sh', "${prefix}/bin/rdeephaven")
+        runCommand("PREFIX=${prefix}; " +
+                  '''set -eux ; \
+                     cd "${PREFIX}/src/rdeephaven"; \
+                     . "${PREFIX}/env.sh"; \
+                     ${PREFIX}/bin/rdeephaven/r-build.sh
+                   ''')
+    }
+    parentContainers = [ project.tasks.getByPath(':cpp-client:cppClient') ]
+}
+
+def testRClient = Docker.registerDockerTask(project, 'testRClient') {
+    // Only tested on x86-64, and we only build dependencies for x86-64
+    platform = 'linux/amd64'
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'r-tests.sh'
+            include 'rdeephaven/inst/**'
+        }
+    }
+    copyOut {
+        into layout.buildDirectory.dir('test-results')
+    }
+    dockerfile {
+        from('deephaven/r-client:local-build')
+        //
+        // Setup for test run; we should be inheriting other env vars
+        // like LD_LIBRARY_PATH from the cpp-client image.
+        //
+        environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
+        environmentVariable 'DH_PORT', '10000'
+    }
+    containerDependencies.dependsOn = [deephavenDocker.healthyTask]
+    containerDependencies.finalizedBy = deephavenDocker.endTask
+    network = deephavenDocker.networkName.get()
+    parentContainers = [ project.tasks.getByName('rClient') ]
+    entrypoint = ["${prefix}/bin/rdeephaven/r-tests.sh", '/out/r-test.xml', '/out/r-test.log']
+}
+
+deephavenDocker.shouldLogIfTaskFails testRClient
+tasks.check.dependsOn(testRClient)
