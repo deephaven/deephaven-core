@@ -93,9 +93,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private static final boolean INCLUDE_DEFAULT_IMPORTS_IN_LOADED_GROOVY =
             Configuration.getInstance()
                     .getBooleanWithDefault("GroovyDeephavenSession.includeDefaultImportsInGroovyScripts", false);
-    private static final boolean INCLUDE_CONSOLE_IMPORTS_IN_LOADED_GROOVY =
-            INCLUDE_DEFAULT_IMPORTS_IN_LOADED_GROOVY && Configuration.getInstance()
-                    .getBooleanWithDefault("GroovyDeephavenSession.includeConsoleImportsInGroovyScripts", false);
 
     private static final boolean ALLOW_UNKNOWN_GROOVY_PACKAGE_IMPORTS = Configuration.getInstance()
             .getBooleanForClassWithDefault(GroovyDeephavenSession.class, "allowUnknownGroovyPackageImports", false);
@@ -581,9 +578,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         if (validated.isPresent()) {
             log.info().append("Adding persistent import \"").append(importString).append("\"").endl();
             validated.get().appendTo(consoleImports);
-            if (GroovyDeephavenSession.INCLUDE_CONSOLE_IMPORTS_IN_LOADED_GROOVY) {
-                validated.get().appendTo(loadedGroovyScriptImports);
-            }
         } else {
             throw new RuntimeException("Attempting to import a path that does not exist: " + importString);
         }
