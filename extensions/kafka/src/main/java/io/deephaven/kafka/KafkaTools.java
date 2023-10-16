@@ -589,8 +589,8 @@ public class KafkaTools {
          * @param <T> the object type
          */
         public static <T> KeyOrValueSpec objectProcessorSpec(
-                Deserializer<T> deserializer,
-                ObjectProcessor<T> processor,
+                Deserializer<? extends T> deserializer,
+                ObjectProcessor<? super T> processor,
                 List<String> columnNames) {
             return new KeyOrValueSpecObjectProcessorImpl<>(deserializer, processor, columnNames);
         }
@@ -606,7 +606,8 @@ public class KafkaTools {
          * @return the Kafka key or value spec
          */
         @SuppressWarnings("unused")
-        public static KeyOrValueSpec objectProcessorSpec(ObjectProcessor<byte[]> processor, List<String> columnNames) {
+        public static KeyOrValueSpec objectProcessorSpec(ObjectProcessor<? super byte[]> processor,
+                List<String> columnNames) {
             return objectProcessorSpec(new ByteArrayDeserializer(), processor, columnNames);
         }
     }

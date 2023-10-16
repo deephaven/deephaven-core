@@ -36,13 +36,13 @@ import java.util.function.Function;
  * take advantage of these better interfaces.
  */
 class KeyOrValueSpecObjectProcessorImpl<T> extends KeyOrValueSpec implements KeyOrValueProcessor {
-    private final Deserializer<T> deserializer;
-    private final ObjectProcessor<T> processor;
+    private final Deserializer<? extends T> deserializer;
+    private final ObjectProcessor<? super T> processor;
     private final List<String> columnNames;
     private Function<WritableChunk<?>[], List<WritableChunk<?>>> offsetsAdapter;
 
     KeyOrValueSpecObjectProcessorImpl(
-            Deserializer<T> deserializer, ObjectProcessor<T> processor, List<String> columnNames) {
+            Deserializer<? extends T> deserializer, ObjectProcessor<? super T> processor, List<String> columnNames) {
         if (columnNames.size() != processor.outputTypes().size()) {
             throw new IllegalArgumentException("Expected columnNames and processor.outputTypes() to be the same size");
         }
@@ -60,7 +60,8 @@ class KeyOrValueSpecObjectProcessorImpl<T> extends KeyOrValueSpec implements Key
     }
 
     @Override
-    protected Deserializer<T> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+    protected Deserializer<? extends T> getDeserializer(KeyOrValue keyOrValue,
+            SchemaRegistryClient schemaRegistryClient,
             Map<String, ?> configs) {
         return deserializer;
     }
