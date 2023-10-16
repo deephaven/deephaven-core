@@ -35,11 +35,10 @@ import java.util.function.Function;
  * adapting into a {@link KeyOrValueProcessor} until such a time when {@link KafkaStreamPublisher} can be re-written to
  * take advantage of these better interfaces.
  */
-class KeyOrValueSpecObjectProcessorImpl<T> extends KeyOrValueSpec implements KeyOrValueProcessor {
+class KeyOrValueSpecObjectProcessorImpl<T> extends KeyOrValueSpec {
     private final Deserializer<? extends T> deserializer;
     private final ObjectProcessor<? super T> processor;
     private final List<String> columnNames;
-    private Function<WritableChunk<?>[], List<WritableChunk<?>>> offsetsAdapter;
 
     KeyOrValueSpecObjectProcessorImpl(
             Deserializer<? extends T> deserializer, ObjectProcessor<? super T> processor, List<String> columnNames) {
@@ -83,16 +82,24 @@ class KeyOrValueSpecObjectProcessorImpl<T> extends KeyOrValueSpec implements Key
 
     @Override
     protected KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
-        offsetsAdapter = offsetsFunction(MultiFieldChunkAdapter.chunkOffsets(tableDef, data.fieldPathToColumnName));
-        return this;
+        return new KeyOrValueProcessorImpl(
+                offsetsFunction(MultiFieldChunkAdapter.chunkOffsets(tableDef, data.fieldPathToColumnName)));
     }
 
-    @Override
-    public void handleChunk(ObjectChunk<Object, Values> inputChunk, WritableChunk<Values>[] publisherChunks) {
-        // noinspection unchecked
-        final ObjectChunk<T, ?> in = (ObjectChunk<T, ?>) inputChunk;
-        // we except isInOrder to be true, so apply should be an O(1) op no matter how many columns there are.
-        processor.processAll(in, offsetsAdapter.apply(publisherChunks));
+    private class KeyOrValueProcessorImpl implements KeyOrValueProcessor {
+        private final Function<WritableChunk<?>[], List<WritableChunk<?>>> offsetsAdapter;
+
+        private KeyOrValueProcessorImpl(Function<WritableChunk<?>[], List<WritableChunk<?>>> offsetsAdapter) {
+            this.offsetsAdapter = Objects.requireNonNull(offsetsAdapter);
+        }
+
+        @Override
+        public void handleChunk(ObjectChunk<Object, Values> inputChunk, WritableChunk<Values>[] publisherChunks) {
+            // noinspection unchecked
+            final ObjectChunk<T, ?> in = (ObjectChunk<T, ?>) inputChunk;
+            // we except isInOrder to be true, so apply should be an O(1) op no matter how many columns there are.
+            processor.processAll(in, offsetsAdapter.apply(publisherChunks));
+        }
     }
 
     private static <T> Function<T[], List<T>> offsetsFunction(int[] offsets) {
