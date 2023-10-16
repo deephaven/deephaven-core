@@ -481,7 +481,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 if (isSnapshot && serverViewport != null) {
                     // noinspection resource
                     WritableRowSet currentRowSet = resultTable.getRowSet().writableCast();
-                    try (final RowSet populated = currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {
+                    try (final RowSet populated =
+                            currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {
                         currentRowSet.retain(populated);
                     }
                 }
