@@ -78,7 +78,6 @@ def buildRClient = Docker.registerDockerTask(project, 'rClient') {
     }
     parentContainers = [ project.tasks.getByPath(':cpp-client:cppClient') ]
 }
-tasks.getByName('rClient').dependsOn project.tasks.getByPath(':cpp-client:cppClient')
 
 def testRClient = Docker.registerDockerTask(project, 'testRClient') {
     // Only tested on x86-64, and we only build dependencies for x86-64
@@ -101,6 +100,9 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
     network = deephavenDocker.networkName.get()
     parentContainers = [ project.tasks.getByName('rClient') ]
     entrypoint = ["${prefix}/bin/rdeephaven/r-tests.sh", '/out/r-test.xml', '/out/r-test.log']
+}
+testRClient.configure {
+    dependsOn buildRClient
 }
 
 deephavenDocker.shouldLogIfTaskFails testRClient
