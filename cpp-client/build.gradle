@@ -94,7 +94,7 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
         copyFile('deephaven/examples/', "${prefix}/src/deephaven/examples/")
         copyFile('deephaven/tests/', "${prefix}/src/deephaven/tests/")
         copyFile('cpp-tests-to-junit.sh', "${prefix}/bin/dhcpp")
-        runCommand("PREFIX=\"" + prefix + "\"; \\\n" +
+        runCommand("PREFIX=${prefix}; " +
                    '''set -eux; \\
                       rm -fr ${PREFIX}/src/deephaven/build; \\
                       mkdir -p ${PREFIX}/src/deephaven/build; \\

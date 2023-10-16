@@ -69,7 +69,7 @@ def buildRClient = Docker.registerDockerTask(project, 'rClient') {
         copyFile('rdeephaven/src/Makevars', "${prefix}/src/rdeephaven/src/")
         copyFile('r-tests.sh', "${prefix}/bin/rdeephaven")
         copyFile('r-build.sh', "${prefix}/bin/rdeephaven")
-        runCommand("PREFIX=\"" + prefix + "\"; \\\n" +
+        runCommand("PREFIX=${prefix}; " +
                   '''set -eux ; \
                      cd "${PREFIX}/src/rdeephaven"; \
                      . "${PREFIX}/env.sh"; \
@@ -82,7 +82,12 @@ def buildRClient = Docker.registerDockerTask(project, 'rClient') {
 def testRClient = Docker.registerDockerTask(project, 'testRClient') {
     // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
-    copyIn {}
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'r-tests.sh'
+            include 'rdeephaven/inst/**'
+        }
+    }
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }
