@@ -11,6 +11,8 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 
 public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel<Double> {
@@ -26,16 +28,18 @@ public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel<
     private double absMax = QueryConstants.NULL_DOUBLE;
 
     @Override
-    public Result processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev) {
+    public Table processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev) {
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(CHUNK_SIZE)) {
             final RowSequence.Iterator okIt = index.getRowSequenceIterator();
 
             while (okIt.hasMore()) {
                 final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(CHUNK_SIZE);
-                final DoubleChunk<? extends Values> chunk = (usePrev ? columnSource.getPrevChunk(getContext, nextKeys) : columnSource.getChunk(getContext, nextKeys)).asDoubleChunk();
+                final DoubleChunk<? extends Values> chunk = (usePrev ? columnSource.getPrevChunk(getContext, nextKeys)
+                        : columnSource.getChunk(getContext, nextKeys)).asDoubleChunk();
 
-                /* we'll use these to get as big as we can before adding into a potentially MUCH larger "total" in an
+                /*
+                 * we'll use these to get as big as we can before adding into a potentially MUCH larger "total" in an
                  * attempt to reduce cumulative loss-of-precision error brought on by FP math.
                  */
                 double chunkedSum = .0;
@@ -86,6 +90,19 @@ public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel<
             }
         }
 
-        return new Result(index.size(), count, sum, absSum, sqrdSum, min, max, absMin, absMax);
+        double avg = ChunkedNumericalStatsKernel.avg(count, sum);
+        return TableTools.newTable(
+                TableTools.longCol("Count", count),
+                TableTools.longCol("Size", index.size()),
+                TableTools.doubleCol("Sum", sum),
+                TableTools.doubleCol("AbsSum", absSum),
+                TableTools.doubleCol("SqrdSum", sqrdSum),
+                TableTools.doubleCol("Min", min),
+                TableTools.doubleCol("Max", max),
+                TableTools.doubleCol("AbsMin", absMin),
+                TableTools.doubleCol("AbsMax", absMax),
+                TableTools.doubleCol("Avg", avg),
+                TableTools.doubleCol("AbsAvg", ChunkedNumericalStatsKernel.avg(count, absSum)),
+                TableTools.doubleCol("AbsAvg", ChunkedNumericalStatsKernel.stdDev(count, avg, sqrdSum)));
     }
 }

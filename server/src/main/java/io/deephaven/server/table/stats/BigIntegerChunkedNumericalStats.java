@@ -7,6 +7,9 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.BigDecimalUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,9 +17,11 @@ import org.jetbrains.annotations.Nullable;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 
 public class BigIntegerChunkedNumericalStats implements ChunkedNumericalStatsKernel<BigInteger> {
-    private final static int SCALE = Configuration.getInstance().getIntegerWithDefault("BigDecimalStdOperator.scale", 10);
+    private final static int SCALE =
+            Configuration.getInstance().getIntegerWithDefault("BigDecimalStdOperator.scale", 10);
 
     private long count = 0;
 
@@ -30,14 +35,16 @@ public class BigIntegerChunkedNumericalStats implements ChunkedNumericalStatsKer
     private BigInteger absMax = null;
 
     @Override
-    public Result processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev) {
+    public Table processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev) {
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(CHUNK_SIZE)) {
             final RowSequence.Iterator okIt = index.getRowSequenceIterator();
 
             while (okIt.hasMore()) {
                 final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(CHUNK_SIZE);
-                final ObjectChunk<BigInteger, ? extends Values> chunk = (usePrev ? columnSource.getPrevChunk(getContext, nextKeys) : columnSource.getChunk(getContext, nextKeys)).asObjectChunk();
+                final ObjectChunk<BigInteger, ? extends Values> chunk =
+                        (usePrev ? columnSource.getPrevChunk(getContext, nextKeys)
+                                : columnSource.getChunk(getContext, nextKeys)).asObjectChunk();
 
                 final int chunkSize = chunk.size();
                 for (int ii = 0; ii < chunkSize; ii++) {
@@ -79,54 +86,25 @@ public class BigIntegerChunkedNumericalStats implements ChunkedNumericalStatsKer
             }
         }
 
-        return new BigIntegerResult(index.size(), count, sum, absSum, sqrdSum, min, max, absMin, absMax);
-    }
+        BigDecimal c = BigDecimal.valueOf(count);
+        BigDecimal avg = count == 0 ? null : new BigDecimal(sum).divide(c, SCALE, RoundingMode.HALF_UP);
+        BigDecimal absAvg = count == 0 ? null : new BigDecimal(absSum).divide(c, SCALE, RoundingMode.HALF_UP);
+        BigDecimal stdDev = count <= 1 ? null
+                : BigDecimalUtils.sqrt((new BigDecimal(sqrdSum).subtract(avg.pow(2).multiply(c)))
+                        .divide(BigDecimal.valueOf(count - 1), SCALE, RoundingMode.HALF_UP), SCALE);
 
-    private static class BigIntegerResult extends Result implements Serializable {
-        private final long count;
-
-        final BigInteger sum;
-        final BigInteger absSum;
-        final BigInteger sqrdSum;
-
-        BigIntegerResult(long size, long count, final @NotNull BigInteger sum, final @NotNull BigInteger absSum, final @NotNull BigInteger sqrdSum, final @Nullable BigInteger min, final @Nullable BigInteger max, final @Nullable BigInteger absMin, final @Nullable BigInteger absMax) {
-            super(size, count, sum, absSum, sqrdSum, min == null ? (Number)Double.NaN : min, max == null ? (Number)Double.NaN : max, absMin == null ? (Number)Double.NaN : absMin, absMax == null ? (Number)Double.NaN : absMax);
-
-            this.count = count;
-
-            this.sum = sum;
-            this.absSum = absSum;
-            this.sqrdSum = sqrdSum;
-        }
-
-        @Override
-        public Number getAvg() {
-            return count == 0 ? (Number)Double.POSITIVE_INFINITY : getAvg(sum);
-        }
-
-        @Override
-        public Number getAbsAvg() {
-            return count == 0 ? (Number)Double.POSITIVE_INFINITY : getAvg(absSum);
-        }
-
-        @Override
-        public Number getStdDev() {
-            final BigDecimal stdDev = getBigStdDev();
-            return stdDev == null ? (Number)Double.NaN : stdDev;
-        }
-
-        private BigDecimal getBigStdDev() {
-            if (count <= 1) {
-                return null;
-            }
-
-            final BigDecimal mean = getAvg(sum);
-            final BigDecimal var = (new BigDecimal(sqrdSum).subtract(mean.pow(2).multiply(BigDecimal.valueOf(count)))).divide(BigDecimal.valueOf(count-1), SCALE, BigDecimal.ROUND_HALF_UP);
-            return BigDecimalUtils.sqrt(var, SCALE);
-        }
-
-        private BigDecimal getAvg(final BigInteger val) {
-            return new BigDecimal(val).divide(BigDecimal.valueOf(count), SCALE, BigDecimal.ROUND_HALF_UP);
-        }
+        return TableTools.newTable(
+                TableTools.longCol("Count", count),
+                TableTools.longCol("Size", index.size()),
+                new ColumnHolder<>("Sum", BigInteger.class, null, false, sum),
+                new ColumnHolder<>("AbsSum", BigInteger.class, null, false, absSum),
+                new ColumnHolder<>("SqrdSum", BigInteger.class, null, false, sqrdSum),
+                new ColumnHolder<>("Min", BigInteger.class, null, false, min),
+                new ColumnHolder<>("Max", BigInteger.class, null, false, max),
+                new ColumnHolder<>("AbsMin", BigInteger.class, null, false, absMin),
+                new ColumnHolder<>("AbsMax", BigInteger.class, null, false, absMax),
+                new ColumnHolder<>("Avg", BigDecimal.class, null, false, avg),
+                new ColumnHolder<>("AbsAvg", BigDecimal.class, null, false, absAvg),
+                new ColumnHolder<>("StdDev", BigDecimal.class, null, false, stdDev));
     }
 }

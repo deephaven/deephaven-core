@@ -31,22 +31,34 @@ public interface ChunkedNumericalStatsKernel<T> {
         } else if (type == Byte.class || type == byte.class) {
             return new ByteChunkedNumericalStats();
         } else {
-            throw new IllegalStateException("Invalid type for ChunkedNumericalStatsFactory: " + type.getCanonicalName());
+            throw new IllegalStateException(
+                    "Invalid type for ChunkedNumericalStatsFactory: " + type.getCanonicalName());
         }
     }
 
-    static Result getChunkedNumericalStats(final Table table, final String columnName, boolean usePrev) {
+    static Table getChunkedNumericalStats(final Table table, final String columnName, boolean usePrev) {
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
         final RowSet index = usePrev ? table.getRowSet().prev() : table.getRowSet();
 
-        final long startTime = System.currentTimeMillis();
         return ChunkedNumericalStatsKernel.makeChunkedNumericalStatsFactory(columnSource.getType())
-                .processChunks(index, columnSource, usePrev)
-                .setRunTime(System.currentTimeMillis()-startTime);
+                .processChunks(index, columnSource, usePrev);
     }
 
-    Result processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev);
+    Table processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev);
 
+    static double avg(long count, double sumValue) {
+        if (count == 0) {
+            return Double.POSITIVE_INFINITY;
+        }
+        return sumValue / count;
+    }
+
+    static double stdDev(long count, double avg, double sqrdSum) {
+        if (count <= 1) {
+            return Double.NaN;
+        }
+        return Math.sqrt((sqrdSum - count * avg * avg) / count - 1);
+    }
 
     class Result implements Serializable {
         private final long size;
@@ -63,7 +75,8 @@ public interface ChunkedNumericalStatsKernel<T> {
 
         private long runTime = -1;
 
-        public Result(long size, long count, final Number sum, final Number absSum, final Number sqrdSum, final Number min, final Number max, final Number absMin, final Number absMax) {
+        public Result(long size, long count, final Number sum, final Number absSum, final Number sqrdSum,
+                final Number min, final Number max, final Number absMin, final Number absMax) {
             this.size = size;
             this.count = count;
 
@@ -122,13 +135,13 @@ public interface ChunkedNumericalStatsKernel<T> {
             return count == 0 ? Double.POSITIVE_INFINITY : absSum.doubleValue() / count;
         }
 
-        public Number getStdDev() {
+        public double getStdDev() {
             if (count <= 1) {
                 return Double.NaN;
             }
 
             final double mean = getAvg().doubleValue();
-            final double var = (sqrdSum.doubleValue() - count * mean * mean) / (count-1);
+            final double var = (sqrdSum.doubleValue() - count * mean * mean) / (count - 1);
             return Math.sqrt(var);
         }
 

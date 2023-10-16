@@ -11,6 +11,8 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 
 public class LongChunkedNumericalStats implements ChunkedNumericalStatsKernel<Long> {
@@ -34,16 +36,18 @@ public class LongChunkedNumericalStats implements ChunkedNumericalStatsKernel<Lo
     private long absMax = QueryConstants.NULL_LONG;
 
     @Override
-    public Result processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev) {
+    public Table processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev) {
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(CHUNK_SIZE)) {
             final RowSequence.Iterator okIt = index.getRowSequenceIterator();
 
             while (okIt.hasMore()) {
                 final RowSequence nextKeys = okIt.getNextRowSequenceThrough(CHUNK_SIZE);
-                final LongChunk<? extends Values> chunk = (usePrev ? columnSource.getPrevChunk(getContext, nextKeys) : columnSource.getChunk(getContext, nextKeys)).asLongChunk();
+                final LongChunk<? extends Values> chunk = (usePrev ? columnSource.getPrevChunk(getContext, nextKeys)
+                        : columnSource.getChunk(getContext, nextKeys)).asLongChunk();
 
-                /* we'll use these to get as big as we can before adding into a potentially MUCH larger "total" in an
+                /*
+                 * we'll use these to get as big as we can before adding into a potentially MUCH larger "total" in an
                  * attempt to reduce cumulative loss-of-precision error brought on by floating-point math; - but ONLY if
                  * we've overflowed our non-floating-point (long)
                  */
@@ -59,7 +63,7 @@ public class LongChunkedNumericalStats implements ChunkedNumericalStatsKernel<Lo
                         continue;
                     }
 
-                    final long absVal = (long)Math.abs(val);
+                    final long absVal = (long) Math.abs(val);
 
                     if (count == 0) {
                         min = max = val;
@@ -136,14 +140,22 @@ public class LongChunkedNumericalStats implements ChunkedNumericalStatsKernel<Lo
             }
         }
 
-        return new Result(index.size(),
-                count,
-                useFloatingSum ? (Number)floatingSum : (Number)sum,
-                useFloatingAbsSum ? (Number)floatingAbsSum : (Number)absSum,
-                useFloatingSqrdSum ? (Number)floatingSqrdSum : (Number)sqrdSum,
-                min,
-                max,
-                absMin,
-                absMax);
+        double avg = ChunkedNumericalStatsKernel.avg(count, sum);
+        return TableTools.newTable(
+                TableTools.longCol("Count", count),
+                TableTools.longCol("Size", index.size()),
+                useFloatingSum ? TableTools.doubleCol("Sum", floatingSum) : TableTools.longCol("Sum", sum),
+                useFloatingAbsSum ? TableTools.doubleCol("AbsSum", floatingAbsSum)
+                        : TableTools.longCol("AbsSum", absSum),
+                useFloatingSqrdSum ? TableTools.doubleCol("SqrdSum", floatingSqrdSum)
+                        : TableTools.longCol("SqrdSum", sqrdSum),
+                TableTools.longCol("Min", min),
+                TableTools.longCol("Max", max),
+                TableTools.longCol("AbsMin", absMin),
+                TableTools.longCol("AbsMax", absMax),
+                TableTools.doubleCol("Avg", avg),
+                TableTools.doubleCol("AbsAvg", ChunkedNumericalStatsKernel.avg(count, absSum)),
+                TableTools.doubleCol("StdDev", ChunkedNumericalStatsKernel.stdDev(count, avg, sqrdSum)));
+
     }
 }

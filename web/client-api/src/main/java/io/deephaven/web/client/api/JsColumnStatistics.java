@@ -27,8 +27,8 @@ public class JsColumnStatistics {
     public enum StatType {
         // Note that a null format means default to columns formatting
         COUNT("COUNT", "long"), SIZE("SIZE", "long"), UNIQUE_VALUES("UNIQUE VALUES", "long"), SUM("SUM", null), SUM_ABS(
-                "SUM (ABS)", null), AVG("AVG", "double"), AVG_ABS("AVG (ABS)", "double"), MIN("MIN",
-                        null), MIN_ABS("MIN (ABS)", null), MAX("MAX", null), MAX_ABS("MAX (ABS)", null);
+                "SUM (ABS)", null), AVG("AVG", "double"), AVG_ABS("AVG (ABS)", "double"), MIN("MIN", null), MIN_ABS(
+                        "MIN (ABS)", null), MAX("MAX", null), MAX_ABS("MAX (ABS)", null), STD_DEV("STD DEV", "double");
 
         private final String displayName;
         private final String formatType;

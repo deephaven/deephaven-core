@@ -23,17 +23,16 @@ public interface ChunkedComparableStatsKernel<T> {
         }
     }
 
-    static Result getChunkedComparableStats(final int maxUnique, final Table table, final String columnName, boolean usePrev) {
+    static Table getChunkedComparableStats(final int maxUnique, final Table table, final String columnName,
+            boolean usePrev) {
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
         final RowSet index = usePrev ? table.getRowSet().prev() : table.getRowSet();
 
-        final long startTime = System.currentTimeMillis();
         return makeChunkedComparableStatsFactory(columnSource.getType())
-                .processChunks(index, columnSource, usePrev, maxUnique)
-                .setRunTime(System.currentTimeMillis()-startTime);
+                .processChunks(index, columnSource, usePrev, maxUnique);
     }
 
-    Result processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev, int maxUnique);
+    Table processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev, int maxUnique);
 
 
     class Result implements Serializable {

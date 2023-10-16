@@ -3860,6 +3860,7 @@ public class TableServiceClient {
                         metadata_or_callback),
                 callback);
     }
+
     @JsOverlay
     public final UnaryResponse computeColumnStatistics(
             ColumnStatisticsRequest requestMessage, BrowserHeaders metadata_or_callback) {
