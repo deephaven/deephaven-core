@@ -16,7 +16,6 @@ import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.internal.log.LoggerFactory;
@@ -87,18 +86,20 @@ public class UpdatePerformanceTracker {
         private boolean encounteredError = false;
 
         private InternalState() {
-            final UpdateSourceRegistrar registrar =
+            final UpdateGraph publishingGraph =
                     PeriodicUpdateGraph.getInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME);
-            Assert.neqNull(registrar, "The " + PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME + " UpdateGraph "
+            Assert.neqNull(publishingGraph, "The " + PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME + " UpdateGraph "
                     + "must be created before UpdatePerformanceTracker can be initialized.");
-            tableLogger = EngineTableLoggers.get().updatePerformanceLogLogger();
-            publisher = new UpdatePerformanceStreamPublisher();
-            adapter = new StreamToBlinkTableAdapter(
-                    UpdatePerformanceStreamPublisher.definition(),
-                    publisher,
-                    registrar,
-                    UpdatePerformanceTracker.class.getName());
-            blink = adapter.table();
+            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(publishingGraph).open()) {
+                tableLogger = EngineTableLoggers.get().updatePerformanceLogLogger();
+                publisher = new UpdatePerformanceStreamPublisher();
+                adapter = new StreamToBlinkTableAdapter(
+                        UpdatePerformanceStreamPublisher.definition(),
+                        publisher,
+                        publishingGraph,
+                        UpdatePerformanceTracker.class.getName());
+                blink = adapter.table();
+            }
         }
 
         /**
@@ -124,7 +125,6 @@ public class UpdatePerformanceTracker {
     private static final AtomicInteger entryIdCounter = new AtomicInteger(1);
 
     private final UpdateGraph updateGraph;
-    private final ExecutionContext context;
     private final PerformanceEntry aggregatedSmallUpdatesEntry;
     private final PerformanceEntry flushEntry;
     private final Queue<WeakReference<PerformanceEntry>> entries = new LinkedBlockingDeque<>();
@@ -135,9 +135,7 @@ public class UpdatePerformanceTracker {
     private long intervalStartTimeNanos = QueryConstants.NULL_LONG;
 
     public UpdatePerformanceTracker(final UpdateGraph updateGraph) {
-        this.updateGraph = updateGraph;
-        this.context = ExecutionContext.getContext()
-                .withUpdateGraph(Objects.requireNonNull(updateGraph));
+        this.updateGraph = Objects.requireNonNull(updateGraph);
         this.aggregatedSmallUpdatesEntry = new PerformanceEntry(
                 QueryConstants.NULL_INT, QueryConstants.NULL_INT, QueryConstants.NULL_INT,
                 "Aggregated Small Updates", null, updateGraph.getName());
@@ -166,7 +164,9 @@ public class UpdatePerformanceTracker {
         }
         final long intervalEndTimeMillis = System.currentTimeMillis();
         final long intervalEndTimeNanos = System.nanoTime();
-        try (final SafeCloseable ignored1 = context.open()) {
+        // This happens on the primary refresh thread of this UPT's UpdateGraph. It should already have that UG
+        // installed in the ExecutionContext. If we need another UG, that's the responsibility of the publish callbacks.
+        try {
             finishInterval(
                     getInternalState(),
                     intervalStartTimeMillis,
