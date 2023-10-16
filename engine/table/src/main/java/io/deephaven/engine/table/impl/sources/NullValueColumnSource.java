@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -12,10 +13,10 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.util.ShiftData;
 import org.jetbrains.annotations.NotNull;
@@ -24,11 +25,21 @@ import org.jetbrains.annotations.Nullable;
 import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
+import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
+
 /**
- * A column source that returns null for all keys.
+ * A column source that returns null for all keys. Trivially "writable" since it can only contain null values.
  */
-public class NullValueColumnSource<T> extends AbstractColumnSource<T>
-        implements ShiftData.ShiftCallback, InMemoryColumnSource, RowKeyAgnosticChunkSource<Values> {
+public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
+        implements ShiftData.ShiftCallback, InMemoryColumnSource, RowKeyAgnosticChunkSource<Values>,
+        WritableColumnSource<T> {
+
     private static final KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> KEY_TYPE =
             new KeyedObjectKey.Basic<>() {
                 @Override
@@ -78,37 +89,37 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T>
 
     @Override
     public byte getByte(long rowKey) {
-        return QueryConstants.NULL_BYTE;
+        return NULL_BYTE;
     }
 
     @Override
     public char getChar(long rowKey) {
-        return QueryConstants.NULL_CHAR;
+        return NULL_CHAR;
     }
 
     @Override
     public double getDouble(long rowKey) {
-        return QueryConstants.NULL_DOUBLE;
+        return NULL_DOUBLE;
     }
 
     @Override
     public float getFloat(long rowKey) {
-        return QueryConstants.NULL_FLOAT;
+        return NULL_FLOAT;
     }
 
     @Override
     public int getInt(long rowKey) {
-        return QueryConstants.NULL_INT;
+        return NULL_INT;
     }
 
     @Override
     public long getLong(long rowKey) {
-        return QueryConstants.NULL_LONG;
+        return NULL_LONG;
     }
 
     @Override
     public short getShort(long rowKey) {
-        return QueryConstants.NULL_SHORT;
+        return NULL_SHORT;
     }
 
     @Override
@@ -123,37 +134,37 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T>
 
     @Override
     public byte getPrevByte(long rowKey) {
-        return QueryConstants.NULL_BYTE;
+        return NULL_BYTE;
     }
 
     @Override
     public char getPrevChar(long rowKey) {
-        return QueryConstants.NULL_CHAR;
+        return NULL_CHAR;
     }
 
     @Override
     public double getPrevDouble(long rowKey) {
-        return QueryConstants.NULL_DOUBLE;
+        return NULL_DOUBLE;
     }
 
     @Override
     public float getPrevFloat(long rowKey) {
-        return QueryConstants.NULL_FLOAT;
+        return NULL_FLOAT;
     }
 
     @Override
     public int getPrevInt(long rowKey) {
-        return QueryConstants.NULL_INT;
+        return NULL_INT;
     }
 
     @Override
     public long getPrevLong(long rowKey) {
-        return QueryConstants.NULL_LONG;
+        return NULL_LONG;
     }
 
     @Override
     public short getPrevShort(long rowKey) {
-        return QueryConstants.NULL_SHORT;
+        return NULL_SHORT;
     }
 
     @Override
@@ -212,5 +223,95 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T>
     @Override
     public boolean providesFillUnordered() {
         return true;
+    }
+
+    private static void throwUnsupported() {
+        throw new UnsupportedOperationException("NullValueColumnSource cannot contain non-null values");
+    }
+
+    @Override
+    public void set(final long key, final T value) {
+        if (value != null) {
+            throwUnsupported();
+        }
+    }
+
+    @Override
+    public void set(final long key, final byte value) {
+        if (value != NULL_BYTE) {
+            throwUnsupported();
+        }
+    }
+
+    @Override
+    public void set(final long key, final char value) {
+        if (value != NULL_CHAR) {
+            throwUnsupported();
+        }
+    }
+
+    @Override
+    public void set(final long key, final double value) {
+        if (value != NULL_DOUBLE) {
+            throwUnsupported();
+        }
+    }
+
+    @Override
+    public void set(final long key, final float value) {
+        if (value != NULL_FLOAT) {
+            throwUnsupported();
+        }
+    }
+
+    @Override
+    public void set(final long key, final int value) {
+        if (value != NULL_INT) {
+            throwUnsupported();
+        }
+    }
+
+    @Override
+    public void set(final long key, final long value) {
+        if (value != NULL_LONG) {
+            throwUnsupported();
+        }
+    }
+
+    @Override
+    public void set(final long key, final short value) {
+        if (value != NULL_SHORT) {
+            throwUnsupported();
+        }
+    }
+
+    @Override
+    public void setNull(final long key) {}
+
+    @Override
+    public void setNull(@NotNull final RowSequence orderedKeys) {}
+
+    @Override
+    public void ensureCapacity(final long capacity, final boolean nullFilled) {}
+
+    @Override
+    public FillFromContext makeFillFromContext(int chunkCapacity) {
+        return DEFAULT_FILL_FROM_INSTANCE;
+    }
+
+    @Override
+    public void fillFromChunk(
+            @NotNull final FillFromContext context,
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final RowSequence rowSequence) {
+        // Assume all values in src are null, which will be true for any correct usage.
+    }
+
+    @Override
+    public void fillFromChunkUnordered(
+            @NotNull final FillFromContext context,
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final LongChunk<RowKeys> keys) {
+        // Assume all values in src are null, which will be true for any correct usage.
     }
 }
