@@ -101,9 +101,6 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
     parentContainers = [ project.tasks.getByName('rClient') ]
     entrypoint = ["${prefix}/bin/rdeephaven/r-tests.sh", '/out/r-test.xml', '/out/r-test.log']
 }
-testRClient.configure {
-    dependsOn buildRClient
-}
 
 deephavenDocker.shouldLogIfTaskFails testRClient
 tasks.check.dependsOn(testRClient)
