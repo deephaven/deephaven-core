@@ -247,7 +247,7 @@ public class FunctionGeneratedTableFactory {
 
                 // Notify listeners that we had an issue refreshing the table.
                 if (getLastNotificationStep() == updateGraph.clock().currentStep()) {
-                     if (parentListener != null) {
+                    if (parentListener != null) {
                         parentListener.forceReferenceCountToZero();
                     }
                     delayedErrorReference = new DelayedErrorNotifier(e, this);
@@ -277,7 +277,7 @@ public class FunctionGeneratedTableFactory {
         private final WeakReference<BaseTable<?>> tableReference;
 
         private DelayedErrorNotifier(@NotNull final Throwable error,
-                                     @NotNull final BaseTable<?> table) {
+                @NotNull final BaseTable<?> table) {
             this.error = error;
             updateGraph = table.getUpdateGraph();
             tableReference = new WeakReference<>(table);
