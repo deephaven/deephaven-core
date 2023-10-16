@@ -643,10 +643,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         @Override
         protected void onFailureInternal(final Throwable originalException, Entry sourceEntry) {
             synchronized (BarrageMessageProducer.this) {
-                if (pendingError != null) {
-                    pendingError = originalException;
-                    schedulePropagation();
-                }
+                pendingError = originalException;
+                schedulePropagation();
             }
         }
 
