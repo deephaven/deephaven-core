@@ -757,6 +757,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      * @param tableColumns the table columns
      * @return the aggregation, if non-empty
      */
+    @VisibleForTesting
     static Optional<Aggregation> singleAggregation(
             AggSpec spec, Collection<? extends ColumnName> groupByColumns,
             Collection<? extends ColumnName> tableColumns) {
