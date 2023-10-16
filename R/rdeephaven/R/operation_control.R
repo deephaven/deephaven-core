@@ -10,7 +10,7 @@
 #' @description
 #' An `OperationControl` is the return type of Deephaven's [`op_control`][op_control] function. It is a function that
 #' determines how special values will be handled in the context of an [`update_by`][UpdateBy] operation.
-#' An `OperationControl`intended to be passed directly to a `uby` function, and should never be instantiated
+#' An `OperationControl` is intended to be passed directly to a `uby` function, and should never be instantiated
 #' directly be user code.
 #'
 #' If you plan to use the same operation control parameters for multiple `uby` functions in one or more `update_by` calls,

@@ -4,7 +4,7 @@
 \alias{uby_ems_time}
 \title{Exponential moving sum by group with time as the decay unit}
 \arguments{
-\item{decay_time}{ISO-8601-formatted string specifying the decay rate.}
+\item{decay_time}{ISO-8601-formatted duration string specifying the decay rate.}
 
 \item{cols}{String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 Default is to compute the exponential moving sum for all non-grouping columns.}
@@ -43,6 +43,36 @@ hidden from the user. However, it is important to understand this detail for deb
 a \code{uby} function can otherwise seem unexpected.
 }
 \examples{
-print("hello!")
+\dontrun{
+library(rdeephaven)
+
+# connecting to Deephaven server
+client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+
+# create data frame, push to server, retrieve TableHandle
+df <- data.frame(
+  timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
+  boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+  col1 = sample(10000, size = 500, replace = TRUE),
+  col2 = sample(10000, size = 500, replace = TRUE),
+  col3 = 1:500
+)
+th <- client$import_table(df)
+
+# compute 10-second exponential moving sum of col1 and col2
+th1 <- th$
+  update_by(uby_ems_time(ts_col="timeCol", decay_time="PT10s", cols=c("col1Ems = col1", "col2Ems = col2")))
+
+# compute 5-second exponential moving sum of col1 and col2, grouped by boolCol
+th2 <- th$
+  update_by(uby_ems_time(ts_col="timeCol", decay_time="PT5s", cols=c("col1Ems = col1", "col2Ems = col2")), by="boolCol")
+
+# compute 20-second exponential moving sum of col1 and col2, grouped by boolCol and parity of col3
+th3 <- th$
+  update("col3Parity = col3 \% 2")$
+  update_by(uby_ems_time(ts_col="timeCol", decay_time="PT20s", cols=c("col1Ems = col1", "col2Ems = col2")), by=c("boolCol", "col3Parity"))
+
+client$close()
+}
 
 }

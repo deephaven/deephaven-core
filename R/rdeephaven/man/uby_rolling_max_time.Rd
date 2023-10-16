@@ -7,7 +7,7 @@
 \item{ts_col}{String denoting the column to use as the timestamp.}
 
 \item{cols}{String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
-Default is to compute the rolling sum for all non-grouping columns.}
+Default is to compute the rolling maximum for all non-grouping columns.}
 
 \item{rev_time}{ISO-8601-formatted string specifying the look-behind window size.}
 
@@ -45,6 +45,36 @@ hidden from the user. However, it is important to understand this detail for deb
 a \code{uby} function can otherwise seem unexpected.
 }
 \examples{
-print("hello!")
+\dontrun{
+library(rdeephaven)
+
+# connecting to Deephaven server
+client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+
+# create data frame, push to server, retrieve TableHandle
+df <- data.frame(
+  timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
+  boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+  col1 = sample(10000, size = 500, replace = TRUE),
+  col2 = sample(10000, size = 500, replace = TRUE),
+  col3 = 1:500
+)
+th <- client$import_table(df)
+
+# compute rolling maximum of col1 and col2, using the previous 5 seconds
+th1 <- th$
+  update_by(uby_rolling_max_time(ts_col="timeCol", cols=c("col1RollMax = col1", "col2RollMax = col2"), rev_time="PT5s"))
+
+# compute rolling maximum of col1 and col2, grouped by boolCol, using previous 5 seconds, and following 5 seconds
+th2 <- th$
+  update_by(uby_rolling_max_time(ts_col="timeCol", cols=c("col1RollMax = col1", "col2RollMax = col2"), rev_time="PT5s", fwd_ticks="PT5s")), by="boolCol")
+
+# compute rolling maximum of col1 and col2, grouped by boolCol and parity of col3, using following 10 seconds
+th3 <- th$
+  update("col3Parity = col3 \% 2")$
+  update_by(uby_rolling_max_time(ts_col="timeCol", cols=c("col1RollMax = col1", "col2RollMax = col2"), rev_time="PT0s", fwd_time="PT10s")), by=c("boolCol", "col3Parity"))
+
+client$close()
+}
 
 }

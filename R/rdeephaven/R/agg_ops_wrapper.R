@@ -32,8 +32,8 @@
 #'   The resulting grouped data is defined by the aggregation specified. This method applies the aggregation to all
 #'   non-grouping columns of the table, so it can only accept one aggregation at a time.
 #'
-#' The `agg_by()` and `agg_all_by()` methods themselves do not know anything about the columns you want to perform
-#' aggregations on. Rather, the desired columns are passed to individual `agg` functions, enabling you to apply
+#' The `agg_by()` and `agg_all_by()` methods themselves do not know anything about the columns on which you want to
+#' perform aggregations. Rather, the desired columns are passed to individual `agg` functions, enabling you to apply
 #' various kinds of aggregations to different columns or groups of columns as needed.
 #'
 #' @section
@@ -68,7 +68,7 @@
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
@@ -178,7 +178,7 @@ AggOp <- R6Class("AggOp",
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
@@ -239,7 +239,7 @@ agg_first <- function(cols = character()) {
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
@@ -300,7 +300,7 @@ agg_last <- function(cols = character()) {
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
@@ -361,7 +361,7 @@ agg_min <- function(cols = character()) {
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
@@ -422,7 +422,7 @@ agg_max <- function(cols = character()) {
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
@@ -483,7 +483,7 @@ agg_sum <- function(cols = character()) {
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
@@ -544,7 +544,7 @@ agg_abs_sum <- function(cols = character()) {
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
@@ -606,7 +606,7 @@ agg_avg <- function(cols = character()) {
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
@@ -668,7 +668,7 @@ agg_w_avg <- function(wcol, cols = character()) {
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
@@ -729,7 +729,7 @@ agg_median <- function(cols = character()) {
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
@@ -790,7 +790,7 @@ agg_var <- function(cols = character()) {
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
@@ -852,7 +852,7 @@ agg_std <- function(cols = character()) {
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
@@ -915,7 +915,7 @@ agg_percentile <- function(percentile, cols = character()) {
 #' # connecting to Deephaven server
 #' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 #'
-#' # create dataframe, push to server, retrieve TableHandle
+#' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
 #'   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),

@@ -7,6 +7,50 @@
 #' @usage NULL
 #' @format NULL
 #' @docType class
+#'
+#' @examples
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create a data frame and push it to the server, retrieve a reference to it as a TableHandle
+#' df <- data.frame(
+#'   col1 = c(1, 2, 3),
+#'   col2 = c("a", "b", "c"),
+#'   col3 = c(TRUE, FALSE, TRUE)
+#' )
+#' th1 <- client$import_table(df)
+#' as.data.frame(th1)
+#'
+#' # give table referenced by 'th' a name on the server
+#' th1$bind_to_variable("server_table")
+#'
+#' # use client to execute script
+#' client$run_script('server_table_new = server_table.update("col4 = col1 + 1")')
+#'
+#' # retrieve reference to new table on the server
+#' th2 <- client$open_table("server_table_new")
+#' as.data.frame(th2)
+#'
+#' # create table on server directly with table API and retrieve a reference to it as a TableHandle
+#' th3 <- client$empty_table(10)$update("col1 = i")
+#' as.data.frame(th3)
+#'
+#' # create ticking table on the server and retrieve a reference to it as a TableHandle
+#' th4 <- client$time_table("PT1S")$update("col1 = i")
+#' Sys.sleep(5)
+#' as.data.frame(th4)
+#' Sys.sleep(5)
+#' as.data.frame(th4)
+#' Sys.sleep(5)
+#' as.data.frame(th4)
+#'
+#' # close client connection
+#' client$close()
+#' }
+#'
 #' @export
 Client <- R6Class("Client",
   cloneable = FALSE,

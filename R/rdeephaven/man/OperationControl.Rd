@@ -7,7 +7,7 @@
 \description{
 An \code{OperationControl} is the return type of Deephaven's \code{\link{op_control}} function. It is a function that
 determines how special values will be handled in the context of an \code{\link[=UpdateBy]{update_by}} operation.
-An \code{OperationControl}intended to be passed directly to a \code{uby} function, and should never be instantiated
+An \code{OperationControl} is intended to be passed directly to a \code{uby} function, and should never be instantiated
 directly be user code.
 
 If you plan to use the same operation control parameters for multiple \code{uby} functions in one or more \code{update_by} calls,

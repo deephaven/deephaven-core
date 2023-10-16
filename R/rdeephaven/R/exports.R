@@ -100,7 +100,7 @@
 #' Getting help:
 #' While we've done our best to provide good documentation for this package, you may find you need more help than what
 #' this documentation has to offer. Please visit the official Deephaven Community Core [documentation](https://deephaven.io/core/docs/tutorials/quickstart/)
-#' to learn more about Deephaven and to find examples that may help you. Additionally, feel free to reach out to us on
+#' to learn more about Deephaven and to find comprehensive examples. Additionally, feel free to reach out to us on
 #' the Deephaven [Community Slack channel](https://deephaven.io/slack) with any questions.
 #' We hope you find real-time data analysis in R to be as easy as possible.
 #'

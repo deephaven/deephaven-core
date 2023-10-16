@@ -33,7 +33,7 @@ library(rdeephaven)
 # connecting to Deephaven server
 client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 
-# create dataframe, push to server, retrieve TableHandle
+# create data frame, push to server, retrieve TableHandle
 df <- data.frame(
   X = c("A", "B", "A", "C", "B", "A", "B", "B", "C"),
   Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),

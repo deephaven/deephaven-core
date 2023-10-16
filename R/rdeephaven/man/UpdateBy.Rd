@@ -7,7 +7,7 @@
 \description{
 Deephaven's \code{update_by()} table method and suite of \code{uby} functions enable cumulative and moving calculations
 on static \emph{and} streaming tables. Complex operations like cumulative minima and maxima, exponential moving averages,
-and rolling standard deviations are all possible and effortless to execute. As is always the case in Deephaven,
+and rolling standard deviations are all possible and effortless to execute. As always in Deephaven,
 the results of these calculations will continue to update as their parent tables are updated. Additionally, it's easy
 to group data by one or more columns, enabling complex group-wise calculations with a single line of code.
 }
@@ -15,11 +15,11 @@ to group data by one or more columns, enabling complex group-wise calculations w
 
 The table method \code{update_by()} is the entry point for UpdateBy operations. It takes two arguments: the first is an
 \code{\link{UpdateByOp}} or a list of \code{UpdateByOp}s denoting the calculations to perform on specific columns of the
-table. Then, it takes a column name or a list of column names that define the groups to perform the calculations on.
-If you don't want grouped calculations, this argument can be omitted.
+table. Then, it takes a column name or a list of column names that define the groups on which to perform the calculations.
+If you don't want grouped calculations, omit this argument.
 
-The \code{update_by()} method itself does not know anything about the columns you want to perform calculations on. Rather,
-the desired columns are passed to individual \code{uby} functions, enabling a massive amount of flexibility.
+The \code{update_by()} method itself does not know anything about the columns on which you want to perform calculations.
+Rather, the desired columns are passed to individual \code{uby} functions, enabling a massive amount of flexibility.
 }
 
 \section{\code{uby} functions}{
@@ -76,32 +76,32 @@ library(rdeephaven)
 # connecting to Deephaven server
 client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 
-# create dataframe, push to server, retrieve TableHandle
+# create data frame, push to server, retrieve TableHandle
 df <- data.frame(
   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
-  col1 = 1:500,
+  col1 = sample(10000, size = 500, replace = TRUE),
   col2 = sample(10000, size = 500, replace = TRUE),
-  col3 = sample(10000, size = 500, replace = TRUE)
+  col3 = 1:500
 )
 th <- client$import_table(df)
 
-# compute 10-row exponential weighted moving average of col2 and col3, grouped by boolCol
+# compute 10-row exponential weighted moving average of col1 and col2, grouped by boolCol
 th1 <- th$
-  update_by(uby_ema_tick(decay_ticks=10, cols=c("col2Ema = col2", "col3Ema = col3")), by="boolCol")
+  update_by(uby_ema_tick(decay_ticks=10, cols=c("col1Ema = col1", "col2Ema = col2")), by="boolCol")
 
-# compute rolling 10-second weighted average and standard deviation of col2 and col3, weighted by col1
+# compute rolling 10-second weighted average and standard deviation of col1 and col2, weighted by col3
 th2 <- th$
   update_by(
-    c(uby_rolling_wavg_time(ts_col="timeCol", wcol="col1", cols=c("col2WAvg = col2", "col3WAvg = col3"), rev_time="PT10s"),
-      uby_rolling_std_time(ts_col="timeCol", cols=c("col2Std = col2", "col3Std = col3"), rev_time="PT10s")))
+    c(uby_rolling_wavg_time(ts_col="timeCol", wcol="col3", cols=c("col1WAvg = col1", "col2WAvg = col2"), rev_time="PT10s"),
+      uby_rolling_std_time(ts_col="timeCol", cols=c("col1Std = col1", "col2Std = col2"), rev_time="PT10s")))
 
-# compute cumulative minimum and maximum of col2 and col3 respectively, and the rolling 20-window sum of col1, grouped by boolCol
+# compute cumulative minimum and maximum of col1 and col2 respectively, and the rolling 20-row sum of col3, grouped by boolCol
 th3 <- th$
   update_by(
-    c(uby_cum_min(cols="col2"),
-      uby_cum_max(cols="col3"),
-      uby_rolling_sum_tick(cols="col1", rev_ticks=20)),
+    c(uby_cum_min(cols="col1"),
+      uby_cum_max(cols="col2"),
+      uby_rolling_sum_tick(cols="col3", rev_ticks=20)),
     by="boolCol")
 
 client$close()

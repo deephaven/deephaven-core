@@ -41,7 +41,7 @@ You can then create a local TableHandle to reference \code{t2} as follows:
 }\if{html}{\out{</div>}}
 
 The above code is not best practice; calling \code{update()} directly on \code{t1} would be preferred to running a script.
-It is, however, more illustriative of the relationship between local TableHandles and server-side tables. The best
+It is, however, more illustrative of the relationship between local TableHandles and server-side tables. The best
 way to accomplish the above would be the following:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{client <- Client$new(...)
@@ -55,6 +55,52 @@ th2$bind_to_variable("t2")
 }\if{html}{\out{</div>}}
 }
 
+\examples{
+\dontrun{
+library(rdeephaven)
+
+# connecting to Deephaven server
+client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+
+# create a data frame, push it to the server, and retrieve a TableHandle referencing the new table
+df <- data.frame(
+  timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:50],
+  boolCol = sample(c(TRUE,FALSE), 50, TRUE),
+  col1 = sample(1000, size = 50, replace = TRUE),
+  col2 = sample(1000, size = 50, replace = TRUE),
+  col3 = 1:50
+)
+th <- client$import_table(df)
+
+# get the dimension of the table
+dim(th)
+
+# get the last 10 rows of the table
+th2 <- tail(th, 10)
+as.data.frame(th2)
+
+# create several new columns
+th3 <- th$update(c("col4 = col1 + col2", "charCol = col3 \% 2 == 0 ? `A` : `B`"))
+as.data.frame(th3)
+
+# filter based on parity of col3
+th4 <- th3$where("charCol == `A`")
+as.data.frame(th4)
+
+# select a subset of columns
+th5 <- th3$select(c("timeCol", "col1", "col4"))
+as.data.frame(th5)
+
+# drop timestamp column and get sum of remaining columns grouped by boolCol and charCol
+th6 <- th3$
+  drop_columns("timeCol")$
+  sum_by(c("boolCol", "charCol"))
+as.data.frame(th6)
+
+client$close()
+}
+
+}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{

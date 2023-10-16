@@ -36,6 +36,36 @@ hidden from the user. However, it is important to understand this detail for deb
 a \code{uby} function can otherwise seem unexpected.
 }
 \examples{
-print("hello!")
+\dontrun{
+library(rdeephaven)
+
+# connecting to Deephaven server
+client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+
+# create data frame, push to server, retrieve TableHandle
+df <- data.frame(
+  timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
+  boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+  col1 = sample(10000, size = 500, replace = TRUE),
+  col2 = sample(10000, size = 500, replace = TRUE),
+  col3 = 1:500
+)
+th <- client$import_table(df)
+
+# compute consecutive differences of col1 and col2
+th1 <- th$
+  update_by(uby_delta(c("col1Delta = col1", "col2Delta = col2")))
+
+# compute consecutive differences of col1 and col2, grouped by boolCol
+th2 <- th$
+  update_by(uby_delta(c("col1Delta = col1", "col2Delta = col2")), by="boolCol")
+
+# compute consecutive differences of col1 and col2, grouped by boolCol and parity of col3
+th3 <- th$
+  update("col3Parity = col3 \% 2")$
+  update_by(uby_delta(c("col1Delta = col1", "col2Delta = col2")), by=c("boolCol", "col3Parity"))
+
+client$close()
+}
 
 }

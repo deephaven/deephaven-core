@@ -26,6 +26,37 @@ hidden from the user. However, it is important to understand this detail for deb
 a \code{uby} function can otherwise seem unexpected.
 }
 \examples{
-print("hello!")
+\dontrun{
+library(rdeephaven)
+
+# connecting to Deephaven server
+client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+
+# create data frame, push to server, retrieve TableHandle
+df <- data.frame(
+  timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
+  boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+  col1 = replace(sample(10000, size = 500, replace = TRUE), sample(500, 100), NA),
+  col2 = replace(sample(10000, size = 500, replace = TRUE), sample(500, 100), NA),
+  col3 = replace(1:500, sample(500, 100), NA)
+)
+th <- client$import_table(df)
+
+# forward fill col1 and col2
+th1 <- th$
+  update_by(uby_forward_fill(c("col1", "col2")))
+
+# forward fill col1 and col2, grouped by boolCol
+th2 <- th$
+ update_by(uby_forward_fill(c("col1", "col2")), by="boolCol")
+
+# forward fill col3, compute parity of col3, and forward fill col1 and col2, grouped by boolCol and parity of col3
+th3 <- th$
+  update_by(uby_forward_fill("col3"))$
+  update("col3Parity = col3 \% 2")$
+  update_by(uby_forward_fill(c("col1", "col2")), by=c("boolCol", "col3Parity"))
+
+client$close()
+}
 
 }
