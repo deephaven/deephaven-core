@@ -2642,10 +2642,15 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             @NotNull final PyCallableWrapper pyCallableWrapper) {
 
         pyCallableWrapper.parseSignature();
+        if (!pyCallableWrapper.isVectorizableReturnType()) {
+            throw new PythonCallVectorizationFailure(
+                    "Python function return type is not supported: " + pyCallableWrapper.getReturnType());
+        }
 
         // Python vectorized functions(numba, DH) return arrays of primitive/Object types. This will break the generated
         // expression evaluation code that expects singular values. This check makes sure that numba/dh vectorized
         // functions must be used alone as the entire expression after removing the enclosing parentheses.
+
         Node n1 = n;
         boolean autoCastChecked = false;
         while (n1.hasParentNode()) {
@@ -2688,6 +2693,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             throw new PythonCallVectorizationFailure("Python function argument count mismatch: " + n + " "
                     + paramTypes.size() + " vs. " + expressions.length);
         }
+
     }
 
     private void prepareVectorizationArgs(MethodCallExpr n, QueryScope queryScope, Expression[] expressions,

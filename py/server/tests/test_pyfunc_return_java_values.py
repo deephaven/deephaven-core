@@ -1,15 +1,15 @@
 #
 #     Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
-import time
+import datetime
 import unittest
-from typing import List, Tuple, Sequence, Union
+from typing import List, Union, Tuple, Sequence
 
+import numba as nb
 import numpy as np
 import pandas as pd
-import datetime
+
 from deephaven import empty_table, dtypes
-from deephaven import time as dhtime
 from tests.testbase import BaseTestCase
 
 _J_TYPE_NP_DTYPE_MAP = {
@@ -126,9 +126,9 @@ foo = Foo()
             "np_array",
         ]
 
-        # we are capable of mapping all datetime array (Sequence, np.ndarray) to instant array, so even if the actual
-        # return value of the function doesn't match its type hint (which will be caught by a static type checker. we
-        # still can convert it to instant array
+        # we are capable of mapping all datetime arrays (Sequence, np.ndarray) to instant arrays, so even if the actual
+        # return value of the function doesn't match its type hint (which will be caught by a static type checker),
+        # as long as it is a valid datetime collection, we can still convert it to instant array
         for np_dtype in dt_dtypes:
             for data in dt_data:
                 with self.subTest(np_dtype=np_dtype, data=data):
@@ -168,6 +168,40 @@ foo = Foo()
         with self.subTest(fn3):
             t = empty_table(1).update("X = i").update(f"Y= fn3(X + 1)")
             self.assertEqual(t.columns[1].data_type, dtypes.JObject)
+
+
+    def test_vectorization_off_on_return_type(self):
+        def f1(x) -> List[str]:
+            return ["a"]
+
+        t = empty_table(10).update("X = f1(3 + i)")
+        self.assertEqual(t.columns[0].data_type, dtypes.string_array)
+
+        t = empty_table(10).update("X = f1(i)")
+        self.assertEqual(t.columns[0].data_type, dtypes.string_array)
+
+        t = empty_table(10).update(["A=i%2", "B=i"]).group_by("A")
+
+        # Testing https://github.com/deephaven/deephaven-core/issues/4557
+        def f4557_1(x, y) -> np.ndarray[np.int64]:
+            # np.array is still needed as of v0.29
+            return np.array(x) + y
+
+        # Testing https://github.com/deephaven/deephaven-core/issues/4562
+        @nb.guvectorize([(nb.int64[:], nb.int64, nb.int64[:])], "(m),()->(m)", nopython=True)
+        def f4562_1(x, y, res):
+            res[:] = x + y
+
+        t2 = t.update([
+            "X = f4557_1(B,3)",
+            "Y = f4562_1(B,3)"
+        ])
+        self.assertEqual(t2.columns[2].data_type, dtypes.long_array)
+        self.assertEqual(t2.columns[3].data_type, dtypes.long_array)
+
+        t3 = t2.ungroup()
+        self.assertEqual(t3.columns[2].data_type, dtypes.int64)
+        self.assertEqual(t3.columns[3].data_type, dtypes.int64)
 
 
 if __name__ == '__main__':
