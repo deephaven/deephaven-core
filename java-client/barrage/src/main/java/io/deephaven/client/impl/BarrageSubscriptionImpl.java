@@ -501,8 +501,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         @Override
         public void onClose() {
-            // TODO NOCOMMIT NATE: tmp log to see if I can trigger this
-            log.error().append("BarrageSubscriptionImpl::onClose").endl();
             signalCompletion();
         }
     }
