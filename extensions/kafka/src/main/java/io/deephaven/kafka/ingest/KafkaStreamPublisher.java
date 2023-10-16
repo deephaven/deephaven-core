@@ -189,6 +189,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                         : null) {
             WritableObjectChunk<Object, Values> keyChunk;
             if (keyChunkCloseable != null) {
+                keyChunkCloseable.fillWithValue(0, keyChunkCloseable.size(), null);
                 keyChunkCloseable.setSize(0);
                 keyChunk = keyChunkCloseable;
             } else if (keyIsSimpleObject) {
@@ -198,6 +199,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
             }
             WritableObjectChunk<Object, Values> valueChunk;
             if (valueChunkCloseable != null) {
+                valueChunkCloseable.fillWithValue(0, valueChunkCloseable.size(), null);
                 valueChunkCloseable.setSize(0);
                 valueChunk = valueChunkCloseable;
             } else if (valueIsSimpleObject) {
@@ -371,6 +373,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
             return;
         }
         keyProcessor.handleChunk(objectChunk, publisherChunks);
+        objectChunk.fillWithValue(0, objectChunk.size(), null);
         objectChunk.setSize(0);
     }
 
@@ -379,6 +382,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
             return;
         }
         valueProcessor.handleChunk(objectChunk, publisherChunks);
+        objectChunk.fillWithValue(0, objectChunk.size(), null);
         objectChunk.setSize(0);
     }
 
