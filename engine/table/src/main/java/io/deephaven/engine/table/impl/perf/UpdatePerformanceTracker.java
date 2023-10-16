@@ -166,7 +166,7 @@ public class UpdatePerformanceTracker {
         }
         final long intervalEndTimeMillis = System.currentTimeMillis();
         final long intervalEndTimeNanos = System.nanoTime();
-        try (final SafeCloseable ignored1 = context.open()) {
+        try {
             finishInterval(
                     getInternalState(),
                     intervalStartTimeMillis,
@@ -228,8 +228,8 @@ public class UpdatePerformanceTracker {
      */
     private void finishInterval(
             final InternalState internalState,
-            final long intervalStartTimeMillis,
             final long intervalEndTimeMillis,
+            final long intervalStartTimeMillis,
             final long intervalDurationNanos) {
         /*
          * Visit all entry references. For entries that no longer exist: Remove by index from the entry list. For

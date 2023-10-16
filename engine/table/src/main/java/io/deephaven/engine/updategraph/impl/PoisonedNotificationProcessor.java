@@ -8,9 +8,9 @@ import org.jetbrains.annotations.NotNull;
  * The poisoned notification processor is used when an update graph has not yet been started, throwing an
  * IllegalStateException on all operations.
  */
-final class PoisonedNotificationProcessor implements AbstractUpdateGraph.NotificationProcessor {
+final class PoisonedNotificationProcessor implements BaseUpdateGraph.NotificationProcessor {
 
-    static final AbstractUpdateGraph.NotificationProcessor INSTANCE = new PoisonedNotificationProcessor();
+    static final BaseUpdateGraph.NotificationProcessor INSTANCE = new PoisonedNotificationProcessor();
 
     private static RuntimeException notYetStarted() {
         return new IllegalStateException("PeriodicUpdateGraph has not been started yet");

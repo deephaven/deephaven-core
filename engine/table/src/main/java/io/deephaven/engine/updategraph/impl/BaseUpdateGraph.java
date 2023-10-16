@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * TODO: write an explanation.
  */
-public abstract class AbstractUpdateGraph implements UpdateGraph, LogOutputAppendable {
+public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendable {
     /**
      * If the provided update graph is a {@link PeriodicUpdateGraph} then create a PerformanceEntry using the given
      * description. Otherwise, return null.
@@ -52,8 +52,8 @@ public abstract class AbstractUpdateGraph implements UpdateGraph, LogOutputAppen
     public static PerformanceEntry createUpdatePerformanceEntry(
             final UpdateGraph updateGraph,
             final String description) {
-        if (updateGraph instanceof AbstractUpdateGraph) {
-            final AbstractUpdateGraph aug = (AbstractUpdateGraph) updateGraph;
+        if (updateGraph instanceof BaseUpdateGraph) {
+            final BaseUpdateGraph aug = (BaseUpdateGraph) updateGraph;
             if (aug.updatePerformanceTracker != null) {
                 return aug.updatePerformanceTracker.getEntry(description);
             }
@@ -219,7 +219,7 @@ public abstract class AbstractUpdateGraph implements UpdateGraph, LogOutputAppen
 
 
 
-    public AbstractUpdateGraph(
+    public BaseUpdateGraph(
             final String name,
             final boolean allowUnitTestMode,
             final Logger log,

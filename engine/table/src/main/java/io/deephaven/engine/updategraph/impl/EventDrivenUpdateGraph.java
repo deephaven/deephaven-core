@@ -1,6 +1,7 @@
 package io.deephaven.engine.updategraph.impl;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
@@ -15,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
  * when a call to {@link #requestRefresh()} is made. All sources are synchronously refreshed on that thread; and then
  * the resultant notifications are also synchronously processed.
  */
-public class EventDrivenUpdateGraph extends AbstractUpdateGraph {
+public class EventDrivenUpdateGraph extends BaseUpdateGraph {
     private static final Logger log = LoggerFactory.getLogger(EventDrivenUpdateGraph.class);
 
     public EventDrivenUpdateGraph(String name, long minimumCycleDurationToLogNanos) {
@@ -51,7 +52,7 @@ public class EventDrivenUpdateGraph extends AbstractUpdateGraph {
     public void requestRefresh() {
         // do the work to refresh everything, on this thread
         isUpdateThread.set(true);
-        try {
+        try (final SafeCloseable ignored = ExecutionContext.newBuilder().setUpdateGraph(this).build().open())  {
             refreshAllTables();
         } finally {
             isUpdateThread.remove();

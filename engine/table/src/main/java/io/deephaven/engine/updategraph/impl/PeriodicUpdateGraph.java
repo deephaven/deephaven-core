@@ -12,7 +12,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.hash.KeyedObjectHashMap;
@@ -51,7 +50,7 @@ import java.util.function.LongConsumer;
  * defined)</li>
  * </ul>
  */
-public class PeriodicUpdateGraph extends AbstractUpdateGraph {
+public class PeriodicUpdateGraph extends BaseUpdateGraph {
 
     public static final String DEFAULT_UPDATE_GRAPH_NAME = "DEFAULT";
     public static final int NUM_THREADS_DEFAULT_UPDATE_GRAPH =

@@ -1,7 +1,5 @@
 package io.deephaven.engine.updategraph.impl;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.configuration.DataDir;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
@@ -11,7 +9,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.LongSingleValueSource;
-import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
@@ -86,7 +83,7 @@ public class TestEventDrivenUpdateGraph {
     public void testSimpleAdd() {
 
         final EventDrivenUpdateGraph eventDrivenUpdateGraph = new EventDrivenUpdateGraph("TestEDUG",
-                AbstractUpdateGraph.DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS);
+                BaseUpdateGraph.DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS);
 
         final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(eventDrivenUpdateGraph)
                 .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
@@ -108,7 +105,7 @@ public class TestEventDrivenUpdateGraph {
     public void testSimpleModify() {
 
         final EventDrivenUpdateGraph eventDrivenUpdateGraph = new EventDrivenUpdateGraph("TestEDUG",
-                AbstractUpdateGraph.DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS);
+                BaseUpdateGraph.DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS);
 
         final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(eventDrivenUpdateGraph)
                 .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
