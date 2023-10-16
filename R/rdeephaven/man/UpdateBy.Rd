@@ -69,10 +69,42 @@ For more details on each aggregation function, click on one of the methods above
 by running \code{?uby_cum_min}, \code{?uby_delta}, etc.
 }
 
-\section{Examples}{
+\examples{
+\dontrun{
+library(rdeephaven)
 
+# connecting to Deephaven server
+client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{NULL
-}\if{html}{\out{</div>}}
+# create dataframe, push to server, retrieve TableHandle
+df <- data.frame(
+  timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
+  boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+  col1 = 1:500,
+  col2 = sample(10000, size = 500, replace = TRUE),
+  col3 = sample(10000, size = 500, replace = TRUE)
+)
+th <- client$import_table(df)
+
+# compute 10-row exponential weighted moving average of col2 and col3, grouped by boolCol
+th1 <- th$
+  update_by(uby_ema_tick(decay_ticks=10, cols=c("col2Ema = col2", "col3Ema = col3")), by="boolCol")
+
+# compute rolling 10-second weighted average and standard deviation of col2 and col3, weighted by col1
+th2 <- th$
+  update_by(
+    c(uby_rolling_wavg_time(ts_col="timeCol", wcol="col1", cols=c("col2WAvg = col2", "col3WAvg = col3"), rev_time="PT10s"),
+      uby_rolling_std_time(ts_col="timeCol", cols=c("col2Std = col2", "col3Std = col3"), rev_time="PT10s")))
+
+# compute cumulative minimum and maximum of col2 and col3 respectively, and the rolling 20-window sum of col1, grouped by boolCol
+th3 <- th$
+  update_by(
+    c(uby_cum_min(cols="col2"),
+      uby_cum_max(cols="col3"),
+      uby_rolling_sum_tick(cols="col1", rev_ticks=20)),
+    by="boolCol")
+
+client$close()
 }
 
+}

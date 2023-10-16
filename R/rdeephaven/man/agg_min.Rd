@@ -41,16 +41,18 @@ df <- data.frame(
 th <- client$import_table(df)
 
 # get minimum elements of Number1 and Number2
-th_min <- th$
+th1 <- th$
   agg_by(agg_min(c("Number1", "Number2")))
 
 # get minimum elements of Number1 and Number2 grouped by X
-th_min_by_x <- th$
+th2 <- th$
   agg_by(agg_min(c("Number1", "Number2")), by="X")
 
 # get minimum elements of Number1 and Number2 grouped by X and Y
-th_min_by_x_and_y <- th$
+th3 <- th$
   agg_by(agg_min(c("Number1", "Number2")), by=c("X", "Y"))
+
+client$close()
 }
 
 }

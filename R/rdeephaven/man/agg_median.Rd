@@ -40,17 +40,19 @@ df <- data.frame(
 )
 th <- client$import_table(df)
 
-# get median of Number1 and Number2
-th_med <- th$
+# compute median of Number1 and Number2
+th1 <- th$
   agg_by(agg_median(c("Number1", "Number2")))
 
-# get median of Number1 and Number2 grouped by X
-th_med_by_x <- th$
+# compute median of Number1 and Number2 grouped by X
+th2 <- th$
   agg_by(agg_median(c("Number1", "Number2")), by="X")
 
-# get median of Number1 and Number2 grouped by X and Y
-th_med_by_x_and_y <- th$
+# compute median of Number1 and Number2 grouped by X and Y
+th3 <- th$
   agg_by(agg_median(c("Number1", "Number2")), by=c("X", "Y"))
+
+client$close()
 }
 
 }

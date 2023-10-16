@@ -40,17 +40,19 @@ df <- data.frame(
 )
 th <- client$import_table(df)
 
-# get variance of Number1 and Number2
-th_var <- th$
+# compute variance of Number1 and Number2
+th1 <- th$
   agg_by(agg_var(c("Number1", "Number2")))
 
-# get variance of Number1 and Number2 grouped by X
-th_var_by_x <- th$
+# compute variance of Number1 and Number2 grouped by X
+th2 <- th$
   agg_by(agg_var(c("Number1", "Number2")), by="X")
 
-# get variance of Number1 and Number2 grouped by X and Y
-th_var_by_x_and_y <- th$
+# compute variance of Number1 and Number2 grouped by X and Y
+th3 <- th$
   agg_by(agg_var(c("Number1", "Number2")), by=c("X", "Y"))
+
+client$close()
 }
 
 }

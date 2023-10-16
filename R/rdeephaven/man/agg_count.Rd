@@ -42,12 +42,14 @@ df <- data.frame(
 th <- client$import_table(df)
 
 # count number of elements in each group when grouped by X, name resulting column "count"
-th_count_by_x <- th$
+th1 <- th$
   agg_by(agg_count("count"), by="X")
 
 # count number of elements in each group when grouped by X and Y, name resulting column "CountingCol"
-th_count_by_x_and_y <- th$
+th2 <- th$
   agg_by(agg_count("CountingCol"), by=c("X", "Y"))
+
+client$close()
 }
 
 }

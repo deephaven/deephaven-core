@@ -40,17 +40,19 @@ df <- data.frame(
 )
 th <- client$import_table(df)
 
-# get standard deviation of Number1 and Number2
-th_std <- th$
+# compute standard deviation of Number1 and Number2
+th1 <- th$
   agg_by(agg_std(c("Number1", "Number2")))
 
-# get standard deviation of Number1 and Number2 grouped by X
-th_std_by_x <- th$
+# compute standard deviation of Number1 and Number2 grouped by X
+th2 <- th$
   agg_by(agg_std(c("Number1", "Number2")), by="X")
 
-# get standard deviation of Number1 and Number2 grouped by X and Y
-th_std_by_x_and_y <- th$
+# compute standard deviation of Number1 and Number2 grouped by X and Y
+th3 <- th$
   agg_by(agg_std(c("Number1", "Number2")), by=c("X", "Y"))
+
+client$close()
 }
 
 }

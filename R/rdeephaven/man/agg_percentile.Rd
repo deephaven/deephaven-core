@@ -42,17 +42,19 @@ df <- data.frame(
 )
 th <- client$import_table(df)
 
-# get 20th percentile of Number1 and Number2
-th_pct <- th$
+# compute 20th percentile of Number1 and Number2
+th1 <- th$
   agg_by(agg_percentile(percentile=0.2, cols=c("Number1", "Number2")))
 
-# get 50th percentile of Number1 and Number2 grouped by X
-th_pct_by_x <- th$
+# compute 50th percentile of Number1 and Number2 grouped by X
+th2 <- th$
   agg_by(agg_percentile(percentile=0.5, cols=c("Number1", "Number2")), by="X")
 
-# get 75th percentile of Number1 and Number2 grouped by X and Y
-th_pct_by_x_and_y <- th$
+# compute 75th percentile of Number1 and Number2 grouped by X and Y
+th3 <- th$
   agg_by(agg_percentile(percentile=0.75, cols=c("Number1", "Number2")), by=c("X", "Y"))
+
+client$close()
 }
 
 }

@@ -41,16 +41,18 @@ df <- data.frame(
 th <- client$import_table(df)
 
 # get maximum elements of Number1 and Number2
-th_max <- th$
+th1 <- th$
   agg_by(agg_max(c("Number1", "Number2")))
 
 # get maximum elements of Number1 and Number2 grouped by X
-th_max_by_x <- th$
+th2 <- th$
   agg_by(agg_max(c("Number1", "Number2")), by="X")
 
 # get maximum elements of Number1 and Number2 grouped by X and Y
-th_max_by_x_and_y <- th$
+th3 <- th$
   agg_by(agg_max(c("Number1", "Number2")), by=c("X", "Y"))
+
+client$close()
 }
 
 }

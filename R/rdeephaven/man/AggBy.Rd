@@ -73,27 +73,29 @@ df <- data.frame(
 th <- client$import_table(df)
 
 # get first and last elements of each column
-th_first_last <- th$
+th1 <- th$
   agg_by(agg_first(c("XFirst = X", "YFirst = Y", "Number1First = Number1", "Number2First = Number2")),
          agg_last(c("XLast = X", "YLast = Y", "Number1Last = Number1", "Number2Last = Number2")))
 
-# get mean and standard deviation of Number1 and Number2, grouped by X
-th_mean_sd_by_x <- th$
+# compute mean and standard deviation of Number1 and Number2, grouped by X
+th2 <- th$
   agg_by(
     c(agg_avg(c("Number1Avg = Number1", "Number2Avg = Number2")),
       agg_std(c("Number1Std = Number1", "Number2Std = Number2"))),
     by="X")
 
-# get maximum of all non-grouping columns, grouped by X and Y
-th_max_by_x_y <- th$
+# compute maximum of all non-grouping columns, grouped by X and Y
+th3 <- th$
   agg_all_by(agg_max(), by=c("X", "Y"))
 
-# get minimum and maximum of Number1 and Number2 respectively grouped by Y
-th_min_max_by_x <- th$
+# compute minimum and maximum of Number1 and Number2 respectively grouped by Y
+th4 <- th$
   agg_by(
     c(agg_min("Number1Min = Number1"),
       agg_max("Number2Max = Number2")),
     by="Y")
+
+client$close()
 }
 
 }

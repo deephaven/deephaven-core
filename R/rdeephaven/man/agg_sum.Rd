@@ -40,17 +40,19 @@ df <- data.frame(
 )
 th <- client$import_table(df)
 
-# get sum of Number1 and Number2
-th_sum <- th$
+# compute sum of Number1 and Number2
+th1 <- th$
   agg_by(agg_sum(c("Number1", "Number2")))
 
-# get sum of Number1 and Number2 grouped by X
-th_sum_by_x <- th$
+# compute sum of Number1 and Number2 grouped by X
+th2 <- th$
   agg_by(agg_sum(c("Number1", "Number2")), by="X")
 
-# get sum of Number1 and Number2 grouped by X and Y
-th_sum_by_x_and_y <- th$
+# compute sum of Number1 and Number2 grouped by X and Y
+th3 <- th$
   agg_by(agg_sum(c("Number1", "Number2")), by=c("X", "Y"))
+
+client$close()
 }
 
 }

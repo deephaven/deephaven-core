@@ -40,17 +40,19 @@ df <- data.frame(
 )
 th <- client$import_table(df)
 
-# get first elements of all columns
-th_last <- th$
+# get last elements of all columns
+th1 <- th$
   agg_by(agg_last(c("X", "Y", "Number1", "Number2")))
 
 # get last elements of Y, Number1, and Number2 grouped by X
-th_last_by_x <- th$
+th2 <- th$
   agg_by(agg_last(c("Y", "Number1", "Number2")), by="X")
 
 # get last elements of Number1 and Number2 grouped by X and Y
-th_last_by_x_and_y <- th$
+th3 <- th$
   agg_by(agg_last(c("Number1", "Number2")), by=c("X", "Y"))
+
+client$close()
 }
 
 }

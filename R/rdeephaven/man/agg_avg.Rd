@@ -40,17 +40,19 @@ df <- data.frame(
 )
 th <- client$import_table(df)
 
-# get average of Number1 and Number2
-th_avg <- th$
+# compute average of Number1 and Number2
+th1 <- th$
   agg_by(agg_avg(c("Number1", "Number2")))
 
-# get average of Number1 and Number2 grouped by X
-th_avg_by_x <- th$
+# compute average of Number1 and Number2 grouped by X
+th2 <- th$
   agg_by(agg_avg(c("Number1", "Number2")), by="X")
 
-# get average of Number1 and Number2 grouped by X and Y
-th_avg_by_x_and_y <- th$
+# compute average of Number1 and Number2 grouped by X and Y
+th3 <- th$
   agg_by(agg_avg(c("Number1", "Number2")), by=c("X", "Y"))
+
+client$close()
 }
 
 }
