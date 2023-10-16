@@ -14,6 +14,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -476,6 +477,15 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             // @formatter:on
 
             if (isComplete) {
+                // remove all unpopulated rows from viewport snapshots
+                if (isSnapshot && serverViewport != null) {
+                    // noinspection resource
+                    WritableRowSet currentRowSet = resultTable.getRowSet().writableCast();
+                    try (final RowSet populated = currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {
+                        currentRowSet.retain(populated);
+                    }
+                }
+
                 signalCompletion();
             }
 

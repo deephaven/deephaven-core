@@ -185,6 +185,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
             final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(flatbufSchema);
             this.barrageTable = BarrageTable.make(updateSourceCombiner, ExecutionContext.getContext().getUpdateGraph(),
                     null, schema.tableDef, schema.attributes, null);
+            this.barrageTable.addSourceToRegistrar();
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
                     .useDeephavenNulls(useDeephavenNulls)
