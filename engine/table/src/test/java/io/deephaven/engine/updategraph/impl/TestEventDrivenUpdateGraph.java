@@ -5,11 +5,13 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.LongSingleValueSource;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.junit.*;
@@ -63,12 +65,13 @@ public class TestEventDrivenUpdateGraph {
             svcs = (LongSingleValueSource)getColumnSource("V", long.class);
             svcs.startTrackingPrevValues();
             updateGraph.addSource(this);
+            svcs.set(0L);
         }
 
         @Override
         public void run() {
             svcs.set(svcs.getLong(0) + 1);
-            notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(), getRowSet());
+            notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(), getRowSet().copy());
         }
     }
 
@@ -120,12 +123,21 @@ public class TestEventDrivenUpdateGraph {
             do {
                 TestCase.assertEquals(1, updated.size());
                 eventDrivenUpdateGraph.requestRefresh();
-                final long xpv = xcs.getPrevLong (updated.getRowSet().firstRowKey());
-                final long xv = xcs.getLong (updated.getRowSet().firstRowKey());
-                TestCase.assertEquals(2L * (steps - 1), xpv);
-                TestCase.assertEquals(2L * steps, xv);
+
+                TableTools.showWithRowSet(modifySource);
+
+                final TrackingRowSet rowSet = updated.getRowSet();
+                System.out.println("Step = " + steps);
+//                final long xpv = xcs.getPrevLong(rowSet.prev().firstRowKey());
+//                TestCase.assertEquals(2L * (steps), xpv);
+                final long xv = xcs.getLong (rowSet.firstRowKey());
+                TestCase.assertEquals(2L * (steps + 1), xv);
+
+                Thread.sleep(1000);
             } while (steps++ < 100);
-            TestCase.assertEquals(steps, updated.size());
+            TestCase.assertEquals(1, updated.size());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 }

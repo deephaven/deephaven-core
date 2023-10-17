@@ -1566,7 +1566,6 @@ public class KafkaTools {
                 } else {
                     result = definitionFactory.apply(commonColumnName);
                 }
-                consumerProperties.remove(nameProperty);
             } else if (nameDefault == null) {
                 result = null;
             } else {

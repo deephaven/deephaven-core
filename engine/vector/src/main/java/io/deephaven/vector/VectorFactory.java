@@ -14,6 +14,12 @@ public enum VectorFactory {
     // @formatter:off
 
     Boolean() {
+         @Override
+         @NotNull
+         public Class<? extends Vector<?>> vectorType() {
+             throw new UnsupportedOperationException("Vector is not implemented for primitive booleans");
+         }
+
         @Override
         @NotNull
         public final Vector<?> vectorWrap(@NotNull final Object array) {
@@ -30,6 +36,12 @@ public enum VectorFactory {
     Char() {
         @Override
         @NotNull
+        public Class<? extends Vector<?>> vectorType() {
+            return CharVector.class;
+        }
+
+        @Override
+        @NotNull
         public final CharVector vectorWrap(@NotNull final Object array) {
             return new CharVectorDirect((char[]) array);
         }
@@ -42,6 +54,12 @@ public enum VectorFactory {
     },
 
     Byte() {
+        @Override
+        @NotNull
+        public Class<? extends Vector<?>> vectorType() {
+            return ByteVector.class;
+        }
+
         @Override
         @NotNull
         public final ByteVector vectorWrap(@NotNull final Object array) {
@@ -58,6 +76,12 @@ public enum VectorFactory {
     Short() {
         @Override
         @NotNull
+        public Class<? extends Vector<?>> vectorType() {
+            return ShortVector.class;
+        }
+
+        @Override
+        @NotNull
         public final ShortVector vectorWrap(@NotNull final Object array) {
             return new ShortVectorDirect((short[]) array);
         }
@@ -70,6 +94,12 @@ public enum VectorFactory {
     },
 
     Int() {
+        @Override
+        @NotNull
+        public Class<? extends Vector<?>> vectorType() {
+            return IntVector.class;
+        }
+
         @Override
         @NotNull
         public final IntVector vectorWrap(@NotNull final Object array) {
@@ -86,6 +116,12 @@ public enum VectorFactory {
     Long() {
         @Override
         @NotNull
+        public Class<? extends Vector<?>> vectorType() {
+            return LongVector.class;
+        }
+
+        @Override
+        @NotNull
         public final LongVector vectorWrap(@NotNull final Object array) {
             return new LongVectorDirect((long[]) array);
         }
@@ -98,6 +134,12 @@ public enum VectorFactory {
     },
 
     Float() {
+        @Override
+        @NotNull
+        public Class<? extends Vector<?>> vectorType() {
+            return FloatVector.class;
+        }
+
         @Override
         @NotNull
         public final FloatVector vectorWrap(@NotNull final Object array) {
@@ -114,6 +156,12 @@ public enum VectorFactory {
     Double() {
         @Override
         @NotNull
+        public Class<? extends Vector<?>> vectorType() {
+            return DoubleVector.class;
+        }
+
+        @Override
+        @NotNull
         public final DoubleVector vectorWrap(@NotNull final Object array) {
             return new DoubleVectorDirect((double[]) array);
         }
@@ -126,6 +174,13 @@ public enum VectorFactory {
     },
 
     Object() {
+        @Override
+        @NotNull
+        public Class<? extends Vector<?>> vectorType() {
+            //noinspection unchecked
+            return (Class<? extends Vector<?>>) (Object) ObjectVector.class;
+        }
+
         @Override
         @NotNull
         public final ObjectVector<?> vectorWrap(@NotNull final Object array) {
@@ -148,6 +203,8 @@ public enum VectorFactory {
     public static VectorFactory forElementType(@NotNull final Class<?> clazz) {
         return BY_ELEMENT_TYPE.get(clazz);
     }
+
+    public abstract @NotNull Class<? extends Vector<?>> vectorType();
 
     @NotNull
     public abstract Vector<?> vectorWrap(@NotNull Object array);
