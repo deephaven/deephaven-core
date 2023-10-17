@@ -133,6 +133,14 @@ public class FunctionGeneratedTableFactory {
         nextRefresh = System.currentTimeMillis() + this.refreshIntervalMs;
 
         Table initialTable = tableGenerator.get();
+        if (initialTable.isRefreshing()) {
+            if (ExecutionContext.getContext().getUpdateGraph() != initialTable.getUpdateGraph()) {
+                throw new IllegalStateException(
+                        "Function-generated tables must belong to the same UpdateGraph as the creating FunctionGeneratedTableFactory.");
+            }
+            initialTable.getUpdateGraph().checkInitiateSerialTableOperation();
+        }
+
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : initialTable.getColumnSourceMap().entrySet()) {
             ColumnSource<?> columnSource = entry.getValue();
             final WritableColumnSource<?> memoryColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
@@ -155,6 +163,15 @@ public class FunctionGeneratedTableFactory {
 
     private long updateTable() {
         Table newTable = tableGenerator.get();
+        if (newTable.isRefreshing()) {
+            if (ExecutionContext.getContext().getUpdateGraph() != newTable.getUpdateGraph()) {
+                throw new IllegalStateException(
+                        "Function-generated tables must belong to the same UpdateGraph as the creating FunctionGeneratedTableFactory.");
+            }
+            if (!newTable.getUpdateGraph().satisfied(newTable.getUpdateGraph().clock().currentStep())) {
+                throw new IllegalStateException("The function-generated table must be satisfied to be valid.");
+            }
+        }
 
         copyTable(newTable);
 
@@ -218,14 +235,6 @@ public class FunctionGeneratedTableFactory {
             nextRefresh = System.currentTimeMillis() + refreshIntervalMs;
 
             doRefresh();
-        }
-
-        @Override
-        public boolean satisfied(long step) {
-            if (refreshIntervalMs >= 0) {
-                return getLastNotificationStep() == updateGraph.clock().currentStep();
-            }
-            return true;
         }
 
         private void doRefresh() {
