@@ -6,7 +6,6 @@ package io.deephaven.server.runner;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
-import io.deephaven.ssl.config.SSLConfig;
 import io.grpc.BindableService;
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
 import io.grpc.ManagedChannelBuilder;
