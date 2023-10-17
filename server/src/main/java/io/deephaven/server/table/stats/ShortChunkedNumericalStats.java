@@ -37,7 +37,7 @@ public class ShortChunkedNumericalStats implements ChunkedNumericalStatsKernel<S
             final RowSequence.Iterator okIt = index.getRowSequenceIterator();
 
             while (okIt.hasMore()) {
-                final RowSequence nextKeys = okIt.getNextRowSequenceThrough(CHUNK_SIZE);
+                final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final ShortChunk<? extends Values> chunk = (usePrev ? columnSource.getPrevChunk(getContext, nextKeys)
                         : columnSource.getChunk(getContext, nextKeys)).asShortChunk();
 

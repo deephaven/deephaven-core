@@ -44,6 +44,7 @@ import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
+import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.input.JsInputTable;
@@ -1445,14 +1446,17 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .refetch(this, workerConnection.metadata())
                 .then(state -> {
                     JsTable table = new JsTable(workerConnection, state);
+
+                    if (table.getColumns().some((p0, p1, p2) -> p0.getName().equals("UNIQUE_KEYS"))) {
+                    }
+                    table.batch(ops -> {
+                        ops.setConfig(new TableConfig());
+                    });
                     table.setViewport(0, 0);
 
                     return table.getViewportData();
                 })
-                .then(tableData -> {
-
-                    return Promise.resolve(new JsColumnStatistics(tableData));
-                });
+                .then(tableData -> Promise.resolve(new JsColumnStatistics(tableData)));
     }
 
     private Literal objectToLiteral(String valueType, Object value) {
