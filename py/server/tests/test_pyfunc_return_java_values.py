@@ -9,7 +9,7 @@ import numba as nb
 import numpy as np
 import pandas as pd
 
-from deephaven import empty_table, dtypes
+from deephaven import empty_table, dtypes, DHError
 from tests.testbase import BaseTestCase
 
 _J_TYPE_NP_DTYPE_MAP = {
@@ -169,7 +169,6 @@ foo = Foo()
             t = empty_table(1).update("X = i").update(f"Y= fn3(X + 1)")
             self.assertEqual(t.columns[1].data_type, dtypes.JObject)
 
-
     def test_vectorization_off_on_return_type(self):
         def f1(x) -> List[str]:
             return ["a"]
@@ -202,6 +201,14 @@ foo = Foo()
         t3 = t2.ungroup()
         self.assertEqual(t3.columns[2].data_type, dtypes.int64)
         self.assertEqual(t3.columns[3].data_type, dtypes.int64)
+
+    def test_vectorization_off_on_return_type_2(self):
+        def f() -> np.ndarray[np.int64]:
+            return np.ndarray([1,2],dtype=np.int64)
+
+        with self.assertRaises(DHError) as cm:
+            t = empty_table(10).update(["X1 = f()"])
+        self.assertIn("not support multi-dimensional arrays", str(cm.exception))
 
 
 if __name__ == '__main__':

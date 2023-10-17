@@ -251,6 +251,9 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
     Raises:
         DHError
     """
+    if isinstance(seq, np.ndarray) and seq.ndim > 1:
+        raise ValueError("array() does not support multi-dimensional arrays")
+
     if not isinstance(dtype, DType):
         raise TypeError(f"array() expects a DType for the first argument but given a {type(dtype).__name__}")
 
