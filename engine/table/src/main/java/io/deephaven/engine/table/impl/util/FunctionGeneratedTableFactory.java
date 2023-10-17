@@ -169,7 +169,7 @@ public class FunctionGeneratedTableFactory {
                         "Function-generated tables must belong to the same UpdateGraph as the creating FunctionGeneratedTableFactory.");
             }
             if (!newTable.getUpdateGraph().satisfied(newTable.getUpdateGraph().clock().currentStep())) {
-                throw new IllegalStateException("The function-generated table must be satisfied to be valid.");
+                throw new IllegalStateException("The function-generated table is not satisfied; did you miss a dependency when specifying source tables?");
             }
         }
 
