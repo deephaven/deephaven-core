@@ -519,7 +519,7 @@ public class ArrowFlightUtil {
                                 // leverage common code for `DoGet` and `BarrageSnapshotOptions`
                                 BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, columns, viewport,
                                         reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener, metrics);
-                                halfClosedState.updateAndGet(current -> {
+                                HalfClosedState newState = halfClosedState.updateAndGet(current -> {
                                     switch (current) {
                                         case DONT_CLOSE:
                                             // record that we have finished sending
@@ -527,7 +527,6 @@ public class ArrowFlightUtil {
                                         case CLIENT_HALF_CLOSED:
                                             // since streaming has now finished, and client already half-closed, time to
                                             // half close from server
-                                            listener.onCompleted();
                                             return HalfClosedState.CLOSED;
                                         case FINISHED_SENDING:
                                         case CLOSED:
@@ -536,6 +535,9 @@ public class ArrowFlightUtil {
                                             throw new IllegalStateException("Unknown state " + current);
                                     }
                                 });
+                                if (newState == HalfClosedState.CLOSED) {
+                                    listener.onCompleted();
+                                }
                             });
                 }
             }
@@ -544,14 +546,13 @@ public class ArrowFlightUtil {
             public void close() {
                 // no work to do for DoGetRequest close
                 // possibly safely complete if finished sending data
-                halfClosedState.updateAndGet(current -> {
+                HalfClosedState newState = halfClosedState.updateAndGet(current -> {
                     switch (current) {
                         case DONT_CLOSE:
                             // record that we have half closed
                             return HalfClosedState.CLIENT_HALF_CLOSED;
                         case FINISHED_SENDING:
                             // since client has now half closed, and we're done sending, time to half-close from server
-                            listener.onCompleted();
                             return HalfClosedState.CLOSED;
                         case CLIENT_HALF_CLOSED:
                         case CLOSED:
@@ -560,6 +561,9 @@ public class ArrowFlightUtil {
                             throw new IllegalStateException("Unknown state " + current);
                     }
                 });
+                if (newState == HalfClosedState.CLOSED) {
+                    listener.onCompleted();
+                }
             }
         }
 
