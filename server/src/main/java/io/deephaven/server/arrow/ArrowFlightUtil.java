@@ -251,14 +251,11 @@ public class ArrowFlightUtil {
             }
             localResultTable.dropReference();
 
-            // no more changes allowed; this is officially static content
-            localResultTable.sealTable(() -> localExportBuilder.submit(() -> {
+            // let's finally export the table to our listener
+            localExportBuilder.submit(() -> {
                 GrpcUtil.safelyComplete(observer);
                 session.removeOnCloseCallback(this);
                 return localResultTable;
-            }), () -> {
-                GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed");
-                session.removeOnCloseCallback(this);
             });
         }
 

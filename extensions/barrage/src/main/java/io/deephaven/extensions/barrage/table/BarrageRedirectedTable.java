@@ -55,8 +55,8 @@ public class BarrageRedirectedTable extends BarrageTable {
             final WritableColumnSource<?>[] writableSources,
             final WritableRowRedirection rowRedirection,
             final Map<String, Object> attributes,
-            final long initialViewPortRows) {
-        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, initialViewPortRows);
+            @Nullable final ViewportChangedCallback vpCallback) {
+        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, vpCallback);
         this.rowRedirection = rowRedirection;
     }
 
@@ -90,15 +90,16 @@ public class BarrageRedirectedTable extends BarrageTable {
         }
 
         if (update.isSnapshot) {
-            serverViewport = update.snapshotRowSet == null ? null : update.snapshotRowSet.copy();
-            serverReverseViewport = update.snapshotRowSetIsReversed;
-            serverColumns = update.snapshotColumns == null ? null : (BitSet) update.snapshotColumns.clone();
+            updateServerViewport(update.snapshotRowSet, update.snapshotColumns, update.snapshotRowSetIsReversed);
         }
 
         // make sure that these RowSet updates make some sense compared with each other, and our current view of the
         // table
         final WritableRowSet currentRowSet = getRowSet().writableCast();
         final boolean mightBeInitialSnapshot = currentRowSet.isEmpty() && update.isSnapshot;
+
+        final RowSet serverViewport = getServerViewport();
+        final boolean serverReverseViewport = getServerReverseViewport();
 
         try (final RowSet currRowsFromPrev = currentRowSet.copy();
                 final WritableRowSet populatedRows =
@@ -247,10 +248,6 @@ public class BarrageRedirectedTable extends BarrageTable {
             return (coalescer == null) ? new UpdateCoalescer(currRowsFromPrev, downstream)
                     : coalescer.update(downstream);
         }
-    }
-
-    private boolean isSubscribedColumn(int i) {
-        return serverColumns == null || serverColumns.get(i);
     }
 
     private RowSet getFreeRows(long size) {
