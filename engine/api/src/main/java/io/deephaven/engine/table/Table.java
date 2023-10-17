@@ -791,10 +791,10 @@ public interface Table extends
     void addUpdateListener(TableUpdateListener listener);
 
     /**
-     * Subscribe for updates to this table. {@code listener} will be invoked via the {@link NotificationQueue}
-     * associated with this Table.
+     * Subscribe for updates to this table if its last notification step matches {@code requiredLastNotificationStep}.
+     * {@code listener} will be invoked via the {@link NotificationQueue} associated with this Table.
      *
-     * @param requiredLastNotificationStep fail to add update listener if the last notification step is not this
+     * @param requiredLastNotificationStep the expected last notification step to match
      * @param listener listener for updates
      * @return true if the listener was added, false if the last notification step requirement was not met
      */

@@ -32,7 +32,7 @@ public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl 
     /**
      * The last clock cycle which the source table produced a notification.
      */
-    protected long lastNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+    long lastNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
 
     /**
      * The sourceTable, used to get the lastNotificationTime.
@@ -107,6 +107,9 @@ public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl 
     @OverridingMethodsMustInvokeSuper
     protected synchronized boolean end(@SuppressWarnings("unused") final long clockCycle) {
         if (isInInitialNotificationWindow()) {
+            if (eventualListener == null) {
+                throw new IllegalStateException("Listener has not been set on end!");
+            }
             if (eventualResult == null) {
                 throw new IllegalStateException("Result has not been set on end!");
             }
@@ -123,10 +126,12 @@ public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl 
                     .endl();
         }
 
-        if (success) {
-            eventualResult.setLastNotificationStep(lastNotificationStep);
-            success = subscribeForUpdates(eventualListener);
+        if (!success) {
+            return false;
         }
+        // Be sure to record initial last notification step before subscribing
+        eventualResult.setLastNotificationStep(lastNotificationStep);
+        return subscribeForUpdates(eventualListener);
 
         return success;
     }
@@ -145,7 +150,7 @@ public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl 
      * @param listener The listener to subscribe
      * @return Whether the subscription was successful
      */
-    protected boolean subscribeForUpdates(@NotNull final TableUpdateListener listener) {
+    boolean subscribeForUpdates(@NotNull final TableUpdateListener listener) {
         return sourceTable.addUpdateListener(lastNotificationStep, listener);
     }
 
