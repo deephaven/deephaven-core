@@ -8,22 +8,14 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.ArrayType;
-import io.deephaven.qst.type.BooleanType;
 import io.deephaven.qst.type.BoxedType;
-import io.deephaven.qst.type.ByteType;
-import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
-import io.deephaven.qst.type.DoubleType;
-import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.InstantType;
-import io.deephaven.qst.type.IntType;
-import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.PrimitiveVectorType;
-import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
 import io.deephaven.vector.ByteVector;
@@ -113,8 +105,7 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     }
 
     public static ColumnDefinition<?> of(String name, PrimitiveType<?> type) {
-        final PrimitiveType.Visitor<ColumnDefinition<?>> adapter = new Adapter(name);
-        return ensureConsistent(type, type.walk(adapter));
+        return ensureConsistent(type, new ColumnDefinition<>(name, type.clazz()));
     }
 
     public static ColumnDefinition<?> of(String name, GenericType<?> type) {
@@ -292,8 +283,8 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         return header.componentType().walk(new Adapter(header.name()));
     }
 
-    private static class Adapter implements Type.Visitor<ColumnDefinition<?>>,
-            PrimitiveType.Visitor<ColumnDefinition<?>>, GenericType.Visitor<ColumnDefinition<?>> {
+    private static class Adapter
+            implements Type.Visitor<ColumnDefinition<?>>, GenericType.Visitor<ColumnDefinition<?>> {
 
         private final String name;
 
@@ -303,7 +294,7 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
 
         @Override
         public ColumnDefinition<?> visit(PrimitiveType<?> primitiveType) {
-            return primitiveType.walk((PrimitiveType.Visitor<ColumnDefinition<?>>) this);
+            return new ColumnDefinition<>(name, primitiveType.clazz());
         }
 
         @Override
@@ -312,49 +303,8 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         }
 
         @Override
-        public ColumnDefinition<?> visit(BooleanType booleanType) {
-            return ofBoolean(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(ByteType byteType) {
-            return ofByte(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(CharType charType) {
-            return ofChar(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(ShortType shortType) {
-            return ofShort(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(IntType intType) {
-            return ofInt(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(LongType longType) {
-            return ofLong(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(FloatType floatType) {
-            return ofFloat(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(DoubleType doubleType) {
-            return ofDouble(name);
-        }
-
-        @Override
         public ColumnDefinition<?> visit(BoxedType<?> boxedType) {
-            // treat the same as primitive type
-            return visit(boxedType.primitiveType());
+            return new ColumnDefinition<>(name, boxedType.clazz());
         }
 
         @Override

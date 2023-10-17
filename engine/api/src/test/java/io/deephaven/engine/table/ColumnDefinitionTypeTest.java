@@ -40,23 +40,12 @@ public class ColumnDefinitionTypeTest {
 
     @Test
     public void testPrimitives() {
-        checkTransitiveType(Type.booleanType().boxedType());
-        checkTransitiveType(Type.byteType());
-        checkTransitiveType(Type.charType());
-        checkTransitiveType(Type.shortType());
-        checkTransitiveType(Type.intType());
-        checkTransitiveType(Type.longType());
-        checkTransitiveType(Type.floatType());
-        checkTransitiveType(Type.doubleType());
+        PrimitiveType.instances().forEach(ColumnDefinitionTypeTest::checkTransitiveType);
+    }
 
-        checkTransformedType(Type.booleanType(), Type.booleanType().boxedType());
-        checkTransformedType(Type.byteType().boxedType(), Type.byteType());
-        checkTransformedType(Type.charType().boxedType(), Type.charType());
-        checkTransformedType(Type.shortType().boxedType(), Type.shortType());
-        checkTransformedType(Type.intType().boxedType(), Type.intType());
-        checkTransformedType(Type.longType().boxedType(), Type.longType());
-        checkTransformedType(Type.floatType().boxedType(), Type.floatType());
-        checkTransformedType(Type.doubleType().boxedType(), Type.doubleType());
+    @Test
+    public void testBoxedPrimitives() {
+        BoxedType.instances().forEach(ColumnDefinitionTypeTest::checkTransitiveType);
     }
 
     @Test
@@ -201,10 +190,6 @@ public class ColumnDefinitionTypeTest {
 
     private static void checkTransitiveType(Type<?> type) {
         checkType(type, cd(type));
-    }
-
-    private static void checkTransformedType(Type<?> cdInput, Type<?> expected) {
-        checkType(expected, cd(cdInput));
     }
 
     private static void checkType(Type<?> expected, ColumnDefinition<?> actual) {
