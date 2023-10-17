@@ -74,9 +74,64 @@ public abstract class PrimitiveVectorType<T, ComponentType>
 
     @Check
     final void checkClazz() {
-        if (!VALID_CLASSES.contains(clazz().getName())) {
-            throw new IllegalArgumentException(String.format("Class '%s' is not a valid '%s'",
-                    clazz(), PrimitiveVectorType.class));
+        final String baseClassName = componentType().walk(ExpectedVectorBase.INSTANCE);
+        if (baseClassName == null) {
+            throw new IllegalArgumentException("No support for boolean vectors");
+        }
+        final Class<?> baseClass;
+        try {
+            baseClass = Class.forName(baseClassName, false, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
+        if (!baseClass.isAssignableFrom(clazz())) {
+            throw new IllegalArgumentException(
+                    String.format("Expected %s to be assignable to %s for primitive component type %s",
+                            clazz().getName(), baseClassName, componentType()));
+        }
+    }
+
+    private enum ExpectedVectorBase implements PrimitiveType.Visitor<String> {
+        INSTANCE;
+
+        @Override
+        public String visit(BooleanType booleanType) {
+            return null;
+        }
+
+        @Override
+        public String visit(ByteType byteType) {
+            return BYTE_VECTOR;
+        }
+
+        @Override
+        public String visit(CharType charType) {
+            return CHAR_VECTOR;
+        }
+
+        @Override
+        public String visit(ShortType shortType) {
+            return SHORT_VECTOR;
+        }
+
+        @Override
+        public String visit(IntType intType) {
+            return INT_VECTOR;
+        }
+
+        @Override
+        public String visit(LongType longType) {
+            return LONG_VECTOR;
+        }
+
+        @Override
+        public String visit(FloatType floatType) {
+            return FLOAT_VECTOR;
+        }
+
+        @Override
+        public String visit(DoubleType doubleType) {
+            return DOUBLE_VECTOR;
         }
     }
 }

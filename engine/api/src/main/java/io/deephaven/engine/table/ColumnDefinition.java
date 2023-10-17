@@ -109,17 +109,28 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     }
 
     public static ColumnDefinition<?> of(String name, Type<?> type) {
-        return type.walk(new Adapter(name));
+        return ensureConsistent(type, type.walk(new Adapter(name)));
     }
 
     public static ColumnDefinition<?> of(String name, PrimitiveType<?> type) {
         final PrimitiveType.Visitor<ColumnDefinition<?>> adapter = new Adapter(name);
-        return type.walk(adapter);
+        return ensureConsistent(type, type.walk(adapter));
     }
 
     public static ColumnDefinition<?> of(String name, GenericType<?> type) {
         final GenericType.Visitor<ColumnDefinition<?>> adapter = new Adapter(name);
-        return type.walk(adapter);
+        return ensureConsistent(type, type.walk(adapter));
+    }
+
+    private static <T> ColumnDefinition<T> ensureConsistent(Type<?> expected, ColumnDefinition<T> cd) {
+        final Type<T> actual = cd.getType();
+        if (!expected.equals(actual)) {
+            throw new IllegalStateException(String.format(
+                    "ColumnDefinition.getType() inconsistency. expected=%s, actual=%s, name=%s, dataType=%s, componentType=%s",
+                    expected, actual, cd.getName(), cd.getDataType().getName(),
+                    cd.getComponentType() == null ? null : cd.getComponentType().getName()));
+        }
+        return cd;
     }
 
     public static <T extends Vector<?>> ColumnDefinition<T> ofVector(
@@ -148,6 +159,44 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
             @NotNull final ColumnType columnType) {
         return new ColumnDefinition<>(
                 name, dataType, checkAndMaybeInferComponentType(dataType, componentType), columnType);
+    }
+
+    public static <T> Type<T> type(
+            @NotNull final Class<T> dataType,
+            @Nullable final Class<?> componentType) {
+        if (componentType == null) {
+            return Type.find(dataType);
+        }
+        if (dataType.isArray()) {
+            return NativeArrayType.of(dataType, Type.find(componentType));
+        }
+        if (Vector.class.isAssignableFrom(dataType)) {
+            return vectorTypeAsType(dataType, componentType);
+        }
+        return null;
+    }
+
+    private static <T> Type<T> vectorTypeAsType(
+            @NotNull final Class<T> dataType,
+            @NotNull final Class<?> componentType) {
+        // noinspection unchecked
+        return (Type<T>) vectorType(dataType, componentType);
+    }
+
+    private static <VT extends Vector<VT>> ArrayType<VT, ?> vectorType(
+            @NotNull final Class<?> dataType,
+            @NotNull final Class<?> componentType) {
+        // noinspection unchecked
+        final Class<VT> vectorType = (Class<VT>) dataType;
+        return vectorType(vectorType, Type.find(componentType));
+    }
+
+    private static <VT extends Vector<VT>, ComponentType> ArrayType<VT, ComponentType> vectorType(
+            Class<VT> vectorClass,
+            Type<ComponentType> type) {
+        return type instanceof PrimitiveType
+                ? PrimitiveVectorType.of(vectorClass, (PrimitiveType<ComponentType>) type)
+                : GenericVectorType.of(vectorClass, (GenericType<ComponentType>) type);
     }
 
     /**
@@ -387,6 +436,10 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     @NotNull
     public ColumnType getColumnType() {
         return columnType;
+    }
+
+    public Type<TYPE> getType() {
+        return type(dataType, componentType);
     }
 
     public ColumnDefinition<TYPE> withPartitioning() {

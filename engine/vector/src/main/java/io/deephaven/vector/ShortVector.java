@@ -10,7 +10,6 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
-import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
@@ -27,7 +26,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<ShortVector, Short> type() {
-        return PrimitiveVectorType.of(ShortVector.class, ShortType.of());
+        return Types.SHORT;
     }
 
     /**

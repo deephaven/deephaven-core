@@ -10,7 +10,6 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
-import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
@@ -27,7 +26,7 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<FloatVector, Float> type() {
-        return PrimitiveVectorType.of(FloatVector.class, FloatType.of());
+        return Types.FLOAT;
     }
 
     /**

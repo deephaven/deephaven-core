@@ -11,6 +11,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.qst.column.header.ColumnHeader;
+import io.deephaven.qst.type.Type;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map.Entry;
@@ -265,6 +266,13 @@ public class TableDefinition implements LogOutputAppendable {
      */
     public Class<?>[] getColumnTypesArray() {
         return getColumnStream().map(ColumnDefinition::getDataType).toArray(Class[]::new);
+    }
+
+    /**
+     * @return The column {@link ColumnDefinition#getType()} types} as a list in the same order as {@link #getColumns()}
+     */
+    public List<Type<?>> getColumnTypes2() {
+        return getColumnStream().map(ColumnDefinition::getType).collect(Collectors.toList());
     }
 
     /**

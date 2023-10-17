@@ -10,7 +10,6 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
-import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
@@ -27,7 +26,7 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<LongVector, Long> type() {
-        return PrimitiveVectorType.of(LongVector.class, LongType.of());
+        return Types.LONG;
     }
 
     /**

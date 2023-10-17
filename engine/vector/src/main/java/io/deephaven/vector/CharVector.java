@@ -5,7 +5,6 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
-import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
@@ -22,7 +21,7 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<CharVector, Character> type() {
-        return PrimitiveVectorType.of(CharVector.class, CharType.of());
+        return Types.CHAR;
     }
 
     /**
