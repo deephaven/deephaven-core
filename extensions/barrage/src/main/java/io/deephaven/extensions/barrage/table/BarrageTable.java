@@ -118,7 +118,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     private RowSet serverViewport;
     private BitSet serverColumns;
     private boolean serverReverseViewport;
-    /** a batch of updates may change the viewport more than once, but we cannot deliver until children are notified */
+    /** A batch of updates may change the viewport more than once, but we cannot deliver until the updates have been propagated to this BarrageTable and its last notification step has been updated. */
     private final ArrayDeque<Runnable> pendingVpChangeNotifications = new ArrayDeque<>();
 
     /** synchronize access to pendingUpdates */
@@ -143,7 +143,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     private final SourceRefresher refresher;
 
-    // Notify a listener that the viewport has changed. This is typically used by the client to know when the server
+    // Used to notify a listener that the viewport has changed. This is typically used by the caller to know when the server
     // has acknowledged a viewport change request.
     @Nullable
     private ViewportChangedCallback viewportChangedCallback;

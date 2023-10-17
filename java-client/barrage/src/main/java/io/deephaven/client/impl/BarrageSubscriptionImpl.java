@@ -235,10 +235,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         // test lock conditions
         if (updateGraph.sharedLock().isHeldByCurrentThread()) {
             throw new UnsupportedOperationException(
-                    "Cannot create subscription while holding the UpdateGraph shared lock");
+                    "Cannot wait for subscription to complete while holding the UpdateGraph shared lock");
         }
 
-        boolean holdingUpdateGraphLock = updateGraph.exclusiveLock().isHeldByCurrentThread();
+        final boolean holdingUpdateGraphLock = updateGraph.exclusiveLock().isHeldByCurrentThread();
         if (completedCondition == null && holdingUpdateGraphLock) {
             completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
         }
@@ -468,12 +468,11 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
             final boolean isComplete = exceptionWhileCompleting != null
                     // Full subscription is completed
-                    || (expectedViewport == null && serverViewport == null && correctColumns)
+                    || (correctColumns && expectedViewport == null && serverViewport == null)
                     // Viewport subscription is completed
-                    || (expectedViewport != null
+                    || (correctColumns && expectedViewport != null
                         && expectedReverseViewport == resultTable.getServerReverseViewport()
-                        && expectedViewport.equals(serverViewport)
-                        && correctColumns);
+                        && expectedViewport.equals(serverViewport));
             // @formatter:on
 
             if (isComplete) {

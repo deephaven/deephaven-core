@@ -240,7 +240,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             resultTable.getUpdateGraph().requestSignal(completedCondition);
         }
 
-        BarrageSnapshotImpl.this.notifyAll();
+        notifyAll();
     }
 
     @Override
