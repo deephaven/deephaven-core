@@ -426,14 +426,11 @@ def function_generated_table(table_generator: Callable[..., Table],
         for tbl in source_tables:
             source_j_tables.append(tbl.j_table)
 
-        # Wrap the source_j_tables in a Java array:
-        source_j_tables_jarray = jpy.array(_JTable, source_j_tables)
-
         # Create the function-generated table:
         with auto_locking_ctx(*source_tables):
             j_function_generated_table = _JFunctionGeneratedTableFactory.create(
                 table_generator_j_function,
-                source_j_tables_jarray
+                source_j_tables
         )
 
     return Table(j_function_generated_table)
