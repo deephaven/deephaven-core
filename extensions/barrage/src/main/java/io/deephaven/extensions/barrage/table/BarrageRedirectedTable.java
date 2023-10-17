@@ -90,10 +90,7 @@ public class BarrageRedirectedTable extends BarrageTable {
         }
 
         if (update.isSnapshot) {
-            updateServerViewport(
-                    update.snapshotRowSet == null ? null : update.snapshotRowSet.copy(),
-                    update.snapshotColumns == null ? null : (BitSet) update.snapshotColumns.clone(),
-                    update.snapshotRowSetIsReversed);
+            updateServerViewport(update.snapshotRowSet, update.snapshotColumns, update.snapshotRowSetIsReversed);
         }
 
         // make sure that these RowSet updates make some sense compared with each other, and our current view of the

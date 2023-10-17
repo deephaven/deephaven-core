@@ -118,7 +118,11 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     private RowSet serverViewport;
     private BitSet serverColumns;
     private boolean serverReverseViewport;
-    /** A batch of updates may change the viewport more than once, but we cannot deliver until the updates have been propagated to this BarrageTable and its last notification step has been updated. */
+
+    /**
+     * A batch of updates may change the viewport more than once, but we cannot deliver until the updates have been
+     * propagated to this BarrageTable and its last notification step has been updated.
+     */
     private final ArrayDeque<Runnable> pendingVpChangeNotifications = new ArrayDeque<>();
 
     /** synchronize access to pendingUpdates */
@@ -143,7 +147,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     private final SourceRefresher refresher;
 
-    // Used to notify a listener that the viewport has changed. This is typically used by the caller to know when the server
+    // Used to notify a listener that the viewport has changed. This is typically used by the caller to know when the
+    // server
     // has acknowledged a viewport change request.
     @Nullable
     private ViewportChangedCallback viewportChangedCallback;
@@ -170,8 +175,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         } else {
             stats = new Stats(tableKey);
         }
-
-        serverViewport = null;
 
         this.destSources = new WritableColumnSource<?>[writableSources.length];
         for (int ii = 0; ii < writableSources.length; ++ii) {
@@ -248,7 +251,15 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
 
         if (!isRefreshing()) {
-            realRefresh();
+            try {
+                realRefresh();
+            } catch (Throwable err) {
+                if (viewportChangedCallback != null) {
+                    viewportChangedCallback.onError(err);
+                    viewportChangedCallback = null;
+                }
+                throw err;
+            }
         } else {
             doWakeup();
         }
@@ -280,25 +291,31 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     }
 
     protected void updateServerViewport(
-            final RowSet finalViewport,
+            final RowSet viewport,
             final BitSet columns,
-            final boolean finalReverseViewport) {
-        final BitSet finalColumns = (columns == null || columns.cardinality() == numColumns()) ? null : columns;
+            final boolean reverseViewport) {
+        Assert.holdsLock(this, "BarrageTable.this");
+
+        final RowSet finalViewport = viewport == null ? null : viewport.copy();
+        final BitSet finalColumns = (columns == null || columns.cardinality() == numColumns())
+                ? null
+                : (BitSet) columns.clone();
 
         serverViewport = finalViewport;
         serverColumns = finalColumns;
-        serverReverseViewport = finalReverseViewport;
+        serverReverseViewport = reverseViewport;
 
         if (viewportChangedCallback == null) {
             return;
         }
 
-        // note that we must defer delivering updates until after the children have been notified
+        // We cannot deliver the vp change until the updates have been propagated to this BarrageTable and its last
+        // notification step has been updated.
         pendingVpChangeNotifications.add(() -> {
             if (viewportChangedCallback == null) {
                 return;
             }
-            if (!viewportChangedCallback.viewportChanged(finalViewport, finalColumns, finalReverseViewport)) {
+            if (!viewportChangedCallback.viewportChanged(finalViewport, finalColumns, reverseViewport)) {
                 viewportChangedCallback = null;
             }
         });
@@ -399,7 +416,15 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             pendingError = e;
         }
         if (!isRefreshing()) {
-            realRefresh();
+            try {
+                realRefresh();
+            } catch (Throwable err) {
+                if (viewportChangedCallback != null) {
+                    viewportChangedCallback.onError(err);
+                    viewportChangedCallback = null;
+                }
+                throw err;
+            }
         } else {
             doWakeup();
         }

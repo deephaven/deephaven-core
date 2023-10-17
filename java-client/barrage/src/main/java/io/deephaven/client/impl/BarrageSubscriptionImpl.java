@@ -11,13 +11,11 @@ import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
@@ -48,12 +46,11 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
     private final String logName;
     private final TableHandle tableHandle;
-    private final UpdateGraph updateGraph;
     private final BarrageSubscriptionOptions options;
     private final ClientCallStreamObserver<FlightData> observer;
+    private final CheckForCompletion checkForCompletion;
+    private final BarrageTable resultTable;
 
-    private CheckForCompletion checkForCompletion;
-    private BarrageTable resultTable;
     private boolean subscribed;
     private boolean isSnapshot;
 
@@ -78,7 +75,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         this.logName = tableHandle.exportId().toString();
         this.tableHandle = tableHandle;
-        this.updateGraph = ExecutionContext.getContext().getUpdateGraph();
         this.options = options;
 
         final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
@@ -121,20 +117,17 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 return;
             }
             try (barrageMessage) {
-                final BarrageTable localResultTable = resultTable;
-
-                if (!connected || localResultTable == null) {
+                if (!connected) {
                     return;
                 }
 
-                localResultTable.handleBarrageMessage(barrageMessage);
+                resultTable.handleBarrageMessage(barrageMessage);
             }
         }
 
         @Override
         public void onError(final Throwable t) {
-            final BarrageTable localResultTable = resultTable;
-            if (!connected || localResultTable == null) {
+            if (!connected) {
                 return;
             }
 
@@ -143,7 +136,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     .append(t).endl();
 
             exceptionWhileCompleting = t;
-            localResultTable.handleBarrageError(t);
+            resultTable.handleBarrageError(t);
             handleDisconnect();
         }
 
@@ -194,9 +187,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             subscribed = true;
         }
 
-        checkForCompletion.expectedViewport = viewport == null ? null : viewport.copy();
-        checkForCompletion.expectedColumns = columns == null ? null : (BitSet) (columns.clone());
-        checkForCompletion.expectedReverseViewport = reverseViewport;
+        checkForCompletion.setExpected(
+                viewport == null ? null : viewport.copy(),
+                columns == null ? null : (BitSet) (columns.clone()),
+                reverseViewport);
 
         if (!isSnapshot) {
             resultTable.addSourceToRegistrar();
@@ -210,14 +204,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 .build());
 
         if (blockUntilComplete) {
-            blockUntilComplete();
+            return blockUntilComplete();
         }
 
-        if (exceptionWhileCompleting == null) {
-            return resultTable;
-        } else {
-            throw new UncheckedDeephavenException("Error while handling subscription:", exceptionWhileCompleting);
-        }
+        return resultTable;
     }
 
     private boolean checkIfCompleteOrThrow() {
@@ -227,20 +217,28 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         return completed;
     }
 
-    public void blockUntilComplete() throws InterruptedException {
+    @Override
+    public BarrageTable blockUntilComplete() throws InterruptedException {
         if (checkIfCompleteOrThrow()) {
-            return;
+            return resultTable;
         }
 
         // test lock conditions
-        if (updateGraph.sharedLock().isHeldByCurrentThread()) {
+        if (resultTable.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
             throw new UnsupportedOperationException(
                     "Cannot wait for subscription to complete while holding the UpdateGraph shared lock");
         }
 
-        final boolean holdingUpdateGraphLock = updateGraph.exclusiveLock().isHeldByCurrentThread();
+        final boolean holdingUpdateGraphLock = resultTable.getUpdateGraph().exclusiveLock().isHeldByCurrentThread();
         if (completedCondition == null && holdingUpdateGraphLock) {
-            completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
+            synchronized (this) {
+                if (checkIfCompleteOrThrow()) {
+                    return resultTable;
+                }
+                if (completedCondition == null) {
+                    completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
+                }
+            }
         }
 
         if (holdingUpdateGraphLock) {
@@ -256,6 +254,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         }
 
         checkIfCompleteOrThrow();
+        return resultTable;
     }
 
     private synchronized void signalCompletion() {
@@ -267,9 +266,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         }
 
         if (completedCondition != null) {
-            updateGraph.requestSignal(completedCondition);
+            resultTable.getUpdateGraph().requestSignal(completedCondition);
         }
-        BarrageSubscriptionImpl.this.notifyAll();
+        notifyAll();
     }
 
     @Override
@@ -326,10 +325,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         cleanup();
     }
 
-    private synchronized void cleanup() {
+    private void cleanup() {
         this.connected = false;
         this.tableHandle.close();
-        resultTable = null;
     }
 
     @Override
@@ -449,8 +447,14 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         private BitSet expectedColumns;
         private boolean expectedReverseViewport;
 
+        private synchronized void setExpected(RowSet viewport, BitSet columns, boolean reverseViewport) {
+            expectedViewport = viewport == null ? null : viewport.copy();
+            expectedColumns = columns == null ? null : (BitSet) (columns.clone());
+            expectedReverseViewport = reverseViewport;
+        }
+
         @Override
-        public boolean viewportChanged(
+        public synchronized boolean viewportChanged(
                 @Nullable final RowSet serverViewport,
                 @Nullable final BitSet serverColumns,
                 final boolean serverReverseViewport) {

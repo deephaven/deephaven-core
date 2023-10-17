@@ -18,6 +18,7 @@ import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.io.streams.ByteBufferInputStream;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -68,6 +69,7 @@ public class ArrowToTableConverter {
         return mi;
     }
 
+    @ScriptApi
     public synchronized void setSchema(final byte[] ipcMessage) {
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
@@ -79,6 +81,7 @@ public class ArrowToTableConverter {
         parseSchema((Schema) mi.header.header(new Schema()));
     }
 
+    @ScriptApi
     public synchronized void addRecordBatch(final byte[] ipcMessage) {
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
@@ -101,6 +104,7 @@ public class ArrowToTableConverter {
         resultTable.handleBarrageMessage(msg);
     }
 
+    @ScriptApi
     public synchronized BarrageTable getResultTable() {
         if (!completed) {
             throw new IllegalStateException("Conversion must be completed prior to requesting the result");
@@ -108,6 +112,7 @@ public class ArrowToTableConverter {
         return resultTable;
     }
 
+    @ScriptApi
     public synchronized void onCompleted() throws InterruptedException {
         if (completed) {
             throw new IllegalStateException("Conversion cannot be completed twice");
