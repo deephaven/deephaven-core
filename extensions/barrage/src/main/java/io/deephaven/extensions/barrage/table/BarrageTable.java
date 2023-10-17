@@ -147,9 +147,10 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     private final SourceRefresher refresher;
 
-    // Used to notify a listener that the viewport has changed. This is typically used by the caller to know when the
-    // server
-    // has acknowledged a viewport change request.
+    /**
+     * Used to notify a listener that the viewport has changed. This is typically used by the caller to know when the
+     * server has acknowledged a viewport change request.
+     */
     @Nullable
     private ViewportChangedCallback viewportChangedCallback;
 
@@ -283,9 +284,19 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
                 final long startTm = System.nanoTime();
                 realRefresh();
                 recordMetric(stats -> stats.refresh, System.nanoTime() - startTm);
-            } catch (Exception e) {
-                beginLog(LogLevel.ERROR).append(": Failure during BarrageTable run: ").append(e).endl();
-                notifyListenersOnError(e, null);
+            } catch (Throwable err) {
+                beginLog(LogLevel.ERROR).append(": Failure during BarrageTable instrumentedRefresh: ")
+                        .append(err).endl();
+                notifyListenersOnError(err, null);
+
+                if (viewportChangedCallback != null) {
+                    viewportChangedCallback.onError(err);
+                    viewportChangedCallback = null;
+                }
+                if (err instanceof Error) {
+                    // rethrow if this was an error (which should not be swallowed)
+                    throw err;
+                }
             }
         }
     }
