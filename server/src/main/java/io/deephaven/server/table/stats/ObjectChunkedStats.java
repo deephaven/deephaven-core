@@ -49,8 +49,8 @@ public class ObjectChunkedStats implements ChunkedComparableStatsKernel<Object> 
             }
 
             return TableTools.newTable(
-                    TableTools.longCol("Count", count),
-                    TableTools.longCol("Count", index.size()));
+                    TableTools.longCol("COUNT", count),
+                    TableTools.longCol("SIZE", index.size()));
         }
     }
 }

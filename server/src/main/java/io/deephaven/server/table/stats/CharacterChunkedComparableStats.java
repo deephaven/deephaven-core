@@ -81,12 +81,12 @@ public class CharacterChunkedComparableStats implements ChunkedComparableStatsKe
             }
 
             return TableTools.newTable(
-                    TableTools.longCol("Count", count),
-                    TableTools.longCol("Count", index.size()),
-                    TableTools.intCol("NumUnique", numUnique),
-                    new ColumnHolder<>("UniqueKeys", String[].class, String.class, false,
+                    TableTools.longCol("COUNT", count),
+                    TableTools.longCol("SIZE", index.size()),
+                    TableTools.intCol("UNIQUE_VALUES", numUnique),
+                    new ColumnHolder<>("UNIQUE_KEYS", String[].class, String.class, false,
                             valueCounts.keySet().toArray(String[]::new)),
-                    new ColumnHolder<>("UniqueValues", long[].class, long.class, false,
+                    new ColumnHolder<>("UNIQUE_COUNTS", long[].class, long.class, false,
                             valueCounts.values().stream().mapToLong(Long::longValue).toArray()));
         }
     }

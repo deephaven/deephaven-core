@@ -94,18 +94,18 @@ public class BigDecimalChunkedNumericalStats implements ChunkedNumericalStatsKer
                         .divide(BigDecimal.valueOf(count - 1), SCALE, RoundingMode.HALF_UP), SCALE);
 
         return TableTools.newTable(
-                TableTools.longCol("Count", count),
-                TableTools.longCol("Size", index.size()),
-                new ColumnHolder<>("Sum", BigDecimal.class, null, false, sum),
-                new ColumnHolder<>("AbsSum", BigDecimal.class, null, false, absSum),
-                new ColumnHolder<>("SqrdSum", BigDecimal.class, null, false, sqrdSum),
-                new ColumnHolder<>("Min", BigDecimal.class, null, false, min),
-                new ColumnHolder<>("Max", BigDecimal.class, null, false, max),
-                new ColumnHolder<>("AbsMin", BigDecimal.class, null, false, absMin),
-                new ColumnHolder<>("AbsMax", BigDecimal.class, null, false, absMax),
-                new ColumnHolder<>("Avg", BigDecimal.class, null, false, avg),
-                new ColumnHolder<>("AbsAvg", BigDecimal.class, null, false,
+                TableTools.longCol("COUNT", count),
+                TableTools.longCol("SIZE", index.size()),
+                new ColumnHolder<>("SUM", BigDecimal.class, null, false, sum),
+                new ColumnHolder<>("SUM_ABS", BigDecimal.class, null, false, absSum),
+                new ColumnHolder<>("SUM_SQRD", BigDecimal.class, null, false, sqrdSum),
+                new ColumnHolder<>("MIN", BigDecimal.class, null, false, min),
+                new ColumnHolder<>("MAX", BigDecimal.class, null, false, max),
+                new ColumnHolder<>("MIN_ABS", BigDecimal.class, null, false, absMin),
+                new ColumnHolder<>("MAX_ABS", BigDecimal.class, null, false, absMax),
+                new ColumnHolder<>("AVG", BigDecimal.class, null, false, avg),
+                new ColumnHolder<>("AVG_SUM", BigDecimal.class, null, false,
                         absAvg),
-                new ColumnHolder<>("StdDev", BigDecimal.class, null, false, stdDev));
+                new ColumnHolder<>("STD_DEV", BigDecimal.class, null, false, stdDev));
     }
 }

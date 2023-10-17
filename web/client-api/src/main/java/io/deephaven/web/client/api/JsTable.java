@@ -1433,10 +1433,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @param column
      * @return Promise of dh.ColumnStatistics
      */
-    // TODO: #697: Column statistic support
-    // @JsMethod
+    @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
         return workerConnection.newState((c, state, metadata) -> {
+            ColumnStatisticsRequest req = new ColumnStatisticsRequest();
+            req.setColumnName(column.getName());
+            req.setSourceId(state().getHandle().makeTableReference());
+            req.setResultId(state.getHandle().makeTicket());
+            workerConnection.tableServiceClient().computeColumnStatistics(req, workerConnection.metadata(), c::apply);
         }, "get column statistics")
                 .refetch(this, workerConnection.metadata())
                 .then(state -> {
@@ -1447,7 +1451,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 })
                 .then(tableData -> {
 
-                    return Promise.resolve(new JsColumnStatistics(null));
+                    return Promise.resolve(new JsColumnStatistics(tableData));
                 });
     }
 

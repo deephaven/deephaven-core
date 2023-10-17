@@ -87,17 +87,17 @@ public class FloatChunkedNumericalStats implements ChunkedNumericalStatsKernel<F
 
         double avg = ChunkedNumericalStatsKernel.avg(count, sum);
         return TableTools.newTable(
-                TableTools.longCol("Count", count),
-                TableTools.longCol("Size", index.size()),
-                TableTools.doubleCol("Sum", sum),
-                TableTools.doubleCol("AbsSum", absSum),
-                TableTools.doubleCol("SqrdSum", sqrdSum),
-                TableTools.floatCol("Min", min),
-                TableTools.floatCol("Max", max),
-                TableTools.floatCol("AbsMin", absMin),
-                TableTools.floatCol("AbsMax", absMax),
-                TableTools.doubleCol("Avg", avg),
-                TableTools.doubleCol("AbsAvg", ChunkedNumericalStatsKernel.avg(count, absSum)),
-                TableTools.doubleCol("AbsAvg", ChunkedNumericalStatsKernel.stdDev(count, avg, sqrdSum)));
+                TableTools.longCol("COUNT", count),
+                TableTools.longCol("SIZE", index.size()),
+                TableTools.doubleCol("SUM", sum),
+                TableTools.doubleCol("SUM_ABS", absSum),
+                TableTools.doubleCol("SUM_SQRD", sqrdSum),
+                TableTools.floatCol("MIN", min),
+                TableTools.floatCol("MAX", max),
+                TableTools.floatCol("MIN_ABS", absMin),
+                TableTools.floatCol("MAX_ABS", absMax),
+                TableTools.doubleCol("AVG", avg),
+                TableTools.doubleCol("AVG_ABS", ChunkedNumericalStatsKernel.avg(count, absSum)),
+                TableTools.doubleCol("STD_DEV", ChunkedNumericalStatsKernel.stdDev(count, avg, sqrdSum)));
     }
 }

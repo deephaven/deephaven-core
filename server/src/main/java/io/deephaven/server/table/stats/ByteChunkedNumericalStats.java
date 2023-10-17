@@ -142,20 +142,20 @@ public class ByteChunkedNumericalStats implements ChunkedNumericalStatsKernel<By
 
         double avg = ChunkedNumericalStatsKernel.avg(count, sum);
         return TableTools.newTable(
-                TableTools.longCol("Count", count),
-                TableTools.longCol("Size", index.size()),
-                useFloatingSum ? TableTools.doubleCol("Sum", floatingSum) : TableTools.longCol("Sum", sum),
-                useFloatingAbsSum ? TableTools.doubleCol("AbsSum", floatingAbsSum)
-                        : TableTools.longCol("AbsSum", absSum),
-                useFloatingSqrdSum ? TableTools.doubleCol("SqrdSum", floatingSqrdSum)
-                        : TableTools.longCol("SqrdSum", sqrdSum),
-                TableTools.byteCol("Min", min),
-                TableTools.byteCol("Max", max),
-                TableTools.byteCol("AbsMin", absMin),
-                TableTools.byteCol("AbsMax", absMax),
-                TableTools.doubleCol("Avg", avg),
-                TableTools.doubleCol("AbsAvg", ChunkedNumericalStatsKernel.avg(count, absSum)),
-                TableTools.doubleCol("StdDev", ChunkedNumericalStatsKernel.stdDev(count, avg, sqrdSum)));
+                TableTools.longCol("COUNT", count),
+                TableTools.longCol("SIZE", index.size()),
+                useFloatingSum ? TableTools.doubleCol("SUM", floatingSum) : TableTools.longCol("SUM", sum),
+                useFloatingAbsSum ? TableTools.doubleCol("SUM_ABS", floatingAbsSum)
+                        : TableTools.longCol("SUM_ABS", absSum),
+                useFloatingSqrdSum ? TableTools.doubleCol("SQRD_SUM", floatingSqrdSum)
+                        : TableTools.longCol("SUM_SQRD", sqrdSum),
+                TableTools.byteCol("MIN", min),
+                TableTools.byteCol("MAX", max),
+                TableTools.byteCol("MIN_ABS", absMin),
+                TableTools.byteCol("MAX_ABS", absMax),
+                TableTools.doubleCol("AVG", avg),
+                TableTools.doubleCol("AVG_ABS", ChunkedNumericalStatsKernel.avg(count, absSum)),
+                TableTools.doubleCol("STD_DEV", ChunkedNumericalStatsKernel.stdDev(count, avg, sqrdSum)));
 
     }
 }
