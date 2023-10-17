@@ -82,9 +82,6 @@ dependencies {
 
     Classpaths.inheritGrpcPlatform(project, 'api')
 
-    api('io.grpc:grpc-inprocess') {
-        because 'downstream dagger compile, see deephaven-core#1722'
-    }
     api('io.grpc:grpc-services') {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
@@ -94,6 +91,7 @@ dependencies {
     implementation 'dev.dirs:directories:26'
 
     testImplementation 'io.grpc:grpc-testing'
+    testImplementation('io.grpc:grpc-inprocess')
 
     testImplementation project(':proto:proto-backplane-grpc')
 
