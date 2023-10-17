@@ -202,9 +202,9 @@ foo = Foo()
         self.assertEqual(t3.columns[2].data_type, dtypes.int64)
         self.assertEqual(t3.columns[3].data_type, dtypes.int64)
 
-    def test_vectorization_off_on_return_type_2(self):
+    def test_ndim_nparray_return_type(self):
         def f() -> np.ndarray[np.int64]:
-            return np.ndarray([1,2],dtype=np.int64)
+            return np.ndarray([1, 2], dtype=np.int64)
 
         with self.assertRaises(DHError) as cm:
             t = empty_table(10).update(["X1 = f()"])
