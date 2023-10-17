@@ -159,12 +159,11 @@ public class TreeTableFilter {
         if (source.isRefreshing()) {
             try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
                     source.getUpdateGraph()).open()) {
-                final SwapListenerEx swapListener = new SwapListenerEx(source, sourceRowLookup);
-                source.addUpdateListener(swapListener);
+                final SimpleSnapshotControlEx snapshotControl = new SimpleSnapshotControlEx(source, sourceRowLookup);
                 ConstructSnapshot.callDataSnapshotFunction(System.identityHashCode(source) + ": ",
-                        swapListener.makeSnapshotControl(),
+                        snapshotControl,
                         (usePrev, beforeClockValue) -> {
-                            doInitialFilter(swapListener, usePrev);
+                            doInitialFilter(snapshotControl, usePrev);
                             return true;
                         });
             }
@@ -173,7 +172,7 @@ public class TreeTableFilter {
         }
     }
 
-    private void doInitialFilter(@Nullable final SwapListener swapListener, final boolean usePrev) {
+    private void doInitialFilter(@Nullable final SimpleSnapshotControl snapshotControl, final boolean usePrev) {
         try (final RowSet sourcePrevRows = usePrev ? source.getRowSet().copyPrev() : null) {
             final RowSet sourceRows = usePrev ? sourcePrevRows : source.getRowSet();
 
@@ -186,9 +185,9 @@ public class TreeTableFilter {
         }
 
         result = source.getSubTable(resultRows);
-        if (swapListener != null) {
+        if (snapshotControl != null) {
             sourceListener = new Listener();
-            swapListener.setListenerAndResult(sourceListener, result);
+            snapshotControl.setListenerAndResult(sourceListener, result);
             result.addParentReference(sourceListener);
         }
     }

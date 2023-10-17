@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.rsp.RspArray;
@@ -64,8 +63,8 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     @Override
-    public SwapListener newSwapListener(QueryTable queryTable) {
-        return new SwapListener(queryTable) {
+    public SimpleSnapshotControl newSnapshotControl(QueryTable queryTable) {
+        return new SimpleSnapshotControl(queryTable) {
             @Override
             public synchronized boolean end(long clockCycle) {
                 final boolean success = super.end(clockCycle);

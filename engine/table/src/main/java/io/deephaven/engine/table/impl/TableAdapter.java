@@ -363,6 +363,11 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
+    default boolean addUpdateListener(final long requiredLastNotificationStep, final TableUpdateListener listener) {
+        return throwUnsupported();
+    }
+
+    @Override
     default void removeUpdateListener(ShiftObliviousListener listener) {
         throwUnsupported();
     }

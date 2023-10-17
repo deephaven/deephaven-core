@@ -101,8 +101,9 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     // region uncoalesced listeners
 
-    protected final void addUpdateListenerUncoalesced(@NotNull final TableUpdateListener listener) {
-        super.addUpdateListener(listener);
+    protected final boolean addUpdateListenerUncoalesced(
+            final long requiredLastNotificationStep, @NotNull final TableUpdateListener listener) {
+        return super.addUpdateListener(requiredLastNotificationStep, listener);
     }
 
     protected final void removeUpdateListenerUncoalesced(@NotNull final TableUpdateListener listener) {
@@ -457,8 +458,13 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public void addUpdateListener(TableUpdateListener listener) {
+    public void addUpdateListener(@NotNull TableUpdateListener listener) {
         coalesce().addUpdateListener(listener);
+    }
+
+    @Override
+    public boolean addUpdateListener(long requiredLastNotificationStep, @NotNull TableUpdateListener listener) {
+        return coalesce().addUpdateListener(requiredLastNotificationStep, listener);
     }
 
     @Override

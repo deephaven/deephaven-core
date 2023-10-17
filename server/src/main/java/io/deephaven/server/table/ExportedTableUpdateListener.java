@@ -10,7 +10,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.NotificationStepReceiver;
-import io.deephaven.engine.table.impl.SwapListener;
+import io.deephaven.engine.table.impl.SimpleSnapshotControl;
 import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.hash.KeyedLongObjectHashMap;
@@ -139,20 +139,14 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             return;
         }
 
-        final SwapListener swapListener = new SwapListener(table);
-        try {
-            swapListener.subscribeForUpdates();
-        } catch (IllegalStateException ise) {
-            // It's possible that the table has already failed or been destroyed.
-            return;
-        }
+        final SimpleSnapshotControl snapshotControl = new SimpleSnapshotControl(table);
         final ListenerImpl listener = new ListenerImpl(table, exportId);
         listener.tryRetainReference();
         updateListenerMap.put(exportId, listener);
 
         final MutableLong initSize = new MutableLong();
-        BaseTable.initializeWithSnapshot(logPrefix, swapListener, (usePrev, beforeClockValue) -> {
-            swapListener.setListenerAndResult(listener, NOOP_NOTIFICATION_STEP_RECEIVER);
+        BaseTable.initializeWithSnapshot(logPrefix, snapshotControl, (usePrev, beforeClockValue) -> {
+            snapshotControl.setListenerAndResult(listener, NOOP_NOTIFICATION_STEP_RECEIVER);
             final TrackingRowSet rowSet = table.getRowSet();
             initSize.setValue(usePrev ? rowSet.sizePrev() : rowSet.size());
             return true;

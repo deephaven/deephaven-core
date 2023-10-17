@@ -2,7 +2,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.TableUpdateListener;
-import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.updategraph.ClockInconsistencyException;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.WaitNotification;
@@ -11,35 +10,27 @@ import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Variant of {@link SwapListener} that considers an "extra" {@link NotificationStepSource} in addition to the source
- * {@link BaseTable} when determining whether to use previous values during initialization or evaluating success. This
- * is useful anytime an operation needs to listen to and snapshot one data source while also snapshotting another.
+ * Variant of {@link SimpleSnapshotControl} that considers an "extra" {@link NotificationStepSource} in addition to the
+ * source {@link BaseTable} when determining whether to use previous values during initialization or evaluating success.
+ * This is useful anytime an operation needs to listen to and snapshot one data source while also snapshotting another.
  */
-public final class SwapListenerEx extends SwapListener {
+public final class SimpleSnapshotControlEx extends SimpleSnapshotControl {
 
-    private static final Logger log = LoggerFactory.getLogger(SwapListenerEx.class);
+    private static final Logger log = LoggerFactory.getLogger(SimpleSnapshotControlEx.class);
 
     private final NotificationStepSource extra;
 
     private long extraLastNotificationStep;
 
-    public SwapListenerEx(@NotNull final BaseTable<?> sourceTable, @NotNull final NotificationStepSource extra) {
+    public SimpleSnapshotControlEx(@NotNull final BaseTable<?> sourceTable,
+            @NotNull final NotificationStepSource extra) {
         super(sourceTable);
         this.extra = extra;
     }
 
     @Override
-    public ConstructSnapshot.SnapshotControl makeSnapshotControl() {
-        return ConstructSnapshot.makeSnapshotControl(
-                sourceTable.getUpdateGraph(),
-                this::startWithExtra,
-                (final long currentClockValue, final boolean usingPreviousValues) -> isInInitialNotificationWindow()
-                        && extra.getLastNotificationStep() == extraLastNotificationStep,
-                (final long afterClockValue, final boolean usedPreviousValues) -> end(afterClockValue));
-    }
-
     @SuppressWarnings("AutoBoxing")
-    public synchronized Boolean startWithExtra(final long beforeClockValue) {
+    public synchronized Boolean usePreviousValues(final long beforeClockValue) {
         lastNotificationStep = sourceTable.getLastNotificationStep();
         extraLastNotificationStep = extra.getLastNotificationStep();
         success = false;
@@ -78,7 +69,7 @@ public final class SwapListenerEx extends SwapListener {
         if (DEBUG) {
             log.info().append("SwapListenerEx {source=").append(System.identityHashCode(sourceTable))
                     .append(", extra=").append(System.identityHashCode(extra))
-                    .append(", swap=").append(System.identityHashCode(this))
+                    .append(", control=").append(System.identityHashCode(this))
                     .append("} Start: beforeStep=").append(beforeStep)
                     .append(", beforeState=").append(beforeState.name())
                     .append(", sourceLastNotificationStep=").append(lastNotificationStep)
@@ -92,14 +83,9 @@ public final class SwapListenerEx extends SwapListener {
     }
 
     @Override
-    public Boolean start(final long beforeClockValue) {
-        throw new UnsupportedOperationException("Use startWithExtra");
-    }
-
-    @Override
-    public synchronized boolean end(final long afterClockValue) {
+    protected synchronized boolean end(final long afterClockValue) {
         if (DEBUG) {
-            log.info().append("SwapListenerEx end() swap=").append(System.identityHashCode(this))
+            log.info().append("SimpleSnapshotControlEx end() control=").append(System.identityHashCode(this))
                     .append(", end={").append(LogicalClock.getStep(afterClockValue)).append(",")
                     .append(LogicalClock.getState(afterClockValue).toString())
                     .append("}, last=").append(sourceTable.getLastNotificationStep())
@@ -114,9 +100,14 @@ public final class SwapListenerEx extends SwapListener {
             @NotNull final NotificationStepReceiver resultTable) {
         super.setListenerAndResult(listener, resultTable);
         if (DEBUG) {
-            log.info().append("SwapListenerEx swap=")
-                    .append(System.identityHashCode(SwapListenerEx.this))
+            log.info().append("SnapshotControlEx control=")
+                    .append(System.identityHashCode(SimpleSnapshotControlEx.this))
                     .append(", result=").append(System.identityHashCode(resultTable)).endl();
         }
+    }
+
+    @Override
+    protected boolean isInInitialNotificationWindow() {
+        return extra.getLastNotificationStep() == extraLastNotificationStep && super.isInInitialNotificationWindow();
     }
 }

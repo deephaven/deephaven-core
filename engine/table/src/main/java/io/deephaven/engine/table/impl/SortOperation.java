@@ -82,8 +82,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     }
 
     @Override
-    public SwapListener newSwapListener(QueryTable queryTable) {
-        return new SwapListener(queryTable) {
+    public SimpleSnapshotControl newSnapshotControl(QueryTable queryTable) {
+        return new SimpleSnapshotControl(queryTable) {
             @Override
             public synchronized boolean end(long clockCycle) {
                 final boolean success = super.end(clockCycle);
