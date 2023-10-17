@@ -2693,7 +2693,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             throw new PythonCallVectorizationFailure("Python function argument count mismatch: " + n + " "
                     + paramTypes.size() + " vs. " + expressions.length);
         }
-
     }
 
     private void prepareVectorizationArgs(MethodCallExpr n, QueryScope queryScope, Expression[] expressions,
