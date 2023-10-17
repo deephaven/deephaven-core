@@ -242,18 +242,17 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         }
 
         if (holdingUpdateGraphLock) {
-            while (!completed && exceptionWhileCompleting == null) {
+            while (!checkIfCompleteOrThrow()) {
                 completedCondition.await();
             }
         } else {
             synchronized (this) {
-                while (!completed && exceptionWhileCompleting == null) {
+                while (!checkIfCompleteOrThrow()) {
                     wait(); // BarrageSubscriptionImpl lock
                 }
             }
         }
 
-        checkIfCompleteOrThrow();
         return resultTable;
     }
 
