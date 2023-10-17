@@ -245,18 +245,17 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         }
 
         if (holdingUpdateGraphLock) {
-            while (!completed && exceptionWhileCompleting == null) {
+            while (!checkIfCompletedOrThrow()) {
                 completedCondition.await();
             }
         } else {
             synchronized (this) {
-                while (!completed && exceptionWhileCompleting == null) {
+                while (!checkIfCompletedOrThrow()) {
                     wait(); // BarrageSnapshotImpl lock
                 }
             }
         }
 
-        checkIfCompleteOrThrow();
         return resultTable;
     }
 

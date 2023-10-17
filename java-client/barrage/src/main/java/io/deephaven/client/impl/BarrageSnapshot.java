@@ -49,7 +49,7 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
     /**
      * Request a full snapshot of the data and populate a {@link BarrageTable} with the data that is received.
      *
-     * @param blockUntilComplete block execution until all rows for the subscribed table are available
+     * @param blockUntilComplete Whether to block execution until all rows for the subscribed table are available
      *
      * @return the {@code BarrageTable}
      */
@@ -87,7 +87,7 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
      * @param columns the columns to include in the subscription
      * @param reverseViewport Whether to treat {@code posRowSet} as offsets from
      *        {@link io.deephaven.engine.table.Table#size()} rather than {@code 0}
-     * @param blockUntilComplete block execution until the subscribed table viewport is satisfied
+     * @param blockUntilComplete Whether to block execution until the subscribed table viewport is satisfied
      *
      * @return the {@code BarrageTable}
      */
