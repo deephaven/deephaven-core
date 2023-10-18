@@ -31,7 +31,9 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 
 ## Installation
 
-Deephaven Community Core can be used from both server- and client-side APIs. Server-side APIs allow users to connect directly to the Deephaven server and execute commands, write queries, and much more. Client-side APIs allow users to connect to a Deephaven server through a client application.
+Deephaven Community Core offers two server-side APIs: Python and Groovy. There are also client-side APIs for Python, Java, JavaScript, Go, and R.
+
+The server-side APIs connect directly to the Deephaven server, allowing users to execute commands on it. Client-side APIs connect to an already-running server through a client application.
 
 See the following documentation links for installation instructions and more:
 
