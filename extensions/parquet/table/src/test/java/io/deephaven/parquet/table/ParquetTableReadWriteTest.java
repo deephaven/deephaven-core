@@ -82,7 +82,7 @@ import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
-public class ParquetTableReadWriteTest {
+public final class ParquetTableReadWriteTest {
 
     private static final String ROOT_FILENAME = ParquetTableReadWriteTest.class.getName() + "_root";
     public static final int LARGE_TABLE_SIZE = 2_000_000;
@@ -628,8 +628,7 @@ public class ParquetTableReadWriteTest {
         }
         assertTrue(filesInParentDir.size() == expectedDataFiles.length + 1);
         final File metadataDir = new File(parentDir, ".dh_metadata");
-        assertTrue(metadataDir.exists() && metadataDir.isDirectory() && metadataDir.isHidden()
-                && metadataDir.list().length == 1);
+        assertTrue(metadataDir.exists() && metadataDir.isDirectory() && metadataDir.list().length == 1);
         final File indexesDir = new File(metadataDir, "indexes");
         assertTrue(indexesDir.exists() && indexesDir.isDirectory()
                 && indexesDir.list().length == groupingColumnToFileMap.size());
@@ -658,7 +657,7 @@ public class ParquetTableReadWriteTest {
         basicWriteTestsImpl(multiWriter);
     }
 
-    private void basicWriteTestsImpl(TestParquetTableWriter writer) {
+    private static void basicWriteTestsImpl(TestParquetTableWriter writer) {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
@@ -816,7 +815,7 @@ public class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void parquetDirectoryWithHiddenFilesTest() throws IOException {
+    public void parquetDirectoryWithDotFilesTest() throws IOException {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
@@ -833,29 +832,32 @@ public class ParquetTableReadWriteTest {
         final File destFile = new File(parentDir, destFilename);
         ParquetTools.writeTable(tableToSave, destFile);
         String vvvGroupingFilePath = ".dh_metadata/indexes/vvv/index_vvv_data.parquet";
-        // Hidden metadata in parent directory
         verifyFilesInDir(parentDir, new String[] {destFilename}, Map.of("vvv", new String[] {vvvGroupingFilePath}));
 
         // Call readTable on parent directory
         Table fromDisk = ParquetTools.readTable(parentDir);
         TstUtils.assertTableEquals(fromDisk, tableToSave);
 
-        // Add an empty dot file in the parent directory
-        final File dotFile = new File(parentDir, ".hiddenData");
+        // Add an empty dot file and dot directory (with valid parquet files) in the parent directory
+        final File dotFile = new File(parentDir, ".dotFile");
         assertTrue(dotFile.createNewFile());
+        final File dotDir = new File(parentDir, ".dotDir");
+        assertTrue(dotDir.mkdir());
+        final Table someTable = TableTools.emptyTable(5).update("A=(int)i");
+        ParquetTools.writeTable(someTable, new File(dotDir, "data.parquet"));
         fromDisk = ParquetTools.readTable(parentDir);
         TstUtils.assertTableEquals(fromDisk, tableToSave);
 
-        // Add another table in a hidden file in parent directory
+        // Add a dot parquet in parent directory
         final Table anotherTable = TableTools.emptyTable(5).update("A=(int)i");
-        final File pqDotFile = new File(parentDir, ".hiddenData.parquet");
+        final File pqDotFile = new File(parentDir, ".dotFile.parquet");
         ParquetTools.writeTable(anotherTable, pqDotFile);
         fromDisk = ParquetTools.readTable(parentDir);
         TstUtils.assertTableEquals(fromDisk, tableToSave);
     }
 
     @Test
-    public void partitionedParuetWithHiddenFilesTest() throws IOException {
+    public void partitionedParquetWithDotFilesTest() throws IOException {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
@@ -874,15 +876,18 @@ public class ParquetTableReadWriteTest {
         final Set<?> columnsSet = partitionedTable.getColumnSourceMap().keySet();
         assertTrue(columnsSet.size() == 2 && columnsSet.contains("A") && columnsSet.contains("X"));
 
-        // Add an empty dot file in one of the partitions directory
-        final File dotFile = new File(firstPartition, ".hiddenData");
+        // Add an empty dot file and dot directory (with valid parquet files) in one of the partitions
+        final File dotFile = new File(firstPartition, ".dotFile");
         assertTrue(dotFile.createNewFile());
+        final File dotDir = new File(firstPartition, ".dotDir");
+        assertTrue(dotDir.mkdir());
+        ParquetTools.writeTable(someTable, new File(dotDir, "data.parquet"));
         Table fromDisk = ParquetTools.readTable(parentDir);
         TstUtils.assertTableEquals(fromDisk, partitionedTable);
 
-        // Add another table in a hidden file in one of the partitions directory
+        // Add a dot parquet file in one of the partitions directory
         final Table anotherTable = TableTools.emptyTable(5).update("B=(int)i");
-        final File pqDotFile = new File(secondPartition, ".hiddenData.parquet");
+        final File pqDotFile = new File(secondPartition, ".dotFile.parquet");
         ParquetTools.writeTable(anotherTable, pqDotFile);
         fromDisk = ParquetTools.readTable(parentDir);
         TstUtils.assertTableEquals(fromDisk, partitionedTable);

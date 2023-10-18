@@ -238,13 +238,13 @@ public class ParquetTools {
     }
 
     /**
-     * Generates grouping file path relative to the table destination file path.
+     * Generates a grouping file path relative to the table destination file path.
      *
      * @param tableDest Destination path for the main table containing these grouping columns
      * @param columnName Name of the grouping column
      *
-     * @return The relative grouping file path. For example, for table {@code "A"} with destination
-     *         {@code "dir/A.parquet"} and grouping column {@code "g"}, the method will return
+     * @return The relative grouping file path. For example, for table {@code "A"} with destination {@code "A.parquet"}
+     *         and grouping column {@code "g"}, the method will return
      *         {@code ".dh_metadata/indexes/g/index_g_A.parquet"}
      */
     public static String getRelativeGroupingFilePath(@NotNull final File tableDest, @NotNull final String columnName) {
@@ -294,7 +294,7 @@ public class ParquetTools {
     }
 
     /**
-     * Roll back any changes made in the {@link #installShadowFile} in a best effort manner
+     * Roll back any changes made in the {@link #installShadowFile} in the best effort manner
      */
     private static void rollbackFile(@NotNull final File destFile) {
         final File backupDestFile = getBackupFile(destFile);
@@ -355,7 +355,8 @@ public class ParquetTools {
     }
 
     /**
-     * Helper function for building grouping column info for writing. Also, deletes any backup grouping column files.
+     * Helper function for building grouping column info for writing. Also, deletes any conflicting backup grouping
+     * column files.
      *
      * @param groupingColumnNames Names of grouping columns
      * @param parquetColumnNames Names of grouping columns for the parquet file
@@ -579,9 +580,12 @@ public class ParquetTools {
                 return readPartitionedTableWithMetadata(source, instructions);
             }
             final Path firstEntryPath;
-            // Ignore hidden files while looking for the first entry
+            // Ignore dot files while looking for the first entry
             try (final DirectoryStream<Path> sourceStream =
-                    Files.newDirectoryStream(sourcePath, (path) -> !path.toFile().isHidden())) {
+                    Files.newDirectoryStream(sourcePath, (path) -> {
+                        final String filename = path.getFileName().toString();
+                        return !filename.isEmpty() && filename.charAt(0) != '.';
+                    })) {
                 final Iterator<Path> entryIterator = sourceStream.iterator();
                 if (!entryIterator.hasNext()) {
                     throw new TableDataException("Source directory " + source + " is empty");
