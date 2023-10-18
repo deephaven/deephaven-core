@@ -373,14 +373,19 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
     if isinstance(t, _GenericAlias) and issubclass(t.__origin__, Sequence):
         component_type = t.__args__[0]
 
-    # npt.NDArray can be used in Py 3.8 as a generic alias, but a realized alias is an instance of a private class
-    # of np, yet we don't have a choice but to use it
-    if not component_type and sys.version_info.minor == 0:
+    # Py3.8: npt.NDArray can be used in Py 3.8 as a generic alias, but a specific alias (e.g. npt.NDArray[np.int64])
+    # is an instance of a private class of np, yet we don't have a choice but to use it. And when npt.NDArray is used,
+    # the 1st argument is typing.Any, the 2nd argument is another generic alias of which the 1st argument is the
+    # component type
+    if not component_type and sys.version_info.minor == 8:
         if isinstance(t, np._typing._generic_alias._GenericAlias) and t.__origin__ == np.ndarray:
-            component_type = t.__args__[1].__args__[0] if t.__args__[0] == typing.Any else t.__args__[0]
+            component_type = t.__args__[1].__args__[0]
 
-    # np.ndarray as a generic alias is only supported in Python 3.9+, also npt.NDArray is still available but a
-    # realized alias is an instance of typing.GenericAlias
+    # Py3.9+, np.ndarray as a generic alias is only supported in Python 3.9+, also npt.NDArray is still available but a
+    # specific alias (e.g. npt.NDArray[np.int64]) now is an instance of typing.GenericAlias.
+    # when npt.NDArray is used, the 1st argument is typing.Any, the 2nd argument is another generic alias of which
+    # the 1st argument is the component type
+    # when np.ndarray is used, the 1st argument is the component type
     if not component_type and sys.version_info.minor > 8:
         import types
         if isinstance(t, types.GenericAlias) and (issubclass(t.__origin__, Sequence) or t.__origin__ == np.ndarray):
