@@ -85,7 +85,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     public OperationSnapshotControl newSnapshotControl(QueryTable queryTable) {
         return new OperationSnapshotControl(queryTable) {
             @Override
-            public synchronized boolean snapshotCompletedConsistently(long afterClockValue, boolean usedPreviousValues) {
+            public synchronized boolean snapshotCompletedConsistently(long afterClockValue,
+                    boolean usedPreviousValues) {
                 final boolean success = super.snapshotCompletedConsistently(afterClockValue, usedPreviousValues);
                 if (success) {
                     QueryTable.startTrackingPrev(resultTable.getColumnSources());

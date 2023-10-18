@@ -86,7 +86,8 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
     @Override
     public synchronized boolean snapshotCompletedConsistently(long afterClockValue, boolean usedPreviousValues) {
         if (DEBUG) {
-            log.info().append("OperationSnapshotControlEx snapshotCompletedConsistently: control=").append(System.identityHashCode(this))
+            log.info().append("OperationSnapshotControlEx snapshotCompletedConsistently: control=")
+                    .append(System.identityHashCode(this))
                     .append(", end={").append(LogicalClock.getStep(afterClockValue)).append(",")
                     .append(LogicalClock.getState(afterClockValue).toString())
                     .append("}, usedPreviousValues=").append(usedPreviousValues)

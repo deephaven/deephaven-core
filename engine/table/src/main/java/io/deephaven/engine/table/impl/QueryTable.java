@@ -1649,21 +1649,17 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                             initializeWithSnapshot(humanReadablePrefix, sc, (usePrev, beforeClockValue) -> {
                                 final boolean publishTheseSources = flavor == Flavor.UpdateView;
-                                final SelectAndViewAnalyzerWrapper analyzerWrapper =
-                                        SelectAndViewAnalyzer.create(
-                                                this, SelectAndViewAnalyzer.Mode.VIEW_EAGER, columns, rowSet,
-                                                getModifiedColumnSetForUpdates(), publishTheseSources, true,
-                                                viewColumns);
-                                final SelectColumn[] processedViewColumns =
-                                        analyzerWrapper.getProcessedColumns()
-                                                .toArray(SelectColumn[]::new);
+                                final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
+                                        this, SelectAndViewAnalyzer.Mode.VIEW_EAGER, columns, rowSet,
+                                        getModifiedColumnSetForUpdates(), publishTheseSources, true, viewColumns);
+                                final SelectColumn[] processedViewColumns = analyzerWrapper.getProcessedColumns()
+                                        .toArray(SelectColumn[]::new);
                                 QueryTable queryTable = new QueryTable(
                                         rowSet, analyzerWrapper.getPublishedColumnResources());
                                 if (sc != null) {
                                     final Map<String, String[]> effects = analyzerWrapper.calcEffects();
                                     final TableUpdateListener listener =
-                                            new ViewOrUpdateViewListener(updateDescription, this, queryTable,
-                                                    effects);
+                                            new ViewOrUpdateViewListener(updateDescription, this, queryTable, effects);
                                     sc.setListenerAndResult(listener, queryTable);
                                 }
 
