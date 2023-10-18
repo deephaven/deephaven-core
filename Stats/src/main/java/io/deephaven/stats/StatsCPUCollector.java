@@ -79,7 +79,8 @@ public class StatsCPUCollector {
         this.divisor = NANOS / (seconds * 10);
         Stats.makeGroup("Kernel", "Unix kernel statistics, as read from " + PROC_STAT_PSEUDOFILE);
         Stats.makeGroup("Proc",
-                "Unix process statistics, as read from " + PROC_SELF_STAT_PSEUDOFILE + " and " + PROC_STAT_FD_PSUEDOFILE);
+                "Unix process statistics, as read from " + PROC_SELF_STAT_PSEUDOFILE + " and "
+                        + PROC_STAT_FD_PSUEDOFILE);
         Stats.makeGroup("CPU", "JMX CPU usage data, per-thread and for the entire process");
 
         if (OSUtil.runningMacOS() || OSUtil.runningWindows()) {
@@ -212,12 +213,12 @@ public class StatsCPUCollector {
     }
 
     private boolean peekNextLong() {
-        return statBuffer.hasRemaining() && statBuffer.get(statBuffer.position()) >= '0' && statBuffer.get(statBuffer.position()) <= '9';
+        return statBuffer.hasRemaining() && statBuffer.get(statBuffer.position()) >= '0'
+                && statBuffer.get(statBuffer.position()) <= '9';
     }
 
     /**
-     * Reads the entire contents of the specified FileChannel into the shared buffer, resizing
-     * it if necessary.
+     * Reads the entire contents of the specified FileChannel into the shared buffer, resizing it if necessary.
      * 
      * @param fileChannel the channel to read contents from
      * @param fileName the file name to use when throwing an error message
@@ -267,7 +268,7 @@ public class StatsCPUCollector {
                 readToBuffer(statFile, PROC_STAT_PSEUDOFILE);
 
                 while (statBuffer.hasRemaining()) {
-                    //noinspection StatementWithEmptyBody - deliberately empty, get() will advance position
+                    // noinspection StatementWithEmptyBody - deliberately empty, get() will advance position
                     while (statBuffer.hasRemaining() && statBuffer.get() < 33) {
                     }
                     if (startsWith("cpu ")) {
@@ -336,7 +337,7 @@ public class StatsCPUCollector {
                             getNextFieldDelta(statSysCtxt);
                         }
                     }
-                    //noinspection StatementWithEmptyBody - deliberately empty, get() will advance position
+                    // noinspection StatementWithEmptyBody - deliberately empty, get() will advance position
                     while (statBuffer.hasRemaining() && statBuffer.get() != '\n') {
                     }
                 }
