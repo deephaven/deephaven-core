@@ -265,8 +265,8 @@ public class StatsCPUCollector {
                 readToBuffer(statFile, PROC_STAT_PSEUDOFILE);
 
                 while (statBuffer.hasRemaining()) {
-                    // noinspection StatementWithEmptyBody - deliberately empty, get() will advance position
-                    while (statBuffer.hasRemaining() && statBuffer.get() < 33) {
+                    while (statBuffer.hasRemaining() && statBuffer.get(statBuffer.position()) < '!') {
+                        statBuffer.get();
                     }
                     if (startsWith("cpu ")) {
                         if (skipNextField() && peekNextLong()) {
