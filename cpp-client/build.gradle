@@ -7,10 +7,11 @@ plugins {
     id 'license'
 }
 
-// We use the r-client-base image instead of the cpp-client-base,
-// so that the R client test task in R/build.gradle can in turn use the
+// We use the cpp-clients-fat-base image instead of the cpp-client-base,
+// so that the test tasks in py/client-ticking and R can in turn use the
 // image we will generate here as a base.
-evaluationDependsOn Docker.registryProject('r-client-base')
+// See https://github.com/deephaven/deephaven-base-images/tree/main/cpp-clients-fat
+evaluationDependsOn Docker.registryProject('cpp-clients-fat-base')
 
 configurations {
     cpp {}
@@ -78,7 +79,7 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
 
     dockerfile {
         // See comment at the beginning of this file for why we use this base image.
-        from('deephaven/r-client-base:local-build')
+        from('deephaven/cpp-clients-fat-base:local-build')
         //
         // Build and install client.
         //
@@ -115,7 +116,7 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
         environmentVariable 'DH_PREFIX', prefix
         environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
     }
-    parentContainers = [ Docker.registryTask(project, 'r-client-base') ]
+    parentContainers = [ Docker.registryTask(project, 'cpp-clients-fat-base') ]
 }
 
 def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
