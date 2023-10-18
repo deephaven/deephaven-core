@@ -73,7 +73,7 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
         if (DEBUG) {
             log.info().append("OperationSnapshotControl {source=").append(System.identityHashCode(sourceTable))
                     .append(", control=").append(System.identityHashCode(this))
-                    .append("} Start: beforeStep=").append(beforeStep)
+                    .append("} usePreviousValues: beforeStep=").append(beforeStep)
                     .append(", beforeState=").append(beforeState.name())
                     .append(", lastNotificationStep=").append(lastNotificationStep)
                     .append(", satisfied=").append(satisfied)

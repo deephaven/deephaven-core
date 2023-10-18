@@ -71,7 +71,7 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
             log.info().append("OperationSnapshotControlEx {source=").append(System.identityHashCode(sourceTable))
                     .append(", extra=").append(System.identityHashCode(extra))
                     .append(", control=").append(System.identityHashCode(this))
-                    .append("} Start: beforeStep=").append(beforeStep)
+                    .append("} usePreviousValues: beforeStep=").append(beforeStep)
                     .append(", beforeState=").append(beforeState.name())
                     .append(", sourceLastNotificationStep=").append(lastNotificationStep)
                     .append(", sourceSatisfied=").append(sourceSatisfied)
@@ -86,7 +86,7 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
     @Override
     public synchronized boolean snapshotCompletedConsistently(long afterClockValue, boolean usedPreviousValues) {
         if (DEBUG) {
-            log.info().append("OperationSnapshotControlEx end() control=").append(System.identityHashCode(this))
+            log.info().append("OperationSnapshotControlEx snapshotCompletedConsistently: control=").append(System.identityHashCode(this))
                     .append(", end={").append(LogicalClock.getStep(afterClockValue)).append(",")
                     .append(LogicalClock.getState(afterClockValue).toString())
                     .append("}, usedPreviousValues=").append(usedPreviousValues)
