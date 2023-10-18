@@ -13,6 +13,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.exceptions.UpdateGraphConflictException;
 import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -559,7 +560,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     @Override
     public void addUpdateListener(@NotNull final TableUpdateListener listener) {
         if (isFailed) {
-            throw new IllegalStateException("Can not listen to failed table " + description);
+            throw new TableAlreadyFailedException("Can not listen to failed table " + description);
         }
         if (isRefreshing()) {
             // ensure that listener is in the same update graph if applicable
@@ -574,7 +575,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     public boolean addUpdateListener(
             @NotNull final TableUpdateListener listener, final long requiredLastNotificationStep) {
         if (isFailed) {
-            throw new IllegalStateException("Can not listen to failed table " + description);
+            throw new TableAlreadyFailedException("Can not listen to failed table " + description);
         }
 
         if (!isRefreshing()) {
