@@ -265,8 +265,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     protected final QueryTable doCoalesce() {
         initialize();
 
-        final SimpleSnapshotControl snapshotControl =
-                createSnapshotControlIfRefreshing((final BaseTable<?> parent) -> new SimpleSnapshotControl(parent) {
+        final OperationSnapshotControl snapshotControl =
+                createSnapshotControlIfRefreshing((final BaseTable<?> parent) -> new OperationSnapshotControl(parent) {
 
                     @Override
                     public boolean subscribeForUpdates(@NotNull final TableUpdateListener listener) {

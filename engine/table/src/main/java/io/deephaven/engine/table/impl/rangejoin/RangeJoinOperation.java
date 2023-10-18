@@ -29,10 +29,9 @@ import io.deephaven.engine.table.impl.MemoizedOperationKey;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortingOrder;
-import io.deephaven.engine.table.impl.SimpleSnapshotControl;
+import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.join.dupcompact.DupCompactKernel;
-import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
@@ -234,7 +233,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
     }
 
     @Override
-    public SimpleSnapshotControl newSnapshotControl(@NotNull final QueryTable queryTable) {
+    public OperationSnapshotControl newSnapshotControl(@NotNull final QueryTable queryTable) {
         // Since this operation never needs a snapshot, it does not need to support creating a SnapshotControl.
         throw new UnsupportedOperationException();
     }

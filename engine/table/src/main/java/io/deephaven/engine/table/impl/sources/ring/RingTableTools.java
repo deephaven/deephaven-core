@@ -8,7 +8,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.BlinkTableTools;
-import io.deephaven.engine.table.impl.SimpleSnapshotControl;
+import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotFunction;
 import io.deephaven.engine.table.impl.sources.ring.AddsToRingsListener.Init;
@@ -45,8 +45,8 @@ public class RingTableTools {
     public static Table of(Table parent, int capacity, boolean initialize) {
         return QueryPerformanceRecorder.withNugget("RingTableTools.of", () -> {
             final BaseTable<?> baseTable = (BaseTable<?>) parent.coalesce();
-            final SimpleSnapshotControl snapshotControl =
-                    baseTable.createSnapshotControlIfRefreshing(SimpleSnapshotControl::new);
+            final OperationSnapshotControl snapshotControl =
+                    baseTable.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
             return new RingTableSnapshotFunction(baseTable, capacity, initialize, snapshotControl).constructResults();
         });
     }
@@ -72,8 +72,8 @@ public class RingTableTools {
             // todo: there is probably a better way to do this
             final int capacityPowerOf2 = capacity == 1 ? 1 : Integer.highestOneBit(capacity - 1) << 1;
             final BaseTable<?> baseTable = (BaseTable<?>) parent.coalesce();
-            final SimpleSnapshotControl snapshotControl =
-                    baseTable.createSnapshotControlIfRefreshing(SimpleSnapshotControl::new);
+            final OperationSnapshotControl snapshotControl =
+                    baseTable.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
             final Table tablePowerOf2 =
                     new RingTableSnapshotFunction(baseTable, capacityPowerOf2, initialize, snapshotControl)
                             .constructResults();
@@ -85,12 +85,12 @@ public class RingTableTools {
         private final Table parent;
         private final int capacity;
         private final boolean initialize;
-        private final SimpleSnapshotControl snapshotControl;
+        private final OperationSnapshotControl snapshotControl;
 
         private Table results;
 
         public RingTableSnapshotFunction(
-                Table parent, int capacity, boolean initialize, SimpleSnapshotControl snapshotControl) {
+                Table parent, int capacity, boolean initialize, OperationSnapshotControl snapshotControl) {
             this.parent = Objects.requireNonNull(parent);
             this.capacity = capacity;
             this.initialize = initialize;

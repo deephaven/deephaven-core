@@ -14,7 +14,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.SimpleSnapshotControl;
+import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 
@@ -28,7 +28,7 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
         NONE, FROM_PREVIOUS, FROM_CURRENT
     }
 
-    static Table of(SimpleSnapshotControl snapshotControl, Table parent, int capacity, Init init) {
+    static Table of(OperationSnapshotControl snapshotControl, Table parent, int capacity, Init init) {
         if (snapshotControl == null && init == Init.NONE) {
             throw new IllegalArgumentException(String.format(
                     "Trying to initialize %s against a static table, but init=NONE; no data will be filled in this case.",

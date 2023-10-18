@@ -10,7 +10,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.NotificationStepReceiver;
-import io.deephaven.engine.table.impl.SimpleSnapshotControl;
+import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.hash.KeyedLongObjectHashMap;
@@ -139,7 +139,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             return;
         }
 
-        final SimpleSnapshotControl snapshotControl = new SimpleSnapshotControl(table);
+        final OperationSnapshotControl snapshotControl = new OperationSnapshotControl(table);
         final ListenerImpl listener = new ListenerImpl(table, exportId);
         listener.tryRetainReference();
         updateListenerMap.put(exportId, listener);

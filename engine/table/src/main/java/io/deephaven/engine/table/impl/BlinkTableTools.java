@@ -69,8 +69,8 @@ public class BlinkTableTools {
             }
 
             final BaseTable<?> baseBlinkTable = (BaseTable<?>) blinkTable.coalesce();
-            final SimpleSnapshotControl snapshotControl =
-                    baseBlinkTable.createSnapshotControlIfRefreshing(SimpleSnapshotControl::new);
+            final OperationSnapshotControl snapshotControl =
+                    baseBlinkTable.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
             // blink tables must tick
             Assert.neqNull(snapshotControl, "snapshotControl");
 

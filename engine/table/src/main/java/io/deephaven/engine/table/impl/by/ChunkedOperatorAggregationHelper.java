@@ -116,8 +116,8 @@ public class ChunkedOperatorAggregationHelper {
             }
         }
         final Mutable<QueryTable> resultHolder = new MutableObject<>();
-        final SimpleSnapshotControl snapshotControl =
-                input.createSnapshotControlIfRefreshing(SimpleSnapshotControl::new);
+        final OperationSnapshotControl snapshotControl =
+                input.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
         BaseTable.initializeWithSnapshot(
                 "by(" + aggregationContextFactory + ", " + groupByColumns + ")", snapshotControl,
                 (usePrev, beforeClockValue) -> {
@@ -130,7 +130,7 @@ public class ChunkedOperatorAggregationHelper {
 
     private static QueryTable aggregation(
             @NotNull final AggregationControl control,
-            @Nullable final SimpleSnapshotControl snapshotControl,
+            @Nullable final OperationSnapshotControl snapshotControl,
             @NotNull final AggregationContextFactory aggregationContextFactory,
             @NotNull final QueryTable input,
             final boolean preserveEmpty,
@@ -251,7 +251,7 @@ public class ChunkedOperatorAggregationHelper {
             final TableUpdateListener listener =
                     new BaseTable.ListenerImpl("by(" + aggregationContextFactory + ")", input, result) {
                         @ReferentialIntegrity
-                        final SimpleSnapshotControl swapListenerHardReference = snapshotControl;
+                        final OperationSnapshotControl swapListenerHardReference = snapshotControl;
 
                         final ModifiedColumnSet keysUpstreamModifiedColumnSet = input.newModifiedColumnSet(keyNames);
                         final ModifiedColumnSet[] operatorInputModifiedColumnSets =
@@ -1910,7 +1910,7 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static QueryTable noKeyAggregation(
-            @Nullable final SimpleSnapshotControl snapshotControl,
+            @Nullable final OperationSnapshotControl snapshotControl,
             @NotNull final AggregationContextFactory aggregationContextFactory,
             @NotNull final QueryTable table,
             final boolean preserveEmpty,

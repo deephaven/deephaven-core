@@ -51,8 +51,8 @@ public final class AddOnlyToBlinkTableAdapter {
         final MutableObject<QueryTable> resultHolder = new MutableObject<>();
         final MutableObject<AddOnlyToBlinkListener> listenerHolder = new MutableObject<>();
         final BaseTable<?> coalesced = (BaseTable<?>) table.coalesce();
-        final SimpleSnapshotControl snapshotControl =
-                coalesced.createSnapshotControlIfRefreshing(SimpleSnapshotControl::new);
+        final OperationSnapshotControl snapshotControl =
+                coalesced.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
         // noinspection DataFlowIssue swapListener cannot be null here, since we know the table is refreshing
         ConstructSnapshot.callDataSnapshotFunction("addOnlyToBlink", snapshotControl,

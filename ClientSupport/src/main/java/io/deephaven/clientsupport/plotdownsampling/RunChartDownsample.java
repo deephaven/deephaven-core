@@ -109,8 +109,8 @@ public class RunChartDownsample implements Function<Table, Table> {
         // TODO restore this to support non-QueryTable types
         // if (wholeTable instanceof BaseTable) {
         // BaseTable baseTable = (BaseTable) wholeTable;
-        // final SimpleSnapshotControl snapshotControl =
-        // baseTable.createSnapshotControlIfRefreshing(SimpleSnapshotControl::new);
+        // final OperationSnapshotControl snapshotControl =
+        // baseTable.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
         //
         // final Mutable<QueryTable> result = new MutableObject<>();
         //
@@ -136,8 +136,8 @@ public class RunChartDownsample implements Function<Table, Table> {
     }
 
     private static Table makeDownsampledQueryTable(final QueryTable wholeQueryTable, final DownsampleKey memoKey) {
-        final SimpleSnapshotControl snapshotControl =
-                wholeQueryTable.createSnapshotControlIfRefreshing(SimpleSnapshotControl::new);
+        final OperationSnapshotControl snapshotControl =
+                wholeQueryTable.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
         final Mutable<Table> result = new MutableObject<>();
 

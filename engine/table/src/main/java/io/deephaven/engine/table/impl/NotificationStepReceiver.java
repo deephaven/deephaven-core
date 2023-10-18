@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 /**
- * Used by {@link SimpleSnapshotControl snapshot control} to set the notification step of elements in our DAG.
+ * Used by {@link OperationSnapshotControl} to set the notification step of elements in our DAG.
  */
 public interface NotificationStepReceiver {
 

@@ -248,8 +248,8 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         return sourceTable.memoizeResult(MemoizedOperationKey.symbolTable(this, useLookupCaching), () -> {
             final String description = "getSymbolTable(" + sourceTable.getDescription() + ", " + useLookupCaching + ')';
             return QueryPerformanceRecorder.withNugget(description, sourceTable.size(), () -> {
-                final SimpleSnapshotControl snapshotControl =
-                        sourceTable.createSnapshotControlIfRefreshing(SimpleSnapshotControl::new);
+                final OperationSnapshotControl snapshotControl =
+                        sourceTable.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                 final Mutable<Table> result = new MutableObject<>();
                 BaseTable.initializeWithSnapshot(description, snapshotControl,
                         (final boolean usePrev, final long beforeClockValue) -> {

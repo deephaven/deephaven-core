@@ -146,8 +146,8 @@ public class QueryTable extends BaseTable<QueryTable> {
          */
         String getLogPrefix();
 
-        default SimpleSnapshotControl newSnapshotControl(final QueryTable queryTable) {
-            return new SimpleSnapshotControl(queryTable);
+        default OperationSnapshotControl newSnapshotControl(final QueryTable queryTable) {
+            return new OperationSnapshotControl(queryTable);
         }
 
         /**
@@ -1211,8 +1211,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
 
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
-                        final SimpleSnapshotControl snapshotControl =
-                                createSnapshotControlIfRefreshing(SimpleSnapshotControl::new);
+                        final OperationSnapshotControl snapshotControl =
+                                createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
                         final Mutable<QueryTable> result = new MutableObject<>();
                         initializeWithSnapshot("where", snapshotControl,
@@ -1645,8 +1645,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                         updateDescription, sizeForInstrumentation(), () -> {
                             final Mutable<Table> result = new MutableObject<>();
 
-                            final SimpleSnapshotControl sc =
-                                    createSnapshotControlIfRefreshing(SimpleSnapshotControl::new);
+                            final OperationSnapshotControl sc =
+                                    createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                             initializeWithSnapshot(humanReadablePrefix, sc, (usePrev, beforeClockValue) -> {
                                 final boolean publishTheseSources = flavor == Flavor.UpdateView;
                                 final SelectAndViewAnalyzerWrapper analyzerWrapper =
@@ -1789,8 +1789,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                             newColumns.remove(columnName);
                         }
 
-                        final SimpleSnapshotControl snapshotControl =
-                                createSnapshotControlIfRefreshing(SimpleSnapshotControl::new);
+                        final OperationSnapshotControl snapshotControl =
+                                createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
                         initializeWithSnapshot("dropColumns", snapshotControl, (usePrev, beforeClockValue) -> {
                             final QueryTable resultTable = new QueryTable(rowSet, newColumns);
@@ -3356,8 +3356,8 @@ public class QueryTable extends BaseTable<QueryTable> {
             return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
                 final Mutable<QueryTable> result = new MutableObject<>();
 
-                final SimpleSnapshotControl snapshotControl =
-                        createSnapshotControlIfRefreshing(SimpleSnapshotControl::new);
+                final OperationSnapshotControl snapshotControl =
+                        createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                 initializeWithSnapshot("copy", snapshotControl, (usePrev, beforeClockValue) -> {
                     final QueryTable resultTable = new CopiedTable(definition, this);
                     propagateFlatness(resultTable);
@@ -3541,7 +3541,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         return QueryPerformanceRecorder.withNugget(operation.getDescription(), sizeForInstrumentation(), () -> {
             final Mutable<T> resultTable = new MutableObject<>();
 
-            final SimpleSnapshotControl snapshotControl;
+            final OperationSnapshotControl snapshotControl;
             if (isRefreshing() && operation.snapshotNeeded()) {
                 snapshotControl = operation.newSnapshotControl(this);
             } else {

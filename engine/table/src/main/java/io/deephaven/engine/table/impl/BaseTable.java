@@ -1312,7 +1312,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      * @return a snapshot control to snapshot this table (or null)
      */
     @Nullable
-    public <T extends SimpleSnapshotControl> T createSnapshotControlIfRefreshing(
+    public <T extends OperationSnapshotControl> T createSnapshotControlIfRefreshing(
             final SnapshotControlFactory<T> factory) {
         if (!isRefreshing()) {
             return null;

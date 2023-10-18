@@ -18,12 +18,12 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
  * A simple implementation of {@link ConstructSnapshot.SnapshotControl} that uses the last notification step of the
  * source table to determine whether to use previous values during initialization and to evaluate success.
  */
-public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl {
+public class OperationSnapshotControl implements ConstructSnapshot.SnapshotControl {
 
     static final boolean DEBUG =
-            Configuration.getInstance().getBooleanWithDefault("SwapListener.debug", false);
+            Configuration.getInstance().getBooleanWithDefault("OperationSnapshotControl.debug", false);
 
-    private static final Logger log = LoggerFactory.getLogger(SimpleSnapshotControl.class);
+    private static final Logger log = LoggerFactory.getLogger(OperationSnapshotControl.class);
 
     private TableUpdateListener eventualListener;
     private NotificationStepReceiver eventualResult;
@@ -38,7 +38,7 @@ public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl 
      */
     final BaseTable<?> sourceTable;
 
-    public SimpleSnapshotControl(final BaseTable<?> sourceTable) {
+    public OperationSnapshotControl(final BaseTable<?> sourceTable) {
         this.sourceTable = sourceTable;
     }
 
@@ -71,7 +71,7 @@ public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl 
         final boolean usePrev = !satisfied;
 
         if (DEBUG) {
-            log.info().append("SimpleSnapshotControl {source=").append(System.identityHashCode(sourceTable))
+            log.info().append("OperationSnapshotControl {source=").append(System.identityHashCode(sourceTable))
                     .append(", control=").append(System.identityHashCode(this))
                     .append("} Start: beforeStep=").append(beforeStep)
                     .append(", beforeState=").append(beforeState.name())
@@ -100,7 +100,7 @@ public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl 
      */
     @Override
     @OverridingMethodsMustInvokeSuper
-    public synchronized final boolean snapshotCompletedConsistently(long afterClockValue, boolean usedPreviousValues) {
+    public synchronized boolean snapshotCompletedConsistently(long afterClockValue, boolean usedPreviousValues) {
         boolean success;
         if (isInInitialNotificationWindow()) {
             if (eventualListener == null) {
@@ -115,9 +115,11 @@ public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl 
         }
 
         if (DEBUG) {
-            log.info().append("SimpleSnapshotControl {source=").append(System.identityHashCode(sourceTable))
+            log.info().append("OperationSnapshotControl {source=").append(System.identityHashCode(sourceTable))
                     .append(" control=").append(System.identityHashCode(this))
-                    .append("} End: success=").append(success)
+                    .append("} snapshotCompletedConsistently: afterClockValue=").append(afterClockValue)
+                    .append(", usedPreviousValues=").append(usedPreviousValues)
+                    .append(", success=").append(success)
                     .append(", last=").append(lastNotificationStep)
                     .endl();
         }
@@ -161,7 +163,7 @@ public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl 
         eventualListener = listener;
         eventualResult = resultTable;
         if (DEBUG) {
-            log.info().append("SimpleSnapshotControl {source=").append(System.identityHashCode(sourceTable))
+            log.info().append("OperationSnapshotControl {source=").append(System.identityHashCode(sourceTable))
                     .append(", control=").append(System.identityHashCode(this))
                     .append(", result=").append(System.identityHashCode(resultTable))
                     .append('}')

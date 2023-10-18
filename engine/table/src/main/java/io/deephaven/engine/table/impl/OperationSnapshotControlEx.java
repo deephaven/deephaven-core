@@ -10,19 +10,19 @@ import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Variant of {@link SimpleSnapshotControl} that considers an "extra" {@link NotificationStepSource} in addition to the
+ * Variant of {@link OperationSnapshotControl} that considers an "extra" {@link NotificationStepSource} in addition to the
  * source {@link BaseTable} when determining whether to use previous values during initialization or evaluating success.
  * This is useful anytime an operation needs to listen to and snapshot one data source while also snapshotting another.
  */
-public final class SimpleSnapshotControlEx extends SimpleSnapshotControl {
+public final class OperationSnapshotControlEx extends OperationSnapshotControl {
 
-    private static final Logger log = LoggerFactory.getLogger(SimpleSnapshotControlEx.class);
+    private static final Logger log = LoggerFactory.getLogger(OperationSnapshotControlEx.class);
 
     private final NotificationStepSource extra;
 
     private long extraLastNotificationStep;
 
-    public SimpleSnapshotControlEx(
+    public OperationSnapshotControlEx(
             @NotNull final BaseTable<?> sourceTable,
             @NotNull final NotificationStepSource extra) {
         super(sourceTable);
@@ -67,7 +67,7 @@ public final class SimpleSnapshotControlEx extends SimpleSnapshotControl {
         }
 
         if (DEBUG) {
-            log.info().append("SwapListenerEx {source=").append(System.identityHashCode(sourceTable))
+            log.info().append("OperationSnapshotControlEx {source=").append(System.identityHashCode(sourceTable))
                     .append(", extra=").append(System.identityHashCode(extra))
                     .append(", control=").append(System.identityHashCode(this))
                     .append("} Start: beforeStep=").append(beforeStep)
@@ -83,16 +83,18 @@ public final class SimpleSnapshotControlEx extends SimpleSnapshotControl {
     }
 
     @Override
-    protected synchronized boolean end(final long afterClockValue) {
+    public synchronized boolean snapshotCompletedConsistently(long afterClockValue, boolean usedPreviousValues) {
         if (DEBUG) {
-            log.info().append("SimpleSnapshotControlEx end() control=").append(System.identityHashCode(this))
+            log.info().append("OperationSnapshotControlEx end() control=").append(System.identityHashCode(this))
                     .append(", end={").append(LogicalClock.getStep(afterClockValue)).append(",")
                     .append(LogicalClock.getState(afterClockValue).toString())
-                    .append("}, last=").append(sourceTable.getLastNotificationStep())
+                    .append("}, usedPreviousValues=").append(usedPreviousValues)
+                    .append(", last=").append(sourceTable.getLastNotificationStep())
                     .append(", extraLast=").append(extra.getLastNotificationStep())
                     .endl();
         }
-        return extra.getLastNotificationStep() == extraLastNotificationStep && super.end(afterClockValue);
+        return extra.getLastNotificationStep() == extraLastNotificationStep
+                && super.snapshotConsistent(afterClockValue, usedPreviousValues);
     }
 
     @Override
@@ -100,8 +102,8 @@ public final class SimpleSnapshotControlEx extends SimpleSnapshotControl {
             @NotNull final NotificationStepReceiver resultTable) {
         super.setListenerAndResult(listener, resultTable);
         if (DEBUG) {
-            log.info().append("SnapshotControlEx control=")
-                    .append(System.identityHashCode(SimpleSnapshotControlEx.this))
+            log.info().append("OperationSnapshotControlEx control=")
+                    .append(System.identityHashCode(OperationSnapshotControlEx.this))
                     .append(", result=").append(System.identityHashCode(resultTable)).endl();
         }
     }
