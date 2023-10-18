@@ -10,7 +10,7 @@ import unittest
 import pandas
 import pyarrow.parquet
 
-from deephaven import empty_table, dtypes, new_table
+from deephaven import DHError, empty_table, dtypes, new_table
 from deephaven import arrow as dharrow
 from deephaven.column import InputColumn
 from deephaven.pandas import to_pandas, to_table
@@ -208,16 +208,17 @@ class ParquetTestCase(BaseTestCase):
     def get_table_with_array_data(self):
         # create a table with columns to test different types and edge cases
         dh_table = empty_table(20).update(formulas=[
-            "someStringArrayColumn = new String[] {i % 10 == 0?null:(`` + (i % 101))}",
-            "someIntArrayColumn = new int[] {i}",
-            "someLongArrayColumn = new long[] {ii}",
-            "someDoubleArrayColumn = new double[] {i*1.1}",
-            "someFloatArrayColumn = new float[] {(float)(i*1.1)}",
-            "someBoolArrayColumn = new Boolean[] {i % 3 == 0?true:i%3 == 1?false:null}",
-            "someShorArrayColumn = new short[] {(short)i}",
-            "someByteArrayColumn = new byte[] {(byte)i}",
-            "someCharArrayColumn = new char[] {(char)i}",
-            "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
+            "someStringArrayColumn = new String[] {i % 10 == 0 ? null : (`` + (i % 101))}",
+            "someIntArrayColumn = new int[] {i % 10 == 0 ? null : i}",
+            "someLongArrayColumn = new long[] {i % 10 == 0 ? null : i}",
+            "someDoubleArrayColumn = new double[] {i % 10 == 0 ? null : i*1.1}",
+            "someFloatArrayColumn = new float[] {i % 10 == 0 ? null : (float)(i*1.1)}",
+            "someBoolArrayColumn = new Boolean[] {i % 3 == 0 ? true :i % 3 == 1 ? false : null}",
+            "someShorArrayColumn = new short[] {i % 10 == 0 ? null : (short)i}",
+            "someByteArrayColumn = new byte[] {i % 10 == 0 ? null : (byte)i}",
+            "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
+            "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
+            "someBiColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
             "nullStringArrayColumn = new String[] {(String)null}",
             "nullIntArrayColumn = new int[] {(int)null}",
             "nullLongArrayColumn = new long[] {(long)null}",
@@ -227,7 +228,8 @@ class ParquetTestCase(BaseTestCase):
             "nullShorArrayColumn = new short[] {(short)null}",
             "nullByteArrayColumn = new byte[] {(byte)null}",
             "nullCharArrayColumn = new char[] {(char)null}",
-            "nullTimeArrayColumn = new Instant[] {(Instant)null}"
+            "nullTimeArrayColumn = new Instant[] {(Instant)null}",
+            "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"
         ])
         return dh_table
 
@@ -304,7 +306,7 @@ class ParquetTestCase(BaseTestCase):
         # result_table = read('data_from_pandas.parquet')
         # self.assert_table_equals(dh_table, result_table)
 
-    def test_writing_via_pyarrow(self):
+    def test_writing_lists_via_pyarrow(self):
         # This function tests that we can write tables with list types to parquet files via pyarrow and read them back
         # through deephaven's parquet reader code with no exceptions
         pa_table = pyarrow.table({'numList': [[2, 2, 4]],
@@ -313,6 +315,25 @@ class ParquetTestCase(BaseTestCase):
         from_disk = read('data_from_pa.parquet').select()
         pa_table_from_disk = dharrow.to_arrow(from_disk)
         self.assertTrue(pa_table.equals(pa_table_from_disk))
+
+    def test_writing_time_via_pyarrow(self):
+        def _test_writing_time_helper(filename):
+            metadata = pyarrow.parquet.read_metadata(filename)
+            if "isAdjustedToUTC=false" in str(metadata.row_group(0).column(0)):
+                # TODO(deephaven-core#976): Unable to read non UTC adjusted timestamps
+                with self.assertRaises(DHError) as e:
+                    read(filename)
+                self.assertIn("ParquetFileReaderException", e.exception.root_cause)
+
+        df = pandas.DataFrame({
+            "f": pandas.date_range("20130101", periods=3),
+        })
+        df.to_parquet("pyarrow_26.parquet", engine='pyarrow', compression=None, version='2.6')
+        _test_writing_time_helper("pyarrow_26.parquet")
+        df.to_parquet("pyarrow_24.parquet", engine='pyarrow', compression=None, version='2.4')
+        _test_writing_time_helper("pyarrow_24.parquet")
+        df.to_parquet("pyarrow_10.parquet", engine='pyarrow', compression=None, version='1.0')
+        _test_writing_time_helper("pyarrow_10.parquet")
 
     def test_dictionary_encoding(self):
         dh_table = empty_table(10).update(formulas=[

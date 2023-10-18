@@ -23,7 +23,7 @@ setup <- function() {
   )
 
   # set up client
-  client <- Client$new(target = "localhost:10000")
+  client <- Client$new(target = get_dh_target())
 
   # move dataframes to server and get TableHandles for testing
   th1 <- client$import_table(df1)

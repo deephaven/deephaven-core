@@ -53,9 +53,8 @@ import org.jetbrains.annotations.NotNull;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS;
 
@@ -252,14 +251,11 @@ public class ArrowFlightUtil {
             }
             localResultTable.dropReference();
 
-            // no more changes allowed; this is officially static content
-            localResultTable.sealTable(() -> localExportBuilder.submit(() -> {
+            // let's finally export the table to our listener
+            localExportBuilder.submit(() -> {
                 GrpcUtil.safelyComplete(observer);
                 session.removeOnCloseCallback(this);
                 return localResultTable;
-            }), () -> {
-                GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed");
-                session.removeOnCloseCallback(this);
             });
         }
 
@@ -268,6 +264,31 @@ public class ArrowFlightUtil {
             // close() is intended to be invoked only though session expiration
             GrpcUtil.safelyError(observer, Code.UNAUTHENTICATED, "Session expired");
         }
+    }
+
+    /**
+     * Represents states for a DoExchange stream where the server must not close until the client has half closed.
+     */
+    enum HalfClosedState {
+        /**
+         * Client has not half-closed, server should not half close until the client has done so.
+         */
+        DONT_CLOSE,
+        /**
+         * Indicates that the client has half-closed, and the server should half close immediately after finishing
+         * sending data.
+         */
+        CLIENT_HALF_CLOSED,
+
+        /**
+         * The server has no more data to send, but client hasn't half-closed.
+         */
+        FINISHED_SENDING,
+
+        /**
+         * Streaming finished and client half-closed.
+         */
+        CLOSED
     }
 
     /**
@@ -439,6 +460,8 @@ public class ArrowFlightUtil {
          */
         private class SnapshotRequestHandler
                 implements Handler {
+            private final AtomicReference<HalfClosedState> halfClosedState =
+                    new AtomicReference<>(HalfClosedState.DONT_CLOSE);
 
             public SnapshotRequestHandler() {}
 
@@ -493,7 +516,25 @@ public class ArrowFlightUtil {
                                 // leverage common code for `DoGet` and `BarrageSnapshotOptions`
                                 BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, columns, viewport,
                                         reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener, metrics);
-                                listener.onCompleted();
+                                HalfClosedState newState = halfClosedState.updateAndGet(current -> {
+                                    switch (current) {
+                                        case DONT_CLOSE:
+                                            // record that we have finished sending
+                                            return HalfClosedState.FINISHED_SENDING;
+                                        case CLIENT_HALF_CLOSED:
+                                            // since streaming has now finished, and client already half-closed, time to
+                                            // half close from server
+                                            return HalfClosedState.CLOSED;
+                                        case FINISHED_SENDING:
+                                        case CLOSED:
+                                            throw new IllegalStateException("Can't finish streaming twice");
+                                        default:
+                                            throw new IllegalStateException("Unknown state " + current);
+                                    }
+                                });
+                                if (newState == HalfClosedState.CLOSED) {
+                                    listener.onCompleted();
+                                }
                             });
                 }
             }
@@ -501,6 +542,25 @@ public class ArrowFlightUtil {
             @Override
             public void close() {
                 // no work to do for DoGetRequest close
+                // possibly safely complete if finished sending data
+                HalfClosedState newState = halfClosedState.updateAndGet(current -> {
+                    switch (current) {
+                        case DONT_CLOSE:
+                            // record that we have half closed
+                            return HalfClosedState.CLIENT_HALF_CLOSED;
+                        case FINISHED_SENDING:
+                            // since client has now half closed, and we're done sending, time to half-close from server
+                            return HalfClosedState.CLOSED;
+                        case CLIENT_HALF_CLOSED:
+                        case CLOSED:
+                            throw new IllegalStateException("Can't close twice");
+                        default:
+                            throw new IllegalStateException("Unknown state " + current);
+                    }
+                });
+                if (newState == HalfClosedState.CLOSED) {
+                    listener.onCompleted();
+                }
             }
         }
 

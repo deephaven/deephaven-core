@@ -1,6 +1,5 @@
 # distutils: language = c++
 # cython: language_level = 3
-# cython: cpp_locals=True
 
 #
 # Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
@@ -96,7 +95,7 @@ cdef class ClientTable:
         result._table = move(table)
         return result
 
-    def get_column(self, columnIndex: size_t) -> ColumnSource:
+    def get_column(self, columnIndex: int) -> ColumnSource:
         cs = deref(self._table).GetColumn(columnIndex)
         return ColumnSource.create(move(cs))
 
@@ -200,11 +199,11 @@ cdef class RowSequence:
         result.row_sequence = move(row_sequence)
         return result
 
-    def Take(self, size: size_t) -> RowSequence:
+    def Take(self, size: int) -> RowSequence:
         row_sequence = deref(self.row_sequence).Take(size)
         return RowSequence.create(move(row_sequence))
 
-    def Drop(self, size: size_t) -> RowSequence:
+    def Drop(self, size: int) -> RowSequence:
         row_sequence = deref(self.row_sequence).Drop(size)
         return RowSequence.create(move(row_sequence))
 
@@ -339,7 +338,7 @@ cdef class ColumnSource:
 
 # Converts an Arrow array to a C++ ColumnSource of the right type. The created column source does not own the
 # memory used, so it is only valid as long as the original Arrow array is valid.
-cdef shared_ptr[CColumnSource] _convert_arrow_array_to_column_source(array: pa.Array) except +:
+cdef shared_ptr[CColumnSource] _convert_arrow_array_to_column_source(array: pa.Array) except *:
     if isinstance(array, pa.lib.StringArray):
         return _convert_arrow_string_array_to_column_source(cast(pa.lib.StringArray, array))
     if isinstance(array, pa.lib.BooleanArray):
@@ -348,7 +347,7 @@ cdef shared_ptr[CColumnSource] _convert_arrow_array_to_column_source(array: pa.A
         return _convert_arrow_timestamp_array_to_column_source(cast(pa.lib.TimestampArray, array))
     buffers = array.buffers()
     if len(buffers) != 2:
-        raise RuntimeError(f"Expected 2 buffers, got {len(buffers)}")
+        raise RuntimeError(f"Expected 2 simple type buffers, got {len(buffers)}")
 
     # buffers[0] is the validity array, but we don't care about it because for numeric types we rely on
     # the Deephaven null convention which reserves a special value in the range to mean null.
@@ -379,11 +378,11 @@ cdef shared_ptr[CColumnSource] _convert_arrow_array_to_column_source(array: pa.A
 
 # Converts an Arrow BooleanArray to a C++ BooleanColumnSource. The created column source does not own the
 # memory used, so it is only valid as long as the original Arrow array is valid.
-cdef shared_ptr[CColumnSource] _convert_arrow_boolean_array_to_column_source(array: pa.BooleanArray) except +:
+cdef shared_ptr[CColumnSource] _convert_arrow_boolean_array_to_column_source(array: pa.BooleanArray) except *:
     num_elements = len(array)
     buffers = array.buffers()
     if len(buffers) != 2:
-        raise RuntimeError(f"Expected 2 buffers, got {len(buffers)}")
+        raise RuntimeError(f"Expected 2 boolean buffers, got {len(buffers)}")
     validity = buffers[0]
     data = buffers[1]
 
@@ -401,11 +400,11 @@ cdef shared_ptr[CColumnSource] _convert_arrow_boolean_array_to_column_source(arr
 
 # Converts an Arrow StringArray to a C++ StringColumnSource. The created column source does not own the
 # memory used, so it is only valid as long as the original Arrow array is valid.
-cdef shared_ptr[CColumnSource] _convert_arrow_string_array_to_column_source(array: pa.StringArray) except +:
+cdef shared_ptr[CColumnSource] _convert_arrow_string_array_to_column_source(array: pa.StringArray) except *:
     num_elements = len(array)
     buffers = array.buffers()
     if len(buffers) != 3:
-        raise RuntimeError(f"Expected 3 buffers, got {len(buffers)}")
+        raise RuntimeError(f"Expected 3 string buffers, got {len(buffers)}")
     validity = buffers[0]
     starts = buffers[1]
     text = buffers[2]
@@ -427,11 +426,11 @@ cdef shared_ptr[CColumnSource] _convert_arrow_string_array_to_column_source(arra
 
 # Converts an Arrow TimestampArray to a C++ DateTimeColumnSource. The created column source does not own the
 # memory used, so it is only valid as long as the original Arrow array is valid.
-cdef shared_ptr[CColumnSource] _convert_arrow_timestamp_array_to_column_source(array: pa.TimestampArray) except +:
+cdef shared_ptr[CColumnSource] _convert_arrow_timestamp_array_to_column_source(array: pa.TimestampArray) except *:
     num_elements = len(array)
     buffers = array.buffers()
     if len(buffers) != 2:
-        raise RuntimeError(f"Expected 2 buffers, got {len(buffers)}")
+        raise RuntimeError(f"Expected 2 timestamp buffers, got {len(buffers)}")
     validity = buffers[0]
     data = buffers[1]
 
@@ -448,7 +447,7 @@ cdef shared_ptr[CColumnSource] _convert_arrow_timestamp_array_to_column_source(a
                                                      num_elements)
 
 # This method converts a PyArrow Schema object to a C++ Schema object.
-cdef shared_ptr[CSchema] _pyarrow_schema_to_deephaven_schema(src: pa.Schema) except +:
+cdef shared_ptr[CSchema] _pyarrow_schema_to_deephaven_schema(src: pa.Schema) except *:
     if len(src.names) != len(src.types):
         raise RuntimeError("Unexpected: schema lengths are inconsistent")
 
@@ -509,9 +508,11 @@ cdef class BarrageProcessor:
         cdef vector[shared_ptr[CColumnSource]] column_sources
         cdef vector[size_t] sizes
         for source in sources:
-            cs = _convert_arrow_array_to_column_source(source)
+            # source is a ListArray of length 1
+            values = source.values
+            cs = _convert_arrow_array_to_column_source(values)
             column_sources.push_back(cs)
-            sizes.push_back(len(source))
+            sizes.push_back(len(values))
 
         result = self._barrage_processor.ProcessNextChunk(column_sources, sizes, &raw_metadata[0],
             raw_metadata.shape[0])
@@ -545,7 +546,7 @@ cdef _equivalentTypes = [
 ]
 
 # Converts a Deephaven type (an enum) into the corresponding PyArrow type.
-cdef _dh_type_to_pa_type(dh_type: ElementTypeId) except +:
+cdef _dh_type_to_pa_type(dh_type: ElementTypeId):
     for et_python in _equivalentTypes:
         et = <_EquivalentTypes>et_python
         if et.dh_type == dh_type:
@@ -553,7 +554,7 @@ cdef _dh_type_to_pa_type(dh_type: ElementTypeId) except +:
     raise RuntimeError(f"Can't convert Deephaven type {<int>dh_type} to pyarrow type type")
 
 # Converts a PyArrow type into the corresponding PyArrow type.
-cdef ElementTypeId _pa_type_to_dh_type(pa_type: pa.DataType) except +:
+cdef ElementTypeId _pa_type_to_dh_type(pa_type: pa.DataType) except *:
     for et_python in _equivalentTypes:
         et = <_EquivalentTypes>et_python
         if et.pa_type == pa_type:

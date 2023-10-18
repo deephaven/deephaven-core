@@ -1,7 +1,7 @@
 library(testthat)
 library(rdeephaven)
 
-target <- "localhost:10000"
+target <- get_dh_target()
 
 setup <- function() {
   df1 <- data.frame(
@@ -31,7 +31,6 @@ setup <- function() {
 
 test_that("client dhConnection works in the simple case of anonymous authentication", {
 
-  # TODO: assumes server is actually running on localhost:10000, this is probably bad for CI
   expect_no_error(client <- Client$new(target = target))
   
 })
@@ -214,7 +213,7 @@ test_that("client constructor fails nicely with bad inputs", {
   )
   expect_error(
     Client$new(target = target, int_options = list(a = 12.34)),
-    "'value' must be an integer. Got 'value' = 12.34."
+    "'value' must be a single integer. Got 'value' = 12.34."
   )
   expect_error(
     Client$new(target = target, string_options = 1234),
@@ -270,10 +269,10 @@ test_that("open_table fails nicely with bad inputs", {
 test_that("empty_table fails nicely with bad inputs", {
   client <- Client$new(target = target)
 
-  expect_error(client$empty_table(-3), "'size' must be a nonnegative integer. Got 'size' = -3.")
-  expect_error(client$empty_table(1.2345), "'size' must be an integer. Got 'size' = 1.2345.")
-  expect_error(client$empty_table("hello!"), "'size' must be a single numeric. Got an object of class character.")
-  expect_error(client$empty_table(c(1, 2, 3, 4)), "'size' must be a single numeric. Got a vector of length 4.")
+  expect_error(client$empty_table(-3), "'size' must be a single non-negative integer. Got 'size' = -3.")
+  expect_error(client$empty_table(1.2345), "'size' must be a single non-negative integer. Got 'size' = 1.2345.")
+  expect_error(client$empty_table("hello!"), "'size' must be a single non-negative integer. Got an object of class character.")
+  expect_error(client$empty_table(c(1, 2, 3, 4)), "'size' must be a single non-negative integer. Got a vector of length 4.")
 
   client$close()
 })

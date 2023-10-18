@@ -37,6 +37,10 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
     private final int simpleKeyColumnIndex;
     private final int simpleValueColumnIndex;
 
+    private final int receiveTimeColumnIndex;
+    private final int keyBytesColumnIndex;
+    private final int valueBytesColumnIndex;
+
     private final boolean keyIsSimpleObject;
     private final boolean valueIsSimpleObject;
 
@@ -56,7 +60,10 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
             final int simpleKeyColumnIndex,
             final int simpleValueColumnIndex,
             final Function<Object, Object> keyToChunkObjectMapper,
-            final Function<Object, Object> valueToChunkObjectMapper) {
+            final Function<Object, Object> valueToChunkObjectMapper,
+            final int receiveTimeColumnIndex,
+            final int keyBytesColumnIndex,
+            final int valueBytesColumnIndex) {
         super(tableDefinition);
         this.shutdownCallback = shutdownCallback;
         this.kafkaPartitionColumnIndex = kafkaPartitionColumnIndex;
@@ -68,6 +75,9 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
         this.valueProcessor = valueProcessor;
         this.keyToChunkObjectMapper = keyToChunkObjectMapper;
         this.valueToChunkObjectMapper = valueToChunkObjectMapper;
+        this.receiveTimeColumnIndex = receiveTimeColumnIndex;
+        this.keyBytesColumnIndex = keyBytesColumnIndex;
+        this.valueBytesColumnIndex = valueBytesColumnIndex;
 
         keyIsSimpleObject = this.simpleKeyColumnIndex >= 0;
         if (keyIsSimpleObject && keyProcessor != null) {
@@ -127,7 +137,10 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                 simpleKeyColumnIndex,
                 simpleValueColumnIndex,
                 parameters.getKeyToChunkObjectMapper(),
-                parameters.getValueToChunkObjectMapper());
+                parameters.getValueToChunkObjectMapper(),
+                parameters.getReceiveTimeColumnIndex(),
+                parameters.getKeyBytesColumnIndex(),
+                parameters.getValueBytesColumnIndex());
     }
 
     @NotNull
@@ -159,7 +172,8 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
     }
 
     @Override
-    public synchronized long consumeRecords(@NotNull final List<? extends ConsumerRecord<?, ?>> records) {
+    public synchronized long consumeRecords(long receiveTime,
+            @NotNull final List<? extends ConsumerRecord<?, ?>> records) {
         WritableChunk<Values>[] chunks = getChunksToFill();
         checkChunkSizes(chunks);
         int remaining = chunks[0].capacity() - chunks[0].size();
@@ -202,8 +216,20 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                     ? chunks[timestampColumnIndex].asWritableLongChunk()
                     : null;
 
+            WritableLongChunk<Values> receiveTimeChunk = receiveTimeColumnIndex >= 0
+                    ? chunks[receiveTimeColumnIndex].asWritableLongChunk()
+                    : null;
+
+            WritableIntChunk<Values> keyBytesChunk = keyBytesColumnIndex >= 0
+                    ? chunks[keyBytesColumnIndex].asWritableIntChunk()
+                    : null;
+
+            WritableIntChunk<Values> valueBytesChunk = valueBytesColumnIndex >= 0
+                    ? chunks[valueBytesColumnIndex].asWritableIntChunk()
+                    : null;
+
             for (ConsumerRecord<?, ?> record : records) {
-                if (--remaining == 0) {
+                if (remaining == 0) {
                     if (keyChunk != null) {
                         flushKeyChunk(keyChunk, chunks);
                     }
@@ -235,6 +261,21 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                     } else {
                         timestampChunk = null;
                     }
+                    if (receiveTimeColumnIndex >= 0) {
+                        receiveTimeChunk = chunks[receiveTimeColumnIndex].asWritableLongChunk();
+                    } else {
+                        receiveTimeChunk = null;
+                    }
+                    if (keyBytesColumnIndex >= 0) {
+                        keyBytesChunk = chunks[keyBytesColumnIndex].asWritableIntChunk();
+                    } else {
+                        keyBytesChunk = null;
+                    }
+                    if (valueBytesColumnIndex >= 0) {
+                        valueBytesChunk = chunks[valueBytesColumnIndex].asWritableIntChunk();
+                    } else {
+                        valueBytesChunk = null;
+                    }
                     if (keyIsSimpleObject) {
                         keyChunk = chunks[simpleKeyColumnIndex].asWritableObjectChunk();
                     }
@@ -258,21 +299,32 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                         timestampChunk.add(DateTimeUtils.millisToNanos(timestamp));
                     }
                 }
+                if (receiveTimeChunk != null) {
+                    receiveTimeChunk.add(receiveTime);
+                }
+                final int keyBytes = record.serializedKeySize();
+                if (keyBytesChunk != null) {
+                    keyBytesChunk.add(keyBytes >= 0 ? keyBytes : QueryConstants.NULL_INT);
+                }
+                final int valueBytes = record.serializedValueSize();
+                if (valueBytesChunk != null) {
+                    valueBytesChunk.add(valueBytes >= 0 ? valueBytes : QueryConstants.NULL_INT);
+                }
 
                 if (keyChunk != null) {
                     keyChunk.add(keyToChunkObjectMapper.apply(record.key()));
-                    final int keyBytes = record.serializedKeySize();
                     if (keyBytes > 0) {
                         bytesProcessed += keyBytes;
                     }
                 }
                 if (valueChunk != null) {
                     valueChunk.add(valueToChunkObjectMapper.apply(record.value()));
-                    final int valueBytes = record.serializedValueSize();
                     if (valueBytes > 0) {
                         bytesProcessed += valueBytes;
                     }
                 }
+
+                --remaining;
             }
             if (keyChunk != null) {
                 flushKeyChunk(keyChunk, chunks);
@@ -342,6 +394,9 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
         private final int kafkaPartitionColumnIndex;
         private final int offsetColumnIndex;
         private final int timestampColumnIndex;
+        private final int receiveTimeColumnIndex;
+        private final int keyBytesColumnIndex;
+        private final int valueBytesColumnIndex;
         private final KeyOrValueProcessor keyProcessor;
         private final KeyOrValueProcessor valueProcessor;
         private final int simpleKeyColumnIndex;
@@ -359,7 +414,10 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                 final int simpleKeyColumnIndex,
                 final int simpleValueColumnIndex,
                 final Function<Object, Object> keyToChunkObjectMapper,
-                final Function<Object, Object> valueToChunkObjectMapper) {
+                final Function<Object, Object> valueToChunkObjectMapper,
+                int receiveTimeColumnIndex,
+                int keyBytesColumnIndex,
+                int valueBytesColumnIndex) {
             this.tableDefinition = tableDefinition;
             this.kafkaPartitionColumnIndex = kafkaPartitionColumnIndex;
             this.offsetColumnIndex = offsetColumnIndex;
@@ -370,6 +428,9 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
             this.simpleValueColumnIndex = simpleValueColumnIndex;
             this.keyToChunkObjectMapper = keyToChunkObjectMapper;
             this.valueToChunkObjectMapper = valueToChunkObjectMapper;
+            this.receiveTimeColumnIndex = receiveTimeColumnIndex;
+            this.keyBytesColumnIndex = keyBytesColumnIndex;
+            this.valueBytesColumnIndex = valueBytesColumnIndex;
         }
 
         @NotNull
@@ -405,6 +466,18 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
             return simpleValueColumnIndex;
         }
 
+        public int getReceiveTimeColumnIndex() {
+            return receiveTimeColumnIndex;
+        }
+
+        public int getKeyBytesColumnIndex() {
+            return keyBytesColumnIndex;
+        }
+
+        public int getValueBytesColumnIndex() {
+            return valueBytesColumnIndex;
+        }
+
         public Function<Object, Object> getKeyToChunkObjectMapper() {
             return keyToChunkObjectMapper;
         }
@@ -424,6 +497,9 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
             private int kafkaPartitionColumnIndex = NULL_COLUMN_INDEX;
             private int offsetColumnIndex = NULL_COLUMN_INDEX;
             private int timestampColumnIndex = NULL_COLUMN_INDEX;
+            private int receiveTimeColumnIndex = NULL_COLUMN_INDEX;
+            private int keyBytesColumnIndex = NULL_COLUMN_INDEX;
+            private int valueBytesColumnIndex = NULL_COLUMN_INDEX;
             private KeyOrValueProcessor keyProcessor;
             private KeyOrValueProcessor valueProcessor;
             private int simpleKeyColumnIndex = NULL_COLUMN_INDEX;
@@ -450,6 +526,21 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
 
             public Builder setTimestampColumnIndex(final int timestampColumnIndex) {
                 this.timestampColumnIndex = timestampColumnIndex;
+                return this;
+            }
+
+            public Builder setReceiveTimeColumnIndex(final int receiveTimeColumnIndex) {
+                this.receiveTimeColumnIndex = receiveTimeColumnIndex;
+                return this;
+            }
+
+            public Builder setKeyBytesColumnIndex(final int keyBytesColumnIndex) {
+                this.keyBytesColumnIndex = keyBytesColumnIndex;
+                return this;
+            }
+
+            public Builder setValueBytesColumnIndex(final int valueBytesColumnIndex) {
+                this.valueBytesColumnIndex = valueBytesColumnIndex;
                 return this;
             }
 
@@ -503,7 +594,10 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                         simpleKeyColumnIndex,
                         simpleValueColumnIndex,
                         keyToChunkObjectMapper,
-                        valueToChunkObjectMapper);
+                        valueToChunkObjectMapper,
+                        receiveTimeColumnIndex,
+                        keyBytesColumnIndex,
+                        valueBytesColumnIndex);
             }
         }
     }

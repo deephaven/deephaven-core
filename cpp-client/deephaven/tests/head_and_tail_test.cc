@@ -12,18 +12,14 @@ TEST_CASE("Head and Tail", "[headtail]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
 
-  auto import_date = table.GetStrCol("ImportDate");
-  auto ticker = table.GetStrCol("Ticker");
-  auto volume = table.GetNumCol("Volume");
+  table = table.Where("ImportDate == `2017-11-01`");
 
-  table = table.Where(import_date == "2017-11-01");
+  auto th = table.Head(2).Select("Ticker", "Volume");
+  auto tt = table.Tail(2).Select("Ticker", "Volume");
 
-  auto th = table.Head(2).Select(ticker, volume);
-  auto tt = table.Tail(2).Select(ticker, volume);
-
-  std::cout << "==== Head(2) ====\n";
-  std::cout << th.Stream(true) << '\n';
-  std::cout << tt.Stream(true) << '\n';
+//  std::cout << "==== Head(2) ====\n";
+//  std::cout << th.Stream(true) << '\n';
+//  std::cout << tt.Stream(true) << '\n';
 
   std::vector<std::string> head_ticker_data = {"XRX", "XRX"};
   std::vector<std::int64_t> head_volume_data = {345000, 87000};

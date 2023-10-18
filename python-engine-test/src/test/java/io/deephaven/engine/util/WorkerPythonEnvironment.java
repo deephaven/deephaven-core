@@ -68,8 +68,8 @@ public enum WorkerPythonEnvironment {
                 .getStringWithDefault("WorkerPythonEnvironment.defaultScriptPath", ".");
 
         final ScriptFinder scriptFinder = new ScriptFinder(defaultScriptPath);
-        final String initScript = Configuration.getInstance().getStringWithDefault("WorkerPythonEnvironment.initScript",
-                "core/deephaven_jpy_init.py");
+        final String initScript =
+                Configuration.getInstance().getStringWithDefault("WorkerPythonEnvironment.initScript", "");
 
         final ScriptFinder.FileOrStream file;
         try {

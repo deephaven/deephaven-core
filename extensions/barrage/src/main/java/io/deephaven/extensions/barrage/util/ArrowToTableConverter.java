@@ -12,14 +12,13 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.io.streams.ByteBufferInputStream;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -31,7 +30,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.concurrent.locks.Condition;
 
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
 
@@ -49,7 +47,6 @@ public class ArrowToTableConverter {
     protected BarrageSubscriptionOptions options = DEFAULT_SER_OPTIONS;
 
     private volatile boolean completed = false;
-    private volatile Throwable exceptionWhileCompleting = null;
 
     private static BarrageProtoUtil.MessageInfo parseArrowIpcMessage(final byte[] ipcMessage) throws IOException {
         final BarrageProtoUtil.MessageInfo mi = new BarrageProtoUtil.MessageInfo();
@@ -72,6 +69,7 @@ public class ArrowToTableConverter {
         return mi;
     }
 
+    @ScriptApi
     public synchronized void setSchema(final byte[] ipcMessage) {
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
@@ -83,6 +81,7 @@ public class ArrowToTableConverter {
         parseSchema((Schema) mi.header.header(new Schema()));
     }
 
+    @ScriptApi
     public synchronized void addRecordBatch(final byte[] ipcMessage) {
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
@@ -105,6 +104,7 @@ public class ArrowToTableConverter {
         resultTable.handleBarrageMessage(msg);
     }
 
+    @ScriptApi
     public synchronized BarrageTable getResultTable() {
         if (!completed) {
             throw new IllegalStateException("Conversion must be completed prior to requesting the result");
@@ -112,50 +112,12 @@ public class ArrowToTableConverter {
         return resultTable;
     }
 
+    @ScriptApi
     public synchronized void onCompleted() throws InterruptedException {
         if (completed) {
             throw new IllegalStateException("Conversion cannot be completed twice");
         }
-
-        final Condition completedCondition;
-        final UpdateGraph updateGraph = resultTable.getUpdateGraph();
-        if (updateGraph.exclusiveLock().isHeldByCurrentThread()) {
-            completedCondition = updateGraph.exclusiveLock().newCondition();
-        } else {
-            completedCondition = null;
-        }
-
-        resultTable.sealTable(() -> {
-            completed = true;
-            signalCompletion(completedCondition);
-        }, () -> {
-            exceptionWhileCompleting = new Exception();
-            signalCompletion(completedCondition);
-        });
-
-        while (!completed && exceptionWhileCompleting == null) {
-            // handle the condition where this function may have the exclusive lock
-            if (completedCondition != null) {
-                completedCondition.await();
-            } else {
-                wait(); // ArrowToTableConverter lock
-            }
-        }
-
-        if (exceptionWhileCompleting != null) {
-            throw new UncheckedDeephavenException("Error while sealing result table:", exceptionWhileCompleting);
-        }
-    }
-
-    private void signalCompletion(final Condition completedCondition) {
-        if (completedCondition != null) {
-            UpdateGraph updateGraph = resultTable.getUpdateGraph();
-            updateGraph.requestSignal(completedCondition);
-        } else {
-            synchronized (ArrowToTableConverter.this) {
-                ArrowToTableConverter.this.notifyAll();
-            }
-        }
+        completed = true;
     }
 
     protected void parseSchema(final Schema header) {
@@ -164,9 +126,7 @@ public class ArrowToTableConverter {
         }
 
         final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(header);
-        result.attributes.put(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
-        result.attributes.put(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
-        resultTable = BarrageTable.make(null, result.tableDef, result.attributes, -1);
+        resultTable = BarrageTable.make(null, result.tableDef, result.attributes, null);
         resultTable.setFlat();
 
         columnConversionFactors = result.conversionFactors;

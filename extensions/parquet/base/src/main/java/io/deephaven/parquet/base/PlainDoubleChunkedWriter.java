@@ -32,11 +32,13 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
 
     private DoubleBuffer targetBuffer;
     private ByteBuffer innerBuffer;
+    private IntBuffer nullOffsets;
 
 
     PlainDoubleChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator) {
         this.allocator = allocator;
         realloc(targetPageSize);
+        nullOffsets = IntBuffer.allocate(4);
     }
 
     @Override
@@ -128,7 +130,7 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
                                                   @NotNull final Statistics<?> statistics) {
         ensureCapacityFor(bulkValues);
         int i = 0;
-        IntBuffer nullOffsets = IntBuffer.allocate(4);
+        nullOffsets.clear();
         while (bulkValues.hasRemaining()) {
             final double v = bulkValues.get();
             if (v != QueryConstants.NULL_DOUBLE) {

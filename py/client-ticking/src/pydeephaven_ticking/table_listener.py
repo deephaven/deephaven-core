@@ -36,8 +36,8 @@ def _make_generator(table: dhc.ClientTable,
 
     col_names = tick_util.canonicalize_cols_param(table, col_names)
     while not rows.empty:
-        these_rows = rows.take(chunk_size)
-        rows = rows.drop(chunk_size)
+        these_rows = rows.Take(chunk_size)
+        rows = rows.Drop(chunk_size)
 
         result: ColDictType = {}
         for i in range(len(col_names)):

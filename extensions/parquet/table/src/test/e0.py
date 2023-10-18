@@ -8,7 +8,8 @@ df = pd.DataFrame(
         "c": np.arange(3, 6).astype("u1"),
         "d": np.arange(4.0, 7.0, dtype="float64"),
         "e": [True, False, True],
-        "f": pd.date_range("20130101", periods=3),
+        # TODO(deephaven-core#976): Unable to read parquet TimestampLogicalTypeAnnotation that is not adjusted to UTC
+        # "f": pd.date_range("20130101", periods=3),
         "g": pd.date_range("20130101", periods=3, tz="US/Eastern"),
         "h": pd.Categorical(list("abc")),
         "i": pd.Categorical(list("abc"), ordered=True),

@@ -149,18 +149,10 @@ public class StreamRequest {
             }
 
             @JsProperty
-            JsArray<Object> getExportedReferencesList();
-
-            @JsProperty
             StreamRequest.ToObjectReturnType.DataFieldType.GetPayloadUnionType getPayload();
 
             @JsProperty
-            void setExportedReferencesList(JsArray<Object> exportedReferencesList);
-
-            @JsOverlay
-            default void setExportedReferencesList(Object[] exportedReferencesList) {
-                setExportedReferencesList(Js.<JsArray<Object>>uncheckedCast(exportedReferencesList));
-            }
+            JsArray<Object> getReferencesList();
 
             @JsProperty
             void setPayload(StreamRequest.ToObjectReturnType.DataFieldType.GetPayloadUnionType payload);
@@ -177,6 +169,14 @@ public class StreamRequest {
                 setPayload(
                         Js.<StreamRequest.ToObjectReturnType.DataFieldType.GetPayloadUnionType>uncheckedCast(
                                 payload));
+            }
+
+            @JsProperty
+            void setReferencesList(JsArray<Object> referencesList);
+
+            @JsOverlay
+            default void setReferencesList(Object[] referencesList) {
+                setReferencesList(Js.<JsArray<Object>>uncheckedCast(referencesList));
             }
         }
 
@@ -330,18 +330,10 @@ public class StreamRequest {
             }
 
             @JsProperty
-            JsArray<Object> getExportedReferencesList();
-
-            @JsProperty
             StreamRequest.ToObjectReturnType0.DataFieldType.GetPayloadUnionType getPayload();
 
             @JsProperty
-            void setExportedReferencesList(JsArray<Object> exportedReferencesList);
-
-            @JsOverlay
-            default void setExportedReferencesList(Object[] exportedReferencesList) {
-                setExportedReferencesList(Js.<JsArray<Object>>uncheckedCast(exportedReferencesList));
-            }
+            JsArray<Object> getReferencesList();
 
             @JsProperty
             void setPayload(StreamRequest.ToObjectReturnType0.DataFieldType.GetPayloadUnionType payload);
@@ -358,6 +350,14 @@ public class StreamRequest {
                 setPayload(
                         Js.<StreamRequest.ToObjectReturnType0.DataFieldType.GetPayloadUnionType>uncheckedCast(
                                 payload));
+            }
+
+            @JsProperty
+            void setReferencesList(JsArray<Object> referencesList);
+
+            @JsOverlay
+            default void setReferencesList(Object[] referencesList) {
+                setReferencesList(Js.<JsArray<Object>>uncheckedCast(referencesList));
             }
         }
 
@@ -395,7 +395,7 @@ public class StreamRequest {
 
     public native ConnectRequest getConnect();
 
-    public native Data getData();
+    public native ClientData getData();
 
     public native int getMessageCase();
 
@@ -411,7 +411,7 @@ public class StreamRequest {
 
     public native void setData();
 
-    public native void setData(Data value);
+    public native void setData(ClientData value);
 
     public native StreamRequest.ToObjectReturnType0 toObject();
 

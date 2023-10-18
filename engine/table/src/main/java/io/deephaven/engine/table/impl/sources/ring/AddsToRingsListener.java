@@ -143,8 +143,7 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
                 throw new IllegalArgumentException();
             }
         }
-        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
-                AddsToRingsListener::bringPreviousUpToDate);
+        prevFlusher = new UpdateCommitter<>(this, getUpdateGraph(), AddsToRingsListener::bringPreviousUpToDate);
     }
 
     private WritableRowSet resultRowSet() {

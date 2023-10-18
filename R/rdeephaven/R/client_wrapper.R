@@ -1,6 +1,11 @@
+#' @title The Deephaven Client
 #' @description
 #' A Client is the entry point for interacting with the Deephaven server. It is used to create new tables,
 #' import data to and export data from the server, and run queries on the server.
+#'
+#' @usage NULL
+#' @format NULL
+#' @docType class
 #' @export
 Client <- R6Class("Client",
   cloneable = FALSE,
@@ -33,7 +38,7 @@ Client <- R6Class("Client",
     #' Initializes a Client object using a pointer to an existing client connection.
     #' @param xptr External pointer to an existing client connection.
     initialize_for_xptr = function(xptr) {
-      verify_type("xptr", xptr, "externalptr", "XPtr", TRUE)
+      verify_type("xptr", xptr, TRUE, "externalptr", "an XPtr")
       self$.internal_rcpp_object = new(INTERNAL_Client, xptr)
     },
 

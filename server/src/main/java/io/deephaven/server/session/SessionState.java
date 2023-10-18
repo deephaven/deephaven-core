@@ -49,7 +49,6 @@ import javax.inject.Provider;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -708,15 +707,14 @@ public class SessionState {
             if (session != null && session.isExpired()) {
                 throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
             }
-
+            final T localResult = result;
             // Note: an export may be released while still being a dependency of queued work; so let's make sure we're
             // still valid
-            if (result == null) {
+            if (localResult == null) {
                 throw new IllegalStateException(
                         "Dependent export '" + exportId + "' is null and in state " + state.name());
             }
-
-            return result;
+            return localResult;
         }
 
         /**

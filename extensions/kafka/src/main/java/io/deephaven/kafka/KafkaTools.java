@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Descriptors.Descriptor;
 import gnu.trove.map.hash.TIntLongHashMap;
 import io.confluent.kafka.schemaregistry.SchemaProvider;
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientFactory;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
@@ -122,11 +122,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.function.IntPredicate;
-import java.util.function.IntToLongFunction;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 import static io.deephaven.kafka.ingest.KafkaStreamPublisher.NULL_COLUMN_INDEX;
 
@@ -138,6 +134,12 @@ public class KafkaTools {
     public static final String OFFSET_COLUMN_NAME_DEFAULT = "KafkaOffset";
     public static final String TIMESTAMP_COLUMN_NAME_PROPERTY = "deephaven.timestamp.column.name";
     public static final String TIMESTAMP_COLUMN_NAME_DEFAULT = "KafkaTimestamp";
+    public static final String RECEIVE_TIME_COLUMN_NAME_PROPERTY = "deephaven.receivetime.column.name";
+    public static final String RECEIVE_TIME_COLUMN_NAME_DEFAULT = null;
+    public static final String KEY_BYTES_COLUMN_NAME_PROPERTY = "deephaven.keybytes.column.name";
+    public static final String KEY_BYTES_COLUMN_NAME_DEFAULT = null;
+    public static final String VALUE_BYTES_COLUMN_NAME_PROPERTY = "deephaven.valuebytes.column.name";
+    public static final String VALUE_BYTES_COLUMN_NAME_DEFAULT = null;
     public static final String KEY_COLUMN_NAME_PROPERTY = "deephaven.key.column.name";
     public static final String KEY_COLUMN_NAME_DEFAULT = "KafkaKey";
     public static final String VALUE_COLUMN_NAME_PROPERTY = "deephaven.value.column.name";
@@ -242,7 +244,7 @@ public class KafkaTools {
     /**
      * Enum to specify operations that may apply to either of Kafka KEY or VALUE fields.
      */
-    enum KeyOrValue {
+    public enum KeyOrValue {
         KEY, VALUE
     }
 
@@ -311,19 +313,19 @@ public class KafkaTools {
          */
         public static abstract class KeyOrValueSpec implements SchemaProviderProvider {
 
-            abstract Deserializer<?> getDeserializer(
+            protected abstract Deserializer<?> getDeserializer(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs);
 
-            abstract KeyOrValueIngestData getIngestData(
+            protected abstract KeyOrValueIngestData getIngestData(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs,
                     MutableInt nextColumnIndexMut,
                     List<ColumnDefinition<?>> columnDefinitionsOut);
 
-            abstract KeyOrValueProcessor getProcessor(
+            protected abstract KeyOrValueProcessor getProcessor(
                     TableDefinition tableDef,
                     KeyOrValueIngestData data);
         }
@@ -520,26 +522,15 @@ public class KafkaTools {
 
         /**
          * The kafka protobuf specs. This will fetch the {@link com.google.protobuf.Descriptors.Descriptor protobuf
-         * descriptor} for the {@link ProtobufConsumeOptions#schemaSubject() schema subject} from the schema registry
-         * using version {@link ProtobufConsumeOptions#schemaVersion() schema version} and create
+         * descriptor} based on the {@link ProtobufConsumeOptions#descriptorProvider()} and create the
          * {@link com.google.protobuf.Message message} parsing functions according to
          * {@link io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)}.
          * These functions will be adapted to handle schema changes.
-         *
-         * <p>
-         * For purposes of reproducibility across restarts where schema changes may occur, it is advisable for callers
-         * to set a specific {@link ProtobufConsumeOptions#schemaVersion() schema version}. This will ensure the
-         * resulting {@link io.deephaven.engine.table.TableDefinition table definition} will not change across restarts.
-         * This gives the caller an explicit opportunity to update any downstream consumers when updating
-         * {@link ProtobufConsumeOptions#schemaVersion() schema version} if necessary.
          *
          * @param options the options
          * @return the key or value spec
          * @see io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)
          *      parsing
-         * @see <a href=
-         *      "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-protobuf.html">kafka
-         *      protobuf serdes</a>
          */
         public static KeyOrValueSpec protobufSpec(ProtobufConsumeOptions options) {
             return new ProtobufConsumeImpl(options);
@@ -1195,19 +1186,7 @@ public class KafkaTools {
                         return;
                     }
                     columnDefinitions.add(commonColumnDefinition);
-                    switch (cc) {
-                        case KafkaPartition:
-                            publisherParametersBuilder.setKafkaPartitionColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        case Offset:
-                            publisherParametersBuilder.setOffsetColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        case Timestamp:
-                            publisherParametersBuilder.setTimestampColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        default:
-                            throw new UnsupportedOperationException("Unexpected common column " + cc);
-                    }
+                    cc.setColumnIndex.setColumnIndex(publisherParametersBuilder, nextColumnIndex.getAndIncrement());
                 });
 
         final KeyOrValueIngestData keyIngestData = keySpec.getIngestData(KeyOrValue.KEY,
@@ -1268,11 +1247,14 @@ public class KafkaTools {
     }
 
     static SchemaRegistryClient newSchemaRegistryClient(Map<String, ?> configs, List<SchemaProvider> providers) {
+        // Note: choosing to not use the constructor with doLog which is a newer API; this is in support of downstream
+        // users _potentially_ being able to replace kafka jars with previous versions.
         final AbstractKafkaSchemaSerDeConfig config = new AbstractKafkaSchemaSerDeConfig(
                 AbstractKafkaSchemaSerDeConfig.baseConfigDef(),
-                configs,
-                false);
-        return SchemaRegistryClientFactory.newClient(
+                configs);
+        // Note: choosing to not use SchemaRegistryClientFactory.newClient which is a newer API; this is in support of
+        // downstream users _potentially_ being able to replace kafka jars with previous versions.
+        return new CachedSchemaRegistryClient(
                 config.getSchemaRegistryUrls(),
                 config.getMaxSchemasPerSubject(),
                 List.copyOf(providers),
@@ -1512,11 +1494,15 @@ public class KafkaTools {
         }
     }
 
-    static class KeyOrValueIngestData {
+    public static class KeyOrValueIngestData {
         public Map<String, String> fieldPathToColumnName;
         public int simpleColumnIndex = NULL_COLUMN_INDEX;
         public Function<Object, Object> toObjectChunkMapper = Function.identity();
         public Object extra;
+    }
+
+    private interface SetColumnIndex {
+        void setColumnIndex(KafkaStreamPublisher.Parameters.Builder builder, int columnIndex);
     }
 
     private enum CommonColumn {
@@ -1524,39 +1510,64 @@ public class KafkaTools {
         KafkaPartition(
                 KAFKA_PARTITION_COLUMN_NAME_PROPERTY,
                 KAFKA_PARTITION_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofInt),
+                ColumnDefinition::ofInt,
+                KafkaStreamPublisher.Parameters.Builder::setKafkaPartitionColumnIndex),
         Offset(
                 OFFSET_COLUMN_NAME_PROPERTY,
                 OFFSET_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofLong),
+                ColumnDefinition::ofLong,
+                KafkaStreamPublisher.Parameters.Builder::setOffsetColumnIndex),
         Timestamp(
                 TIMESTAMP_COLUMN_NAME_PROPERTY,
                 TIMESTAMP_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofTime);
+                ColumnDefinition::ofTime,
+                KafkaStreamPublisher.Parameters.Builder::setTimestampColumnIndex),
+
+        ReceiveTime(
+                RECEIVE_TIME_COLUMN_NAME_PROPERTY,
+                RECEIVE_TIME_COLUMN_NAME_DEFAULT,
+                ColumnDefinition::ofTime,
+                KafkaStreamPublisher.Parameters.Builder::setReceiveTimeColumnIndex),
+
+        KeyBytes(
+                KEY_BYTES_COLUMN_NAME_PROPERTY,
+                KEY_BYTES_COLUMN_NAME_DEFAULT,
+                ColumnDefinition::ofInt,
+                KafkaStreamPublisher.Parameters.Builder::setKeyBytesColumnIndex),
+
+        ValueBytes(
+                VALUE_BYTES_COLUMN_NAME_PROPERTY,
+                VALUE_BYTES_COLUMN_NAME_DEFAULT,
+                ColumnDefinition::ofInt,
+                KafkaStreamPublisher.Parameters.Builder::setValueBytesColumnIndex);
         // @formatter:on
 
         private final String nameProperty;
         private final String nameDefault;
         private final Function<String, ColumnDefinition<?>> definitionFactory;
+        private final SetColumnIndex setColumnIndex;
 
         CommonColumn(@NotNull final String nameProperty,
-                @NotNull final String nameDefault,
-                @NotNull final Function<String, ColumnDefinition<?>> definitionFactory) {
+                @Nullable final String nameDefault,
+                @NotNull final Function<String, ColumnDefinition<?>> definitionFactory,
+                @NotNull final SetColumnIndex setColumnIndex) {
             this.nameProperty = nameProperty;
             this.nameDefault = nameDefault;
             this.definitionFactory = definitionFactory;
+            this.setColumnIndex = setColumnIndex;
         }
 
         private ColumnDefinition<?> getDefinition(@NotNull final Properties consumerProperties) {
             final ColumnDefinition<?> result;
             if (consumerProperties.containsKey(nameProperty)) {
-                final String partitionColumnName = consumerProperties.getProperty(nameProperty);
-                if (partitionColumnName == null || partitionColumnName.equals("")) {
+                final String commonColumnName = consumerProperties.getProperty(nameProperty);
+                if (commonColumnName == null || commonColumnName.equals("")) {
                     result = null;
                 } else {
-                    result = definitionFactory.apply(partitionColumnName);
+                    result = definitionFactory.apply(commonColumnName);
                 }
-                consumerProperties.remove(nameProperty);
+            } else if (nameDefault == null) {
+                result = null;
             } else {
                 result = definitionFactory.apply(nameDefault);
             }
@@ -1631,9 +1642,10 @@ public class KafkaTools {
         }
 
         @Override
-        public long consume(@NotNull final List<? extends ConsumerRecord<?, ?>> consumerRecords) {
+        public long consume(final long receiveTime,
+                @NotNull final List<? extends ConsumerRecord<?, ?>> consumerRecords) {
             try {
-                return adapter.consumeRecords(consumerRecords);
+                return adapter.consumeRecords(receiveTime, consumerRecords);
             } catch (Exception e) {
                 acceptFailure(e);
                 return 0;
