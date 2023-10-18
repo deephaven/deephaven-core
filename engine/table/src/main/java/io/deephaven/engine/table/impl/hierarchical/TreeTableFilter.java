@@ -159,7 +159,8 @@ public class TreeTableFilter {
         if (source.isRefreshing()) {
             try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
                     source.getUpdateGraph()).open()) {
-                final OperationSnapshotControlEx snapshotControl = new OperationSnapshotControlEx(source, sourceRowLookup);
+                final OperationSnapshotControlEx snapshotControl =
+                        new OperationSnapshotControlEx(source, sourceRowLookup);
                 ConstructSnapshot.callDataSnapshotFunction(System.identityHashCode(source) + ": ",
                         snapshotControl,
                         (usePrev, beforeClockValue) -> {

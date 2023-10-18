@@ -10,9 +10,10 @@ import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Variant of {@link OperationSnapshotControl} that considers an "extra" {@link NotificationStepSource} in addition to the
- * source {@link BaseTable} when determining whether to use previous values during initialization or evaluating success.
- * This is useful anytime an operation needs to listen to and snapshot one data source while also snapshotting another.
+ * Variant of {@link OperationSnapshotControl} that considers an "extra" {@link NotificationStepSource} in addition to
+ * the source {@link BaseTable} when determining whether to use previous values during initialization or evaluating
+ * success. This is useful anytime an operation needs to listen to and snapshot one data source while also snapshotting
+ * another.
  */
 public final class OperationSnapshotControlEx extends OperationSnapshotControl {
 
