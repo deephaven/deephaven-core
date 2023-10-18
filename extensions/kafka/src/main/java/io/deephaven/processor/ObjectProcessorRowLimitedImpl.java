@@ -12,7 +12,20 @@ import io.deephaven.qst.type.Type;
 import java.util.List;
 import java.util.Objects;
 
-final class ObjectProcessorRowLimitedImpl<T> implements ObjectProcessorRowLimited<T> {
+final class ObjectProcessorRowLimitedImpl<T> implements ObjectProcessor<T> {
+
+    static <T> ObjectProcessorRowLimitedImpl<T> of(ObjectProcessor<T> delegate, int rowLimit) {
+        if (delegate instanceof ObjectProcessorRowLimitedImpl) {
+            final ObjectProcessorRowLimitedImpl<T> limited = (ObjectProcessorRowLimitedImpl<T>) delegate;
+            if (limited.rowLimit() <= rowLimit) {
+                // already limited more than rowLimit
+                return limited;
+            }
+            return new ObjectProcessorRowLimitedImpl<>(limited.delegate(), rowLimit);
+        }
+        return new ObjectProcessorRowLimitedImpl<>(delegate, rowLimit);
+    }
+
     private final ObjectProcessor<T> delegate;
     private final int rowLimit;
 
@@ -31,14 +44,13 @@ final class ObjectProcessorRowLimitedImpl<T> implements ObjectProcessorRowLimite
         return delegate;
     }
 
-    @Override
-    public List<Type<?>> outputTypes() {
-        return delegate.outputTypes();
+    int rowLimit() {
+        return rowLimit;
     }
 
     @Override
-    public int rowLimit() {
-        return rowLimit;
+    public List<Type<?>> outputTypes() {
+        return delegate.outputTypes();
     }
 
     @Override

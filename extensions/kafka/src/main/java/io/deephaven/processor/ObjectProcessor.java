@@ -27,7 +27,6 @@ import java.util.List;
  * row basis.
  *
  * @param <T> the object type
- * @see ObjectProcessorRowLimited
  */
 public interface ObjectProcessor<T> {
 
@@ -41,6 +40,25 @@ public interface ObjectProcessor<T> {
      */
     static <T> ObjectProcessor<T> strict(ObjectProcessor<T> delegate) {
         return ObjectProcessorStrict.create(delegate);
+    }
+
+    /**
+     * Creates or returns a row-limited implementation. If {@code delegate} is already been limited more than
+     * {@code rowLimit}, {@code delegate} is returned. Otherwise, a row-limited implementation is created that wraps
+     * {@code delegate} and invokes {@link #processAll(ObjectChunk, List) delegate#processAll} with {@code rowLimit}
+     * sized out chunks, except for the last invocation which may have size less-than {@code rowLimit}.
+     *
+     * <p>
+     * Adding a row-limit may be useful in cases where the input objects are "wide". By limiting the number of rows
+     * considered at any given time, there may be better opportunity for read caching.
+     *
+     * @param delegate the delegate
+     * @param rowLimit the row limit
+     * @return the row-limited processor
+     * @param <T> the object type
+     */
+    static <T> ObjectProcessor<T> rowLimited(ObjectProcessor<T> delegate, int rowLimit) {
+        return ObjectProcessorRowLimitedImpl.of(delegate, rowLimit);
     }
 
     /**
