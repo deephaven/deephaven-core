@@ -25,6 +25,7 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.util.SafeCloseable;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -131,6 +132,11 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         }
         if (!table.isRefreshing()) {
             sendUpdateMessage(ticket, table.size(), null);
+            return;
+        }
+        if (table.isFailed()) {
+            sendUpdateMessage(ticket, -1, Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Exported Table Already Failed"));
             return;
         }
 
