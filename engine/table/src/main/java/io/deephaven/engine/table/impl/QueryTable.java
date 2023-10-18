@@ -1645,51 +1645,50 @@ public class QueryTable extends BaseTable<QueryTable> {
                         updateDescription, sizeForInstrumentation(), () -> {
                             final Mutable<Table> result = new MutableObject<>();
 
-                            final SimpleSnapshotControl snapshotControl =
+                            final SimpleSnapshotControl sc =
                                     createSnapshotControlIfRefreshing(SimpleSnapshotControl::new);
-                            initializeWithSnapshot(humanReadablePrefix, snapshotControl,
-                                    (usePrev, beforeClockValue) -> {
-                                        final boolean publishTheseSources = flavor == Flavor.UpdateView;
-                                        final SelectAndViewAnalyzerWrapper analyzerWrapper =
-                                                SelectAndViewAnalyzer.create(
-                                                        this, SelectAndViewAnalyzer.Mode.VIEW_EAGER, columns, rowSet,
-                                                        getModifiedColumnSetForUpdates(), publishTheseSources, true,
-                                                        viewColumns);
-                                        final SelectColumn[] processedViewColumns =
-                                                analyzerWrapper.getProcessedColumns()
-                                                        .toArray(SelectColumn[]::new);
-                                        QueryTable queryTable = new QueryTable(
-                                                rowSet, analyzerWrapper.getPublishedColumnResources());
-                                        if (snapshotControl != null) {
-                                            final Map<String, String[]> effects = analyzerWrapper.calcEffects();
-                                            final TableUpdateListener listener =
-                                                    new ViewOrUpdateViewListener(updateDescription, this, queryTable,
-                                                            effects);
-                                            snapshotControl.setListenerAndResult(listener, queryTable);
-                                        }
+                            initializeWithSnapshot(humanReadablePrefix, sc, (usePrev, beforeClockValue) -> {
+                                final boolean publishTheseSources = flavor == Flavor.UpdateView;
+                                final SelectAndViewAnalyzerWrapper analyzerWrapper =
+                                        SelectAndViewAnalyzer.create(
+                                                this, SelectAndViewAnalyzer.Mode.VIEW_EAGER, columns, rowSet,
+                                                getModifiedColumnSetForUpdates(), publishTheseSources, true,
+                                                viewColumns);
+                                final SelectColumn[] processedViewColumns =
+                                        analyzerWrapper.getProcessedColumns()
+                                                .toArray(SelectColumn[]::new);
+                                QueryTable queryTable = new QueryTable(
+                                        rowSet, analyzerWrapper.getPublishedColumnResources());
+                                if (sc != null) {
+                                    final Map<String, String[]> effects = analyzerWrapper.calcEffects();
+                                    final TableUpdateListener listener =
+                                            new ViewOrUpdateViewListener(updateDescription, this, queryTable,
+                                                    effects);
+                                    sc.setListenerAndResult(listener, queryTable);
+                                }
 
-                                        propagateFlatness(queryTable);
+                                propagateFlatness(queryTable);
 
-                                        copyAttributes(queryTable,
-                                                flavor == Flavor.UpdateView ? CopyAttributeOperation.UpdateView
-                                                        : CopyAttributeOperation.View);
-                                        copySortableColumns(queryTable, processedViewColumns);
-                                        if (publishTheseSources) {
-                                            maybeCopyColumnDescriptions(queryTable, processedViewColumns);
-                                        } else {
-                                            maybeCopyColumnDescriptions(queryTable);
-                                        }
-                                        final SelectAndViewAnalyzerWrapper.UpdateFlavor updateFlavor =
-                                                flavor == Flavor.UpdateView
-                                                        ? SelectAndViewAnalyzerWrapper.UpdateFlavor.UpdateView
-                                                        : SelectAndViewAnalyzerWrapper.UpdateFlavor.View;
-                                        queryTable = analyzerWrapper.applyShiftsAndRemainingColumns(
-                                                this, queryTable, updateFlavor);
+                                copyAttributes(queryTable,
+                                        flavor == Flavor.UpdateView ? CopyAttributeOperation.UpdateView
+                                                : CopyAttributeOperation.View);
+                                copySortableColumns(queryTable, processedViewColumns);
+                                if (publishTheseSources) {
+                                    maybeCopyColumnDescriptions(queryTable, processedViewColumns);
+                                } else {
+                                    maybeCopyColumnDescriptions(queryTable);
+                                }
+                                final SelectAndViewAnalyzerWrapper.UpdateFlavor updateFlavor =
+                                        flavor == Flavor.UpdateView
+                                                ? SelectAndViewAnalyzerWrapper.UpdateFlavor.UpdateView
+                                                : SelectAndViewAnalyzerWrapper.UpdateFlavor.View;
+                                queryTable = analyzerWrapper.applyShiftsAndRemainingColumns(
+                                        this, queryTable, updateFlavor);
 
-                                        result.setValue(queryTable);
+                                result.setValue(queryTable);
 
-                                        return true;
-                                    });
+                                return true;
+                            });
 
                             return result.getValue();
                         }));

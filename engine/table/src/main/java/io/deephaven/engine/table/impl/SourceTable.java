@@ -282,7 +282,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 resultTable.setAttribute(INITIALLY_EMPTY_COALESCED_SOURCE_TABLE_ATTRIBUTE, true);
             }
 
-            result.setValue(resultTable);
             if (snapshotControl != null) {
                 final ListenerImpl listener =
                         new ListenerImpl("SourceTable.coalesce", this, resultTable) {
@@ -297,6 +296,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 snapshotControl.setListenerAndResult(listener, resultTable);
             }
 
+            result.setValue(resultTable);
             return true;
         });
 

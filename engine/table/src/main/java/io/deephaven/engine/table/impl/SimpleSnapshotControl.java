@@ -27,7 +27,6 @@ public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl 
 
     private TableUpdateListener eventualListener;
     private NotificationStepReceiver eventualResult;
-    boolean success = false;
 
     /**
      * The last clock cycle which the source table produced a notification.
@@ -57,7 +56,6 @@ public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl 
     @Override
     public synchronized Boolean usePreviousValues(final long beforeClockValue) {
         lastNotificationStep = sourceTable.getLastNotificationStep();
-        success = false;
 
         final long beforeStep = LogicalClock.getStep(beforeClockValue);
         final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
@@ -90,22 +88,20 @@ public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl 
         return isInInitialNotificationWindow();
     }
 
-    @Override
-    public final boolean snapshotCompletedConsistently(long afterClockValue, boolean usedPreviousValues) {
-        return end(afterClockValue);
-    }
-
     /**
      * Ends a snapshot. Overriding methods must call {@code super} in order to ensure that the result's last
      * notification step is properly set.
      *
-     * @param clockCycle The {@link LogicalClock logical clock} cycle we are ending a snapshot on
+     * @param afterClockValue The {@link LogicalClock logical clock} cycle we are ending a snapshot on
+     * @param usedPreviousValues Whether we used previous values during the snapshot
      * @return true if the snapshot was successful, false if we should try again.
      * @throws IllegalStateException If the snapshot was successful (consistent), but the snapshot function failed to
      *         set the eventual listener or eventual result
      */
+    @Override
     @OverridingMethodsMustInvokeSuper
-    protected synchronized boolean end(@SuppressWarnings("unused") final long clockCycle) {
+    public synchronized final boolean snapshotCompletedConsistently(long afterClockValue, boolean usedPreviousValues) {
+        boolean success;
         if (isInInitialNotificationWindow()) {
             if (eventualListener == null) {
                 throw new IllegalStateException("Listener has not been set on end!");
@@ -129,11 +125,10 @@ public class SimpleSnapshotControl implements ConstructSnapshot.SnapshotControl 
         if (!success) {
             return false;
         }
+
         // Be sure to record initial last notification step before subscribing
         eventualResult.setLastNotificationStep(lastNotificationStep);
         return subscribeForUpdates(eventualListener);
-
-        return success;
     }
 
     /**

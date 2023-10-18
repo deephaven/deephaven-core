@@ -22,7 +22,8 @@ public final class SimpleSnapshotControlEx extends SimpleSnapshotControl {
 
     private long extraLastNotificationStep;
 
-    public SimpleSnapshotControlEx(@NotNull final BaseTable<?> sourceTable,
+    public SimpleSnapshotControlEx(
+            @NotNull final BaseTable<?> sourceTable,
             @NotNull final NotificationStepSource extra) {
         super(sourceTable);
         this.extra = extra;
@@ -33,7 +34,6 @@ public final class SimpleSnapshotControlEx extends SimpleSnapshotControl {
     public synchronized Boolean usePreviousValues(final long beforeClockValue) {
         lastNotificationStep = sourceTable.getLastNotificationStep();
         extraLastNotificationStep = extra.getLastNotificationStep();
-        success = false;
 
         final long beforeStep = LogicalClock.getStep(beforeClockValue);
         final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
