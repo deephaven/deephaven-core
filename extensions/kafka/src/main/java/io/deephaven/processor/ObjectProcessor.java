@@ -43,14 +43,19 @@ public interface ObjectProcessor<T> {
     }
 
     /**
-     * Creates or returns a row-limited implementation. If {@code delegate} is already been limited more than
+     * Creates or returns a row-limited implementation. If {@code delegate} has already been limited more than
      * {@code rowLimit}, {@code delegate} is returned. Otherwise, a row-limited implementation is created that wraps
      * {@code delegate} and invokes {@link #processAll(ObjectChunk, List) delegate#processAll} with {@code rowLimit}
-     * sized out chunks, except for the last invocation which may have size less-than {@code rowLimit}.
+     * sized {@code out} chunks, except for the last invocation which may have size less-than {@code rowLimit}.
      *
      * <p>
      * Adding a row-limit may be useful in cases where the input objects are "wide". By limiting the number of rows
      * considered at any given time, there may be better opportunity for read caching.
+     *
+     * <p>
+     * Callers should typically have knowledge of the {@code delegate} implementation; for example, in cases where the
+     * {@code delegate} implementation already processes data in a row-oriented fashion, adding a row-limit here
+     * introduces extraneous overhead.
      *
      * @param delegate the delegate
      * @param rowLimit the row limit
@@ -58,7 +63,7 @@ public interface ObjectProcessor<T> {
      * @param <T> the object type
      */
     static <T> ObjectProcessor<T> rowLimited(ObjectProcessor<T> delegate, int rowLimit) {
-        return ObjectProcessorRowLimitedImpl.of(delegate, rowLimit);
+        return ObjectProcessorRowLimited.of(delegate, rowLimit);
     }
 
     /**
