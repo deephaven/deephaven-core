@@ -8,6 +8,7 @@ package io.deephaven.server.table.stats;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
@@ -17,15 +18,15 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 
 public class ObjectChunkedComparableStats implements ChunkedComparableStatsKernel<Object> {
+    private static final int MAX_UNIQUES = 1_000_000;
     @Override
     public Table processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev, int maxUnique) {
         long count = 0;
@@ -42,9 +43,8 @@ public class ObjectChunkedComparableStats implements ChunkedComparableStatsKerne
                 // Grab up to the next CHUNK_SIZE rows
                 final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(CHUNK_SIZE);
 
-                final ObjectChunk<?, ? extends Values> chunk =
-                        (usePrev ? columnSource.getPrevChunk(getContext, nextKeys)
-                                : columnSource.getChunk(getContext, nextKeys)).asObjectChunk();
+                final ObjectChunk<?, ? extends Values> chunk = (usePrev ? columnSource.getPrevChunk(getContext, nextKeys)
+                        : columnSource.getChunk(getContext, nextKeys)).asObjectChunk();
                 final int chunkSize = chunk.size();
                 for (int ii = 0; ii < chunkSize; ii++) {
                     final Object val = chunk.get(ii);
@@ -57,8 +57,8 @@ public class ObjectChunkedComparableStats implements ChunkedComparableStatsKerne
 
                     if (useSet) {
                         uniqueValues.add((Comparable<?>) val);
-                    } else if (uniqueCount > maxUnique) {
-                        // we no longer need to track counts for these items; fall back to a Set
+                    } else if (uniqueCount > MAX_UNIQUES) {
+                        // we no longer need to track counts for these items; fall back to a Set to get at least a count
                         uniqueValues.addAll(countValues.keySet());
                         countValues.clear();
                         uniqueValues.add((Comparable<?>) val);
@@ -70,19 +70,28 @@ public class ObjectChunkedComparableStats implements ChunkedComparableStatsKerne
             }
 
             final int numUnique;
-            final Map<String, Long> valueCounts;
+            String[] uniqueKeys;
+            long[] uniqueCounts;
             if (useSet) {
                 numUnique = uniqueValues.size();
-                valueCounts = Collections.emptyMap();
+                uniqueKeys = CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
+                uniqueCounts = CollectionUtil.ZERO_LENGTH_LONG_ARRAY;
             } else {
                 numUnique = countValues.size();
-                if (numUnique < maxUnique) {
-                    valueCounts = new LinkedHashMap<>();
-                    final ArrayList<Comparable<?>> sortedKeys = new ArrayList<>(countValues.keySet());
-                    sortedKeys.sort(null);
-                    sortedKeys.forEach(key -> valueCounts.put(Objects.toString(key), countValues.get(key)));
-                } else {
-                    valueCounts = Collections.emptyMap();
+                TreeSet<Map.Entry<String, Long>> sorted = new TreeSet<>(Map.Entry.comparingByValue());
+                countValues.forEachEntry((o, c) -> {
+                    sorted.add(Map.entry(Objects.toString(o), c));
+                    return true;
+                });
+
+                int resultCount = Math.min(maxUnique, sorted.size());
+                uniqueKeys = new String[resultCount];
+                uniqueCounts = new long[resultCount];
+                Iterator<Map.Entry<String, Long>> iter = sorted.iterator();
+                for (int i = 0; i < resultCount && iter.hasNext(); i++) {
+                    Map.Entry<String, Long> entry = iter.next();
+                    uniqueKeys[i] = entry.getKey();
+                    uniqueCounts[i] = entry.getValue();
                 }
             }
 
@@ -90,10 +99,8 @@ public class ObjectChunkedComparableStats implements ChunkedComparableStatsKerne
                     TableTools.longCol("COUNT", count),
                     TableTools.longCol("SIZE", index.size()),
                     TableTools.intCol("UNIQUE_VALUES", numUnique),
-                    new ColumnHolder<>("UNIQUE_KEYS", String[].class, String.class, false,
-                            valueCounts.keySet().toArray(String[]::new)),
-                    new ColumnHolder<>("UNIQUE_COUNTS", long[].class, long.class, false,
-                            valueCounts.values().stream().mapToLong(Long::longValue).toArray()));
+                    new ColumnHolder<>("UNIQUE_KEYS", String[].class, String.class, false, uniqueKeys),
+                    new ColumnHolder<>("UNIQUE_COUNTS", long[].class, long.class, false, uniqueCounts));
         }
     }
 }

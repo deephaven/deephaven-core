@@ -16,10 +16,8 @@ public interface ChunkedComparableStatsKernel<T> {
     static ChunkedComparableStatsKernel<?> makeChunkedComparableStatsFactory(final Class<?> type) {
         if (type == Character.class || type == char.class) {
             return new CharacterChunkedComparableStats();
-        } else if (Comparable.class.isAssignableFrom(type)) {
-            return new ObjectChunkedComparableStats();
         } else {
-            return new ObjectChunkedStats();
+            return new ObjectChunkedComparableStats();
         }
     }
 
