@@ -14,7 +14,6 @@ import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.RollupRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.TreeRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
@@ -37,7 +36,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Snap
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.batchtablerequest.Operation;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.ResponseStream;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
@@ -1436,24 +1434,43 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
+        List<Runnable> toRelease = new ArrayList<>();
         return workerConnection.newState((c, state, metadata) -> {
             ColumnStatisticsRequest req = new ColumnStatisticsRequest();
             req.setColumnName(column.getName());
             req.setSourceId(state().getHandle().makeTableReference());
             req.setResultId(state.getHandle().makeTicket());
-            workerConnection.tableServiceClient().computeColumnStatistics(req, workerConnection.metadata(), c::apply);
+            workerConnection.tableServiceClient().computeColumnStatistics(req, metadata, c::apply);
         }, "get column statistics")
                 .refetch(this, workerConnection.metadata())
                 .then(state -> {
-                    JsTable table = new JsTable(workerConnection, state);
-
-                    if (table.getColumns().some((p0, p1, p2) -> p0.getName().equals("UNIQUE_KEYS"))) {
+                    List<String> dropCols = new ArrayList<>();
+                    if (Arrays.stream(state.getColumns()).anyMatch(c -> c.getName().equals("UNIQUE_KEYS"))) {
+                        dropCols.add("UNIQUE_KEYS");
                     }
-                    table.batch(ops -> {
-                        ops.setConfig(new TableConfig());
-                    });
-                    table.setViewport(0, 0);
+                    if (Arrays.stream(state.getColumns()).anyMatch(c -> c.getName().equals("UNIQUE_COUNTS"))) {
+                        dropCols.add("UNIQUE_COUNTS");
+                    }
 
+                    if (!dropCols.isEmpty()) {
+                        toRelease.add(() -> workerConnection.releaseHandle(state.getHandle()));
+                        return workerConnection.newState((c2, state2, metadata2) -> {
+                            DropColumnsRequest drop = new DropColumnsRequest();
+                            drop.setSourceId(state.getHandle().makeTableReference());
+                            drop.setResultId(state2.getHandle().makeTicket());
+                            workerConnection.tableServiceClient().dropColumns(drop, metadata2, c2::apply);
+                        }, "drop unreadable stats columns")
+                                .refetch(this, workerConnection.metadata())
+                                .then(state2 -> {
+                                    JsTable table = new JsTable(workerConnection, state2);
+                                    toRelease.add(table::close);
+                                    table.setViewport(0, 0);
+                                    return table.getViewportData();
+                                });
+                    }
+                    JsTable table = new JsTable(workerConnection, state);
+                    toRelease.add(table::close);
+                    table.setViewport(0, 0);
                     return table.getViewportData();
                 })
                 .then(tableData -> Promise.resolve(new JsColumnStatistics(tableData)));
