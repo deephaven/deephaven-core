@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
@@ -48,8 +49,8 @@ public class TestListenerFailure extends RefreshingTableTestCase {
         try {
             updated.addUpdateListener(new ErrorListener(updated));
             TestCase.fail("Should not be allowed to listen to failed table");
-        } catch (IllegalStateException ise) {
-            assertEquals("Can not listen to failed table QueryTable", ise.getMessage());
+        } catch (TableAlreadyFailedException tafe) {
+            assertEquals("Can not listen to failed table QueryTable", tafe.getMessage());
         }
 
         try {
@@ -59,8 +60,8 @@ public class TestListenerFailure extends RefreshingTableTestCase {
                         public void onUpdate(RowSet added, RowSet removed, RowSet modified) {}
                     }, false);
             TestCase.fail("Should not be allowed to listen to failed table");
-        } catch (IllegalStateException ise) {
-            assertEquals("Can not listen to failed table QueryTable", ise.getMessage());
+        } catch (TableAlreadyFailedException tafe) {
+            assertEquals("Can not listen to failed table QueryTable", tafe.getMessage());
         }
     }
 
