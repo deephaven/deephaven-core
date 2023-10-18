@@ -266,7 +266,7 @@ public class StatsCPUCollector {
 
                 while (statBuffer.hasRemaining()) {
                     while (statBuffer.hasRemaining() && statBuffer.get(statBuffer.position()) < '!') {
-                        statBuffer.get();
+                        statBuffer.position(statBuffer.position() + 1);
                     }
                     if (startsWith("cpu ")) {
                         if (skipNextField() && peekNextLong()) {
