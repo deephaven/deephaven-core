@@ -165,9 +165,6 @@ public class StatsCPUCollector {
 
     private boolean skipWhiteSpace() {
         while (statBuffer.hasRemaining() && statBuffer.get(statBuffer.position()) == ' ') {
-            if (statBuffer.get(statBuffer.position()) == '\n') {
-                return false;
-            }
             statBuffer.position(statBuffer.position() + 1);
         }
         return statBuffer.hasRemaining();
@@ -517,7 +514,7 @@ public class StatsCPUCollector {
      */
     public void update() {
         if (statBuffer == null) {
-            statBuffer = ByteBuffer.allocate(1);
+            statBuffer = ByteBuffer.allocate(4096);
         }
         updateSys();
         updateProc();
