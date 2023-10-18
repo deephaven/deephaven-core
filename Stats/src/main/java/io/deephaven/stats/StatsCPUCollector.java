@@ -216,29 +216,40 @@ public class StatsCPUCollector {
     }
 
     /**
-     * Attempt to read the entire contents of an already-opened file to a pre-defined buffer. If the buffer is not large
-     * enough for the entire contents of the file, then the caller should re-allocate the buffer, and try again
-     *
-     * @param inFile a file whose bytes we intend to read
-     * @param buffer an array of bytes, which will be populated with the contents of the file
-     *
-     * @return the number of bytes successfully read into the buffer
+     * Reads the entire contents of the specified FileChannel into the shared buffer, resizing
+     * it if necessary.
+     * 
+     * @param fileChannel the channel to read contents from
+     * @param fileName the file name to use when throwing an error message
+     * @throws IOException if there is an error in reading the file
      */
-    private static int readToSizedBuffer(final FileChannel inFile, final ByteBuffer buffer) throws IOException {
+    private void readToBuffer(FileChannel fileChannel, String fileName) throws IOException {
+        statBuffer.clear();
         int nb = 0;
-        inFile.position(0);
+        fileChannel.position(0);
 
-        while (nb < buffer.capacity()) {
-            final int thisNb = inFile.read(buffer);
+        while (nb < statBuffer.capacity()) {
+            final int thisNb = fileChannel.read(statBuffer);
 
             if (thisNb == -1) {
                 break;
             } else {
                 nb += thisNb;
+                if (!statBuffer.hasRemaining()) {
+                    // allocate larger read-buffer, and continue reading
+                    ByteBuffer resized = ByteBuffer.allocate(statBuffer.capacity() * 2);
+                    resized.put(statBuffer.flip());
+                    statBuffer = resized;
+                }
             }
         }
 
-        return nb;
+        if (nb == 0) {
+            throw new RuntimeException(fileName + " zero read");
+        } else {
+            // Success, set position and limit to the data read
+            statBuffer.flip();
+        }
     }
 
     /**
@@ -249,26 +260,11 @@ public class StatsCPUCollector {
     private void updateSys() {
         if (hasProcStat) {
             try {
-                if (this.statFile == null) {
+                if (statFile == null) {
                     statFile = FileChannel.open(Path.of(PROC_STAT_PSEUDOFILE));
                 }
 
-                statBuffer.clear();
-                while (true) {
-                    int nb;
-                    nb = readToSizedBuffer(this.statFile, statBuffer);
-
-                    if (nb == statBuffer.capacity()) {
-                        // allocate larger read-buffer, and try again
-                        statBuffer = ByteBuffer.allocate(statBuffer.capacity() * 2);
-                        System.out.println(statBuffer.capacity());
-                    } else if (nb == 0) {
-                        throw new RuntimeException(PROC_STAT_PSEUDOFILE + " zero read");
-                    } else {
-                        statBuffer.flip();
-                        break;
-                    }
-                }
+                readToBuffer(statFile, PROC_STAT_PSEUDOFILE);
 
                 while (statBuffer.hasRemaining()) {
                     //noinspection StatementWithEmptyBody - deliberately empty, get() will advance position
@@ -391,22 +387,7 @@ public class StatsCPUCollector {
                             Stats.makeItem("Proc", "RSS", State.FACTORY, "Resident set size of the process in pages")
                                     .getValue();
                 }
-                statBuffer.clear();
-
-                while (true) {
-                    int nb = readToSizedBuffer(procFile, statBuffer);
-
-                    if (nb == statBuffer.capacity()) {
-                        // allocate larger read-buffer, and try again
-                        statBuffer = ByteBuffer.allocate(statBuffer.capacity() * 2);
-                        System.out.println(statBuffer.capacity());
-                    } else if (nb == 0) {
-                        throw new RuntimeException(PROC_SELF_STAT_PSEUDOFILE + " zero read");
-                    } else {
-                        statBuffer.flip();
-                        break;
-                    }
-                }
+                readToBuffer(procFile, PROC_SELF_STAT_PSEUDOFILE);
 
                 for (int i = 0; i < 9; i++) {
                     skipNextField();
