@@ -210,6 +210,15 @@ foo = Foo()
             t = empty_table(10).update(["X1 = f()"])
         self.assertIn("not support multi-dimensional arrays", str(cm.exception))
 
+    def test_npt_NDArray_return_type(self):
+        import numpy.typing as npt
+
+        def f() -> npt.NDArray[np.int64]:
+            return np.array([1, 2], dtype=np.int64)
+
+        t = empty_table(10).update(["X1 = f()"])
+        self.assertEqual(t.columns[0].data_type, dtypes.long_array)
+
 
 if __name__ == '__main__':
     unittest.main()
