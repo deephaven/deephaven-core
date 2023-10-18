@@ -226,24 +226,23 @@ public class StatsCPUCollector {
         int nb = 0;
         fileChannel.position(0);
 
-        while (nb < statBuffer.capacity()) {
+        while (true) {
             final int thisNb = fileChannel.read(statBuffer);
 
             if (thisNb == -1) {
                 break;
-            } else {
-                nb += thisNb;
-                if (!statBuffer.hasRemaining()) {
-                    // allocate larger read-buffer, and continue reading
-                    ByteBuffer resized = ByteBuffer.allocate(statBuffer.capacity() * 2);
-                    resized.put(statBuffer.flip());
-                    statBuffer = resized;
-                }
+            }
+            nb += thisNb;
+            if (!statBuffer.hasRemaining()) {
+                // allocate larger read-buffer, and continue reading
+                ByteBuffer resized = ByteBuffer.allocate(statBuffer.capacity() * 2);
+                resized.put(statBuffer.flip());
+                statBuffer = resized;
             }
         }
 
         if (nb == 0) {
-            throw new RuntimeException(fileName + " zero read");
+            throw new IOException(fileName + " zero read");
         } else {
             // Success, set position and limit to the data read
             statBuffer.flip();
