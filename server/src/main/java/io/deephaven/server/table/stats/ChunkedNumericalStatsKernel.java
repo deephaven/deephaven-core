@@ -3,6 +3,7 @@ package io.deephaven.server.table.stats;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.util.QueryConstants;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -48,150 +49,15 @@ public interface ChunkedNumericalStatsKernel<T> {
 
     static double avg(long count, double sumValue) {
         if (count == 0) {
-            return Double.POSITIVE_INFINITY;
+            return QueryConstants.NULL_DOUBLE;
         }
         return sumValue / count;
     }
 
     static double stdDev(long count, double avg, double sqrdSum) {
         if (count <= 1) {
-            return Double.NaN;
+            return QueryConstants.NULL_DOUBLE;
         }
         return Math.sqrt((sqrdSum - count * avg * avg) / count - 1);
-    }
-
-    class Result implements Serializable {
-        private final long size;
-        private final long count;
-
-        private final Number sum;
-        private final Number absSum;
-        private final Number sqrdSum;
-
-        private final Number min;
-        private final Number max;
-        private final Number absMin;
-        private final Number absMax;
-
-        private long runTime = -1;
-
-        public Result(long size, long count, final Number sum, final Number absSum, final Number sqrdSum,
-                final Number min, final Number max, final Number absMin, final Number absMax) {
-            this.size = size;
-            this.count = count;
-
-            this.sum = sum;
-            this.absSum = absSum;
-            this.sqrdSum = sqrdSum;
-
-            this.min = min;
-            this.max = max;
-            this.absMin = absMin;
-            this.absMax = absMax;
-        }
-
-        private Result setRunTime(final long runTime) {
-            this.runTime = runTime;
-            return this;
-        }
-
-        public long getSize() {
-            return size;
-        }
-
-        public long getCount() {
-            return count;
-        }
-
-        public Number getSum() {
-            return sum;
-        }
-
-        public Number getAbsSum() {
-            return absSum;
-        }
-
-        public Number getMin() {
-            return min;
-        }
-
-        public Number getMax() {
-            return max;
-        }
-
-        public Number getAbsMin() {
-            return absMin;
-        }
-
-        public Number getAbsMax() {
-            return absMax;
-        }
-
-        public Number getAvg() {
-            return count == 0 ? Double.POSITIVE_INFINITY : sum.doubleValue() / count;
-        }
-
-        public Number getAbsAvg() {
-            return count == 0 ? Double.POSITIVE_INFINITY : absSum.doubleValue() / count;
-        }
-
-        public double getStdDev() {
-            if (count <= 1) {
-                return Double.NaN;
-            }
-
-            final double mean = getAvg().doubleValue();
-            final double var = (sqrdSum.doubleValue() - count * mean * mean) / (count - 1);
-            return Math.sqrt(var);
-        }
-
-        public String getSizeString(final Format format) {
-            return format.format(size);
-        }
-
-        public String getCountString(final Format format) {
-            return format.format(count);
-        }
-
-        public String getSumString(final Format format) {
-            return format.format(sum);
-        }
-
-        public String getAbsSumString(final Format format) {
-            return format.format(absSum);
-        }
-
-        public String getAvgString(final Format format) {
-            return count != 0 ? format.format(getAvg()) : "";
-        }
-
-        public String getAbsAvgString(final Format format) {
-            return count != 0 ? format.format(getAbsAvg()) : "";
-        }
-
-        public String getMinString(final Format format) {
-            return format.format(min);
-        }
-
-        public String getAbsMinString(final Format format) {
-            return format.format(absMin);
-        }
-
-        public String getMaxString(final Format format) {
-            return format.format(max);
-        }
-
-        public String getAbsMaxString(final Format format) {
-            return format.format(absMax);
-        }
-
-        public String getStdDevString(final Format format) {
-            if (count <= 1) {
-                return "";
-            }
-
-            final Number stdDev = getStdDev();
-            return stdDev != null ? format.format(stdDev) : "";
-        }
     }
 }
