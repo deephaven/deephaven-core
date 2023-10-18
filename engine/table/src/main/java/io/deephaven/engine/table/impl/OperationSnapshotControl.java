@@ -148,7 +148,7 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
      * @return Whether the subscription was successful
      */
     boolean subscribeForUpdates(@NotNull final TableUpdateListener listener) {
-        return sourceTable.addUpdateListener(lastNotificationStep, listener);
+        return sourceTable.addUpdateListener(listener, lastNotificationStep);
     }
 
     /**

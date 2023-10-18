@@ -572,7 +572,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     @Override
     public boolean addUpdateListener(
-            final long requiredLastNotificationStep, @NotNull final TableUpdateListener listener) {
+            @NotNull final TableUpdateListener listener, final long requiredLastNotificationStep) {
         if (isFailed) {
             throw new IllegalStateException("Can not listen to failed table " + description);
         }
