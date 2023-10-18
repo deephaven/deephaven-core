@@ -16,6 +16,7 @@ import java.io.FileInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.*;
+import java.nio.channels.FileChannel;
 
 /**
  * Collects statistic related to CPU and memory usage of the entire system, the process, and each thread in the process.
@@ -27,6 +28,7 @@ public class StatsCPUCollector {
             Configuration.getInstance().getBoolean("measurement.per_thread_cpu");
     private static final String PROC_STAT_PSEUDOFILE = "/proc/stat";
     private static final String PROC_SELF_STAT_PSEUDOFILE = "/proc/self/stat";
+    private static final String PROC_STAT_FD_PSUEDOFILE = "/proc/self/fd";
 
     private static final long NANOS = 1000000000;
     private static final long MILLIS = 1000;
@@ -35,13 +37,13 @@ public class StatsCPUCollector {
     private final long divisor;
 
     // true, if we can open /proc/stat
-    boolean hasProcStat = true;
+    private boolean hasProcStat = true;
 
     // true, if we can open /proc/self/stat
-    boolean hasProcPidStat = true;
+    private boolean hasProcPidStat = true;
 
     // true, if we can list the contents of /proc/self/fd
-    boolean hasProcFd = true;
+    private boolean hasProcFd = true;
 
     // state for the machine as a whole
     private Counter statSysUserJiffies = null;
@@ -76,7 +78,7 @@ public class StatsCPUCollector {
         this.divisor = NANOS / (seconds * 10);
         Stats.makeGroup("Kernel", "Unix kernel statistics, as read from " + PROC_STAT_PSEUDOFILE);
         Stats.makeGroup("Proc",
-                "Unix process statistics, as read from " + PROC_SELF_STAT_PSEUDOFILE + " and /proc/self/fd");
+                "Unix process statistics, as read from " + PROC_SELF_STAT_PSEUDOFILE + " and " + PROC_STAT_FD_PSUEDOFILE);
         Stats.makeGroup("CPU", "JMX CPU usage data, per-thread and for the entire process");
 
         if (OSUtil.runningMacOS() || OSUtil.runningWindows()) {
@@ -125,7 +127,7 @@ public class StatsCPUCollector {
         };
 
         public static KeyedLongObjectHash.ValueFactory<ThreadState> factory =
-                new KeyedLongObjectHash.ValueFactory<ThreadState>() {
+                new KeyedLongObjectHash.ValueFactory<>() {
                     public ThreadState newValue(long key) {
                         return new ThreadState(key);
                     }
@@ -137,7 +139,7 @@ public class StatsCPUCollector {
     }
 
     /** the map containing all thread states */
-    private static KeyedLongObjectHashMap<ThreadState> threadStates =
+    private static final KeyedLongObjectHashMap<ThreadState> threadStates =
             new KeyedLongObjectHashMap<>(100, ThreadState.keyDef);
 
     /** the user time for the process as a whole */
@@ -146,11 +148,10 @@ public class StatsCPUCollector {
     /** the system time for the process as a whole */
     private State processSystemTime;
 
-
     private boolean startsWith(String match, int nb) {
         for (int i = 0; i < match.length(); i++) {
             final int nextIdx = i + statBufferIndex;
-            if (nextIdx == statBuffer.length || (nextIdx < nb && statBuffer[nextIdx] != match.charAt(i))) {
+            if (nextIdx >= nb || statBuffer[nextIdx] != match.charAt(i)) {
                 return false;
             }
         }
@@ -158,8 +159,8 @@ public class StatsCPUCollector {
     }
 
     private boolean skipWhiteSpace(int nb) {
-        while (statBufferIndex < statBuffer.length && statBuffer[statBufferIndex] == ' ') {
-            if (statBufferIndex >= nb || statBuffer[statBufferIndex] == '\n') {
+        while (statBufferIndex < nb && statBuffer[statBufferIndex] == ' ') {
+            if (statBuffer[statBufferIndex] == '\n') {
                 return false;
             }
             statBufferIndex++;
@@ -168,8 +169,8 @@ public class StatsCPUCollector {
     }
 
     private boolean skipNextField(int nb) {
-        while (statBufferIndex < statBuffer.length && statBuffer[statBufferIndex] != ' ') {
-            if (statBufferIndex >= nb || statBuffer[statBufferIndex] == '\n') {
+        while (statBufferIndex < nb && statBuffer[statBufferIndex] != ' ') {
+            if (statBuffer[statBufferIndex] == '\n') {
                 return false;
             }
             statBufferIndex++;
@@ -177,9 +178,9 @@ public class StatsCPUCollector {
         return skipWhiteSpace(nb);
     }
 
-    private boolean getNextFieldSampleKilobytes(State v, int nb) {
+    private void getNextFieldSampleKilobytes(State v, int nb) {
         v.sample(getNextFieldLong(nb) / 1024);
-        return skipWhiteSpace(nb);
+        skipWhiteSpace(nb);
     }
 
     private boolean getNextFieldDeltaJiffies(Counter v, int nb) {
@@ -192,9 +193,9 @@ public class StatsCPUCollector {
         return skipWhiteSpace(nb);
     }
 
-    private boolean getNextFieldSample(State v, int nb) {
+    private void getNextFieldSample(State v, int nb) {
         v.sample(getNextFieldLong(nb));
-        return skipWhiteSpace(nb);
+        skipWhiteSpace(nb);
     }
 
     private long getNextFieldLong(int nb) {
@@ -208,8 +209,7 @@ public class StatsCPUCollector {
     }
 
     private boolean peekNextLong(int nb) {
-        return statBufferIndex < nb && statBufferIndex < statBuffer.length && statBuffer[statBufferIndex] >= '0'
-                && statBuffer[statBufferIndex] <= '9';
+        return statBufferIndex < nb && statBuffer[statBufferIndex] >= '0' && statBuffer[statBufferIndex] <= '9';
     }
 
     /**
@@ -217,11 +217,11 @@ public class StatsCPUCollector {
      * enough for the entire contents of the file, then the caller should re-allocate the buffer, and try again
      *
      * @param inFile a file whose bytes we intend to read
-     * @param buffer an array of bytes, which will be populates with the contents of the file
+     * @param buffer an array of bytes, which will be populated with the contents of the file
      *
      * @return the number of bytes successfully read into the buffer
      */
-    private static int readToSizedBuffer(final FileInputStream inFile, final byte[] buffer) throws IOException {
+    private static int readToSizedBuffer(final FileChannel inFile, final byte[] buffer) throws IOException {
         int nb = 0;
 
         while (nb < buffer.length) {
@@ -240,8 +240,8 @@ public class StatsCPUCollector {
     /**
      * Update the system-wide kernel statistics
      */
-    int statBufferIndex;
-    FileInputStream statFile;
+    private int statBufferIndex;
+    private FileInputStream statFile;
 
     private void updateSys() {
         if (hasProcStat) {
@@ -252,15 +252,17 @@ public class StatsCPUCollector {
 
                 int nb;
                 while (true) {
-                    statFile.getChannel().position(0);
+                    FileChannel channel = statFile.getChannel();
+                    channel.position(0);
                     nb = readToSizedBuffer(statFile, statBuffer);
 
                     if (nb == statBuffer.length) {
                         // allocate larger read-buffer, and try again
                         statBuffer = new byte[statBuffer.length * 2];
 
-                        statFile.close();
-                        statFile = new FileInputStream(PROC_STAT_PSEUDOFILE);
+//                        statFile.close();
+//                        statFile = new FileInputStream(PROC_STAT_PSEUDOFILE);
+                        channel.position(0);
                     } else if (nb == 0) {
                         throw new RuntimeException(PROC_STAT_PSEUDOFILE + " zero read");
                     } else {
@@ -447,7 +449,7 @@ public class StatsCPUCollector {
     private void updateProcFD() {
         if (hasProcFd) {
             try {
-                File procFd = new File("/proc/self/fd");
+                File procFd = new File(PROC_STAT_FD_PSUEDOFILE);
                 String[] entries = procFd.list();
                 if (entries == null) {
                     // if the directory is not readable, don't try to read it again
