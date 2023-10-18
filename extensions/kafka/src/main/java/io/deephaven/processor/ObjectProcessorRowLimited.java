@@ -12,9 +12,8 @@ import java.util.List;
  * {@link #processAll(ObjectChunk, List)}.
  *
  * <p>
- * For use-cases that are naturally performed one row at a time, callers are encouraged to extend
- * {@link ObjectProcessorRowBase}. For use-cases where the implementation can be columnar but callers would like to add
- * a row limit, callers are encouraged to create a columnar implementation against {@link ObjectProcessor} and use
+ * For use-cases where the implementation can be columnar but callers would like to add a row limit, callers are
+ * encouraged to create a columnar implementation against {@link ObjectProcessor} and use
  * {@link #of(ObjectProcessor, int)}.
  *
  * @param <T> the object type

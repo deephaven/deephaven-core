@@ -579,7 +579,7 @@ public class KafkaTools {
          * Creates a kafka key or value spec implementation from an {@link ObjectProcessor}.
          *
          * <p>
-         * The respective column definition are derived from the combination of {@code columnNames} and
+         * The respective column definitions are derived from the combination of {@code columnNames} and
          * {@link ObjectProcessor#outputTypes()}.
          *
          * @param deserializer the deserializer

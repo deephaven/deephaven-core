@@ -23,7 +23,8 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * An interface for processing data from one or more input objects into output chunks on a 1-to-1 input to output basis.
+ * An interface for processing data from one or more input objects into output chunks on a 1-to-1 input record to output
+ * row basis.
  *
  * @param <T> the object type
  * @see ObjectProcessorRowLimited
@@ -32,7 +33,7 @@ public interface ObjectProcessor<T> {
 
     /**
      * Creates or returns an implementation that adds strict safety checks around {@code delegate}
-     * {@link #processAll(ObjectChunk, List)}. The may be useful during for development or debugging purposes.
+     * {@link #processAll(ObjectChunk, List)}. The may be useful for development or debugging purposes.
      *
      * @param delegate the delegate
      * @return the strict implementation
@@ -113,11 +114,15 @@ public interface ObjectProcessor<T> {
     /**
      * Processes {@code in} into {@code out} by appending {@code in.size()} values to each chunk. The size of each
      * {@code out} chunk will be incremented by {@code in.size()}. Implementations are free to process the data in a
-     * row-oriented, column-oriented, or mix-oriented fashion. Implementations must not keep any references to the
-     * passed-in chunks.
+     * row-oriented, column-oriented, or mix-oriented fashion. {@code in}, {@code out}, and the elements of {@code out}
+     * are owned by the caller; implementations should not keep references to these. Implementations may copy references
+     * from {@code in} into the elements of {@code out}; for example, if the input type {@code T} is {@code byte[]},
+     * implementations may copy that reference into {@code out}. In general, implementations should document the
+     * references they may copy from {@code in} into {@code out}.
      *
      * <p>
-     * If an exception thrown the output chunks will be in an unspecified state.
+     * If an exception is thrown the output chunks will be in an unspecified state for all rows after their initial
+     * size.
      *
      * @param in the input objects
      * @param out the output chunks as specified by {@link #outputTypes()}; each chunk must have remaining capacity of

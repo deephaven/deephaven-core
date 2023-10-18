@@ -4,7 +4,6 @@
 package io.deephaven.processor.functions;
 
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -49,14 +48,13 @@ import io.deephaven.util.type.TypeUtils;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 final class ObjectProcessorFunctionsImpl<T> implements ObjectProcessor<T> {
 
     interface Appender<T> {
 
-        void append(WritableChunk<?> dest, ObjectChunk<? extends T, ?> src);
+        void append(ObjectChunk<? extends T, ?> src, WritableChunk<?> dest);
     }
 
     static <T> ObjectProcessorFunctionsImpl<T> create(List<TypedFunction<? super T>> functions) {
@@ -87,7 +85,7 @@ final class ObjectProcessorFunctionsImpl<T> implements ObjectProcessor<T> {
         checkChunks(out);
         final int L = appenders.size();
         for (int i = 0; i < L; ++i) {
-            appenders.get(i).append(out.get(i), in);
+            appenders.get(i).append(in, out.get(i));
         }
     }
 
@@ -246,33 +244,10 @@ final class ObjectProcessorFunctionsImpl<T> implements ObjectProcessor<T> {
         }
 
         @Override
-        public void append(WritableChunk<?> dest, ObjectChunk<? extends T, ?> src) {
-            ObjectProcessorFunctionsImpl.append(dest.asWritableObjectChunk(), f, src);
+        public void append(ObjectChunk<? extends T, ?> src, WritableChunk<?> dest) {
+            ObjectProcessorFunctionsImpl.append(src, f, dest.asWritableObjectChunk());
         }
     }
-
-    // private static class BooleanAppender<T> implements Appender<T> {
-    // private final Predicate<? super T> f;
-    //
-    // BooleanAppender(Predicate<? super T> f) {
-    // this.f = Objects.requireNonNull(f);
-    // }
-    //
-    // @Override
-    // public Type<?> returnType() {
-    // return Type.booleanType();
-    // }
-    //
-    // @Override
-    // public void add(WritableChunk<?> dest, T src) {
-    // dest.asWritableBooleanChunk().add(f.test(src));
-    // }
-    //
-    // @Override
-    // public void append(WritableChunk<?> dest, ObjectChunk<? extends T, ?> src) {
-    // ObjectProcessorFunctionsImpl.append(dest.asWritableBooleanChunk(), f, src);
-    // }
-    // }
 
     private static class CharAppender<T> implements Appender<T> {
         private final ToCharFunction<? super T> f;
@@ -282,8 +257,8 @@ final class ObjectProcessorFunctionsImpl<T> implements ObjectProcessor<T> {
         }
 
         @Override
-        public void append(WritableChunk<?> dest, ObjectChunk<? extends T, ?> src) {
-            ObjectProcessorFunctionsImpl.append(dest.asWritableCharChunk(), f, src);
+        public void append(ObjectChunk<? extends T, ?> src, WritableChunk<?> dest) {
+            ObjectProcessorFunctionsImpl.append(src, f, dest.asWritableCharChunk());
         }
     }
 
@@ -304,8 +279,8 @@ final class ObjectProcessorFunctionsImpl<T> implements ObjectProcessor<T> {
         }
 
         @Override
-        public void append(WritableChunk<?> dest, ObjectChunk<? extends T, ?> src) {
-            ObjectProcessorFunctionsImpl.append(dest.asWritableByteChunk(), f, src);
+        public void append(ObjectChunk<? extends T, ?> src, WritableChunk<?> dest) {
+            ObjectProcessorFunctionsImpl.append(src, f, dest.asWritableByteChunk());
         }
     }
 
@@ -317,8 +292,8 @@ final class ObjectProcessorFunctionsImpl<T> implements ObjectProcessor<T> {
         }
 
         @Override
-        public void append(WritableChunk<?> dest, ObjectChunk<? extends T, ?> src) {
-            ObjectProcessorFunctionsImpl.append(dest.asWritableShortChunk(), f, src);
+        public void append(ObjectChunk<? extends T, ?> src, WritableChunk<?> dest) {
+            ObjectProcessorFunctionsImpl.append(src, f, dest.asWritableShortChunk());
         }
     }
 
@@ -330,8 +305,8 @@ final class ObjectProcessorFunctionsImpl<T> implements ObjectProcessor<T> {
         }
 
         @Override
-        public void append(WritableChunk<?> dest, ObjectChunk<? extends T, ?> src) {
-            ObjectProcessorFunctionsImpl.append(dest.asWritableIntChunk(), f, src);
+        public void append(ObjectChunk<? extends T, ?> src, WritableChunk<?> dest) {
+            ObjectProcessorFunctionsImpl.append(src, f, dest.asWritableIntChunk());
         }
     }
 
@@ -343,8 +318,8 @@ final class ObjectProcessorFunctionsImpl<T> implements ObjectProcessor<T> {
         }
 
         @Override
-        public void append(WritableChunk<?> dest, ObjectChunk<? extends T, ?> src) {
-            ObjectProcessorFunctionsImpl.append(dest.asWritableLongChunk(), f, src);
+        public void append(ObjectChunk<? extends T, ?> src, WritableChunk<?> dest) {
+            ObjectProcessorFunctionsImpl.append(src, f, dest.asWritableLongChunk());
         }
     }
 
@@ -356,8 +331,8 @@ final class ObjectProcessorFunctionsImpl<T> implements ObjectProcessor<T> {
         }
 
         @Override
-        public void append(WritableChunk<?> dest, ObjectChunk<? extends T, ?> src) {
-            ObjectProcessorFunctionsImpl.append(dest.asWritableFloatChunk(), f, src);
+        public void append(ObjectChunk<? extends T, ?> src, WritableChunk<?> dest) {
+            ObjectProcessorFunctionsImpl.append(src, f, dest.asWritableFloatChunk());
         }
     }
 
@@ -369,89 +344,80 @@ final class ObjectProcessorFunctionsImpl<T> implements ObjectProcessor<T> {
         }
 
         @Override
-        public void append(WritableChunk<?> dest, ObjectChunk<? extends T, ?> src) {
-            ObjectProcessorFunctionsImpl.append(dest.asWritableDoubleChunk(), f, src);
+        public void append(ObjectChunk<? extends T, ?> src, WritableChunk<?> dest) {
+            ObjectProcessorFunctionsImpl.append(src, f, dest.asWritableDoubleChunk());
         }
     }
 
     // Ideally, these would be built into WritableChunk impls
 
     private static <T> void append(
-            WritableBooleanChunk<?> dest,
-            Predicate<? super T> booleanFunction,
-            ObjectChunk<? extends T, ?> src) {
-        final int destSize = dest.size();
-        ChunkUtils.applyInto(booleanFunction, src, 0, dest, destSize, src.size());
-        dest.setSize(destSize + src.size());
-    }
-
-    private static <T> void append(
-            WritableByteChunk<?> dest,
+            ObjectChunk<? extends T, ?> src,
             ToByteFunction<? super T> byteFunction,
-            ObjectChunk<? extends T, ?> src) {
+            WritableByteChunk<?> dest) {
         final int destSize = dest.size();
         ChunkUtils.applyInto(byteFunction, src, 0, dest, destSize, src.size());
         dest.setSize(destSize + src.size());
     }
 
     private static <T> void append(
-            WritableCharChunk<?> dest,
+            ObjectChunk<? extends T, ?> src,
             ToCharFunction<? super T> charFunction,
-            ObjectChunk<? extends T, ?> src) {
+            WritableCharChunk<?> dest) {
         final int destSize = dest.size();
         ChunkUtils.applyInto(charFunction, src, 0, dest, destSize, src.size());
         dest.setSize(destSize + src.size());
     }
 
     private static <T> void append(
-            WritableShortChunk<?> dest,
+            ObjectChunk<? extends T, ?> src,
             ToShortFunction<? super T> shortFunction,
-            ObjectChunk<? extends T, ?> src) {
+            WritableShortChunk<?> dest) {
         final int destSize = dest.size();
         ChunkUtils.applyInto(shortFunction, src, 0, dest, destSize, src.size());
         dest.setSize(destSize + src.size());
     }
 
     private static <T> void append(
-            WritableIntChunk<?> dest,
+            ObjectChunk<? extends T, ?> src,
             java.util.function.ToIntFunction<? super T> intFunction,
-            ObjectChunk<? extends T, ?> src) {
+            WritableIntChunk<?> dest) {
         final int destSize = dest.size();
         ChunkUtils.applyInto(intFunction, src, 0, dest, destSize, src.size());
         dest.setSize(destSize + src.size());
     }
 
     private static <T> void append(
-            WritableLongChunk<?> dest,
+            ObjectChunk<? extends T, ?> src,
             java.util.function.ToLongFunction<? super T> longFunction,
-            ObjectChunk<? extends T, ?> src) {
+            WritableLongChunk<?> dest) {
         final int destSize = dest.size();
         ChunkUtils.applyInto(longFunction, src, 0, dest, destSize, src.size());
         dest.setSize(destSize + src.size());
     }
 
     private static <T> void append(
-            WritableFloatChunk<?> dest,
+            ObjectChunk<? extends T, ?> src,
             ToFloatFunction<? super T> floatFunction,
-            ObjectChunk<? extends T, ?> src) {
+            WritableFloatChunk<?> dest) {
         final int destSize = dest.size();
         ChunkUtils.applyInto(floatFunction, src, 0, dest, destSize, src.size());
         dest.setSize(destSize + src.size());
     }
 
     private static <T> void append(
-            WritableDoubleChunk<?> dest,
+            ObjectChunk<? extends T, ?> src,
             java.util.function.ToDoubleFunction<? super T> doubleFunction,
-            ObjectChunk<? extends T, ?> src) {
+            WritableDoubleChunk<?> dest) {
         final int destSize = dest.size();
         ChunkUtils.applyInto(doubleFunction, src, 0, dest, destSize, src.size());
         dest.setSize(destSize + src.size());
     }
 
     private static <T, R> void append(
-            WritableObjectChunk<R, ?> dest,
+            ObjectChunk<? extends T, ?> src,
             Function<? super T, ? extends R> objFunction,
-            ObjectChunk<? extends T, ?> src) {
+            WritableObjectChunk<R, ?> dest) {
         final int destSize = dest.size();
         ChunkUtils.applyInto(objFunction, src, 0, dest, destSize, src.size());
         dest.setSize(destSize + src.size());

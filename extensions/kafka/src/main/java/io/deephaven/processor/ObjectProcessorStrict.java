@@ -41,31 +41,31 @@ class ObjectProcessorStrict<T> implements ObjectProcessor<T> {
                     numColumns, out.size()));
         }
         final int[] originalSizes = new int[numColumns];
-        for (int i = 0; i < numColumns; ++i) {
-            final WritableChunk<?> chunk = out.get(i);
+        for (int chunkIx = 0; chunkIx < numColumns; ++chunkIx) {
+            final WritableChunk<?> chunk = out.get(chunkIx);
             if (chunk.capacity() - chunk.size() < in.size()) {
                 throw new IllegalArgumentException(String.format(
-                        "out chunk does not have enough remaining capacity. i=%d, in.size()=%d, chunk.size()=%d, chunk.capacity()=%d",
-                        i, in.size(), chunk.size(), chunk.capacity()));
+                        "out chunk does not have enough remaining capacity. chunkIx=%d, in.size()=%d, chunk.size()=%d, chunk.capacity()=%d",
+                        chunkIx, in.size(), chunk.size(), chunk.capacity()));
             }
-            final Type<?> type = delegate.outputTypes().get(i);
+            final Type<?> type = delegate.outputTypes().get(chunkIx);
             final ChunkType expectedChunkType = ObjectProcessor.chunkType(type);
             final ChunkType actualChunkType = chunk.getChunkType();
-            if (!expectedChunkType.equals(actualChunkType)) {
+            if (expectedChunkType != actualChunkType) {
                 throw new IllegalArgumentException(String.format(
-                        "Improper ChunkType. i=%d, outputType=%s, expectedChunkType=%s, actualChunkType=%s", i, type,
-                        expectedChunkType, actualChunkType));
+                        "Improper ChunkType. chunkIx=%d, outputType=%s, expectedChunkType=%s, actualChunkType=%s",
+                        chunkIx, type, expectedChunkType, actualChunkType));
             }
-            originalSizes[i] = chunk.size();
+            originalSizes[chunkIx] = chunk.size();
         }
         delegate.processAll(in, out);
-        for (int i = 0; i < numColumns; ++i) {
-            final WritableChunk<?> chunk = out.get(i);
-            final int expectedSize = originalSizes[i] + in.size();
+        for (int chunkIx = 0; chunkIx < numColumns; ++chunkIx) {
+            final WritableChunk<?> chunk = out.get(chunkIx);
+            final int expectedSize = originalSizes[chunkIx] + in.size();
             if (chunk.size() != expectedSize) {
                 throw new UncheckedDeephavenException(String.format(
-                        "Implementation did not increment chunk size correctly. i=%d, (before) chunk.size()=%d, (after) chunk.size()=%d, in.size()=%d",
-                        i, originalSizes[i], chunk.size(), in.size()));
+                        "Implementation did not increment chunk size correctly. chunkIx=%d, (before) chunk.size()=%d, (after) chunk.size()=%d, in.size()=%d",
+                        chunkIx, originalSizes[chunkIx], chunk.size(), in.size()));
             }
         }
     }

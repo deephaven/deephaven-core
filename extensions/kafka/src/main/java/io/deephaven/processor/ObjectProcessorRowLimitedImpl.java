@@ -13,9 +13,6 @@ import java.util.List;
 import java.util.Objects;
 
 final class ObjectProcessorRowLimitedImpl<T> implements ObjectProcessorRowLimited<T> {
-    private static final ThreadLocal<ResettableObjectChunk<?, ?>> SLICES =
-            ThreadLocal.withInitial(ResettableObjectChunk::makeResettableChunkForPool);
-
     private final ObjectProcessor<T> delegate;
     private final int rowLimit;
 
@@ -55,12 +52,12 @@ final class ObjectProcessorRowLimitedImpl<T> implements ObjectProcessorRowLimite
     private <T2 extends T, ATTR extends Any> void processAllImpl(
             ObjectChunk<T2, ATTR> in,
             List<WritableChunk<?>> out) {
-        // noinspection unchecked
-        final ResettableObjectChunk<T2, Any> slice = (ResettableObjectChunk<T2, Any>) SLICES.get();
-        final int inSize = in.size();
-        for (int i = 0; i < inSize && i >= 0; i += rowLimit) {
-            slice.resetFromTypedChunk(in, i, Math.min(rowLimit, inSize - i));
-            delegate.processAll(slice, out);
+        try (final ResettableObjectChunk<T2, Any> slice = ResettableObjectChunk.makeResettableChunk()) {
+            final int inSize = in.size();
+            for (int i = 0; i < inSize && i >= 0; i += rowLimit) {
+                slice.resetFromTypedChunk(in, i, Math.min(rowLimit, inSize - i));
+                delegate.processAll(slice, out);
+            }
         }
     }
 }
