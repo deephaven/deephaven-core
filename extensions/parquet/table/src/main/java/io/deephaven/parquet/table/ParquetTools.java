@@ -36,7 +36,7 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFac
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ParquetFileReader;
-import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.parquet.base.util.CachedChannelProvider;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -685,8 +685,15 @@ public class ParquetTools {
                 throw new IllegalArgumentException("First location key " + firstKey
                         + " has null partition value at partition key " + partitionKey);
             }
-            allColumns.add(ColumnDefinition.fromGenericType(partitionKey,
-                    getUnboxedTypeIfBoxed(partitionValue.getClass()), null, ColumnDefinition.ColumnType.Partitioning));
+
+            // Primitives should be unboxed, except booleans
+            Class<?> dataType = partitionValue.getClass();
+            if (dataType != Boolean.class) {
+                dataType = getUnboxedTypeIfBoxed(partitionValue.getClass());
+            }
+
+            allColumns.add(ColumnDefinition.fromGenericType(partitionKey, dataType, null,
+                    ColumnDefinition.ColumnType.Partitioning));
         }
         allColumns.addAll(schemaInfo.getFirst());
         return readPartitionedTable(readInstructions.isRefreshing() ? locationKeyFinder : initialKeys,
@@ -707,7 +714,7 @@ public class ParquetTools {
         return readPartitionedTable(layout, layout.getInstructions(), layout.getTableDefinition());
     }
 
-    private static final SimpleTypeMap<Class<?>> DB_ARRAY_TYPE_MAP = SimpleTypeMap.create(
+    private static final SimpleTypeMap<Class<?>> VECTOR_TYPE_MAP = SimpleTypeMap.create(
             null, CharVector.class, ByteVector.class, ShortVector.class, IntVector.class, LongVector.class,
             FloatVector.class, DoubleVector.class, ObjectVector.class);
 
@@ -741,7 +748,7 @@ public class ParquetTools {
                 if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.StringSet) {
                     colDef = ColumnDefinition.fromGenericType(parquetColDef.name, StringSet.class, null);
                 } else if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.Vector) {
-                    final Class<?> vectorType = DB_ARRAY_TYPE_MAP.get(baseType);
+                    final Class<?> vectorType = VECTOR_TYPE_MAP.get(baseType);
                     if (vectorType != null) {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, vectorType, baseType);
                     } else {
@@ -841,14 +848,33 @@ public class ParquetTools {
                         s -> s.replace(" ", "_"), takenNames)));
     }
 
+    public static final ParquetInstructions UNCOMPRESSED =
+            ParquetInstructions.builder().setCompressionCodecName("UNCOMPRESSED").build();
+
+    /**
+     * @deprecated Use LZ4_RAW instead, as explained
+     *             <a href="https://github.com/apache/parquet-format/blob/master/Compression.md">here</a>
+     */
+    @Deprecated
     public static final ParquetInstructions LZ4 = ParquetInstructions.builder().setCompressionCodecName("LZ4").build();
+    public static final ParquetInstructions LZ4_RAW =
+            ParquetInstructions.builder().setCompressionCodecName("LZ4_RAW").build();
     public static final ParquetInstructions LZO = ParquetInstructions.builder().setCompressionCodecName("LZO").build();
     public static final ParquetInstructions GZIP =
             ParquetInstructions.builder().setCompressionCodecName("GZIP").build();
     public static final ParquetInstructions ZSTD =
             ParquetInstructions.builder().setCompressionCodecName("ZSTD").build();
+    public static final ParquetInstructions SNAPPY =
+            ParquetInstructions.builder().setCompressionCodecName("SNAPPY").build();
+    public static final ParquetInstructions BROTLI =
+            ParquetInstructions.builder().setCompressionCodecName("BROTLI").build();
     public static final ParquetInstructions LEGACY = ParquetInstructions.builder().setIsLegacyParquet(true).build();
 
+    /**
+     * @deprecated Do not use this method, instead pass the above codecs as arguments to
+     *             {@link #writeTable(Table, File, ParquetInstructions)} method
+     */
+    @Deprecated
     public static void setDefaultCompressionCodecName(final String compressionCodecName) {
         ParquetInstructions.setDefaultCompressionCodecName(compressionCodecName);
     }

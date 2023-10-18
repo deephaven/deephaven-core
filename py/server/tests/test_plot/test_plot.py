@@ -10,7 +10,7 @@ from deephaven.plot import axis_transform_names, axis_transform, DecimalAxisForm
 from deephaven.plot import Shape
 from deephaven.plot import PlotStyle
 from deephaven.plot import Figure
-from deephaven.time import time_zone
+from deephaven.time import to_j_time_zone
 from tests.testbase import BaseTestCase
 
 
@@ -54,7 +54,7 @@ class PlotTestCase(BaseTestCase):
         axis = new_f.axis(format=nanos_aix_format)
         self.assertIsNotNone(axis)
 
-        nanos_aix_format = NanosAxisFormat(tz=time_zone("PT"))
+        nanos_aix_format = NanosAxisFormat(tz=to_j_time_zone("PT"))
         nanos_aix_format.set_pattern("yyyy-MM-dd'T'HH:mm")
         axis = new_f.axis(format=nanos_aix_format)
         self.assertIsNotNone(axis)

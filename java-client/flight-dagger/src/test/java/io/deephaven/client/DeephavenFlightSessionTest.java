@@ -127,13 +127,14 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
                 ColumnHeader.ofFloat("Float"),
                 ColumnHeader.ofDouble("Double"),
                 ColumnHeader.ofString("String"),
-                ColumnHeader.ofInstant("Instant"))
+                ColumnHeader.ofInstant("Instant"),
+                ColumnHeader.of("ByteVector", byte[].class))
                 .start(3)
                 .row(true, (byte) 42, 'a', (short) 32_000, 1234567, 1234567890123L, 3.14f, 3.14d, "Hello, World",
-                        Instant.now())
-                .row(null, null, null, null, null, null, null, null, null, (Instant) null)
+                        Instant.now(), "abc".getBytes())
+                .row(null, null, null, null, null, null, null, null, null, (Instant) null, (byte[]) null)
                 .row(false, (byte) -42, 'b', (short) -32_000, -1234567, -1234567890123L, -3.14f, -3.14d, "Goodbye.",
-                        Instant.ofEpochMilli(0))
+                        Instant.ofEpochMilli(0), new byte[] {0x32, 0x02, 0x17, 0x42})
                 .newTable();
     }
 }

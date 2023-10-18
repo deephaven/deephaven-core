@@ -22,7 +22,6 @@ void MainMenu(const TableHandleManager &manager);
 void PrintStaticTable(const TableHandleManager &manager);
 void WithArrow(const TableHandleManager &manager);
 void InteractiveWhereClause1(const TableHandleManager &manager);
-void InteractiveWhereClause2(const TableHandleManager &manager);
 
 // utilities
 void PrintTable(const TableHandle &table, bool null_aware);
@@ -80,9 +79,8 @@ void MainMenu(const TableHandleManager &manager) {
                "1 - PrintStaticTable\n"
                "2 - WithArrow\n"
                "3 - InteractiveWhereClause1\n"
-               "4 - InteractiveWhereClause2\n"
                "\n"
-               "Please select 1-4: ";
+               "Please select 1-3: ";
 
   auto selection = ReadNumber(std::cin);
 
@@ -97,10 +95,6 @@ void MainMenu(const TableHandleManager &manager) {
 
     case 3:
       InteractiveWhereClause1(manager);
-      break;
-
-    case 4:
-      InteractiveWhereClause2(manager);
       break;
 
     default:
@@ -137,38 +131,28 @@ void InteractiveWhereClause1(const TableHandleManager &manager) {
   PrintTable(table, true);
 }
 
-void InteractiveWhereClause2(const TableHandleManager &manager) {
-  std::cout << "Enter limit: ";
-  auto limit = ReadNumber(std::cin);
-
-  auto table = manager.FetchTable("demo1");
-  auto int_col = table.GetNumCol("Int64Value");
-  table = table.Where(int_col < limit);
-  PrintTable(table, true);
-}
-
 void PrintTable(const TableHandle &table, bool null_aware) {
   auto fsr = table.GetFlightStreamReader();
 
   while (true) {
     arrow::flight::FlightStreamChunk chunk;
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(fsr->Next(&chunk)));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr->Next(&chunk)));
     if (chunk.data == nullptr) {
       break;
     }
 
     auto int64_data = chunk.data->GetColumnByName("Int64Value");
-    CheckNotNull(int64_data.get(), DEEPHAVEN_DEBUG_MSG("Int64Value column not found"));
+    CheckNotNull(int64_data.get(), DEEPHAVEN_LOCATION_STR("Int64Value column not found"));
     auto double_data = chunk.data->GetColumnByName("DoubleValue");
-    CheckNotNull(double_data.get(), DEEPHAVEN_DEBUG_MSG("DoubleValue column not found"));
+    CheckNotNull(double_data.get(), DEEPHAVEN_LOCATION_STR("DoubleValue column not found"));
 
     auto int64_array = std::dynamic_pointer_cast<arrow::Int64Array>(int64_data);
-    CheckNotNull(int64_array.get(), DEEPHAVEN_DEBUG_MSG("intData was not an arrow::Int64Array"));
+    CheckNotNull(int64_array.get(), DEEPHAVEN_LOCATION_STR("intData was not an arrow::Int64Array"));
     auto double_array = std::dynamic_pointer_cast<arrow::DoubleArray>(double_data);
-    CheckNotNull(double_array.get(), DEEPHAVEN_DEBUG_MSG("doubleData was not an arrow::DoubleArray"));
+    CheckNotNull(double_array.get(), DEEPHAVEN_LOCATION_STR("doubleData was not an arrow::DoubleArray"));
 
     if (int64_array->length() != double_array->length()) {
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Lengths differ"));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Lengths differ"));
     }
 
     if (!null_aware) {

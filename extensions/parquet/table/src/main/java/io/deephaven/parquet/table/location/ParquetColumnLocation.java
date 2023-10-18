@@ -26,7 +26,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
-import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.parquet.table.*;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
@@ -700,6 +700,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         @Override
         public Optional<ToPage<ATTR, ?>> visit(
                 LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
+            // TODO(deephaven-core#976): Unable to read parquet TimestampLogicalTypeAnnotation that is not adjusted
+            // to UTC
             if (timestampLogicalType.isAdjustedToUTC()) {
                 return Optional
                         .of(ToInstantPage.create(componentType, timestampLogicalType.getUnit()));

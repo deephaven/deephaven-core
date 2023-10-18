@@ -140,7 +140,12 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         }
 
         final SwapListener swapListener = new SwapListener(table);
-        swapListener.subscribeForUpdates();
+        try {
+            swapListener.subscribeForUpdates();
+        } catch (IllegalStateException ise) {
+            // It's possible that the table has already failed or been destroyed.
+            return;
+        }
         final ListenerImpl listener = new ListenerImpl(table, exportId);
         listener.tryRetainReference();
         updateListenerMap.put(exportId, listener);

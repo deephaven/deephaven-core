@@ -13,8 +13,10 @@ import pandas as pd
 from deephaven import dtypes
 from deephaven.constants import *
 from deephaven.dtypes import Instant, LocalDate, LocalTime, Duration, Period, TimeZone, ZonedDateTime
-from deephaven.time import now, to_zdt, time_zone
+from deephaven.time import dh_now
 from tests.testbase import BaseTestCase
+
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 
 def remap_double(v, null_value):
@@ -201,7 +203,7 @@ class DTypesTestCase(BaseTestCase):
 
     def test_instant(self):
         dt1 = Instant.j_type.ofEpochSecond(0, round(time.time()))
-        dt2 = now()
+        dt2 = dh_now()
         values = [dt1, dt2, None]
         j_array = dtypes.array(Instant, values)
         self.assertTrue(all(x == y for x, y in zip(j_array, values)))
@@ -238,7 +240,7 @@ class DTypesTestCase(BaseTestCase):
 
     def test_zdt(self):
         dt1 = ZonedDateTime.j_type.now()
-        dt2 = to_zdt(now(), time_zone(None))
+        dt2 = _JDateTimeUtils.toZonedDateTime(dh_now(), _JDateTimeUtils.timeZone())
         values = [dt1, dt2, None]
         j_array = dtypes.array(ZonedDateTime, values)
         self.assertTrue(all(x == y for x, y in zip(j_array, values)))
@@ -250,6 +252,11 @@ class DTypesTestCase(BaseTestCase):
         j_array2 = dtypes.array(dtypes.bool_, [True, False])
         self.assertEqual(j_array[0], j_array2[0])
         self.assertEqual(j_array[1], j_array2[1])
+
+    def test_np_ndim_array(self):
+        np_array = np.ndarray([1, 2, 3], np.int32)
+        with self.assertRaises(ValueError):
+            j_array = dtypes.array(dtypes.int32, np_array)
 
 
 if __name__ == '__main__':

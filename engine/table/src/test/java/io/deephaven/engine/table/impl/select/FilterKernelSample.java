@@ -64,6 +64,7 @@ import static io.deephaven.function.Parse.*;
 import static io.deephaven.function.Random.*;
 import static io.deephaven.function.Sort.*;
 import static io.deephaven.gui.color.Color.*;
+
 import static io.deephaven.time.DateTimeUtils.*;
 import static io.deephaven.time.calendar.StaticCalendarMethods.*;
 import static io.deephaven.util.QueryConstants.*;
@@ -94,7 +95,7 @@ public class FilterKernelSample implements io.deephaven.engine.table.impl.select
         for (int __my_i__ = 0; __my_i__ < __size; __my_i__++) {
             final short v1 =  (short)__columnChunk0.get(__my_i__);
             final double v2 =  (double)__columnChunk1.get(__my_i__);
-            if ("foo".equals((plus(plus(plus(p1, p2), v1), v2))+p3)) {
+            if ("foo".equals((plus(plus(plus(p1, p2), v1), v2)) + p3)) {
                 __context.resultChunk.add(__indices.get(__my_i__));
             }
         }

@@ -4,13 +4,10 @@
 #pragma once
 
 #include <string_view>
-#include "deephaven/client/columns.h"
 #include "deephaven/client/client_options.h"
-#include "deephaven/client/expressions.h"
 #include "deephaven/client/utility/misc_types.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
-#include "deephaven/dhcore/utility/callbacks.h"
 
 namespace deephaven::client::impl {
 class UpdateByOperationImpl;

@@ -11,7 +11,6 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.AbstractNotification;
@@ -54,7 +53,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     private final String listenerDescription;
     protected final QueryTable result;
     @Nullable
-    private final PerformanceEntry entry;
+    protected final PerformanceEntry entry;
     private final String logPrefix;
 
     @SuppressWarnings("FieldMayBeFinal")
@@ -135,11 +134,19 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         getUpdateGraph().addNotification(new MergedNotification());
     }
 
-    private void propagateError(
-            final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+    /**
+     * Propagate an error to downstream listeners.
+     *
+     * @param uncaughtExceptionFromProcess true if the exception was thrown from {@link #process()}, false otherwise
+     * @param error the error to propagate
+     * @param entry the {@link io.deephaven.engine.table.TableListener.Entry} that threw the error.
+     */
+    protected void propagateError(
+            final boolean uncaughtExceptionFromProcess,
+            @NotNull final Throwable error,
+            @Nullable final TableListener.Entry entry) {
         forceReferenceCountToZero();
-        recorders.forEach(ListenerRecorder::forceReferenceCountToZero);
-        propagateErrorDownstream(fromProcess, error, entry);
+        propagateErrorDownstream(uncaughtExceptionFromProcess, error, entry);
         try {
             if (systemicResult()) {
                 AsyncClientErrorNotifier.reportError(error);
@@ -151,6 +158,11 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     protected boolean systemicResult() {
         return SystemicObjectTracker.isSystemic(result);
+    }
+
+    @Override
+    protected void destroy() {
+        recorders.forEach(ListenerRecorder::forceReferenceCountToZero);
     }
 
     protected void propagateErrorDownstream(

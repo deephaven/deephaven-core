@@ -14,6 +14,7 @@ import org.apache.arrow.vector.TimeStampNanoTZVector;
 import org.apache.arrow.vector.TinyIntVector;
 import org.apache.arrow.vector.UInt2Vector;
 import org.apache.arrow.vector.VarCharVector;
+import org.apache.arrow.vector.VarBinaryVector;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -213,6 +214,20 @@ public class VectorHelper {
                 vector.setNull(i);
             } else {
                 vector.setSafe(i, value.getBytes(StandardCharsets.UTF_8));
+            }
+            ++i;
+        }
+        vector.setValueCount(array.size());
+    }
+
+    public static void fill(VarBinaryVector vector, Collection<byte[]> array) {
+        vector.allocateNew(array.size());
+        int i = 0;
+        for (byte[] value : array) {
+            if (value == null) {
+                vector.setNull(i);
+            } else {
+                vector.setSafe(i, value);
             }
             ++i;
         }

@@ -29,6 +29,11 @@ public class TstColumnRegionInt {
     static class Identity implements ColumnRegionInt<Values>, Page.WithDefaults<Values> {
 
         @Override
+        public void invalidate() {
+            // NOTHNG TO DO
+        }
+
+        @Override
         public long mask() {
             return Long.MAX_VALUE;
         }

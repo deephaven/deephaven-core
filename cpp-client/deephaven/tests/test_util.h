@@ -123,8 +123,8 @@ inline void CompareTableRecurse(int /*depth*/, const std::shared_ptr<arrow::Tabl
 template<typename T, typename... Args>
 void CompareTableRecurse(int depth, const std::shared_ptr<arrow::Table> &table,
     const std::string &column_name, const std::vector<T> &data, Args &&... rest) {
-  auto zi = deephaven::client::utility::internal::TypeConverter::CreateNew(data);
-  const auto &data_as_arrow = zi.Column();
+  auto tc = deephaven::client::utility::internal::TypeConverter::CreateNew(data);
+  const auto &data_as_arrow = tc.Column();
   CompareTableHelper(depth, table, column_name, data_as_arrow);
   CompareTableRecurse(depth + 1, table, std::forward<Args>(rest)...);
 }

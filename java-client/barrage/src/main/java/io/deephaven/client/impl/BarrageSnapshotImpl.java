@@ -77,7 +77,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         final TableDefinition tableDefinition = schema.tableDef;
-        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, -1);
+        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, new CheckForCompletion());
         resultTable.addParentReference(this);
 
         final MethodDescriptor<FlightData, BarrageMessage> snapshotDescriptor =
@@ -117,8 +117,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 return;
             }
             try (barrageMessage) {
-                final Listener listener = resultTable;
-                if (!connected || listener == null) {
+                final Listener localResultTable = resultTable;
+                if (!connected || localResultTable == null) {
                     return;
                 }
 
@@ -135,7 +135,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
                 rowsReceived += resultSize;
 
-                listener.handleBarrageMessage(barrageMessage);
+                localResultTable.handleBarrageMessage(barrageMessage);
             }
         }
 
@@ -145,11 +145,11 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                     .append(": Error detected in snapshot: ")
                     .append(t).endl();
 
-            final Listener listener = resultTable;
-            if (!connected || listener == null) {
+            final Listener localResultTable = resultTable;
+            if (!connected || localResultTable == null) {
                 return;
             }
-            listener.handleBarrageError(t);
+            localResultTable.handleBarrageError(t);
             handleDisconnect();
         }
 
@@ -161,36 +161,39 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     @Override
     public BarrageTable entireTable() throws InterruptedException {
-        return partialTable(null, null);
+        return partialTable(null, null, false, true);
     }
 
     @Override
-    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
-        return partialTable(viewport, columns, false);
+    public BarrageTable entireTable(boolean blockUntilComplete) throws InterruptedException {
+        return partialTable(null, null, false, blockUntilComplete);
     }
 
     @Override
-    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
+    public BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
+        return partialTable(viewport, columns, false, true);
+    }
+
+    @Override
+    public BarrageTable partialTable(
+            RowSet viewport, BitSet columns, boolean reverseViewport) throws InterruptedException {
+        return partialTable(viewport, columns, reverseViewport, true);
+    }
+
+    @Override
+    public BarrageTable partialTable(
+            RowSet viewport, BitSet columns, boolean reverseViewport, boolean blockUntilComplete)
             throws InterruptedException {
-        // notify user when connection has already been used and closed
-        if (prevUsed) {
-            throw new UnsupportedOperationException("Snapshot object already used");
-        }
+        synchronized (this) {
+            if (!connected) {
+                throw new UncheckedDeephavenException(this + " is not connected");
+            }
 
-        // test lock conditions
-        if (resultTable.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
-            throw new UnsupportedOperationException(
-                    "Cannot snapshot while holding the UpdateGraph shared lock");
-        }
-
-        prevUsed = true;
-
-        if (resultTable.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
-            completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
-        }
-
-        if (!connected) {
-            throw new UncheckedDeephavenException(this + " is not connected");
+            // notify user when connection has already been used and closed
+            if (prevUsed) {
+                throw new UnsupportedOperationException("Snapshot object already used");
+            }
+            prevUsed = true;
         }
 
         // store this for streamreader parser
@@ -201,22 +204,59 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
                 .build());
 
-        while (!completed && exceptionWhileCompleting == null) {
-            // handle the condition where this function may have the exclusive lock
-            if (completedCondition != null) {
-                completedCondition.await();
-            } else {
-                wait(); // barragesnapshotimpl lock
+        observer.onCompleted();
+
+        if (blockUntilComplete) {
+            return blockUntilComplete();
+        }
+
+        return resultTable;
+    }
+
+    private boolean checkIfCompleteOrThrow() {
+        if (exceptionWhileCompleting != null) {
+            throw new UncheckedDeephavenException("Error while handling subscription:", exceptionWhileCompleting);
+        }
+        return completed;
+    }
+
+    @Override
+    public BarrageTable blockUntilComplete() throws InterruptedException {
+        if (checkIfCompleteOrThrow()) {
+            return resultTable;
+        }
+
+        // test lock conditions
+        if (resultTable.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
+            throw new UnsupportedOperationException(
+                    "Cannot wait for snapshot to complete while holding the UpdateGraph shared lock");
+        }
+
+        final boolean holdingUpdateGraphLock = resultTable.getUpdateGraph().exclusiveLock().isHeldByCurrentThread();
+        if (completedCondition == null && holdingUpdateGraphLock) {
+            synchronized (this) {
+                if (checkIfCompleteOrThrow()) {
+                    return resultTable;
+                }
+                if (completedCondition == null) {
+                    completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
+                }
             }
         }
 
-        observer.onCompleted();
-
-        if (exceptionWhileCompleting == null) {
-            return resultTable;
+        if (holdingUpdateGraphLock) {
+            while (!checkIfCompleteOrThrow()) {
+                completedCondition.await();
+            }
         } else {
-            throw new UncheckedDeephavenException("Error while handling snapshot:", exceptionWhileCompleting);
+            synchronized (this) {
+                while (!checkIfCompleteOrThrow()) {
+                    wait(); // BarrageSnapshotImpl lock
+                }
+            }
         }
+
+        return resultTable;
     }
 
     @Override
@@ -230,24 +270,17 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             return;
         }
 
-        resultTable.sealTable(() -> {
-            completed = true;
-            signalCompletion();
-        }, () -> {
-            exceptionWhileCompleting = new Exception();
-            signalCompletion();
-        });
+        completed = true;
+        signalCompletion();
         cleanup();
     }
 
-    private void signalCompletion() {
+    private synchronized void signalCompletion() {
         if (completedCondition != null) {
             resultTable.getUpdateGraph().requestSignal(completedCondition);
-        } else {
-            synchronized (BarrageSnapshotImpl.this) {
-                BarrageSnapshotImpl.this.notifyAll();
-            }
         }
+
+        notifyAll();
     }
 
     @Override
@@ -370,6 +403,24 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         public BarrageMessage parse(final InputStream stream) {
             return streamReader.safelyParseFrom(options, expectedColumns, columnChunkTypes, columnTypes, componentTypes,
                     stream);
+        }
+    }
+
+    private class CheckForCompletion implements BarrageTable.ViewportChangedCallback {
+        @Override
+        public boolean viewportChanged(@Nullable RowSet rowSet, @Nullable BitSet columns, boolean reverse) {
+            return true;
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            exceptionWhileCompleting = t;
+            signalCompletion();
+        }
+
+        @Override
+        public void onClose() {
+            signalCompletion();
         }
     }
 }

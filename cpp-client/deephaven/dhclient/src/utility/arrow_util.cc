@@ -26,7 +26,7 @@ void OkOrThrow(const deephaven::dhcore::utility::DebugInfo &debug_info,
 arrow::flight::FlightDescriptor ConvertTicketToFlightDescriptor(const std::string &ticket) {
   if (ticket.length() != 5 || ticket[0] != 'e') {
     const char *message = "Ticket is not in correct format for export";
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
   uint32_t value;
   memcpy(&value, ticket.data() + 1, sizeof(uint32_t));

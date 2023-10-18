@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -43,7 +43,7 @@ jobs:
 
       - name: Login to ghcr.io
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -59,7 +59,7 @@ jobs:
       - name: Tag upstream images
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
-          ./docker/registry/cpp-client-base/build/crane/retag.sh
+          ./docker/registry/r-client-base/build/crane/retag.sh
           ./docker/registry/protoc-base/build/crane/retag.sh
           ./docker/registry/slim-base/build/crane/retag.sh
           ./docker/registry/server-base/build/crane/retag.sh

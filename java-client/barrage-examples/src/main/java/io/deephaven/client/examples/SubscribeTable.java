@@ -3,6 +3,7 @@
  */
 package io.deephaven.client.examples;
 
+import io.deephaven.base.system.AsyncSystem;
 import io.deephaven.qst.TableCreationLogic;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
@@ -21,6 +22,7 @@ class SubscribeTable extends SubscribeExampleBase {
     }
 
     public static void main(String[] args) {
+        Thread.setDefaultUncaughtExceptionHandler(AsyncSystem.uncaughtExceptionHandler(1, System.err));
         int execute = new CommandLine(new SubscribeTable()).execute(args);
         System.exit(execute);
     }

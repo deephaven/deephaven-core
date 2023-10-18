@@ -5,7 +5,6 @@
 #include "deephaven/client/client.h"
 #include "deephaven/client/utility/table_maker.h"
 
-using deephaven::client::NumCol;
 using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::TableHandleManager;

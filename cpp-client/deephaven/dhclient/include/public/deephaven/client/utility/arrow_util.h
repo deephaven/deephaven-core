@@ -17,7 +17,7 @@ arrow::flight::FlightDescriptor ConvertTicketToFlightDescriptor(const std::strin
 
 /**
  * If result's status is OK, do nothing. Otherwise throw a runtime error with an informative message.
- * @param debug_info A DebugInfo object, typically as provided by DEEPHAVEN_EXPR_MSG.
+ * @param debug_info A DebugInfo object, typically as provided by DEEPHAVEN_LOCATION_EXPR.
  * @param result an arrow::Result
  */
 template<typename T>
@@ -27,7 +27,7 @@ void OkOrThrow(const deephaven::dhcore::utility::DebugInfo &debug_info, const ar
 
 /**
  * If status is OK, do nothing. Otherwise throw a runtime error with an informative message.
- * @param debug_info A DebugInfo object, typically as provided by DEEPHAVEN_EXPR_MSG.
+ * @param debug_info A DebugInfo object, typically as provided by DEEPHAVEN_LOCATION_EXPR.
  * @param status the arrow::Status
  */
 void OkOrThrow(const deephaven::dhcore::utility::DebugInfo &debug_info, const arrow::Status &status);
@@ -35,7 +35,7 @@ void OkOrThrow(const deephaven::dhcore::utility::DebugInfo &debug_info, const ar
 /**
  * If result's internal status is OK, return result's contained value.
  * Otherwise throw a runtime error with an informative message.
- * @param debug_info A DebugInfo object, typically as provided by DEEPHAVEN_EXPR_MSG.
+ * @param debug_info A DebugInfo object, typically as provided by DEEPHAVEN_LOCATION_EXPR.
  * @param result The arrow::Result
  */
 template<typename T>

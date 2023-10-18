@@ -38,7 +38,8 @@ public abstract class BaseProcessEnvironment implements ProcessEnvironment {
      * @param mainClassName
      * @param log
      */
-    protected BaseProcessEnvironment(@NotNull final ShutdownManager shutdownManager,
+    protected BaseProcessEnvironment(
+            @NotNull final ShutdownManager shutdownManager,
             @NotNull final FatalErrorReporter fatalErrorReporter,
             @NotNull final String mainClassName,
             @NotNull final Logger log) {

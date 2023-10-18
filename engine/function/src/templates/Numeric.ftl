@@ -476,7 +476,19 @@ public class Numeric {
             }
         }
 
-        return sum2 / (count - 1) - sum * sum / count / (count - 1);
+        // Return NaN if poisoned or too few values to compute variance.
+        if (count <= 1 || Double.isNaN(sum) || Double.isNaN(sum2)) {
+            return Double.NaN;
+        }
+
+        // Perform the calculation in a way that minimizes the impact of floating point error.
+        final double eps = Math.ulp(sum2);
+        final double vs2bar = sum * (sum / count);
+        final double delta = sum2 - vs2bar;
+        final double rel_eps = delta / eps;
+
+        // Return zero when the variance is leq the floating point error.
+        return Math.abs(rel_eps) > 1.0 ? delta / (count - 1) : 0.0;
     }
 
     <#list primitiveTypes as pt2>
@@ -567,8 +579,13 @@ public class Numeric {
             }
         }
 
+        // Return NaN if poisoned or too few values to compute variance.
+        if (count <= 1 || Double.isNaN(sum) || Double.isNaN(sum2) || Double.isNaN(count) || Double.isNaN(count2)) {
+            return Double.NaN;
+        }
+
         // For unbiased estimator derivation see https://en.wikipedia.org/wiki/Weighted_arithmetic_mean#Weighted_sample_variance
-        // For unweighted statistics, there is a (N-1)/N = (1-1/N) Bessel correction.  
+        // For unweighted statistics, there is a (N-1)/N = 1-(1/N) Bessel correction.
         // The analagous correction for weighted statistics is 1-count2/count/count, which yields an effective sample size of Neff = count*count/count2.
         // This yields an unbiased estimator of (sum2/count - sum*sum/count/count) * ((count*count/count2)/((count*count/count2)-1)).
         // This can be simplified to (count * sum2 - sum * sum) / (count * count - count2)
@@ -1579,7 +1596,13 @@ public class Numeric {
         result[0] = values[0];
 
         for (int i = 1; i < values.length; i++) {
-            result[i] = compare(result[i-1], values[i]) > 0 ? result[i-1] : values[i];
+            if (isNull(result[i - 1])) {
+                result[i] = values[i];
+            } else if (isNull(values[i])) {
+                result[i] = result[i - 1];
+            } else {
+                result[i] = (${pt.primitive})Math.max(result[i - 1], values[i]);
+            }
         }
 
         return result;
@@ -1606,10 +1629,18 @@ public class Numeric {
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             result[0] = vi.${pt.iteratorNext}();
             int i = 1;
-    
+
             while (vi.hasNext()) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
-                result[i] = compare(result[i-1], v) > 0 ? result[i-1] : v;
+
+                if (isNull(result[i - 1])) {
+                    result[i] = v;
+                } else if (isNull(v)) {
+                    result[i] = result[i - 1];
+                } else {
+                    result[i] = (${pt.primitive})Math.max(result[i - 1], v);
+                }
+
                 i++;
             }
         }

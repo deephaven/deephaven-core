@@ -5,6 +5,7 @@ import io.deephaven.configuration.Configuration;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -23,10 +24,20 @@ public interface ThreadInitializationFactory {
                     return clazz.getDeclaredConstructor().newInstance();
                 } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException
                         | InstantiationException | IllegalAccessException e) {
+
+                    // TODO (https://github.com/deephaven/deephaven-core/issues/4040):
+                    // Currently the default property file is shared between both the java client and the server. This
+                    // means that client-side usage will attempt to load the thread.initialization property intended for
+                    // the server which is not available on the class path.
+                    if (e instanceof ClassNotFoundException && type.startsWith("io.deephaven.server.")) {
+                        return null;
+                    }
+
                     throw new IllegalArgumentException(
                             "Error instantiating initializer " + type + ", please check configuration", e);
                 }
             })
+            .filter(Objects::nonNull)
             .collect(Collectors.toUnmodifiableList());
 
     /**

@@ -21,6 +21,7 @@ import io.deephaven.ssl.config.SSLConfig.ClientAuth;
 import io.deephaven.ssl.config.Trust;
 import io.deephaven.ssl.config.TrustCertificates;
 import io.deephaven.util.HeapDump;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -62,7 +63,8 @@ public class MainHelper {
         }
     }
 
-    private static void bootstrapProjectDirectories() throws IOException {
+    @VisibleForTesting
+    public static void bootstrapProjectDirectories() throws IOException {
         final String applicationName =
                 applicationProperty().or(MainHelper::applicationEnvironmentVariable).orElse("deephaven");
 

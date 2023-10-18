@@ -3,30 +3,20 @@
  */
 package io.deephaven.parquet.table;
 
-import gnu.trove.impl.Constants;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.NullSelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.parquet.base.ColumnWriter;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.RowGroupWriter;
@@ -34,70 +24,36 @@ import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
+import io.deephaven.parquet.table.transfer.*;
 import io.deephaven.parquet.table.util.TrackedSeekableChannelsProvider;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.codec.ObjectCodec;
-import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
-import org.apache.parquet.column.statistics.IntStatistics;
 import org.apache.parquet.column.statistics.Statistics;
-import org.apache.parquet.io.api.Binary;
+import org.apache.parquet.schema.PrimitiveType;
+import org.apache.parquet.schema.Types;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.*;
-import java.util.function.IntSupplier;
-
-import static io.deephaven.util.QueryConstants.NULL_INT;
 
 /**
  * API for writing DH tables in parquet format
  */
 public class ParquetTableWriter {
-    private static final int INITIAL_DICTIONARY_SIZE = 1 << 8;
-
     public static final String METADATA_KEY = "deephaven";
-
-    private static final int LOCAL_CHUNK_SIZE = 1024;
-
     public static final String BEGIN_POS = "dh_begin_pos";
     public static final String END_POS = "dh_end_pos";
     public static final String GROUPING_KEY = "dh_key";
-
     public static final String PARQUET_FILE_EXTENSION = ".parquet";
-
-    enum CacheTags {
-        DECIMAL_ARGS
-    }
-
-    /**
-     * Classes that implement this interface are responsible for converting data from individual DH columns into buffers
-     * to be written out to the Parquet file.
-     *
-     * @param <B>
-     */
-    interface TransferObject<B> extends SafeCloseable {
-        void propagateChunkData();
-
-        B getBuffer();
-
-        int rowCount();
-
-        void fetchData(RowSequence rs);
-    }
 
     /**
      * Helper struct used to pass information about where to write the grouping files for each grouping column
@@ -208,12 +164,11 @@ public class ParquetTableWriter {
             // When we need to perform some computation depending on column data to make a decision impacting both
             // schema and written data, we store results in computedCache to avoid having to calculate twice.
             // An example is the necessary precision and scale for a BigDecimal column writen as decimal logical type.
-            final Map<String, Map<CacheTags, Object>> computedCache = new HashMap<>();
+            final Map<String, Map<ParquetCacheTags, Object>> computedCache = new HashMap<>();
             final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, tableRowSet,
-                    columnSourceMap, path, writeInstructions, tableMeta,
-                    tableInfoBuilder);
-
-            write(t, definition, writeInstructions, parquetFileWriter, computedCache);
+                    columnSourceMap, path, writeInstructions, tableMeta, tableInfoBuilder);
+            // Given the transformation, do not use the original table's "definition" for writing
+            write(t, writeInstructions, parquetFileWriter, computedCache);
         }
     }
 
@@ -223,30 +178,28 @@ public class ParquetTableWriter {
      * tables created are properly cleaned up.
      *
      * @param table The table to write
-     * @param definition The table definition
      * @param writeInstructions Write instructions for customizations while writing
      * @param parquetFileWriter the writer
      * @throws IOException For file writing related errors
      */
     private static void write(
             @NotNull final Table table,
-            @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final ParquetFileWriter parquetFileWriter,
-            @NotNull final Map<String, Map<CacheTags, Object>> computedCache) throws IOException {
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) throws IOException {
         final TrackingRowSet tableRowSet = table.getRowSet();
         final Map<String, ? extends ColumnSource<?>> columnSourceMap = table.getColumnSourceMap();
         final long nRows = table.size();
         if (nRows > 0) {
             final RowGroupWriter rowGroupWriter = parquetFileWriter.addRowGroup(nRows);
             for (final Map.Entry<String, ? extends ColumnSource<?>> nameToSource : columnSourceMap.entrySet()) {
-                final String name = nameToSource.getKey();
+                final String columnName = nameToSource.getKey();
                 final ColumnSource<?> columnSource = nameToSource.getValue();
                 try {
-                    writeColumnSource(computedCache, tableRowSet, rowGroupWriter, name, columnSource,
-                            definition.getColumn(name), writeInstructions);
+                    writeColumnSource(tableRowSet, writeInstructions, rowGroupWriter, computedCache, columnName,
+                            columnSource);
                 } catch (IllegalAccessException e) {
-                    throw new RuntimeException("Failed to write column " + name, e);
+                    throw new RuntimeException("Failed to write column " + columnName, e);
                 }
             }
         }
@@ -260,7 +213,8 @@ public class ParquetTableWriter {
      *
      * @param table the input table
      * @param definition the table definition being written
-     * @return a transformed view of the input table.
+     * @return a transformed view of the input table. The table definition for the transformed view can be different
+     *         from the definition of the input table.
      */
     @NotNull
     private static Table pretransformTable(@NotNull final Table table, @NotNull final TableDefinition definition) {
@@ -309,7 +263,7 @@ public class ParquetTableWriter {
      */
     @NotNull
     private static ParquetFileWriter getParquetFileWriter(
-            @NotNull final Map<String, Map<CacheTags, Object>> computedCache,
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final TableDefinition definition,
             @NotNull final RowSet tableRowSet,
             @NotNull final Map<String, ? extends ColumnSource<?>> columnSourceMap,
@@ -364,756 +318,139 @@ public class ParquetTableWriter {
                 writeInstructions.getCompressionCodecName(), extraMetaData);
     }
 
-    private interface ColumnWriteHelper {
-
-        boolean isVectorFormat();
-
-        IntSupplier valuePageSizeSupplier();
-    }
-
-    /**
-     * ColumnWriteHelper for columns of "flat" data with no nesting or vector encoding.
-     */
-    private static class FlatColumnWriterHelper implements ColumnWriteHelper {
-
-        /**
-         * The maximum page size for values.
-         */
-        private final int maxValuePageSize;
-
-        private FlatColumnWriterHelper(final int maxValuePageSize) {
-            this.maxValuePageSize = maxValuePageSize;
-        }
-
-        public boolean isVectorFormat() {
-            return false;
-        }
-
-        public IntSupplier valuePageSizeSupplier() {
-            return () -> maxValuePageSize;
-        }
-    }
-
-    /**
-     * This is a helper struct storing useful data required to write column source in the parquet file, particularly
-     * helpful for writing array/vector data.
-     */
-    private static class VectorColumnWriterHelper implements ColumnWriteHelper {
-
-        /**
-         * The source for per-row array/vector lengths.
-         */
-        private final ColumnSource<?> lengthSource;
-
-        /**
-         * The RowSet for (ungrouped) values.
-         */
-        private final RowSet valueRowSet;
-
-        /**
-         * The size of each value page. Parallel to {@link #lengthPageSizes}.
-         */
-        private final TIntArrayList valuePageSizes;
-
-        /**
-         * The size of each length page. Parallel to {@link #valuePageSizes}.
-         */
-        private final TIntArrayList lengthPageSizes;
-
-        private VectorColumnWriterHelper(
-                @NotNull final ColumnSource<?> lengthSource,
-                @NotNull final RowSet valueRowSet) {
-            this.lengthSource = lengthSource;
-            this.valueRowSet = valueRowSet;
-            valuePageSizes = new TIntArrayList();
-            lengthPageSizes = new TIntArrayList();
-        }
-
-        public boolean isVectorFormat() {
-            return true;
-        }
-
-        public IntSupplier lengthPageSizeSupplier() {
-            return lengthPageSizes.iterator()::next;
-        }
-
-        public IntSupplier valuePageSizeSupplier() {
-            return valuePageSizes.iterator()::next;
-        }
-    }
-
     @VisibleForTesting
     static <DATA_TYPE> void writeColumnSource(
-            @NotNull final Map<String, Map<CacheTags, Object>> computedCache,
-            @NotNull final TrackingRowSet tableRowSet,
+            @NotNull final RowSet tableRowSet,
+            @NotNull final ParquetInstructions writeInstructions,
             @NotNull final RowGroupWriter rowGroupWriter,
-            @NotNull final String name,
-            @NotNull final ColumnSource<DATA_TYPE> columnSourceIn,
-            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
-            @NotNull final ParquetInstructions writeInstructions) throws IllegalAccessException, IOException {
-        ColumnSource<DATA_TYPE> valueSource = columnSourceIn;
-
-        final ColumnWriteHelper helper;
-        int maxValuesPerPage = 0;
-        int maxRowsPerPage = 0;
-        int pageCount;
-        if (columnSourceIn.getComponentType() != null
-                && !CodecLookup.explicitCodecPresent(writeInstructions.getCodecName(columnDefinition.getName()))
-                && !CodecLookup.codecRequired(columnDefinition)) {
-            final VectorColumnWriterHelper vectorHelper;
-            final int targetValuesPerPage = getTargetRowsPerPage(
-                    valueSource.getComponentType(),
-                    writeInstructions.getTargetPageSize());
-            final HashMap<String, ColumnSource<?>> columns = new HashMap<>();
-            columns.put("array", valueSource);
-            {
-                final Table lengthsTable = new QueryTable(tableRowSet, columns);
-                final ColumnSource<?> lengthSource = lengthsTable
-                        .view("len= ((Object)array) == null ? null : (int)array."
-                                + (Vector.class.isAssignableFrom(valueSource.getType()) ? "size()" : "length"))
-                        .getColumnSource("len");
-                final Table ungroupedArrays = lengthsTable.ungroup("array");
-                vectorHelper = new VectorColumnWriterHelper(lengthSource, ungroupedArrays.getRowSet());
-                helper = vectorHelper;
-                valueSource = ungroupedArrays.getColumnSource("array");
-            }
-
-            // This is the count of items contained in all arrays from the original table as we process.
-            int valuesInPage = 0;
-
-            // This is the count of rows in the original table as we process them
-            int rowsInPage = 0;
-            try (final ChunkSource.GetContext context = vectorHelper.lengthSource.makeGetContext(LOCAL_CHUNK_SIZE);
-                    final RowSequence.Iterator it = tableRowSet.getRowSequenceIterator()) {
-                while (it.hasMore()) {
-                    final RowSequence rs = it.getNextRowSequenceWithLength(LOCAL_CHUNK_SIZE);
-                    final IntChunk<? extends Values> lengthChunk =
-                            vectorHelper.lengthSource.getChunk(context, rs).asIntChunk();
-                    for (int chunkPos = 0; chunkPos < lengthChunk.size(); chunkPos++) {
-                        final int curLength = lengthChunk.get(chunkPos);
-                        if (curLength != NULL_INT) {
-                            // If this array puts us past the target number of items within a page then we'll record the
-                            // current values into the page lists above and restart our counts.
-                            if ((valuesInPage + curLength > targetValuesPerPage || rowsInPage + 1 > targetValuesPerPage)
-                                    && (valuesInPage > 0 || rowsInPage > 0)) {
-                                // Record the current item count and original row count into the parallel page arrays.
-                                vectorHelper.valuePageSizes.add(valuesInPage);
-                                vectorHelper.lengthPageSizes.add(rowsInPage);
-                                maxValuesPerPage = Math.max(valuesInPage, maxValuesPerPage);
-                                maxRowsPerPage = Math.max(rowsInPage, maxRowsPerPage);
-
-                                // Reset the counts to compute these values for the next page.
-                                rowsInPage = 0;
-                                valuesInPage = 0;
-                            }
-                            valuesInPage += curLength;
-                        }
-                        rowsInPage++;
-                    }
-                }
-            }
-
-            // If there are any leftover, accumulate the last page.
-            if (rowsInPage > 0) {
-                maxValuesPerPage = Math.max(valuesInPage, maxValuesPerPage);
-                maxRowsPerPage = Math.max(rowsInPage, maxRowsPerPage);
-                vectorHelper.valuePageSizes.add(valuesInPage);
-                vectorHelper.lengthPageSizes.add(rowsInPage);
-            }
-            pageCount = vectorHelper.valuePageSizes.size();
-        } else {
-            final long tableSize = tableRowSet.size();
-            final int targetPageSize = getTargetRowsPerPage(
-                    valueSource.getType(), writeInstructions.getTargetPageSize());
-            maxValuesPerPage = maxRowsPerPage = (int) Math.min(tableSize, targetPageSize);
-            helper = new FlatColumnWriterHelper(maxValuesPerPage);
-            pageCount = Math.toIntExact((tableSize + targetPageSize - 1) / targetPageSize);
-        }
-
-        Class<DATA_TYPE> columnType = valueSource.getType();
-        if (columnType == Instant.class) {
-            // noinspection unchecked
-            valueSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.instantToLongSource(
-                    (ColumnSource<Instant>) valueSource);
-            columnType = valueSource.getType();
-        } else if (columnType == Boolean.class) {
-            // noinspection unchecked
-            valueSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource(
-                    (ColumnSource<Boolean>) valueSource);
-        }
-
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
+            @NotNull final String columnName,
+            @NotNull ColumnSource<DATA_TYPE> columnSource) throws IllegalAccessException, IOException {
         try (final ColumnWriter columnWriter = rowGroupWriter.addColumn(
-                writeInstructions.getParquetColumnNameFromColumnNameOrDefault(name))) {
+                writeInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName))) {
             boolean usedDictionary = false;
-            if (valueSource.getType() == String.class) {
-                usedDictionary = tryEncodeDictionary(writeInstructions,
-                        tableRowSet,
-                        columnDefinition,
-                        columnWriter,
-                        valueSource,
-                        helper,
-                        maxValuesPerPage,
-                        maxRowsPerPage,
-                        pageCount);
+            if (String.class.equals(columnSource.getType()) || String.class.equals(columnSource.getComponentType())) {
+                usedDictionary =
+                        tryEncodeDictionary(tableRowSet, writeInstructions, columnWriter, columnName, columnSource);
             }
-
             if (!usedDictionary) {
-                encodePlain(writeInstructions,
-                        tableRowSet,
-                        columnDefinition,
-                        columnType,
-                        columnWriter,
-                        valueSource,
-                        helper,
-                        computedCache,
-                        maxValuesPerPage,
-                        maxRowsPerPage,
-                        pageCount);
+                encodePlain(tableRowSet, writeInstructions, columnWriter, computedCache, columnName, columnSource);
             }
         }
     }
 
-    private static <DATA_TYPE> void encodePlain(@NotNull final ParquetInstructions writeInstructions,
-            @NotNull final RowSet tableRowSet,
-            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
-            @NotNull final Class<DATA_TYPE> columnType,
-            @NotNull final ColumnWriter columnWriter,
-            @NotNull final ColumnSource<DATA_TYPE> valueSource,
-            @NotNull final ColumnWriteHelper writingHelper,
-            @NotNull final Map<String, Map<CacheTags, Object>> computedCache,
-            final int maxValuesPerPage,
-            final int maxRowsPerPage,
-            final int pageCount) throws IOException {
-        try (final TransferObject<?> transferObject = getDestinationBuffer(computedCache,
-                tableRowSet,
-                valueSource,
-                columnDefinition,
-                maxValuesPerPage,
-                columnType,
-                writeInstructions)) {
-            final Object bufferToWrite = transferObject.getBuffer();
-            final VectorColumnWriterHelper vectorHelper = writingHelper.isVectorFormat()
-                    ? (VectorColumnWriterHelper) writingHelper
-                    : null;
-            final Statistics<?> statistics = columnWriter.getStats();
-            // @formatter:off
-            try (final RowSequence.Iterator lengthRowSetIterator = vectorHelper != null
-                    ? tableRowSet.getRowSequenceIterator()
-                    : null;
-                 final ChunkSource.GetContext lengthSourceContext = vectorHelper != null
-                         ? vectorHelper.lengthSource.makeGetContext(maxRowsPerPage)
-                         : null;
-                 final RowSequence.Iterator valueRowSetIterator = vectorHelper != null
-                         ? vectorHelper.valueRowSet.getRowSequenceIterator()
-                         : tableRowSet.getRowSequenceIterator()) {
-                // @formatter:on
-
-                final IntBuffer repeatCount = vectorHelper != null
-                        ? IntBuffer.allocate(maxRowsPerPage)
-                        : null;
-                final IntSupplier lengthPageSizeGetter = vectorHelper != null
-                        ? vectorHelper.lengthPageSizeSupplier()
-                        : null;
-                final IntSupplier valuePageSizeGetter = writingHelper.valuePageSizeSupplier();
-                for (int step = 0; step < pageCount; ++step) {
-                    final RowSequence rs =
-                            valueRowSetIterator.getNextRowSequenceWithLength(valuePageSizeGetter.getAsInt());
-                    transferObject.fetchData(rs);
-                    transferObject.propagateChunkData();
-                    if (vectorHelper != null) {
-                        final IntChunk<? extends Values> lenChunk = vectorHelper.lengthSource.getChunk(
-                                lengthSourceContext,
-                                lengthRowSetIterator.getNextRowSequenceWithLength(lengthPageSizeGetter.getAsInt()))
-                                .asIntChunk();
-                        lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
-                        repeatCount.limit(lenChunk.size());
-                        columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount(), statistics);
-                        repeatCount.clear();
-                    } else {
-                        columnWriter.addPage(bufferToWrite, transferObject.rowCount(), statistics);
-                    }
-                }
-            }
-        }
+    /**
+     * Makes a copy of the given buffer
+     */
+    private static IntBuffer makeCopy(IntBuffer orig) {
+        IntBuffer copy = IntBuffer.allocate(orig.capacity());
+        copy.put(orig).flip();
+        return copy;
     }
 
     private static <DATA_TYPE> boolean tryEncodeDictionary(
-            @NotNull final ParquetInstructions writeInstructions,
             @NotNull final RowSet tableRowSet,
-            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
+            @NotNull final ParquetInstructions writeInstructions,
             @NotNull final ColumnWriter columnWriter,
-            @NotNull final ColumnSource<DATA_TYPE> valueSource,
-            @NotNull final ColumnWriteHelper writingHelper,
-            final int maxValuesPerPage,
-            final int maxRowsPerPage,
-            final int pageCount) throws IOException {
-        // Note: We only support strings as dictionary pages. Knowing that, we can make some assumptions about chunk
-        // types and avoid a bunch of lambda and virtual method invocations. If we decide to support more, than
-        // these assumptions will need to be revisited.
-        Assert.eq(valueSource.getType(), "valueSource.getType()", String.class, "ColumnSource supports dictionary");
-
-        final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
+            @NotNull final String columnName,
+            @NotNull final ColumnSource<DATA_TYPE> columnSource) throws IOException {
+        final boolean useDictionaryHint = writeInstructions.useDictionary(columnName);
         final int maxKeys = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionaryKeys();
-        final VectorColumnWriterHelper vectorHelper = writingHelper.isVectorFormat()
-                ? (VectorColumnWriterHelper) writingHelper
-                : null;
+        final int maxDictSize = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionarySize();
+        // We encode dictionary positions as integers, therefore for a null string, we use NULL_INT as the position
+        final int NULL_POS = QueryConstants.NULL_INT;
         final Statistics<?> statistics = columnWriter.getStats();
-        try {
-            final List<IntBuffer> pageBuffers = new ArrayList<>();
-            final BitSet pageBufferHasNull = new BitSet();
-            Binary[] encodedKeys = new Binary[Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)];
-
-            final TObjectIntHashMap<String> keyToPos =
-                    new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY,
-                            Constants.DEFAULT_LOAD_FACTOR,
-                            QueryConstants.NULL_INT);
-            int keyCount = 0;
-            boolean hasNulls = false;
-            final IntSupplier valuePageSizeGetter = writingHelper.valuePageSizeSupplier();
-            try (final ChunkSource.GetContext context = valueSource.makeGetContext(maxValuesPerPage);
-                    final RowSequence.Iterator it = vectorHelper != null
-                            ? vectorHelper.valueRowSet.getRowSequenceIterator()
-                            : tableRowSet.getRowSequenceIterator()) {
-                for (int curPage = 0; curPage < pageCount; curPage++) {
-                    boolean pageHasNulls = false;
-                    final RowSequence rs = it.getNextRowSequenceWithLength(valuePageSizeGetter.getAsInt());
-                    final ObjectChunk<String, ? extends Values> chunk =
-                            valueSource.getChunk(context, rs).asObjectChunk();
-                    final IntBuffer posInDictionary = IntBuffer.allocate(rs.intSize());
-                    for (int vi = 0; vi < chunk.size(); ++vi) {
-                        final String key = chunk.get(vi);
-                        int dictionaryPos = keyToPos.get(key);
-                        if (dictionaryPos == keyToPos.getNoEntryValue()) {
-                            // Track the min/max statistics while the dictionary is being built.
-                            if (key == null) {
-                                hasNulls = pageHasNulls = true;
-                            } else {
-                                if (keyCount == encodedKeys.length) {
-                                    if (keyCount >= maxKeys) {
-                                        // Reset the stats because we will re-encode these in PLAIN encoding.
-                                        columnWriter.resetStats();
-                                        throw new DictionarySizeExceededException(
-                                                "Dictionary maximum size exceeded for " + columnDefinition.getName());
-                                    }
-                                    encodedKeys = Arrays.copyOf(encodedKeys, (int) Math.min(keyCount * 2L, maxKeys));
-                                }
-                                final Binary encodedKey = Binary.fromString(key);
-                                encodedKeys[keyCount] = encodedKey;
-                                statistics.updateStats(encodedKey);
-                                dictionaryPos = keyCount;
-                                keyCount++;
-                            }
-                            keyToPos.put(key, dictionaryPos);
-                        }
-                        posInDictionary.put(dictionaryPos);
+        final List<IntBuffer> pageBuffers = new ArrayList<>();
+        final List<IntBuffer> lengthsBuffers = new ArrayList<>();
+        final BitSet pageBufferHasNull = new BitSet();
+        final boolean isArrayOrVector = (columnSource.getComponentType() != null);
+        final StringDictionary dictionary = new StringDictionary(maxKeys, maxDictSize, statistics, NULL_POS);
+        int curPage = 0;
+        try (final TransferObject<IntBuffer> transferObject = TransferObject.createDictEncodedStringTransfer(
+                tableRowSet, columnSource, writeInstructions.getTargetPageSize(), dictionary)) {
+            boolean done;
+            do {
+                // Paginate the data and prepare the dictionary. Then add the dictionary page followed by all data pages
+                transferObject.transferOnePageToBuffer();
+                done = !transferObject.hasMoreDataToBuffer();
+                if (done) {
+                    // If done, we store a reference to transfer object's page buffer, else we make copies of all the
+                    // page buffers and write them later
+                    pageBuffers.add(transferObject.getBuffer());
+                    if (isArrayOrVector) {
+                        lengthsBuffers.add(transferObject.getRepeatCount());
                     }
-                    pageBuffers.add(posInDictionary);
-                    pageBufferHasNull.set(curPage, pageHasNulls);
-                }
-            }
-
-            if (keyCount == 0 && hasNulls) {
-                // Reset the stats because we will re-encode these in PLAIN encoding.
-                columnWriter.resetStats();
-                return false;
-            }
-
-            List<IntBuffer> arraySizeBuffers = null;
-            if (vectorHelper != null) {
-                arraySizeBuffers = new ArrayList<>();
-                final IntSupplier lengthPageSizeGetter = vectorHelper.lengthPageSizeSupplier();
-                try (final ChunkSource.GetContext context =
-                        vectorHelper.lengthSource.makeGetContext(maxRowsPerPage);
-                        final RowSequence.Iterator it = tableRowSet.getRowSequenceIterator()) {
-                    while (it.hasMore()) {
-                        final RowSequence rs = it.getNextRowSequenceWithLength(lengthPageSizeGetter.getAsInt());
-                        final IntChunk<? extends Values> chunk =
-                                vectorHelper.lengthSource.getChunk(context, rs).asIntChunk();
-                        final IntBuffer newBuffer = IntBuffer.allocate(chunk.size());
-                        chunk.copyToTypedBuffer(0, newBuffer, 0, chunk.size());
-                        newBuffer.limit(chunk.size());
-                        arraySizeBuffers.add(newBuffer);
+                } else {
+                    pageBuffers.add(makeCopy(transferObject.getBuffer()));
+                    if (isArrayOrVector) {
+                        lengthsBuffers.add(makeCopy(transferObject.getRepeatCount()));
                     }
                 }
-            }
+                if (transferObject.pageHasNull()) {
+                    pageBufferHasNull.set(curPage);
+                }
+                curPage++;
+            } while (!done);
+        } catch (final DictionarySizeExceededException ignored) {
+            // Reset the stats because we will re-encode these in PLAIN encoding.
+            columnWriter.resetStats();
+            // TODO(deephaven-core#946): We discard all dictionary data accumulated so far and fall back to PLAIN
+            // encoding. We could have added a dictionary page first with data collected so far and then encoded the
+            // remaining data using PLAIN encoding
+            return false;
+        }
 
-            columnWriter.addDictionaryPage(encodedKeys, keyCount);
-            final Iterator<IntBuffer> arraySizeIt = arraySizeBuffers == null ? null : arraySizeBuffers.iterator();
-            // We've already determined min/max statistics while building the dictionary. Now use an integer statistics
-            // object to track the number of nulls that will be written.
-            Statistics<Integer> tmpStats = new IntStatistics();
-            for (int i = 0; i < pageBuffers.size(); ++i) {
-                final IntBuffer pageBuffer = pageBuffers.get(i);
+        if (dictionary.getKeyCount() == 0 && !pageBufferHasNull.isEmpty()) {
+            // Reset the stats because we will re-encode these in PLAIN encoding.
+            columnWriter.resetStats();
+            return false;
+        }
+        columnWriter.addDictionaryPage(dictionary.getEncodedKeys(), dictionary.getKeyCount());
+        // We've already determined min/max statistics for the strings while building the dictionary. The buffer now
+        // stores only the offsets in the dictionary, and we don't need statistics for offsets. Therefore, we create a
+        // temporary integer stats object just to track the number of nulls and pass it to lower layers.
+        // We use the following fake type object to create proper statistics object
+        final PrimitiveType fakeObject = Types.optional(PrimitiveType.PrimitiveTypeName.INT32).named("fake");
+        final Statistics<?> tmpStats = Statistics.createStats(fakeObject);
+        final int numPages = pageBuffers.size();
+        for (int i = 0; i < numPages; ++i) {
+            final IntBuffer pageBuffer = pageBuffers.get(i);
+            if (isArrayOrVector) {
+                columnWriter.addVectorPage(pageBuffer, lengthsBuffers.get(i), pageBuffer.remaining(), tmpStats);
+            } else {
                 final boolean pageHasNulls = pageBufferHasNull.get(i);
-                pageBuffer.flip();
-                if (vectorHelper != null) {
-                    columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining(), tmpStats);
-                } else if (pageHasNulls) {
+                if (pageHasNulls) {
                     columnWriter.addPage(pageBuffer, pageBuffer.remaining(), tmpStats);
                 } else {
                     columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining(), tmpStats);
                 }
             }
-            // Add the count of nulls to the overall stats.
-            statistics.incrementNumNulls(tmpStats.getNumNulls());
-            return true;
-        } catch (final DictionarySizeExceededException ignored) {
-            // Reset the stats because we will re-encode these in PLAIN encoding.
-            columnWriter.resetStats();
-            return false;
         }
+        // Add the count of nulls to the overall stats.
+        statistics.incrementNumNulls(tmpStats.getNumNulls());
+        return true;
     }
 
-    /**
-     * Get the number of rows that fit within the current targetPageSize for the specified type.
-     *
-     * @param columnType the column type
-     * @return the number of rows that fit within the target page size.
-     */
-    private static int getTargetRowsPerPage(@NotNull final Class<?> columnType,
-            final int targetPageSize)
-            throws IllegalAccessException {
-        if (columnType == Boolean.class) {
-            return targetPageSize * 8;
-        }
-
-        if (columnType == short.class || columnType == char.class || columnType == byte.class) {
-            return targetPageSize / Integer.BYTES;
-        }
-
-        if (columnType == String.class) {
-            return targetPageSize / Integer.BYTES;
-        }
-
-        try {
-            final Field bytesCountField = TypeUtils.getBoxedType(columnType).getField("BYTES");
-            return targetPageSize / ((Integer) bytesCountField.get(null));
-        } catch (NoSuchFieldException e) {
-            // We assume the baseline and go from there
-            return targetPageSize / 8;
-        }
-    }
-
-    private static <DATA_TYPE> TransferObject<?> getDestinationBuffer(
-            @NotNull final Map<String, Map<CacheTags, Object>> computedCache,
+    private static <DATA_TYPE> void encodePlain(
             @NotNull final RowSet tableRowSet,
-            @NotNull final ColumnSource<DATA_TYPE> columnSource,
-            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
-            final int maxValuesPerPage,
-            @NotNull final Class<DATA_TYPE> columnType,
-            @NotNull final ParquetInstructions instructions) {
-        if (int.class.equals(columnType)) {
-            int[] array = new int[maxValuesPerPage];
-            WritableIntChunk<Values> chunk = WritableIntChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, IntBuffer.wrap(array), maxValuesPerPage);
-        } else if (long.class.equals(columnType)) {
-            long[] array = new long[maxValuesPerPage];
-            WritableLongChunk<Values> chunk = WritableLongChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, LongBuffer.wrap(array), maxValuesPerPage);
-        } else if (double.class.equals(columnType)) {
-            double[] array = new double[maxValuesPerPage];
-            WritableDoubleChunk<Values> chunk = WritableDoubleChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, DoubleBuffer.wrap(array), maxValuesPerPage);
-        } else if (float.class.equals(columnType)) {
-            float[] array = new float[maxValuesPerPage];
-            WritableFloatChunk<Values> chunk = WritableFloatChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, FloatBuffer.wrap(array), maxValuesPerPage);
-        } else if (Boolean.class.equals(columnType)) {
-            byte[] array = new byte[maxValuesPerPage];
-            WritableByteChunk<Values> chunk = WritableByteChunk.writableChunkWrap(array);
-            return new PrimitiveTransfer<>(columnSource, chunk, ByteBuffer.wrap(array), maxValuesPerPage);
-        } else if (short.class.equals(columnType)) {
-            return new ShortTransfer(columnSource, maxValuesPerPage);
-        } else if (char.class.equals(columnType)) {
-            return new CharTransfer(columnSource, maxValuesPerPage);
-        } else if (byte.class.equals(columnType)) {
-            return new ByteTransfer(columnSource, maxValuesPerPage);
-        } else if (String.class.equals(columnType)) {
-            return new StringTransfer(columnSource, maxValuesPerPage);
-        }
-
-        // If there's an explicit codec, we should disregard the defaults for these CodecLookup#lookup() will properly
-        // select the codec assigned by the instructions so we only need to check and redirect once.
-        if (!CodecLookup.explicitCodecPresent(instructions.getCodecName(columnDefinition.getName()))) {
-            if (BigDecimal.class.equals(columnType)) {
-                // noinspection unchecked
-                final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
-                final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
-                        computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
-                final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
-                        precisionAndScale.precision, precisionAndScale.scale, -1);
-                return new CodecTransfer<>(bigDecimalColumnSource, codec, maxValuesPerPage);
-            } else if (BigInteger.class.equals(columnType)) {
-                // noinspection unchecked
-                return new CodecTransfer<>((ColumnSource<BigInteger>) columnSource, new BigIntegerParquetBytesCodec(-1),
-                        maxValuesPerPage);
-            }
-        }
-
-        final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
-        return new CodecTransfer<>(columnSource, codec, maxValuesPerPage);
-    }
-
-    static class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer> implements TransferObject<B> {
-        private final C chunk;
-        private final B buffer;
-        private final ColumnSource<?> columnSource;
-        private final ChunkSource.FillContext context;
-
-        PrimitiveTransfer(ColumnSource<?> columnSource, C chunk, B buffer, int targetSize) {
-            this.columnSource = columnSource;
-            this.chunk = chunk;
-            this.buffer = buffer;
-            context = columnSource.makeFillContext(targetSize);
-        }
-
-        @Override
-        public void propagateChunkData() {
-            buffer.position(0);
-            buffer.limit(chunk.size());
-        }
-
-        @Override
-        public B getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            columnSource.fillChunk(context, chunk, rs);
-        }
-
-        @Override
-        public void close() {
-            context.close();
-        }
-    }
-
-    static class ShortTransfer implements TransferObject<IntBuffer> {
-
-        private ShortChunk<Values> chunk;
-        private final IntBuffer buffer;
-        private final ColumnSource<?> columnSource;
-        private final ChunkSource.GetContext context;
-
-        ShortTransfer(ColumnSource<?> columnSource, int targetSize) {
-
-            this.columnSource = columnSource;
-            this.buffer = IntBuffer.allocate(targetSize);
-            context = columnSource.makeGetContext(targetSize);
-        }
-
-
-        @Override
-        public void propagateChunkData() {
-            buffer.clear();
-            for (int i = 0; i < chunk.size(); i++) {
-                buffer.put(chunk.get(i));
-            }
-            buffer.flip();
-        }
-
-        @Override
-        public IntBuffer getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (ShortChunk<Values>) columnSource.getChunk(context, rs);
-        }
-
-        @Override
-        public void close() {
-            context.close();
-        }
-    }
-
-    static class CharTransfer implements TransferObject<IntBuffer> {
-
-        private final ColumnSource<?> columnSource;
-        private final ChunkSource.GetContext context;
-        private CharChunk<Values> chunk;
-        private final IntBuffer buffer;
-
-        CharTransfer(ColumnSource<?> columnSource, int targetSize) {
-            this.columnSource = columnSource;
-            this.buffer = IntBuffer.allocate(targetSize);
-            context = this.columnSource.makeGetContext(targetSize);
-        }
-
-        @Override
-        public void propagateChunkData() {
-            buffer.clear();
-            for (int i = 0; i < chunk.size(); i++) {
-                buffer.put(chunk.get(i));
-            }
-            buffer.flip();
-        }
-
-        @Override
-        public IntBuffer getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (CharChunk<Values>) columnSource.getChunk(context, rs);
-        }
-
-        @Override
-        public void close() {
-            context.close();
-        }
-    }
-
-    static class ByteTransfer implements TransferObject<IntBuffer> {
-
-        private ByteChunk<Values> chunk;
-        private final IntBuffer buffer;
-        private final ColumnSource<?> columnSource;
-        private final ChunkSource.GetContext context;
-
-        ByteTransfer(ColumnSource<?> columnSource, int targetSize) {
-            this.columnSource = columnSource;
-            this.buffer = IntBuffer.allocate(targetSize);
-            context = this.columnSource.makeGetContext(targetSize);
-        }
-
-        @Override
-        public void propagateChunkData() {
-            buffer.clear();
-            for (int i = 0; i < chunk.size(); i++) {
-                buffer.put(chunk.get(i));
-            }
-            buffer.flip();
-        }
-
-        @Override
-        public IntBuffer getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (ByteChunk<Values>) columnSource.getChunk(context, rs);
-        }
-
-        @Override
-        public void close() {
-            context.close();
-        }
-    }
-
-    static class StringTransfer implements TransferObject<Binary[]> {
-
-        private final ChunkSource.GetContext context;
-        private ObjectChunk<String, Values> chunk;
-        private final Binary[] buffer;
-        private final ColumnSource<?> columnSource;
-
-        StringTransfer(ColumnSource<?> columnSource, int targetSize) {
-            this.columnSource = columnSource;
-            this.buffer = new Binary[targetSize];
-            context = this.columnSource.makeGetContext(targetSize);
-        }
-
-        @Override
-        public void propagateChunkData() {
-            for (int i = 0; i < chunk.size(); i++) {
-                String value = chunk.get(i);
-                buffer[i] = value == null ? null : Binary.fromString(value);
-            }
-        }
-
-        @Override
-        public Binary[] getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (ObjectChunk<String, Values>) columnSource.getChunk(context, rs);
-        }
-
-        @Override
-        public void close() {
-            context.close();
-        }
-    }
-
-    static class CodecTransfer<T> implements TransferObject<Binary[]> {
-
-        private final ChunkSource.GetContext context;
-        private final ObjectCodec<? super T> codec;
-        private ObjectChunk<T, Values> chunk;
-        private final Binary[] buffer;
-        private final ColumnSource<T> columnSource;
-
-        CodecTransfer(ColumnSource<T> columnSource, ObjectCodec<? super T> codec, int targetSize) {
-            this.columnSource = columnSource;
-            this.buffer = new Binary[targetSize];
-            context = this.columnSource.makeGetContext(targetSize);
-            this.codec = codec;
-        }
-
-        @Override
-        public void propagateChunkData() {
-            for (int i = 0; i < chunk.size(); i++) {
-                T value = chunk.get(i);
-                buffer[i] = value == null ? null : Binary.fromConstantByteArray(codec.encode(value));
-            }
-        }
-
-        @Override
-        public Binary[] getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
-        }
-
-        @Override
-        public void close() {
-            context.close();
+            @NotNull final ParquetInstructions writeInstructions,
+            @NotNull final ColumnWriter columnWriter,
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
+            @NotNull final String columnName,
+            @NotNull final ColumnSource<DATA_TYPE> columnSource) throws IOException {
+        try (final TransferObject<?> transferObject = TransferObject.create(
+                tableRowSet, writeInstructions, computedCache, columnName, columnSource)) {
+            final Statistics<?> statistics = columnWriter.getStats();
+            boolean writeVectorPages = (transferObject instanceof ArrayAndVectorTransfer);
+            do {
+                int numValuesBuffered = transferObject.transferOnePageToBuffer();
+                if (writeVectorPages) {
+                    columnWriter.addVectorPage(transferObject.getBuffer(), transferObject.getRepeatCount(),
+                            numValuesBuffered, statistics);
+                } else {
+                    columnWriter.addPage(transferObject.getBuffer(), numValuesBuffered, statistics);
+                }
+            } while (transferObject.hasMoreDataToBuffer());
         }
     }
 

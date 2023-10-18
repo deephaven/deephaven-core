@@ -1,5 +1,5 @@
-$(info The name of the shared library to be created is: $(SHLIB))
-rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
+# set C++ standard
+CXX_STD = CXX17
 
 #
 # The code below assumes an environment variable DHCPP is defined and
@@ -7,7 +7,7 @@ rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(su
 # and its dependent libraries was built, as per the instructions in
 # https://github.com/deephaven/deephaven-core/blob/main/cpp-client/README.md
 #
-DEPENDENCY_DIRS = -L$(DHCPP)/local/lib
+DEPENDENCY_DIRS = -L$(DHCPP)/lib
 
 
 #
@@ -15,45 +15,46 @@ DEPENDENCY_DIRS = -L$(DHCPP)/local/lib
 # if the C++ client and its dependent libraries are built with
 #   CMAKE_BUILD_TYPE=Release
 # The value -lprotobufd matches the default build type `Debug`
+# The line below tries to automatically guess whether to use
+# `-lprotbufd` or `-lprotobuf` depending on which file is available.
 #
-DEPENDENCY_LIBS = \
-        -lprotobufd \
-        -larrow_flight -larrow -larrow_bundled_dependencies \
-        `PKG_CONFIG_PATH=\${DHCPP}/local/lib/pkgconfig pkg-config --libs grpc++`
+PROTOBUF_LIB = `[ -f \${DHCPP}/lib/libprotobufd.so ] && echo -lprotobufd || echo -lprotobuf`
 
+DEPENDENCY_LIBS = \
+        $(PROTOBUF_LIB) \
+        -larrow \
+        `PKG_CONFIG_PATH=\${DHCPP}/lib/pkgconfig pkg-config --libs grpc++`
 
 # tells the compiler where to look for additional include directories
 PKG_CXXFLAGS = \
-	-I$(DHCPP)/local/include \
+	-I$(DHCPP)/include \
 	-I/usr/share/R/include \
 	-I/usr/local/lib/R/site-library/Rcpp/include
 
+# Uncomment to enable address sanitizer.  You may want to build
+# the C++ libraries with `cmake -DSANITIZE_ADDRESS=ON ...`.
+# To use address sanitizer you would also need an R build
+# with it compiled-in/enabled.
+#
+# To get such a build you can compile R from sources and
+# when running the `configure` script, have an environment
+# variable set with `CC="gcc -fsanitize=address"`.
+#
+#PKG_CXXFLAGS = -fsanitize=address
+#EXTRA_LDFLAGS = -fsanitize=address
 
 # list of required libraries, including deephaven and associated dependencies
 PKG_LIBS = \
-	$(R_CPPFLAGS) \
+        $(EXTRA_LD_FLAGS) \
 	-L/usr/lib/R/lib -lR \
-	$(R_CXXFLAGS) \
-        -L$(DHCPP)/local/lib \
-	-ldhclient -ldhcore \
 	$(DEPENDENCY_DIRS) \
+	-ldhclient -ldhcore \
 	$(DEPENDENCY_LIBS) \
 
-
-CC = `"${R_HOME}/bin/R" CMD config CC`
-CFLAGS = `"${R_HOME}/bin/R" CMD config CFLAGS`
-CXX17 = `"${R_HOME}/bin/R" CMD config CXX17`
-CXX17STD=`"${R_HOME}/bin/R" CMD config CXX17STD`
-CXXFLAGS = `"${R_HOME}/bin/R" CMD config CXX17FLAGS`
-
-
-# set C++ standard
-CXX_STD = CXX17
 # all src directory c++ source files
 SOURCES = $(wildcard *.cpp)
 # compiled objects to link
 OBJECTS = $(SOURCES:.cpp=.o)
-
 
 all: $(SHLIB)
 

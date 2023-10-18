@@ -209,7 +209,7 @@ private:
       int64_t parity) {
     const auto int64_col_generic = table.GetColumn(col_index);
     const auto *typed_int64_col =
-        VerboseCast<const Int64ColumnSource*>(DEEPHAVEN_EXPR_MSG(int64_col_generic.get()));
+        VerboseCast<const Int64ColumnSource*>(DEEPHAVEN_LOCATION_EXPR(int64_col_generic.get()));
 
     constexpr const size_t kChunkSize = 8192;
     auto data_chunk = Int64Chunk::Create(kChunkSize);
