@@ -103,7 +103,7 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
     public synchronized boolean snapshotCompletedConsistently(
             final long afterClockValue,
             final boolean usedPreviousValues) {
-        final boolean success;
+        final boolean snapshotConsistent;
         if (isInInitialNotificationWindow()) {
             if (eventualListener == null) {
                 throw new IllegalStateException("Listener has not been set on end!");
@@ -111,9 +111,9 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
             if (eventualResult == null) {
                 throw new IllegalStateException("Result has not been set on end!");
             }
-            success = true;
+            snapshotConsistent = true;
         } else {
-            success = false;
+            snapshotConsistent = false;
         }
 
         if (DEBUG) {
@@ -121,12 +121,12 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
                     .append(" control=").append(System.identityHashCode(this))
                     .append("} snapshotCompletedConsistently: afterClockValue=").append(afterClockValue)
                     .append(", usedPreviousValues=").append(usedPreviousValues)
-                    .append(", success=").append(success)
+                    .append(", snapshotConsistent=").append(snapshotConsistent)
                     .append(", last=").append(lastNotificationStep)
                     .endl();
         }
 
-        if (!success) {
+        if (!snapshotConsistent) {
             return false;
         }
 
