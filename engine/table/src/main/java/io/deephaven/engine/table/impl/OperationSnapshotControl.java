@@ -84,7 +84,7 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
     }
 
     @Override
-    public boolean snapshotConsistent(long currentClockValue, boolean usingPreviousValues) {
+    public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
         return isInInitialNotificationWindow();
     }
 
@@ -100,8 +100,10 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
      */
     @Override
     @OverridingMethodsMustInvokeSuper
-    public synchronized boolean snapshotCompletedConsistently(long afterClockValue, boolean usedPreviousValues) {
-        boolean success;
+    public synchronized boolean snapshotCompletedConsistently(
+            final long afterClockValue,
+            final boolean usedPreviousValues) {
+        final boolean success;
         if (isInInitialNotificationWindow()) {
             if (eventualListener == null) {
                 throw new IllegalStateException("Listener has not been set on end!");

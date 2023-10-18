@@ -66,8 +66,9 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     public OperationSnapshotControl newSnapshotControl(QueryTable queryTable) {
         return new OperationSnapshotControl(queryTable) {
             @Override
-            public synchronized boolean snapshotCompletedConsistently(long afterClockValue,
-                    boolean usedPreviousValues) {
+            public synchronized boolean snapshotCompletedConsistently(
+                    final long afterClockValue,
+                    final boolean usedPreviousValues) {
                 final boolean success = super.snapshotCompletedConsistently(afterClockValue, usedPreviousValues);
                 if (success) {
                     QueryTable.startTrackingPrev(resultTable.getColumnSources());

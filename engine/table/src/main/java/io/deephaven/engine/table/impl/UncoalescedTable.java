@@ -107,7 +107,7 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     protected final boolean addUpdateListenerUncoalesced(
-            final long requiredLastNotificationStep, @NotNull final TableUpdateListener listener) {
+            @NotNull final TableUpdateListener listener, final long requiredLastNotificationStep) {
         return super.addUpdateListener(listener, requiredLastNotificationStep);
     }
 

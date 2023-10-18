@@ -270,7 +270,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
 
                     @Override
                     public boolean subscribeForUpdates(@NotNull final TableUpdateListener listener) {
-                        return addUpdateListenerUncoalesced(lastNotificationStep, listener);
+                        return addUpdateListenerUncoalesced(listener, lastNotificationStep);
                     }
                 });
 
