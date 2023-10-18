@@ -43,9 +43,14 @@ public class ColumnWriterImpl implements ColumnWriter {
     private static final int MIN_SLAB_SIZE = 64;
     private final SeekableByteChannel writeChannel;
     /**
-     * The buffered output stream {@link #bout} will stream data to the {@link #writeChannel}
+     * Buffered stream that writes to {@link #writeChannel}. Used for buffering small writes, particularly page headers.
      */
-    private final BufferedOutputStream bout;
+    private final BufferedOutputStream bufferedOutput;
+    /**
+     * Following is used to set the size of buffer for {@link #bufferedOutput}. In our testing, we found the page
+     * headers to be much smaller than 16 KB, so using that as the default size.
+     */
+    private static final int EXPECTED_PAGE_HEADER_SIZE = 16 << 10;
     private final ColumnDescriptor column;
     private final RowGroupWriterImpl owner;
     private final CompressorAdapter compressorAdapter;
@@ -79,12 +84,7 @@ public class ColumnWriterImpl implements ColumnWriter {
             final int targetPageSize,
             final ByteBufferAllocator allocator) {
         this.writeChannel = writeChannel;
-        // The buffered output stream is used to buffer the page header. Therefore, we set the size of the buffer as
-        // 16 KB because that is the expected page header size (ref
-        // https://github.com/apache/arrow/blob/ac581fd2a87b35c872cf334bb147851fe1287714/cpp/src/parquet/column_reader.h#L57)
-        // Also, in our testing, we found that the headers we write are much smaller than 16 KB.
-        final int EXPECTED_PAGE_HEADER_SIZE = 16 << 10;
-        bout = new BufferedOutputStream(Channels.newOutputStream(writeChannel), EXPECTED_PAGE_HEADER_SIZE);
+        bufferedOutput = new BufferedOutputStream(Channels.newOutputStream(writeChannel), EXPECTED_PAGE_HEADER_SIZE);
         this.column = column;
         this.compressorAdapter = compressorAdapter;
         this.targetPageSize = targetPageSize;
@@ -168,8 +168,8 @@ public class ColumnWriterImpl implements ColumnWriter {
                 compressedPageSize,
                 valuesCount,
                 Encoding.PLAIN,
-                bout);
-        bout.flush();
+                bufferedOutput);
+        bufferedOutput.flush();
         long headerSize = writeChannel.position() - currentChunkDictionaryPageOffset;
         this.uncompressedLength += uncompressedSize + headerSize;
         this.compressedLength += compressedPageSize + headerSize;
@@ -314,8 +314,8 @@ public class ColumnWriterImpl implements ColumnWriter {
                 valueCount, nullCount, rowCount,
                 rlByteLength,
                 dlByteLength,
-                bout);
-        bout.flush();
+                bufferedOutput);
+        bufferedOutput.flush();
         long headerSize = writeChannel.position() - initialOffset;
         this.uncompressedLength += (uncompressedSize + headerSize);
         this.compressedLength += (compressedSize + headerSize);
@@ -359,8 +359,8 @@ public class ColumnWriterImpl implements ColumnWriter {
                 (int) compressedSize,
                 valueCount,
                 valuesEncoding,
-                bout);
-        bout.flush();
+                bufferedOutput);
+        bufferedOutput.flush();
         long headerSize = writeChannel.position() - initialOffset;
         this.uncompressedLength += (uncompressedSize + headerSize);
         this.compressedLength += (compressedSize + headerSize);
