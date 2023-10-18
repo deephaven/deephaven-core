@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * When given a pyObject that is a callable, we stick it inside the callable wrapper, which implements a call() varargs
@@ -38,6 +39,17 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         numpyType2JavaClass.put('U', String.class);
         numpyType2JavaClass.put('M', Instant.class);
         numpyType2JavaClass.put('O', Object.class);
+    }
+
+    // TODO: support for vectorizing functions that return arrays
+    // https://github.com/deephaven/deephaven-core/issues/4649
+    private static final Set<Class<?>> vectorizableReturnTypes = Set.of(int.class, long.class, short.class, float.class,
+            double.class, byte.class, Boolean.class, String.class, Instant.class, PyObject.class);
+
+    @Override
+    public boolean isVectorizableReturnType() {
+        parseSignature();
+        return vectorizableReturnTypes.contains(returnType);
     }
 
     private final PyObject pyCallable;
