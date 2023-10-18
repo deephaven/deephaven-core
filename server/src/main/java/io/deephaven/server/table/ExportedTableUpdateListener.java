@@ -71,11 +71,15 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
 
         final Ticket ticket = notification.getTicket();
         final int exportId = ExportTicketHelper.ticketToExportId(ticket, "ticket");
+        if (exportId == SessionState.NON_EXPORT_ID) {
+            // ignore non-export notifications; we cannot look these up in the session
+            return;
+        }
 
         try {
             final ExportNotification.State state = notification.getExportState();
             if (state == ExportNotification.State.EXPORTED) {
-                final SessionState.ExportObject<?> export = session.getExport(ticket, "ticket");
+                final SessionState.ExportObject<?> export = session.getExport(exportId);
                 if (export.tryRetainReference()) {
                     try {
                         final Object obj = export.get();

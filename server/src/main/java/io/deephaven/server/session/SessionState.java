@@ -286,15 +286,18 @@ public class SessionState {
         final ExportObject<T> result;
 
         // If this a non-export or server side export, then it must already exist or else is a user error.
-        if (exportId <= NON_EXPORT_ID) {
+        if (exportId < NON_EXPORT_ID) {
             result = (ExportObject<T>) exportMap.get(exportId);
 
             if (result == null) {
                 throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                         "Export id " + exportId + " does not exist and cannot be used out-of-order!");
             }
-        } else {
+        } else if (exportId > NON_EXPORT_ID) {
             result = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+        } else {
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Export id " + exportId + " refers to a non-export and cannot be requested!");
         }
 
         return result;
