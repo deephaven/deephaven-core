@@ -52,7 +52,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
         synchronized (this) {
             int localNumPages = numPages;
 
-            // Make sure that no one has has already extended to this page yet.
+            // Make sure that no one has already extended to this page yet.
             if (localNumPages == prevNumPages) {
                 Assert.assertion(columnPageReaderIterator.hasNext(),
                         "columnPageReaderIterator.hasNext()",

@@ -9,14 +9,11 @@ TEST_CASE("Merge Tables", "[Merge]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
 
-  auto import_date = table.GetStrCol("ImportDate");
-  auto ticker = table.GetStrCol("Ticker");
-
-  table = table.Where(import_date == "2017-11-01");
+  table = table.Where("ImportDate == `2017-11-01`");
 
   // Run a merge by fetching two tables and them merging them
-  auto aapl_table = table.Where(ticker == "AAPL").Tail(10);
-  auto znga_table = table.Where(ticker == "ZNGA").Tail(10);
+  auto aapl_table = table.Where("Ticker == `AAPL`").Tail(10);
+  auto znga_table = table.Where("Ticker == `ZNGA`").Tail(10);
 
   auto merged = aapl_table.Merge({znga_table});
   std::cout << merged.Stream(true) << '\n';

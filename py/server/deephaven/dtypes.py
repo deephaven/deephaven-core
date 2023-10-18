@@ -224,12 +224,13 @@ def _instant_array(data: Sequence) -> jpy.JType:
         else:  # data.dtype.kind == 'U'
             longs = jpy.array('long', [pd.Timestamp(str(dt)).to_numpy().astype('int64') for dt in data])
         data = _JPrimitiveArrayConversionUtility.translateArrayLongToInstant(longs)
+        return data
 
     if not isinstance(data, instant_array.j_type):
         from deephaven.time import to_j_instant
         data = [to_j_instant(d) for d in data]
 
-    return data
+    return jpy.array(Instant.j_type, data)
 
 
 def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jpy.JType:
@@ -250,6 +251,9 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
     Raises:
         DHError
     """
+    if isinstance(seq, np.ndarray) and seq.ndim > 1:
+        raise ValueError("array() does not support multi-dimensional arrays")
+
     if not isinstance(dtype, DType):
         raise TypeError(f"array() expects a DType for the first argument but given a {type(dtype).__name__}")
 

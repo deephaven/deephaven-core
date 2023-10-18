@@ -13,7 +13,6 @@
 #include <vector>
 
 #include "deephaven/client/client.h"
-#include "deephaven/client/columns.h"
 #include "deephaven/client/flight.h"
 #include "deephaven/client/update_by.h"
 #include "deephaven/client/utility/arrow_util.h"

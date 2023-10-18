@@ -3,6 +3,7 @@
  */
 package io.deephaven.client.examples;
 
+import io.deephaven.base.system.AsyncSystem;
 import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TimeTable;
@@ -23,6 +24,7 @@ class SubscribeQST extends SubscribeExampleBase {
     }
 
     public static void main(String[] args) {
+        Thread.setDefaultUncaughtExceptionHandler(AsyncSystem.uncaughtExceptionHandler(1, System.err));
         int execute = new CommandLine(new SubscribeQST()).execute(args);
         System.exit(execute);
     }

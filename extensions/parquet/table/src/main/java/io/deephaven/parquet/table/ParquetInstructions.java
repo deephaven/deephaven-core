@@ -83,10 +83,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         return defaultMaximumDictionarySize;
     }
 
-    private static final int MIN_TARGET_PAGE_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("Parquet.minTargetPageSize", 2 << 10);
+    public static final int MIN_TARGET_PAGE_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("Parquet.minTargetPageSize", 1 << 11); // 2KB
     private static final int DEFAULT_TARGET_PAGE_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("Parquet.defaultTargetPageSize", 8 << 10);
+            Configuration.getInstance().getIntegerWithDefault("Parquet.defaultTargetPageSize", 1 << 16); // 64KB
     private static volatile int defaultTargetPageSize = DEFAULT_TARGET_PAGE_SIZE;
 
     private static final boolean DEFAULT_IS_REFRESHING = false;

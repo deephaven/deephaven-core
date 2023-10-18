@@ -1,8 +1,6 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
-    // See TESTING.md
-    // id 'com.google.protobuf' version '0.9.4'
 }
 
 description 'Kafka: Integrating Engine tables with Kafka'
@@ -17,8 +15,15 @@ dependencies {
     // version, but has a different version to make it easier to keep confluent dependencies aligned.
     api 'org.apache.kafka:kafka-clients:7.4.0-ccs'
     api 'io.confluent:kafka-avro-serializer:7.4.0'
-
     api 'io.confluent:kafka-protobuf-serializer:7.4.0'
+
+    // When updating the kafka implementation, it may be useful to test out the minimum kafka version that our code
+    // compiles, tests, and runs with. If we want to offer more strict guarantees in these regards in the future, at
+    // that time we can setup explicit scaffolding to compile and test with other versions.
+    // api 'org.apache.kafka:kafka-clients:5.5.15-ccs'
+    // api 'io.confluent:kafka-avro-serializer:5.5.15'
+    // api 'io.confluent:kafka-protobuf-serializer:5.5.15'
+
     api project(':extensions-protobuf')
 
     implementation project(':Configuration')
@@ -41,14 +46,6 @@ spotless {
     java {
         targetExclude(
                 '**/**FieldCopier.java',
-                'src/test/java/io/deephaven/kafka/protobuf/gen/**',
         )
     }
 }
-
-// See TESTING.md
-//protobuf {
-//    protoc {
-//        artifact = 'com.google.protobuf:protoc:3.24.1'
-//    }
-//}

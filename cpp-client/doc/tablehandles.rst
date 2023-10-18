@@ -5,10 +5,10 @@ TableHandleManager
 ------------------
 
 :cpp:class:`TableHandleManager <deephaven::client::TableHandleManager>` is used to access existing tables in the system (e.g. via
-:cpp:func:`fetchTable <deephaven::client::TableHandleManager::fetchTable>`)
+:cpp:func:`FetchTable <deephaven::client::TableHandleManager::FetchTable>`)
 or create new tables (e.g. via
-:cpp:func:`emptyTable <deephaven::client::TableHandleManager::emptyTable>` or
-:cpp:func:`timeTable <deephaven::client::TableHandleManager::timeTable>`).
+:cpp:func:`EmptyTable <deephaven::client::TableHandleManager::EmptyTable>` or
+:cpp:func:`TimeTable <deephaven::client::TableHandleManager::TimeTable>`).
 These calls return a 
 :cpp:class:`TableHandle <deephaven::client::TableHandle>`.
 
@@ -21,16 +21,18 @@ TableHandle
 Once you have a
 :cpp:class:`TableHandle <deephaven::client::TableHandle>`,
 you can create derived tables via a large variety of methods, such as
-:cpp:func:`where <deephaven::client::TableHandle::where>`
+:cpp:func:`Where <deephaven::client::TableHandle::Where>`
 and
-:cpp:func:`sort <deephaven::client::TableHandle::sort>`.
+:cpp:func:`Sort <deephaven::client::TableHandle::Sort>`.
 
 A simple example is:
 
 .. code:: c++
 
-   TableHandle mydata = manager.fetchTable("MyData");
-   TableHandle filtered = t1.where("Price < 100").sort("Timestamp").tail(5);
+   TableHandle my_data = manager.FetchTable("MyData");
+   TableHandle filtered = my_data.Where("Price < 100")
+       .Sort(SortPair("Timestamp"))
+       .Tail(5);
 
 Declarations
 ------------

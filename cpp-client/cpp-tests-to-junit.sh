@@ -11,7 +11,7 @@ if [ "$#" -ne 2 ]; then
 fi
 
 if [ -z "${DH_PREFIX}" ]; then
-    echo "$0: Environment variable DHCPP_PREFIX is not set, aborting." 1>&2
+    echo "$0: Environment variable DH_PREFIX is not set, aborting." 1>&2
     exit 1
 fi
 
