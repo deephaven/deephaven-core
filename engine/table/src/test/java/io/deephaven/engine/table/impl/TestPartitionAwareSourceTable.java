@@ -19,7 +19,6 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
@@ -70,7 +69,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     private SourceTableComponentFactory componentFactory;
     private ColumnSourceManager columnSourceManager;
 
-    private DeferredGroupingColumnSource<?>[] columnSources;
+    private ColumnSource<?>[] columnSources;
 
     private TableLocationProvider locationProvider;
     private ImmutableTableLocationKey[] tableLocationKeys;
@@ -94,7 +93,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         componentFactory = mock(SourceTableComponentFactory.class);
         columnSourceManager = mock(ColumnSourceManager.class);
         columnSources = TABLE_DEFINITION.getColumnStream().map(cd -> {
-            final DeferredGroupingColumnSource<?> mocked = mock(DeferredGroupingColumnSource.class, cd.getName());
+            final ColumnSource<?> mocked = mock(ColumnSource.class, cd.getName());
             checking(new Expectations() {
                 {
                     allowing(mocked).getType();
@@ -106,7 +105,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 }
             });
             return mocked;
-        }).toArray(DeferredGroupingColumnSource[]::new);
+        }).toArray(ColumnSource[]::new);
         locationProvider = mock(TableLocationProvider.class);
         tableLocationKeys = IntStream.range(0, 6).mapToObj(tlki -> {
             final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
@@ -168,7 +167,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         }
     }
 
-    private Map<String, ? extends DeferredGroupingColumnSource<?>> getIncludedColumnsMap(final int... indices) {
+    private Map<String, ? extends ColumnSource<?>> getIncludedColumnsMap(final int... indices) {
         return IntStream.of(indices)
                 .mapToObj(ci -> new Pair<>(TABLE_DEFINITION.getColumns().get(ci).getName(), columnSources[ci]))
                 .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond, Assert::neverInvoked, LinkedHashMap::new));

@@ -672,9 +672,6 @@ public class TstUtils {
                 result = new ObjectTestSource<>(columnHolder.dataType, rowSet, chunkData);
             }
         }
-        if (columnHolder.grouped) {
-            result.setGroupToRange(result.getValuesMapping(rowSet));
-        }
         return result;
     }
 

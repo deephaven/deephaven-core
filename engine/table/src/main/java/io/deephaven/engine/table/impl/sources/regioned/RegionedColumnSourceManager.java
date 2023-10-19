@@ -4,16 +4,18 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.ColumnSourceManager;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.dataindex.DataIndexBuilder;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -49,7 +51,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     /**
      * An unmodifiable view of columnSources.
      */
-    private final Map<String, ? extends DeferredGroupingColumnSource<?>> sharedColumnSources =
+    private final Map<String, ? extends ColumnSource<?>> sharedColumnSources =
             Collections.unmodifiableMap(columnSources);
 
     /**
@@ -68,6 +70,19 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
      * Table locations that provide the regions backing our column sources, in insertion order.
      */
     private final List<IncludedTableLocationEntry> orderedIncludedTableLocations = new ArrayList<>();
+
+    /**
+     * Table locations stored in a table.
+     */
+    private final QueryTable orderedLocationsTable;
+    private final ObjectArraySource<TableLocation> locationSource;
+    private final LongArraySource offsetSource;
+    private final ObjectArraySource<RowSet> rowSetSource;
+    private final String LOCATION_COLUMN_NAME = "Location";
+    private final String OFFSET_COLUMN_NAME = "Offset";
+    private final String ROWSET_COLUMN_NAME = "RowSet";
+    private final ModifiedColumnSet locationModifiedColumnSet;
+    private final ModifiedColumnSet rowSetModifiedColumnSet;
 
     /**
      * Whether grouping is enabled.
@@ -89,9 +104,34 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         this.isRefreshing = isRefreshing;
         this.columnDefinitions = columnDefinitions;
         for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
+            final RegionedColumnSource<?> columnSource = componentFactory.createRegionedColumnSource(columnDefinition,
+                    codecMappings);
+            columnSource.setColumnSourceManager(this);
             columnSources.put(
                     columnDefinition.getName(),
-                    componentFactory.createRegionedColumnSource(columnDefinition, codecMappings));
+                    columnSource);
+        }
+
+        // Create the table that will hold the location data
+        locationSource = (ObjectArraySource<TableLocation>) ArrayBackedColumnSource.getMemoryColumnSource(0,
+                TableLocation.class);
+        offsetSource = (LongArraySource) ArrayBackedColumnSource.getMemoryColumnSource(0, long.class);
+        rowSetSource = (ObjectArraySource<RowSet>) ArrayBackedColumnSource.getMemoryColumnSource(0, RowSet.class);
+        final Map<String, ColumnSource<?>> columnLocationMap = new LinkedHashMap<>();
+        columnLocationMap.put(LOCATION_COLUMN_NAME, locationSource);
+        columnLocationMap.put(OFFSET_COLUMN_NAME, offsetSource);
+        columnLocationMap.put(ROWSET_COLUMN_NAME, rowSetSource);
+
+        orderedLocationsTable = new QueryTable(RowSetFactory.empty().toTracking(), columnLocationMap);
+        if (isRefreshing) {
+            orderedLocationsTable.setRefreshing(true);
+            locationSource.startTrackingPrevValues();
+            rowSetSource.startTrackingPrevValues();
+            locationModifiedColumnSet = orderedLocationsTable.newModifiedColumnSet(LOCATION_COLUMN_NAME);
+            rowSetModifiedColumnSet = orderedLocationsTable.newModifiedColumnSet(ROWSET_COLUMN_NAME);
+        } else {
+            locationModifiedColumnSet = null;
+            rowSetModifiedColumnSet = null;
         }
     }
 
@@ -144,9 +184,23 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     @Override
     public synchronized WritableRowSet refresh() {
         final RowSetBuilderSequential addedRowSetBuilder = RowSetFactory.builderSequential();
+
+        final WritableRowSet added = RowSetFactory.empty();
+        final WritableRowSet modified = RowSetFactory.empty();
+        final TableUpdate update = new TableUpdateImpl(
+                added, RowSetFactory.empty(), modified, RowSetShiftData.EMPTY,
+                orderedLocationsTable.getModifiedColumnSetForUpdates());
+
         // Ordering matters, since we're using a sequential builder.
         for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) {
-            entry.pollUpdates(addedRowSetBuilder);
+            if (entry.pollUpdates(addedRowSetBuilder)) {
+                // Changes were detected, update the row set in the table and mark the row/column as modified.
+                rowSetSource.set(entry.regionIndex, entry.location.getRowSet());
+                modified.insert(entry.regionIndex);
+            }
+            if (modified.isNonempty()) {
+                update.modifiedColumnSet().setAll(rowSetModifiedColumnSet);
+            }
         }
 
         Collection<EmptyTableLocationEntry> entriesToInclude = null;
@@ -171,10 +225,27 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 includedTableLocations.add(entry);
                 orderedIncludedTableLocations.add(entry);
                 entry.processInitial(addedRowSetBuilder, entryToInclude.initialRowSet);
+
+                // We have a new location, add the row set to the table and mark the row as added.
+                locationSource.ensureCapacity(entry.regionIndex);
+                locationSource.set(entry.regionIndex, entry.location);
+
+                offsetSource.ensureCapacity(entry.regionIndex);
+                offsetSource.set(entry.regionIndex, RegionedColumnSource.getFirstRowKey(entry.regionIndex));
+
+                rowSetSource.ensureCapacity(entry.regionIndex);
+                rowSetSource.set(entry.regionIndex, entryToInclude.initialRowSet);
+
+                added.insert(entry.regionIndex);
             }
         }
         if (!isRefreshing) {
             emptyTableLocations.clear();
+        } else {
+            // Send the downstream updates to any listeners of the table.
+            if (!update.empty()) {
+                orderedLocationsTable.notifyListeners(update);
+            }
         }
         return addedRowSetBuilder.build();
     }
@@ -194,28 +265,33 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     }
 
     @Override
+    public Table locationTable() {
+        return orderedLocationsTable;
+    }
+
+    @Override
+    public String locationColumnName() {
+        return LOCATION_COLUMN_NAME;
+    }
+
+    @Override
+    public String offsetColumnName() {
+        return OFFSET_COLUMN_NAME;
+    }
+
+    @Override
+    public String rowSetColumnName() {
+        return ROWSET_COLUMN_NAME;
+    }
+
+    @Override
     public final synchronized boolean isEmpty() {
         return includedTableLocations.isEmpty();
     }
 
     @Override
-    public final Map<String, ? extends DeferredGroupingColumnSource<?>> getColumnSources() {
+    public final Map<String, ? extends ColumnSource<?>> getColumnSources() {
         return sharedColumnSources;
-    }
-
-    @Override
-    public final synchronized void disableGrouping() {
-        if (!isGroupingEnabled) {
-            return;
-        }
-        isGroupingEnabled = false;
-        for (ColumnDefinition<?> columnDefinition : columnDefinitions) {
-            if (columnDefinition.isGrouping()) {
-                DeferredGroupingColumnSource<?> columnSource = getColumnSources().get(columnDefinition.getName());
-                columnSource.setGroupingProvider(null);
-                columnSource.setGroupToRange(null);
-            }
-        }
     }
 
     /**
@@ -312,11 +388,6 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                             location.getColumnLocation(columnDefinition.getName()));
                     columnLocationStates.add(state);
                     state.regionAllocated(regionIndex);
-                    if (state.needToUpdateGrouping()) {
-                        state.updateGrouping(
-                                addRowSetInTable == null ? addRowSetInTable = initialRowSet.shift(regionFirstKey)
-                                        : addRowSetInTable);
-                    }
                 }
             } finally {
                 if (addRowSetInTable != null) {
@@ -326,11 +397,21 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             rowSetAtLastUpdate = initialRowSet;
         }
 
-        private void pollUpdates(final RowSetBuilderSequential addedRowSetBuilder) {
+        /** Returns {@code true} if there were changes to the row set for this location. */
+        private boolean pollUpdates(final RowSetBuilderSequential addedRowSetBuilder) {
             Assert.neqNull(subscriptionBuffer, "subscriptionBuffer"); // Effectively, this is asserting "isRefreshing".
             try {
                 if (!subscriptionBuffer.processPending()) {
-                    return;
+                    return false;
+                }
+            } catch (Exception ex) {
+                invalidate();
+                throw ex;
+            }
+
+            try {
+                if (!subscriptionBuffer.processPending()) {
+                    return false;
                 }
             } catch (Exception ex) {
                 invalidate();
@@ -357,7 +438,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
 
                 if (rowSetAtLastUpdate.size() == updateRowSet.size()) {
                     // Nothing to do
-                    return;
+                    return false;
                 }
                 if (updateRowSet.lastRowKey() > RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK) {
                     throw new TableDataException(String.format(
@@ -375,25 +456,12 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                     final long regionFirstKey = RegionedColumnSource.getFirstRowKey(regionIndex);
                     addedRowSet.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedRowSetBuilder
                             .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
-                    RowSet addRowSetInTable = null;
-                    try {
-                        for (final ColumnLocationState state : columnLocationStates) {
-                            if (state.needToUpdateGrouping()) {
-                                state.updateGrouping(
-                                        addRowSetInTable == null
-                                                ? addRowSetInTable = updateRowSet.shift(regionFirstKey)
-                                                : addRowSetInTable);
-                            }
-                        }
-                    } finally {
-                        if (addRowSetInTable != null) {
-                            addRowSetInTable.close();
-                        }
-                    }
                 }
             } finally {
                 rowSetAtLastUpdate.close();
                 rowSetAtLastUpdate = updateRowSet;
+                // There was a change to the row set.
+                return true;
             }
         }
 
@@ -442,45 +510,6 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         private void regionAllocated(final int regionIndex) {
             Assert.eq(regionIndex, "regionIndex", source.addRegion(definition, location),
                     "source.addRegion((definition, location)");
-        }
-
-        private boolean needToUpdateGrouping() {
-            return (definition.isGrouping() && isGroupingEnabled) || definition.isPartitioning();
-        }
-
-        /**
-         * Update column groupings, if appropriate.
-         *
-         * @param locationAddedRowSetInTable The added RowSet, in the table's address space
-         */
-        private void updateGrouping(@NotNull final RowSet locationAddedRowSetInTable) {
-            if (definition.isGrouping()) {
-                Assert.eqTrue(isGroupingEnabled, "isGroupingEnabled");
-                GroupingProvider groupingProvider = source.getGroupingProvider();
-                if (groupingProvider == null) {
-                    groupingProvider = GroupingProvider.makeGroupingProvider(definition);
-                    // noinspection unchecked
-                    source.setGroupingProvider(groupingProvider);
-                }
-                if (groupingProvider instanceof KeyRangeGroupingProvider) {
-                    ((KeyRangeGroupingProvider) groupingProvider).addSource(location, locationAddedRowSetInTable);
-                }
-            } else if (definition.isPartitioning()) {
-                final DeferredGroupingColumnSource<T> partitioningColumnSource = source;
-                Map<T, RowSet> columnPartitionToRowSet = partitioningColumnSource.getGroupToRange();
-                if (columnPartitionToRowSet == null) {
-                    columnPartitionToRowSet = new LinkedHashMap<>();
-                    partitioningColumnSource.setGroupToRange(columnPartitionToRowSet);
-                }
-                final T columnPartitionValue =
-                        location.getTableLocation().getKey().getPartitionValue(definition.getName());
-                final RowSet current = columnPartitionToRowSet.get(columnPartitionValue);
-                if (current == null) {
-                    columnPartitionToRowSet.put(columnPartitionValue, locationAddedRowSetInTable.copy());
-                } else {
-                    current.writableCast().insert(locationAddedRowSetInTable);
-                }
-            }
         }
     }
 }

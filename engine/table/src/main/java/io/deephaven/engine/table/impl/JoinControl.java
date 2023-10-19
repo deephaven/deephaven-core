@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -49,9 +49,8 @@ public class JoinControl {
         return DEFAULT_TARGET_LOAD_FACTOR;
     }
 
-    static boolean useGrouping(Table leftTable, ColumnSource<?>[] leftSources) {
-        return !leftTable.isRefreshing() && leftSources.length == 1
-                && RowSetIndexer.of(leftTable.getRowSet()).hasGrouping(leftSources[0]);
+    static boolean useDataIndex(Table leftTable, ColumnSource<?>[] leftSources) {
+        return DataIndexer.of(leftTable.getRowSet()).hasDataIndex(leftSources);
     }
 
     boolean buildLeft(QueryTable leftTable, Table rightTable) {

@@ -4,12 +4,13 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.*;
@@ -21,6 +22,7 @@ import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 
@@ -220,41 +222,161 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
         // pick something sensible
         if (trackingSelection != null) {
-            final RowSetIndexer selectionIndexer = RowSetIndexer.of(trackingSelection);
-            if (selectionIndexer.hasGrouping(keyColumns)) {
-                if (selection.size() > (selectionIndexer.getGrouping(tupleSource).size() * 2L)) {
-                    return filterGrouping(trackingSelection, selectionIndexer, tupleSource);
+            final DataIndexer dataIndexer = DataIndexer.of(trackingSelection);
+
+            // Do we have an index exactly matching the key columns?
+            if (dataIndexer.hasDataIndex(keyColumns)) {
+                final DataIndex dataIndex = dataIndexer.getDataIndex(keyColumns);
+                final Table indexTable = dataIndex.table();
+
+                if (selection.size() > (indexTable.size() * 2L)) {
+                    return filterFullIndex(selection, dataIndex);
                 } else {
                     return filterLinear(selection, keyColumns, tupleSource);
                 }
             }
-            final boolean allGrouping = Arrays.stream(keyColumns).allMatch(selectionIndexer::hasGrouping);
-            if (allGrouping) {
-                return filterGrouping(trackingSelection, selectionIndexer, tupleSource);
-            }
 
-            final ColumnSource<?>[] sourcesWithGroupings = Arrays.stream(keyColumns)
-                    .filter(selectionIndexer::hasGrouping).toArray(ColumnSource[]::new);
-            final OptionalInt minGroupCount = Arrays.stream(sourcesWithGroupings)
-                    .mapToInt(x -> selectionIndexer.getGrouping(x).size()).min();
-            if (minGroupCount.isPresent() && (minGroupCount.getAsInt() * 4L) < selection.size()) {
-                return filterGrouping(trackingSelection, selectionIndexer, tupleSource);
+            // Do we have any indexes that partially match the key columns?
+            final ColumnSource<?>[] indexedSources = Arrays.stream(keyColumns)
+                    .filter(dataIndexer::hasDataIndex).toArray(ColumnSource[]::new);
+            final ColumnSource<?>[] notIndexedSources = Arrays.stream(keyColumns)
+                    .filter(col -> !dataIndexer.hasDataIndex(col)).toArray(ColumnSource[]::new);
+
+            final OptionalInt minCount = Arrays.stream(indexedSources)
+                    .mapToInt(x -> dataIndexer.getDataIndex(x).table().intSize()).min();
+
+            if (minCount.isPresent() && (minCount.getAsInt() * 4L) < selection.size()) {
+                return filterPartialIndexes(trackingSelection, dataIndexer, tupleSource);
             }
         }
         return filterLinear(selection, keyColumns, tupleSource);
     }
 
-    private WritableRowSet filterGrouping(TrackingRowSet selection, RowSetIndexer selectionIndexer,
-            TupleSource<?> tupleSource) {
-        final RowSet matchingKeys = selectionIndexer.getSubSetForKeySet(liveValues, tupleSource);
-        return (inclusion ? matchingKeys.copy() : selection.minus(matchingKeys));
+    @NotNull
+    private WritableRowSet filterFullIndex(@NotNull final RowSet selection, final DataIndex dataIndex) {
+        // Use the RowSetLookup to create a combined row set of matching rows.
+        final RowSetBuilderRandom rowSetBuilder = RowSetFactory.builderRandom();
+        final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup();
+        liveValues.forEach(key -> {
+            final RowSet rowSet = rowSetLookup.apply(key);
+            if (rowSet != null) {
+                rowSetBuilder.addRowSet(rowSet);
+            }
+        });
+
+        try (final RowSet matchingKeys = rowSetBuilder.build()) {
+            return (inclusion ? matchingKeys.copy() : selection.minus(matchingKeys));
+        }
     }
 
-    private WritableRowSet filterGrouping(TrackingRowSet selection, RowSetIndexer selectionIndexer, Table table) {
-        final ColumnSource<?>[] keyColumns = Arrays.stream(matchPairs)
-                .map(mp -> table.getColumnSource(mp.leftColumn())).toArray(ColumnSource[]::new);
-        final TupleSource<?> tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
-        return filterGrouping(selection, selectionIndexer, tupleSource);
+    @NotNull
+    private WritableRowSet filterPartialIndexes(
+            @NotNull final RowSet selection,
+            final DataIndexer dataIndexer,
+            final TupleSource<?> tupleSource) {
+
+        List<ColumnSource<?>> sourceList = tupleSource.getColumnSources();
+
+        List<ColumnSource<?>> indexedSourceList = new ArrayList<>();
+        List<ColumnSource<?>> notIndexSourceList = new ArrayList<>();
+        List<Integer> indexedSourceIndices = new ArrayList<>();
+        List<Integer> notIndexedSourceIndices = new ArrayList<>();
+
+        for (int ii = 0; ii < sourceList.size(); ++ii) {
+            final ColumnSource<?> source = sourceList.get(ii);
+            if (dataIndexer.hasDataIndex(source)) {
+                indexedSourceList.add(source);
+                indexedSourceIndices.add(ii);
+            } else {
+                notIndexSourceList.add(source);
+                notIndexedSourceIndices.add(ii);
+            }
+        }
+
+        Assert.geqZero(indexedSourceList.size(), "indexedSourceList.size()");
+
+        final ColumnSource<?>[] indexedSources = indexedSourceList.toArray(new ColumnSource<?>[0]);
+        final TupleSource indexedTupleSource = TupleSourceFactory.makeTupleSource(indexedSources);
+
+        // Get the data indexes for each of the indexed sources.
+        final DataIndex.RowSetLookup[] indexLookupArr = Arrays.stream(indexedSources)
+                .map(source -> dataIndexer.getDataIndex(source).rowSetLookup()).toArray(DataIndex.RowSetLookup[]::new);
+
+        final Map<Object, RowSet> indexKeyRowSetMap = new LinkedHashMap<>();
+
+        if (indexedSourceIndices.size() == 1) {
+            // Only one indexed source, so we can use the RowSetLookup directly and return the row set.
+            liveValues.forEach(key -> {
+                final RowSet rowSet = indexLookupArr[0].apply(key);
+                if (rowSet != null) {
+                    // Make a copy of the row set.
+                    indexKeyRowSetMap.put(key, rowSet.copy());
+                }
+            });
+        } else {
+            // Intersect the retrieved row sets to get the final row set for this key.
+            liveValues.forEach(key -> {
+                RowSet result = null;
+                for (int ii = 0; ii < indexedSourceIndices.size(); ++ii) {
+                    final int tupleIndex = indexedSourceIndices.get(ii);
+                    // noinspection unchecked
+                    final Object singleKey = indexedTupleSource.exportElementReinterpreted(key, tupleIndex);
+                    final RowSet rowSet = indexLookupArr[ii].apply(singleKey);
+                    if (rowSet != null) {
+                        result = result == null ? rowSet.copy() : result.intersect(rowSet);
+                    }
+                }
+                if (result != null) {
+                    indexKeyRowSetMap.put(key, result);
+                }
+            });
+        }
+
+        if (notIndexSourceList.size() == 0) {
+            // Combine the indexed answers and return the result.
+            final RowSetBuilderRandom resultBuilder = RowSetFactory.builderRandom();
+            for (final RowSet rowSet : indexKeyRowSetMap.values()) {
+                try (final SafeCloseable ignored = rowSet) {
+                    resultBuilder.addRowSet(rowSet);
+                }
+            }
+            return resultBuilder.build();
+        } else {
+            // We have some non-indexed sources, so we need to filter them manually. Iterate through the indexed
+            // row sets and build a new row set where all keys match.
+            final Map<Object, RowSetBuilderSequential> keyRowSetBuilder = new LinkedHashMap<>();
+
+            for (final Map.Entry<Object, RowSet> entry : indexKeyRowSetMap.entrySet()) {
+                try (final RowSet resultRowSet = entry.getValue()) {
+                    if (resultRowSet.isEmpty()) {
+                        continue;
+                    }
+
+                    // Iterate through the index-restricted row set for matches.
+                    for (final RowSet.Iterator iterator = resultRowSet.iterator(); iterator.hasNext();) {
+                        final long rowKey = iterator.nextLong();
+                        final Object key = tupleSource.createTuple(rowKey);
+
+                        if (!liveValues.contains(key)) {
+                            continue;
+                        }
+
+                        final RowSetBuilderSequential rowSetForKey =
+                                keyRowSetBuilder.computeIfAbsent(key, k -> RowSetFactory.builderSequential());
+                        rowSetForKey.appendKey(rowKey);
+                    }
+                }
+            }
+
+            // Combine the final answers and return the result.
+            final RowSetBuilderRandom resultBuilder = RowSetFactory.builderRandom();
+            for (final RowSetBuilderSequential builder : keyRowSetBuilder.values()) {
+                try (final RowSet ignored = builder.build()) {
+                    resultBuilder.addRowSet(ignored);
+                }
+            }
+            return resultBuilder.build();
+        }
     }
 
     private WritableRowSet filterLinear(RowSet selection, ColumnSource<?>[] keyColumns, TupleSource<?> tupleSource) {

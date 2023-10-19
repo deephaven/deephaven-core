@@ -19,8 +19,9 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.by.*;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
@@ -28,7 +29,6 @@ import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
-import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.sources.TestColumnSource;
@@ -195,14 +195,34 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testStaticGroupedByWithChunks() {
-        final Table input = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
-        // noinspection unused
-        final Map<?, RowSet> g1 = RowSetIndexer.of(input.getRowSet()).getGrouping(input.getColumnSource("A"));
-        // noinspection unused
-        final Map<?, RowSet> g2 = RowSetIndexer.of(input.getRowSet()).getGrouping(input.getColumnSource("B"));
+        // Create dynamic indexes for the test table.
+        final Table input1 = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
+        DataIndexer indexer1 = DataIndexer.of(input1.getRowSet());
 
-        individualStaticByTest(input, null, "A");
-        individualStaticByTest(input, null, "B");
+        ColumnSource<?> cs;
+
+        cs = input1.getColumnSource("A");
+        indexer1.createDataIndex((QueryTable) input1, cs);
+
+        cs = input1.getColumnSource("B");
+        indexer1.createDataIndex((QueryTable) input1, cs);
+
+        individualStaticByTest(input1, null, "A");
+        individualStaticByTest(input1, null, "B");
+
+        // Create static indexes for the test table.
+
+        final Table input2 = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
+        DataIndexer indexer2 = DataIndexer.of(input2.getRowSet());
+
+        cs = input2.getColumnSource("A");
+        indexer2.createDataIndex(cs);
+
+        cs = input2.getColumnSource("B");
+        indexer2.createDataIndex(cs);
+
+        individualStaticByTest(input2, null, "A");
+        individualStaticByTest(input2, null, "B");
     }
 
     @Test
@@ -3743,14 +3763,14 @@ public class QueryTableAggregationTest {
         // Tests grouped addition for static tables and static initial groups
 
         final Table data = testTable(col("S", "A", "A", "B", "B"), col("I", 10, 20, 30, 40));
-        final RowSetIndexer dataIndexer = RowSetIndexer.of(data.getRowSet());
-        dataIndexer.getGrouping(data.getColumnSource("S"));
+        final DataIndexer dataIndexer = DataIndexer.of(data.getRowSet());
+        dataIndexer.getDataIndex(data.getColumnSource("S"));
         final Table distinct = data.selectDistinct("S");
         assertTableEquals(testTable(col("S", "A", "B")), distinct);
 
         final Table reversed = data.reverse();
-        final RowSetIndexer reversedIndexer = RowSetIndexer.of(reversed.getRowSet());
-        reversedIndexer.getGrouping(reversed.getColumnSource("S"));
+        final DataIndexer reversedIndexer = DataIndexer.of(reversed.getRowSet());
+        reversedIndexer.getDataIndex(reversed.getColumnSource("S"));
         final Table initializedDistinct =
                 data.aggBy(List.of(Count.of("C")), false, reversed, ColumnName.from("S")).dropColumns("C");
         assertTableEquals(testTable(col("S", "B", "A")), initializedDistinct);

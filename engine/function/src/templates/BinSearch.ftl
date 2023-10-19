@@ -90,6 +90,28 @@ public class BinSearch {
         }
     }
 
+    /**
+     * Performs a binary search to find a key.
+     *
+     * @param values sorted values to search.  Null values are not supported.
+     * @param fromIndex lowest index to include in the search.
+     * @param toIndex highest index to include in the search.
+     * @param key key to search for.  Null keys are not supported.
+     * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
+     * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
+     */
+    static public <T extends Comparable<? super T>> int rawBinSearchIndex(ObjectVector<T> values, int fromIndex, int toIndex, T key, BinSearchAlgo choiceWhenEquals) {
+        if (values == null || key == null) {
+            return QueryConstants.NULL_INT;
+        }
+
+        if (choiceWhenEquals != BinSearchAlgo.BS_ANY) {
+            return binarySearch0Modified(values, fromIndex, toIndex, key, choiceWhenEquals == BinSearchAlgo.BS_HIGHEST);
+        } else {
+            return binarySearch0(values, fromIndex, toIndex, key);
+        }
+    }
+
     static private <T extends Comparable<? super T>> int binarySearch0(ObjectVector<T> array, int fromIndex, int toIndex, T key) {
         int low = fromIndex;
         int high = toIndex - 1;
@@ -256,6 +278,29 @@ public class BinSearch {
             return binarySearch0(values, 0, values.intSize("rawBinSearchIndex"), key);
         }
     }
+
+    /**
+     * Performs a binary search to find a key.
+     *
+     * @param values sorted values to search.  Null values are not supported.
+     * @param fromIndex lowest index to include in the search.
+     * @param toIndex highest index to include in the search.
+     * @param key key to search for.  Null keys are not supported.
+     * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
+     * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
+     */
+    public static int rawBinSearchIndex(${pt.vector} values, int fromIndex, int toIndex, ${pt.primitive} key, BinSearchAlgo choiceWhenEquals) {
+        if (values == null || key == ${pt.null}) {
+            return NULL_INT;
+        }
+
+        if (choiceWhenEquals != BinSearchAlgo.BS_ANY) {
+            return binarySearch0Modified(values, fromIndex, toIndex, key, choiceWhenEquals == BinSearchAlgo.BS_HIGHEST);
+        } else {
+            return binarySearch0(values, fromIndex, toIndex, key);
+        }
+    }
+
 
     static private int binarySearch0(${pt.vector} array, int fromIndex, int toIndex, ${pt.primitive} key) {
         int low = fromIndex;

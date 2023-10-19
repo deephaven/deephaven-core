@@ -38,6 +38,7 @@ import java.util.stream.LongStream;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.tableRangesAreEqual;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link ParquetTools}.
@@ -171,7 +172,7 @@ public class TestParquetTools {
         path = testRoot + File.separator + "Table4.parquet";
         ParquetTools.writeTable(test, path);
         test2 = ParquetTools.readTable(new File(path));
-        TestCase.assertNotNull(test2.getColumnSource("aString").getGroupToRange());
+        assertTrue(test2.getColumnSource("aString").hasGrouping());
         test2.close();
     }
 

@@ -3,12 +3,18 @@
  */
 package io.deephaven.engine.table.impl.locations.impl;
 
+import io.deephaven.api.SortColumn;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.SortPair;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.rowset.RowSetFactory;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /**
  * {@link TableLocation} implementation for locations that are found to not actually exist when accessed.
@@ -34,6 +40,23 @@ public final class NonexistentTableLocation extends AbstractTableLocation {
     @NotNull
     @Override
     protected ColumnLocation makeColumnLocation(@NotNull String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    @Nullable
+    protected Table loadDataIndex(@NotNull String... columns) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    @NotNull
+    public List<SortColumn> getSortedColumns() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean hasDataIndexFor(@NotNull String... columns) {
         throw new UnsupportedOperationException();
     }
 }

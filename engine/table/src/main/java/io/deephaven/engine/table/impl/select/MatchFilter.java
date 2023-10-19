@@ -52,7 +52,7 @@ public class MatchFilter extends WhereFilterImpl {
         MatchCase, IgnoreCase
     }
 
-    public MatchFilter(MatchType matchType, String columnName, Object... values) {
+    public MatchFilter(MatchType matchType, @NotNull String columnName, Object... values) {
         this.columnName = columnName;
         this.values = values;
         this.strValues = null;
@@ -72,6 +72,17 @@ public class MatchFilter extends WhereFilterImpl {
         this.columnName = columnName;
         this.strValues = strValues;
         this.caseInsensitive = (sensitivity == CaseSensitivity.IgnoreCase);
+        this.invertMatch = (matchType == MatchType.Inverted);
+    }
+
+    public MatchFilter(@NotNull final CaseSensitivity sensitivity,
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @NotNull final Object... values) {
+        this.columnName = columnName;
+        this.values = values;
+        this.strValues = null;
+        this.caseInsensitive = sensitivity == CaseSensitivity.IgnoreCase;
         this.invertMatch = (matchType == MatchType.Inverted);
     }
 

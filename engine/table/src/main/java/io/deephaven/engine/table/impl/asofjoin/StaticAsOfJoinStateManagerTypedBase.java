@@ -12,7 +12,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
@@ -340,7 +339,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     }
 
     @Override
-    public void convertRightGrouping(IntegerArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource) {
+    public void convertRightIndexTable(IntegerArraySource slots, int slotCount, ColumnSource<RowSet> rowSetSource) {
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final int slot = slots.getInt(slotIndex);
 
@@ -352,19 +351,16 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
                     rightRowSetSource.set(slot, EMPTY_RIGHT_STATE);
                     rs.close();
                 } else {
-                    rightRowSetSource.set(slot, getGroupedIndex(rowSetSource, sequentialBuilder));
+                    final RowSet groupedRowSet = sequentialBuilder.build();
+                    if (groupedRowSet.size() != 1) {
+                        throw new IllegalStateException(
+                                "Grouped rowSet should have exactly one value: " + groupedRowSet);
+                    }
+                    rightRowSetSource.set(slot, rowSetSource.get(groupedRowSet.firstRowKey()));
                 }
             }
         }
         rightBuildersConverted = true;
-    }
-
-    private RowSet getGroupedIndex(ObjectArraySource<RowSet> rowSetSource, RowSetBuilderSequential sequentialBuilder) {
-        final RowSet groupedRowSet = sequentialBuilder.build();
-        if (groupedRowSet.size() != 1) {
-            throw new IllegalStateException("Grouped rowSet should have exactly one value: " + groupedRowSet);
-        }
-        return rowSetSource.getUnsafe(groupedRowSet.get(0));
     }
 
     abstract protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);

@@ -5,12 +5,15 @@ package io.deephaven.engine.table.impl.replay;
 
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
@@ -79,20 +82,23 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
 
         super(RowSetFactory.empty().toTracking(), getResultSources(input, rowRedirection));
         this.rowRedirection = rowRedirection;
-        Map<Object, RowSet> grouping;
 
         final ColumnSource<?>[] columnSources =
                 Arrays.stream(groupingColumns).map(input::get).toArray(ColumnSource[]::new);
-        final TupleSource<?> tupleSource = TupleSourceFactory.makeTupleSource(columnSources);
-        grouping = RowSetIndexer.of(rowSet).getGrouping(tupleSource);
+
+        final DataIndexer dataIndexer = DataIndexer.of(rowSet);
+        final DataIndex dataIndex = dataIndexer.getDataIndex(columnSources);
+        final Table indexTable = dataIndex.table();
 
         // noinspection unchecked
         ColumnSource<Instant> timeSource = (ColumnSource<Instant>) input.get(timeColumn);
         int pos = 0;
-        for (RowSet groupRowSet : grouping.values()) {
-            RowSet.Iterator iterator = groupRowSet.iterator();
-            if (iterator.hasNext()) {
-                allIterators.add(new IteratorsAndNextTime(iterator, timeSource, pos++));
+        try (final CloseableIterator<RowSet> it = indexTable.columnIterator(dataIndex.rowSetColumnName())) {
+            while (it.hasNext()) {
+                RowSet.Iterator iterator = it.next().iterator();
+                if (iterator.hasNext()) {
+                    allIterators.add(new IteratorsAndNextTime(iterator, timeSource, pos++));
+                }
             }
         }
         Require.requirement(replayer != null, "replayer != null");

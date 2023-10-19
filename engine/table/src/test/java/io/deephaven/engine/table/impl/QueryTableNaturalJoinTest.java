@@ -17,7 +17,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
@@ -39,7 +39,6 @@ import java.nio.file.Files;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -364,9 +363,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table leftFlat = leftTable.flatten();
         final ColumnSource<?> flatGrouped = leftFlat.getColumnSource("I1");
         final TrackingRowSet flatRowSet = leftFlat.getRowSet();
-        final Map<Object, RowSet> grouping = RowSetIndexer.of(flatRowSet).getGrouping(flatGrouped);
-        // noinspection unchecked
-        ((AbstractColumnSource<Object>) flatGrouped).setGroupToRange(grouping);
+
+        // Asking for a data index will cause it to be created when it does not exist.
+        DataIndexer.of(flatRowSet).getDataIndex(flatGrouped);
 
         final Table resultFlat = leftFlat.naturalJoin(rightTable, "I1", "LC1=C1,LC2=C2");
         assertTableEquals(noGroupingResult, resultFlat);

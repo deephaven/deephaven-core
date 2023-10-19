@@ -4,9 +4,12 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.ColumnSourceManager;
+import io.deephaven.engine.table.impl.dataindex.DataIndexBuilder;
+import io.deephaven.engine.table.impl.dataindex.PartitioningIndexProvider;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -39,7 +42,7 @@ import org.jetbrains.annotations.NotNull;
  */
 @VisibleForTesting // This could be package-private, but for mock-based unit testing purposes it must be public
 public interface RegionedColumnSource<DATA_TYPE>
-        extends DeferredGroupingColumnSource<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
+        extends ColumnSource<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
 
     /**
      * Address bits allocated to the region index.
@@ -118,4 +121,15 @@ public interface RegionedColumnSource<DATA_TYPE>
      * @param regionIndex the region to invalidate
      */
     void invalidateRegion(int regionIndex);
+
+
+    /**
+     * Return the column source manager for this column source. Returns {@code null} if one does not exist.
+     */
+    ColumnSourceManager getColumnSourceManager();
+
+    /**
+     * Set the column source manager for this column source.
+     */
+    void setColumnSourceManager(ColumnSourceManager columnSourceManager);
 }

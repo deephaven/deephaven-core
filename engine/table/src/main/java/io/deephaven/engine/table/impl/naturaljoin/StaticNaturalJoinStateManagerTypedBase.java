@@ -241,7 +241,7 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
     }
 
     public WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch,
-            long groupingSize, IntegerArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices,
+            long groupingSize, IntegerArraySource leftHashSlots, ColumnSource<RowSet> leftIndices,
             JoinControl.RedirectionType redirectionType) {
         return buildGroupedRowRedirection(leftTable, exactMatch, groupingSize,
                 (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), leftIndices,

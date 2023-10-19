@@ -3,12 +3,12 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
 import io.deephaven.engine.table.impl.naturaljoin.*;
 import io.deephaven.engine.table.impl.sources.*;
@@ -90,7 +90,7 @@ class NaturalJoinHelper {
             final WritableRowRedirection rowRedirection;
             if (rightTable.isRefreshing()) {
                 if (leftTable.isRefreshing()) {
-                    if (bucketingContext.useLeftGrouping) {
+                    if (bucketingContext.useLeftIndex) {
                         throw new UnsupportedOperationException(
                                 "Grouping is not supported with ticking chunked naturalJoin!");
                     }
@@ -148,38 +148,37 @@ class NaturalJoinHelper {
                     RightIncrementalNaturalJoinStateManager.InitialBuildContext initialBuildContext =
                             jsm.makeInitialBuildContext(leftTable);
 
-                    final ObjectArraySource<WritableRowSet> rowSetSource;
-                    final MutableInt groupingSize = new MutableInt();
-                    if (bucketingContext.useLeftGrouping) {
-                        final Map<?, RowSet> grouping =
-                                bucketingContext.leftSources[0].getGroupToRange(leftTable.getRowSet());
+                    final int groupingSize;
+                    final ColumnSource<RowSet> rowSetSource;
 
-                        // noinspection unchecked,rawtypes
-                        final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<WritableRowSet>> flatResultColumnSources =
-                                GroupingUtils.groupingToFlatSources(
-                                        (ColumnSource) bucketingContext.leftSources[0], grouping, leftTable.getRowSet(),
-                                        groupingSize);
-                        final ArrayBackedColumnSource<?> groupSource = flatResultColumnSources.getFirst();
-                        rowSetSource = flatResultColumnSources.getSecond();
+                    if (bucketingContext.useLeftIndex) {
+                        if (leftTable.isRefreshing()) {
+                            throw new UnsupportedOperationException(
+                                    "Grouping information is not supported when tables are refreshing!");
+                        }
 
-                        final Table leftTableGrouped = new QueryTable(
-                                RowSetFactory.flat(groupingSize.intValue()).toTracking(),
-                                Collections.singletonMap(columnsToMatch[0].leftColumn(), groupSource));
+                        final DataIndex leftDataIndex = DataIndexer.of(leftTable.getRowSet())
+                                .getDataIndex(bucketingContext.leftSources)
+                                .applyIntersect(leftTable.getRowSet());
+                        final Table leftIndexTable = leftDataIndex.table();
 
-                        final ColumnSource<?>[] groupedSourceArray = {groupSource};
-                        jsm.buildFromLeftSide(leftTableGrouped, groupedSourceArray, initialBuildContext);
-                        jsm.convertLeftGroups(groupingSize.intValue(), initialBuildContext, rowSetSource);
+                        groupingSize = leftIndexTable.intSize();
+                        rowSetSource = leftDataIndex.rowSetColumn();
+                        final ColumnSource<?>[] indexKeySources =
+                                leftDataIndex.indexKeyColumns(bucketingContext.leftSources);
+                        jsm.buildFromLeftSide(leftIndexTable, indexKeySources, initialBuildContext);
+                        jsm.convertLeftDataIndex(leftIndexTable.intSize(), initialBuildContext, rowSetSource);
                     } else {
+                        groupingSize = 0;
                         jsm.buildFromLeftSide(leftTable, bucketingContext.leftSources, initialBuildContext);
                         rowSetSource = null;
                     }
 
                     jsm.addRightSide(rightTable.getRowSet(), bucketingContext.rightSources);
 
-                    if (bucketingContext.useLeftGrouping) {
+                    if (bucketingContext.useLeftIndex) {
                         rowRedirection = jsm.buildRowRedirectionFromHashSlotGrouped(leftTable, rowSetSource,
-                                groupingSize.intValue(), exactMatch, initialBuildContext,
-                                control.getRedirectionType(leftTable));
+                                groupingSize, exactMatch, initialBuildContext, control.getRedirectionType(leftTable));
                     } else {
                         rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, initialBuildContext,
                                 control.getRedirectionType(leftTable));
@@ -201,41 +200,33 @@ class NaturalJoinHelper {
                     return result;
                 }
             } else {
-                if (bucketingContext.useLeftGrouping) {
+                if (bucketingContext.useLeftIndex) {
                     if (leftTable.isRefreshing()) {
                         throw new UnsupportedOperationException(
                                 "Grouping information is not supported when tables are refreshing!");
                     }
 
-                    final Map<?, RowSet> grouping =
-                            bucketingContext.leftSources[0].getGroupToRange(leftTable.getRowSet());
+                    final DataIndex leftDataIndex = DataIndexer.of(leftTable.getRowSet())
+                            .getDataIndex(bucketingContext.leftSources)
+                            .applyIntersect(leftTable.getRowSet());
+                    final Table leftIndexTable = leftDataIndex.table();
 
-                    final MutableInt groupingSize = new MutableInt();
-                    // noinspection unchecked,rawtypes
-                    final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<RowSet>> flatResultColumnSources =
-                            GroupingUtils.groupingToFlatSources((ColumnSource) bucketingContext.leftSources[0],
-                                    grouping, leftTable.getRowSet(), groupingSize);
-                    final ArrayBackedColumnSource<?> groupSource = flatResultColumnSources.getFirst();
-                    final ObjectArraySource<RowSet> rowSetSource = flatResultColumnSources.getSecond();
+                    final int groupingSize = leftIndexTable.intSize();
+                    final ColumnSource<RowSet> rowSetSource = leftDataIndex.rowSetColumn();
+                    final ColumnSource<?>[] indexKeySources =
+                            leftDataIndex.indexKeyColumns(bucketingContext.leftSources);
 
-                    final Table leftTableGrouped = new QueryTable(
-                            RowSetFactory.flat(groupingSize.intValue()).toTracking(),
-                            Collections.singletonMap(columnsToMatch[0].leftColumn(), groupSource));
-
-                    final ColumnSource<?>[] groupedSourceArray = {groupSource};
                     final StaticHashedNaturalJoinStateManager jsm =
-                            TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class, groupedSourceArray,
-                                    groupedSourceArray,
-                                    control.tableSize(groupingSize.intValue()),
+                            TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,
+                                    indexKeySources,
+                                    indexKeySources,
+                                    control.tableSize(groupingSize),
                                     control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+
                     final IntegerArraySource leftHashSlots = new IntegerArraySource();
-                    jsm.buildFromLeftSide(leftTableGrouped, groupedSourceArray, leftHashSlots);
-                    try {
-                        jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
-                    } catch (DuplicateRightRowDecorationException e) {
-                        jsm.errorOnDuplicatesGrouped(leftHashSlots, leftTableGrouped.size(), rowSetSource);
-                    }
-                    rowRedirection = jsm.buildGroupedRowRedirection(leftTable, exactMatch, leftTableGrouped.size(),
+                    jsm.buildFromLeftSide(leftIndexTable, indexKeySources, leftHashSlots);
+                    jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
+                    rowRedirection = jsm.buildGroupedRowRedirection(leftTable, exactMatch, leftIndexTable.size(),
                             leftHashSlots, rowSetSource, control.getRedirectionType(leftTable));
                 } else if (control.buildLeft(leftTable, rightTable)) {
                     final StaticHashedNaturalJoinStateManager jsm =

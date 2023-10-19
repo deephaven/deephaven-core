@@ -62,8 +62,6 @@ public class ImmutableIntTestSource extends AbstractColumnSource<Integer>
 
     // region chunk add
     public synchronized void add(final RowSet rowSet, Chunk<Values> vs) {
-        setGroupToRange(null);
-
         if (rowSet.size() != vs.size()) {
             throw new IllegalArgumentException("Index=" + rowSet + ", data size=" + vs.size());
         }

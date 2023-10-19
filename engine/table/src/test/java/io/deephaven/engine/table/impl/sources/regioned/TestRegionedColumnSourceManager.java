@@ -69,9 +69,6 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
     private TableLocation duplicateTableLocation0A;
 
-    private Map<String, RowSet> partitioningColumnGrouping;
-    private KeyRangeGroupingProvider groupingColumnGroupingProvider;
-
     private TableLocationUpdateSubscriptionBuffer[] subscriptionBuffers;
     private long[] lastSizes;
     private int regionCount;
@@ -202,21 +199,22 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     }
 
     private void expectPartitioningColumnInitialGrouping() {
-        partitioningColumnGrouping = null;
+        partitioningColumnGroupingProvider = null;
         checking(new Expectations() {
             {
-                allowing(partitioningColumnSource).getGroupToRange();
+                allowing(partitioningColumnSource).getGroupingProvider();
                 will(new CustomAction("Return previously set partitioning column grouping") {
                     @Override
                     public Object invoke(Invocation invocation) {
-                        return partitioningColumnGrouping;
+                        return partitioningColumnGroupingProvider;
                     }
                 });
-                oneOf(partitioningColumnSource).setGroupToRange(with(any(Map.class)));
-                will(new CustomAction("Capture partitioning column grouping") {
+                oneOf(partitioningColumnSource).setGroupingProvider(with(any(GroupingProvider.class)));
+                will(new CustomAction("Capture partitioning column grouping provider") {
                     @Override
                     public Object invoke(Invocation invocation) {
-                        partitioningColumnGrouping = (Map) invocation.getParameter(0);
+                        partitioningColumnGroupingProvider =
+                                (PartitionColumnGroupingProvider) invocation.getParameter(0);
                         return null;
                     }
                 });
@@ -347,9 +345,11 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     private void checkIndexes(@NotNull final RowSet addedRowSet) {
         assertIsSatisfied();
         assertRowSetEquals(expectedAddedRowSet, addedRowSet);
-        if (partitioningColumnGrouping == null) {
+        if (partitioningColumnGroupingProvider == null) {
             assertTrue(expectedPartitioningColumnGrouping.isEmpty());
         } else {
+            final Map<String, RowSet> partitioningColumnGrouping =
+                    partitioningColumnGroupingProvider.getGroupingBuilder().buildGroupingMap();
             assertEquals(expectedPartitioningColumnGrouping.keySet(), partitioningColumnGrouping.keySet());
             expectedPartitioningColumnGrouping
                     .forEach((final String columnPartition, final RowSet expectedGrouping) -> {
@@ -444,7 +444,6 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(groupingColumnSource).setGroupingProvider(null);
-                oneOf(groupingColumnSource).setGroupToRange(null);
             }
         });
         SUT.disableGrouping();

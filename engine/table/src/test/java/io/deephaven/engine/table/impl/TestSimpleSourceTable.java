@@ -7,6 +7,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -14,7 +15,6 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableLocationKey;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -52,7 +52,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
     private SourceTableComponentFactory componentFactory;
     private ColumnSourceManager columnSourceManager;
 
-    private DeferredGroupingColumnSource<?>[] columnSources;
+    private ColumnSource<?>[] columnSources;
 
     private TableLocationProvider locationProvider;
     private TableLocation tableLocation;
@@ -68,8 +68,16 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
 
         componentFactory = mock(SourceTableComponentFactory.class);
         columnSourceManager = mock(ColumnSourceManager.class);
+        checking(new Expectations() {
+            {
+                will(returnValue(null));
+                allowing(columnSourceManager).allLocations();
+                will(returnValue(Collections.EMPTY_SET));
+            }
+        });
+
         columnSources = TABLE_DEFINITION.getColumnStream().map(cd -> {
-            final DeferredGroupingColumnSource<?> mocked = mock(DeferredGroupingColumnSource.class, cd.getName());
+            final ColumnSource<?> mocked = mock(ColumnSource.class, cd.getName());
             checking(new Expectations() {
                 {
                     allowing(mocked).getType();
@@ -81,7 +89,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                 }
             });
             return mocked;
-        }).toArray(DeferredGroupingColumnSource[]::new);
+        }).toArray(ColumnSource[]::new);
         locationProvider = mock(TableLocationProvider.class);
         tableLocation = mock(TableLocation.class);
         checking(new Expectations() {
@@ -139,7 +147,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                 .toArray(String[]::new);
     }
 
-    private Map<String, ? extends DeferredGroupingColumnSource<?>> getIncludedColumnsMap(final int... indices) {
+    private Map<String, ? extends ColumnSource<?>> getIncludedColumnsMap(final int... indices) {
         return IntStream.of(indices)
                 .mapToObj(ci -> new Pair<>(TABLE_DEFINITION.getColumns().get(ci).getName(), columnSources[ci]))
                 .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond, Assert::neverInvoked, LinkedHashMap::new));

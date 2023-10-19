@@ -4,11 +4,19 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.hash.KeyedObjectHashMap;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.lang.ref.SoftReference;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Partial TableLocation implementation for use by TableDataService implementations.
@@ -16,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 public abstract class AbstractTableLocation
         extends SubscriptionAggregator<TableLocation.Listener>
         implements TableLocation {
+    protected static final SoftReference<Table> NO_GROUPING_SENTINEL = new SoftReference<>(null);
 
     private final ImmutableTableKey tableKey;
     private final ImmutableTableLocationKey tableLocationKey;
@@ -23,6 +32,9 @@ public abstract class AbstractTableLocation
     private final TableLocationStateHolder state = new TableLocationStateHolder();
     private final KeyedObjectHashMap<CharSequence, ColumnLocation> columnLocations =
             new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
+
+    /** A map of grouping (or data index) columns to the materialized */
+    protected volatile Map<List<String>, SoftReference<Table>> cachedGroupings;
 
     /**
      * @param tableKey Table key for the table this location belongs to
@@ -138,4 +150,61 @@ public abstract class AbstractTableLocation
     protected final void clearColumnLocations() {
         columnLocations.clear();
     }
+
+    @Nullable
+    @Override
+    public final Table getDataIndex(@NotNull final String... columns) {
+        final List<String> colNames = Arrays.asList(columns);
+        Table grouping = null;
+        if (cachedGroupings != null) {
+            final SoftReference<Table> cachedGrouping = cachedGroupings.get(colNames);
+            if (cachedGrouping == NO_GROUPING_SENTINEL) {
+                return null;
+            }
+
+            if (cachedGrouping != null) {
+                grouping = cachedGrouping.get();
+                if (grouping != null) {
+                    return grouping;
+                }
+            }
+        }
+
+        synchronized (this) {
+            if (cachedGroupings == null) {
+                cachedGroupings = new HashMap<>();
+            }
+
+            final SoftReference<Table> cachedGrouping = cachedGroupings.get(colNames);
+            if (cachedGrouping == NO_GROUPING_SENTINEL) {
+                return null;
+            }
+
+            if (cachedGrouping != null) {
+                grouping = cachedGrouping.get();
+            }
+
+            if (grouping == null) {
+                grouping = loadDataIndex(columns);
+
+                if (grouping == null || grouping.isEmpty()) {
+                    cachedGroupings.put(colNames, NO_GROUPING_SENTINEL);
+                } else {
+                    cachedGroupings.put(colNames, new SoftReference<>(grouping));
+                }
+            }
+
+            return grouping;
+        }
+    }
+
+    /**
+     * Load the data index from the location implementaiton. Implementations of this method should not perform any
+     * result caching.
+     *
+     * @param columns the columns to load an index for.
+     * @return the data index table, or an empty table or null if none existed.
+     */
+    @Nullable
+    protected abstract Table loadDataIndex(@NotNull final String... columns);
 }

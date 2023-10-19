@@ -28,6 +28,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -39,7 +40,6 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
@@ -59,13 +59,13 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.table.impl.by.*;
-import io.deephaven.engine.table.impl.locations.GroupingProvider;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
@@ -259,6 +259,11 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     private static final AtomicReferenceFieldUpdater<QueryTable, ModifiedColumnSet> MODIFIED_COLUMN_SET_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, ModifiedColumnSet.class, "modifiedColumnSet");
+
+    private static final AtomicReferenceFieldUpdater<QueryTable, Map> INDEXED_DATA_COLUMNS_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, Map.class, "indexedDataColumns");
+    private static final Map<String, IndexedDataColumn<?>> EMPTY_INDEXED_DATA_COLUMNS = Collections.emptyMap();
+
     private static final AtomicReferenceFieldUpdater<QueryTable, Map> CACHED_OPERATIONS_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, Map.class, "cachedOperations");
     private static final Map<MemoizedOperationKey, MemoizedResult<?>> EMPTY_CACHED_OPERATIONS = Collections.emptyMap();
@@ -267,6 +272,10 @@ public class QueryTable extends BaseTable<QueryTable> {
     private final LinkedHashMap<String, ColumnSource<?>> columns;
     @SuppressWarnings("FieldMayBeFinal") // Set via MODIFIED_COLUMN_SET_UPDATER if not initialized
     private volatile ModifiedColumnSet modifiedColumnSet;
+
+    // Cached data columns
+    @SuppressWarnings("FieldMayBeFinal") // Set via INDEXED_DATA_COLUMNS_UPDATER
+    private volatile Map<String, IndexedDataColumn<?>> indexedDataColumns = EMPTY_INDEXED_DATA_COLUMNS;
 
     // Flattened table support
     private boolean flat;
@@ -1541,7 +1550,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 resultTable.setFlat();
                             }
                             if (resultTable.getRowSet() == rowSet) {
-                                propagateGrouping(processedColumns, resultTable);
+                                propagateDataIndexes(processedColumns, resultTable);
                             }
                             for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
                                 if (columnSource instanceof PossiblyImmutableColumnSource) {
@@ -1564,8 +1573,21 @@ public class QueryTable extends BaseTable<QueryTable> {
                 }));
     }
 
-    private void propagateGrouping(SelectColumn[] selectColumns, QueryTable resultTable) {
+    /**
+     * Data indexes on select source columns may be valid in the result table. Add new mappings so the data indexes are
+     * retrievable from the result table column sources.
+     *
+     */
+    private void propagateDataIndexes(SelectColumn[] selectColumns, QueryTable resultTable) {
+        // Get a list of all the data indexes in the source table.
+        final DataIndexer dataIndexer = DataIndexer.of(rowSet);
+        final List<DataIndex> dataIndexes = dataIndexer.dataIndexes();
+        if (dataIndexes.isEmpty()) {
+            return;
+        }
+
         final Set<String> usedOutputColumns = new HashSet<>();
+        final Map<ColumnSource<?>, ColumnSource<?>> oldToNewMap = new HashMap<>();
         for (SelectColumn selectColumn : selectColumns) {
             if (selectColumn instanceof SwitchColumn) {
                 selectColumn = ((SwitchColumn) selectColumn).getRealColumn();
@@ -1580,34 +1602,31 @@ public class QueryTable extends BaseTable<QueryTable> {
                         getColumnSource(sourceColumn.getSourceName()));
                 final ColumnSource<?> selectedColumnSource = ReinterpretUtils.maybeConvertToPrimitive(
                         resultTable.getColumnSource(sourceColumn.getName()));
+
                 if (originalColumnSource != selectedColumnSource) {
-                    if (originalColumnSource instanceof DeferredGroupingColumnSource) {
-                        final DeferredGroupingColumnSource<?> deferredGroupingSelectedSource =
-                                (DeferredGroupingColumnSource<?>) selectedColumnSource;
-                        final GroupingProvider<?> groupingProvider =
-                                ((DeferredGroupingColumnSource<?>) originalColumnSource).getGroupingProvider();
-                        if (groupingProvider != null) {
-                            // noinspection unchecked,rawtypes
-                            deferredGroupingSelectedSource.setGroupingProvider((GroupingProvider) groupingProvider);
-                        } else if (originalColumnSource.getGroupToRange() != null) {
-                            // noinspection unchecked,rawtypes
-                            deferredGroupingSelectedSource
-                                    .setGroupToRange((Map) originalColumnSource.getGroupToRange());
-                        }
-                    } else if (originalColumnSource.getGroupToRange() != null) {
-                        final DeferredGroupingColumnSource<?> deferredGroupingSelectedSource =
-                                (DeferredGroupingColumnSource<?>) selectedColumnSource;
-                        // noinspection unchecked,rawtypes
-                        deferredGroupingSelectedSource.setGroupToRange((Map) originalColumnSource.getGroupToRange());
-                    } else {
-                        final RowSetIndexer indexer = RowSetIndexer.of(rowSet);
-                        if (indexer.hasGrouping(originalColumnSource)) {
-                            indexer.copyImmutableGroupings(originalColumnSource, selectedColumnSource);
-                        }
-                    }
+                    // Map original source to the new source.
+                    oldToNewMap.put(originalColumnSource, selectedColumnSource);
                 }
             }
             usedOutputColumns.add(selectColumn.getName());
+        }
+
+        if (oldToNewMap.isEmpty()) {
+            return;
+        }
+
+        // Add new DataIndex entries to the DataIndexer with the remapped column sources.
+        for (final DataIndex dataIndex : dataIndexes) {
+            if (Collections.disjoint(dataIndex.keyColumnMap().keySet(), oldToNewMap.keySet())) {
+                // The index contains no remapped original sources, no work needed.
+                continue;
+            }
+
+            // Create a new DataIndex using the new column sources as keys.
+            final DataIndex remappedIndex = dataIndex.applyColumnRemap(oldToNewMap);
+
+            // Add the new index to the DataIndexer.
+            dataIndexer.addIndex(remappedIndex);
         }
     }
 

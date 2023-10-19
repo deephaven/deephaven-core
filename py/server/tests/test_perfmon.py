@@ -5,6 +5,7 @@
 import unittest
 
 from deephaven import empty_table
+from deephaven.liveness_scope import liveness_scope
 from deephaven.perfmon import process_info_log, process_metrics_log, server_state_log, \
     query_operation_performance_log, query_performance_log, update_performance_log, metrics_get_counters, \
     metrics_reset_counters

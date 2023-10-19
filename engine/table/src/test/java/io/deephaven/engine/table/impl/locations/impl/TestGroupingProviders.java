@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
@@ -32,7 +33,8 @@ import java.util.stream.IntStream;
 import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
 
 /**
- * Unit tests for {@link ParallelDeferredGroupingProvider}.
+ * Unit tests for {@link io.deephaven.engine.table.impl.dataindex.DiskBackedDeferredGroupingProvider} and
+ * {@link io.deephaven.engine.table.impl.dataindex.PartitionColumnGroupingProvider}.
  */
 public class TestGroupingProviders {
 
@@ -153,10 +155,8 @@ public class TestGroupingProviders {
             partitions[2] = partitions[2].updateView("Sym = NULL_CHAR");
             partitions[3] = partitions[3].updateView("Sym = NULL_CHAR");
         }
-        final Table expected = TableTools.merge(partitions).view("Part", "Sym", "Other"); // Column ordering was changed
-                                                                                          // by groupBy()/ungroup()
-                                                                                          // above,
-                                                                                          // restore it here.
+        // Column ordering was changed by groupBy()/ungroup() above, restore it here.
+        final Table expected = TableTools.merge(partitions).view("Part", "Sym", "Other");
 
         final Table actual = ParquetTools.readPartitionedTable(
                 DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "Part", ipn -> ipn.equals("IP")),
@@ -165,7 +165,8 @@ public class TestGroupingProviders {
 
         TstUtils.assertTableEquals(expected, actual);
 
-        TestCase.assertEquals(missingGroups, actual.getColumnSource("Sym").getGroupToRange() == null);
+        TestCase.assertEquals(!missingGroups,
+                DataIndexer.of(actual.getRowSet()).hasDataIndex(actual.getColumnSource("Sym")));
 
         TstUtils.assertTableEquals(expected.groupBy("Sym").ungroup(), actual.groupBy("Sym").ungroup());
     }

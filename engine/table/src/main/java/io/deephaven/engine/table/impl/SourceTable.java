@@ -96,10 +96,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 definition.getColumns() // NB: this is the *re-written* definition passed to the super-class
                                         // constructor.
         );
-        if (isRefreshing) {
-            // NB: There's no reason to start out trying to group, if this is a refreshing table.
-            columnSourceManager.disableGrouping();
-        }
 
         setRefreshing(isRefreshing);
         setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);

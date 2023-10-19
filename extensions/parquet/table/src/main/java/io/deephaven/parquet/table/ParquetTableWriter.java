@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table;
 
+import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
@@ -13,6 +14,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.NullSelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -22,9 +24,11 @@ import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.RowGroupWriter;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
-import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
+import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.parquet.table.transfer.*;
+import io.deephaven.parquet.table.transfer.ArrayAndVectorTransfer;
+import io.deephaven.parquet.table.transfer.StringDictionary;
+import io.deephaven.parquet.table.transfer.TransferObject;
 import io.deephaven.parquet.table.util.TrackedSeekableChannelsProvider;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.util.QueryConstants;
@@ -37,13 +41,15 @@ import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.*;
+import java.nio.IntBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.IntSupplier;
 
 /**
  * API for writing DH tables in parquet format
@@ -53,7 +59,46 @@ public class ParquetTableWriter {
     public static final String BEGIN_POS = "dh_begin_pos";
     public static final String END_POS = "dh_end_pos";
     public static final String GROUPING_KEY = "dh_key";
+
+    public static final String INDEX_COL_NAME = "dh_row_set";
+
+
     public static final String PARQUET_FILE_EXTENSION = ".parquet";
+
+    /**
+     * Helper struct used to pass information about where to write the index files
+     */
+    public static class IndexWritingInfo {
+        /**
+         * Name(s) of the indexing column(s)
+         */
+        public final String[] indexColumnNames;
+        /**
+         * Parquet name(s) of the indexing column(s)
+         */
+        public final String[] parquetColumnNames;
+        /**
+         * File path to be added in the grouping metadata of main parquet file
+         */
+        public final File metadataFilePath;
+
+        /**
+         * Destination path for writing the grouping file. The two filenames can differ because we write grouping files
+         * to shadow file paths first and then place them at the final path once the write is complete. But the metadata
+         * should always hold the accurate path.
+         */
+        public final File destFile;
+
+        public IndexWritingInfo(final String[] indexColumnNames,
+                final String[] parquetColumnNames,
+                final File metadataFilePath,
+                final File destFile) {
+            this.indexColumnNames = indexColumnNames;
+            this.parquetColumnNames = parquetColumnNames;
+            this.metadataFilePath = metadataFilePath;
+            this.destFile = destFile;
+        }
+    }
 
     /**
      * Helper struct used to pass information about where to write the grouping files for each grouping column
@@ -91,6 +136,8 @@ public class ParquetTableWriter {
      * @param writeInstructions Write instructions for customizations while writing
      * @param destPathName The destination path
      * @param incomingMeta A map of metadata values to be stores in the file footer
+     * @param indexInfoList column arrays containing the column names(s) for written indexes (the write operation will
+     *        store the index info as sidecar tables)
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
      *         unsupported types)
      * @throws IOException For file writing related errors
@@ -101,24 +148,34 @@ public class ParquetTableWriter {
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final String destPathName,
             @NotNull final Map<String, String> incomingMeta,
-            final Map<String, GroupingColumnWritingInfo> groupingColumnsWritingInfoMap)
+            @Nullable final List<ParquetTableWriter.IndexWritingInfo> indexInfoList)
             throws SchemaMappingException, IOException {
         final TableInfo.Builder tableInfoBuilder = TableInfo.builder();
         List<File> cleanupFiles = null;
         try {
-            if (groupingColumnsWritingInfoMap != null) {
-                cleanupFiles = new ArrayList<>(groupingColumnsWritingInfoMap.size());
+            if (indexInfoList != null) {
+                cleanupFiles = new ArrayList<>(indexInfoList.size());
                 final Path destDirPath = Paths.get(destPathName).getParent();
-                for (Map.Entry<String, GroupingColumnWritingInfo> entry : groupingColumnsWritingInfoMap.entrySet()) {
-                    final String groupingColumnName = entry.getKey();
-                    final Table auxiliaryTable = groupingAsTable(t, groupingColumnName);
-                    final String parquetColumnName = entry.getValue().parquetColumnName;
-                    final File metadataFilePath = entry.getValue().metadataFilePath;
-                    final File groupingDestFile = entry.getValue().destFile;
+                final DataIndexer dataIndexer = DataIndexer.of(t.getRowSet());
+                for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
+                    final String[] indexColumnNames = info.indexColumnNames;
+                    final ColumnSource<?>[] indexColumns = Arrays.stream(indexColumnNames)
+                            .map(t::getColumnSource)
+                            .toArray(ColumnSource[]::new);
+
+                    // This will retrieve an existing index if one exists, or create a new one if not.
+                    final DataIndex dataIndex = dataIndexer.getDataIndex((QueryTable) t, indexColumns);
+                    final Table indexTable = dataIndex.table();
+
+                    final String[] parquetColumnNames = info.parquetColumnNames;
+                    final File metadataFilePath = info.metadataFilePath;
+                    final File groupingDestFile = info.destFile;
                     cleanupFiles.add(groupingDestFile);
-                    tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(parquetColumnName,
-                            destDirPath.relativize(metadataFilePath.toPath()).toString()));
-                    write(auxiliaryTable, auxiliaryTable.getDefinition(), writeInstructions,
+
+                    tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
+                            destDirPath.relativize(metadataFilePath.toPath()).toString(),
+                            parquetColumnNames));
+                    write(indexTable, indexTable.getDefinition(), writeInstructions,
                             groupingDestFile.getAbsolutePath(), Collections.emptyMap(), TableInfo.builder());
                 }
             }
@@ -316,6 +373,84 @@ public class ParquetTableWriter {
                 writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData);
+    }
+
+    private interface ColumnWriteHelper {
+
+        boolean isVectorFormat();
+
+        IntSupplier valuePageSizeSupplier();
+    }
+
+    /**
+     * ColumnWriteHelper for columns of "flat" data with no nesting or vector encoding.
+     */
+    private static class FlatColumnWriterHelper implements ColumnWriteHelper {
+
+        /**
+         * The maximum page size for values.
+         */
+        private final int maxValuePageSize;
+
+        private FlatColumnWriterHelper(final int maxValuePageSize) {
+            this.maxValuePageSize = maxValuePageSize;
+        }
+
+        public boolean isVectorFormat() {
+            return false;
+        }
+
+        public IntSupplier valuePageSizeSupplier() {
+            return () -> maxValuePageSize;
+        }
+    }
+
+    /**
+     * This is a helper struct storing useful data required to write column source in the parquet file, particularly
+     * helpful for writing array/vector data.
+     */
+    private static class VectorColumnWriterHelper implements ColumnWriteHelper {
+
+        /**
+         * The source for per-row array/vector lengths.
+         */
+        private final ColumnSource<?> lengthSource;
+
+        /**
+         * The RowSet for (ungrouped) values.
+         */
+        private final RowSet valueRowSet;
+
+        /**
+         * The size of each value page. Parallel to {@link #lengthPageSizes}.
+         */
+        private final TIntArrayList valuePageSizes;
+
+        /**
+         * The size of each length page. Parallel to {@link #valuePageSizes}.
+         */
+        private final TIntArrayList lengthPageSizes;
+
+        private VectorColumnWriterHelper(
+                @NotNull final ColumnSource<?> lengthSource,
+                @NotNull final RowSet valueRowSet) {
+            this.lengthSource = lengthSource;
+            this.valueRowSet = valueRowSet;
+            valuePageSizes = new TIntArrayList();
+            lengthPageSizes = new TIntArrayList();
+        }
+
+        public boolean isVectorFormat() {
+            return true;
+        }
+
+        public IntSupplier lengthPageSizeSupplier() {
+            return lengthPageSizes.iterator()::next;
+        }
+
+        public IntSupplier valuePageSizeSupplier() {
+            return valuePageSizes.iterator()::next;
+        }
     }
 
     @VisibleForTesting
