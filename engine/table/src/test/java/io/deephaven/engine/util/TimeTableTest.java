@@ -8,12 +8,16 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
@@ -245,27 +249,36 @@ public class TimeTableTest extends RefreshingTableTestCase {
         tick(2000);
         Assert.assertEquals(timeTable.size(), 201);
 
-        StaticGroupingProvider provider =
-                StaticGroupingProvider.buildFrom(dtColumn, "Timestamp", RowSetFactory.fromRange(100, 109));
+        final DataIndexer dataIndexer = DataIndexer.of(timeTable.getRowSet());
 
-        final Map<Instant, RowSet> dtMap = provider.getGroupingBuilder().buildGroupingMap();
+        // Asking for a data index will cause it to be created when it does not exist.
+        final DataIndex dataIndex = dataIndexer.getDataIndex(dtColumn).applyIntersect(RowSetFactory.fromRange(100, 109));
+        final Table indexTable = dataIndex.table();
 
-        Assert.assertEquals(dtMap.size(), 10);
-        dtMap.forEach((tm, rows) -> {
-            Assert.assertEquals(rows.size(), 1);
-            Assert.assertEquals(dtColumn.get(rows.firstRowKey()), tm);
-        });
+        Assert.assertEquals(indexTable.size(), 10);
+        try (final CloseableIterator<Instant> keyIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0]);
+             final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0])) {
+            while (keyIt.hasNext()) {
+                final Instant key = keyIt.next();
+                final RowSet rs = rsIt.next();
+                Assert.assertEquals(rs.size(), 1);
+                Assert.assertEquals(dtColumn.get(rs.firstRowKey()), key);
+            }
+        }
 
-        provider =
-                StaticGroupingProvider.buildFrom(column, "Timestamp", RowSetFactory.fromRange(100, 109));
+        final DataIndex longDataIndex = dataIndexer.getDataIndex(column).applyIntersect(RowSetFactory.fromRange(100, 109));
+        final Table longIndexTable = longDataIndex.table();
 
-        final Map<Long, RowSet> longMap = provider.getGroupingBuilder().buildGroupingMap();
-
-        Assert.assertEquals(longMap.size(), 10);
-        longMap.forEach((tm, rows) -> {
-            Assert.assertEquals(rows.size(), 1);
-            Assert.assertEquals(column.get(rows.firstRowKey()), tm);
-        });
+        Assert.assertEquals(longIndexTable.size(), 10);
+        try (final CloseableIterator<Long> keyIt = longIndexTable.columnIterator(longDataIndex.keyColumnNames()[0]);
+             final CloseableIterator<RowSet> rsIt = longIndexTable.columnIterator(longDataIndex.keyColumnNames()[0])) {
+            while (keyIt.hasNext()) {
+                final Long key = keyIt.next();
+                final RowSet rs = rsIt.next();
+                Assert.assertEquals(rs.size(), 1);
+                Assert.assertEquals(dtColumn.get(rs.firstRowKey()), key);
+            }
+        }
     }
 
     @Test

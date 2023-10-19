@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.table.impl.dataindex.StaticGroupingProvider;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
@@ -86,8 +86,9 @@ public class QueryTableHugeSortTest {
                 TableTools.emptyTable(tableSize).updateView("Captain=captains[(int)(ii / segSize)]", "Sentinel=ii");
 
         final ColumnSource<Object> captainSource = (ColumnSource<Object>) grouped.getColumnSource("Captain");
-        captainSource
-                .setGroupingProvider(StaticGroupingProvider.buildFrom(captainSource, "Captain", grouped.getRowSet()));
+
+        // Asking for a data index will cause it to be created when it does not exist.
+        DataIndexer.of(grouped.getRowSet()).getDataIndex(captainSource);
 
         final long sortStart = System.currentTimeMillis();
         final Table sortedGrouped = grouped.sortDescending("Captain");

@@ -70,7 +70,6 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         columnSourceManager = mock(ColumnSourceManager.class);
         checking(new Expectations() {
             {
-                allowing(columnSourceManager).getDataIndexProvider();
                 will(returnValue(null));
                 allowing(columnSourceManager).allLocations();
                 will(returnValue(Collections.EMPTY_SET));

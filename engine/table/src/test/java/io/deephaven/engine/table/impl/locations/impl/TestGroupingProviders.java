@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
@@ -164,7 +165,8 @@ public class TestGroupingProviders {
 
         TstUtils.assertTableEquals(expected, actual);
 
-        TestCase.assertEquals(!missingGroups, actual.getColumnSource("Sym").hasGrouping());
+        TestCase.assertEquals(!missingGroups,
+                DataIndexer.of(actual.getRowSet()).hasDataIndex(actual.getColumnSource("Sym")));
 
         TstUtils.assertTableEquals(expected.groupBy("Sym").ungroup(), actual.groupBy("Sym").ungroup());
     }

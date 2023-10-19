@@ -8,7 +8,6 @@ import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.impl.dataindex.StaticGroupingProvider;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;

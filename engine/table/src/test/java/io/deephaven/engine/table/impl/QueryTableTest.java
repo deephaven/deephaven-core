@@ -21,6 +21,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
@@ -3033,7 +3034,9 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testWhereInGrouped() throws IOException {
         diskBackedTestHarness(t -> {
             final ColumnSource<String> symbol = t.getColumnSource("Symbol");
-            symbol.setGroupingProvider(StaticGroupingProvider.buildFrom(symbol, "Symbol", t.getRowSet()));
+            // Create the data index by asking for it.
+            DataIndexer.of(t.getRowSet()).getDataIndex(symbol);
+
             final Table result =
                     t.whereIn(t.where("Truthiness=true"), "Symbol", "Timestamp");
             TableTools.showWithRowSet(result);
@@ -3308,7 +3311,9 @@ public class QueryTableTest extends QueryTableTestBase {
 
         // noinspection rawtypes
         final ColumnSource result = t2.getColumnSource("T").reinterpret(long.class);
-        assertSame(cs.groupingProvider, result.getGroupingProvider());
+
+        assertTrue(DataIndexer.of(t1.getRowSet()).hasDataIndex(cs));
+        assertTrue(DataIndexer.of(t2.getRowSet()).hasDataIndex(result));
     }
 
     private static void validateUpdates(final Table table) {

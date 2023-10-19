@@ -8,7 +8,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TupleSource;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import junit.framework.TestCase;
@@ -67,7 +67,7 @@ public class GroupingValidator extends InstrumentedTableUpdateListenerAdapter {
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(groupColumns);
         validateGrouping(groupingToCheck, rowSet, source, context,
                 rowSet.isTracking()
-                        ? RowSetIndexer.of(rowSet.trackingCast()).getGrouping(tupleSource)
+                        ? DataIndexer.of(rowSet.trackingCast()).getGrouping(tupleSource)
                         : Collections.emptyMap());
     }
 
@@ -126,7 +126,7 @@ public class GroupingValidator extends InstrumentedTableUpdateListenerAdapter {
     private void validatePrevGrouping(String[] groupingToCheck, TrackingRowSet rowSet) {
         final ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(groupColumns);
-        final Map<Object, RowSet> grouping = RowSetIndexer.of(rowSet).getPrevGrouping(tupleSource);
+        final Map<Object, RowSet> grouping = DataIndexer.of(rowSet).getPrevGrouping(tupleSource);
         for (Map.Entry<Object, RowSet> objectIndexEntry : grouping.entrySet()) {
             for (RowSet.Iterator it = objectIndexEntry.getValue().iterator(); it.hasNext();) {
                 long next = it.nextLong();

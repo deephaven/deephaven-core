@@ -26,8 +26,8 @@ import static io.deephaven.engine.table.impl.MatchPair.matchString;
 
 class BucketingContext implements SafeCloseable {
     final int keyColumnCount;
-    final boolean useLeftGrouping;
-    final boolean useRightGrouping;
+    final boolean useLeftIndex;
+    final boolean useRightIndex;
     final String listenerDescription;
 
     final ColumnSource<?>[] leftSources;
@@ -57,11 +57,11 @@ class BucketingContext implements SafeCloseable {
         originalLeftSources = Arrays.copyOf(leftSources, leftSources.length);
 
         keyColumnCount = leftSources.length;
-        useLeftGrouping = JoinControl.useGrouping(leftTable, leftSources);
+        useLeftIndex = control.useDataIndex(leftTable, leftSources);
         // note that the naturalJoin operation ignores this field, because there is never any point to reading or
         // processing grouping information when we have a single row on the right side. Cross join just doesn't support
         // grouping at all (yuck).
-        useRightGrouping = JoinControl.useGrouping(rightTable, rightSources);
+        useRightIndex = control.useDataIndex(rightTable, rightSources);
 
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             final Class<?> leftType = TypeUtils.getUnboxedTypeIfBoxed(leftSources[ii].getType());
@@ -89,7 +89,7 @@ class BucketingContext implements SafeCloseable {
                             JoinControl.CHUNK_SIZE, -BooleanUtils.NULL_BOOLEAN_AS_BYTE);
                 }
             } else if (leftType == String.class) {
-                if (control.considerSymbolTables(leftTable, rightTable, useLeftGrouping, useRightGrouping,
+                if (control.considerSymbolTables(leftTable, rightTable, useLeftIndex, useRightIndex,
                         leftSources[ii], rightSources[ii])) {
                     final SymbolTableSource<?> leftSymbolTableSource = (SymbolTableSource<?>) leftSources[ii];
                     final SymbolTableSource<?> rightSymbolTableSource = (SymbolTableSource<?>) rightSources[ii];

@@ -246,6 +246,11 @@ public class ParquetTools {
         return columnName -> prefix + "_" + columnName + "_grouping.parquet";
     }
 
+    public static Function<String[], String> defaultIndexFileName(@NotNull final String path) {
+        final String prefix = minusParquetSuffix(path);
+        return columnNames -> prefix + "_" + String.join(",", columnNames) + "_index.parquet";
+    }
+
     /**
      * Delete any old backup files created for this destination, and throw an exception on failure
      */
@@ -956,13 +961,6 @@ public class ParquetTools {
             // Oh well, we tried as reasonably hardly.
             return null;
         }
-    }
-
-    public static String minusParquetSuffix(@NotNull final String s) {
-        if (s.endsWith(PARQUET_FILE_EXTENSION)) {
-            return s.substring(0, s.length() - PARQUET_FILE_EXTENSION.length());
-        }
-        return s;
     }
 
     public static String computeDataIndexTableName(@NotNull final String path, @NotNull final String... columnName) {
