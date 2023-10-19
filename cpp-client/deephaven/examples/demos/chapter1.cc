@@ -22,7 +22,6 @@ void MainMenu(const TableHandleManager &manager);
 void PrintStaticTable(const TableHandleManager &manager);
 void WithArrow(const TableHandleManager &manager);
 void InteractiveWhereClause1(const TableHandleManager &manager);
-void InteractiveWhereClause2(const TableHandleManager &manager);
 
 // utilities
 void PrintTable(const TableHandle &table, bool null_aware);
@@ -80,9 +79,8 @@ void MainMenu(const TableHandleManager &manager) {
                "1 - PrintStaticTable\n"
                "2 - WithArrow\n"
                "3 - InteractiveWhereClause1\n"
-               "4 - InteractiveWhereClause2\n"
                "\n"
-               "Please select 1-4: ";
+               "Please select 1-3: ";
 
   auto selection = ReadNumber(std::cin);
 
@@ -97,10 +95,6 @@ void MainMenu(const TableHandleManager &manager) {
 
     case 3:
       InteractiveWhereClause1(manager);
-      break;
-
-    case 4:
-      InteractiveWhereClause2(manager);
       break;
 
     default:
@@ -134,16 +128,6 @@ void InteractiveWhereClause1(const TableHandleManager &manager) {
 
   auto table = manager.FetchTable("demo1");
   table = table.Where(where_clause.str());
-  PrintTable(table, true);
-}
-
-void InteractiveWhereClause2(const TableHandleManager &manager) {
-  std::cout << "Enter limit: ";
-  auto limit = ReadNumber(std::cin);
-
-  auto table = manager.FetchTable("demo1");
-  auto int_col = table.GetNumCol("Int64Value");
-  table = table.Where(int_col < limit);
   PrintTable(table, true);
 }
 

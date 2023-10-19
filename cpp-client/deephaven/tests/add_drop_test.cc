@@ -4,7 +4,6 @@
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 
-using deephaven::client::NumericExpression;
 using deephaven::dhcore::utility::Streamf;
 
 namespace deephaven::client::tests {
@@ -12,8 +11,7 @@ namespace deephaven::client::tests {
 TEST_CASE("Drop all columns", "[adddrop]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
-  auto ticker = table.GetStrCol("Ticker");
-  auto t = table.Update("II = ii").Where(ticker == "AAPL");
+  auto t = table.Update("II = ii").Where("Ticker == `AAPL`");
   const auto &cn = tm.ColumnNames();
   auto t2 = t.DropColumns(cn.ImportDate(), cn.Ticker(), cn.Open(), cn.Close());
   std::cout << t2.Stream(true) << '\n';

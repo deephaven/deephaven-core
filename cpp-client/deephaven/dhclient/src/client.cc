@@ -9,10 +9,7 @@
 
 #include <arrow/array.h>
 #include <arrow/scalar.h>
-#include "deephaven/client/columns.h"
 #include "deephaven/client/flight.h"
-#include "deephaven/client/impl/columns_impl.h"
-#include "deephaven/client/impl/boolean_expression_impl.h"
 #include "deephaven/client/impl/aggregate_impl.h"
 #include "deephaven/client/impl/client_impl.h"
 #include "deephaven/client/impl/table_handle_impl.h"
@@ -26,7 +23,6 @@
 using io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
 using io::deephaven::proto::backplane::grpc::Ticket;
 using deephaven::client::server::Server;
-using deephaven::client::Column;
 using deephaven::client::impl::AggregateComboImpl;
 using deephaven::client::impl::AggregateImpl;
 using deephaven::client::impl::ClientImpl;
@@ -171,7 +167,8 @@ ComboAggregateRequest::Aggregate CreateDescForColumn(ComboAggregateRequest::AggT
   return result;
 }
 
-Aggregate createAggForMatchPairs(ComboAggregateRequest::AggType aggregate_type, std::vector<std::string> column_specs) {
+Aggregate createAggForMatchPairs(ComboAggregateRequest::AggType aggregate_type,
+    std::vector<std::string> column_specs) {
   auto ad = CreateDescForMatchPairs(aggregate_type, std::move(column_specs));
   auto impl = AggregateImpl::Create(std::move(ad));
   return Aggregate(std::move(impl));
@@ -299,12 +296,6 @@ TableHandleManager TableHandle::GetManager() const {
   return TableHandleManager(impl_->ManagerImpl());
 }
 
-TableHandle TableHandle::Where(const BooleanExpression &condition) const {
-  SimpleOstringstream oss;
-    condition.implAsBooleanExpressionImpl()->StreamIrisRepresentation(oss);
-  return Where(std::move(oss.str()));
-}
-
 TableHandle TableHandle::Where(std::string condition) const {
   auto qt_impl = impl_->Where(std::move(condition));
   return TableHandle(std::move(qt_impl));
@@ -313,31 +304,6 @@ TableHandle TableHandle::Where(std::string condition) const {
 TableHandle TableHandle::Sort(std::vector<SortPair> sortPairs) const {
   auto qt_impl = impl_->Sort(std::move(sortPairs));
   return TableHandle(std::move(qt_impl));
-}
-
-std::vector<Column> TableHandle::GetAllCols() const {
-  auto column_impls = impl_->GetColumnImpls();
-  std::vector<Column> result;
-  result.reserve(column_impls.size());
-  for (const auto &ci : column_impls) {
-    result.emplace_back(ci);
-  }
-  return result;
-}
-
-StrCol TableHandle::GetStrCol(std::string columnName) const {
-  auto sc_impl = impl_->GetStrColImpl(std::move(columnName));
-  return StrCol(std::move(sc_impl));
-}
-
-NumCol TableHandle::GetNumCol(std::string columnName) const {
-  auto nc_impl = impl_->GetNumColImpl(std::move(columnName));
-  return NumCol(std::move(nc_impl));
-}
-
-DateTimeCol TableHandle::GetDateTimeCol(std::string columnName) const {
-  auto dt_impl = impl_->GetDateTimeColImpl(std::move(columnName));
-  return DateTimeCol(std::move(dt_impl));
 }
 
 TableHandle TableHandle::Select(std::vector<std::string> columnSpecs) const {
@@ -487,20 +453,6 @@ TableHandle TableHandle::Merge(std::string keyColumn, std::vector<TableHandle> s
   return TableHandle(std::move(qt_impl));
 }
 
-namespace {
-template<typename T>
-std::vector<std::string> toIrisRepresentation(const std::vector<T> &items) {
-  std::vector<std::string> result;
-  result.reserve(items.size());
-  for (const auto &ctm : items) {
-    SimpleOstringstream oss;
-    ctm.GetIrisRepresentableImpl()->StreamIrisRepresentation(oss);
-    result.push_back(std::move(oss.str()));
-  }
-  return result;
-}
-}  // namespace
-
 TableHandle TableHandle::CrossJoin(const TableHandle &rightSide,
     std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const {
   auto qt_impl = impl_->CrossJoin(*rightSide.impl_, std::move(columnsToMatch),
@@ -508,25 +460,11 @@ TableHandle TableHandle::CrossJoin(const TableHandle &rightSide,
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::CrossJoin(const TableHandle &right_side,
-    std::vector<MatchWithColumn> columns_to_match, std::vector<SelectColumn> columns_to_add) const {
-  auto ctm_strings = toIrisRepresentation(columns_to_match);
-  auto cta_strings = toIrisRepresentation(columns_to_add);
-  return CrossJoin(right_side, std::move(ctm_strings), std::move(cta_strings));
-}
-
 TableHandle TableHandle::NaturalJoin(const TableHandle &rightSide,
     std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const {
   auto qt_impl = impl_->NaturalJoin(*rightSide.impl_, std::move(columnsToMatch),
       std::move(columnsToAdd));
   return TableHandle(std::move(qt_impl));
-}
-
-TableHandle TableHandle::NaturalJoin(const TableHandle &rightSide,
-    std::vector<MatchWithColumn> columnsToMatch, std::vector<SelectColumn> columnsToAdd) const {
-  auto ctm_strings = toIrisRepresentation(columnsToMatch);
-  auto cta_strings = toIrisRepresentation(columnsToAdd);
-  return NaturalJoin(rightSide, std::move(ctm_strings), std::move(cta_strings));
 }
 
 TableHandle TableHandle::ExactJoin(const TableHandle &rightSide,
@@ -552,13 +490,6 @@ TableHandle TableHandle::LeftOuterJoin(const TableHandle &right_side, std::vecto
     std::vector<std::string> joins) const {
   auto qt_impl = impl_->LeftOuterJoin(*right_side.impl_, std::move(on), std::move(joins));
   return TableHandle(std::move(qt_impl));
-}
-
-TableHandle TableHandle::ExactJoin(const TableHandle &rightSide,
-    std::vector<MatchWithColumn> columnsToMatch, std::vector<SelectColumn> columnsToAdd) const {
-  auto ctm_strings = toIrisRepresentation(columnsToMatch);
-  auto cta_strings = toIrisRepresentation(columnsToAdd);
-  return ExactJoin(rightSide, std::move(ctm_strings), std::move(cta_strings));
 }
 
 TableHandle TableHandle::UpdateBy(std::vector<UpdateByOperation> ops, std::vector<std::string> by) const {
@@ -647,13 +578,6 @@ std::ostream &operator<<(std::ostream &s, const TableHandleStreamAdaptor &o) {
   PrintTableData(s, o.table_, o.wantHeaders_);
   return s;
 }
-
-std::string ConvertToString::ToString(
-    const deephaven::client::SelectColumn &selectColumn) {
-  SimpleOstringstream oss;
-  selectColumn.GetIrisRepresentableImpl()->StreamIrisRepresentation(oss);
-  return std::move(oss.str());
-}
 }  // namespace internal
 
 namespace {
@@ -661,11 +585,8 @@ void PrintTableData(std::ostream &s, const TableHandle &table_handle, bool want_
   auto fsr = table_handle.GetFlightStreamReader();
 
   if (want_headers) {
-    auto cols = table_handle.GetAllCols();
-    auto stream_name = [](std::ostream &s, const Column &c) {
-      s << c.Name();
-    };
-    s << separatedList(cols.begin(), cols.end(), "\t", stream_name) << '\n';
+    auto schema = table_handle.Schema();
+    s << separatedList(schema->Names().begin(), schema->Names().end(), "\t") << '\n';
   }
 
   while (true) {

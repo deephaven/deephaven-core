@@ -22,27 +22,12 @@
 namespace deephaven::client {
 class SortPair;
 namespace impl {
-class BooleanExpressionImpl;
-
-class ColumnImpl;
-
-class DateTimeColImpl;
-
-class NumColImpl;
-
-class StrColImpl;
-
 class TableHandleManagerImpl;
 
 class TableHandleImpl : public std::enable_shared_from_this<TableHandleImpl> {
   struct Private {
   };
   using SortPair = deephaven::client::SortPair;
-  using ColumnImpl = deephaven::client::impl::ColumnImpl;
-  using DateTimeColImpl = deephaven::client::impl::DateTimeColImpl;
-  using NumColImpl = deephaven::client::impl::NumColImpl;
-  using StrColImpl = deephaven::client::impl::StrColImpl;
-  using BooleanExpressionImpl = deephaven::client::impl::BooleanExpressionImpl;
   using SubscriptionHandle = deephaven::client::subscription::SubscriptionHandle;
   using Executor = deephaven::client::utility::Executor;
   using SchemaType = deephaven::dhcore::clienttable::Schema;
@@ -167,15 +152,6 @@ public:
 
   void AddTable(const TableHandleImpl &table_to_add);
   void RemoveTable(const TableHandleImpl &table_to_remove);
-
-  [[nodiscard]]
-  std::vector<std::shared_ptr<ColumnImpl>> GetColumnImpls();
-  [[nodiscard]]
-  std::shared_ptr<StrColImpl> GetStrColImpl(std::string column_name);
-  [[nodiscard]]
-  std::shared_ptr<NumColImpl> GetNumColImpl(std::string column_name);
-  [[nodiscard]]
-  std::shared_ptr<DateTimeColImpl> GetDateTimeColImpl(std::string column_name);
 
   void BindToVariable(std::string variable);
 

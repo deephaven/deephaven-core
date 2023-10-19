@@ -9,13 +9,11 @@ from enum import Enum
 from typing import Sequence, Any
 
 import jpy
-import numpy as np
-import pandas as pd
 
 import deephaven.dtypes as dtypes
-from deephaven import DHError, time
+from deephaven import DHError
 from deephaven.dtypes import DType
-from deephaven.time import to_j_instant
+from deephaven.dtypes import _instant_array
 
 _JColumnHeader = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
 _JColumn = jpy.get_type("io.deephaven.qst.column.Column")
@@ -206,27 +204,7 @@ def datetime_col(name: str, data: Sequence) -> InputColumn:
     Returns:
         a new input column
     """
-
-    # try to convert to numpy array of datetime64 if not already, so that we can call translateArrayLongToInstant on
-    # it to reduce the number of round trips to the JVM
-    if not isinstance(data, np.ndarray):
-        try:
-            data = np.array([pd.Timestamp(dt).to_numpy() for dt in data], dtype=np.datetime64)
-        except Exception as e:
-            ...
-
-    if isinstance(data, np.ndarray) and data.dtype.kind in ('M', 'i', 'U'):
-        if data.dtype.kind == 'M':
-            longs = jpy.array('long', data.astype('datetime64[ns]').astype('int64'))
-        elif data.dtype.kind == 'i':
-            longs = jpy.array('long', data.astype('int64'))
-        else:  # data.dtype.kind == 'U'
-            longs = jpy.array('long', [pd.Timestamp(str(dt)).to_numpy().astype('int64') for dt in data])
-        data = _JPrimitiveArrayConversionUtility.translateArrayLongToInstant(longs)
-
-    if not isinstance(data, dtypes.instant_array.j_type):
-        data = [to_j_instant(d) for d in data]
-
+    data = _instant_array(data)
     return InputColumn(name=name, data_type=dtypes.Instant, input_data=data)
 
 

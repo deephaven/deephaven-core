@@ -248,19 +248,19 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         return sourceTable.memoizeResult(MemoizedOperationKey.symbolTable(this, useLookupCaching), () -> {
             final String description = "getSymbolTable(" + sourceTable.getDescription() + ", " + useLookupCaching + ')';
             return QueryPerformanceRecorder.withNugget(description, sourceTable.size(), () -> {
-                final SwapListener swapListener =
-                        sourceTable.createSwapListenerIfRefreshing(SwapListener::new);
+                final OperationSnapshotControl snapshotControl =
+                        sourceTable.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                 final Mutable<Table> result = new MutableObject<>();
-                BaseTable.initializeWithSnapshot(description, swapListener,
+                BaseTable.initializeWithSnapshot(description, snapshotControl,
                         (final boolean usePrev, final long beforeClockValue) -> {
                             final QueryTable symbolTable;
-                            if (swapListener == null) {
+                            if (snapshotControl == null) {
                                 symbolTable = getStaticSymbolTable(sourceTable.getRowSet(), useLookupCaching);
                             } else {
                                 symbolTable = getStaticSymbolTable(
                                         usePrev ? sourceTable.getRowSet().copyPrev() : sourceTable.getRowSet(),
                                         useLookupCaching);
-                                swapListener.setListenerAndResult(
+                                snapshotControl.setListenerAndResult(
                                         new SymbolTableUpdateListener(description, sourceTable, symbolTable),
                                         symbolTable);
                             }
