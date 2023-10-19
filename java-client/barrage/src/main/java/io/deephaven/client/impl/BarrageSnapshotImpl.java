@@ -78,7 +78,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         final TableDefinition tableDefinition = schema.tableDef;
         resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, new CheckForCompletion());
-        resultTable.addParentReference(this);
 
         final MethodDescriptor<FlightData, BarrageMessage> snapshotDescriptor =
                 getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
