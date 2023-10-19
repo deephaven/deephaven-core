@@ -18,6 +18,8 @@ import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.hotspot.JvmIntrospectionContext;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
@@ -35,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * TODO: write an explanation.
@@ -62,6 +65,9 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
         }
         return null;
     }
+
+    private static final KeyedObjectHashMap<String, UpdateGraph> INSTANCES = new KeyedObjectHashMap<>(
+            new KeyedObjectKey.BasicAdapter<>(UpdateGraph::getName));
 
     private final Logger log;
 
@@ -974,5 +980,38 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
                 sharedLock().unlock();
             }
         }
+    }
+
+    public static UpdateGraph getInstance(final String name) {
+        return INSTANCES.get(name);
+    }
+
+    /**
+     * Inserts the given UpdateGraph into the INSTANCES array. It is an error to do so if instance already exists
+     * with the name provided to this builder.
+     *
+     * @param updateGraph the update graph to insert into INSTANCES
+     *
+     * @throws IllegalStateException if a PeriodicUpdateGraph with the provided name already exists
+     */
+    public static void insertInstance(UpdateGraph updateGraph) {
+        final String name = updateGraph.getName();
+        synchronized (INSTANCES) {
+            if (INSTANCES.containsKey(name)) {
+                throw new IllegalStateException(
+                        String.format("UpdateGraph with name %s already exists", name));
+            }
+            INSTANCES.put(name, updateGraph);
+        }
+    }
+
+    /**
+     * Returns an existing PeriodicUpdateGraph with the name provided to this Builder, if one exists, else returns a
+     * new PeriodicUpdateGraph.
+     *
+     * @return the PeriodicUpdateGraph
+     */
+    public static UpdateGraph existingOrBuild(final String name, Function<String, UpdateGraph> construct) {
+        return INSTANCES.putIfAbsent(name, construct::apply);
     }
 }

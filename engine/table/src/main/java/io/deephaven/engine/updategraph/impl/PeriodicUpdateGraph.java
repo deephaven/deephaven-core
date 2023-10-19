@@ -61,9 +61,6 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
     }
 
 
-    private static final KeyedObjectHashMap<String, PeriodicUpdateGraph> INSTANCES = new KeyedObjectHashMap<>(
-            new KeyedObjectKey.BasicAdapter<>(PeriodicUpdateGraph::getName));
-
     private static final Logger log = LoggerFactory.getLogger(PeriodicUpdateGraph.class);
 
     /**
@@ -1119,7 +1116,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
     }
 
     public static PeriodicUpdateGraph getInstance(final String name) {
-        return INSTANCES.get(name);
+        return BaseUpdateGraph.getInstance(name).cast();
     }
 
     public static final class Builder {
@@ -1181,15 +1178,9 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
          * @throws IllegalStateException if a PeriodicUpdateGraph with the provided name already exists
          */
         public PeriodicUpdateGraph build() {
-            synchronized (INSTANCES) {
-                if (INSTANCES.containsKey(name)) {
-                    throw new IllegalStateException(
-                            String.format("PeriodicUpdateGraph with name %s already exists", name));
-                }
-                final PeriodicUpdateGraph newUpdateGraph = construct();
-                INSTANCES.put(name, newUpdateGraph);
-                return newUpdateGraph;
-            }
+            final PeriodicUpdateGraph newUpdateGraph = construct(name);
+            BaseUpdateGraph.insertInstance(newUpdateGraph);
+            return newUpdateGraph;
         }
 
         /**
@@ -1199,10 +1190,12 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
          * @return the PeriodicUpdateGraph
          */
         public PeriodicUpdateGraph existingOrBuild() {
-            return INSTANCES.putIfAbsent(name, n -> construct());
+            return BaseUpdateGraph.existingOrBuild(name, this::construct).cast();
         }
 
-        private PeriodicUpdateGraph construct() {
+        private PeriodicUpdateGraph construct(String name) {
+            // we are passing the object through, so it should be identical
+            Assert.eq(name, "name", this.name, "this.name");
             return new PeriodicUpdateGraph(
                     name,
                     allowUnitTestMode,
