@@ -106,6 +106,8 @@ def count_(col: str) -> Aggregation:
     Returns:
         an aggregation
     """
+    if not isinstance(col, str):
+        raise DHError(message="count_ aggregation requires a string value for the 'col' argument.")
     return Aggregation(j_aggregation=_JAggregation.AggCount(col))
 
 
@@ -119,6 +121,8 @@ def partition(col: str, include_by_columns: bool = True) -> Aggregation:
     Returns:
         an aggregation
     """
+    if not isinstance(col, str):
+        raise DHError(message="partition aggregation requires a string value for the 'col' argument.")
     return Aggregation(j_aggregation=_JAggregation.AggPartition(col, include_by_columns))
 
 

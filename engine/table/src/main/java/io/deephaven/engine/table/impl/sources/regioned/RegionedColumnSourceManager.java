@@ -409,6 +409,15 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 throw ex;
             }
 
+            try {
+                if (!subscriptionBuffer.processPending()) {
+                    return false;
+                }
+            } catch (Exception ex) {
+                invalidate();
+                throw ex;
+            }
+
             final RowSet updateRowSet = location.getRowSet();
             try {
                 if (updateRowSet == null) {

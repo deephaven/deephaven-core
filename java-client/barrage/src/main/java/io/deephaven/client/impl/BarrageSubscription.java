@@ -3,6 +3,7 @@
  */
 package io.deephaven.client.impl;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -44,14 +45,6 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
      * @return true when all rows for the subscribed table are available, false otherwise
      */
     boolean isCompleted();
-
-    /**
-     * This call will return the number of rows received by the subscription handler. This is the sum of all the
-     * `rowsIncluded` in the BarrageMessages
-     *
-     * @return number of rows received by the subscription handler
-     */
-    long getRowsReceived();
 
     /**
      * Request a full subscription of the data and populate a {@link BarrageTable} with the incrementally updating data
@@ -171,6 +164,20 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
     BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport,
             boolean blockUntilComplete)
             throws InterruptedException;
+
+    /**
+     * Block until the subscription is complete.
+     * <p>
+     * It is an error to {@code blockUntilComplete} if the current thread holds the result table's UpdateGraph shared
+     * lock. If the current thread holds the result table's UpdateGraph exclusive lock, then this method will use an
+     * update graph condition variable to wait for completion. Otherwise, this method will use the subscription's object
+     * monitor to wait for completion.
+     *
+     * @throws InterruptedException if the current thread is interrupted while waiting for completion
+     * @throws UncheckedDeephavenException if an error occurred while handling the subscription
+     * @return the {@code BarrageTable}
+     */
+    BarrageTable blockUntilComplete() throws InterruptedException;
 
     @Override
     void close();

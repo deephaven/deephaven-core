@@ -335,6 +335,13 @@ public:
   static DateTime Parse(std::string_view iso_8601_timestamp);
 
   /**
+   * Parses a string in ISO 8601 format into a DateTime.
+   * @param iso_8601_timestamp The timestamp, in ISO 8601 format.
+   * @return The corresponding DateTime.
+   */
+  static DateTime Parse(std::string_view iso_8601_timestamp);
+
+  /**
    * Default constructor. Sets the DateTime equal to the epoch.
    */
   DateTime() = default;

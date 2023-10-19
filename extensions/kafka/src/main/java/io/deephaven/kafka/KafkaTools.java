@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Descriptors.Descriptor;
 import gnu.trove.map.hash.TIntLongHashMap;
 import io.confluent.kafka.schemaregistry.SchemaProvider;
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientFactory;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
@@ -16,6 +16,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.annotations.SingletonStyle;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -122,7 +123,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.*;
+import java.util.function.Function;
+import java.util.function.IntPredicate;
+import java.util.function.IntToLongFunction;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static io.deephaven.kafka.ingest.KafkaStreamPublisher.NULL_COLUMN_INDEX;
 
@@ -522,26 +527,15 @@ public class KafkaTools {
 
         /**
          * The kafka protobuf specs. This will fetch the {@link com.google.protobuf.Descriptors.Descriptor protobuf
-         * descriptor} for the {@link ProtobufConsumeOptions#schemaSubject() schema subject} from the schema registry
-         * using version {@link ProtobufConsumeOptions#schemaVersion() schema version} and create
+         * descriptor} based on the {@link ProtobufConsumeOptions#descriptorProvider()} and create the
          * {@link com.google.protobuf.Message message} parsing functions according to
          * {@link io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)}.
          * These functions will be adapted to handle schema changes.
-         *
-         * <p>
-         * For purposes of reproducibility across restarts where schema changes may occur, it is advisable for callers
-         * to set a specific {@link ProtobufConsumeOptions#schemaVersion() schema version}. This will ensure the
-         * resulting {@link io.deephaven.engine.table.TableDefinition table definition} will not change across restarts.
-         * This gives the caller an explicit opportunity to update any downstream consumers when updating
-         * {@link ProtobufConsumeOptions#schemaVersion() schema version} if necessary.
          *
          * @param options the options
          * @return the key or value spec
          * @see io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)
          *      parsing
-         * @see <a href=
-         *      "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-protobuf.html">kafka
-         *      protobuf serdes</a>
          */
         public static KeyOrValueSpec protobufSpec(ProtobufConsumeOptions options) {
             return new ProtobufConsumeImpl(options);
@@ -579,6 +573,42 @@ public class KafkaTools {
         @SuppressWarnings("unused")
         public static KeyOrValueSpec rawSpec(ColumnHeader<?> header, Class<? extends Deserializer<?>> deserializer) {
             return new RawConsume(ColumnDefinition.from(header), deserializer);
+        }
+
+        /**
+         * Creates a kafka key or value spec implementation from an {@link ObjectProcessor}.
+         *
+         * <p>
+         * The respective column definitions are derived from the combination of {@code columnNames} and
+         * {@link ObjectProcessor#outputTypes()}.
+         *
+         * @param deserializer the deserializer
+         * @param processor the object processor
+         * @param columnNames the column names
+         * @return the Kafka key or value spec
+         * @param <T> the object type
+         */
+        public static <T> KeyOrValueSpec objectProcessorSpec(
+                Deserializer<? extends T> deserializer,
+                ObjectProcessor<? super T> processor,
+                List<String> columnNames) {
+            return new KeyOrValueSpecObjectProcessorImpl<>(deserializer, processor, columnNames);
+        }
+
+        /**
+         * Creates a kafka key or value spec implementation from a byte-array {@link ObjectProcessor}.
+         *
+         * <p>
+         * Equivalent to {@code objectProcessorSpec(new ByteArrayDeserializer(), processor, columnNames)}.
+         *
+         * @param processor the byte-array object processor
+         * @param columnNames the column names
+         * @return the Kafka key or value spec
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec objectProcessorSpec(ObjectProcessor<? super byte[]> processor,
+                List<String> columnNames) {
+            return objectProcessorSpec(new ByteArrayDeserializer(), processor, columnNames);
         }
     }
 
@@ -1258,11 +1288,14 @@ public class KafkaTools {
     }
 
     static SchemaRegistryClient newSchemaRegistryClient(Map<String, ?> configs, List<SchemaProvider> providers) {
+        // Note: choosing to not use the constructor with doLog which is a newer API; this is in support of downstream
+        // users _potentially_ being able to replace kafka jars with previous versions.
         final AbstractKafkaSchemaSerDeConfig config = new AbstractKafkaSchemaSerDeConfig(
                 AbstractKafkaSchemaSerDeConfig.baseConfigDef(),
-                configs,
-                false);
-        return SchemaRegistryClientFactory.newClient(
+                configs);
+        // Note: choosing to not use SchemaRegistryClientFactory.newClient which is a newer API; this is in support of
+        // downstream users _potentially_ being able to replace kafka jars with previous versions.
+        return new CachedSchemaRegistryClient(
                 config.getSchemaRegistryUrls(),
                 config.getMaxSchemasPerSubject(),
                 List.copyOf(providers),
@@ -1574,7 +1607,6 @@ public class KafkaTools {
                 } else {
                     result = definitionFactory.apply(commonColumnName);
                 }
-                consumerProperties.remove(nameProperty);
             } else if (nameDefault == null) {
                 result = null;
             } else {

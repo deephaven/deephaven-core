@@ -357,7 +357,7 @@ public class TestFormulaColumn {
         {
             FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "(double)IntCol");
             formulaColumn.initDef(availableColumns);
-            formulaColumn.initInputs(testDataTable);
+            formulaColumn.initInputs(testDataTable.getRowSet(), testDataTable.getColumnSourceMap());
 
             result = formulaColumn.getDataView().getDouble(0);
             assertEquals((double) BASE_VALUES[0], result);
@@ -557,7 +557,7 @@ public class TestFormulaColumn {
     private FormulaColumn initCheck(String formulaString) {
         FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", formulaString);
         formulaColumn.initDef(availableColumns);
-        formulaColumn.initInputs(testDataTable);
+        formulaColumn.initInputs(testDataTable.getRowSet(), testDataTable.getColumnSourceMap());
         return formulaColumn;
     }
 

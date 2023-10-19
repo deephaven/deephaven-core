@@ -3,12 +3,10 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
+import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -20,11 +18,17 @@ import java.util.Map;
 public interface ColumnSourceManager {
 
     /**
-     * Get a map of name to {@link ColumnSource} for the column sources maintained by this manager.
+     * Get a map of name to {@link DeferredGroupingColumnSource} for the column sources maintained by this manager.
      *
      * @return An unmodifiable view of the column source map maintained by this manager.
      */
-    Map<String, ? extends ColumnSource<?>> getColumnSources();
+    Map<String, ? extends DeferredGroupingColumnSource<?>> getColumnSources();
+
+    /**
+     * Turn off column grouping, and clear the groupings on all GROUPING column sources. Note that this does *not*
+     * affect PARTITIONING columns.
+     */
+    void disableGrouping();
 
     /**
      * Add a table location to the list to be checked in run().
@@ -50,44 +54,11 @@ public interface ColumnSourceManager {
 
     /**
      * Get the added locations that have been found to exist and have non-zero size.
-     *
+     * 
      * @return The added locations that have been found to exist and have non-zero size
      */
     @SuppressWarnings("unused")
     Collection<TableLocation> includedLocations();
-
-    /**
-     * Get the added locations that have been found to exist and have non-zero size as a table along with the table
-     * {@link io.deephaven.engine.rowset.RowSet row sets} for each location.
-     *
-     * @return The added locations that have been found to exist and have non-zero size
-     */
-    @SuppressWarnings("unused")
-    Table locationTable();
-
-    /**
-     * Get the name of the column that contains the {@link TableLocation} values from {@link #locationTable()}.
-     *
-     * @return The name of the location column
-     */
-    @SuppressWarnings("unused")
-    String locationColumnName();
-
-    /**
-     * Get the name of the column that contains the offset values from {@link #locationTable()}.
-     *
-     * @return The name of the location column
-     */
-    @SuppressWarnings("unused")
-    String offsetColumnName();
-
-    /**
-     * Get the name of the column that contains the {@link RowSet} values from {@link #locationTable()}.
-     *
-     * @return The name of the row set column
-     */
-    @SuppressWarnings("unused")
-    String rowSetColumnName();
 
     /**
      * Report whether this ColumnSourceManager has no locations that have been "included" (i.e. found to exist with

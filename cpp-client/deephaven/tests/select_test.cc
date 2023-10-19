@@ -9,8 +9,6 @@
 #include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::client::Client;
-using deephaven::client::NumCol;
-using deephaven::client::StrCol;
 using deephaven::client::TableHandle;
 using deephaven::client::utility::TableMaker;
 using deephaven::dhcore::DeephavenConstants;
@@ -87,12 +85,8 @@ TEST_CASE("Create / Update / fetch a Table", "[select]") {
   maker.AddColumn("StringValue", string_data);
   auto t = maker.MakeTable(tm.Client().GetManager());
   auto t2 = t.Update("Q2 = IntValue * 100");
-  std::cout << t2.Stream(true) << '\n';
   auto t3 = t2.Update("Q3 = Q2 + 10");
-  std::cout << t3.Stream(true) << '\n';
-  auto q2 = t3.GetNumCol("Q2");
-  auto t4 = t3.Update((q2 + 100).as("Q4"));
-  std::cout << t4.Stream(true) << '\n';
+  auto t4 = t3.Update("Q4 = Q2 + 100");
 
   std::vector<int32_t> q2_data = {0, 100, 200, 300, 400, 500, 600, 700, 800, 900};
   std::vector<int32_t> q3_data = {10, 110, 210, 310, 410, 510, 610, 710, 810, 910};
@@ -117,22 +111,13 @@ TEST_CASE("Select a few columns", "[select]") {
   auto t1 = table.Where("ImportDate == `2017-11-01` && Ticker == `AAPL`")
       .Select("Ticker", "Close", "Volume")
       .Head(2);
-  std::cout << t1.Stream(true) << '\n';
-
-  // Symbolically
-  auto [importDate, ticker, close, volume] =
-      table.GetCols<StrCol, StrCol, NumCol, NumCol>("ImportDate", "Ticker", "Close", "Volume");
-  auto t2 = table.Where(importDate == "2017-11-01" && ticker == "AAPL")
-      .Select(ticker, close, volume)
-      .Head(2);
-  std::cout << t2.Stream(true) << '\n';
 
   std::vector<std::string> ticker_data = {"AAPL", "AAPL"};
   std::vector<double> close_data = {23.5, 24.2};
   std::vector<int64_t> vol_data = {100000, 250000};
 
   CompareTable(
-      t2,
+      t1,
       "Ticker", ticker_data,
       "Close", close_data,
       "Volume", vol_data
@@ -143,28 +128,20 @@ TEST_CASE("LastBy + Select", "[select]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
 
-  auto t1 = table.Where("ImportDate == `2017-11-01` && Ticker == `AAPL`").LastBy("Ticker")
+  auto t1 = table.Where("ImportDate == `2017-11-01` && Ticker == `AAPL`")
+      .LastBy("Ticker")
       .Select("Ticker", "Close", "Volume");
   std::cout << t1.Stream(true) << '\n';
 
-  // Symbolically
-  auto importDate = table.GetStrCol("ImportDate");
-  auto ticker = table.GetStrCol("Ticker");
-  auto close = table.GetNumCol("Close");
-  auto volume = table.GetNumCol("Volume");
-  auto t2 = table.Where(importDate == "2017-11-01" && ticker == "AAPL").LastBy(ticker)
-      .Select(ticker, close, volume);
-  std::cout << t2.Stream(true) << '\n';
-
-  std::vector<std::string> tickerData = {"AAPL"};
-  std::vector<double> closeData = {26.7};
-  std::vector<int64_t> volData = {19000};
+  std::vector<std::string> ticker_data = {"AAPL"};
+  std::vector<double> close_data = {26.7};
+  std::vector<int64_t> vol_data = {19000};
 
   CompareTable(
-      t2,
-      "Ticker", tickerData,
-      "Close", closeData,
-      "Volume", volData
+      t1,
+      "Ticker", ticker_data,
+      "Close", close_data,
+      "Volume", vol_data
   );
 }
 
@@ -175,53 +152,40 @@ TEST_CASE("New columns", "[select]") {
   // A formula expression
   auto t1 = table.Where("ImportDate == `2017-11-01` && Ticker == `AAPL`")
       .Select("MV1 = Volume * Close", "V_plus_12 = Volume + 12");
-  std::cout << t1.Stream(true) << '\n';
 
-  // Symbolically
-  auto importDate = table.GetStrCol("ImportDate");
-  auto ticker = table.GetStrCol("Ticker");
-  auto close = table.GetNumCol("Close");
-  auto volume = table.GetNumCol("Volume");
+  std::vector<double> mv1_data = {2350000, 6050000, 507300};
+  std::vector<int64_t> mv2_data = {100012, 250012, 19012};
 
-  auto t2 = table.Where(importDate == "2017-11-01" && ticker == "AAPL")
-      .Select((volume * close).as("MV1"), (volume + 12).as("V_plus_12"));
-  std::cout << t2.Stream(true) << '\n';
+  CompareTable(
+      t1,
+      "MV1", mv1_data,
+      "V_plus_12", mv2_data
+  );
+}
 
-  std::vector<double> mv1Data = {2350000, 6050000, 507300};
-  std::vector<int64_t> mv2Data = {100012, 250012, 19012};
+TEST_CASE("Drop columns", "[select]") {
+  auto tm = TableMakerForTests::Create();
+  auto table = tm.Table();
 
-  const TableHandle *tables[] = {&t1, &t2};
-  for (const auto *t : tables) {
-    CompareTable(
-        *t,
-        "MV1", mv1Data,
-        "V_plus_12", mv2Data
-    );
-  }
+  auto t1 = table.DropColumns({"ImportDate", "Open", "Close"});
+  CHECK(2 == t1.Schema()->NumCols());
 }
 
 TEST_CASE("Simple Where", "[select]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
   auto updated = table.Update("QQQ = i");
-  // Symbolically
-  auto importDate = updated.GetStrCol("ImportDate");
-  auto ticker = updated.GetStrCol("Ticker");
-  auto volume = updated.GetNumCol("Volume");
-  // if we allowed C++17 we could do something like
-  // auto [importDate, ticker, volume] = table.getCol<StrCol, StrCol, NumCol>("ImportDate", "Ticker", "Volume");
 
-  auto t2 = updated.Where(importDate == "2017-11-01" && ticker == "IBM")
-      .Select(ticker, volume);
-  std::cout << t2.Stream(true) << '\n';
+  auto t1 = updated.Where("ImportDate == `2017-11-01` && Ticker == `IBM`")
+      .Select("Ticker", "Volume");
 
-  std::vector<std::string> tickerData = {"IBM"};
-  std::vector<int64_t> volData = {138000};
+  std::vector<std::string> ticker_data = {"IBM"};
+  std::vector<int64_t> vol_data = {138000};
 
   CompareTable(
-      t2,
-      "Ticker", tickerData,
-      "Volume", volData
+      t1,
+      "Ticker", ticker_data,
+      "Volume", vol_data
   );
 }
 
@@ -234,26 +198,14 @@ TEST_CASE("Formula in the Where clause", "[select]") {
       .Select("Ticker", "Volume");
   std::cout << t1.Stream(true) << '\n';
 
-  // Symbolically
-  auto importDate = table.GetStrCol("ImportDate");
-  auto ticker = table.GetStrCol("Ticker");
-  auto volume = table.GetNumCol("Volume");
-  auto t2 = table.Where(
-          importDate == "2017-11-01" && ticker == "AAPL" && volume % 10 == volume % 100)
-      .Select(ticker, volume);
-  std::cout << t2.Stream(true) << '\n';
+  std::vector<std::string> ticker_data = {"AAPL", "AAPL", "AAPL"};
+  std::vector<int64_t> vol_data = {100000, 250000, 19000};
 
-  std::vector<std::string> tickerData = {"AAPL", "AAPL", "AAPL"};
-  std::vector<int64_t> volData = {100000, 250000, 19000};
-
-  const TableHandle *tables[] = {&t1, &t2};
-  for (const auto *t : tables) {
-    CompareTable(
-        *t,
-        "Ticker", tickerData,
-        "Volume", volData
-    );
-  }
+  CompareTable(
+      t1,
+      "Ticker", ticker_data,
+      "Volume", vol_data
+  );
 }
 
 TEST_CASE("Simple 'Where' with syntax error", "[select]") {

@@ -16,6 +16,8 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,7 +28,8 @@ import java.util.List;
 /**
  * Boilerplate super-class for various clock-oriented filters.
  */
-public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implements ReindexingFilter, Runnable {
+public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl
+        implements ReindexingFilter, Runnable, NotificationQueue.Dependency {
 
     protected final String columnName;
     protected final Clock clock;
@@ -92,6 +95,16 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
     }
 
     @Override
+    public boolean satisfied(long step) {
+        return updateGraph.satisfied(step);
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateGraph;
+    }
+
+    @Override
     public final void setRecomputeListener(@NotNull final RecomputeListener listener) {
         if (!refreshing) {
             return;
@@ -112,8 +125,7 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
         final RowSet added = updateAndGetAddedIndex();
         if (added != null && !added.isEmpty()) {
             resultTable.getRowSet().writableCast().insert(added);
-            resultTable.notifyListeners(added, RowSetFactory.empty(),
-                    RowSetFactory.empty());
+            resultTable.notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
         }
     }
 

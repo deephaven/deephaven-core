@@ -11,7 +11,6 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.AbstractNotification;
@@ -147,7 +146,6 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             @NotNull final Throwable error,
             @Nullable final TableListener.Entry entry) {
         forceReferenceCountToZero();
-        recorders.forEach(ListenerRecorder::forceReferenceCountToZero);
         propagateErrorDownstream(uncaughtExceptionFromProcess, error, entry);
         try {
             if (systemicResult()) {
@@ -160,6 +158,11 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     protected boolean systemicResult() {
         return SystemicObjectTracker.isSystemic(result);
+    }
+
+    @Override
+    protected void destroy() {
+        recorders.forEach(ListenerRecorder::forceReferenceCountToZero);
     }
 
     protected void propagateErrorDownstream(

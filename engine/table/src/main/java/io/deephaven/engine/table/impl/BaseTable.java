@@ -13,6 +13,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.exceptions.UpdateGraphConflictException;
 import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -474,26 +475,31 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         StepUpdater.checkForOlderStep(step, lastSatisfiedStep);
         StepUpdater.checkForOlderStep(step, lastNotificationStep);
 
-        final Collection<Object> localParents = parents;
         // If we have no parents whatsoever then we are a source, and have no dependency chain other than the UGP
         // itself
-        if (localParents.isEmpty()) {
-            if (updateGraph.satisfied(step)) {
-                updateGraph.logDependencies().append("Root node satisfied ").append(this)
-                        .endl();
-                StepUpdater.tryUpdateRecordedStep(LAST_SATISFIED_STEP_UPDATER, this, step);
-                return true;
+        final Collection<Object> localParents = parents;
+
+        if (!updateGraph.satisfied(step)) {
+            if (localParents.isEmpty()) {
+                updateGraph.logDependencies().append("Root node not satisfied ").append(this).endl();
+            } else {
+                updateGraph.logDependencies().append("Update graph not satisfied for ").append(this).endl();
             }
             return false;
         }
 
-        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+        if (localParents.isEmpty()) {
+            updateGraph.logDependencies().append("Root node satisfied ").append(this).endl();
+            StepUpdater.tryUpdateRecordedStep(LAST_SATISFIED_STEP_UPDATER, this, step);
+            return true;
+        }
+
         synchronized (localParents) {
             for (Object parent : localParents) {
                 if (parent instanceof NotificationQueue.Dependency) {
                     if (!((NotificationQueue.Dependency) parent).satisfied(step)) {
                         updateGraph.logDependencies()
-                                .append("Parents dependencies not satisfied for ").append(this)
+                                .append("Parent dependencies not satisfied for ").append(this)
                                 .append(", parent=").append((NotificationQueue.Dependency) parent)
                                 .endl();
                         return false;
@@ -503,7 +509,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
 
         updateGraph.logDependencies()
-                .append("All parents dependencies satisfied for ").append(this)
+                .append("All parent dependencies satisfied for ").append(this)
                 .endl();
 
         StepUpdater.tryUpdateRecordedStep(LAST_SATISFIED_STEP_UPDATER, this, step);
@@ -552,9 +558,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     }
 
     @Override
-    public void addUpdateListener(final TableUpdateListener listener) {
+    public void addUpdateListener(@NotNull final TableUpdateListener listener) {
         if (isFailed) {
-            throw new IllegalStateException("Can not listen to failed table " + description);
+            throw new TableAlreadyFailedException("Can not listen to failed table " + description);
         }
         if (isRefreshing()) {
             // ensure that listener is in the same update graph if applicable
@@ -565,14 +571,38 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
     }
 
+    @Override
+    public boolean addUpdateListener(
+            @NotNull final TableUpdateListener listener, final long requiredLastNotificationStep) {
+        if (isFailed) {
+            throw new TableAlreadyFailedException("Can not listen to failed table " + description);
+        }
+
+        if (!isRefreshing()) {
+            return false;
+        }
+
+        synchronized (this) {
+            if (this.lastNotificationStep != requiredLastNotificationStep) {
+                return false;
+            }
+
+            // ensure that listener is in the same update graph if applicable
+            if (listener instanceof NotificationQueue.Dependency) {
+                getUpdateGraph((NotificationQueue.Dependency) listener);
+            }
+            ensureChildListenerReferences().add(listener);
+
+            return true;
+        }
+    }
+
     private SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> ensureChildListenerReferences() {
         // noinspection unchecked
         return FieldUtils.ensureField(this, CHILD_LISTENER_REFERENCES_UPDATER, EMPTY_CHILD_LISTENER_REFERENCES,
                 () -> new SimpleReferenceManager<>((final TableUpdateListener tableUpdateListener) -> {
                     if (tableUpdateListener instanceof LegacyListenerAdapter) {
                         return (LegacyListenerAdapter) tableUpdateListener;
-                    } else if (tableUpdateListener instanceof SwapListener) {
-                        return ((SwapListener) tableUpdateListener).getReferenceForSource();
                     } else {
                         return new WeakSimpleReference<>(tableUpdateListener);
                     }
@@ -696,12 +726,14 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             validateUpdateOverlaps(update);
         }
 
-        lastNotificationStep = currentStep;
-
         // notify children
-        final NotificationQueue notificationQueue = getNotificationQueue();
-        childListenerReferences.forEach(
-                (listenerRef, listener) -> notificationQueue.addNotification(listener.getNotification(update)));
+        synchronized (this) {
+            lastNotificationStep = currentStep;
+
+            final NotificationQueue notificationQueue = getNotificationQueue();
+            childListenerReferences.forEach(
+                    (listenerRef, listener) -> notificationQueue.addNotification(listener.getNotification(update)));
+        }
 
         update.release();
     }
@@ -808,11 +840,14 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         isFailed = true;
         maybeSignal();
-        lastNotificationStep = currentStep;
 
-        final NotificationQueue notificationQueue = getNotificationQueue();
-        childListenerReferences.forEach((listenerRef, listener) -> notificationQueue
-                .addNotification(listener.getErrorNotification(e, sourceEntry)));
+        synchronized (this) {
+            lastNotificationStep = currentStep;
+
+            final NotificationQueue notificationQueue = getNotificationQueue();
+            childListenerReferences.forEach((listenerRef, listener) -> notificationQueue
+                    .addNotification(listener.getErrorNotification(e, sourceEntry)));
+        }
     }
 
     /**
@@ -1256,34 +1291,35 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     }
 
     public static void initializeWithSnapshot(
-            String logPrefix, SwapListener swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
-        if (swapListener == null) {
+            @NotNull final String logPrefix,
+            @Nullable final ConstructSnapshot.SnapshotControl snapshotControl,
+            @NotNull final ConstructSnapshot.SnapshotFunction snapshotFunction) {
+        if (snapshotControl == null) {
             snapshotFunction.call(false, LogicalClock.NULL_CLOCK_VALUE);
             return;
         }
-        ConstructSnapshot.callDataSnapshotFunction(logPrefix, swapListener.makeSnapshotControl(), snapshotFunction);
+        ConstructSnapshot.callDataSnapshotFunction(logPrefix, snapshotControl, snapshotFunction);
     }
 
-    public interface SwapListenerFactory<T extends SwapListener> {
-        T newListener(BaseTable<?> sourceTable);
+    public interface SnapshotControlFactory<T extends ConstructSnapshot.SnapshotControl> {
+        T newControl(BaseTable<?> sourceTable);
     }
 
     /**
-     * If we are a refreshing table, then we should create a swap listener that listens for updates to this table.
-     *
+     * If we are a refreshing table, then we should create a snapshot control to validate the snapshot.
+     * <p>
      * Otherwise, we return null.
      *
-     * @return a swap listener for this table (or null)
+     * @return a snapshot control to snapshot this table (or null)
      */
     @Nullable
-    public <T extends SwapListener> T createSwapListenerIfRefreshing(final SwapListenerFactory<T> factory) {
+    public <T extends OperationSnapshotControl> T createSnapshotControlIfRefreshing(
+            final SnapshotControlFactory<T> factory) {
         if (!isRefreshing()) {
             return null;
         }
 
-        final T swapListener = factory.newListener(this);
-        swapListener.subscribeForUpdates();
-        return swapListener;
+        return factory.newControl(this);
     }
 
     // ------------------------------------------------------------------------------------------------------------------

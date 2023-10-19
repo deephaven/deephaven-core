@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
@@ -597,12 +598,9 @@ public class ConstructSnapshot {
             final RowSet keysToSnapshot;
             if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
-            } else if (usePrev) {
-                try (final RowSet prevIndex = table.getRowSet().copyPrev()) {
-                    keysToSnapshot = prevIndex.subSetForPositions(positionsToSnapshot);
-                }
             } else {
-                keysToSnapshot = table.getRowSet().subSetForPositions(positionsToSnapshot);
+                keysToSnapshot = (usePrev ? table.getRowSet().prev() : table.getRowSet())
+                        .subSetForPositions(positionsToSnapshot);
             }
             return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
         };
@@ -681,22 +679,19 @@ public class ConstructSnapshot {
                 if (positionsToSnapshot == null && reversePositionsToSnapshot == null) {
                     keysToSnapshot = null;
                 } else {
-                    final RowSet rowSetToUse = usePrev ? table.getRowSet().copyPrev() : table.getRowSet();
-                    try (final SafeCloseable ignored = usePrev ? rowSetToUse : null) {
-                        final WritableRowSet forwardKeys =
-                                positionsToSnapshot == null ? null
-                                        : rowSetToUse.subSetForPositions(positionsToSnapshot);
-                        final RowSet reverseKeys = reversePositionsToSnapshot == null ? null
-                                : rowSetToUse.subSetForReversePositions(reversePositionsToSnapshot);
-                        if (forwardKeys != null) {
-                            if (reverseKeys != null) {
-                                forwardKeys.insert(reverseKeys);
-                                reverseKeys.close();
-                            }
-                            keysToSnapshot = forwardKeys;
-                        } else {
-                            keysToSnapshot = reverseKeys;
+                    final RowSet rowSetToUse = usePrev ? table.getRowSet().prev() : table.getRowSet();
+                    final WritableRowSet forwardKeys =
+                            positionsToSnapshot == null ? null : rowSetToUse.subSetForPositions(positionsToSnapshot);
+                    final RowSet reverseKeys = reversePositionsToSnapshot == null ? null
+                            : rowSetToUse.subSetForReversePositions(reversePositionsToSnapshot);
+                    if (forwardKeys != null) {
+                        if (reverseKeys != null) {
+                            forwardKeys.insert(reverseKeys);
+                            reverseKeys.close();
                         }
+                        keysToSnapshot = forwardKeys;
+                    } else {
+                        keysToSnapshot = reverseKeys;
                     }
                 }
                 try (final RowSet ignored = keysToSnapshot) {
@@ -1317,9 +1312,9 @@ public class ConstructSnapshot {
             if (!functionSuccessful) {
                 final String message = "Failed to execute function concurrently despite consistent state";
                 if (caughtException != null) {
-                    throw new UncheckedDeephavenException(message, caughtException);
+                    throw new SnapshotUnsuccessfulException(message, caughtException);
                 } else {
-                    throw new UncheckedDeephavenException(message);
+                    throw new SnapshotUnsuccessfulException(message);
                 }
             }
         } else {
@@ -1399,8 +1394,7 @@ public class ConstructSnapshot {
             @NotNull final Object logIdentityObject,
             @Nullable final BitSet columnsToSerialize,
             @Nullable final RowSet keysToSnapshot) {
-        // noinspection resource
-        snapshot.rowSet = (usePrev ? table.getRowSet().copyPrev() : table.getRowSet()).copy();
+        snapshot.rowSet = (usePrev ? table.getRowSet().prev() : table.getRowSet()).copy();
 
         if (keysToSnapshot != null) {
             snapshot.rowsIncluded = snapshot.rowSet.intersect(keysToSnapshot);
@@ -1473,7 +1467,7 @@ public class ConstructSnapshot {
             @Nullable final BitSet columnsToSerialize,
             @Nullable final RowSet keysToSnapshot) {
 
-        snapshot.rowsAdded = (usePrev ? table.getRowSet().copyPrev() : table.getRowSet()).copy();
+        snapshot.rowsAdded = (usePrev ? table.getRowSet().prev() : table.getRowSet()).copy();
         snapshot.rowsRemoved = RowSetFactory.empty();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
 

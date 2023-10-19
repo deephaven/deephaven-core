@@ -9,6 +9,8 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -17,7 +19,9 @@ import java.util.List;
 /**
  * This will filter a table starting off with the first N rows, and then adding new rows to the table on each run.
  */
-public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implements Runnable {
+public class RollingReleaseFilter
+        extends WhereFilterLivenessArtifactImpl
+        implements Runnable, NotificationQueue.Dependency {
     private final long workingSize;
     private final long rollingSize;
     private long offset = 0;
@@ -85,6 +89,16 @@ public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implem
         this.listener = listener;
         listener.setIsRefreshing(true);
         updateGraph.addSource(this);
+    }
+
+    @Override
+    public boolean satisfied(long step) {
+        return updateGraph.satisfied(step);
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateGraph;
     }
 
     @Override

@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.util.ModelFileGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,7 +32,11 @@ public class TestConditionFilterGeneration {
                 .captureQueryScope()
                 .captureUpdateGraph()
                 .build().open();
+    }
 
+    @After
+    public void tearDown() {
+        executionContext.close();
     }
 
     // @Test

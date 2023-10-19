@@ -9,7 +9,6 @@
 #include <memory>
 #include <mutex>
 #include <thread>
-#include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/dhcore/utility/utility.h"
 
 namespace deephaven::client::utility {
@@ -21,19 +20,16 @@ public:
   [[nodiscard]]
   static std::shared_ptr<Executor> Create(std::string id);
 
-  explicit Executor(Private, std::string id);
+  Executor(Private, std::string id);
   ~Executor();
 
   void Shutdown();
 
-  using callback_t = deephaven::dhcore::utility::Callback<>;
-
-  void Invoke(std::shared_ptr<callback_t> f);
-
-  template<typename Callable>
-  void InvokeCallable(Callable &&callable) {
-    Invoke(callback_t::CreateFromCallable(std::forward<Callable>(callable)));
-  }
+  /**
+   * Enqueues 'f' on the Executor's thread. If f throws, the exception will be logged but otherwise
+   * ignored.
+   */
+  void Invoke(std::function<void()> f);
 
 private:
   static void ThreadStart(std::shared_ptr<Executor> self);
@@ -44,7 +40,7 @@ private:
   std::mutex mutex_;
   std::condition_variable condvar_;
   bool cancelled_ = false;
-  std::deque<std::shared_ptr<callback_t>> todo_;
+  std::vector<std::function<void()>> todo_;
   std::thread executorThread_;
 };
 }  // namespace deephaven::client::utility

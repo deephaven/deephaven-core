@@ -208,16 +208,17 @@ class ParquetTestCase(BaseTestCase):
     def get_table_with_array_data(self):
         # create a table with columns to test different types and edge cases
         dh_table = empty_table(20).update(formulas=[
-            "someStringArrayColumn = new String[] {i % 10 == 0?null:(`` + (i % 101))}",
-            "someIntArrayColumn = new int[] {i}",
-            "someLongArrayColumn = new long[] {ii}",
-            "someDoubleArrayColumn = new double[] {i*1.1}",
-            "someFloatArrayColumn = new float[] {(float)(i*1.1)}",
-            "someBoolArrayColumn = new Boolean[] {i % 3 == 0?true:i%3 == 1?false:null}",
-            "someShorArrayColumn = new short[] {(short)i}",
-            "someByteArrayColumn = new byte[] {(byte)i}",
-            "someCharArrayColumn = new char[] {(char)i}",
-            "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
+            "someStringArrayColumn = new String[] {i % 10 == 0 ? null : (`` + (i % 101))}",
+            "someIntArrayColumn = new int[] {i % 10 == 0 ? null : i}",
+            "someLongArrayColumn = new long[] {i % 10 == 0 ? null : i}",
+            "someDoubleArrayColumn = new double[] {i % 10 == 0 ? null : i*1.1}",
+            "someFloatArrayColumn = new float[] {i % 10 == 0 ? null : (float)(i*1.1)}",
+            "someBoolArrayColumn = new Boolean[] {i % 3 == 0 ? true :i % 3 == 1 ? false : null}",
+            "someShorArrayColumn = new short[] {i % 10 == 0 ? null : (short)i}",
+            "someByteArrayColumn = new byte[] {i % 10 == 0 ? null : (byte)i}",
+            "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
+            "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
+            "someBiColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
             "nullStringArrayColumn = new String[] {(String)null}",
             "nullIntArrayColumn = new int[] {(int)null}",
             "nullLongArrayColumn = new long[] {(long)null}",
@@ -227,7 +228,8 @@ class ParquetTestCase(BaseTestCase):
             "nullShorArrayColumn = new short[] {(short)null}",
             "nullByteArrayColumn = new byte[] {(byte)null}",
             "nullCharArrayColumn = new char[] {(char)null}",
-            "nullTimeArrayColumn = new Instant[] {(Instant)null}"
+            "nullTimeArrayColumn = new Instant[] {(Instant)null}",
+            "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"
         ])
         return dh_table
 

@@ -234,9 +234,16 @@ public class ParquetTools {
         return new File(destFile.getParent(), ".OLD_" + destFile.getName());
     }
 
-    public static Function<String[], String> defaultIndexFileName(@NotNull final String path) {
+    private static String minusParquetSuffix(@NotNull final String s) {
+        if (s.endsWith(PARQUET_FILE_EXTENSION)) {
+            return s.substring(0, s.length() - PARQUET_FILE_EXTENSION.length());
+        }
+        return s;
+    }
+
+    public static Function<String, String> defaultGroupingFileName(@NotNull final String path) {
         final String prefix = minusParquetSuffix(path);
-        return columnNames -> prefix + "_" + String.join(",", columnNames) + "_index.parquet";
+        return columnName -> prefix + "_" + columnName + "_grouping.parquet";
     }
 
     /**
@@ -701,8 +708,15 @@ public class ParquetTools {
                 throw new IllegalArgumentException("First location key " + firstKey
                         + " has null partition value at partition key " + partitionKey);
             }
-            allColumns.add(ColumnDefinition.fromGenericType(partitionKey,
-                    getUnboxedTypeIfBoxed(partitionValue.getClass()), null, ColumnDefinition.ColumnType.Partitioning));
+
+            // Primitives should be unboxed, except booleans
+            Class<?> dataType = partitionValue.getClass();
+            if (dataType != Boolean.class) {
+                dataType = getUnboxedTypeIfBoxed(partitionValue.getClass());
+            }
+
+            allColumns.add(ColumnDefinition.fromGenericType(partitionKey, dataType, null,
+                    ColumnDefinition.ColumnType.Partitioning));
         }
         allColumns.addAll(schemaInfo.getFirst());
         return readPartitionedTable(readInstructions.isRefreshing() ? locationKeyFinder : initialKeys,
@@ -723,7 +737,7 @@ public class ParquetTools {
         return readPartitionedTable(layout, layout.getInstructions(), layout.getTableDefinition());
     }
 
-    private static final SimpleTypeMap<Class<?>> DB_ARRAY_TYPE_MAP = SimpleTypeMap.create(
+    private static final SimpleTypeMap<Class<?>> VECTOR_TYPE_MAP = SimpleTypeMap.create(
             null, CharVector.class, ByteVector.class, ShortVector.class, IntVector.class, LongVector.class,
             FloatVector.class, DoubleVector.class, ObjectVector.class);
 
@@ -757,7 +771,7 @@ public class ParquetTools {
                 if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.StringSet) {
                     colDef = ColumnDefinition.fromGenericType(parquetColDef.name, StringSet.class, null);
                 } else if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.Vector) {
-                    final Class<?> vectorType = DB_ARRAY_TYPE_MAP.get(baseType);
+                    final Class<?> vectorType = VECTOR_TYPE_MAP.get(baseType);
                     if (vectorType != null) {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, vectorType, baseType);
                     } else {
@@ -856,6 +870,9 @@ public class ParquetTools {
                 (final String colName, final Set<String> takenNames) -> NameValidator.legalizeColumnName(colName,
                         s -> s.replace(" ", "_"), takenNames)));
     }
+
+    public static final ParquetInstructions UNCOMPRESSED =
+            ParquetInstructions.builder().setCompressionCodecName("UNCOMPRESSED").build();
 
     // region Indexing
     /**
@@ -957,6 +974,11 @@ public class ParquetTools {
     }
     // endregion
 
+    /**
+     * @deprecated Use LZ4_RAW instead, as explained
+     *             <a href="https://github.com/apache/parquet-format/blob/master/Compression.md">here</a>
+     */
+    @Deprecated
     public static final ParquetInstructions LZ4 = ParquetInstructions.builder().setCompressionCodecName("LZ4").build();
     public static final ParquetInstructions LZ4_RAW =
             ParquetInstructions.builder().setCompressionCodecName("LZ4_RAW").build();

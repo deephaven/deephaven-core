@@ -155,7 +155,7 @@ def pattern(
     See https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/regex/Pattern.html for documentation on
     the regex pattern.
 
-    This filter will never match {@code null} values.
+    This filter will never match ``null`` values.
 
     Args:
         mode (PatternMode): the mode

@@ -232,7 +232,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
             return;
         }
         StreamRequest req = new StreamRequest();
-        Data data = new Data();
+        ClientData data = new ClientData();
         if (msg.isString()) {
             byte[] bytes = msg.asString().getBytes(StandardCharsets.UTF_8);
             Uint8Array payload = new Uint8Array(bytes.length);
@@ -250,7 +250,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
 
         for (int i = 0; references != null && i < references.length; i++) {
             ServerObject reference = references.getAt(i);
-            data.addExportedReferences(reference.typedTicket());
+            data.addReferences(reference.typedTicket());
         }
 
         req.setData(data);
@@ -262,10 +262,10 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
      */
     @TsName(namespace = "dh", name = "WidgetMessageDetails")
     private static class EventDetails implements WidgetMessageDetails {
-        private final Data data;
+        private final ServerData data;
         private final JsArray<JsWidgetExportedObject> exportedObjects;
 
-        public EventDetails(Data data, JsArray<JsWidgetExportedObject> exports) {
+        public EventDetails(ServerData data, JsArray<JsWidgetExportedObject> exports) {
             this.data = data;
             this.exportedObjects = exports;
         }

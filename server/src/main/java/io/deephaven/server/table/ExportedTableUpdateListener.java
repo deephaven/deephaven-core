@@ -5,14 +5,18 @@ package io.deephaven.server.table;
 
 import com.google.rpc.Code;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
+import io.deephaven.engine.liveness.LivenessStateException;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.NotificationStepReceiver;
-import io.deephaven.engine.table.impl.SwapListener;
+import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -24,7 +28,6 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.util.SafeCloseable;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -33,7 +36,7 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 
 /**
  * Manage the lifecycle of exports that are Tables.
- *
+ * <p>
  * Initially we receive a run of exports from the session state. This allows us to timely notify the observer of
  * existing table sizes for both static tables and tables that won't tick frequently. When the run is complete we are
  * sent a notification for exportId == 0 (which is otherwise an invalid export id).
@@ -70,11 +73,15 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
 
         final Ticket ticket = notification.getTicket();
         final int exportId = ExportTicketHelper.ticketToExportId(ticket, "ticket");
+        if (exportId == SessionState.NON_EXPORT_ID) {
+            // ignore non-export notifications; we cannot look these up in the session
+            return;
+        }
 
         try {
             final ExportNotification.State state = notification.getExportState();
             if (state == ExportNotification.State.EXPORTED) {
-                final SessionState.ExportObject<?> export = session.getExport(ticket, "ticket");
+                final SessionState.ExportObject<?> export = session.getExport(exportId);
                 if (export.tryRetainReference()) {
                     try {
                         final Object obj = export.get();
@@ -94,8 +101,12 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
                     listener.dropReference();
                 }
             }
-        } catch (final StatusRuntimeException ignored) {
+        } catch (final LivenessStateException ignored) {
             // we ignore race conditions related to liveness of an export/session
+        } catch (final RuntimeException err) {
+            // let's catch any other error, be verbose about it, but not kill the RPC
+            log.error().append(logPrefix).append("unexpected failure when processing export notification: ")
+                    .append(err).endl();
         }
     }
 
@@ -124,7 +135,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
      * @param exportId the export id of the table being exported
      * @param table the table that was just exported
      */
-    private synchronized void onNewTableExport(final Ticket ticket, final int exportId, final BaseTable table) {
+    private synchronized void onNewTableExport(final Ticket ticket, final int exportId, final BaseTable<?> table) {
         if (table instanceof UncoalescedTable) {
             // uncoalesced tables have no size and don't get updates
             return;
@@ -133,26 +144,39 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             sendUpdateMessage(ticket, table.size(), null);
             return;
         }
+        if (table.isFailed()) {
+            sendUpdateMessage(ticket, -1, Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Exported Table Already Failed"));
+            return;
+        }
 
         // we may receive duplicate creation messages
         if (updateListenerMap.contains(exportId)) {
             return;
         }
 
-        final SwapListener swapListener = new SwapListener(table);
-        swapListener.subscribeForUpdates();
+        final OperationSnapshotControl snapshotControl = new OperationSnapshotControl(table);
         final ListenerImpl listener = new ListenerImpl(table, exportId);
         listener.tryRetainReference();
         updateListenerMap.put(exportId, listener);
 
-        final MutableLong initSize = new MutableLong();
-        BaseTable.initializeWithSnapshot(logPrefix, swapListener, (usePrev, beforeClockValue) -> {
-            swapListener.setListenerAndResult(listener, NOOP_NOTIFICATION_STEP_RECEIVER);
-            final TrackingRowSet rowSet = table.getRowSet();
-            initSize.setValue(usePrev ? rowSet.sizePrev() : rowSet.size());
-            return true;
-        });
-        sendUpdateMessage(ticket, initSize.longValue(), null);
+        try {
+            final MutableLong initSize = new MutableLong();
+            BaseTable.initializeWithSnapshot(logPrefix, snapshotControl, (usePrev, beforeClockValue) -> {
+                snapshotControl.setListenerAndResult(listener, NOOP_NOTIFICATION_STEP_RECEIVER);
+                final TrackingRowSet rowSet = table.getRowSet();
+                initSize.setValue(usePrev ? rowSet.sizePrev() : rowSet.size());
+                return true;
+            });
+            sendUpdateMessage(ticket, initSize.longValue(), null);
+        } catch (final SnapshotUnsuccessfulException err) {
+            if (err.getCause() instanceof TableAlreadyFailedException) {
+                sendUpdateMessage(ticket, -1, Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Exported Table Already Failed"));
+            } else {
+                sendUpdateMessage(ticket, -1, GrpcUtil.securelyWrapError(log, err, Code.FAILED_PRECONDITION));
+            }
+        }
     }
 
     /**
