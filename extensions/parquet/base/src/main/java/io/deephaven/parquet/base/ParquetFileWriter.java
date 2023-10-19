@@ -99,7 +99,7 @@ public class ParquetFileWriter {
                     new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
             serializeFooter(footer, os);
         }
-        // os (and thus writeChannel) are closed at this point.
+        // os (and thus writeChannel) are flushed and closed at this point.
         compressorAdapter.close();
     }
 
