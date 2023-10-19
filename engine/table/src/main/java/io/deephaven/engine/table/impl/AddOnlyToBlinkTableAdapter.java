@@ -51,10 +51,11 @@ public final class AddOnlyToBlinkTableAdapter {
         final MutableObject<QueryTable> resultHolder = new MutableObject<>();
         final MutableObject<AddOnlyToBlinkListener> listenerHolder = new MutableObject<>();
         final BaseTable<?> coalesced = (BaseTable<?>) table.coalesce();
-        final SwapListener swapListener = coalesced.createSwapListenerIfRefreshing(SwapListener::new);
+        final OperationSnapshotControl snapshotControl =
+                coalesced.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
         // noinspection DataFlowIssue swapListener cannot be null here, since we know the table is refreshing
-        ConstructSnapshot.callDataSnapshotFunction("addOnlyToBlink", swapListener.makeSnapshotControl(),
+        ConstructSnapshot.callDataSnapshotFunction("addOnlyToBlink", snapshotControl,
                 (final boolean usePrev, final long beforeClockValue) -> {
                     // Start with the same rows as the original table
                     final TrackingRowSet resultRowSet = usePrev
@@ -69,7 +70,7 @@ public final class AddOnlyToBlinkTableAdapter {
                     final AddOnlyToBlinkListener listener = new AddOnlyToBlinkListener(recorder, result);
                     recorder.setMergedListener(listener);
                     result.addParentReference(listener);
-                    swapListener.setListenerAndResult(recorder, result);
+                    snapshotControl.setListenerAndResult(recorder, result);
 
                     listenerHolder.setValue(listener);
                     resultHolder.setValue(result);

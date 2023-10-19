@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -264,32 +265,24 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     protected final QueryTable doCoalesce() {
         initialize();
 
-        final SwapListener swapListener =
-                createSwapListenerIfRefreshing((final BaseTable<?> parent) -> new SwapListener(parent) {
+        final OperationSnapshotControl snapshotControl =
+                createSnapshotControlIfRefreshing((final BaseTable<?> parent) -> new OperationSnapshotControl(parent) {
 
                     @Override
-                    public void destroy() {
-                        // NB: We can't call super.destroy() because we don't want to try to remove ourselves from the
-                        // coalesced table (see override for removeUpdateListener), but we are probably not missing
-                        // anything by not having super.destroy() invoke its own super.destroy().
-                        removeUpdateListenerUncoalesced(this);
-                    }
-
-                    @Override
-                    public void subscribeForUpdates() {
-                        addUpdateListenerUncoalesced(this);
+                    public boolean subscribeForUpdates(@NotNull final TableUpdateListener listener) {
+                        return addUpdateListenerUncoalesced(listener, lastNotificationStep);
                     }
                 });
 
         final Mutable<QueryTable> result = new MutableObject<>();
-        initializeWithSnapshot("SourceTable.coalesce", swapListener, (usePrev, beforeClockValue) -> {
+        initializeWithSnapshot("SourceTable.coalesce", snapshotControl, (usePrev, beforeClockValue) -> {
             final QueryTable resultTable = new QueryTable(definition, rowSet, columnSourceManager.getColumnSources());
             copyAttributes(resultTable, CopyAttributeOperation.Coalesce);
             if (rowSet.isEmpty()) {
                 resultTable.setAttribute(INITIALLY_EMPTY_COALESCED_SOURCE_TABLE_ATTRIBUTE, true);
             }
 
-            if (swapListener != null) {
+            if (snapshotControl != null) {
                 final ListenerImpl listener =
                         new ListenerImpl("SourceTable.coalesce", this, resultTable) {
 
@@ -300,7 +293,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                                 removeUpdateListenerUncoalesced(this);
                             }
                         };
-                swapListener.setListenerAndResult(listener, resultTable);
+                snapshotControl.setListenerAndResult(listener, resultTable);
             }
 
             result.setValue(resultTable);

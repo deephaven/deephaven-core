@@ -23,6 +23,7 @@ import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -41,6 +42,15 @@ public class ColumnWriterImpl implements ColumnWriter {
 
     private static final int MIN_SLAB_SIZE = 64;
     private final SeekableByteChannel writeChannel;
+    /**
+     * Buffered stream that writes to {@link #writeChannel}. Used for buffering small writes, particularly page headers.
+     */
+    private final BufferedOutputStream bufferedOutput;
+    /**
+     * Following is used to set the size of buffer for {@link #bufferedOutput}. In our testing, we found the page
+     * headers to be much smaller than 16 KB, so using that as the default size.
+     */
+    private static final int EXPECTED_PAGE_HEADER_SIZE = 16 << 10;
     private final ColumnDescriptor column;
     private final RowGroupWriterImpl owner;
     private final CompressorAdapter compressorAdapter;
@@ -74,6 +84,7 @@ public class ColumnWriterImpl implements ColumnWriter {
             final int targetPageSize,
             final ByteBufferAllocator allocator) {
         this.writeChannel = writeChannel;
+        bufferedOutput = new BufferedOutputStream(Channels.newOutputStream(writeChannel), EXPECTED_PAGE_HEADER_SIZE);
         this.column = column;
         this.compressorAdapter = compressorAdapter;
         this.targetPageSize = targetPageSize;
@@ -137,7 +148,6 @@ public class ColumnWriterImpl implements ColumnWriter {
         pageCount++;
         hasDictionary = true;
         dictionaryPage = new DictionaryPageHeader(valuesCount, org.apache.parquet.format.Encoding.PLAIN);
-
     }
 
     public void writeDictionaryPage(final ByteBuffer dictionaryBuffer, final int valuesCount) throws IOException {
@@ -158,7 +168,8 @@ public class ColumnWriterImpl implements ColumnWriter {
                 compressedPageSize,
                 valuesCount,
                 Encoding.PLAIN,
-                Channels.newOutputStream(writeChannel));
+                bufferedOutput);
+        bufferedOutput.flush();
         long headerSize = writeChannel.position() - currentChunkDictionaryPageOffset;
         this.uncompressedLength += uncompressedSize + headerSize;
         this.compressedLength += compressedPageSize + headerSize;
@@ -303,7 +314,8 @@ public class ColumnWriterImpl implements ColumnWriter {
                 valueCount, nullCount, rowCount,
                 rlByteLength,
                 dlByteLength,
-                Channels.newOutputStream(writeChannel));
+                bufferedOutput);
+        bufferedOutput.flush();
         long headerSize = writeChannel.position() - initialOffset;
         this.uncompressedLength += (uncompressedSize + headerSize);
         this.compressedLength += (compressedSize + headerSize);
@@ -347,7 +359,8 @@ public class ColumnWriterImpl implements ColumnWriter {
                 (int) compressedSize,
                 valueCount,
                 valuesEncoding,
-                Channels.newOutputStream(writeChannel));
+                bufferedOutput);
+        bufferedOutput.flush();
         long headerSize = writeChannel.position() - initialOffset;
         this.uncompressedLength += (uncompressedSize + headerSize);
         this.compressedLength += (compressedSize + headerSize);
@@ -431,6 +444,9 @@ public class ColumnWriterImpl implements ColumnWriter {
                         totalValueCount,
                         compressedLength,
                         uncompressedLength));
+
+        // We do not call bout.close() because it closes the underlying writeChannel, and this class does not own the
+        // writeChannel. Also, we are assuming that all the buffered data has already been flushed to the writeChannel.
     }
 
     public ColumnDescriptor getColumn() {

@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
@@ -1311,9 +1312,9 @@ public class ConstructSnapshot {
             if (!functionSuccessful) {
                 final String message = "Failed to execute function concurrently despite consistent state";
                 if (caughtException != null) {
-                    throw new UncheckedDeephavenException(message, caughtException);
+                    throw new SnapshotUnsuccessfulException(message, caughtException);
                 } else {
-                    throw new UncheckedDeephavenException(message);
+                    throw new SnapshotUnsuccessfulException(message);
                 }
             }
         } else {
