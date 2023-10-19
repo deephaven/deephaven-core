@@ -96,7 +96,7 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
                     .endl();
         }
         return extra.getLastNotificationStep() == extraLastNotificationStep
-                && super.snapshotConsistent(afterClockValue, usedPreviousValues);
+                && super.snapshotCompletedConsistently(afterClockValue, usedPreviousValues);
     }
 
     @Override
