@@ -14,13 +14,12 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 
 import java.io.IOException;
-import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class RowGroupWriterImpl implements RowGroupWriter {
-    private final SeekableByteChannel writeChannel;
+    private final BufferedStreamOverWriteChannel bufferedOutput;
     private final MessageType type;
     private final int targetPageSize;
     private final ByteBufferAllocator allocator;
@@ -29,16 +28,13 @@ public class RowGroupWriterImpl implements RowGroupWriter {
     private final List<OffsetIndex> currentOffsetIndexes = new ArrayList<>();
     private final CompressorAdapter compressorAdapter;
 
-    RowGroupWriterImpl(String path,
-            boolean append,
-            SeekableChannelsProvider channelsProvider,
+    RowGroupWriterImpl(BufferedStreamOverWriteChannel bufferedOutput,
             MessageType type,
             int targetPageSize,
             ByteBufferAllocator allocator,
-            CompressorAdapter compressorAdapter)
-            throws IOException {
-        this(channelsProvider.getWriteChannel(path, append), type, targetPageSize, allocator, blockWithPath(path),
-                compressorAdapter);
+            CompressorAdapter compressorAdapter,
+            String path) {
+        this(bufferedOutput, type, targetPageSize, allocator, blockWithPath(path), compressorAdapter);
     }
 
     private static BlockMetaData blockWithPath(String path) {
@@ -47,22 +43,22 @@ public class RowGroupWriterImpl implements RowGroupWriter {
         return blockMetaData;
     }
 
-    RowGroupWriterImpl(SeekableByteChannel writeChannel,
+    RowGroupWriterImpl(BufferedStreamOverWriteChannel bufferedOutput,
             MessageType type,
             int targetPageSize,
             ByteBufferAllocator allocator,
             CompressorAdapter compressorAdapter) {
-        this(writeChannel, type, targetPageSize, allocator, new BlockMetaData(), compressorAdapter);
+        this(bufferedOutput, type, targetPageSize, allocator, new BlockMetaData(), compressorAdapter);
     }
 
 
-    private RowGroupWriterImpl(SeekableByteChannel writeChannel,
+    private RowGroupWriterImpl(BufferedStreamOverWriteChannel bufferedOutput,
             MessageType type,
             int targetPageSize,
             ByteBufferAllocator allocator,
             BlockMetaData blockMetaData,
             CompressorAdapter compressorAdapter) {
-        this.writeChannel = writeChannel;
+        this.bufferedOutput = bufferedOutput;
         this.type = type;
         this.targetPageSize = targetPageSize;
         this.allocator = allocator;
@@ -93,7 +89,7 @@ public class RowGroupWriterImpl implements RowGroupWriter {
                             + " need to close that before opening a writer for " + columnName);
         }
         activeWriter = new ColumnWriterImpl(this,
-                writeChannel,
+                bufferedOutput,
                 type.getColumnDescription(getPrimitivePath(columnName)),
                 compressorAdapter,
                 targetPageSize,
