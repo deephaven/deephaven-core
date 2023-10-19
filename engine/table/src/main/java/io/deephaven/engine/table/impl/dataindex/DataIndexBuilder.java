@@ -5,11 +5,11 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import org.jetbrains.annotations.NotNull;
 
-public interface DataIndexBuilder <DATA_TYPE> {
+public interface DataIndexBuilder<DATA_TYPE> {
 
     void addSource(final int regionIndex,
-                          @NotNull final ColumnLocation columnLocation,
-                          @NotNull final RowSet locationRowSetInTable);
+            @NotNull final ColumnLocation columnLocation,
+            @NotNull final RowSet locationRowSetInTable);
 
     ColumnDefinition<DATA_TYPE> getColumnDefinition();
 

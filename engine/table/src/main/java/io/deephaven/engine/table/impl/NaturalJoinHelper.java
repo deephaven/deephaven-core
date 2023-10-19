@@ -164,7 +164,8 @@ class NaturalJoinHelper {
 
                         groupingSize = leftIndexTable.intSize();
                         rowSetSource = leftDataIndex.rowSetColumn();
-                        final ColumnSource<?>[] indexKeySources = leftDataIndex.indexKeyColumns(bucketingContext.leftSources);
+                        final ColumnSource<?>[] indexKeySources =
+                                leftDataIndex.indexKeyColumns(bucketingContext.leftSources);
                         jsm.buildFromLeftSide(leftIndexTable, indexKeySources, initialBuildContext);
                         jsm.convertLeftDataIndex(leftIndexTable.intSize(), initialBuildContext, rowSetSource);
                     } else {
@@ -212,7 +213,8 @@ class NaturalJoinHelper {
 
                     final int groupingSize = leftIndexTable.intSize();
                     final ColumnSource<RowSet> rowSetSource = leftDataIndex.rowSetColumn();
-                    final ColumnSource<?>[] indexKeySources = leftDataIndex.indexKeyColumns(bucketingContext.leftSources);
+                    final ColumnSource<?>[] indexKeySources =
+                            leftDataIndex.indexKeyColumns(bucketingContext.leftSources);
 
                     final StaticHashedNaturalJoinStateManager jsm =
                             TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,

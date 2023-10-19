@@ -20,11 +20,12 @@ public abstract class BinarySearcher {
 
         @Override
         public int searchFirst(final Object key, int fromIndex, int toIndex) {
-            return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (T)key, BinSearchAlgo.BS_LOWEST);
+            return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (T) key, BinSearchAlgo.BS_LOWEST);
         }
+
         @Override
         public int searchLast(final Object key, int fromIndex, int toIndex) {
-            return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (T)key, BinSearchAlgo.BS_HIGHEST);
+            return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (T) key, BinSearchAlgo.BS_HIGHEST);
         }
     }
 
@@ -39,6 +40,7 @@ public abstract class BinarySearcher {
         public int searchFirst(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (byte) key, BinSearchAlgo.BS_LOWEST);
         }
+
         @Override
         public int searchLast(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (byte) key, BinSearchAlgo.BS_HIGHEST);
@@ -56,6 +58,7 @@ public abstract class BinarySearcher {
         public int searchFirst(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (char) key, BinSearchAlgo.BS_LOWEST);
         }
+
         @Override
         public int searchLast(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (char) key, BinSearchAlgo.BS_HIGHEST);
@@ -73,6 +76,7 @@ public abstract class BinarySearcher {
         public int searchFirst(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (double) key, BinSearchAlgo.BS_LOWEST);
         }
+
         @Override
         public int searchLast(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (double) key, BinSearchAlgo.BS_HIGHEST);
@@ -90,6 +94,7 @@ public abstract class BinarySearcher {
         public int searchFirst(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (float) key, BinSearchAlgo.BS_LOWEST);
         }
+
         @Override
         public int searchLast(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (float) key, BinSearchAlgo.BS_HIGHEST);
@@ -107,6 +112,7 @@ public abstract class BinarySearcher {
         public int searchFirst(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (int) key, BinSearchAlgo.BS_LOWEST);
         }
+
         @Override
         public int searchLast(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (int) key, BinSearchAlgo.BS_HIGHEST);
@@ -124,6 +130,7 @@ public abstract class BinarySearcher {
         public int searchFirst(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (long) key, BinSearchAlgo.BS_LOWEST);
         }
+
         @Override
         public int searchLast(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (long) key, BinSearchAlgo.BS_HIGHEST);
@@ -141,6 +148,7 @@ public abstract class BinarySearcher {
         public int searchFirst(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (short) key, BinSearchAlgo.BS_LOWEST);
         }
+
         @Override
         public int searchLast(final Object key, int fromIndex, int toIndex) {
             return BinSearch.rawBinSearchIndex(vector, fromIndex, toIndex, (short) key, BinSearchAlgo.BS_HIGHEST);
@@ -175,5 +183,5 @@ public abstract class BinarySearcher {
             return new ShortBinarySearcher((ColumnSource<Short>) cs, rowSet);
         }
         return new ObjectBinarySearcher<>((ColumnSource<? extends Comparable>) cs, rowSet);
-    }    
+    }
 }

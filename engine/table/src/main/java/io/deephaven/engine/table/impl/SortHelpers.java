@@ -515,7 +515,7 @@ public class SortHelpers {
     }
 
     private static SortMapping getSortMappingIndexed(SortingOrder order[], ColumnSource<Comparable<?>>[] columnSources,
-                                                     TrackingRowSet rowSet) {
+            TrackingRowSet rowSet) {
         final DataIndex index = DataIndexer.of(rowSet).getDataIndex(columnSources);
         final Table indexTable = index.table();
         final Map<ColumnSource<?>, String> map = index.keyColumnMap();
@@ -558,7 +558,7 @@ public class SortHelpers {
             int ii = 0;
             try (final ColumnIterator<?> rsIt = (ColumnIterator<?>) sortedIndexTable.columnIterator(rowSetColumnName)) {
                 while (rsIt.hasNext()) {
-                    final RowSet group = ((RowSet)rsIt.next()).intersect(rowSet);
+                    final RowSet group = ((RowSet) rsIt.next()).intersect(rowSet);
                     outputSize += group.size();
                     groupSize[ii] = outputSize;
                     groupRowSet[ii++] = group;
@@ -582,17 +582,17 @@ public class SortHelpers {
 
         ColumnSource<Comparable<?>> columnSource = columnSources[0];
 
-        // Can we utilize existing index on the first caolumn
-        if (columnSources[0].hasGrouping()) {
-            final GroupingBuilder groupingBuilder = columnSource.getGroupingBuilder();
-            Table groupingTable = groupingBuilder
-                    .clampToIndex(rowSet, true)
-                    .buildTable();
+        // Can we utilize existing index on the first column
+        if (rowSet.isTracking() && DataIndexer.of(rowSet.trackingCast()).hasDataIndex(columnSources[0])) {
+            final DataIndex dataIndex = DataIndexer.of(rowSet.trackingCast()).getDataIndex(columnSources[0])
+                    .applyIntersect(rowSet);
+            Table indexTable = dataIndex.table();
+            final String firstColumnName = dataIndex.keyColumnNames()[0];
 
-            groupingTable = order[0] == SortingOrder.Ascending
-                    ? groupingTable.sort(groupingBuilder.getValueColumnName())
-                    : groupingTable.sortDescending(groupingBuilder.getValueColumnName());
-            groupingTable = groupingTable.flatten();
+            indexTable = order[0] == SortingOrder.Ascending
+                    ? indexTable.sort(firstColumnName)
+                    : indexTable.sortDescending(firstColumnName);
+            indexTable = indexTable.flatten();
 
             offsetsOut.setSize(0);
             lengthsOut.setSize(0);
@@ -600,7 +600,7 @@ public class SortHelpers {
             final WritableIntChunk<ChunkPositions> finalOffOut = offsetsOut;
             WritableIntChunk<ChunkLengths> finalLengthsOut = lengthsOut;
             final MutableInt outputIdx = new MutableInt(0);
-            processWithGroupingChunk(groupingTable, groupingBuilder.getIndexColumnName(), (indexChunk, nextKeys) -> {
+            processWithGroupingChunk(indexTable, dataIndex.rowSetColumnName(), (indexChunk, nextKeys) -> {
                 for (int ii = 0; ii < nextKeys.size(); ii++) {
                     final RowSet group = indexChunk.get(ii);
                     if (group.size() > 1) {

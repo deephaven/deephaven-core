@@ -15,23 +15,22 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Map;
 
-import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-
 /**
- * This class provides a data index for a table.  The index is a table containing the key column(s) and the RowSets
- * that contain these values.  DataIndexes may be loaded from storage or created in-memory using aggregations.
+ * This class provides a data index for a table. The index is a table containing the key column(s) and the RowSets that
+ * contain these values. DataIndexes may be loaded from storage or created in-memory using aggregations.
  */
 public abstract class AbstractDataIndex implements DataIndex {
     protected static final int BIN_SEARCH_THRESHOLD = 1 << 20;
-    private static final String INDEX_DIR_PREFIX = "Index-";
-    public static final String INDEX_COL_NAME = "Index";
+    public static final String INDEX_COL_NAME = "dh_row_set";
 
     @Override
     public DataIndex apply(@Nullable final RowSet intersectRowSet,
-                           @Nullable final RowSet invertRowSet,
-                           final boolean sortByFirstRowKey,
-                           @Nullable final Map<ColumnSource<?>, ColumnSource<?>> keyColumnRemap) {
-        return DeferredDataIndex.from(this, intersectRowSet, invertRowSet, sortByFirstRowKey, keyColumnRemap);
+            @Nullable final RowSet invertRowSet,
+            final boolean sortByFirstRowKey,
+            @Nullable final Map<ColumnSource<?>, ColumnSource<?>> keyColumnRemap,
+            final boolean immutableResult) {
+        return DerivedDataIndex.from(this, intersectRowSet, invertRowSet, sortByFirstRowKey, keyColumnRemap,
+                immutableResult);
     }
 
 
@@ -66,10 +65,9 @@ public abstract class AbstractDataIndex implements DataIndex {
     }
 
     static @NotNull PositionLookup buildPositionLookup(final Table indexTable, final String[] keyColumnNames) {
-        final BinarySearcher[] keyVectors = Arrays.stream(keyColumnNames).map(colName ->
-                        BinarySearcher.from(
-                                indexTable.getColumnSource(colName),
-                                indexTable.getRowSet()))
+        final BinarySearcher[] keyVectors = Arrays.stream(keyColumnNames).map(colName -> BinarySearcher.from(
+                indexTable.getColumnSource(colName),
+                indexTable.getRowSet()))
                 .toArray(BinarySearcher[]::new);
 
         final int tableSize = indexTable.getRowSet().intSize();

@@ -19,8 +19,8 @@ import java.util.*;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GROUP_ROW_SETS;
 
 /**
- * This class creates a data index for a table.  The index is a table containing the key column(s) and the RowSets
- * that contain these values.  DataIndexes may be loaded from storage or created in-memory using aggregations.
+ * This class creates a data index for a table. The index is a table containing the key column(s) and the RowSets that
+ * contain these values. DataIndexes may be loaded from storage or created in-memory using aggregations.
  */
 public class TableBackedDataIndexImpl extends AbstractDataIndex {
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
@@ -39,7 +39,7 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
     private AggregationRowLookup lookupFunction;
 
     public TableBackedDataIndexImpl(@NotNull final QueryTable sourceTable,
-                                    @NotNull final List<ColumnSource<?>> keySources) {
+            @NotNull final List<ColumnSource<?>> keySources) {
 
         this.sourceTable = sourceTable;
 
@@ -52,7 +52,8 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
             ColumnSource<?> keySource = keySources.get(ii);
 
             // Find the column name in the source table and add to the map.
-            for (final Map.Entry<String, ? extends ColumnSource<?>> entry : sourceTable.getColumnSourceMap().entrySet()) {
+            for (final Map.Entry<String, ? extends ColumnSource<?>> entry : sourceTable.getColumnSourceMap()
+                    .entrySet()) {
                 if (keySource == entry.getValue()) {
                     final String columnName = entry.getKey();
                     keyColumnMap.put(keySource, columnName);
@@ -87,15 +88,18 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
             // the source table from being garbage collected.
 
             // Create the index table, grouped by the key column sources.
-            indexTable = QueryPerformanceRecorder.withNugget("Build Table Backed Data Index [" + String.join(", ", keyColumnNames) + "]", () -> {
-                final Table groupedTable = sourceTable
-                        .aggNoMemo(AggregationProcessor.forExposeGroupRowSets(), false, null, ColumnName.from(keyColumnNames));
+            indexTable = QueryPerformanceRecorder
+                    .withNugget("Build Table Backed Data Index [" + String.join(", ", keyColumnNames) + "]", () -> {
+                        final Table groupedTable = sourceTable
+                                .aggNoMemo(AggregationProcessor.forExposeGroupRowSets(), false, null,
+                                        ColumnName.from(keyColumnNames));
 
-                lookupFunction = AggregationProcessor.getRowLookup(groupedTable);
-                Assert.neqNull(lookupFunction, "AggregationRowLookup lookupFunction should never be null");
+                        lookupFunction = AggregationProcessor.getRowLookup(groupedTable);
+                        Assert.neqNull(lookupFunction, "AggregationRowLookup lookupFunction should never be null");
 
-                return groupedTable.renameColumns(Collections.singleton(Pair.of(EXPOSED_GROUP_ROW_SETS, ColumnName.of(INDEX_COL_NAME))));
-            });
+                        return groupedTable.renameColumns(
+                                Collections.singleton(Pair.of(EXPOSED_GROUP_ROW_SETS, ColumnName.of(INDEX_COL_NAME))));
+                    });
         }
         return indexTable;
     }

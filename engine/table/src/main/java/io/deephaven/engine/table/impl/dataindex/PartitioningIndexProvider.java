@@ -17,8 +17,10 @@ import java.util.Map;
 
 import static io.deephaven.engine.table.impl.dataindex.AbstractDataIndex.INDEX_COL_NAME;
 
-/** This class will provide methods to build a deferred single-column index (i.e. grouping) for a partitioning
- * storage-backed table. */
+/**
+ * This class will provide methods to build a deferred single-column index (i.e. grouping) for a partitioning
+ * storage-backed table.
+ */
 public class PartitioningIndexProvider<DATA_TYPE> implements DataIndexBuilder<DATA_TYPE> {
     private final ColumnDefinition<DATA_TYPE> columnDefinition;
 
@@ -30,7 +32,8 @@ public class PartitioningIndexProvider<DATA_TYPE> implements DataIndexBuilder<DA
     public PartitioningIndexProvider(@NotNull final ColumnDefinition<DATA_TYPE> columnDefinition) {
         this.columnDefinition = columnDefinition;
         valueSource = ArrayBackedColumnSource.getMemoryColumnSource(10, columnDefinition.getDataType(), null);
-        rowSetSource = (ObjectArraySource<RowSet>)ArrayBackedColumnSource.getMemoryColumnSource(10, RowSet.class, null);
+        rowSetSource =
+                (ObjectArraySource<RowSet>) ArrayBackedColumnSource.getMemoryColumnSource(10, RowSet.class, null);
 
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
         columnSourceMap.put(columnDefinition.getName(), valueSource);
@@ -40,8 +43,8 @@ public class PartitioningIndexProvider<DATA_TYPE> implements DataIndexBuilder<DA
 
     @Override
     public void addSource(final int regionIndex,
-                          @NotNull final ColumnLocation columnLocation,
-                          @NotNull final RowSet locationRowSetInTable) {
+            @NotNull final ColumnLocation columnLocation,
+            @NotNull final RowSet locationRowSetInTable) {
         valueSource.ensureCapacity(regionIndex + 1);
         rowSetSource.ensureCapacity(regionIndex + 1);
         final DATA_TYPE columnPartitionValue =

@@ -56,7 +56,7 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     private RowSetLookup cachedRowSetLookup;
 
     public StorageBackedDataIndexImpl(@NotNull final QueryTable sourceTable,
-                                      @NotNull final List<ColumnSource<?>> keySources) {
+            @NotNull final List<ColumnSource<?>> keySources) {
 
         // Create an array to hold the key column names from the source table (and replicated into the index table).
         keyColumnNames = new String[keySources.size()];
@@ -69,7 +69,8 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
             Assert.eqTrue(keySource instanceof RegionedColumnSource, "keySource instanceof RegionedColumnSource");
 
             // Find the column name in the source table and add to the map.
-            for (final Map.Entry<String, ? extends ColumnSource<?>> entry : sourceTable.getColumnSourceMap().entrySet()) {
+            for (final Map.Entry<String, ? extends ColumnSource<?>> entry : sourceTable.getColumnSourceMap()
+                    .entrySet()) {
                 if (keySource == entry.getValue()) {
                     final String columnName = entry.getKey();
                     keyColumnMap.put(keySource, columnName);
@@ -80,7 +81,7 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
         }
 
         // Store the column source manager for later use.
-        columnSourceManager = ((RegionedColumnSource)keySources.get(0)).getColumnSourceManager();
+        columnSourceManager = ((RegionedColumnSource) keySources.get(0)).getColumnSourceManager();
 
         this.sourceTable = sourceTable;
 
@@ -118,7 +119,8 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
                                     final TableLocation location = locationColumnSource.get(key);
                                     final long firstKey = offsetColumnSource.getLong(key);
 
-                                    final LocationState locationState = new LocationState(location, firstKey, keyColumnNames);
+                                    final LocationState locationState =
+                                            new LocationState(location, firstKey, keyColumnNames);
                                     locations.put(location, locationState);
                                 });
 
@@ -158,64 +160,68 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     @Override
     public Table table() {
         if (indexTable == null) {
-            indexTable = QueryPerformanceRecorder.withNugget("Build Storage Backed Data Index [" + String.join(", ", keyColumnNames) + "]", () -> {
+            indexTable = QueryPerformanceRecorder
+                    .withNugget("Build Storage Backed Data Index [" + String.join(", ", keyColumnNames) + "]", () -> {
 
-                final Table[] locationIndexes = new Table[locations.size()];
-                int tCount = 0;
-                for (final LocationState ls : locations.values()) {
-                    final Table locationIndex = ls.getCachedIndexTable();
-                    // If any location is missing a data index, we must bail out because we can't guarantee a consistent
-                    // index.
-                    if (locationIndex == null) {
-                        return null;
-                    }
+                        final Table[] locationIndexes = new Table[locations.size()];
+                        int tCount = 0;
+                        for (final LocationState ls : locations.values()) {
+                            final Table locationIndex = ls.getCachedIndexTable();
+                            // If any location is missing a data index, we must bail out because we can't guarantee a
+                            // consistent
+                            // index.
+                            if (locationIndex == null) {
+                                return null;
+                            }
 
-                    locationIndexes[tCount++] = locationIndex;
-                }
-
-                // Merge all the individual indexes into a single table.
-                final Table merged = TableTools.merge(locationIndexes);
-
-                // Partition the merged table by the keys
-                final PartitionedTable pt = merged.partitionBy(keyColumnNames);
-                final PartitionedTable transformed = pt.transform(t -> {
-                    // Create a new table containing the key columns and a RowSet.
-                    Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
-                    for (String keyColumnName : keyColumnNames) {
-                        columnSourceMap.put(keyColumnName, t.getColumnSource(keyColumnName));
-                    }
-
-                    // Build a new row set from the individual row sets (with their offset keys).
-                    final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-                    try (final CloseableIterator<RowSet> rsIt = t.columnIterator(INDEX_COL_NAME);
-                         final CloseableIterator<Long> keyIt = t.columnIterator(OFFSET_KEY_COL_NAME)) {
-                        while (rsIt.hasNext()) {
-                            final RowSet rowSet = rsIt.next();
-                            final long offsetKey = keyIt.next();
-                            builder.appendRowSequenceWithOffset(rowSet, offsetKey);
+                            locationIndexes[tCount++] = locationIndex;
                         }
-                    }
-                    final RowSet outputRowSet = builder.build();
 
-                    // Create a SingleValueColumnSource for the row set and add it to the column source map.
-                    SingleValueColumnSource<RowSet> rowSetColumnSource = SingleValueColumnSource.getSingleValueColumnSource(RowSet.class);
-                    rowSetColumnSource.set(outputRowSet);
-                    columnSourceMap.put(INDEX_COL_NAME, rowSetColumnSource);
+                        // Merge all the individual indexes into a single table.
+                        final Table merged = TableTools.merge(locationIndexes);
 
-                    // The result table row set is a single key. We'll use the first key of input table to get the
-                    // correct key values from the key column sources.
-                    final WritableRowSet resultRowSet = RowSetFactory.fromKeys(t.getRowSet().firstRowKey());
+                        // Partition the merged table by the keys
+                        final PartitionedTable pt = merged.partitionBy(keyColumnNames);
+                        final PartitionedTable transformed = pt.transform(t -> {
+                            // Create a new table containing the key columns and a RowSet.
+                            Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+                            for (String keyColumnName : keyColumnNames) {
+                                columnSourceMap.put(keyColumnName, t.getColumnSource(keyColumnName));
+                            }
 
-                    return new QueryTable(resultRowSet.toTracking(), columnSourceMap);
-                });
+                            // Build a new row set from the individual row sets (with their offset keys).
+                            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+                            try (final CloseableIterator<RowSet> rsIt = t.columnIterator(INDEX_COL_NAME);
+                                    final CloseableIterator<Long> keyIt = t.columnIterator(OFFSET_KEY_COL_NAME)) {
+                                while (rsIt.hasNext()) {
+                                    final RowSet rowSet = rsIt.next();
+                                    final long offsetKey = keyIt.next();
+                                    builder.appendRowSequenceWithOffset(rowSet, offsetKey);
+                                }
+                            }
+                            final RowSet outputRowSet = builder.build();
 
-                // Flatten the result table to cache all the redirections we just created.
-                final Table mergedOutput = transformed.merge()
-                        .sort(keyColumnNames)
-                        .select();
+                            // Create a SingleValueColumnSource for the row set and add it to the column source map.
+                            SingleValueColumnSource<RowSet> rowSetColumnSource =
+                                    SingleValueColumnSource.getSingleValueColumnSource(RowSet.class);
+                            rowSetColumnSource.set(outputRowSet);
+                            columnSourceMap.put(INDEX_COL_NAME, rowSetColumnSource);
 
-                return mergedOutput;
-            });
+                            // The result table row set is a single key. We'll use the first key of input table to get
+                            // the
+                            // correct key values from the key column sources.
+                            final WritableRowSet resultRowSet = RowSetFactory.fromKeys(t.getRowSet().firstRowKey());
+
+                            return new QueryTable(resultRowSet.toTracking(), columnSourceMap);
+                        });
+
+                        // Flatten the result table to cache all the redirections we just created.
+                        final Table mergedOutput = transformed.merge()
+                                .sort(keyColumnNames)
+                                .select();
+
+                        return mergedOutput;
+                    });
         }
         return indexTable;
     }
@@ -277,8 +283,8 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
         private SoftReference<Table> cachedIndexTable;
 
         private LocationState(final TableLocation location,
-                              final long offsetKey,
-                              @NotNull final String... keyColumns) {
+                final long offsetKey,
+                @NotNull final String... keyColumns) {
             this.location = location;
             this.offsetKey = offsetKey;
             this.keyColumns = keyColumns;
@@ -299,7 +305,8 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
                 Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>(indexTable.getColumnSourceMap());
 
                 // Record the first key as a column of this table using a SingleValueColumnSource.
-                SingleValueColumnSource<?> offsetKeySource = SingleValueColumnSource.getSingleValueColumnSource(long.class);
+                SingleValueColumnSource<?> offsetKeySource =
+                        SingleValueColumnSource.getSingleValueColumnSource(long.class);
                 offsetKeySource.set(offsetKey);
                 columnSourceMap.put(OFFSET_KEY_COL_NAME, offsetKeySource);
 

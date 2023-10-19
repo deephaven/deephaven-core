@@ -4,20 +4,23 @@
 package io.deephaven.engine.table.impl.indexer;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.impl.ImmutableColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndexImpl;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
 /**
- * Indexer that provides single and multi-column clustering indexes for a table, linked to a
- * {@link TrackingRowSet}.
+ * Indexer that provides single and multi-column clustering indexes for a table, linked to a {@link TrackingRowSet}.
  * 
  * @apiNote DataIndexers should not be used after the host {@link TrackingRowSet} has been {@link RowSet#close()
  *          closed}.
@@ -29,8 +32,10 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
     private final TrackingRowSet rowSet;
 
-    /** The root of a pseudo-trie of index caches. This is a complicated structure but has the strong benefit of
-     * allowing GC of data indexes belonging to GC'd column sources. */
+    /**
+     * The root of a pseudo-trie of index caches. This is a complicated structure but has the strong benefit of allowing
+     * GC of data indexes belonging to GC'd column sources.
+     */
     WeakHashMap<ColumnSource<?>, DataIndexCache> dataIndexes;
 
     @Override
@@ -46,7 +51,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         int refreshingIndexCount = 0;
         final Iterator<Map.Entry<ColumnSource<?>, DataIndexCache>> iterator = indexMap.entrySet().iterator();
 
-        while(iterator.hasNext()) {
+        while (iterator.hasNext()) {
             final Map.Entry<ColumnSource<?>, DataIndexCache> entry = iterator.next();
             final DataIndexCache cache = entry.getValue();
 
@@ -89,7 +94,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         WeakHashMap<ColumnSource<?>, DataIndexCache> dataIndexes;
 
         DataIndexCache(@Nullable final DataIndex index,
-                       @Nullable final WeakHashMap<ColumnSource<?>, DataIndexCache> dataIndexes) {
+                @Nullable final WeakHashMap<ColumnSource<?>, DataIndexCache> dataIndexes) {
             this.index = index;
             this.dataIndexes = dataIndexes;
         }
@@ -107,13 +112,6 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     public boolean hasDataIndex(final List<ColumnSource<?>> keyColumns) {
         if (keyColumns.size() == 0) {
             return true;
-        }
-
-        if (keyColumns.size() == 1) {
-            final ColumnSource<?> keyColumn = keyColumns.get(0);
-            if (keyColumn instanceof RegionedColumnSource) {
-                return ((RegionedColumnSource<?>) keyColumn).getIndexManager() != null;
-            }
         }
 
         return findIndex(dataIndexes, keyColumns) != null;
@@ -215,13 +213,27 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         addIndex(dataIndexes, keys, index);
     }
 
-    public Map<List<ColumnSource<?>>, DataIndex> getDataIndexMap() {
-        final Map<List<ColumnSource<?>>, DataIndex> result = new HashMap<>();
+    public List<DataIndex> dataIndexes() {
+        final List<DataIndex> result = new ArrayList<>();
 
-
-
+        addIndexesToList(dataIndexes, result);
 
         return result;
+    }
+
+    private static void addIndexesToList(final WeakHashMap<ColumnSource<?>, DataIndexCache> dataIndexes,
+            final List<DataIndex> resultList) {
+        // Recurse through all the sub-indexes and collect DataIndexes.
+        for (final Map.Entry<ColumnSource<?>, DataIndexCache> entry : dataIndexes.entrySet()) {
+            final DataIndexCache subCache = entry.getValue();
+
+            if (subCache.index != null) {
+                resultList.add(subCache.index);
+            }
+            if (subCache.dataIndexes != null) {
+                addIndexesToList(subCache.dataIndexes, resultList);
+            }
+        }
     }
 
     /** Remove the item at the specified index from a list. */
@@ -245,7 +257,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
             return cache == null ? null : cache.index;
         }
 
-        // Test every column source in the map for a match.  This handles mis-ordered keys.
+        // Test every column source in the map for a match. This handles mis-ordered keys.
         for (int ii = 0; ii < keyColumnSources.size(); ++ii) {
             final ColumnSource<?> keyColumnSource = keyColumnSources.get(ii);
             final DataIndexCache cache = map.get(keyColumnSources.get(0));

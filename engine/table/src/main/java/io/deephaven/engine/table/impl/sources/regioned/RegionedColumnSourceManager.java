@@ -113,9 +113,10 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         }
 
         // Create the table that will hold the location data
-        locationSource = (ObjectArraySource<TableLocation>)ArrayBackedColumnSource.getMemoryColumnSource(0, TableLocation.class);
-        offsetSource = (LongArraySource)ArrayBackedColumnSource.getMemoryColumnSource(0, long.class);
-        rowSetSource = (ObjectArraySource<RowSet>)ArrayBackedColumnSource.getMemoryColumnSource(0, RowSet.class);
+        locationSource = (ObjectArraySource<TableLocation>) ArrayBackedColumnSource.getMemoryColumnSource(0,
+                TableLocation.class);
+        offsetSource = (LongArraySource) ArrayBackedColumnSource.getMemoryColumnSource(0, long.class);
+        rowSetSource = (ObjectArraySource<RowSet>) ArrayBackedColumnSource.getMemoryColumnSource(0, RowSet.class);
         final Map<String, ColumnSource<?>> columnLocationMap = new LinkedHashMap<>();
         columnLocationMap.put(LOCATION_COLUMN_NAME, locationSource);
         columnLocationMap.put(OFFSET_COLUMN_NAME, offsetSource);
@@ -187,7 +188,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         final WritableRowSet added = RowSetFactory.empty();
         final WritableRowSet modified = RowSetFactory.empty();
         final TableUpdate update = new TableUpdateImpl(
-                added, RowSetFactory.empty(), modified, RowSetShiftData.EMPTY, orderedLocationsTable.getModifiedColumnSetForUpdates());
+                added, RowSetFactory.empty(), modified, RowSetShiftData.EMPTY,
+                orderedLocationsTable.getModifiedColumnSetForUpdates());
 
         // Ordering matters, since we're using a sequential builder.
         for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) {

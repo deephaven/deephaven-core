@@ -250,7 +250,7 @@ public class AsOfJoinHelper {
             arrayValuesCache = null;
             if (rightIndexTable != null) {
                 // noinspection unchecked
-                asOfJoinStateManager.convertRightIndexTable(slots, slotCount,rightDataIndex.rowSetColumn());
+                asOfJoinStateManager.convertRightIndexTable(slots, slotCount, rightDataIndex.rowSetColumn());
             } else {
                 asOfJoinStateManager.convertRightBuildersToIndex(slots, slotCount);
             }

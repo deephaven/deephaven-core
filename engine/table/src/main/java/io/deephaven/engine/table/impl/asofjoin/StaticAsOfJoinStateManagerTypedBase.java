@@ -353,7 +353,8 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
                 } else {
                     final RowSet groupedRowSet = sequentialBuilder.build();
                     if (groupedRowSet.size() != 1) {
-                        throw new IllegalStateException("Grouped rowSet should have exactly one value: " + groupedRowSet);
+                        throw new IllegalStateException(
+                                "Grouped rowSet should have exactly one value: " + groupedRowSet);
                     }
                     rightRowSetSource.set(slot, rowSetSource.get(groupedRowSet.firstRowKey()));
                 }

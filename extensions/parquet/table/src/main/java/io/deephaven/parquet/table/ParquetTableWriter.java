@@ -86,6 +86,8 @@ public class ParquetTableWriter {
     public static final String END_POS = "dh_end_pos";
     public static final String GROUPING_KEY = "dh_key";
 
+    public static final String INDEX_COL_NAME = "dh_row_set";
+
 
     public static final String PARQUET_FILE_EXTENSION = ".parquet";
 
@@ -114,9 +116,9 @@ public class ParquetTableWriter {
         public final File destFile;
 
         public IndexWritingInfo(final String[] indexColumnNames,
-                                final String[] parquetColumnNames,
-                                final File metadataFilePath,
-                                final File destFile) {
+                final String[] parquetColumnNames,
+                final File metadataFilePath,
+                final File destFile) {
             this.indexColumnNames = indexColumnNames;
             this.parquetColumnNames = parquetColumnNames;
             this.metadataFilePath = metadataFilePath;
@@ -129,44 +131,43 @@ public class ParquetTableWriter {
         return columnName -> prefix + "_" + columnName + "_grouping.parquet";
     }
 
-    /**
-     * Writes a table in parquet format under a given path
-     *
-     * @param t The table to write
-     * @param path The destination path
-     * @param incomingMeta A map of metadata values to be stores in the file footer
-     * @param indexPathFactory a factory to construct paths for index tables.
-     * @param indexColumnArr arrays containing the key column names(s) for written indexes (the write operation will
-     *                     store the index info as sidecar tables)
-     * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
-     *         unsupported types)
-     * @throws IOException For file writing related errors
-     */
-    public static void write(
-            @NotNull final Table t,
-            @NotNull final String path,
-            @NotNull final Map<String, String> incomingMeta,
-            @NotNull final Function<String, String> indexPathFactory,
-            @Nullable final String[]... indexColumnArr) throws SchemaMappingException, IOException {
-        write(t, t.getDefinition(), ParquetInstructions.EMPTY, path, incomingMeta, indexPathFactory,
-                indexColumnArr);
-    }
-
-    /**
-     * Writes a table in parquet format under a given path
-     *
-     * @param t the table to write
-     * @param path the destination path
-     * @param incomingMeta any metadata to include in the parquet metadata
-     * @param indexColumnArr arrays containing the key column names(s) for written indexes (the write operation will
-     *                     store the index info as sidecar tables)
-    */
-    public static void write(@NotNull final Table t,
-            @NotNull final String path,
-            @NotNull final Map<String, String> incomingMeta,
-            @Nullable final String[]... indexColumnArr) throws SchemaMappingException, IOException {
-        write(t, path, incomingMeta, defaultGroupingFileName(path), indexColumnArr);
-    }
+    // /**
+    // * Writes a table in parquet format under a given path
+    // *
+    // * @param t The table to write
+    // * @param path The destination path
+    // * @param incomingMeta A map of metadata values to be stores in the file footer
+    // * @param indexPathFactory a factory to construct paths for index tables.
+    // * @param indexColumnArr arrays containing the key column names(s) for written indexes (the write operation will
+    // * store the index info as sidecar tables)
+    // * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
+    // * unsupported types)
+    // * @throws IOException For file writing related errors
+    // */
+    // public static void write(
+    // @NotNull final Table t,
+    // @NotNull final String path,
+    // @NotNull final Map<String, String> incomingMeta,
+    // @NotNull final Function<String, String> indexPathFactory,
+    // @Nullable final String[]... indexColumnArr) throws SchemaMappingException, IOException {
+    // write(t, t.getDefinition(), ParquetInstructions.EMPTY, path, incomingMeta, indexPathFactory, indexColumnArr);
+    // }
+    //
+    // /**
+    // * Writes a table in parquet format under a given path
+    // *
+    // * @param t the table to write
+    // * @param path the destination path
+    // * @param incomingMeta any metadata to include in the parquet metadata
+    // * @param indexColumnArr arrays containing the key column names(s) for written indexes (the write operation will
+    // * store the index info as sidecar tables)
+    // */
+    // public static void write(@NotNull final Table t,
+    // @NotNull final String path,
+    // @NotNull final Map<String, String> incomingMeta,
+    // @Nullable final String[]... indexColumnArr) throws SchemaMappingException, IOException {
+    // write(t, path, incomingMeta, defaultGroupingFileName(path), indexColumnArr);
+    // }
 
     /**
      * Writes a table in parquet format under a given path
@@ -177,7 +178,7 @@ public class ParquetTableWriter {
      * @param destPathName The destination path
      * @param incomingMeta A map of metadata values to be stores in the file footer
      * @param indexInfoList column arrays containing the column names(s) for written indexes (the write operation will
-     *                     store the index info as sidecar tables)
+     *        store the index info as sidecar tables)
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
      *         unsupported types)
      * @throws IOException For file writing related errors

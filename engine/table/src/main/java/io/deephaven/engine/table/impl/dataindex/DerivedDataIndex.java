@@ -1,29 +1,32 @@
 package io.deephaven.engine.table.impl.dataindex;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.ImmutableColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.WrappedRowSetRowRedirection;
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.SoftReference;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-public class DeferredDataIndex extends AbstractDataIndex {
+public class DerivedDataIndex extends AbstractDataIndex {
     private static final int CHUNK_SIZE = 2048;
     @NotNull
     final DataIndex parentIndex;
@@ -32,6 +35,7 @@ public class DeferredDataIndex extends AbstractDataIndex {
     @Nullable
     final RowSet invertRowSet;
     final boolean sortByFirstRowKey;
+    final boolean immutableResult;
 
     final Map<ColumnSource<?>, String> columnNameMap;
 
@@ -46,23 +50,27 @@ public class DeferredDataIndex extends AbstractDataIndex {
     /** Provides fast lookup from keys to positions in the table **/
     private TObjectIntHashMap<Object> cachedPositionMap;
 
-    public static DeferredDataIndex from(@NotNull final DataIndex index,
-                                          @Nullable final RowSet intersectRowSet,
-                                          @Nullable final RowSet invertRowSet,
-                                          final boolean sortByFirstRowKey,
-                                          @Nullable final Map<ColumnSource<?>, ColumnSource<?>> oldToNewMap) {
-        return new DeferredDataIndex(index, intersectRowSet, invertRowSet, sortByFirstRowKey, oldToNewMap);
+    public static DerivedDataIndex from(@NotNull final DataIndex index,
+            @Nullable final RowSet intersectRowSet,
+            @Nullable final RowSet invertRowSet,
+            final boolean sortByFirstRowKey,
+            @Nullable final Map<ColumnSource<?>, ColumnSource<?>> oldToNewMap,
+            final boolean immutableResult) {
+        return new DerivedDataIndex(index, intersectRowSet, invertRowSet, sortByFirstRowKey, oldToNewMap,
+                immutableResult);
     }
 
-    private DeferredDataIndex(@NotNull final DataIndex parentIndex,
-                             @Nullable final RowSet intersectRowSet,
-                             @Nullable final RowSet invertRowSet,
-                             final boolean sortByFirstRowKey,
-                             @Nullable final Map<ColumnSource<?>, ColumnSource<?>> oldToNewMap) {
+    private DerivedDataIndex(@NotNull final DataIndex parentIndex,
+            @Nullable final RowSet intersectRowSet,
+            @Nullable final RowSet invertRowSet,
+            final boolean sortByFirstRowKey,
+            @Nullable final Map<ColumnSource<?>, ColumnSource<?>> oldToNewMap,
+            final boolean immutableResult) {
         this.parentIndex = parentIndex;
         this.intersectRowSet = intersectRowSet;
         this.invertRowSet = invertRowSet;
         this.sortByFirstRowKey = sortByFirstRowKey;
+        this.immutableResult = immutableResult;
 
         // Handle the column source remapping if needed.
         if (oldToNewMap != null && !oldToNewMap.isEmpty()) {
@@ -112,6 +120,7 @@ public class DeferredDataIndex extends AbstractDataIndex {
 
         resultTable = maybeIntersectAndInvert(resultTable);
         resultTable = maybeSortByFirsKey(resultTable);
+        resultTable = maybeMakeImmutable(resultTable);
 
         // Cache the result table.
         cachedTable = new SoftReference<>(resultTable);
@@ -140,6 +149,7 @@ public class DeferredDataIndex extends AbstractDataIndex {
 
         resultTable = maybeIntersectAndInvert(resultTable);
         resultTable = maybeSortByFirsKey(resultTable);
+        resultTable = maybeMakeImmutable(resultTable);
 
         // Cache the result table.
         cachedPrevTable = new SoftReference<>(resultTable);
@@ -209,10 +219,12 @@ public class DeferredDataIndex extends AbstractDataIndex {
 
     @Override
     public DataIndex apply(@Nullable final RowSet intersectRowSet,
-                           @Nullable final RowSet invertRowSet,
-                           final boolean sortByFirstRowKey,
-                           @Nullable final Map<ColumnSource<?>, ColumnSource<?>> keyColumnRemap) {
-        return DeferredDataIndex.from(this, intersectRowSet, invertRowSet, sortByFirstRowKey, keyColumnRemap);
+            @Nullable final RowSet invertRowSet,
+            final boolean sortByFirstRowKey,
+            @Nullable final Map<ColumnSource<?>, ColumnSource<?>> keyColumnRemap,
+            final boolean immutableResult) {
+        return DerivedDataIndex.from(this, intersectRowSet, invertRowSet, sortByFirstRowKey, keyColumnRemap,
+                immutableResult);
     }
 
     /** Return true if the set of operations may modify the parent index table row set. **/
@@ -223,7 +235,7 @@ public class DeferredDataIndex extends AbstractDataIndex {
 
     // region DataIndex materialization operations
     private static Function<RowSet, RowSet> getMutator(@Nullable final RowSet intersectRowSet,
-                                                       @Nullable final RowSet invertRowSet) {
+            @Nullable final RowSet invertRowSet) {
         final Function<RowSet, RowSet> mutator;
         if (invertRowSet == null) {
             // Only intersect.
@@ -267,7 +279,7 @@ public class DeferredDataIndex extends AbstractDataIndex {
 
         final int chunkSize = Math.min(CHUNK_SIZE, indexTable.intSize());
         try (final RowSequence.Iterator rsIt = indexTable.getRowSet().getRowSequenceIterator();
-             final ChunkSource.GetContext rowSetCtx = indexSource.makeGetContext(chunkSize)) {
+                final ChunkSource.GetContext rowSetCtx = indexSource.makeGetContext(chunkSize)) {
 
             long outputPosition = 0;
             while (rsIt.hasMore()) {
@@ -318,6 +330,54 @@ public class DeferredDataIndex extends AbstractDataIndex {
         return indexTable.updateView("FirstKey=" + INDEX_COL_NAME + ".firstRowKey()")
                 .sort("FirstKey")
                 .dropColumns("FirstKey");
+    }
+
+    /**
+     * If requested, return an immutable version of the index table.
+     *
+     * @param indexTable the input index table.
+     * @return the table sorted by first key, if requested.
+     */
+    protected Table maybeMakeImmutable(final @NotNull Table indexTable) {
+        if (!immutableResult) {
+            return indexTable;
+        }
+
+        // Make a static copy of the table with immutable column sources.
+        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+        final long size = indexTable.size();
+
+        final ArrayList<ColumnSource<?>> cloneSources = new ArrayList<>();
+        final ArrayList<WritableColumnSource<?>> cloneDestinations = new ArrayList<>();
+
+        for (final Map.Entry<String, ? extends ColumnSource<?>> entry : indexTable.getColumnSourceMap().entrySet()) {
+            final String columnName = entry.getKey();
+            final ColumnSource<?> columnSource = entry.getValue();
+
+            if (columnSource instanceof ImmutableColumnSource) {
+                // We can use this directly, no need to clone.
+                columnSourceMap.put(columnName, columnSource);
+            } else {
+                // Create a new immutable column source and copy all the data.
+                final WritableColumnSource<?> immutableColumnSource =
+                        InMemoryColumnSource.getImmutableMemoryColumnSource(size, columnSource.getType(),
+                                columnSource.getComponentType());
+                cloneSources.add(columnSource);
+                cloneDestinations.add(immutableColumnSource);
+            }
+        }
+
+        final WritableRowSet outputRowSet = RowSetFactory.flat(size);
+        if (!cloneSources.isEmpty()) {
+            ColumnSource<?>[] cloneSourceArr = (ColumnSource<?>[]) cloneSources.toArray();
+            WritableColumnSource<?>[] cloneDestinationArr = (WritableColumnSource<?>[]) cloneDestinations.toArray();
+
+            ChunkUtils.copyData(cloneSourceArr, indexTable.getRowSet(),
+                    cloneDestinationArr, outputRowSet,
+                    false);
+        }
+
+        return new QueryTable(outputRowSet.toTracking(), columnSourceMap);
     }
 
     // endregion DataIndex materialization operations

@@ -90,9 +90,4 @@ abstract class RegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Values, N
     public RegionedColumnSourceBase<NATIVE_DATA_TYPE, ATTR, NATIVE_REGION_TYPE> getNativeSource() {
         return nativeSource;
     }
-
-    @Override
-    public boolean isPartitioning() {
-        return nativeSource.isPartitioning();
-    }
 }

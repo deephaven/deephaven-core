@@ -57,7 +57,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.function.Function;
 
-import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
+import static io.deephaven.parquet.table.ParquetTableWriter.*;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
 
 /**
@@ -386,8 +386,8 @@ public class ParquetTools {
      * @param destinations The destinations paths. Any non-existing directories in the paths provided are created. If
      *        there is an error any intermediate directories previously created are removed; note this makes this method
      *        unsafe for concurrent use
-     * @param indexColumnArr arrays containing the column names(s) for written indexes (the write operation will
-     *                     store the index info as sidecar tables)
+     * @param indexColumnArr arrays containing the column names(s) for written indexes (the write operation will store
+     *        the index info as sidecar tables)
      * @param indexColumnArr List of columns the tables are grouped by (the write operation will store the grouping
      *        info)
      */
@@ -425,7 +425,7 @@ public class ParquetTools {
                     shadowFiles.add(shadowDestFiles[tableIdx]);
                     final Table source = sources[tableIdx];
                     ParquetTableWriter.write(source, definition, writeInstructions, shadowDestFiles[tableIdx].getPath(),
-                            Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>)null);
+                            Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>) null);
                 }
             } else {
                 // Create grouping info for each table and write the table and grouping files to shadow path
@@ -433,9 +433,9 @@ public class ParquetTools {
 
                 // Shared parquet column names across all tables
                 final String[][] parquetColumnNameArr = Arrays.stream(indexColumnArr)
-                        .map((String[] columns) ->
-                                Arrays.stream(columns).map(writeInstructions::getParquetColumnNameFromColumnNameOrDefault)
-                                        .toArray(String[]::new))
+                        .map((String[] columns) -> Arrays.stream(columns)
+                                .map(writeInstructions::getParquetColumnNameFromColumnNameOrDefault)
+                                .toArray(String[]::new))
                         .toArray(String[][]::new);
 
                 for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
@@ -859,8 +859,8 @@ public class ParquetTools {
 
     // region Indexing
     /**
-     * Read a Data Index table from disk. If {@link TableInfo} are provided, it will be used to aid in
-     * locating the table.
+     * Read a Data Index table from disk. If {@link TableInfo} are provided, it will be used to aid in locating the
+     * table.
      *
      * @param tableFile The path to the base table
      * @param info An optional {@link TableInfo} object to assist in locating files
@@ -900,7 +900,9 @@ public class ParquetTools {
                             // This table will be written like the older style grouping format of Key, start, end so we
                             // have to convert
                             return indexTable.select(String.format("%s=%s", keyColumnNames[0], GROUPING_KEY),
-                                    String.format("%s=(io.deephaven.engine.rowset.RowSet)io.deephaven.engine.rowset.RowSetFactory.fromRange(%s, %s-1)", INDEX_COL_NAME, BEGIN_POS, END_POS));
+                                    String.format(
+                                            "%s=(io.deephaven.engine.rowset.RowSet)io.deephaven.engine.rowset.RowSetFactory.fromRange(%s, %s-1)",
+                                            INDEX_COL_NAME, BEGIN_POS, END_POS));
                         }
                         // There's a table here, but it doesn't look like a grouping table.
                         return null;

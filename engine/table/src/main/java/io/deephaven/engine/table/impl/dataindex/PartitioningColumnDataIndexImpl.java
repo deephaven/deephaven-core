@@ -47,11 +47,12 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     private TObjectIntHashMap<Object> cachedPositionMap;
 
     public PartitioningColumnDataIndexImpl(@NotNull final QueryTable sourceTable,
-                                           @NotNull final List<ColumnSource<?>> keySources) {
+            @NotNull final List<ColumnSource<?>> keySources) {
         Assert.eq(keySources.size(), "keySources.size()", 1, "1");
-        Assert.eqTrue(keySources.get(0) instanceof RegionedColumnSource, "keySources.get(0) instanceof RegionedColumnSource");
+        Assert.eqTrue(keySources.get(0) instanceof RegionedColumnSource,
+                "keySources.get(0) instanceof RegionedColumnSource");
 
-        this.keySource = (RegionedColumnSource<?>)keySources.get(0);
+        this.keySource = (RegionedColumnSource<?>) keySources.get(0);
 
         String matchedColumnName = null;
         // Find the column name in the source table and add to the map.
@@ -66,21 +67,26 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
         keyColumnName = matchedColumnName;
 
         // Store the column source manager for later use.
-        columnSourceManager = ((RegionedColumnSource)keySources.get(0)).getColumnSourceManager();
+        columnSourceManager = ((RegionedColumnSource) keySources.get(0)).getColumnSourceManager();
 
         this.sourceTable = sourceTable;
 
         // Build the index table and the position lookup map.
         final Table locationTable = columnSourceManager.locationTable();
-        indexKeySource = (WritableColumnSource<Object>) ArrayBackedColumnSource.getMemoryColumnSource(10, keySource.getType(), null);
-        indexRowSetSource = (ObjectArraySource<RowSet>)ArrayBackedColumnSource.getMemoryColumnSource(10, RowSet.class, null);
+        indexKeySource = (WritableColumnSource<Object>) ArrayBackedColumnSource.getMemoryColumnSource(10,
+                keySource.getType(), null);
+        indexRowSetSource =
+                (ObjectArraySource<RowSet>) ArrayBackedColumnSource.getMemoryColumnSource(10, RowSet.class, null);
 
         // Iterate through the location table.
         cachedPositionMap = new TObjectIntHashMap<>(locationTable.intSize(), 0.5F, -1);
 
-        try (final CloseableIterator<TableLocation> locationIt = locationTable.columnIterator(columnSourceManager.locationColumnName());
-             final CloseableIterator<Long> offsetIt = locationTable.columnIterator(columnSourceManager.offsetColumnName());
-             final CloseableIterator<RowSet> rowSetIt = locationTable.columnIterator(columnSourceManager.rowSetColumnName())) {
+        try (final CloseableIterator<TableLocation> locationIt =
+                locationTable.columnIterator(columnSourceManager.locationColumnName());
+                final CloseableIterator<Long> offsetIt =
+                        locationTable.columnIterator(columnSourceManager.offsetColumnName());
+                final CloseableIterator<RowSet> rowSetIt =
+                        locationTable.columnIterator(columnSourceManager.rowSetColumnName())) {
             MutableInt position = new MutableInt(0);
 
             while (locationIt.hasNext()) {
@@ -98,19 +104,19 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
 
                     indexKeySource.ensureCapacity(index + 1);
                     if (clazz == Byte.class) {
-                        indexKeySource.set(index, (byte)key);
+                        indexKeySource.set(index, (byte) key);
                     } else if (clazz == Character.class) {
-                        indexKeySource.set(index, (char)key);
+                        indexKeySource.set(index, (char) key);
                     } else if (clazz == Float.class) {
-                        indexKeySource.set(index, (float)key);
+                        indexKeySource.set(index, (float) key);
                     } else if (clazz == Double.class) {
-                        indexKeySource.set(index, (double)key);
+                        indexKeySource.set(index, (double) key);
                     } else if (clazz == Short.class) {
-                        indexKeySource.set(index, (short)key);
+                        indexKeySource.set(index, (short) key);
                     } else if (clazz == Integer.class) {
-                        indexKeySource.set(index, (int)key);
+                        indexKeySource.set(index, (int) key);
                     } else if (clazz == Long.class) {
-                        indexKeySource.set(index, (long)key);
+                        indexKeySource.set(index, (long) key);
                     } else {
                         indexKeySource.set(index, key);
                     }
@@ -129,8 +135,7 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
             }
             indexTable = new QueryTable(RowSetFactory.flat(position.getValue()).toTracking(), Map.of(
                     keyColumnName, indexKeySource,
-                    INDEX_COL_NAME, indexRowSetSource
-            ));
+                    INDEX_COL_NAME, indexRowSetSource));
         }
         if (sourceTable.isRefreshing()) {
             indexTable.setRefreshing(true);

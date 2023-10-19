@@ -154,14 +154,14 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             return null;
         }
 
-        final Function<String, String> defaultGroupingFilenameByColumnName =
-                ParquetTools.defaultGroupingFileName(tl().getParquetFile().getAbsolutePath());
+        final Function<String[], String> defaultGroupingFilenameByColumnName =
+                ParquetTools.defaultIndexFileName(tl().getParquetFile().getAbsolutePath());
         try {
             final GroupingColumnInfo groupingColumnInfo =
-                    tl().getDataIndexes().get(parquetColumnName);
+                    tl().getGroupingColumns().get(parquetColumnName);
             final ParquetFileReader parquetFileReader;
             final String groupingFileName = groupingColumnInfo == null
-                    ? defaultGroupingFilenameByColumnName.apply(parquetColumnName)
+                    ? defaultGroupingFilenameByColumnName.apply(new String[] {parquetColumnName})
                     : tl().getParquetFile().toPath().getParent()
                             .resolve(groupingColumnInfo.groupingTablePath()).toString();
             try {

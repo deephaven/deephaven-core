@@ -1598,15 +1598,15 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     /**
-     * Data indexes on select source columns may be valid in the result table. Add new mappings so the data indexes
-     * are retrievable from the result table column sources.
+     * Data indexes on select source columns may be valid in the result table. Add new mappings so the data indexes are
+     * retrievable from the result table column sources.
      *
      */
     private void propagateDataIndexes(SelectColumn[] selectColumns, QueryTable resultTable) {
         // Get a list of all the data indexes in the source table.
         final DataIndexer dataIndexer = DataIndexer.of(rowSet);
-        final Map<List<ColumnSource<?>>, DataIndex> dataIndexMap = dataIndexer.getDataIndexMap();
-        if (dataIndexMap.isEmpty()) {
+        final List<DataIndex> dataIndexes = dataIndexer.dataIndexes();
+        if (dataIndexes.isEmpty()) {
             return;
         }
 
@@ -1640,11 +1640,8 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         // Add new DataIndex entries to the DataIndexer with the remapped column sources.
-        for (Map.Entry<List<ColumnSource<?>>, DataIndex> entry : dataIndexMap.entrySet()) {
-            final DataIndex dataIndex = entry.getValue();
-            final List<ColumnSource<?>> dataIndexKeys = entry.getKey();
-
-            if (Collections.disjoint(dataIndexKeys, oldToNewMap.keySet())) {
+        for (final DataIndex dataIndex : dataIndexes) {
+            if (Collections.disjoint(dataIndex.keyColumnMap().keySet(), oldToNewMap.keySet())) {
                 // The index contains no remapped original sources, no work needed.
                 continue;
             }
