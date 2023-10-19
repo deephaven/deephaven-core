@@ -22,6 +22,7 @@ JArrayList = jpy.get_type("java.util.ArrayList")
 _JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
+
 @dataclass
 class CustomClass:
     f1: int
@@ -56,7 +57,9 @@ class TableFactoryTestCase(BaseTestCase):
         t = time_table("PT00:00:01", start_time="2021-11-06T13:21:00 ET")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 ET", _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0), time.to_j_time_zone('ET')))
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET",
+                         _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0),
+                                                        time.to_j_time_zone('ET')))
 
         t = time_table(1000_000_000)
         self.assertEqual(1, len(t.columns))
@@ -65,7 +68,9 @@ class TableFactoryTestCase(BaseTestCase):
         t = time_table(1000_1000_1000, start_time="2021-11-06T13:21:00 ET")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 ET", _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0), time.to_j_time_zone('ET')))
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET",
+                         _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0),
+                                                        time.to_j_time_zone('ET')))
 
         p = time.to_timedelta(time.to_j_duration("PT1s"))
         t = time_table(p)
@@ -76,7 +81,9 @@ class TableFactoryTestCase(BaseTestCase):
         t = time_table(p, start_time=st)
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 ET", _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0), time.to_j_time_zone('ET')))
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET",
+                         _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0),
+                                                        time.to_j_time_zone('ET')))
 
     def test_time_table_blink(self):
         t = time_table("PT1s", blink_table=True)
@@ -333,6 +340,24 @@ class TableFactoryTestCase(BaseTestCase):
         st = stream_to_append_only(tt)
         self.assertTrue(st.is_refreshing)
         self.assertFalse(jpy.cast(st.j_table, _JBaseTable).isBlink())
+
+    def test_instant_array(self):
+        from deephaven import DynamicTableWriter
+        from deephaven import dtypes as dht
+        from deephaven import time as dhtu
+
+        col_defs_5 = \
+            { \
+                "InstantArray": dht.instant_array \
+                }
+
+        dtw5 = DynamicTableWriter(col_defs_5)
+        t5 = dtw5.table
+        dtw5.write_row(dht.array(dht.Instant, [dhtu.to_j_instant("2021-01-01T00:00:00 ET"),
+                                               dhtu.to_j_instant("2022-01-01T00:00:00 ET")]))
+        self.wait_ticking_table_update(t5, row_count=1, timeout=5)
+        self.assertEqual(t5.size, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

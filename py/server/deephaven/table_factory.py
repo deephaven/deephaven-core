@@ -417,21 +417,20 @@ def function_generated_table(table_generator: Callable[..., Table],
             refresh_interval_ms
         )
     else:
+        # Make sure we have a list of Tables
+        if isinstance(source_tables, Table):
+            source_tables = [source_tables]
+
         # Extract the underlying Java tables of any source_tables:
         source_j_tables = []
-        if isinstance(source_tables, Table):
-            source_j_tables.append(source_tables.j_table)
-        else:
-            for tbl in source_tables:
-                source_j_tables.append(tbl.j_table)
-
-        # Wrap the source_j_tables in a Java array:
-        source_j_tables_jarray = jpy.array(_JTable, source_j_tables)
+        for tbl in source_tables:
+            source_j_tables.append(tbl.j_table)
 
         # Create the function-generated table:
-        j_function_generated_table = _JFunctionGeneratedTableFactory.create(
-            table_generator_j_function,
-            source_j_tables_jarray
+        with auto_locking_ctx(*source_tables):
+            j_function_generated_table = _JFunctionGeneratedTableFactory.create(
+                table_generator_j_function,
+                source_j_tables
         )
 
     return Table(j_function_generated_table)

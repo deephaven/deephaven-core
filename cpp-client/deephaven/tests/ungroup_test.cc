@@ -11,16 +11,10 @@ TEST_CASE("Ungroup columns", "[.]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
 
-  auto import_date = table.GetStrCol("ImportDate");
-  auto ticker = table.GetStrCol("Ticker");
+  table = table.Where("ImportDate == `2017-11-01`");
 
-  table = table.Where(import_date == "2017-11-01");
-
-  auto by_table = table.Where(ticker == "AAPL").View("Ticker", "Close").View("Ticker");
-  std::cout << by_table.Stream(true) << '\n';
-
+  auto by_table = table.Where("Ticker == `AAPL`").View("Ticker", "Close").View("Ticker");
   auto ungrouped = by_table.Ungroup("Close");
-  std::cout << ungrouped.Stream(true) << '\n';
 
   std::vector<std::string> ticker_data = {"AAPL"};
   std::vector<std::string> close_data = {"[23.5,24.2,26.7]"};

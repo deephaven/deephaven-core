@@ -55,7 +55,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
     }
 
     public void testNoSources() {
-        // If no sources are specified, function should still run once on initializtaion.
+        // If no sources are specified, function should still run once on initialization.
         final Table functionBacked =
                 FunctionGeneratedTableFactory.create(() -> newTable(
                         stringCol("StringCol", "MyString"),

@@ -22,7 +22,6 @@ using arrow::flight::FlightClient;
 using deephaven::client::impl::MoveVectorData;
 using deephaven::dhcore::utility::Bit_cast;
 using deephaven::dhcore::utility::GetWhat;
-using deephaven::dhcore::utility::Streamf;
 using deephaven::dhcore::utility::Stringf;
 using io::deephaven::proto::backplane::grpc::AddTableRequest;
 using io::deephaven::proto::backplane::grpc::AddTableResponse;
@@ -74,9 +73,9 @@ std::optional<std::chrono::milliseconds> ExtractExpirationInterval(
 
 const char *timeoutKey = "http.session.durationMs";
 
-// (Potentially) re-send a handshake this often *until* the server responds to the handshake.
-// The server will typically respond quickly so the resend will typically never happen.
-const size_t handshakeResendIntervalMillis = 5 * 1000;
+// A handshake resend interval to use as a default if our normal interval calculation
+// fails, e.g. due to GRPC errors.
+constexpr const auto kHandshakeResendInterval = std::chrono::seconds(5);
 }  // namespace
 
 namespace {
@@ -371,6 +370,17 @@ void Server::SendRpc(const std::function<grpc::Status(grpc::ClientContext *)> &c
     auto message = Stringf("Error %o. Message: %o", status.error_code(), status.error_message());
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
+
+  // Authorization token and timeout housekeeping
+  const auto &metadata = ctx.GetServerInitialMetadata();
+
+  auto ip = metadata.find(kAuthorizationKey);
+  std::unique_lock lock(mutex_);
+  if (ip != metadata.end()) {
+    const auto &val = ip->second;
+    sessionToken_.assign(val.begin(), val.end());
+  }
+  nextHandshakeTime_ = now + expirationInterval_;
 }
 
 void Server::SendKeepaliveMessages(const std::shared_ptr<Server> &self) {
@@ -400,11 +410,8 @@ bool Server::KeepaliveHelper() {
         break;
       }
     }
-
-    // Pessimistically set nextHandshakeTime_ to a short interval from now (say about 5 seconds).
-    // If there are no responses from the server in the meantime (including no response to the very
-    // handshake we are about to send), then we will send another handshake after this interval.
-    nextHandshakeTime_ = now + std::chrono::milliseconds(handshakeResendIntervalMillis);
+    // Set a default nextHandshakeTime_. This will likely be overwritten by SendRpc, if it succeeds.
+    nextHandshakeTime_ = now + kHandshakeResendInterval;
   }
 
   // Send a 'GetConfigurationConstants' as a handshake. On the way out, we note our local time.
@@ -433,10 +440,10 @@ void Server::SetExpirationInterval(std::chrono::milliseconds interval) {
   expirationInterval_ = interval;
 
   // In the unlikely event that the server reduces the expirationInterval_ (probably never happens),
-  // we need to wake up the keepalive thread so it can assess what to do.
-  auto expirationTimeEstimate = std::chrono::system_clock::now() + expirationInterval_;
-  if (expirationTimeEstimate < nextHandshakeTime_) {
-    nextHandshakeTime_ = expirationTimeEstimate;
+  // we might need to update the nextHandshakeTime_.
+  auto expiration_time_estimate = std::chrono::system_clock::now() + expirationInterval_;
+  if (expiration_time_estimate < nextHandshakeTime_) {
+    nextHandshakeTime_ = expiration_time_estimate;
     condVar_.notify_all();
   }
 }
@@ -444,9 +451,9 @@ void Server::SetExpirationInterval(std::chrono::milliseconds interval) {
 void Server::ForEachHeaderNameAndValue(
     const std::function<void(const std::string &, const std::string &)> &fun) {
   mutex_.lock();
-  auto tokenCopy = sessionToken_;
+  auto token_copy = sessionToken_;
   mutex_.unlock();
-  fun(kAuthorizationKey, tokenCopy);
+  fun(kAuthorizationKey, token_copy);
   for (const auto &header : extraHeaders_) {
     fun(header.first, header.second);
   }

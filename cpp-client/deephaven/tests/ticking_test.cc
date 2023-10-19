@@ -10,8 +10,6 @@
 #include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::client::Client;
-using deephaven::client::NumCol;
-using deephaven::client::StrCol;
 using deephaven::client::TableHandle;
 using deephaven::client::utility::TableMaker;
 using deephaven::dhcore::chunk::Int64Chunk;

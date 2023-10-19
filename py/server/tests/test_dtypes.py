@@ -18,6 +18,7 @@ from tests.testbase import BaseTestCase
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
+
 def remap_double(v, null_value):
     if v != v or v == NULL_DOUBLE or v == float('inf'):
         return null_value
@@ -251,6 +252,11 @@ class DTypesTestCase(BaseTestCase):
         j_array2 = dtypes.array(dtypes.bool_, [True, False])
         self.assertEqual(j_array[0], j_array2[0])
         self.assertEqual(j_array[1], j_array2[1])
+
+    def test_np_ndim_array(self):
+        np_array = np.ndarray([1, 2, 3], np.int32)
+        with self.assertRaises(ValueError):
+            j_array = dtypes.array(dtypes.int32, np_array)
 
 
 if __name__ == '__main__':

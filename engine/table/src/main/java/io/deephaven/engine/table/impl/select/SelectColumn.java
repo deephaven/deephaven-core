@@ -17,7 +17,6 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import org.jetbrains.annotations.NotNull;
@@ -60,15 +59,6 @@ public interface SelectColumn extends Selectable {
      * Convenient static final instance of a zero length Array of SelectColumns for use in toArray calls.
      */
     SelectColumn[] ZERO_LENGTH_SELECT_COLUMN_ARRAY = new SelectColumn[0];
-
-    /**
-     * Initialize the SelectColumn using the input table and return a list of underlying columns that this SelectColumn
-     * is dependent upon.
-     *
-     * @param table the table to initialize internals from
-     * @return a list containing all columns from 'table' that the result depends on
-     */
-    List<String> initInputs(Table table);
 
     /**
      * Initialize the column from the provided set of underlying columns and row set.

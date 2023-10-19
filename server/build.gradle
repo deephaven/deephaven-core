@@ -91,6 +91,7 @@ dependencies {
     implementation 'dev.dirs:directories:26'
 
     testImplementation 'io.grpc:grpc-testing'
+    testImplementation('io.grpc:grpc-inprocess')
 
     testImplementation project(':proto:proto-backplane-grpc')
 

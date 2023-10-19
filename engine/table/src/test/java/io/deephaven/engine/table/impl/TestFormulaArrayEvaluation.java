@@ -270,7 +270,9 @@ public class TestFormulaArrayEvaluation {
             simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
         final long duration = System.currentTimeMillis() - startTm;
-        Assert.assertTrue("test finishes in less than 15 seconds", duration < 15_000);
+        Assert.assertTrue(
+                String.format("Test finishes in less than 15 seconds, instead duration was %d ms", duration),
+                duration < 15_000);
     }
 
     @Test

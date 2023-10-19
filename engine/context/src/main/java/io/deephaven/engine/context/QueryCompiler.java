@@ -707,7 +707,7 @@ public class QueryCompiler {
         if (!result) {
             throw new RuntimeException("Error compiling class " + fqClassName + ":\n" + compilerOutput);
         }
-        // The above has compiled into into e.g.
+        // The above has compiled into e.g.
         // /tmp/workspace/cache/classes/temporaryCompilationDirectory12345/io/deephaven/test/cm12862183232603186v52_0/{various
         // class files}
         // We want to atomically move it to e.g.
