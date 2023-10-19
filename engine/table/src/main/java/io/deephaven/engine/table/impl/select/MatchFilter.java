@@ -82,8 +82,8 @@ public class MatchFilter extends WhereFilterImpl {
         this.columnName = columnName;
         this.values = values;
         this.strValues = null;
-        this.invertMatch = (matchType == MatchType.Inverted);
         this.caseInsensitive = sensitivity == CaseSensitivity.IgnoreCase;
+        this.invertMatch = (matchType == MatchType.Inverted);
     }
 
     public MatchFilter renameFilter(String newName) {

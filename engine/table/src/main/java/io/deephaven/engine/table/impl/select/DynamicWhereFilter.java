@@ -27,7 +27,6 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.function.BiConsumer;
 
 /**
  * A where filter that extracts a set of inclusion or exclusion keys from a set table.
@@ -354,7 +353,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                     }
 
                     // Iterate through the index-restricted row set for matches.
-                    for (final RowSet.Iterator iterator = resultRowSet.iterator(); iterator.hasNext(); ) {
+                    for (final RowSet.Iterator iterator = resultRowSet.iterator(); iterator.hasNext();) {
                         final long rowKey = iterator.nextLong();
                         final Object key = tupleSource.createTuple(rowKey);
 

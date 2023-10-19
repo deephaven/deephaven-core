@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.SortPair;
 import io.deephaven.engine.table.impl.locations.TableKey;
@@ -41,7 +42,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
 
     private final ParquetInstructions readInstructions;
-    private final List<SortPair> sortingColumns;
+    private final List<SortColumn> sortingColumns;
     private final ParquetFileReader parquetFileReader;
     private final int[] rowGroupIndices;
 
@@ -96,9 +97,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         dataIndexes = tableInfo.dataIndexes();
         columnTypes = tableInfo.columnTypeMap();
 
-        sortingColumns = tableInfo.sortingColumns().stream()
-                .map(SortPair::of)
-                .collect(Collectors.toList());
+        sortingColumns = tableInfo.sortingColumns();
 
         handleUpdate(computeIndex(), tableLocationKey.getFile().lastModified());
     }
@@ -157,7 +156,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     @NotNull
     @Override
-    public List<SortPair> getSortedColumns() {
+    public List<SortColumn> getSortedColumns() {
         return sortingColumns;
     }
 
@@ -202,7 +201,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     @Nullable
     @Override
-    public Table getDataIndexImpl(@NotNull final String... columns) {
+    public Table loadDataIndex(@NotNull final String... columns) {
         return ParquetTools.readDataIndexTable(getParquetFile(), tableInfo, columns);
     }
 }

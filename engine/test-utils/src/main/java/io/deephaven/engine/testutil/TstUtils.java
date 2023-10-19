@@ -22,7 +22,6 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.dataindex.StaticGroupingProvider;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -672,9 +671,6 @@ public class TstUtils {
             } else {
                 result = new ObjectTestSource<>(columnHolder.dataType, rowSet, chunkData);
             }
-        }
-        if (columnHolder.grouped) {
-            result.setGroupingProvider(StaticGroupingProvider.buildFrom(result, columnHolder.name, rowSet));
         }
         return result;
     }

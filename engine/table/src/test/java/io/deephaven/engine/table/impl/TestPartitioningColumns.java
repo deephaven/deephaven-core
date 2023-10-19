@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -110,7 +111,7 @@ public class TestPartitioningColumns {
         }
 
         @Override
-        public @NotNull List<SortPair> getSortedColumns() {
+        public @NotNull List<SortColumn> getSortedColumns() {
             return null;
         }
 
@@ -198,7 +199,7 @@ public class TestPartitioningColumns {
         }
 
         @Override
-        protected @Nullable Table getDataIndexImpl(@NotNull String... columns) {
+        protected @Nullable Table loadDataIndex(@NotNull String... columns) {
             return null;
         }
     }

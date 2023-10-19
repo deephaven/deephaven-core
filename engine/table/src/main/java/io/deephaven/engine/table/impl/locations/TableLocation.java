@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.locations;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.table.Table;
@@ -85,10 +86,10 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
     /**
      * Get an ordered list of columns this location is sorted by.
      * 
-     * @return a non-null ordered list of {@link SortPair}s
+     * @return a non-null ordered list of {@link SortColumn}s
      */
     @NotNull
-    List<SortPair> getSortedColumns();
+    List<SortColumn> getSortedColumns();
 
     /**
      * Check if this location has a data index for the specified columns.
@@ -118,7 +119,7 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
      * Get the column location for the specified column name, casting to the requested type.
      *
      * @param name The column name
-     * @param locationType tye desired {@link ColumnLocation} type
+     * @param locationType type desired {@link ColumnLocation} type
      * @return The ColumnLocation for the defined column under this table location
      */
     @NotNull

@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table;
 
+import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
@@ -10,20 +11,14 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.SortedColumnsAttribute;
-import io.deephaven.engine.table.impl.SortingOrder;
-import io.deephaven.engine.table.impl.dataindex.RowSetCodec;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.NullSelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.parquet.base.ColumnWriter;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.RowGroupWriter;
@@ -31,39 +26,30 @@ import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.parquet.table.transfer.*;
+import io.deephaven.parquet.table.transfer.ArrayAndVectorTransfer;
+import io.deephaven.parquet.table.transfer.StringDictionary;
+import io.deephaven.parquet.table.transfer.TransferObject;
 import io.deephaven.parquet.table.util.TrackedSeekableChannelsProvider;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
-import org.apache.parquet.column.statistics.IntStatistics;
-import org.apache.parquet.column.statistics.Statistics;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
-import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.*;
+import java.nio.IntBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.IntSupplier;
-import java.util.stream.Collectors;
-
-import static io.deephaven.parquet.table.ParquetTools.computeDataIndexTableName;
-import static io.deephaven.parquet.table.ParquetTools.minusParquetSuffix;
-import static io.deephaven.util.QueryConstants.NULL_INT;
 
 /**
  * API for writing DH tables in parquet format
@@ -104,9 +90,9 @@ public class ParquetTableWriter {
         public final File destFile;
 
         public IndexWritingInfo(final String[] indexColumnNames,
-                                final String[] parquetColumnNames,
-                                final File metadataFilePath,
-                                final File destFile) {
+                final String[] parquetColumnNames,
+                final File metadataFilePath,
+                final File destFile) {
             this.indexColumnNames = indexColumnNames;
             this.parquetColumnNames = parquetColumnNames;
             this.metadataFilePath = metadataFilePath;

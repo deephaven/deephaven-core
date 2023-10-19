@@ -1,5 +1,6 @@
 package io.deephaven.engine.testutil.locations;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortPair;
@@ -62,7 +63,7 @@ public final class TableBackedTableLocation extends AbstractTableLocation {
     }
 
     @Override
-    public @NotNull List<SortPair> getSortedColumns() {
+    public @NotNull List<SortColumn> getSortedColumns() {
         return null;
     }
 
@@ -72,7 +73,7 @@ public final class TableBackedTableLocation extends AbstractTableLocation {
     }
 
     @Override
-    protected @Nullable Table getDataIndexImpl(@NotNull String... columns) {
+    protected @Nullable Table loadDataIndex(@NotNull String... columns) {
         return null;
     }
 

@@ -165,7 +165,6 @@ public abstract class AbstractTableLocation
             if (cachedGrouping != null) {
                 grouping = cachedGrouping.get();
                 if (grouping != null) {
-                    // System.out.println("HAD CACHE");
                     return grouping;
                 }
             }
@@ -186,12 +185,11 @@ public abstract class AbstractTableLocation
             }
 
             if (grouping == null) {
-                grouping = getDataIndexImpl(columns);
+                grouping = loadDataIndex(columns);
 
                 if (grouping == null || grouping.isEmpty()) {
                     cachedGroupings.put(colNames, NO_GROUPING_SENTINEL);
                 } else {
-                    // System.out.println("NO CACHE");
                     cachedGroupings.put(colNames, new SoftReference<>(grouping));
                 }
             }
@@ -208,5 +206,5 @@ public abstract class AbstractTableLocation
      * @return the data index table, or an empty table or null if none existed.
      */
     @Nullable
-    protected abstract Table getDataIndexImpl(@NotNull final String... columns);
+    protected abstract Table loadDataIndex(@NotNull final String... columns);
 }

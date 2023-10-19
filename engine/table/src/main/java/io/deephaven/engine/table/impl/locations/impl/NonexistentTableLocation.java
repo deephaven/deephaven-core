@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.locations.impl;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.SortPair;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
@@ -43,17 +44,19 @@ public final class NonexistentTableLocation extends AbstractTableLocation {
     }
 
     @Override
-    protected @Nullable Table getDataIndexImpl(@NotNull String... columns) {
-        return null;
+    @Nullable
+    protected Table loadDataIndex(@NotNull String... columns) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public @NotNull List<SortPair> getSortedColumns() {
-        return List.of();
+    @NotNull
+    public List<SortColumn> getSortedColumns() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean hasDataIndexFor(@NotNull String... columns) {
-        return false;
+        throw new UnsupportedOperationException();
     }
 }

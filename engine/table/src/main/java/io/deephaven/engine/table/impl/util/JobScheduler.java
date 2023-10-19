@@ -27,18 +27,6 @@ import java.util.function.Supplier;
  * thread for inclusion in overall task metrics.
  */
 public interface JobScheduler {
-
-    /**
-     * A factory method for generating the correct instance of JobScheduler .
-     */
-    static JobScheduler make() {
-        if (OperationInitializationThreadPool.canParallelize()) {
-            return new OperationInitializationPoolJobScheduler();
-        } else {
-            return ImmediateJobScheduler.INSTANCE;
-        }
-    }
-
     /**
      * A default context for the scheduled job actions. Override this to provide reusable resources for the serial and
      * parallel iterate actions.
