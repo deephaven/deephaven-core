@@ -16,7 +16,9 @@ import org.apache.parquet.hadoop.metadata.*;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.internal.hadoop.metadata.IndexReference;
 import org.apache.parquet.schema.MessageType;
+import org.jetbrains.annotations.NotNull;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -79,30 +81,42 @@ public class ParquetFileWriter {
         return rowGroupWriter;
     }
 
+    private static class BufferedOutputStreamWithCount extends BufferedOutputStream {
+        BufferedOutputStreamWithCount(@NotNull OutputStream out) {
+            super(out);
+        }
+
+        int getCount() {
+            return count;
+        }
+    }
+
     public void close() throws IOException {
-        try (final OutputStream os = Channels.newOutputStream(writeChannel)) {
+        try (final BufferedOutputStreamWithCount os =
+                new BufferedOutputStreamWithCount(Channels.newOutputStream(writeChannel))) {
             serializeOffsetIndexes(offsetIndexes, blocks, os);
             ParquetMetadata footer =
                     new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
             serializeFooter(footer, os);
         }
         // os (and thus writeChannel) are closed at this point.
-
         compressorAdapter.close();
     }
 
-    private void serializeFooter(final ParquetMetadata footer, final OutputStream os) throws IOException {
-        final long footerIndex = writeChannel.position();
+    private void serializeFooter(final ParquetMetadata footer, final BufferedOutputStreamWithCount os)
+            throws IOException {
         org.apache.parquet.format.FileMetaData parquetMetadata = metadataConverter.toParquetMetadata(VERSION, footer);
+        final long offset = writeChannel.position() + os.getCount();
         writeFileMetaData(parquetMetadata, os);
-        BytesUtils.writeIntLittleEndian(os, (int) (writeChannel.position() - footerIndex));
+        final long numBytesWritten = writeChannel.position() + os.getCount() - offset;
+        BytesUtils.writeIntLittleEndian(os, (int) numBytesWritten);
         os.write(ParquetFileReader.MAGIC);
     }
 
     private void serializeOffsetIndexes(
             final List<List<OffsetIndex>> offsetIndexes,
             final List<BlockMetaData> blocks,
-            final OutputStream os) throws IOException {
+            final BufferedOutputStreamWithCount os) throws IOException {
         for (int bIndex = 0, bSize = blocks.size(); bIndex < bSize; ++bIndex) {
             final List<ColumnChunkMetaData> columns = blocks.get(bIndex).getColumns();
             final List<OffsetIndex> blockOffsetIndexes = offsetIndexes.get(bIndex);
@@ -112,9 +126,10 @@ public class ParquetFileWriter {
                     continue;
                 }
                 ColumnChunkMetaData column = columns.get(cIndex);
-                final long offset = writeChannel.position();
+                final long offset = writeChannel.position() + os.getCount();
                 Util.writeOffsetIndex(ParquetMetadataConverter.toParquetOffsetIndex(offsetIndex), os);
-                column.setOffsetIndexReference(new IndexReference(offset, (int) (writeChannel.position() - offset)));
+                final long numBytesWritten = writeChannel.position() + os.getCount() - offset;
+                column.setOffsetIndexReference(new IndexReference(offset, (int) numBytesWritten));
             }
         }
     }
