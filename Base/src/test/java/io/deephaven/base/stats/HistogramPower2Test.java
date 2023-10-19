@@ -33,7 +33,7 @@ public class HistogramPower2Test extends TestCase {
         // should have a count of 1 in bin[1]..bin[63]; bin[0]=2
 
         Stats.update(new ItemUpdateListener() {
-            public void handleItemUpdated(Item item, long now, long appNow, int intervalIndex, long intervalMillis,
+            public void handleItemUpdated(Item<?> item, long now, long appNow, int intervalIndex, long intervalMillis,
                     String intervalName) {
                 // Value v = item.getValue();
                 HistogramPower2 nh;

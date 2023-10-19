@@ -4,13 +4,10 @@
 package io.deephaven.base.stats;
 
 public interface ItemUpdateListener {
-    public void handleItemUpdated(Item item, long now, long appNow, int intervalIndex, long intervalMillis,
-            String intervalName);
 
-    public static final ItemUpdateListener NULL = new ItemUpdateListener() {
-        public void handleItemUpdated(Item item, long now, long appNow, int intervalIndex, long intervalMillis,
-                String intervalName) {
-            // empty
-        }
+    void handleItemUpdated(
+            Item<?> item, long now, long appNow, int intervalIndex, long intervalMillis, String intervalName);
+
+    ItemUpdateListener NULL = (item, now, appNow, intervalIndex, intervalMillis, intervalName) -> {
     };
 }

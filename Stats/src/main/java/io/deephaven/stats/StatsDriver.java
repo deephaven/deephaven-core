@@ -7,7 +7,6 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.net.CommBase;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.formatters.ISO8601;
 import io.deephaven.base.stats.*;
 import io.deephaven.base.text.TimestampBuffer;
 import io.deephaven.configuration.Configuration;
@@ -15,8 +14,10 @@ import io.deephaven.io.log.*;
 import io.deephaven.io.sched.TimedJob;
 import io.deephaven.io.log.impl.LogEntryPoolImpl;
 import io.deephaven.io.log.impl.LogSinkImpl;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 
 import java.util.Properties;
+import java.util.TimeZone;
 
 /**
  * Drives the collection of statistics on a 1-second timer task.
@@ -39,11 +40,11 @@ public class StatsDriver extends TimedJob {
     }
 
     private final LogEntryPool entryPool;
-    private final LogSink sink;
+    private final LogSink<?> sink;
     private final LogEntry[] entries;
 
     private final LogEntryPool entryPoolHisto;
-    private final LogSink sinkHisto;
+    private final LogSink<?> sinkHisto;
     private final LogEntry[] entriesHisto;
 
     private final TimestampBuffer systemTimestamp;
@@ -52,9 +53,9 @@ public class StatsDriver extends TimedJob {
     public final static String header =
             "Stat,IntervalName,NowSec,NowString,AppNowSec,AppNowString,TypeTag,Name,N,Sum,Last,Min,Max,Avg,Sum2,Stdev";
 
-    private long nextInvocation = System.currentTimeMillis();
-    private long nextCpuUpdate = nextInvocation + CPU_INTERVAL;
-    private long nextMemUpdate = nextInvocation + MEM_INTERVAL;
+    private long nextInvocation;
+    private long nextCpuUpdate;
+    private long nextMemUpdate;
 
     private static final long STEP = 1000;
     private static final long MEM_INTERVAL = 1000;
@@ -74,6 +75,7 @@ public class StatsDriver extends TimedJob {
 
     private final StatsMemoryCollector memStats;
     private final StatsCPUCollector cpuStats;
+    @ReferentialIntegrity
     private ObjectAllocationCollector objectAllocation;
 
     public StatsDriver(Clock clock) {
@@ -116,8 +118,9 @@ public class StatsDriver extends TimedJob {
             }
         }
 
-        this.systemTimestamp = new TimestampBuffer(ISO8601.serverTimeZone());
-        this.appTimestamp = new TimestampBuffer(ISO8601.serverTimeZone());
+        final TimeZone serverTimeZone = Configuration.getInstance().getServerTimezone();
+        this.systemTimestamp = new TimestampBuffer(serverTimeZone);
+        this.appTimestamp = new TimestampBuffer(serverTimeZone);
 
         if (path == null) {
             this.entryPool = null;
@@ -150,9 +153,12 @@ public class StatsDriver extends TimedJob {
             clockValue = null;
         }
 
-        long now = System.currentTimeMillis();
-        long delay = STEP - (now % STEP);
+        final long now = System.currentTimeMillis();
+        final long delay = STEP - (now % STEP);
         nextInvocation = now + delay;
+        nextCpuUpdate = nextInvocation + CPU_INTERVAL;
+        nextMemUpdate = nextInvocation + MEM_INTERVAL;
+
         cpuStats = new StatsCPUCollector(CPU_INTERVAL, getFdStats);
         memStats = new StatsMemoryCollector(MEM_INTERVAL, statusAdapter::sendAlert, statusAdapter::cmsAlertEnabled);
         if (Configuration.getInstance().getBoolean("allocation.stats.enabled")) {
@@ -220,7 +226,7 @@ public class StatsDriver extends TimedJob {
 
     private final ItemUpdateListener LISTENER = new ItemUpdateListener() {
         @Override
-        public void handleItemUpdated(Item item, long now, long appNow, int intervalIndex, long intervalMillis,
+        public void handleItemUpdated(Item<?> item, long now, long appNow, int intervalIndex, long intervalMillis,
                 String intervalName) {
             final Value v = item.getValue();
             final History history = v.getHistory();
