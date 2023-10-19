@@ -63,8 +63,6 @@ public class ImmutableObjectTestSource<T> extends AbstractColumnSource<T>
 
     // region chunk add
     public synchronized void add(final RowSet rowSet, Chunk<Values> vs) {
-        setGroupingProvider(null);
-
         if (rowSet.size() != vs.size()) {
             throw new IllegalArgumentException("rowSet=" + rowSet + ", data size=" + vs.size());
         }
