@@ -389,7 +389,14 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
     if not component_type and sys.version_info.minor > 8:
         import types
         if isinstance(t, types.GenericAlias) and (issubclass(t.__origin__, Sequence) or t.__origin__ == np.ndarray):
-            component_type = t.__args__[1].__args__[0] if t.__args__[0] == typing.Any else t.__args__[0]
+            nargs = len(t.__args__)
+            if nargs == 1:
+                component_type = t.__args__[0]
+            elif nargs == 2:  # for npt.NDArray[np.int64], etc.
+                a0 = t.__args__[0]
+                a1 = t.__args__[1]
+                if a0 == typing.Any and isinstance(a1, types.GenericAlias):
+                    component_type = a1.__args__[0]
 
     if component_type:
         return _np_dtype_char(component_type)
