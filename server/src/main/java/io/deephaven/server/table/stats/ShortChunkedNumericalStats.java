@@ -135,7 +135,7 @@ public class ShortChunkedNumericalStats implements ChunkedNumericalStatsKernel {
             }
         }
 
-        double avg = avg(count, sum);
+        double avg = avg(count, useFloatingSum ? floatingSum : sum);
         return TableTools.newTable(
                 TableTools.longCol("COUNT", count),
                 TableTools.longCol("SIZE", rowSet.size()),
@@ -150,7 +150,6 @@ public class ShortChunkedNumericalStats implements ChunkedNumericalStatsKernel {
                 TableTools.shortCol("MAX_ABS", absMax),
                 TableTools.doubleCol("AVG", avg),
                 TableTools.doubleCol("AVG_ABS", avg(count, absSum)),
-                TableTools.doubleCol("STD_DEV", stdDev(count, avg, sqrdSum)));
-
+                TableTools.doubleCol("STD_DEV", stdDev(count, avg, useFloatingSqrdSum ? floatingSqrdSum : sqrdSum)));
     }
 }
