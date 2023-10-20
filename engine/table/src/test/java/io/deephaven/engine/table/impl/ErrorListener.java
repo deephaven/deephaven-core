@@ -16,8 +16,7 @@ public class ErrorListener extends InstrumentedTableUpdateListenerAdapter {
     }
 
     @Override
-    public void onUpdate(final TableUpdate upstream) {
-    }
+    public void onUpdate(final TableUpdate upstream) {}
 
     @Override
     public void onFailureInternal(Throwable originalException, Entry sourceEntry) {

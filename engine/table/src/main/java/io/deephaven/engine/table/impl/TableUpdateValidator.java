@@ -251,6 +251,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
     /**
      * Has an update validation failed on this table?
+     * 
      * @return true if an update validation has failed on this table.
      */
     public boolean hasFailed() {
