@@ -1243,7 +1243,7 @@ message ColumnStatisticsRequest {
   string column_name = 3;
   // For non-numeric, non-date types, specify the max number of unique values to return, sorted by popularity.
   // Leave unset to use server default, specify zero to skip.
-  optional int32 max_unique_values = 4;
+  optional int32 unique_value_limit = 4;
 }
 
 message BatchTableRequest {

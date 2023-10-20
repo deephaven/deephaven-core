@@ -39,10 +39,10 @@ public class LongChunkedNumericalStats implements ChunkedNumericalStatsKernel {
     public Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev) {
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(CHUNK_SIZE)) {
-            final RowSequence.Iterator okIt = rowSet.getRowSequenceIterator();
+            final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
 
-            while (okIt.hasMore()) {
-                final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(CHUNK_SIZE);
+            while (rsIt.hasMore()) {
+                final RowSequence nextKeys = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final LongChunk<? extends Values> chunk = (usePrev ? columnSource.getPrevChunk(getContext, nextKeys)
                         : columnSource.getChunk(getContext, nextKeys)).asLongChunk();
 

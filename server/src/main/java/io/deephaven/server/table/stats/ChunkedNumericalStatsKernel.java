@@ -8,7 +8,7 @@ import io.deephaven.util.QueryConstants;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-public interface ChunkedNumericalStatsKernel extends ColumnChunkedStatsFunction {
+public interface ChunkedNumericalStatsKernel extends ChunkedStatsKernel {
 
     static ChunkedNumericalStatsKernel makeChunkedNumericalStatsFactory(final Class<?> type) {
         if (type == Long.class || type == long.class) {

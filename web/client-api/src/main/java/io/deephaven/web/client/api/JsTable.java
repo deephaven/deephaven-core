@@ -1444,6 +1444,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         }, "get column statistics")
                 .refetch(this, workerConnection.metadata())
                 .then(state -> {
+                    // TODO (deephaven-core#188) don't drop these columns once we can decode them
                     JsArray<String> dropCols = new JsArray<>();
                     if (Arrays.stream(state.getColumns()).anyMatch(c -> c.getName().equals("UNIQUE_KEYS"))) {
                         dropCols.push("UNIQUE_KEYS");

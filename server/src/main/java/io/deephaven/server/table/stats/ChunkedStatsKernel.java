@@ -5,9 +5,9 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 
 /**
- *
+ * A function ready to be run in a snapshot, to collect data about a table column.
  */
-public interface ColumnChunkedStatsFunction {
+public interface ChunkedStatsKernel {
     int CHUNK_SIZE = 2048;
 
     Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev);

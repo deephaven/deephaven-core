@@ -2,6 +2,7 @@ package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -14,7 +15,7 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.table.stats.CharacterChunkedStats;
 import io.deephaven.server.table.stats.ChunkedNumericalStatsKernel;
-import io.deephaven.server.table.stats.ColumnChunkedStatsFunction;
+import io.deephaven.server.table.stats.ChunkedStatsKernel;
 import io.deephaven.server.table.stats.DateTimeChunkedStats;
 import io.deephaven.server.table.stats.ObjectChunkedStats;
 import io.deephaven.util.type.TypeUtils;
@@ -29,9 +30,18 @@ import java.util.List;
 
 @Singleton
 public class ColumnStatisticsGrpcImpl extends GrpcTableOperation<ColumnStatisticsRequest> {
-    private static final int MAX_UNIQUE_LIMIT = 200;
-    private static final int MAX_UNIQUE_DEFAULT = 20;
-    private static final int MAX_UNQIUE_TO_COLLECT = 1_000_000;
+    /** Default number of unique values to collect from a column. */
+    private static final int DEFAULT_UNIQUE_LIMIT =
+            Configuration.getInstance().getIntegerWithDefault("ColumnStatistics.defaultUniqueLimit", 20);
+    /** Maximum number of unique values to let a client request. */
+    private static final int MAX_UNIQUE_LIMIT =
+            Configuration.getInstance().getIntegerWithDefault("ColumnStatistics.maxUniqueLimit", 200);
+    /**
+     * Maximum number of unique values to collect before falling back and only collecting the count, not the most common
+     * values
+     */
+    private static final int MAX_UNIQUE_TO_COLLECT =
+            Configuration.getInstance().getIntegerWithDefault("ColumnStatistics.maxUniqueToCollect", 1_000_000);
 
     @Inject
     public ColumnStatisticsGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
@@ -46,7 +56,7 @@ public class ColumnStatisticsGrpcImpl extends GrpcTableOperation<ColumnStatistic
         final Class<?> type = table.getDefinition().getColumn(columnName).getDataType();
 
         // Based on the column type, make a stats function and get a column source
-        final ColumnChunkedStatsFunction statsFunc;
+        final ChunkedStatsKernel statsFunc;
         final ColumnSource<?> columnSource;
         if (TypeUtils.isDateTime(type)) {
             // Instant/ZonedDateTime only look at max/min and count
@@ -68,15 +78,15 @@ public class ColumnStatisticsGrpcImpl extends GrpcTableOperation<ColumnStatistic
         } else {
             // For remaining types the best we can do is count/track unique values in the column
             final int maxUnique;
-            if (request.hasMaxUniqueValues()) {
-                maxUnique = Math.max(request.getMaxUniqueValues(), MAX_UNIQUE_LIMIT);
+            if (request.hasUniqueValueLimit()) {
+                maxUnique = Math.max(request.getUniqueValueLimit(), MAX_UNIQUE_LIMIT);
             } else {
-                maxUnique = MAX_UNIQUE_DEFAULT;
+                maxUnique = DEFAULT_UNIQUE_LIMIT;
             }
             if (type == Character.class || type == char.class) {
-                statsFunc = new CharacterChunkedStats(MAX_UNQIUE_TO_COLLECT, maxUnique);
+                statsFunc = new CharacterChunkedStats(MAX_UNIQUE_TO_COLLECT, maxUnique);
             } else {
-                statsFunc = new ObjectChunkedStats(MAX_UNQIUE_TO_COLLECT, maxUnique);
+                statsFunc = new ObjectChunkedStats(MAX_UNIQUE_TO_COLLECT, maxUnique);
             }
             columnSource = table.getColumnSource(columnName);
         }

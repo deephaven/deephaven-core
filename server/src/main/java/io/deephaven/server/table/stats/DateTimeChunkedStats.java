@@ -11,8 +11,8 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 
-public class DateTimeChunkedStats implements ColumnChunkedStatsFunction {
-    public Table processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev) {
+public class DateTimeChunkedStats implements ChunkedStatsKernel {
+    public Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev) {
         long count = 0;
 
         long min = QueryConstants.NULL_LONG;
@@ -20,10 +20,10 @@ public class DateTimeChunkedStats implements ColumnChunkedStatsFunction {
 
         try (final ChunkSource.GetContext getContext =
                 columnSource.makeGetContext(ChunkedNumericalStatsKernel.CHUNK_SIZE)) {
-            final RowSequence.Iterator okIt = index.getRowSequenceIterator();
+            final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
 
-            while (okIt.hasMore()) {
-                final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(ChunkedNumericalStatsKernel.CHUNK_SIZE);
+            while (rsIt.hasMore()) {
+                final RowSequence nextKeys = rsIt.getNextRowSequenceWithLength(ChunkedNumericalStatsKernel.CHUNK_SIZE);
                 final LongChunk<? extends Values> chunk = (usePrev ? columnSource.getPrevChunk(getContext, nextKeys)
                         : columnSource.getChunk(getContext, nextKeys)).asLongChunk();
 
@@ -54,7 +54,7 @@ public class DateTimeChunkedStats implements ColumnChunkedStatsFunction {
 
         return TableTools.newTable(
                 TableTools.longCol("COUNT", count),
-                TableTools.longCol("SIZE", index.size()),
+                TableTools.longCol("SIZE", rowSet.size()),
                 TableTools.instantCol("MIN", DateTimeUtils.epochNanosToInstant(min)),
                 TableTools.instantCol("MAX", DateTimeUtils.epochNanosToInstant(max)));
     }

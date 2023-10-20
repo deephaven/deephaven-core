@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public class ObjectChunkedStats implements ColumnChunkedStatsFunction {
+public class ObjectChunkedStats implements ChunkedStatsKernel {
     private final int maxUniqueToCollect;
     private final int maxUniqueToDisplay;
 
@@ -40,16 +40,16 @@ public class ObjectChunkedStats implements ColumnChunkedStatsFunction {
         long count = 0;
         int uniqueCount = 0;
 
-        final TObjectLongHashMap<Comparable<?>> countValues = new TObjectLongHashMap<>();
+        final TObjectLongHashMap<Object> countValues = new TObjectLongHashMap<>();
         boolean useSet = false;
-        final Set<Comparable<?>> uniqueValues = new HashSet<>();
+        final Set<Object> uniqueValues = new HashSet<>();
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(CHUNK_SIZE)) {
-            final RowSequence.Iterator okIt = rowSet.getRowSequenceIterator();
+            final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
 
-            while (okIt.hasMore()) {
+            while (rsIt.hasMore()) {
                 // Grab up to the next CHUNK_SIZE rows
-                final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(CHUNK_SIZE);
+                final RowSequence nextKeys = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
 
                 final ObjectChunk<?, ? extends Values> chunk =
                         (usePrev ? columnSource.getPrevChunk(getContext, nextKeys)
@@ -65,14 +65,14 @@ public class ObjectChunkedStats implements ColumnChunkedStatsFunction {
                     count++;
 
                     if (useSet) {
-                        uniqueValues.add((Comparable<?>) val);
+                        uniqueValues.add(val);
                     } else if (uniqueCount > maxUniqueToCollect) {
                         // we no longer need to track counts for these items; fall back to a Set to get at least a count
                         uniqueValues.addAll(countValues.keySet());
                         countValues.clear();
-                        uniqueValues.add((Comparable<?>) val);
+                        uniqueValues.add(val);
                         useSet = true;
-                    } else if (countValues.adjustOrPutValue((Comparable<?>) val, 1, 1) == 1) {
+                    } else if (countValues.adjustOrPutValue(val, 1, 1) == 1) {
                         uniqueCount++;
                     }
                 }
