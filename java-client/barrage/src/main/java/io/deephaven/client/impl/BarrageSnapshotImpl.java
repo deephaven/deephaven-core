@@ -9,6 +9,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.*;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.engine.exceptions.RequestCancelledException;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -38,6 +39,15 @@ import java.util.BitSet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.Condition;
 
+/**
+ * This class is an intermediary helper class that uses a {@code DoExchange} to populate a {@link BarrageTable} using
+ * snapshot data from a remote server.
+ * <p>
+ * Users may call {@code entireTable}, or {@code partialTable}, to initiate the gRPC call to the server. These methods
+ * return the eventually populated {@code BarrageTable} to the user. The user must either set {@code blockUntilComplete}
+ * to {@code true} or call {@code blockUntilComplete} to ensure that the {@code BarrageTable} is fully populated before
+ * using it.
+ */
 public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements BarrageSnapshot {
     private static final Logger log = LoggerFactory.getLogger(BarrageSnapshotImpl.class);
 
@@ -283,10 +293,16 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         if (!connected) {
             return;
         }
+
+        exceptionWhileCompleting = new RequestCancelledException("BarrageSnapshotImpl closed");
+        signalCompletion();
+        GrpcUtil.safelyExecuteLocked(observer, () -> {
+            observer.cancel("BarrageSnapshotImpl closed", exceptionWhileCompleting);
+        });
         cleanup();
     }
 

@@ -11,6 +11,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.engine.exceptions.RequestCancelledException;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -41,6 +42,30 @@ import java.util.BitSet;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * This class is an intermediary helper class that uses a {@code DoExchange} to populate, and propagate updates if the
+ * request is not a snapshot, to a {@link BarrageTable} using subscription data from a remote server.
+ * <p>
+ * For Subscriptions (refreshing tables):
+ * <p>
+ * Users may call {@code entireTable}, or {@code partialTable}, to initiate the gRPC call to the server. These methods
+ * return the eventually populated {@code BarrageTable} to the user.
+ * <p>
+ * If the user wants to ensure that the table is completely populated with an initial state of the remote table prior to
+ * using the result they must either set {@code blockUntilComplete} to {@code true} or call {@code blockUntilComplete}
+ * to ensure that the {@code BarrageTable} is respecting the requested subscription.
+ * <p>
+ * It is not an error to create derived tables from the {@code BarrageTable} prior to the subscription being complete,
+ * as all changes are propagated to downstream tables.
+ * <p>
+ * For Snapshots (static tables):
+ * <p>
+ * Users may call {@code snapshotEntireTable}, or {@code snapshotPartialTable}, to initiate the gRPC call to the server.
+ * These methods return the eventually populated {@code BarrageTable} to the user. The user must either set
+ * {@code blockUntilComplete} to {@code true} during initiation or call {@code blockUntilComplete} to ensure that the
+ * {@code BarrageTable} is fully populated before using it. Noting that snapshots are static tables that do not
+ * propagate changes on any update graph.
+ */
 public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implements BarrageSubscription {
     private static final Logger log = LoggerFactory.getLogger(BarrageSubscriptionImpl.class);
 
@@ -320,6 +345,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         if (!connected) {
             return;
         }
+
+        exceptionWhileCompleting = new RequestCancelledException("BarrageSubscriptionImpl closed");
+        signalCompletion();
         GrpcUtil.safelyComplete(observer);
         cleanup();
     }

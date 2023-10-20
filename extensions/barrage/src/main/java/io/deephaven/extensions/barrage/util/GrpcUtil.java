@@ -37,7 +37,7 @@ public class GrpcUtil {
      * @param observer the stream that will be used in the runnable
      * @param runner the runnable to execute safely
      */
-    private static void safelyExecuteLocked(final StreamObserver<?> observer,
+    public static void safelyExecuteLocked(final StreamObserver<?> observer,
             final ThrowingRunnable<Exception> runner) {
         try {
             // noinspection SynchronizationOnLocalVariableOrMethodParameter
