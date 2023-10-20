@@ -654,13 +654,22 @@ public class WorkerConnection {
         state = State.Disconnected;
 
         // forcibly clean up the log stream and its listeners
-        logStream.cancel();
+        if (logStream != null) {
+            logStream.cancel();
+            logStream = null;
+        }
         pastLogs.clear();
         logCallbacks.clear();
 
         // Stop server streams, will not reconnect
-        terminationStream.cancel();
-        exportNotifications.cancel();
+        if (terminationStream != null) {
+            terminationStream.cancel();
+            terminationStream = null;
+        }
+        if (exportNotifications != null) {
+            exportNotifications.cancel();
+            exportNotifications = null;
+        }
 
         newSessionReconnect.disconnected();
         DomGlobal.clearTimeout(scheduledAuthUpdate);
