@@ -12,7 +12,7 @@ import io.deephaven.qst.type.Type;
 import java.util.List;
 import java.util.Objects;
 
-class ObjectProcessorStrict<T> implements ObjectProcessor<T> {
+final class ObjectProcessorStrict<T> implements ObjectProcessor<T> {
 
     static <T> ObjectProcessor<T> create(ObjectProcessor<T> delegate) {
         if (delegate instanceof ObjectProcessorStrict) {
@@ -22,14 +22,20 @@ class ObjectProcessorStrict<T> implements ObjectProcessor<T> {
     }
 
     private final ObjectProcessor<T> delegate;
+    private final List<Type<?>> outputTypes;
 
     ObjectProcessorStrict(ObjectProcessor<T> delegate) {
         this.delegate = Objects.requireNonNull(delegate);
+        this.outputTypes = List.copyOf(delegate.outputTypes());
     }
 
     @Override
     public List<Type<?>> outputTypes() {
-        return delegate.outputTypes();
+        final List<Type<?>> outputTypes = delegate.outputTypes();
+        if (!this.outputTypes.equals(outputTypes)) {
+            throw new UncheckedDeephavenException("Implementation is returning a different list of outputTypes");
+        }
+        return outputTypes;
     }
 
     @Override
@@ -37,7 +43,7 @@ class ObjectProcessorStrict<T> implements ObjectProcessor<T> {
         final int numColumns = delegate.outputTypes().size();
         if (numColumns != out.size()) {
             throw new IllegalArgumentException(String.format(
-                    "Expected delegate.outputTypes().size() == out.size(). delegate.outputTypes().size()=%d, out.size()=%d",
+                    "Improper number of out chunks. Expected delegate.outputTypes().size() == out.size(). delegate.outputTypes().size()=%d, out.size()=%d",
                     numColumns, out.size()));
         }
         final int[] originalSizes = new int[numColumns];
