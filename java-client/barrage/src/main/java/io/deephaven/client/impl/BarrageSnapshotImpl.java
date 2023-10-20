@@ -37,6 +37,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.Condition;
 
 /**
@@ -64,7 +65,9 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     private volatile boolean completed = false;
     private volatile Throwable exceptionWhileCompleting = null;
 
-    private volatile boolean connected = true;
+    private volatile int connected = 1;
+    private static final AtomicIntegerFieldUpdater<BarrageSnapshotImpl> CONNECTED_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(BarrageSnapshotImpl.class, "connected");
 
     private boolean prevUsed = false;
 
@@ -126,8 +129,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 return;
             }
             try (barrageMessage) {
-                final Listener localResultTable = resultTable;
-                if (!connected || localResultTable == null) {
+                if (connected == 0) {
                     return;
                 }
 
@@ -144,7 +146,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
                 rowsReceived += resultSize;
 
-                localResultTable.handleBarrageMessage(barrageMessage);
+                resultTable.handleBarrageMessage(barrageMessage);
             }
         }
 
@@ -154,17 +156,18 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                     .append(": Error detected in snapshot: ")
                     .append(t).endl();
 
-            final Listener localResultTable = resultTable;
-            if (!connected || localResultTable == null) {
+            if (connected == 0) {
                 return;
             }
-            localResultTable.handleBarrageError(t);
-            handleDisconnect();
+
+            // this error will always be propagated to our CheckForCompletion#onError callback
+            resultTable.handleBarrageError(t);
         }
 
         @Override
         public void onCompleted() {
-            handleDisconnect();
+            // this will always be propagated to our CheckForCompletion#onClose callback
+            resultTable.unsubscribe();
         }
     }
 
@@ -194,7 +197,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             RowSet viewport, BitSet columns, boolean reverseViewport, boolean blockUntilComplete)
             throws InterruptedException {
         synchronized (this) {
-            if (!connected) {
+            if (connected == 0) {
                 throw new UncheckedDeephavenException(this + " is not connected");
             }
 
@@ -274,41 +277,37 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         close();
     }
 
-    private void handleDisconnect() {
-        if (!connected) {
-            return;
-        }
-
-        completed = true;
-        signalCompletion();
-        cleanup();
+    private synchronized void signalCompletion() {
+        signalCompletion(null);
     }
 
-    private synchronized void signalCompletion() {
+    /**
+     * This method will only be invoked once using the CAS of {@code connected} from 1 to 0 as a guard.
+     */
+    private synchronized void signalCompletion(@Nullable final Throwable t) {
+        completed = true;
+
+        if (t != null) {
+            exceptionWhileCompleting = t;
+        }
+
         if (completedCondition != null) {
             resultTable.getUpdateGraph().requestSignal(completedCondition);
         }
 
         notifyAll();
+
+        tableHandle.close();
     }
 
     @Override
-    public synchronized void close() {
-        if (!connected) {
+    public void close() {
+        if (!CONNECTED_UPDATER.compareAndSet(this, 1, 0)) {
             return;
         }
 
-        exceptionWhileCompleting = new RequestCancelledException("BarrageSnapshotImpl closed");
-        signalCompletion();
-        GrpcUtil.safelyExecuteLocked(observer, () -> {
-            observer.cancel("BarrageSnapshotImpl closed", exceptionWhileCompleting);
-        });
-        cleanup();
-    }
-
-    private void cleanup() {
-        this.connected = false;
-        this.tableHandle.close();
+        signalCompletion(new RequestCancelledException("BarrageSnapshotImpl closed"));
+        GrpcUtil.safelyCancel(observer, "BarrageSnapshotImpl closed", exceptionWhileCompleting);
     }
 
     @Override
@@ -429,12 +428,17 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         @Override
         public void onError(Throwable t) {
-            exceptionWhileCompleting = t;
-            signalCompletion();
+            if (!CONNECTED_UPDATER.compareAndSet(BarrageSnapshotImpl.this, 1, 0)) {
+                return;
+            }
+            signalCompletion(t);
         }
 
         @Override
         public void onClose() {
+            if (!CONNECTED_UPDATER.compareAndSet(BarrageSnapshotImpl.this, 1, 0)) {
+                return;
+            }
             signalCompletion();
         }
     }

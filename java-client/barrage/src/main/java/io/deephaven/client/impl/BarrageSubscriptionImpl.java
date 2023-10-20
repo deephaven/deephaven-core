@@ -39,6 +39,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -80,7 +81,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private boolean isSnapshot;
 
     private volatile Condition completedCondition;
-    private volatile boolean completed;
+    private volatile int completed;
+    private static final AtomicIntegerFieldUpdater<BarrageSubscriptionImpl> COMPLETED_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(BarrageSubscriptionImpl.class, "completed");
     private volatile Throwable exceptionWhileCompleting;
 
     private volatile boolean connected = true;
@@ -173,7 +176,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
     @Override
     public boolean isCompleted() {
-        return completed;
+        return completed == 1;
     }
 
     @Override
@@ -239,7 +242,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         if (exceptionWhileCompleting != null) {
             throw new UncheckedDeephavenException("Error while handling subscription:", exceptionWhileCompleting);
         }
-        return completed;
+        return completed == 1;
     }
 
     @Override
@@ -282,7 +285,17 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     private synchronized void signalCompletion() {
-        completed = true;
+        signalCompletion(null);
+    }
+
+    private synchronized void signalCompletion(@Nullable final Throwable t) {
+        if (!COMPLETED_UPDATER.compareAndSet(BarrageSubscriptionImpl.this, 0, 1)) {
+            return;
+        }
+
+        if (t != null) {
+            exceptionWhileCompleting = t;
+        }
 
         // if we are building a snapshot via a growing viewport subscription, then cancel our subscription
         if (isSnapshot) {
@@ -341,13 +354,12 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     @Override
-    public synchronized void close() {
+    public void close() {
         if (!connected) {
             return;
         }
 
-        exceptionWhileCompleting = new RequestCancelledException("BarrageSubscriptionImpl closed");
-        signalCompletion();
+        signalCompletion(new RequestCancelledException("BarrageSubscriptionImpl closed"));
         GrpcUtil.safelyComplete(observer);
         cleanup();
     }
@@ -485,7 +497,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 @Nullable final RowSet serverViewport,
                 @Nullable final BitSet serverColumns,
                 final boolean serverReverseViewport) {
-            if (completed) {
+            if (completed == 1) {
                 return false;
             }
 
@@ -525,8 +537,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         @Override
         public void onError(Throwable t) {
-            exceptionWhileCompleting = t;
-            signalCompletion();
+            signalCompletion(t);
         }
 
         @Override

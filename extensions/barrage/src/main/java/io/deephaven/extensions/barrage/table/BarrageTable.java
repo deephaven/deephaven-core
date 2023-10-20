@@ -396,6 +396,24 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
     }
 
+    public void unsubscribe() {
+        unsubscribed = true;
+
+        if (!isRefreshing()) {
+            try {
+                realRefresh();
+            } catch (Throwable err) {
+                if (viewportChangedCallback != null) {
+                    viewportChangedCallback.onError(err);
+                    viewportChangedCallback = null;
+                }
+                throw err;
+            }
+        } else {
+            doWakeup();
+        }
+    }
+
     private void cleanup() {
         unsubscribed = true;
         if (stats != null) {
