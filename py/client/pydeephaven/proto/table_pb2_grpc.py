@@ -608,7 +608,9 @@ class TableServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ComputeColumnStatistics(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """*
+        Returns a new table representing statistics about a single column of the provided table.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
