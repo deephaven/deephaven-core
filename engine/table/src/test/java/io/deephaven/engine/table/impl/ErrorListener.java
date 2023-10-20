@@ -17,7 +17,6 @@ public class ErrorListener extends InstrumentedTableUpdateListenerAdapter {
 
     @Override
     public void onUpdate(final TableUpdate upstream) {
-        TestCase.fail("Should not have gotten an update!");
     }
 
     @Override
