@@ -5,16 +5,12 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.QueryConstants;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.text.DecimalFormat;
-import java.text.Format;
 
-public interface ChunkedNumericalStatsKernel<T> {
-    int CHUNK_SIZE = 2048;
+public interface ChunkedNumericalStatsKernel extends ColumnChunkedStatsFunction {
 
-    static ChunkedNumericalStatsKernel<?> makeChunkedNumericalStatsFactory(final Class<?> type) {
+    static ChunkedNumericalStatsKernel makeChunkedNumericalStatsFactory(final Class<?> type) {
         if (type == Long.class || type == long.class) {
             return new LongChunkedNumericalStats();
         } else if (type == Double.class || type == double.class) {
@@ -37,24 +33,16 @@ public interface ChunkedNumericalStatsKernel<T> {
         }
     }
 
-    static Table getChunkedNumericalStats(final Table table, final String columnName, boolean usePrev) {
-        final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        final RowSet index = usePrev ? table.getRowSet().prev() : table.getRowSet();
+    Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev);
 
-        return ChunkedNumericalStatsKernel.makeChunkedNumericalStatsFactory(columnSource.getType())
-                .processChunks(index, columnSource, usePrev);
-    }
-
-    Table processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev);
-
-    static double avg(long count, double sumValue) {
+    default double avg(long count, double sumValue) {
         if (count == 0) {
             return QueryConstants.NULL_DOUBLE;
         }
         return sumValue / count;
     }
 
-    static double stdDev(long count, double avg, double sqrdSum) {
+    default double stdDev(long count, double avg, double sqrdSum) {
         if (count <= 1) {
             return QueryConstants.NULL_DOUBLE;
         }

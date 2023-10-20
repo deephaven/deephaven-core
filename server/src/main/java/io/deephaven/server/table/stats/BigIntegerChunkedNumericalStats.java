@@ -11,15 +11,12 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.BigDecimalUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 
-public class BigIntegerChunkedNumericalStats implements ChunkedNumericalStatsKernel<BigInteger> {
+public class BigIntegerChunkedNumericalStats implements ChunkedNumericalStatsKernel {
     private final static int SCALE =
             Configuration.getInstance().getIntegerWithDefault("BigDecimalStdOperator.scale", 10);
 
@@ -35,10 +32,10 @@ public class BigIntegerChunkedNumericalStats implements ChunkedNumericalStatsKer
     private BigInteger absMax = null;
 
     @Override
-    public Table processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev) {
+    public Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev) {
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(CHUNK_SIZE)) {
-            final RowSequence.Iterator okIt = index.getRowSequenceIterator();
+            final RowSequence.Iterator okIt = rowSet.getRowSequenceIterator();
 
             while (okIt.hasMore()) {
                 final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(CHUNK_SIZE);
@@ -95,7 +92,7 @@ public class BigIntegerChunkedNumericalStats implements ChunkedNumericalStatsKer
 
         return TableTools.newTable(
                 TableTools.longCol("COUNT", count),
-                TableTools.longCol("SIZE", index.size()),
+                TableTools.longCol("SIZE", rowSet.size()),
                 new ColumnHolder<>("SUM", BigInteger.class, null, false, sum),
                 new ColumnHolder<>("SUM_ABS", BigInteger.class, null, false, absSum),
                 new ColumnHolder<>("SUM_SQRD", BigInteger.class, null, false, sqrdSum),

@@ -11,15 +11,11 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.BigDecimalUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.RoundingMode;
 
-public class BigDecimalChunkedNumericalStats implements ChunkedNumericalStatsKernel<BigDecimal> {
+public class BigDecimalChunkedNumericalStats implements ChunkedNumericalStatsKernel {
     private final static int SCALE =
             Configuration.getInstance().getIntegerWithDefault("BigDecimalStdOperator.scale", 10);
 
@@ -35,10 +31,10 @@ public class BigDecimalChunkedNumericalStats implements ChunkedNumericalStatsKer
     private BigDecimal absMax = null;
 
     @Override
-    public Table processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev) {
+    public Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev) {
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(CHUNK_SIZE)) {
-            final RowSequence.Iterator okIt = index.getRowSequenceIterator();
+            final RowSequence.Iterator okIt = rowSet.getRowSequenceIterator();
 
             while (okIt.hasMore()) {
                 final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(CHUNK_SIZE);
@@ -95,7 +91,7 @@ public class BigDecimalChunkedNumericalStats implements ChunkedNumericalStatsKer
 
         return TableTools.newTable(
                 TableTools.longCol("COUNT", count),
-                TableTools.longCol("SIZE", index.size()),
+                TableTools.longCol("SIZE", rowSet.size()),
                 new ColumnHolder<>("SUM", BigDecimal.class, null, false, sum),
                 new ColumnHolder<>("SUM_ABS", BigDecimal.class, null, false, absSum),
                 new ColumnHolder<>("SUM_SQRD", BigDecimal.class, null, false, sqrdSum),
@@ -104,8 +100,7 @@ public class BigDecimalChunkedNumericalStats implements ChunkedNumericalStatsKer
                 new ColumnHolder<>("MIN_ABS", BigDecimal.class, null, false, absMin),
                 new ColumnHolder<>("MAX_ABS", BigDecimal.class, null, false, absMax),
                 new ColumnHolder<>("AVG", BigDecimal.class, null, false, avg),
-                new ColumnHolder<>("AVG_SUM", BigDecimal.class, null, false,
-                        absAvg),
+                new ColumnHolder<>("AVG_SUM", BigDecimal.class, null, false, absAvg),
                 new ColumnHolder<>("STD_DEV", BigDecimal.class, null, false, stdDev));
     }
 }

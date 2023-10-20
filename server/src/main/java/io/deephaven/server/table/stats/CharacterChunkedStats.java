@@ -13,17 +13,25 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 
-public class CharacterChunkedComparableStats implements ChunkedComparableStatsKernel<Character> {
-    private static final int MAX_UNIQUES = 1_000_000;
+public class CharacterChunkedStats implements ColumnChunkedStatsFunction {
+    private final int maxUniqueToCollect;
+    private final int maxUniqueToDisplay;
+
+    public CharacterChunkedStats(int maxUniqueToCollect, int maxUniqueToDisplay) {
+        this.maxUniqueToCollect = maxUniqueToCollect;
+        this.maxUniqueToDisplay = maxUniqueToDisplay;
+    }
+
     @Override
-    public Table processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev, int maxUnique) {
+    public Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev) {
         long count = 0;
         int uniqueCount = 0;
 
@@ -32,7 +40,7 @@ public class CharacterChunkedComparableStats implements ChunkedComparableStatsKe
         final Set<Comparable<?>> uniqueValues = new HashSet<>();
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(CHUNK_SIZE)) {
-            final RowSequence.Iterator okIt = index.getRowSequenceIterator();
+            final RowSequence.Iterator okIt = rowSet.getRowSequenceIterator();
 
             while (okIt.hasMore()) {
                 // Grab up to the next CHUNK_SIZE rows
@@ -52,7 +60,7 @@ public class CharacterChunkedComparableStats implements ChunkedComparableStatsKe
 
                     if (useSet) {
                         uniqueValues.add((Comparable<?>) val);
-                    } else if (uniqueCount > MAX_UNIQUES) {
+                    } else if (uniqueCount > maxUniqueToCollect) {
                         // we no longer need to track counts for these items; fall back to a Set to get at least a count
                         uniqueValues.addAll(countValues.keySet());
                         countValues.clear();
@@ -73,13 +81,15 @@ public class CharacterChunkedComparableStats implements ChunkedComparableStatsKe
                 uniqueCounts = CollectionUtil.ZERO_LENGTH_LONG_ARRAY;
             } else {
                 numUnique = countValues.size();
-                TreeSet<Map.Entry<String, Long>> sorted = new TreeSet<>(Map.Entry.comparingByValue());
+                List<Map.Entry<String, Long>> sorted = new ArrayList<>();
+
                 countValues.forEachEntry((o, c) -> {
                     sorted.add(Map.entry(Objects.toString(o), c));
                     return true;
                 });
+                sorted.sort(Map.Entry.comparingByValue());
 
-                int resultCount = Math.min(maxUnique, sorted.size());
+                int resultCount = Math.min(maxUniqueToDisplay, sorted.size());
                 uniqueKeys = new String[resultCount];
                 uniqueCounts = new long[resultCount];
                 Iterator<Map.Entry<String, Long>> iter = sorted.iterator();
@@ -92,7 +102,7 @@ public class CharacterChunkedComparableStats implements ChunkedComparableStatsKe
 
             return TableTools.newTable(
                     TableTools.longCol("COUNT", count),
-                    TableTools.longCol("SIZE", index.size()),
+                    TableTools.longCol("SIZE", rowSet.size()),
                     TableTools.intCol("UNIQUE_VALUES", numUnique),
                     new ColumnHolder<>("UNIQUE_KEYS", String[].class, String.class, false, uniqueKeys),
                     new ColumnHolder<>("UNIQUE_COUNTS", long[].class, long.class, false, uniqueCounts));

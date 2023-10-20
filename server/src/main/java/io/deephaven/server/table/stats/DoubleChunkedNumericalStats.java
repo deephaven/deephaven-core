@@ -15,7 +15,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 
-public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel<Double> {
+public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel {
     private long count = 0;
 
     private double sum = .0;
@@ -28,10 +28,10 @@ public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel<
     private double absMax = QueryConstants.NULL_DOUBLE;
 
     @Override
-    public Table processChunks(final RowSet index, final ColumnSource<?> columnSource, boolean usePrev) {
+    public Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev) {
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(CHUNK_SIZE)) {
-            final RowSequence.Iterator okIt = index.getRowSequenceIterator();
+            final RowSequence.Iterator okIt = rowSet.getRowSequenceIterator();
 
             while (okIt.hasMore()) {
                 final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(CHUNK_SIZE);
@@ -90,10 +90,10 @@ public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel<
             }
         }
 
-        double avg = ChunkedNumericalStatsKernel.avg(count, sum);
+        double avg = avg(count, sum);
         return TableTools.newTable(
                 TableTools.longCol("COUNT", count),
-                TableTools.longCol("SIZE", index.size()),
+                TableTools.longCol("SIZE", rowSet.size()),
                 TableTools.doubleCol("SUM", sum),
                 TableTools.doubleCol("SUM_ABS", absSum),
                 TableTools.doubleCol("SUM_SQRD", sqrdSum),
@@ -102,7 +102,7 @@ public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel<
                 TableTools.doubleCol("MIN_ABS", absMin),
                 TableTools.doubleCol("MAX_ABS", absMax),
                 TableTools.doubleCol("AVG", avg),
-                TableTools.doubleCol("AVG_ABS", ChunkedNumericalStatsKernel.avg(count, absSum)),
-                TableTools.doubleCol("STD_DEV", ChunkedNumericalStatsKernel.stdDev(count, avg, sqrdSum)));
+                TableTools.doubleCol("AVG_ABS", avg(count, absSum)),
+                TableTools.doubleCol("STD_DEV", stdDev(count, avg, sqrdSum)));
     }
 }

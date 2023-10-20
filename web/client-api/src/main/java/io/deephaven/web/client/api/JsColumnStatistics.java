@@ -28,17 +28,57 @@ public class JsColumnStatistics {
 
     public enum StatType {
         // Note that a null format means default to columns formatting
+        /**
+         * The number of non-null values in the column.
+         */
         COUNT("COUNT", "long"),
+        /**
+         * The total number of values in the column.
+         */
         SIZE("SIZE", "long"),
+        /**
+         * The number of unique values in the column.
+         */
         UNIQUE_VALUES("UNIQUE VALUES", "long"),
-        SUM("SUM", null), SUM_ABS("SUM (ABS)", null),
+        /**
+         * The sum of all data in the column.
+         */
+        SUM("SUM", null),
+        /**
+         * The sum of the absolute value of all data in the column.
+         */
+        SUM_ABS("SUM (ABS)", null),
+        /**
+         * The average of all data in the column.
+         */
         AVG("AVG", "double"),
+        /**
+         * The average of the absolute value of all data in the column.
+         */
         AVG_ABS("AVG (ABS)", "double"),
+        /**
+         * The minimum value found in the column.
+         */
         MIN("MIN", null),
+        /**
+         * The minimum absolute value found in the column.
+         */
         MIN_ABS("MIN (ABS)", null),
+        /**
+         * The maximum value found in the column.
+         */
         MAX("MAX", null),
+        /**
+         * The maximum absolute value found in the column.
+         */
         MAX_ABS("MAX (ABS)", null),
+        /**
+         * The standard deviation of the values in the column.
+         */
         STD_DEV("STD DEV", "double"),
+        /**
+         * The sum of the square of all values in the column.
+         */
         SUM_SQRD("SUM (SQRD)", null);
 
         private final String displayName;

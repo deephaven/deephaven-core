@@ -24,7 +24,7 @@ public class ReplicateColumnStats {
                 "server/src/main/java/io/deephaven/server/table/stats/FloatChunkedNumericalStats.java");
 
         final String objectPath = ReplicatePrimitiveCode.charToObject(
-                "server/src/main/java/io/deephaven/server/table/stats/CharacterChunkedComparableStats.java");
+                "server/src/main/java/io/deephaven/server/table/stats/CharacterChunkedStats.java");
         fixupObjectChunk(objectPath);
     }
 
