@@ -43,10 +43,10 @@ import java.util.concurrent.locks.Condition;
  * This class is an intermediary helper class that uses a {@code DoExchange} to populate a {@link BarrageTable} using
  * snapshot data from a remote server.
  * <p>
- * Users may call {@code entireTable}, or {@code partialTable}, to initiate the gRPC call to the server. These methods
+ * Users may call {@link #entireTable}, or {@link #partialTable}, to initiate the gRPC call to the server. These methods
  * return the eventually populated {@code BarrageTable} to the user. The user must either set {@code blockUntilComplete}
- * to {@code true} or call {@code blockUntilComplete} to ensure that the {@code BarrageTable} is fully populated before
- * using it.
+ * to {@code true} or call {@link #blockUntilComplete()} to ensure that the {@code BarrageTable} is fully populated
+ * before using it.
  */
 public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements BarrageSnapshot {
     private static final Logger log = LoggerFactory.getLogger(BarrageSnapshotImpl.class);

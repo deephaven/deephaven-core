@@ -43,26 +43,26 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * This class is an intermediary helper class that uses a {@code DoExchange} to populate, and propagate updates if the
- * request is not a snapshot, to a {@link BarrageTable} using subscription data from a remote server.
+ * This class is an intermediary helper class that uses a {@code DoExchange} to populate a {@link BarrageTable} using
+ * subscription data from a remote server, propagating updates if the request is a subscription.
  * <p>
- * For Subscriptions (refreshing tables):
+ * For Subscriptions (refreshing result tables):
  * <p>
- * Users may call {@code entireTable}, or {@code partialTable}, to initiate the gRPC call to the server. These methods
+ * Users may call {@link #entireTable} or {@link #partialTable} to initiate the gRPC call to the server. These methods
  * return the eventually populated {@code BarrageTable} to the user.
  * <p>
  * If the user wants to ensure that the table is completely populated with an initial state of the remote table prior to
- * using the result they must either set {@code blockUntilComplete} to {@code true} or call {@code blockUntilComplete}
- * to ensure that the {@code BarrageTable} is respecting the requested subscription.
+ * using the result they must either set {@code blockUntilComplete} to {@code true} or call
+ * {@link #blockUntilComplete()} to ensure that the {@code BarrageTable} is respecting the requested subscription.
  * <p>
  * It is not an error to create derived tables from the {@code BarrageTable} prior to the subscription being complete,
  * as all changes are propagated to downstream tables.
  * <p>
- * For Snapshots (static tables):
+ * For Snapshots (static result tables):
  * <p>
- * Users may call {@code snapshotEntireTable}, or {@code snapshotPartialTable}, to initiate the gRPC call to the server.
+ * Users may call {@link #snapshotEntireTable} or {@link #snapshotPartialTable} to initiate the gRPC call to the server.
  * These methods return the eventually populated {@code BarrageTable} to the user. The user must either set
- * {@code blockUntilComplete} to {@code true} during initiation or call {@code blockUntilComplete} to ensure that the
+ * {@code blockUntilComplete} to {@code true} during initiation or call {@link #blockUntilComplete()} to ensure that the
  * {@code BarrageTable} is fully populated before using it. Noting that snapshots are static tables that do not
  * propagate changes on any update graph.
  */
