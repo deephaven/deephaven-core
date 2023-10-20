@@ -46,6 +46,6 @@ public interface ChunkedNumericalStatsKernel extends ColumnChunkedStatsFunction 
         if (count <= 1) {
             return QueryConstants.NULL_DOUBLE;
         }
-        return Math.sqrt((sqrdSum - count * avg * avg) / count - 1);
+        return Math.sqrt((sqrdSum - count * avg * avg) / (count - 1));
     }
 }

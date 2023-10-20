@@ -53,9 +53,9 @@ public class DateTimeChunkedStats implements ColumnChunkedStatsFunction {
         }
 
         return TableTools.newTable(
-                TableTools.longCol("Count", count),
-                TableTools.longCol("Size", index.size()),
-                TableTools.instantCol("Min", DateTimeUtils.epochNanosToInstant(min)),
-                TableTools.instantCol("Max", DateTimeUtils.epochNanosToInstant(max)));
+                TableTools.longCol("COUNT", count),
+                TableTools.longCol("SIZE", index.size()),
+                TableTools.instantCol("MIN", DateTimeUtils.epochNanosToInstant(min)),
+                TableTools.instantCol("MAX", DateTimeUtils.epochNanosToInstant(max)));
     }
 }

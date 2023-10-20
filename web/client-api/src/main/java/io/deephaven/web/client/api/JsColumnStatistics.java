@@ -8,7 +8,6 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsMap;
-import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.shared.data.ColumnStatistics;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
