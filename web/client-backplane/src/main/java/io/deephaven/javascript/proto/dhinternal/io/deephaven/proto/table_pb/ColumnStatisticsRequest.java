@@ -106,25 +106,25 @@ public class ColumnStatisticsRequest {
         String getColumnName();
 
         @JsProperty
-        double getMaxUniqueValues();
-
-        @JsProperty
         ColumnStatisticsRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
         @JsProperty
         ColumnStatisticsRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
         @JsProperty
-        void setColumnName(String columnName);
+        double getUniqueValueLimit();
 
         @JsProperty
-        void setMaxUniqueValues(double maxUniqueValues);
+        void setColumnName(String columnName);
 
         @JsProperty
         void setResultId(ColumnStatisticsRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
         @JsProperty
         void setSourceId(ColumnStatisticsRequest.ToObjectReturnType.SourceIdFieldType sourceId);
+
+        @JsProperty
+        void setUniqueValueLimit(double uniqueValueLimit);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -216,25 +216,25 @@ public class ColumnStatisticsRequest {
         String getColumnName();
 
         @JsProperty
-        double getMaxUniqueValues();
-
-        @JsProperty
         ColumnStatisticsRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
         @JsProperty
         ColumnStatisticsRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
         @JsProperty
-        void setColumnName(String columnName);
+        double getUniqueValueLimit();
 
         @JsProperty
-        void setMaxUniqueValues(double maxUniqueValues);
+        void setColumnName(String columnName);
 
         @JsProperty
         void setResultId(ColumnStatisticsRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
         @JsProperty
         void setSourceId(ColumnStatisticsRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
+
+        @JsProperty
+        void setUniqueValueLimit(double uniqueValueLimit);
     }
 
     public static native ColumnStatisticsRequest deserializeBinary(Uint8Array bytes);
@@ -247,31 +247,29 @@ public class ColumnStatisticsRequest {
     public static native ColumnStatisticsRequest.ToObjectReturnType toObject(
             boolean includeInstance, ColumnStatisticsRequest msg);
 
-    public native void clearMaxUniqueValues();
-
     public native void clearResultId();
 
     public native void clearSourceId();
 
-    public native String getColumnName();
+    public native void clearUniqueValueLimit();
 
-    public native double getMaxUniqueValues();
+    public native String getColumnName();
 
     public native Ticket getResultId();
 
     public native TableReference getSourceId();
 
-    public native boolean hasMaxUniqueValues();
+    public native int getUniqueValueLimit();
 
     public native boolean hasResultId();
 
     public native boolean hasSourceId();
 
+    public native boolean hasUniqueValueLimit();
+
     public native Uint8Array serializeBinary();
 
     public native void setColumnName(String value);
-
-    public native void setMaxUniqueValues(double value);
 
     public native void setResultId();
 
@@ -280,6 +278,8 @@ public class ColumnStatisticsRequest {
     public native void setSourceId();
 
     public native void setSourceId(TableReference value);
+
+    public native void setUniqueValueLimit(int value);
 
     public native ColumnStatisticsRequest.ToObjectReturnType0 toObject();
 
