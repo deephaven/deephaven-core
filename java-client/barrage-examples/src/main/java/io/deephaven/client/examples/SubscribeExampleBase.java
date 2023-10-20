@@ -15,7 +15,6 @@ import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import picocli.CommandLine;
@@ -54,8 +53,8 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
         final TableHandleManager subscriptionManager = mode == null ? client.session()
                 : mode.batch ? client.session().batch() : client.session().serial();
 
-        try (final TableHandle handle = subscriptionManager.executeLogic(logic());
-                final BarrageSubscription subscription = client.subscribe(handle, options)) {
+        try (final TableHandle handle = subscriptionManager.executeLogic(logic())) {
+            final BarrageSubscription subscription = client.subscribe(handle, options);
 
             final Table subscriptionTable;
             if (headerSize > 0) {
@@ -105,6 +104,9 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
             });
 
             countDownLatch.await();
+
+            // inform the server we're done with the subscription
+            subscription.cancel();
 
             // For a "real" implementation, we would use liveness tracking for the listener, and ensure that it was
             // destroyed and unreachable when we no longer needed it.
