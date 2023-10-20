@@ -4,25 +4,28 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.vector.*;
-import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.engine.table.impl.util.ShiftData;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
+import io.deephaven.vector.*;
 import org.apache.commons.lang3.mutable.MutableInt;
 
-import javax.sound.midi.Track;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.function.Supplier;
 
 public class TableUpdateValidator implements QueryTable.Operation {
