@@ -29,7 +29,7 @@ import io.deephaven.engine.table.impl.MemoizedOperationKey;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortingOrder;
-import io.deephaven.engine.table.impl.SwapListener;
+import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.join.dupcompact.DupCompactKernel;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
@@ -233,8 +233,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
     }
 
     @Override
-    public SwapListener newSwapListener(@NotNull final QueryTable queryTable) {
-        // Since this operation never needs a snapshot, it does not need to support creating a SwapListener.
+    public OperationSnapshotControl newSnapshotControl(@NotNull final QueryTable queryTable) {
+        // Since this operation never needs a snapshot, it does not need to support creating a SnapshotControl.
         throw new UnsupportedOperationException();
     }
 

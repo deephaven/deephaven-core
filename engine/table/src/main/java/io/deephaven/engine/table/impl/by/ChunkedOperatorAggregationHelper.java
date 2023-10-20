@@ -116,11 +116,12 @@ public class ChunkedOperatorAggregationHelper {
             }
         }
         final Mutable<QueryTable> resultHolder = new MutableObject<>();
-        final SwapListener swapListener = input.createSwapListenerIfRefreshing(SwapListener::new);
+        final OperationSnapshotControl snapshotControl =
+                input.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
         BaseTable.initializeWithSnapshot(
-                "by(" + aggregationContextFactory + ", " + groupByColumns + ")", swapListener,
+                "by(" + aggregationContextFactory + ", " + groupByColumns + ")", snapshotControl,
                 (usePrev, beforeClockValue) -> {
-                    resultHolder.setValue(aggregation(control, swapListener, aggregationContextFactory,
+                    resultHolder.setValue(aggregation(control, snapshotControl, aggregationContextFactory,
                             input, preserveEmpty, initialKeys, keyNames, usePrev));
                     return true;
                 });
@@ -129,7 +130,7 @@ public class ChunkedOperatorAggregationHelper {
 
     private static QueryTable aggregation(
             @NotNull final AggregationControl control,
-            @Nullable final SwapListener swapListener,
+            @Nullable final OperationSnapshotControl snapshotControl,
             @NotNull final AggregationContextFactory aggregationContextFactory,
             @NotNull final QueryTable input,
             final boolean preserveEmpty,
@@ -140,7 +141,7 @@ public class ChunkedOperatorAggregationHelper {
             // This should be checked before this method is called, but let's verify here in case an additional
             // entry point is added incautiously.
             Assert.eqNull(initialKeys, "initialKeys");
-            return noKeyAggregation(swapListener, aggregationContextFactory, input, preserveEmpty, usePrev);
+            return noKeyAggregation(snapshotControl, aggregationContextFactory, input, preserveEmpty, usePrev);
         }
 
         final ColumnSource<?>[] keySources =
@@ -250,7 +251,7 @@ public class ChunkedOperatorAggregationHelper {
             final TableUpdateListener listener =
                     new BaseTable.ListenerImpl("by(" + aggregationContextFactory + ")", input, result) {
                         @ReferentialIntegrity
-                        final SwapListener swapListenerHardReference = swapListener;
+                        final OperationSnapshotControl swapListenerHardReference = snapshotControl;
 
                         final ModifiedColumnSet keysUpstreamModifiedColumnSet = input.newModifiedColumnSet(keyNames);
                         final ModifiedColumnSet[] operatorInputModifiedColumnSets =
@@ -296,7 +297,7 @@ public class ChunkedOperatorAggregationHelper {
                         }
                     };
 
-            swapListener.setListenerAndResult(listener, result);
+            snapshotControl.setListenerAndResult(listener, result);
         }
 
         return ac.transformResult(result);
@@ -1909,7 +1910,7 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static QueryTable noKeyAggregation(
-            @Nullable final SwapListener swapListener,
+            @Nullable final OperationSnapshotControl snapshotControl,
             @NotNull final AggregationContextFactory aggregationContextFactory,
             @NotNull final QueryTable table,
             final boolean preserveEmpty,
@@ -2102,7 +2103,7 @@ public class ChunkedOperatorAggregationHelper {
                             super.onFailureInternal(originalException, sourceEntry);
                         }
                     };
-            swapListener.setListenerAndResult(listener, result);
+            snapshotControl.setListenerAndResult(listener, result);
         }
 
         ac.supplyRowLookup(() -> key -> Arrays.equals((Object[]) key, EMPTY_KEY) ? 0 : DEFAULT_UNKNOWN_ROW);
