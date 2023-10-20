@@ -4,6 +4,7 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.*;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
@@ -12,6 +13,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.qst.TableCreationLogic;
+import io.deephaven.util.SafeCloseable;
 import picocli.CommandLine;
 
 import java.util.BitSet;
@@ -40,7 +42,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
                 : mode.batch ? client.session().batch() : client.session().serial();
 
         // example #1 - verify full table reading
-        try (final TableHandle handle = manager.executeLogic(logic())) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final TableHandle handle = manager.executeLogic(logic())) {
             final BarrageSnapshot snapshot = client.snapshot(handle, options);
 
             System.out.println("Requesting all rows, all columns");
@@ -56,7 +59,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
         }
 
         // example #2 - reading all columns, but only subset of rows starting with 0
-        try (final TableHandle handle = manager.executeLogic(logic())) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final TableHandle handle = manager.executeLogic(logic())) {
             final BarrageSnapshot snapshot = client.snapshot(handle, options);
 
             System.out.println("Requesting rows 0-5, all columns");
@@ -73,7 +77,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
         }
 
         // example #3 - reading all columns, but only subset of rows starting at >0
-        try (final TableHandle handle = manager.executeLogic(logic())) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final TableHandle handle = manager.executeLogic(logic())) {
             final BarrageSnapshot snapshot = client.snapshot(handle, options);
 
             System.out.println("Requesting rows 6-10, all columns");
@@ -90,7 +95,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
         }
 
         // example #4 - reading some columns but all rows
-        try (final TableHandle handle = manager.executeLogic(logic())) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final TableHandle handle = manager.executeLogic(logic())) {
             final BarrageSnapshot snapshot = client.snapshot(handle, options);
 
             System.out.println("Requesting all rows, columns 0-1");
@@ -109,7 +115,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
         }
 
         // example #5 - reading some columns and only some rows
-        try (final TableHandle handle = manager.executeLogic(logic())) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final TableHandle handle = manager.executeLogic(logic())) {
             final BarrageSnapshot snapshot = client.snapshot(handle, options);
 
             System.out.println("Requesting rows 100-150, columns 0-1");
@@ -129,7 +136,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
         }
 
         // example #6 - reverse viewport, all columns
-        try (final TableHandle handle = manager.executeLogic(logic());
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final TableHandle handle = manager.executeLogic(logic());
                 // range inclusive
                 final RowSet viewport = RowSetFactory.flat(5)) {
             final BarrageSnapshot snapshot = client.snapshot(handle, options);
@@ -147,7 +155,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
         }
 
         // example #7 - reverse viewport, some columns
-        try (final TableHandle handle = manager.executeLogic(logic());
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final TableHandle handle = manager.executeLogic(logic());
                 // range inclusive
                 final RowSet viewport = RowSetFactory.flat(5)) {
             final BarrageSnapshot snapshot = client.snapshot(handle, options);
@@ -174,7 +183,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
         // terminated and the table returned to the user.
         final BarrageSubscriptionOptions subOptions = BarrageSubscriptionOptions.builder().build();
 
-        try (final TableHandle handle = manager.executeLogic(logic())) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final TableHandle handle = manager.executeLogic(logic())) {
             final BarrageSubscription subscription = client.subscribe(handle, subOptions);
 
             System.out.println("Snapshot created");

@@ -4,7 +4,6 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
@@ -16,7 +15,7 @@ import java.util.BitSet;
  * A {@code BarrageSnapshot} represents a snapshot of a table that may or may not be filtered to a viewport of the
  * remote source table.
  */
-public interface BarrageSnapshot extends LivenessReferent {
+public interface BarrageSnapshot {
     interface Factory {
         /**
          * Sources a barrage snapshot from a {@link TableSpec}.

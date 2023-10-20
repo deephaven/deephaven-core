@@ -7,7 +7,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.qst.table.TableSpec;
 
 import java.util.BitSet;
@@ -16,7 +15,7 @@ import java.util.BitSet;
  * A {@code BarrageSubscription} represents a subscription over a table that may or may not be filtered to a viewport of
  * the remote source table.
  */
-public interface BarrageSubscription extends LivenessReferent {
+public interface BarrageSubscription {
     interface Factory {
         /**
          * Sources a barrage subscription from a {@link TableSpec}.

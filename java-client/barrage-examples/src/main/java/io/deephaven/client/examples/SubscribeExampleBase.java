@@ -7,6 +7,7 @@ import io.deephaven.client.impl.BarrageSession;
 import io.deephaven.client.impl.BarrageSubscription;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
@@ -16,6 +17,7 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.qst.TableCreationLogic;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import picocli.CommandLine;
 
@@ -53,7 +55,8 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
         final TableHandleManager subscriptionManager = mode == null ? client.session()
                 : mode.batch ? client.session().batch() : client.session().serial();
 
-        try (final TableHandle handle = subscriptionManager.executeLogic(logic())) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final TableHandle handle = subscriptionManager.executeLogic(logic())) {
             final BarrageSubscription subscription = client.subscribe(handle, options);
 
             final Table subscriptionTable;
@@ -108,8 +111,8 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
             // inform the server we're done with the subscription
             subscription.cancel();
 
-            // For a "real" implementation, we would use liveness tracking for the listener, and ensure that it was
-            // destroyed and unreachable when we no longer needed it.
+            // Note that when the LivenessScope, which is opened in the try-with-resources block, is closed the
+            // listener, resultTable, and subscription objects will be destroyed.
             listener = null;
         }
     }

@@ -233,7 +233,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     @Override
     public void handleBarrageMessage(final BarrageMessage update) {
-        if (pendingError != null) {
+        if (pendingError != null || isFailed()) {
             beginLog(LogLevel.INFO).append(": Discarding update for errored table!").endl();
             return;
         }
@@ -293,7 +293,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
     }
 
-    protected void updateServerViewport(
+    protected synchronized void updateServerViewport(
             final RowSet viewport,
             final BitSet columns,
             final boolean reverseViewport) {
@@ -330,6 +330,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     private synchronized void realRefresh() {
         if (isFailed()) {
+            discardAnyPendingUpdates();
             return;
         }
 
@@ -373,6 +374,13 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
     }
 
+    private void discardAnyPendingUpdates() {
+        synchronized (pendingUpdatesLock) {
+            pendingUpdates.forEach(BarrageMessage::close);
+            pendingUpdates.clear();
+        }
+    }
+
     private void cleanup() {
         if (stats != null) {
             stats.stop();
@@ -380,10 +388,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         if (isRefreshing()) {
             registrar.removeSource(refresher);
         }
-        synchronized (pendingUpdatesLock) {
-            // release any pending snapshots, as we will never process them
-            pendingUpdates.clear();
-        }
+        // release any pending snapshots, as we will never process them
+        discardAnyPendingUpdates();
         // we are quite certain the shadow copies should have been drained on the last run
         Assert.eqZero(shadowPendingUpdates.size(), "shadowPendingUpdates.size()");
     }
