@@ -15,6 +15,7 @@ import io.deephaven.engine.exceptions.RequestCancelledException;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -84,9 +85,12 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private volatile int completed;
     private static final AtomicIntegerFieldUpdater<BarrageSubscriptionImpl> COMPLETED_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(BarrageSubscriptionImpl.class, "completed");
+    private volatile boolean completedSuccessfully;
     private volatile Throwable exceptionWhileCompleting;
 
-    private volatile boolean connected = true;
+    private volatile int connected = 1;
+    private static final AtomicIntegerFieldUpdater<BarrageSubscriptionImpl> CONNECTED_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(BarrageSubscriptionImpl.class, "connected");
 
     /**
      * Represents a BarrageSubscription.
@@ -145,7 +149,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 return;
             }
             try (barrageMessage) {
-                if (!connected) {
+                if (!isConnected()) {
+                    GrpcUtil.safelyCancel(observer, "Barrage subscription is closed", null);
                     return;
                 }
 
@@ -155,7 +160,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         @Override
         public void onError(final Throwable t) {
-            if (!connected) {
+            if (!tryRecordDisconnect()) {
                 return;
             }
 
@@ -163,54 +168,88 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     .append(": Error detected in subscription: ")
                     .append(t).endl();
 
-            exceptionWhileCompleting = t;
             resultTable.handleBarrageError(t);
-            handleDisconnect();
+            cleanup();
         }
 
         @Override
         public void onCompleted() {
-            handleDisconnect();
+            if (!tryRecordDisconnect()) {
+                return;
+            }
+
+            log.error().append(BarrageSubscriptionImpl.this).append(": unexpectedly closed by other host").endl();
+            resultTable.handleBarrageError(new RequestCancelledException("Barrage subscription closed by server"));
+            cleanup();
         }
     }
 
     @Override
     public boolean isCompleted() {
-        return completed == 1;
+        return completedSuccessfully || exceptionWhileCompleting != null;
     }
 
     @Override
-    public BarrageTable entireTable() throws InterruptedException {
+    public Table entireTable() throws InterruptedException {
         return entireTable(true);
     }
 
     @Override
-    public BarrageTable entireTable(boolean blockUntilComplete) throws InterruptedException {
+    public Table entireTable(boolean blockUntilComplete) throws InterruptedException {
         return partialTable(null, null, false, blockUntilComplete);
     }
 
     @Override
-    public BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
+    public Table partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
         return partialTable(viewport, columns, false, true);
     }
 
     @Override
-    public BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
+    public Table partialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
             throws InterruptedException {
         return partialTable(viewport, columns, reverseViewport, true);
     }
 
+
     @Override
-    public BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport,
+    public Table snapshotEntireTable() throws InterruptedException {
+        return snapshotEntireTable(true);
+    }
+
+    @Override
+    public Table snapshotEntireTable(boolean blockUntilComplete) throws InterruptedException {
+        return snapshotPartialTable(null, null, false, blockUntilComplete);
+    }
+
+    @Override
+    public Table snapshotPartialTable(RowSet viewport, BitSet columns) throws InterruptedException {
+        return snapshotPartialTable(viewport, columns, false, true);
+    }
+
+    @Override
+    public Table snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
+            throws InterruptedException {
+        return snapshotPartialTable(viewport, columns, reverseViewport, true);
+    }
+
+    @Override
+    public Table snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport,
+            boolean blockUntilComplete) throws InterruptedException {
+        isSnapshot = true;
+        return partialTable(viewport, columns, reverseViewport, blockUntilComplete);
+    }
+
+    @Override
+    public Table partialTable(RowSet viewport, BitSet columns, boolean reverseViewport,
             boolean blockUntilComplete) throws InterruptedException {
         synchronized (this) {
-            if (!connected) {
+            if (!isConnected()) {
                 throw new UncheckedDeephavenException(
                         this + " is no longer an active subscription and cannot be retained further");
             }
             if (subscribed) {
                 throw new UncheckedDeephavenException(
-                        "BarrageSubscription objects cannot be reused.");
+                        "Barrage subscription objects cannot be reused.");
             }
             subscribed = true;
         }
@@ -240,13 +279,13 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
     private boolean checkIfCompleteOrThrow() {
         if (exceptionWhileCompleting != null) {
-            throw new UncheckedDeephavenException("Error while handling subscription:", exceptionWhileCompleting);
+            throw new UncheckedDeephavenException("Error while handling subscription", exceptionWhileCompleting);
         }
-        return completed == 1;
+        return completedSuccessfully;
     }
 
     @Override
-    public BarrageTable blockUntilComplete() throws InterruptedException {
+    public Table blockUntilComplete() throws InterruptedException {
         if (checkIfCompleteOrThrow()) {
             return resultTable;
         }
@@ -260,9 +299,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         final boolean holdingUpdateGraphLock = resultTable.getUpdateGraph().exclusiveLock().isHeldByCurrentThread();
         if (completedCondition == null && holdingUpdateGraphLock) {
             synchronized (this) {
-                if (checkIfCompleteOrThrow()) {
-                    return resultTable;
-                }
                 if (completedCondition == null) {
                     completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
                 }
@@ -284,90 +320,62 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         return resultTable;
     }
 
-    private synchronized void signalCompletion() {
-        signalCompletion(null);
+    private boolean isConnected() {
+        return connected == 1;
     }
 
-    private synchronized void signalCompletion(@Nullable final Throwable t) {
+    private boolean tryRecordDisconnect() {
+        return CONNECTED_UPDATER.compareAndSet(this, 1, 0);
+    }
+
+    private void trySignalCompletion() {
+        trySignalCompletion(null);
+    }
+
+    private void trySignalCompletion(@Nullable final Throwable t) {
         if (!COMPLETED_UPDATER.compareAndSet(BarrageSubscriptionImpl.this, 0, 1)) {
             return;
         }
 
         if (t != null) {
             exceptionWhileCompleting = t;
+        } else {
+            completedSuccessfully = true;
         }
 
         // if we are building a snapshot via a growing viewport subscription, then cancel our subscription
         if (isSnapshot) {
-            observer.onCompleted();
+            GrpcUtil.safelyCancel(observer, "Barrage snapshot is complete", null);
         }
 
-        if (completedCondition != null) {
-            resultTable.getUpdateGraph().requestSignal(completedCondition);
+        final Condition localCondition = completedCondition;
+        if (localCondition != null) {
+            resultTable.getUpdateGraph().requestSignal(localCondition);
         }
-        notifyAll();
-    }
-
-    @Override
-    public BarrageTable snapshotEntireTable() throws InterruptedException {
-        return snapshotEntireTable(true);
-    }
-
-    @Override
-    public BarrageTable snapshotEntireTable(boolean blockUntilComplete) throws InterruptedException {
-        return snapshotPartialTable(null, null, false, blockUntilComplete);
-    }
-
-    @Override
-    public BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns) throws InterruptedException {
-        return snapshotPartialTable(viewport, columns, false, true);
-    }
-
-    @Override
-    public BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
-            throws InterruptedException {
-        return snapshotPartialTable(viewport, columns, reverseViewport, true);
-    }
-
-    @Override
-    public BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport,
-            boolean blockUntilComplete) throws InterruptedException {
-        isSnapshot = true;
-        return partialTable(viewport, columns, reverseViewport, blockUntilComplete);
+        synchronized (this) {
+            notifyAll();
+        }
     }
 
     @Override
     protected void destroy() {
         super.destroy();
-        close();
-    }
-
-    private void handleDisconnect() {
-        if (!connected) {
-            return;
-        }
-        // log an error only when doing a true subscription (not snapshot)
-        if (!isSnapshot) {
-            log.error().append(this).append(": unexpectedly closed by other host").endl();
-        }
-        cleanup();
+        cancel();
     }
 
     @Override
-    public void close() {
-        if (!connected) {
+    public void cancel() {
+        if (!tryRecordDisconnect()) {
             return;
         }
 
-        resultTable.unsubscribe();
-        signalCompletion(new RequestCancelledException("BarrageSubscriptionImpl closed"));
-        GrpcUtil.safelyComplete(observer);
+        resultTable.handleBarrageError(new RequestCancelledException("Barrage subscription cancelled by client"));
+        GrpcUtil.safelyCancel(observer, "Barrage subscription is cancelled", null);
         cleanup();
     }
 
     private void cleanup() {
-        this.connected = false;
-        this.tableHandle.close();
+        tableHandle.close();
     }
 
     @Override
@@ -382,7 +390,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             @Nullable final BitSet columns,
             boolean reverseViewport,
             @Nullable BarrageSubscriptionOptions options,
-            @NotNull byte[] ticketId) {
+            byte @NotNull [] ticketId) {
 
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
@@ -498,7 +506,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 @Nullable final RowSet serverViewport,
                 @Nullable final BitSet serverColumns,
                 final boolean serverReverseViewport) {
-            if (completed == 1) {
+            if (isCompleted()) {
                 return false;
             }
 
@@ -530,7 +538,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     }
                 }
 
-                signalCompletion();
+                trySignalCompletion();
             }
 
             return !isComplete;
@@ -538,12 +546,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         @Override
         public void onError(Throwable t) {
-            signalCompletion(t);
-        }
-
-        @Override
-        public void onClose() {
-            signalCompletion();
+            trySignalCompletion(t);
         }
     }
 }

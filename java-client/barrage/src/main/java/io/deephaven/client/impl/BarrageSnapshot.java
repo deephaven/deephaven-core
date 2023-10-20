@@ -6,8 +6,8 @@ package io.deephaven.client.impl;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.qst.table.TableSpec;
 
 import java.util.BitSet;
@@ -16,7 +16,7 @@ import java.util.BitSet;
  * A {@code BarrageSnapshot} represents a snapshot of a table that may or may not be filtered to a viewport of the
  * remote source table.
  */
-public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
+public interface BarrageSnapshot extends LivenessReferent {
     interface Factory {
         /**
          * Sources a barrage snapshot from a {@link TableSpec}.
@@ -40,48 +40,48 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
     }
 
     /**
-     * Request a full snapshot of the data and populate a {@link BarrageTable} with the data that is received.
+     * Request a full snapshot of the data and populate a {@link Table} with the data that is received.
      *
-     * @return the {@code BarrageTable}
+     * @return the {@code Table}
      */
-    BarrageTable entireTable() throws InterruptedException;
+    Table entireTable() throws InterruptedException;
 
     /**
-     * Request a full snapshot of the data and populate a {@link BarrageTable} with the data that is received.
+     * Request a full snapshot of the data and populate a {@link Table} with the data that is received.
      *
      * @param blockUntilComplete Whether to block execution until all rows for the subscribed table are available
      *
-     * @return the {@code BarrageTable}
+     * @return the {@code Table}
      */
-    BarrageTable entireTable(boolean blockUntilComplete) throws InterruptedException;
+    Table entireTable(boolean blockUntilComplete) throws InterruptedException;
 
     /**
-     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link BarrageTable} with
-     * the data that is received.
+     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link Table} with the
+     * data that is received.
      *
      * @param viewport the position-space viewport to use for the snapshot
      * @param columns the columns to include in the snapshot
      *
-     * @return the {@code BarrageTable}
+     * @return the {@code Table}
      */
-    BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException;
+    Table partialTable(RowSet viewport, BitSet columns) throws InterruptedException;
 
     /**
-     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link BarrageTable} with
-     * the data that is received. Allows the viewport to be reversed.
+     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link Table} with the
+     * data that is received. Allows the viewport to be reversed.
      *
      * @param viewport the position-space viewport to use for the snapshot
      * @param columns the columns to include in the snapshot
      * @param reverseViewport Whether to treat {@code posRowSet} as offsets from
      *        {@link io.deephaven.engine.table.Table#size()} rather than {@code 0}
      *
-     * @return the {@code BarrageTable}
+     * @return the {@code Table}
      */
-    BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport) throws InterruptedException;
+    Table partialTable(RowSet viewport, BitSet columns, boolean reverseViewport) throws InterruptedException;
 
     /**
-     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link BarrageTable} with
-     * the data that is received. Allows the viewport to be reversed.
+     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link Table} with the
+     * data that is received. Allows the viewport to be reversed.
      *
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
@@ -89,9 +89,9 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
      *        {@link io.deephaven.engine.table.Table#size()} rather than {@code 0}
      * @param blockUntilComplete Whether to block execution until the subscribed table viewport is satisfied
      *
-     * @return the {@code BarrageTable}
+     * @return the {@code Table}
      */
-    BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport, boolean blockUntilComplete)
+    Table partialTable(RowSet viewport, BitSet columns, boolean reverseViewport, boolean blockUntilComplete)
             throws InterruptedException;
 
     /**
@@ -104,10 +104,12 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
      *
      * @throws InterruptedException if the current thread is interrupted while waiting for completion
      * @throws UncheckedDeephavenException if an error occurred while handling the snapshot
-     * @return the {@code BarrageTable}
+     * @return the {@code Table}
      */
-    BarrageTable blockUntilComplete() throws InterruptedException;
+    Table blockUntilComplete() throws InterruptedException;
 
-    @Override
-    void close();
+    /**
+     * Cancel the snapshot.
+     */
+    void cancel();
 }

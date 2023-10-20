@@ -119,8 +119,8 @@ public class GrpcUtil {
      * stream.
      * <p>
      * It is recommended that at least one of {@code message} or {@code cause} to be non-{@code null}, to provide useful
-     * debug information. Both argument being null may log warnings and result in suboptimal performance. Also note that
-     * the provided information will not be sent to the server.
+     * debug information. Both arguments being null may log warnings and result in suboptimal performance. Also note
+     * that the provided information will not be sent to the server.
      *
      * @param observer the stream that will be used in the runnable
      * @param message if not {@code null}, will appear as the description of the CANCELLED status

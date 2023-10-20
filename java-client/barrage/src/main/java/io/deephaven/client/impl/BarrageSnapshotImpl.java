@@ -13,9 +13,9 @@ import io.deephaven.engine.exceptions.RequestCancelledException;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
@@ -62,7 +62,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     private volatile BitSet expectedColumns;
 
     private volatile Condition completedCondition;
-    private volatile boolean completed = false;
+    private volatile boolean completedSuccessfully = false;
     private volatile Throwable exceptionWhileCompleting = null;
 
     private volatile int connected = 1;
@@ -129,7 +129,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 return;
             }
             try (barrageMessage) {
-                if (connected == 0) {
+                if (!isConnected()) {
+                    GrpcUtil.safelyCancel(observer, "Barrage snapshot disconnected", null);
                     return;
                 }
 
@@ -156,7 +157,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                     .append(": Error detected in snapshot: ")
                     .append(t).endl();
 
-            if (connected == 0) {
+            if (!isConnected()) {
                 return;
             }
 
@@ -166,38 +167,39 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         @Override
         public void onCompleted() {
-            // this will always be propagated to our CheckForCompletion#onClose callback
-            resultTable.unsubscribe();
+            if (tryRecordDisconnect()) {
+                signalCompletion();
+            }
         }
     }
 
     @Override
-    public BarrageTable entireTable() throws InterruptedException {
+    public Table entireTable() throws InterruptedException {
         return partialTable(null, null, false, true);
     }
 
     @Override
-    public BarrageTable entireTable(boolean blockUntilComplete) throws InterruptedException {
+    public Table entireTable(boolean blockUntilComplete) throws InterruptedException {
         return partialTable(null, null, false, blockUntilComplete);
     }
 
     @Override
-    public BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
+    public Table partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
         return partialTable(viewport, columns, false, true);
     }
 
     @Override
-    public BarrageTable partialTable(
+    public Table partialTable(
             RowSet viewport, BitSet columns, boolean reverseViewport) throws InterruptedException {
         return partialTable(viewport, columns, reverseViewport, true);
     }
 
     @Override
-    public BarrageTable partialTable(
+    public Table partialTable(
             RowSet viewport, BitSet columns, boolean reverseViewport, boolean blockUntilComplete)
             throws InterruptedException {
         synchronized (this) {
-            if (connected == 0) {
+            if (!isConnected()) {
                 throw new UncheckedDeephavenException(this + " is not connected");
             }
 
@@ -227,13 +229,13 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     private boolean checkIfCompleteOrThrow() {
         if (exceptionWhileCompleting != null) {
-            throw new UncheckedDeephavenException("Error while handling subscription:", exceptionWhileCompleting);
+            throw new UncheckedDeephavenException("Error while handling subscription", exceptionWhileCompleting);
         }
-        return completed;
+        return completedSuccessfully;
     }
 
     @Override
-    public BarrageTable blockUntilComplete() throws InterruptedException {
+    public Table blockUntilComplete() throws InterruptedException {
         if (checkIfCompleteOrThrow()) {
             return resultTable;
         }
@@ -247,9 +249,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         final boolean holdingUpdateGraphLock = resultTable.getUpdateGraph().exclusiveLock().isHeldByCurrentThread();
         if (completedCondition == null && holdingUpdateGraphLock) {
             synchronized (this) {
-                if (checkIfCompleteOrThrow()) {
-                    return resultTable;
-                }
                 if (completedCondition == null) {
                     completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
                 }
@@ -271,44 +270,57 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         return resultTable;
     }
 
-    @Override
-    protected void destroy() {
-        super.destroy();
-        close();
+    private boolean isConnected() {
+        return connected == 1;
     }
 
-    private synchronized void signalCompletion() {
+    private boolean tryRecordDisconnect() {
+        return CONNECTED_UPDATER.compareAndSet(this, 1, 0);
+    }
+
+    private void signalCompletion() {
         signalCompletion(null);
     }
 
     /**
      * This method will only be invoked once using the CAS of {@code connected} from 1 to 0 as a guard.
      */
-    private synchronized void signalCompletion(@Nullable final Throwable t) {
-        completed = true;
-
+    private void signalCompletion(@Nullable final Throwable t) {
         if (t != null) {
             exceptionWhileCompleting = t;
+        } else {
+            completedSuccessfully = true;
         }
 
-        if (completedCondition != null) {
-            resultTable.getUpdateGraph().requestSignal(completedCondition);
+        final Condition localCondition = completedCondition;
+        if (localCondition != null) {
+            resultTable.getUpdateGraph().requestSignal(localCondition);
+        }
+        synchronized (this) {
+            notifyAll();
         }
 
-        notifyAll();
-
-        tableHandle.close();
+        cleanup();
     }
 
     @Override
-    public void close() {
-        if (!CONNECTED_UPDATER.compareAndSet(this, 1, 0)) {
+    protected void destroy() {
+        super.destroy();
+        cancel();
+    }
+
+    @Override
+    public void cancel() {
+        if (!tryRecordDisconnect()) {
             return;
         }
 
-        resultTable.unsubscribe();
-        signalCompletion(new RequestCancelledException("BarrageSnapshotImpl closed"));
-        GrpcUtil.safelyCancel(observer, "BarrageSnapshotImpl closed", exceptionWhileCompleting);
+        resultTable.handleBarrageError(new RequestCancelledException("Barrage subscription cancelled by client"));
+        GrpcUtil.safelyCancel(observer, "Barrage snapshot is cancelled", exceptionWhileCompleting);
+    }
+
+    private void cleanup() {
+        tableHandle.close();
     }
 
     @Override
@@ -429,18 +441,9 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         @Override
         public void onError(Throwable t) {
-            if (!CONNECTED_UPDATER.compareAndSet(BarrageSnapshotImpl.this, 1, 0)) {
-                return;
+            if (tryRecordDisconnect()) {
+                signalCompletion(t);
             }
-            signalCompletion(t);
-        }
-
-        @Override
-        public void onClose() {
-            if (!CONNECTED_UPDATER.compareAndSet(BarrageSnapshotImpl.this, 1, 0)) {
-                return;
-            }
-            signalCompletion();
         }
     }
 }

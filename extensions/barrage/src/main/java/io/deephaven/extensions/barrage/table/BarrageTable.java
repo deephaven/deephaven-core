@@ -75,11 +75,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
          * @param t the error
          */
         void onError(Throwable t);
-
-        /**
-         * Called when the subscription is closed; will not be invoked after an onError.
-         */
-        void onClose();
     }
 
     public static final boolean DEBUG_ENABLED =
@@ -99,10 +94,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     protected long capacity = 0;
     /** the reinterpreted destination writable sources */
     protected final WritableColumnSource<?>[] destSources;
-
-
-    /** unsubscribed must never be reset to false once it has been set to true */
-    private volatile boolean unsubscribed = false;
 
     /**
      * The client and the server update asynchronously with respect to one another. The client requests a viewport, the
@@ -242,8 +233,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     @Override
     public void handleBarrageMessage(final BarrageMessage update) {
-        if (unsubscribed) {
-            beginLog(LogLevel.INFO).append(": Discarding update for unsubscribed table!").endl();
+        if (pendingError != null) {
+            beginLog(LogLevel.INFO).append(": Discarding update for errored table!").endl();
             return;
         }
 
@@ -255,10 +246,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             try {
                 realRefresh();
             } catch (Throwable err) {
-                if (viewportChangedCallback != null) {
-                    viewportChangedCallback.onError(err);
-                    viewportChangedCallback = null;
-                }
+                tryToDeliverErrorToCallback(err);
                 throw err;
             }
         } else {
@@ -269,6 +257,13 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     @Override
     public void handleBarrageError(Throwable t) {
         enqueueError(t);
+    }
+
+    private synchronized void tryToDeliverErrorToCallback(final Throwable err) {
+        if (viewportChangedCallback != null) {
+            viewportChangedCallback.onError(err);
+            viewportChangedCallback = null;
+        }
     }
 
     private class SourceRefresher extends InstrumentedUpdateSource {
@@ -289,10 +284,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
                         .append(err).endl();
                 notifyListenersOnError(err, null);
 
-                if (viewportChangedCallback != null) {
-                    viewportChangedCallback.onError(err);
-                    viewportChangedCallback = null;
-                }
+                tryToDeliverErrorToCallback(err);
                 if (err instanceof Error) {
                     // rethrow if this was an error (which should not be swallowed)
                     throw err;
@@ -337,31 +329,16 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     }
 
     private synchronized void realRefresh() {
+        if (isFailed()) {
+            return;
+        }
+
         if (pendingError != null) {
-            if (viewportChangedCallback != null) {
-                viewportChangedCallback.onError(pendingError);
-                viewportChangedCallback = null;
-            }
+            tryToDeliverErrorToCallback(pendingError);
             if (isRefreshing()) {
                 notifyListenersOnError(pendingError, null);
             }
             // once we notify on error we are done, we can not notify any further, we are failed
-            cleanup();
-            return;
-        }
-        if (unsubscribed) {
-            if (getRowSet().isNonempty()) {
-                // publish one last clear downstream; this data would be stale
-                final RowSet allRows = getRowSet().copy();
-                getRowSet().writableCast().remove(allRows);
-                if (isRefreshing()) {
-                    notifyListeners(RowSetFactory.empty(), allRows, RowSetFactory.empty());
-                }
-            }
-            if (viewportChangedCallback != null) {
-                viewportChangedCallback.onClose();
-                viewportChangedCallback = null;
-            }
             cleanup();
             return;
         }
@@ -396,26 +373,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
     }
 
-    public void unsubscribe() {
-        unsubscribed = true;
-
-        if (!isRefreshing()) {
-            try {
-                realRefresh();
-            } catch (Throwable err) {
-                if (viewportChangedCallback != null) {
-                    viewportChangedCallback.onError(err);
-                    viewportChangedCallback = null;
-                }
-                throw err;
-            }
-        } else {
-            doWakeup();
-        }
-    }
-
     private void cleanup() {
-        unsubscribed = true;
         if (stats != null) {
             stats.stop();
         }
@@ -448,10 +406,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             try {
                 realRefresh();
             } catch (Throwable err) {
-                if (viewportChangedCallback != null) {
-                    viewportChangedCallback.onError(err);
-                    viewportChangedCallback = null;
-                }
+                tryToDeliverErrorToCallback(err);
                 throw err;
             }
         } else {

@@ -8,6 +8,7 @@ import io.deephaven.client.impl.BarrageSubscription;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
@@ -56,7 +57,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
         try (final TableHandle handle = subscriptionManager.executeLogic(logic());
                 final BarrageSubscription subscription = client.subscribe(handle, options)) {
 
-            final BarrageTable subscriptionTable;
+            final Table subscriptionTable;
             if (headerSize > 0) {
                 // create a Table subscription with forward viewport of the specified size
                 subscriptionTable = subscription.partialTable(RowSetFactory.flat(headerSize), null, false);
@@ -76,7 +77,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
             subscriptionTable.addUpdateListener(listener = new InstrumentedTableUpdateListener("example-listener") {
                 @ReferentialIntegrity
-                final BarrageTable tableRef = subscriptionTable;
+                final Table tableRef = subscriptionTable;
                 {
                     // Maintain a liveness ownership relationship with subscriptionTable for the lifetime of the
                     // listener
