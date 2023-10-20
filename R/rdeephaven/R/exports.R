@@ -19,8 +19,6 @@
 #' The Deephaven Community R Client provides an R interface to Deephaven's powerful real-time data engine, [_Deephaven Core_](https://deephaven.io/community/).
 #' To use this package, you must have a Deephaven server running and be able to connect to it. For more information on
 #' how to set up a Deephaven server, see the documentation [here](https://deephaven.io/core/docs/tutorials/quickstart/).
-#' For a brief overview of the Deephaven R Client, see the [blog post](https://deephaven.io/blog/2023/10/04/r-client-updates/)
-#' we published on the topic.
 #'
 #' @section
 #' Building blocks of the Deephaven R Client:
