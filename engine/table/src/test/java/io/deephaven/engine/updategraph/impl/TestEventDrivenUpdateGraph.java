@@ -1,18 +1,23 @@
 package io.deephaven.engine.updategraph.impl;
 
+import io.deephaven.base.SleepUtil;
 import io.deephaven.configuration.DataDir;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.LongSingleValueSource;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.ReflexiveUse;
 import junit.framework.TestCase;
 import org.junit.*;
 
@@ -128,8 +133,6 @@ public class TestEventDrivenUpdateGraph {
 
                 final TrackingRowSet rowSet = updated.getRowSet();
                 System.out.println("Step = " + steps);
-//                final long xpv = xcs.getPrevLong(rowSet.prev().firstRowKey());
-//                TestCase.assertEquals(2L * (steps), xpv);
                 final long xv = xcs.getLong (rowSet.firstRowKey());
                 TestCase.assertEquals(2L * (steps + 1), xv);
 
@@ -138,6 +141,74 @@ public class TestEventDrivenUpdateGraph {
             TestCase.assertEquals(1, updated.size());
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void testUpdatePerformanceTracker() {
+        final Table upt = UpdatePerformanceTracker.getQueryTable();
+        TableTools.showWithRowSet(upt);
+
+        final long start = System.currentTimeMillis();
+
+        final EventDrivenUpdateGraph eventDrivenUpdateGraph1 = new EventDrivenUpdateGraph("TestEDUG1",
+                BaseUpdateGraph.DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS);
+        final EventDrivenUpdateGraph eventDrivenUpdateGraph2 = new EventDrivenUpdateGraph("TestEDUG2",
+                BaseUpdateGraph.DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS);
+
+        doWork(eventDrivenUpdateGraph1, 100, 10);
+        doWork(eventDrivenUpdateGraph2, 200, 5);
+
+        do {
+            final long now = System.currentTimeMillis();
+            final long end = start + UpdatePerformanceTracker.REPORT_INTERVAL_MILLIS;
+            if (end < now) {
+                break;
+            }
+            System.out.println("Did work, waiting for performance cycle to complete: " + (end - now) + " ms");
+            SleepUtil.sleep(end - now);
+        } while (true);
+
+        doWork(eventDrivenUpdateGraph1, 100, 1);
+        doWork(eventDrivenUpdateGraph2, 2, 100);
+
+        PeriodicUpdateGraph instance = PeriodicUpdateGraph.getInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).cast();
+        instance.requestRefresh();
+
+        SleepUtil.sleep(1000);
+
+        TableTools.showWithRowSet(upt);
+    }
+
+    @ReflexiveUse(referrers = "TestEventDrivenUpdateGraph")
+    static public <T> T sleepValue(long duration, T retVal) {
+        final Object blech = new Object();
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (blech) {
+            try {
+                final long milliSeconds = duration / 1_000_000L;
+                final int nanos = (int) (duration % 1_000_000L);
+                blech.wait(milliSeconds, nanos);
+            } catch (InterruptedException ignored) {
+            }
+        }
+        return retVal;
+    }
+
+    private void doWork(final EventDrivenUpdateGraph eventDrivenUpdateGraph, final int durationMillis, final int steps) {
+        final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(eventDrivenUpdateGraph)
+                .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
+        try (final SafeCloseable ignored = context.open()) {
+            final SourceThatModifiesItself modifySource = new SourceThatModifiesItself(eventDrivenUpdateGraph);
+            final Table updated =
+                    eventDrivenUpdateGraph.sharedLock().computeLocked(() -> modifySource.update("X=" + getClass().getName() + ".sleepValue(" + (1000L * 1000L * durationMillis) + ", 2 * V)"));
+
+            int step = 0;
+            do {
+                TestCase.assertEquals(1, updated.size());
+                eventDrivenUpdateGraph.requestRefresh();
+            } while (step++ < steps);
+            TestCase.assertEquals(1, updated.size());
         }
     }
 }

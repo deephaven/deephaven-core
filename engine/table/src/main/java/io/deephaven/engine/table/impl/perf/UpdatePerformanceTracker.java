@@ -120,6 +120,10 @@ public class UpdatePerformanceTracker {
                 }
             }
         }
+
+        public void flush() {
+            publisher.flush();
+        }
     }
 
     private static final AtomicInteger entryIdCounter = new AtomicInteger(1);
@@ -264,6 +268,8 @@ public class UpdatePerformanceTracker {
             internalState.publish(intervalLevelDetails, aggregatedSmallUpdatesEntry);
         }
         aggregatedSmallUpdatesEntry.reset();
+
+        internalState.flush();
         flushEntry.onUpdateEnd();
     }
 
