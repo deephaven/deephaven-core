@@ -23234,7 +23234,7 @@ class ColumnStatisticsRequest final :
     kColumnNameFieldNumber = 3,
     kResultIdFieldNumber = 1,
     kSourceIdFieldNumber = 2,
-    kMaxUniqueValuesFieldNumber = 4,
+    kUniqueValueLimitFieldNumber = 4,
   };
   // string column_name = 3;
   void clear_column_name();
@@ -23286,17 +23286,17 @@ class ColumnStatisticsRequest final :
       ::io::deephaven::proto::backplane::grpc::TableReference* source_id);
   ::io::deephaven::proto::backplane::grpc::TableReference* unsafe_arena_release_source_id();
 
-  // optional int32 max_unique_values = 4;
-  bool has_max_unique_values() const;
+  // optional int32 unique_value_limit = 4;
+  bool has_unique_value_limit() const;
   private:
-  bool _internal_has_max_unique_values() const;
+  bool _internal_has_unique_value_limit() const;
   public:
-  void clear_max_unique_values();
-  int32_t max_unique_values() const;
-  void set_max_unique_values(int32_t value);
+  void clear_unique_value_limit();
+  int32_t unique_value_limit() const;
+  void set_unique_value_limit(int32_t value);
   private:
-  int32_t _internal_max_unique_values() const;
-  void _internal_set_max_unique_values(int32_t value);
+  int32_t _internal_unique_value_limit() const;
+  void _internal_set_unique_value_limit(int32_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest)
@@ -23311,7 +23311,7 @@ class ColumnStatisticsRequest final :
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr column_name_;
   ::io::deephaven::proto::backplane::grpc::Ticket* result_id_;
   ::io::deephaven::proto::backplane::grpc::TableReference* source_id_;
-  int32_t max_unique_values_;
+  int32_t unique_value_limit_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
 // -------------------------------------------------------------------
@@ -47472,32 +47472,32 @@ inline void ColumnStatisticsRequest::set_allocated_column_name(std::string* colu
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.column_name)
 }
 
-// optional int32 max_unique_values = 4;
-inline bool ColumnStatisticsRequest::_internal_has_max_unique_values() const {
+// optional int32 unique_value_limit = 4;
+inline bool ColumnStatisticsRequest::_internal_has_unique_value_limit() const {
   bool value = (_has_bits_[0] & 0x00000001u) != 0;
   return value;
 }
-inline bool ColumnStatisticsRequest::has_max_unique_values() const {
-  return _internal_has_max_unique_values();
+inline bool ColumnStatisticsRequest::has_unique_value_limit() const {
+  return _internal_has_unique_value_limit();
 }
-inline void ColumnStatisticsRequest::clear_max_unique_values() {
-  max_unique_values_ = 0;
+inline void ColumnStatisticsRequest::clear_unique_value_limit() {
+  unique_value_limit_ = 0;
   _has_bits_[0] &= ~0x00000001u;
 }
-inline int32_t ColumnStatisticsRequest::_internal_max_unique_values() const {
-  return max_unique_values_;
+inline int32_t ColumnStatisticsRequest::_internal_unique_value_limit() const {
+  return unique_value_limit_;
 }
-inline int32_t ColumnStatisticsRequest::max_unique_values() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.max_unique_values)
-  return _internal_max_unique_values();
+inline int32_t ColumnStatisticsRequest::unique_value_limit() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.unique_value_limit)
+  return _internal_unique_value_limit();
 }
-inline void ColumnStatisticsRequest::_internal_set_max_unique_values(int32_t value) {
+inline void ColumnStatisticsRequest::_internal_set_unique_value_limit(int32_t value) {
   _has_bits_[0] |= 0x00000001u;
-  max_unique_values_ = value;
+  unique_value_limit_ = value;
 }
-inline void ColumnStatisticsRequest::set_max_unique_values(int32_t value) {
-  _internal_set_max_unique_values(value);
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.max_unique_values)
+inline void ColumnStatisticsRequest::set_unique_value_limit(int32_t value) {
+  _internal_set_unique_value_limit(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.unique_value_limit)
 }
 
 // -------------------------------------------------------------------
