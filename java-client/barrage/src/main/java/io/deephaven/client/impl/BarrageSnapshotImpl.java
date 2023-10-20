@@ -306,6 +306,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             return;
         }
 
+        resultTable.unsubscribe();
         signalCompletion(new RequestCancelledException("BarrageSnapshotImpl closed"));
         GrpcUtil.safelyCancel(observer, "BarrageSnapshotImpl closed", exceptionWhileCompleting);
     }

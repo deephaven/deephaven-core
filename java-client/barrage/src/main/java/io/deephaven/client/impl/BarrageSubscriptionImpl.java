@@ -359,6 +359,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             return;
         }
 
+        resultTable.unsubscribe();
         signalCompletion(new RequestCancelledException("BarrageSubscriptionImpl closed"));
         GrpcUtil.safelyComplete(observer);
         cleanup();
