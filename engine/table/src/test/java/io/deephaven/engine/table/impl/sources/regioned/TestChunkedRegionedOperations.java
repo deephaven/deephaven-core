@@ -239,7 +239,7 @@ public class TestChunkedRegionedOperations {
                 partitionedDataDefinition.getWritable(),
                 parquetInstructions,
                 partitionedInputDestinations,
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY);
 
         final PartitionedTable partitionedInputMissingData = inputMissingData.view("PC", "II").partitionBy("PC");
         final File[] partitionedInputMissingDestinations;
@@ -255,7 +255,7 @@ public class TestChunkedRegionedOperations {
                 partitionedMissingDataDefinition.getWritable(),
                 parquetInstructions,
                 partitionedInputMissingDestinations,
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY);
 
         expected = TableTools
                 .merge(

@@ -143,7 +143,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
                         with(equal(TABLE_DEFINITION.getColumns())));
                 will(returnValue(columnSourceManager));
-                oneOf(columnSourceManager).disableGrouping();
             }
         });
 
@@ -444,7 +443,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
                         with(equal(includedColumns1)));
                 will(returnValue(columnSourceManager));
-                oneOf(columnSourceManager).disableGrouping();
             }
         });
         final Table dropColumnsResult1 = SUT.dropColumns(BOOLEAN_COLUMN_DEFINITION.getName());
@@ -486,7 +484,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
                         with(equal(includedColumns2)));
                 will(returnValue(columnSourceManager));
-                oneOf(columnSourceManager).disableGrouping();
             }
         });
         final Table dropColumnsResult2 = dropColumnsResult1.dropColumns(CHARACTER_COLUMN_DEFINITION.getName());
@@ -537,7 +534,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
                         with(equal(includedColumns3)));
                 will(returnValue(columnSourceManager));
-                oneOf(columnSourceManager).disableGrouping();
             }
         });
         final Table viewResult1 = dropColumnsResult2.view(INTEGER_COLUMN_DEFINITION.getName());
@@ -645,7 +641,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(componentFactory).createColumnSourceManager(true, ColumnToCodecMappings.EMPTY,
                         TABLE_DEFINITION.getColumns());
                 will(returnValue(columnSourceManager));
-                oneOf(columnSourceManager).disableGrouping();
             }
         });
         assertRowSetEquals(expectedRowSet, SUT.where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`").getRowSet());
@@ -707,7 +702,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(componentFactory).createColumnSourceManager(true, ColumnToCodecMappings.EMPTY,
                         TABLE_DEFINITION.getColumns());
                 will(returnValue(columnSourceManager));
-                oneOf(columnSourceManager).disableGrouping();
                 allowing(columnSources[3]).getInt(with(any(long.class)));
                 will(returnValue(1));
                 allowing(columnSources[3]).makeGetContext(with(any(Integer.class)));
