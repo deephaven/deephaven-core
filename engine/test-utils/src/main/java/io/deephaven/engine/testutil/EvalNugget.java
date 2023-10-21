@@ -96,13 +96,15 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     }
 
     private final TableUpdateValidator validator;
-    private final TableUpdateListener validationFailureListener = new ValidationFailureListener();
+    private final TableUpdateListener validationFailureListener;
     {
         if (originalValue instanceof QueryTable && ((QueryTable) originalValue).isRefreshing()) {
             validator = TableUpdateValidator.make((QueryTable) originalValue);
+            validationFailureListener = new ValidationFailureListener();
             validator.getResultTable().addUpdateListener(validationFailureListener);
         } else {
             validator = null;
+            validationFailureListener = null;
         }
     }
 

@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import junit.framework.TestCase;
 
 public class ErrorListener extends InstrumentedTableUpdateListenerAdapter {
 
