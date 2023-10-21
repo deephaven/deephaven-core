@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
-public class TableUpdateValidator implements QueryTable.Operation {
+public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
     private static final boolean useSharedContext = Configuration.getInstance()
             .getBooleanForClassWithDefault(TableUpdateValidator.class, "useSharedContext", true);
     private static final boolean aggressiveUpdateValidation = Configuration.getInstance()
