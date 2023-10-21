@@ -54,7 +54,6 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
     private TrackingWritableRowSet rowSet;
     private QueryTable resultTable;
-    private ModifiedColumnSet.Transformer transformer;
     private SharedContext sharedContext;
     private final String description;
 
@@ -105,7 +104,6 @@ public class TableUpdateValidator implements QueryTable.Operation {
         rowSet = (usePrev ? tableToValidate.getRowSet().prev() : tableToValidate.getRowSet()).copy().toTracking();
 
         resultTable = new QueryTable(rowSet, tableToValidate.getColumnSourceMap());
-        transformer = tableToValidate.newModifiedColumnSetIdentityTransformer(resultTable);
 
         final TableUpdateListener listener;
         try (final SafeCloseable ignored1 = maybeOpenSharedContext();
@@ -220,8 +218,6 @@ public class TableUpdateValidator implements QueryTable.Operation {
             }
 
             final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-            downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
-            transformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
             resultTable.notifyListeners(downstream);
         }
     }
