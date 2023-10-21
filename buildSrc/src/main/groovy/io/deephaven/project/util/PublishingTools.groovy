@@ -37,7 +37,12 @@ class PublishingTools {
     static final String RELEASE_REPO = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
 
     static void setupPublications(Project project, Closure closure) {
-        setupPublications(project, ConfigureUtil.configureUsing(closure))
+        setupPublications(project, new Action<MavenPublication>() {
+            @Override
+            void execute(MavenPublication mavenPublication) {
+                project.configure(mavenPublication, closure)
+            }
+        })
     }
 
     static void setupPublications(Project project, Action<MavenPublication> action) {

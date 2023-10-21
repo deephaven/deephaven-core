@@ -6,12 +6,15 @@ import io.deephaven.tools.docker.Architecture
 
 description 'Parquet Table: Integrating Engine tables with Parquet'
 
-configurations {
-    brotliTestImplementation.extendsFrom(testImplementation)
-}
+
 
 sourceSets {
     brotliTest {}
+}
+
+// Order matters, declare configurations after sourceSets https://github.com/gradle/gradle/issues/26255
+configurations {
+    brotliTestImplementation.extendsFrom(testImplementation)
 }
 
 dependencies {
