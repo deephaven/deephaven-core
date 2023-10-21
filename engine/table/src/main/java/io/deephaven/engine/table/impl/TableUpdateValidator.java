@@ -101,8 +101,8 @@ public class TableUpdateValidator implements QueryTable.Operation {
     }
 
     @Override
-    public Result initialize(boolean usePrev, long beforeClock) {
-        rowSet = (usePrev ? tableToValidate.getRowSet().copyPrev() : tableToValidate.getRowSet().copy()).toTracking();
+    public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
+        rowSet = (usePrev ? tableToValidate.getRowSet().prev() : tableToValidate.getRowSet()).copy().toTracking();
 
         resultTable = new QueryTable(rowSet, tableToValidate.getColumnSourceMap());
         transformer = tableToValidate.newModifiedColumnSetIdentityTransformer(resultTable);
