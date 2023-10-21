@@ -30,7 +30,7 @@ public final class ParquetFileWriter {
     private static final int VERSION = 1;
     private static final int OUTPUT_BUFFER_SIZE = 1 << 18; // TODO Benchmark this
 
-    private BufferedStreamOverWriteChannel bufferedOutput;
+    private PositionedBufferedOutputStream bufferedOutput;
     private final MessageType type;
     private final int targetPageSize;
     private final ByteBufferAllocator allocator;
@@ -51,8 +51,7 @@ public final class ParquetFileWriter {
         this.targetPageSize = targetPageSize;
         this.allocator = allocator;
         this.extraMetaData = new HashMap<>(extraMetaData);
-        // TODO add support for appending
-        bufferedOutput = new BufferedStreamOverWriteChannel(channelsProvider.getWriteChannel(filePath, false),
+        bufferedOutput = new PositionedBufferedOutputStream(channelsProvider.getWriteChannel(filePath, false),
                 OUTPUT_BUFFER_SIZE);
         bufferedOutput.write(ParquetFileReader.MAGIC);
         this.type = type;
@@ -60,14 +59,11 @@ public final class ParquetFileWriter {
         this.compressorAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName(codecName);
     }
 
-    /**
-     * Following method is unused and untested.
-     */
     @SuppressWarnings("unused")
     RowGroupWriter addRowGroup(final String path, final boolean append) throws IOException {
         bufferedOutput.close();
         bufferedOutput =
-                new BufferedStreamOverWriteChannel(channelsProvider.getWriteChannel(path, append), OUTPUT_BUFFER_SIZE);
+                new PositionedBufferedOutputStream(channelsProvider.getWriteChannel(path, append), OUTPUT_BUFFER_SIZE);
         final RowGroupWriter rowGroupWriter =
                 new RowGroupWriterImpl(bufferedOutput, type, targetPageSize, allocator, compressorAdapter, path);
         blocks.add(rowGroupWriter.getBlock());

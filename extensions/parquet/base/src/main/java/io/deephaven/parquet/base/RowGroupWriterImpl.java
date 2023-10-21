@@ -3,7 +3,6 @@
  */
 package io.deephaven.parquet.base;
 
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
@@ -13,13 +12,12 @@ import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class RowGroupWriterImpl implements RowGroupWriter {
-    private final BufferedStreamOverWriteChannel bufferedOutput;
+    private final PositionedBufferedOutputStream bufferedOutput;
     private final MessageType type;
     private final int targetPageSize;
     private final ByteBufferAllocator allocator;
@@ -28,7 +26,7 @@ public class RowGroupWriterImpl implements RowGroupWriter {
     private final List<OffsetIndex> currentOffsetIndexes = new ArrayList<>();
     private final CompressorAdapter compressorAdapter;
 
-    RowGroupWriterImpl(BufferedStreamOverWriteChannel bufferedOutput,
+    RowGroupWriterImpl(PositionedBufferedOutputStream bufferedOutput,
             MessageType type,
             int targetPageSize,
             ByteBufferAllocator allocator,
@@ -43,7 +41,7 @@ public class RowGroupWriterImpl implements RowGroupWriter {
         return blockMetaData;
     }
 
-    RowGroupWriterImpl(BufferedStreamOverWriteChannel bufferedOutput,
+    RowGroupWriterImpl(PositionedBufferedOutputStream bufferedOutput,
             MessageType type,
             int targetPageSize,
             ByteBufferAllocator allocator,
@@ -52,7 +50,7 @@ public class RowGroupWriterImpl implements RowGroupWriter {
     }
 
 
-    private RowGroupWriterImpl(BufferedStreamOverWriteChannel bufferedOutput,
+    private RowGroupWriterImpl(PositionedBufferedOutputStream bufferedOutput,
             MessageType type,
             int targetPageSize,
             ByteBufferAllocator allocator,
