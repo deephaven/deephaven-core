@@ -8,6 +8,50 @@
 A Client is the entry point for interacting with the Deephaven server. It is used to create new tables,
 import data to and export data from the server, and run queries on the server.
 }
+\examples{
+\dontrun{
+library(rdeephaven)
+
+# connecting to Deephaven server
+client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+
+# create a data frame and push it to the server, retrieve a reference to it as a TableHandle
+df <- data.frame(
+  col1 = c(1, 2, 3),
+  col2 = c("a", "b", "c"),
+  col3 = c(TRUE, FALSE, TRUE)
+)
+th1 <- client$import_table(df)
+as.data.frame(th1)
+
+# give table referenced by 'th' a name on the server
+th1$bind_to_variable("server_table")
+
+# use client to execute script
+client$run_script('server_table_new = server_table.update("col4 = col1 + 1")')
+
+# retrieve reference to new table on the server
+th2 <- client$open_table("server_table_new")
+as.data.frame(th2)
+
+# create table on server directly with table API and retrieve a reference to it as a TableHandle
+th3 <- client$empty_table(10)$update("col1 = i")
+as.data.frame(th3)
+
+# create ticking table on the server and retrieve a reference to it as a TableHandle
+th4 <- client$time_table("PT1S")$update("col1 = i")
+Sys.sleep(5)
+as.data.frame(th4)
+Sys.sleep(5)
+as.data.frame(th4)
+Sys.sleep(5)
+as.data.frame(th4)
+
+# close client connection
+client$close()
+}
+
+}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
@@ -27,8 +71,8 @@ import data to and export data from the server, and run queries on the server.
 \if{html}{\out{<a id="method-Client-new"></a>}}
 \if{latex}{\out{\hypertarget{method-Client-new}{}}}
 \subsection{Method \code{new()}}{
-Calls `initialize_for_xptr` if the first argument is an external pointer, and `initialize_for_target` if the
-first argument is a string. In the latter case, the remaining keyword arguments are passed to `initialize_for_target`.
+Calls \code{initialize_for_xptr()} if the first argument is an external pointer, and \code{initialize_for_target()} if the
+first argument is a string. In the latter case, the remaining keyword arguments are passed to \code{initialize_for_target()}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Client$new(...)}\if{html}{\out{</div>}}
 }
@@ -37,7 +81,7 @@ first argument is a string. In the latter case, the remaining keyword arguments 
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{...}}{Either an external pointer to an existing client connection, or a string denoting the address
-of a running Deephaven server followed by keyword arguments to `initialize_from_target`.}
+of a running Deephaven server followed by keyword arguments to \code{initialize_from_target()}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -83,31 +127,30 @@ Initializes a Client object and connects to a Deephaven server.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{target}}{String denoting the address of a Deephaven server, formatted as `"ip:port"`.}
+\item{\code{target}}{String denoting the address of a Deephaven server, formatted as \code{"ip:port"}.}
 
-\item{\code{auth_type}}{String denoting the authentication type. Can be `"anonymous"`, `"basic"`,
-or any custom-built authenticator supported by the server, such as `"io.deephaven.authentication.psk.PskAuthenticationHandler"`.
-Default is `anonymous`.}
+\item{\code{auth_type}}{String denoting the authentication type. Can be \code{"anonymous"}, \code{"basic"}, \code{"psk"},
+or any custom-built authenticator supported by the server. Default is \code{"anonymous"}.}
 
-\item{\code{username}}{String denoting the username, which only applies if `auth_type` is `basic`.
-Username and password should not be used in conjunction with `auth_token`. Defaults to an empty string.}
+\item{\code{username}}{String denoting the username, which only applies if \code{auth_type} is \code{"basic"}.
+Username and password should not be used in conjunction with \code{auth_token}. Defaults to an empty string.}
 
-\item{\code{password}}{String denoting the password, which only applies if `auth_type` is `basic`.
-Username and password should not be used in conjunction with `auth_token`. Defaults to an empty string.}
+\item{\code{password}}{String denoting the password, which only applies if \code{auth_type} is \code{"basic"}.
+Username and password should not be used in conjunction with \code{auth_token}. Defaults to an empty string.}
 
-\item{\code{auth_token}}{String denoting the authentication token. When `auth_type`
-is `anonymous`, it will be ignored; when `auth_type` is `basic`, it must be
-`"user:password"` or left blank; when `auth_type` is a custom-built authenticator, it must
-conform to the specific requirement of that authenticator. This should not be used
-in conjunction with `username` and `password`. Defaults to an empty string.}
+\item{\code{auth_token}}{String denoting the authentication token. When \code{auth_type}
+is \code{"anonymous"}, it will be ignored; when \code{auth_type} is \code{"basic"}, it must be
+\code{"user:password"} or left blank; when \code{auth_type} \code{"psk"}, it must be the pre-shared key, when \code{auth_type}
+is a custom-built authenticator, it must conform to the specific requirement of that authenticator.
+This should not be used in conjunction with \code{username} and \code{password}. Defaults to an empty string.}
 
 \item{\code{session_type}}{String denoting the session type supported on the server.
-Currently, `python` and `groovy` are supported. Defaults to `python`.}
+Currently, \code{"python"} and \code{"groovy"} are supported. Defaults to \code{"python"}.}
 
-\item{\code{use_tls}}{Whether or not to use a TLS connection. Defaults to `FALSE`.}
+\item{\code{use_tls}}{Whether or not to use a TLS connection. Defaults to \code{FALSE}.}
 
 \item{\code{tls_root_certs}}{String denoting PEM encoded root certificates to use for TLS connection,
-or `""` to use system defaults. Only used if `use_tls == TRUE`. Defaults to system defaults.}
+or \code{""} to use system defaults. Only used if \code{use_tls == TRUE}. Defaults to system defaults.}
 
 \item{\code{int_options}}{List of name-value pairs for int-valued options to the underlying
 grpc channel creation. Defaults to an empty list, which implies not using any channel options.}
@@ -125,7 +168,7 @@ to add to server requests. Defaults to an empty list, which implies not using an
 \if{html}{\out{<a id="method-Client-empty_table"></a>}}
 \if{latex}{\out{\hypertarget{method-Client-empty_table}{}}}
 \subsection{Method \code{empty_table()}}{
-Creates an empty table on the server with 'size' rows and no columns.
+Creates an empty table on the server with \code{size} rows and no columns.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Client$empty_table(size)}\if{html}{\out{</div>}}
 }
@@ -189,7 +232,7 @@ TableHandle reference to the named table.
 \if{latex}{\out{\hypertarget{method-Client-import_table}{}}}
 \subsection{Method \code{import_table()}}{
 Imports a new table to the Deephaven server. Note that this new table is not automatically bound to
-a variable name on the server. See `?TableHandle` for more information.
+a variable name on the server. See \code{?TableHandle} for more information.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Client$import_table(table_object)}\if{html}{\out{</div>}}
 }
