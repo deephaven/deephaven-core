@@ -7,14 +7,16 @@ apply from: "$rootDir/gradle/web-client.gradle"
 configurations {
     js
     dts
+    typescriptDoclet
 }
 
 dependencies {
     implementation project(':web-shared-beans')
     implementation project(':web-client-backplane')
 
-    implementation 'com.vertispan.tsdefs:jsinterop-ts-defs-annotations:1.0.0-RC2'
-    annotationProcessor 'com.vertispan.tsdefs:jsinterop-ts-defs-processor:1.0.0-RC2'
+    implementation 'com.vertispan.tsdefs:jsinterop-ts-defs-annotations:HEAD-SNAPSHOT'
+    annotationProcessor 'com.vertispan.tsdefs:jsinterop-ts-defs-processor:HEAD-SNAPSHOT'
+    typescriptDoclet 'com.vertispan.tsdefs:jsinterop-ts-defs-doclet:HEAD-SNAPSHOT'
 
     implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
 
@@ -38,10 +40,20 @@ def gwtOutput = tasks.register('gwtOutput', Sync) {
 }
 
 def dtsOutput = layout.buildDirectory.dir('ts-types');
-def tsDefs = tasks.register('typescriptDefinitions', Sync) {
-    from tasks.getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME).outputs.files
-    into dtsOutput
-    include '*.d.ts'
+def tsDefs = tasks.register('typescriptDefinitions', Javadoc) {
+    source = sourceSets.main.allJava
+    options.classpath = sourceSets.main.compileClasspath.files.asType(List)
+    destinationDir = dtsOutput.get().asFile
+    options.docletpath = configurations.typescriptDoclet.files.asType(List) + sourceSets.main.compileClasspath.files.asType(List)
+    options.doclet = 'com.vertispan.tsdefs.doclet.TsDoclet'
+}
+
+// Temporary wiring to build locally and get this working
+repositories {
+//    maven {
+//        url 'https://oss.sonatype.org/content/repositories/snapshots/'
+//    }
+    mavenLocal()
 }
 
 artifacts {
