@@ -33,15 +33,6 @@ tasks.register('updateProtobuf', Sync) {
     into protoSourceDir
 }
 
-tasks.getByName('license').dependsOn(tasks.create("licensePy", com.hierynomus.gradle.license.tasks.LicenseCheck) {
-    source = ['deephaven']
-})
-tasks.getByName('licenseFormat').dependsOn(tasks.create("licenseFormatPy", com.hierynomus.gradle.license.tasks.LicenseFormat) {
-    source = ['deephaven']
-})
-
-project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')
-
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
