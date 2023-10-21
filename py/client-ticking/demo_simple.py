@@ -7,7 +7,7 @@ import pydeephaven as pyd
 import pyarrow as pa
 import time
 from typing import Dict, List, Tuple
-from pydeephaven import TableListener, TableUpdate, listen
+from pydeephaven_ticking import TableListener, TableUpdate, listen
 
 session = pyd.Session(host="localhost", port=10000)
 
@@ -48,3 +48,4 @@ time.sleep(15)
 print("Waking up and stopping the listener")
 
 listener_handle.stop()
+session.close()

@@ -1,0 +1,79 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+    id 'io.deephaven.deephaven-in-docker'
+}
+
+evaluationDependsOn(':cpp-client')
+
+configurations {
+    python {}
+}
+
+dependencies {
+    python project(':cpp-client')
+}
+
+def prefix = '/opt/deephaven'
+
+// start a grpc-api server
+String randomSuffix = UUID.randomUUID().toString();
+deephavenDocker {
+    envVars.set([
+        'START_OPTS':'-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler'
+    ])
+    containerName.set "pydeephaven-test-container-${randomSuffix}"
+    networkName.set "pydeephaven-network-${randomSuffix}"
+}
+
+def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking') {
+    // Only tested on x86-64, and we only build dependencies for x86-64
+    platform = 'linux/amd64'
+
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'setup.py'
+            include 'README.md'
+            include 'src/**'
+        }
+    }
+    copyOut {
+        into layout.buildDirectory.dir('wheel')
+    }
+    // containerDependencies.dependsOn = [deephavenDocker.healthyTask]
+    // containerDependencies.finalizedBy = deephavenDocker.endTask
+    // network = deephavenDocker.networkName.get()
+    dockerfile {
+        from('deephaven/cpp-client:local-build')
+        runCommand("""mkdir -p \\
+                        /out \\
+                        ${prefix}/log \\
+                        ${prefix}/bin/py-client-ticking \\
+                        ${prefix}/src/py-client-ticking/src}
+                   """)
+
+        copyFile('setup.py', "${prefix}/src/py-client-ticking")
+        copyFile('README.md', "${prefix}/src/py-client-ticking")
+        copyFile('src/', "${prefix}/src/py-client-ticking/src/")
+        runCommand("PREFIX=${prefix}; " +
+                  '''set -eux ; \
+                     cd "${PREFIX}/src/py-client-ticking"; \
+                     . "${PREFIX}/env.sh"; \
+                     MAKEFLAGS="-j${NCPUS}" CFLAGS="-I${DHCPP}/include" LDFLAGS="-L${DHCPP}/lib" python3 setup.py build_ext -i; \
+                     python3 setup.py bdist_wheel; \
+                     ln dist/*.whl /out
+                   ''')
+    }
+    parentContainers = [ project.tasks.getByPath(':cpp-client:cppClient') ]
+}
+
+def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTicking') {
+    // Only tested on x86-64, and we only build dependencies for x86-64
+    platform = 'linux/amd64'
+    copyIn {}
+    
+
+}
+
+tasks.getByName('check').dependsOn(testPyClientTicking)
+deephavenDocker.shouldLogIfTaskFails testPyClientTicking

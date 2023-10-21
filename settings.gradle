@@ -331,6 +331,9 @@ project(':jpy-integration').projectDir = file('py/jpy-integration')
 include(':py-client')
 project(':py-client').projectDir = file('py/client')
 
+include(':py-client-ticking')
+project(':py-client-ticking').projectDir = file('py/client-ticking')
+
 include(':py-server')
 project(':py-server').projectDir = file('py/server')
 
