@@ -81,13 +81,10 @@ deephavenDocker {
     networkName.set "pydeephaven-network-${randomSuffix}"
 }
 
-def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
+def buildPyClientImage = Docker.registerDockerTask(project, 'pyClient') {
     copyIn {
         from('pydeephaven') {
             into 'project/pydeephaven'
-        }
-        from('tests') {
-            into 'project/tests'
         }
         from ('requirements-dev.txt') {
             into 'project/'
@@ -99,24 +96,39 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
             into 'project/'
         }
     }
+    dockerfile {
+        from('deephaven/cpp-client:local-build')
+        copyFile('project', '/project')
+        workingDir('/project')
+        runCommand '''set -eux; \
+                      pip3 install --upgrade pip; \
+                      pip3 install -r requirements-dev.txt; \
+                      pip3 install .; \
+                      cd /; \
+                      rm -fr /project
+                   '''
+    }
+    parentContainers = [ project.tasks.getByPath(':cpp-client:cppClient') ]
+}
+
+def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
+    copyIn {
+        from('tests') {
+            into 'project/tests'
+        }
+    }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
     dockerfile {
-        from('deephaven/python:local-build')
+        from('deephaven/py-client:local-build')
         copyFile('project', '/project')
         workingDir('/project')
-        runCommand '''set -eux; \\
-                      mkdir -p /out/report; \\
-                      pip3 install --upgrade pip; \\
-                      pip3 install -r requirements-dev.txt'''
-
-        runCommand 'pip3 install .'
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
     }
-    parentContainers = [ Docker.registryTask(project, 'python') ]
-    entrypoint = ['python', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
+    parentContainers = [ project.tasks.getByName('pyClient') ]
+    entrypoint = ['python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }

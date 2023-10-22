@@ -41,11 +41,10 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
         into layout.buildDirectory.dir('wheel')
     }
     dockerfile {
-        from('deephaven/cpp-client:local-build')
+        from('deephaven/py-client:local-build')
         runCommand("""mkdir -p \\
                         /out \\
                         ${prefix}/log \\
-                        ${prefix}/bin/py-client-ticking \\
                         ${prefix}/src/py-client-ticking/src
                    """)
         copyFile('setup.py', "${prefix}/src/py-client-ticking")
@@ -60,10 +59,13 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
                        LDFLAGS="-L${DHCPP}/lib" \
                        python3 setup.py build_ext -i; \
                      python3 setup.py bdist_wheel; \
-                     ln dist/*.whl /out
+                     ln dist/*.whl /out; \
+                     pip3 install /out/*.whl; \
+                     cd /; \
+                     rm -fr "${PREFIX}/src/py-client-ticking"
                    ''')
     }
-    parentContainers = [ project.tasks.getByPath(':cpp-client:cppClient') ]
+    parentContainers = [ project.tasks.getByPath(':py-client:pyClient') ]
 }
 
 def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTicking') {
@@ -82,9 +84,10 @@ def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTickin
                       rm -fr /out; \
                       mkdir -p \
                         /out/report \
-                        ${PREFIX}/src/py-client-ticking/tests                      
+                        /project/tests                      
                    ''')
-        copyFile('tests/', "${prefix}/src/py-client-ticking/tests/")
+        copyFile('tests/', "/project/tests/")
+        workingDir('/project')
         //
         // Setup for test run.
         //

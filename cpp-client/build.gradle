@@ -112,7 +112,7 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
                       rm -fr ${PREFIX}/src/deephaven/build
                    ''')
         // Note environment variables defined here are inherited by other images
-        // using this image as a base.
+        // using this image as a base ("from").
         environmentVariable 'DH_PREFIX', prefix
         environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
     }
