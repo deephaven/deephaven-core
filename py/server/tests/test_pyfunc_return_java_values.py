@@ -2,11 +2,13 @@
 #     Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
 import datetime
+import typing
 import unittest
 from typing import List, Union, Tuple, Sequence
 
 import numba as nb
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from deephaven import empty_table, dtypes, DHError
@@ -211,13 +213,30 @@ foo = Foo()
         self.assertIn("not support multi-dimensional arrays", str(cm.exception))
 
     def test_npt_NDArray_return_type(self):
-        import numpy.typing as npt
-
         def f() -> npt.NDArray[np.int64]:
             return np.array([1, 2], dtype=np.int64)
 
         t = empty_table(10).update(["X1 = f()"])
         self.assertEqual(t.columns[0].data_type, dtypes.long_array)
+
+    def test_ndarray_weird_cases(self):
+        def f() -> np.ndarray[typing.Any]:
+            return np.array([1, 2], dtype=np.int64)
+
+        t = empty_table(10).update(["X1 = f()"])
+        self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
+
+        def f1() -> npt.NDArray[typing.Any]:
+            return np.array([1, 2], dtype=np.int64)
+
+        t = empty_table(10).update(["X1 = f1()"])
+        self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
+
+        def f2() -> np.ndarray[typing.Any, np.int64]:
+            return np.array([1, 2], dtype=np.int64)
+
+        t = empty_table(10).update(["X1 = f2()"])
+        self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
 
 
 if __name__ == '__main__':
