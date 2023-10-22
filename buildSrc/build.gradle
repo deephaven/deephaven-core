@@ -34,5 +34,5 @@ dependencies {
         because('needed by plugin java-coding-conventions')
     }
 
-    implementation "gradle.plugin.com.github.johnrengelman:shadow:7.1.2"
+    implementation "com.github.johnrengelman:shadow:8.1.1"
 }
