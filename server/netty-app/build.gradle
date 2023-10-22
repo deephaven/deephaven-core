@@ -82,8 +82,10 @@ tasks.withType(CreateStartScripts).configureEach {
     defaultJvmOpts += extraJvmArgs
 }
 
-applicationName = 'start'
-mainClassName = 'io.deephaven.server.netty.NettyMain'
+application {
+    applicationName = 'start'
+    mainClass = 'io.deephaven.server.netty.NettyMain'
+}
 
 artifacts {
     applicationDist project.tasks.findByName('distTar')

@@ -1,6 +1,6 @@
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
-import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.reporting.Report
 import org.gradle.api.reporting.internal.SimpleReport
 import org.gradle.api.tasks.SourceSetContainer
@@ -105,7 +105,7 @@ By default only runs in CI; to run locally:
             // wire up dependencies manually, since we don't get this for free in custom tasks
             // (it's usually assumed you will do a custom sourceSet for integration tests,
             // but we already use custom layouts which make "use separate sourcesets per module" in IntelliJ...troublesome).
-            SourceSetContainer sources = project.convention.getPlugin(JavaPluginConvention).sourceSets
+            SourceSetContainer sources = project.getExtensions().findByType(JavaPluginExtension).sourceSets
             setClasspath project.files(sources.getByName('test').output, sources.getByName('main').output, project.configurations.getByName(TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME))
 
             // we also need to adjust the reporting output directory of the alt task,

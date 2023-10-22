@@ -137,8 +137,10 @@ tasks.withType(CreateStartScripts).configureEach {
     defaultJvmOpts += extraJvmArgs
 }
 
-applicationName = 'start'
-mainClassName = 'io.deephaven.server.jetty.JettyMain'
+application {
+    applicationName = 'start'
+    mainClass = 'io.deephaven.server.jetty.JettyMain'
+}
 
 artifacts {
     applicationDist project.tasks.findByName('distTar')

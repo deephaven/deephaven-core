@@ -21,5 +21,5 @@ project.subprojects { Project p ->
     p.tasks.findByName('assemble').dependsOn(p.tasks.named('shadowJar'))
 
     // Let projects be named consistently
-    p.archivesBaseName = "deephaven-${p.name}-authentication-provider"
+    p.base.archivesName = "deephaven-${p.name}-authentication-provider"
 }

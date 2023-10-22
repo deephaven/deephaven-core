@@ -39,8 +39,7 @@ sourceSets {
     }
 }
 
-JavaPluginConvention java = project.convention.plugins.get('java') as JavaPluginConvention
-SourceSet test = java.sourceSets.maybeCreate('test')
+SourceSet test = extensions.findByType(JavaPluginExtension).sourceSets.maybeCreate('test')
 
 def runInDocker = { String name, String sourcePath, List<String> command, Closure addConfig = {} ->
     Docker.registerDockerTask(project, name) {
