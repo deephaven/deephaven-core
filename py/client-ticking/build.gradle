@@ -40,26 +40,25 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
     copyOut {
         into layout.buildDirectory.dir('wheel')
     }
-    // containerDependencies.dependsOn = [deephavenDocker.healthyTask]
-    // containerDependencies.finalizedBy = deephavenDocker.endTask
-    // network = deephavenDocker.networkName.get()
     dockerfile {
         from('deephaven/cpp-client:local-build')
         runCommand("""mkdir -p \\
                         /out \\
                         ${prefix}/log \\
                         ${prefix}/bin/py-client-ticking \\
-                        ${prefix}/src/py-client-ticking/src}
+                        ${prefix}/src/py-client-ticking/src
                    """)
-
         copyFile('setup.py', "${prefix}/src/py-client-ticking")
         copyFile('README.md', "${prefix}/src/py-client-ticking")
         copyFile('src/', "${prefix}/src/py-client-ticking/src/")
         runCommand("PREFIX=${prefix}; " +
-                  '''set -eux ; \
+                   '''set -eux ; \
                      cd "${PREFIX}/src/py-client-ticking"; \
                      . "${PREFIX}/env.sh"; \
-                     MAKEFLAGS="-j${NCPUS}" CFLAGS="-I${DHCPP}/include" LDFLAGS="-L${DHCPP}/lib" python3 setup.py build_ext -i; \
+                     MAKEFLAGS="-j${NCPUS}" \
+                       CFLAGS="-I${DHCPP}/include" \
+                       LDFLAGS="-L${DHCPP}/lib" \
+                       python3 setup.py build_ext -i; \
                      python3 setup.py bdist_wheel; \
                      ln dist/*.whl /out
                    ''')
@@ -70,9 +69,36 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
 def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTicking') {
     // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
-    copyIn {}
-    
-
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'tests/**'
+        }
+    }
+    dockerfile {
+        from('deephaven/py-client-ticking:local-build')
+        runCommand("PREFIX=${prefix}; " +
+                   '''set -eux ; \
+                      pip3 install --force --no-deps /out/*.whl; \
+                      rm -fr /out; \
+                      mkdir -p \
+                        /out/report \
+                        ${PREFIX}/src/py-client-ticking/tests                      
+                   ''')
+        copyFile('tests/', "${prefix}/src/py-client-ticking/tests/")
+        //
+        // Setup for test run.
+        //
+        environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
+        environmentVariable 'DH_PORT', '10000'
+    }
+    containerDependencies.dependsOn = [deephavenDocker.healthyTask]
+    containerDependencies.finalizedBy = deephavenDocker.endTask
+    network = deephavenDocker.networkName.get()
+    parentContainers = [ project.tasks.getByName('pyClientTicking') ]
+    entrypoint = ['python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
+    copyOut {
+        into layout.buildDirectory.dir('test-results')
+    }
 }
 
 tasks.getByName('check').dependsOn(testPyClientTicking)
