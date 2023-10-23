@@ -21,9 +21,9 @@ import static elemental2.dom.DomGlobal.console;
 /**
  * Assumes two tables, ticking every 2 seconds:
  *
- * growingForward = db.timeTable("00:00:01").update("I=i", "J=i*i", "K=0")
- * growingBackward = growingForward.sortDescending("Timestamp")
- * blinkOne = db.timeTable("00:00:01").update("I=i", "J=1").lastBy("J").where("I%2 != 0")
+ * growingForward = db.timeTable("00:00:01").update("I=i", "J=i*i", "K=0") growingBackward =
+ * growingForward.sortDescending("Timestamp") blinkOne = db.timeTable("00:00:01").update("I=i",
+ * "J=1").lastBy("J").where("I%2 != 0")
  *
  * And another static one:
  *
@@ -33,8 +33,10 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
 
     private final TableSource tables = new TableSourceBuilder()
             .script("staticTable", "deephaven.empty_table(100).update(\"I=i\")", "emptyTable(100).update(\"I=i\")")
-            .script("growingForward", "timeTable(\"00:00:01\").update(\"I=i\", \"J=i*i\", \"K=0\")", "timeTable(\"00:00:01\").update(\"I=i\", \"J=i*i\", \"K=0\")")
-            .script("growingBackward", "growingForward.sortDescending(\"Timestamp\")", "growingForward.sortDescending(\"Timestamp\")")
+            .script("growingForward", "timeTable(\"00:00:01\").update(\"I=i\", \"J=i*i\", \"K=0\")",
+                    "timeTable(\"00:00:01\").update(\"I=i\", \"J=i*i\", \"K=0\")")
+            .script("growingBackward", "growingForward.sortDescending(\"Timestamp\")",
+                    "growingForward.sortDescending(\"Timestamp\")")
             .script("blinkOne", "deephaven.empty_table(100).update(\"I=i\")", "emptyTable(100).update(\"I=i\")")
             .build();
 
@@ -44,13 +46,13 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     delayTestFinish(5000);
 
-                    int size = (int)table.getSize();
+                    int size = (int) table.getSize();
                     int lastRow = size - 1;
                     table.setViewport(0, lastRow, null);
                     return assertUpdateReceived(table, size, 500);
                 })
                 .then(table -> {
-                    //table has 100 rows, go through each page of 25, make sure the offset and length is sane
+                    // table has 100 rows, go through each page of 25, make sure the offset and length is sane
                     table.setViewport(0, 24, null);
                     return assertUpdateReceived(table, viewport -> {
                         assertEquals(0, (long) viewport.getOffset());
@@ -87,7 +89,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table("growingForward"))
                 .then(waitForTick(2200))
                 .then(delayFinish(25_000))
-                .then(table ->{
+                .then(table -> {
                     // set viewport to actual table size, check that all items are present
                     int size = (int) table.getSize();
                     int lastRow = size - 1;
@@ -122,7 +124,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             .then(JsTable::getViewportData)
                             .then(viewportData -> {
                                 assertEquals(2, viewportData.getRows().length);
-                                //switch back to table for next promise
+                                // switch back to table for next promise
                                 return Promise.resolve(table);
                             });
                 })
@@ -136,10 +138,12 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     delayTestFinish(4000);
                     // set up a viewport, and watch it show up, and tick once
                     table.setViewport(0, 9, null);
-                    return assertUpdateReceived(table, viewportData -> {}, 1000);
+                    return assertUpdateReceived(table, viewportData -> {
+                    }, 1000);
                 })
                 .then(table -> {
-                    return assertUpdateReceived(table, viewportData -> {}, 2000);
+                    return assertUpdateReceived(table, viewportData -> {
+                    }, 2000);
                 })
                 .then(this::finish).catch_(this::report);
     }
@@ -147,6 +151,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
     private static <T> int indexOf(JsArray<T> array, T object) {
         return indexOf(array.asList().toArray(), object);
     }
+
     private static <T> int indexOf(Object[] array, T object) {
         for (int i = 0; i < array.length; i++) {
             Object t = array[i];
@@ -177,7 +182,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     }, 500);
                 })
                 .then(table -> {
-                    //don't change viewport, test the same thing again, make sure deltas behave too
+                    // don't change viewport, test the same thing again, make sure deltas behave too
                     return assertUpdateReceived(table, viewport -> {
                         assertEquals(1, viewport.getColumns().length);
                         assertEquals(0, indexOf(viewport.getColumns(), table.findColumn("I")));
@@ -281,7 +286,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
 
     // TODO: https://deephaven.atlassian.net/browse/DH-11196
     public void ignore_testEmptyTableWithViewport() {
-        //confirm that when the viewport is set on an empty table that we get exactly one update event
+        // confirm that when the viewport is set on an empty table that we get exactly one update event
         connect(tables)
                 .then(table("staticTable"))
                 .then(table -> {
@@ -294,8 +299,9 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     table.setViewport(0, 100, null);
                     return Promise.all(new IThenable<?>[] {
                             // when IDS-2113 is fixed, restore this stronger assertion
-//                            assertEventFiresOnce(table, JsTable.EVENT_UPDATED, 1000)
-                            waitForEvent(table, JsTable.EVENT_UPDATED, ignore -> {}, 1000),
+                            // assertEventFiresOnce(table, JsTable.EVENT_UPDATED, 1000)
+                            waitForEvent(table, JsTable.EVENT_UPDATED, ignore -> {
+                            }, 1000),
                             assertEventFiresOnce(table, JsTable.EVENT_SIZECHANGED, 1000)
                     }).then(ignore -> Promise.resolve(table));
                 })
@@ -303,36 +309,39 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     // reset the filter, wait for back to normal
                     table.applyFilter(new FilterCondition[0]);
                     table.setViewport(0, 100, null);
-                    return assertUpdateReceived(table, ignore -> {}, 1000);
+                    return assertUpdateReceived(table, ignore -> {
+                    }, 1000);
                 })
                 .then(table -> {
-                    //change the filter, don't set a viewport, assert only size changes
+                    // change the filter, don't set a viewport, assert only size changes
                     table.applyFilter(new FilterCondition[] {
                             FilterValue.ofBoolean(false).isTrue()
                     });
                     return assertEventFiresOnce(table, JsTable.EVENT_SIZECHANGED, 1000);
                 })
                 .then(table -> {
-                    //set a viewport, assert that update fires and no size change
+                    // set a viewport, assert that update fires and no size change
                     table.setViewport(0, 100, null);
                     // when IDS-2113 is fixed, restore this stronger assertion
-//                    return assertEventFiresOnce(table, JsTable.EVENT_UPDATED, 1000);
-                    return waitForEvent(table, JsTable.EVENT_UPDATED, ignore -> {}, 1000);
+                    // return assertEventFiresOnce(table, JsTable.EVENT_UPDATED, 1000);
+                    return waitForEvent(table, JsTable.EVENT_UPDATED, ignore -> {
+                    }, 1000);
                 })
                 .then(this::finish).catch_(this::report);
     }
 
     public void testViewportOutOfRangeOfTable() {
-        //confirm that when the viewport is set beyond the range of the table that we get exactly one update event
+        // confirm that when the viewport is set beyond the range of the table that we get exactly one update event
         connect(tables)
                 .then(table("staticTable"))
                 .then(table -> {
                     table.setViewport(100, 104, null);
 
-                    return Promise.all(new IThenable<?>[]{
+                    return Promise.all(new IThenable<?>[] {
                             // when IDS-2113 is fixed, restore this stronger assertion
-//                            assertEventFiresOnce(table, JsTable.EVENT_UPDATED, 1000)
-                            waitForEvent(table, JsTable.EVENT_UPDATED, ignore -> {}, 1000)
+                            // assertEventFiresOnce(table, JsTable.EVENT_UPDATED, 1000)
+                            waitForEvent(table, JsTable.EVENT_UPDATED, ignore -> {
+                            }, 1000)
                     }).then(ignore -> Promise.resolve(table));
                 })
                 .then(this::finish).catch_(this::report);
@@ -344,7 +353,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table("staticTable"))
                 .then(table -> {
                     delayTestFinish(5000);
-                    //test running both synchronously
+                    // test running both synchronously
                     table.setViewport(0, 10, null);
                     table.setViewport(5, 14, null);
                     return assertUpdateReceived(table, viewport -> {
@@ -353,9 +362,9 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     }, 1000);
                 })
                 .then(table -> {
-                    //test changing the viewport over a microtask (anyone in the web api getting clever with batching?)
+                    // test changing the viewport over a microtask (anyone in the web api getting clever with batching?)
                     table.setViewport(0, 10, null);
-                    return Promise.resolve((Object)null).then(ignore -> Promise.resolve(table));
+                    return Promise.resolve((Object) null).then(ignore -> Promise.resolve(table));
                 })
                 .then(table -> {
                     table.setViewport(6, 14, null);
@@ -368,17 +377,18 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     table.setViewport(0, 10, null);
                     return Promise.resolve(table);
                 })
-                //test again over a 4ms delay, minimum task delay
+                // test again over a 4ms delay, minimum task delay
                 .then(waitFor(4))
                 .then(table -> {
                     table.setViewport(7, 17, null);
-                    return assertUpdateReceived(table, ignored->{}, 1000)
+                    return assertUpdateReceived(table, ignored -> {
+                    }, 1000)
                             .then(waitFor(JsTable.DEBOUNCE_TIME * 2))
                             .then(t -> {
                                 // force the debounce to be processed
                                 t.processSnapshot();
-                                t.getViewportData().then(vp->{
-//                            assertEquals(7, (int) vp.getOffset());
+                                t.getViewportData().then(vp -> {
+                                    // assertEquals(7, (int) vp.getOffset());
                                     assertEquals(11, (int) vp.getRows().length);
                                     return Promise.resolve(vp);
                                 });
@@ -397,7 +407,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     delayTestFinish(20_000);
 
-                    //first run, assume all columns
+                    // first run, assume all columns
                     return helperForViewportWithNoInitialItems(table, null, table.getColumns());
                 }).then(table -> {
                     // second, specify only one column to ensure that it is respected
@@ -407,7 +417,8 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
-    private IThenable<JsTable> helperForViewportWithNoInitialItems(JsTable t, Column[] requestColumns, JsArray<Column> expectedColumns) {
+    private IThenable<JsTable> helperForViewportWithNoInitialItems(JsTable t, Column[] requestColumns,
+            JsArray<Column> expectedColumns) {
         // wait until zero rows are present, so we can set the viewport and get a zero-row "snapshot"
         return waitFor(() -> t.getSize() == 0, 100, 2000, t)
                 .then(table -> {
@@ -426,7 +437,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     return waitForEventWhere(table, "updated", (CustomEvent<ViewportData> e) -> {
                         ViewportData viewport = (ViewportData) e.detail;
                         if (viewport.getRows().length != 1) {
-                            return false; //wrong data, wait for another event
+                            return false; // wrong data, wait for another event
                         }
                         assertEquals(expectedColumns.length, viewport.getColumns().length);
                         for (int i = 0; i < viewport.getColumns().length; i++) {
@@ -441,7 +452,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     return waitForEventWhere(table, "updated", (CustomEvent<ViewportData> e) -> {
                         ViewportData emptyViewport = (ViewportData) e.detail;
                         if (emptyViewport.getRows().length != 0) {
-                            return false; //wrong data, wait for another event
+                            return false; // wrong data, wait for another event
                         }
                         assertEquals(expectedColumns.length, emptyViewport.getColumns().length);
                         return true;
@@ -452,7 +463,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     return waitForEventWhere(table, "updated", (CustomEvent<ViewportData> e) -> {
                         ViewportData viewport = (ViewportData) e.detail;
                         if (viewport.getRows().length != 1) {
-                            return false; //wrong data, wait for another event
+                            return false; // wrong data, wait for another event
                         }
                         assertEquals(expectedColumns.length, viewport.getColumns().length);
                         for (int i = 0; i < viewport.getColumns().length; i++) {
@@ -464,11 +475,12 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 });
     }
 
-    private <T extends HasEventHandling> Promise<T> assertEventFiresOnce(T eventSource, String eventName, int intervalInMilliseconds) {
+    private <T extends HasEventHandling> Promise<T> assertEventFiresOnce(T eventSource, String eventName,
+            int intervalInMilliseconds) {
         return new Promise<>((resolve, reject) -> {
             int[] runCount = {0};
             console.log("adding " + eventName + " listener " + eventSource);
-            //apparent compiler bug, review in gwt 2.9
+            // apparent compiler bug, review in gwt 2.9
             RemoverFn unsub = Js.<HasEventHandling>uncheckedCast(eventSource)
                     .addEventListener(eventName, e -> {
                         runCount[0]++;
@@ -488,12 +500,12 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
         });
     }
 
-    private void assertThrowsException(Runnable r)  {
+    private void assertThrowsException(Runnable r) {
         try {
             r.run();
             fail("Expected exception");
         } catch (Exception ignore) {
-            //expected
+            // expected
         }
     }
 

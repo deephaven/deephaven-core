@@ -36,6 +36,7 @@ import static elemental2.dom.DomGlobal.console;
 public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     @JsMethod(namespace = JsPackage.GLOBAL, name = "import")
     private static native Promise<JsPropertyMap<Object>> importScript(String moduleName);
+
     private static Promise<Void> importDhInternal() {
         return importScript("dhinternal.js")
                 .then(module -> {
@@ -43,6 +44,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
                     return Promise.resolve((Void) null);
                 });
     }
+
     public static final String localServer = System.getProperty("dhTestServer", "http://localhost:10000");
 
     public static class TableSourceBuilder {
@@ -80,15 +82,15 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         return Js.cast(k);
     }
 
-    public JsArray<JsString> toJsString(String ... k) {
+    public JsArray<JsString> toJsString(String... k) {
         return Js.cast(k);
     }
 
     @JsProperty(name = "log", namespace = "console")
     private static native elemental2.core.Function getLog();
 
-    static <T> IThenable.ThenOnFulfilledCallbackFn<T, T> logOnSuccess(Object ... rest) {
-        return value-> {
+    static <T> IThenable.ThenOnFulfilledCallbackFn<T, T> logOnSuccess(Object... rest) {
+        return value -> {
             // GWT will puke if we have varargs being sent to varargs;
             // so we go JS on it and just grab the function to apply
             getLog().apply(null, rest);
@@ -96,15 +98,14 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         };
     }
 
-    static Promise<Object> log(Object ... rest) {
+    static Promise<Object> log(Object... rest) {
         getLog().apply(null, rest);
         return Promise.resolve(rest);
     }
 
     JsRunnable assertEventNotCalled(
             HasEventHandling handling,
-            String... events
-    ) {
+            String... events) {
         RemoverFn[] undos = new RemoverFn[events.length];
         for (int i = 0; i < events.length; i++) {
             final String ev = events[i];
@@ -113,7 +114,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
                 report("Expected " + ev + " to not be called; detail: " + (e.detail));
             });
         }
-        return ()->{
+        return () -> {
             for (RemoverFn undo : undos) {
                 undo.remove();
             }
@@ -122,25 +123,24 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     static <T> IThenable.ThenOnFulfilledCallbackFn<T, T> run(JsRunnable allow) {
-        return t->{
+        return t -> {
             allow.run();
             return Promise.resolve(t);
         };
     }
 
     static <T> Promise<T> expectFailure(Promise<?> state, T value) {
-        return state.then(val-> Promise.reject("Failed"),
-                error->Promise.resolve(value)
-        );
+        return state.then(val -> Promise.reject("Failed"),
+                error -> Promise.resolve(value));
     }
 
     /**
-     * Connects and authenticates to the specified server, and resolves once the specified query config has
-     * become available.
+     * Connects and authenticates to the specified server, and resolves once the specified query config has become
+     * available.
      */
     protected Promise<IdeSession> connect(TableSource tables) {
         TableSourceImpl impl = (TableSourceImpl) tables;
-        //start by delaying test finish by .5s so we fail fast in cases where we aren't set up right
+        // start by delaying test finish by .5s so we fail fast in cases where we aren't set up right
         delayTestFinish(500);
         return importDhInternal().then(module -> {
             CoreClient coreClient = new CoreClient(localServer, null);
@@ -164,7 +164,8 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         });
     }
 
-    private Promise<IdeSession> runAllScriptsInOrder(CancellablePromise<IdeSession> ideSession, IdeSession session, JsArray<String> code) {
+    private Promise<IdeSession> runAllScriptsInOrder(CancellablePromise<IdeSession> ideSession, IdeSession session,
+            JsArray<String> code) {
         Promise<IdeSession> result = ideSession;
         for (int i = 0; i < code.length; i++) {
             final int index = i;
@@ -186,15 +187,16 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
      */
     protected <T> Promise<T> report(Object error) {
         if (error instanceof String) {
-            reportUncaughtException(new RuntimeException((String)error));
+            reportUncaughtException(new RuntimeException((String) error));
         } else if (error instanceof Throwable) {
             reportUncaughtException((Throwable) error);
-        } if (error instanceof JsError) {
+        }
+        if (error instanceof JsError) {
             reportUncaughtException(new JavaScriptException(error));
         } else {
             reportUncaughtException(new RuntimeException(error.toString()));
         }
-        //keep failing down the chain in case someone else cares
+        // keep failing down the chain in case someone else cares
         return Promise.reject(error);
     }
 
@@ -217,12 +219,14 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
      * Helper method to add a listener to a table, and ensure that an update is recieved with the expected number of
      * items, within the specified timeout.
      *
-     * Prereq: have already requested a viewport on that table. Remember to request that within the same event loop,
-     * so that there isn't a data race and the update gets missed.
+     * Prereq: have already requested a viewport on that table. Remember to request that within the same event loop, so
+     * that there isn't a data race and the update gets missed.
      */
     protected Promise<JsTable> assertUpdateReceived(JsTable table, int count, int timeoutInMillis) {
-        return assertUpdateReceived(table, viewportData -> assertEquals(count, viewportData.getRows().length), timeoutInMillis);
+        return assertUpdateReceived(table, viewportData -> assertEquals(count, viewportData.getRows().length),
+                timeoutInMillis);
     }
+
     protected Promise<JsTable> assertUpdateReceived(JsTable table, Consumer<ViewportData> check, int timeoutInMillis) {
         return this.<JsTable, ViewportData>waitForEvent(table, JsTable.EVENT_UPDATED, e -> {
             ViewportData viewportData = e.detail;
@@ -236,27 +240,36 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
             return Promise.resolve(table);
         };
     }
+
     protected IThenable.ThenOnFulfilledCallbackFn<JsTable, JsTable> waitForTick(int timeout) {
-        return table -> waitForEvent(table, JsTable.EVENT_SIZECHANGED, ignored->{}, timeout);
+        return table -> waitForEvent(table, JsTable.EVENT_SIZECHANGED, ignored -> {
+        }, timeout);
     }
+
     protected IThenable.ThenOnFulfilledCallbackFn<JsTable, JsTable> waitForTickTwice(int timeout) {
         return table -> {
-            // wait for two ticks... one from setting the viewport, and then another for whenever the table actually ticks.
+            // wait for two ticks... one from setting the viewport, and then another for whenever the table actually
+            // ticks.
             // (if these happen out of order, they will still be very close)
-            return waitForEvent(table, JsTable.EVENT_SIZECHANGED, ignored->{}, timeout)
-                    .then(t-> waitForEvent(table, JsTable.EVENT_SIZECHANGED, ignored->{}, timeout));
+            return waitForEvent(table, JsTable.EVENT_SIZECHANGED, ignored -> {
+            }, timeout)
+                    .then(t -> waitForEvent(table, JsTable.EVENT_SIZECHANGED, ignored -> {
+                    }, timeout));
         };
     }
-    protected <V extends HasEventHandling, T> Promise<V> waitForEventWhere(V evented, String eventName, Predicate<CustomEvent<T>> check, int timeout) {
-        //note that this roughly reimplements the 'kill timer' so this can be run in parallel with itself or other similar steps
+
+    protected <V extends HasEventHandling, T> Promise<V> waitForEventWhere(V evented, String eventName,
+            Predicate<CustomEvent<T>> check, int timeout) {
+        // note that this roughly reimplements the 'kill timer' so this can be run in parallel with itself or other
+        // similar steps
         return new Promise<>((resolve, reject) -> {
             boolean[] complete = {false};
             console.log("adding " + eventName + " listener ", evented);
-            //apparent compiler bug, review in gwt 2.9
+            // apparent compiler bug, review in gwt 2.9
             RemoverFn unsub = Js.<HasEventHandling>uncheckedCast(evented)
                     .<T>addEventListener(eventName, e -> {
                         if (complete[0]) {
-                            return;//already done, but timeout hasn't cleared us yet
+                            return;// already done, but timeout hasn't cleared us yet
                         }
                         console.log("event ", e, " observed ", eventName, " for ", evented);
                         try {
@@ -274,13 +287,14 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
                     reject.onInvoke("Failed to complete in " + timeout + "ms " + evented);
                 }
                 complete[0] = true;
-                //complete already handled
+                // complete already handled
             }, timeout * TIMEOUT_SCALE);
 
         });
     }
 
-    protected <V extends HasEventHandling, T> Promise<V> waitForEvent(V evented, String eventName, Consumer<CustomEvent<T>> check, int timeout) {
+    protected <V extends HasEventHandling, T> Promise<V> waitForEvent(V evented, String eventName,
+            Consumer<CustomEvent<T>> check, int timeout) {
         return this.<V, T>waitForEventWhere(evented, eventName, e -> {
             check.accept(e);
             return true;
@@ -288,24 +302,28 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
 
-    protected static <T> Promise<T> promiseAllThen(T then, IThenable<?> ... promises) {
-        return Promise.all(promises).then(items->Promise.resolve(then));
+    protected static <T> Promise<T> promiseAllThen(T then, IThenable<?>... promises) {
+        return Promise.all(promises).then(items -> Promise.resolve(then));
     }
 
     protected <T> IThenable<T> waitFor(BooleanSupplier predicate, int checkInterval, int timeout, T result) {
         return new Promise<>((resolve, reject) -> {
-            schedule(predicate, checkInterval, () -> resolve.onInvoke(result), () -> reject.onInvoke("timeout of " + timeout + " exceeded"), timeout);
+            schedule(predicate, checkInterval, () -> resolve.onInvoke(result),
+                    () -> reject.onInvoke("timeout of " + timeout + " exceeded"), timeout);
         });
     }
+
     protected <T> IThenable.ThenOnFulfilledCallbackFn<T, T> waitFor(int millis) {
         return result -> new Promise<>((resolve, reject) -> {
             DomGlobal.setTimeout(p -> resolve.onInvoke(result), millis);
         });
     }
-    protected <T extends HasEventHandling> IThenable.ThenOnFulfilledCallbackFn<T, T> waitForEvent(T table, String eventName, int millis) {
+
+    protected <T extends HasEventHandling> IThenable.ThenOnFulfilledCallbackFn<T, T> waitForEvent(T table,
+            String eventName, int millis) {
         return result -> new Promise<>((resolve, reject) -> {
             boolean[] success = {false};
-            table.addEventListenerOneShot(eventName, e-> {
+            table.addEventListenerOneShot(eventName, e -> {
                 success[0] = true;
                 resolve.onInvoke(table);
             });
@@ -333,10 +351,12 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         }, checkInterval);
     }
 
-    protected Promise<JsTable> assertNextViewportIs(JsTable table, Function<JsTable, Column> column, String[] expected) {
+    protected Promise<JsTable> assertNextViewportIs(JsTable table, Function<JsTable, Column> column,
+            String[] expected) {
         return assertUpdateReceived(table, viewportData -> {
             String[] actual = Js.uncheckedCast(getColumnData(viewportData, column.apply(table)));
-            assertTrue("Expected " + Arrays.toString(expected) + ", found " + Arrays.toString(actual) + " in table " + table + " at state " + table.state(), Arrays.equals(expected, actual));
+            assertTrue("Expected " + Arrays.toString(expected) + ", found " + Arrays.toString(actual) + " in table "
+                    + table + " at state " + table.state(), Arrays.equals(expected, actual));
         }, 2000);
     }
 
@@ -347,13 +367,14 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     protected Promise<JsTable> assertNextViewportIs(JsTable table, double... expected) {
         return assertUpdateReceived(table, viewportData -> {
             double[] actual = Js.uncheckedCast(getColumnData(viewportData, table.findColumn("I")));
-            assertTrue("Expected " + Arrays.toString(expected) + ", found " + Arrays.toString(actual) + " in table " + table, Arrays.equals(expected, actual));
+            assertTrue("Expected " + Arrays.toString(expected) + ", found " + Arrays.toString(actual) + " in table "
+                    + table, Arrays.equals(expected, actual));
         }, 2000);
     }
 
     public static List<Column> filterColumns(JsTable table, JsPredicate<Column> filter) {
         List<Column> matches = new ArrayList<>();
-        table.getColumns().forEach((c, i, arr)->{
+        table.getColumns().forEach((c, i, arr) -> {
             if (filter.test(c)) {
                 matches.add(c);
             }

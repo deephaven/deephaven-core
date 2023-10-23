@@ -98,21 +98,22 @@ public class SubscriptionTableData {
                 arrayCopy.copyTo(localCopy, dest, dataColumn.getData(), positions[j]);
             }
 
-//            int j = 0;
-//            while (indexIter.hasNext()) {
-//                assert destIter.hasNext();
-//                long dest = destIter.nextLong();
-//                redirectedIndexes.put(indexIter.nextLong(), dest);
-//                arrayCopy.copyTo(localCopy, dest, dataColumn.getData(), j++);
-//            }
-//            assert !destIter.hasNext();
+            // int j = 0;
+            // while (indexIter.hasNext()) {
+            // assert destIter.hasNext();
+            // long dest = destIter.nextLong();
+            // redirectedIndexes.put(indexIter.nextLong(), dest);
+            // arrayCopy.copyTo(localCopy, dest, dataColumn.getData(), j++);
+            // }
+            // assert !destIter.hasNext();
         }
 
         return notifyUpdates(index, RangeSet.empty(), RangeSet.empty());
     }
 
     private long[] array(RangeSet rangeSet) {
-        return StreamSupport.longStream(Spliterators.spliterator(rangeSet.indexIterator(), Long.MAX_VALUE, 0), false).toArray();
+        return StreamSupport.longStream(Spliterators.spliterator(rangeSet.indexIterator(), Long.MAX_VALUE, 0), false)
+                .toArray();
     }
 
     public void shuffle(long[] destArray, long[] indexArray, int[] positions) {
