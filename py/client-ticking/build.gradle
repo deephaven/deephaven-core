@@ -4,15 +4,7 @@ plugins {
     id 'io.deephaven.deephaven-in-docker'
 }
 
-evaluationDependsOn(':cpp-client')
-
-configurations {
-    python {}
-}
-
-dependencies {
-    python project(':cpp-client')
-}
+evaluationDependsOn(':py-client')
 
 def prefix = '/opt/deephaven'
 
