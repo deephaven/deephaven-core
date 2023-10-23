@@ -4,6 +4,14 @@ plugins {
     id 'io.deephaven.deephaven-in-docker'
 }
 
+configurations {
+    pythonWheel
+}
+
+dependencies {
+    pythonWheel project(':py-client')
+}
+
 evaluationDependsOn(':cpp-client')
 
 def prefix = '/opt/deephaven'
@@ -28,20 +36,26 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
             include 'README.md'
             include 'src/**'
         }
+        from(configurations.pythonWheel) {
+            into 'wheels'
+        }
     }
     copyOut {
         into layout.buildDirectory.dir('wheel')
     }
     dockerfile {
-        from('deephaven/py-client:local-build')
+        from('deephaven/cpp-client:local-build')
         runCommand("""mkdir -p \\
                         /out \\
                         ${prefix}/log \\
-                        ${prefix}/src/py-client-ticking/src
+                        ${prefix}/src/py-client-ticking/src \\
+                        ${prefix}/src/py-client-ticking/in-wheels
+
                    """)
         copyFile('setup.py', "${prefix}/src/py-client-ticking")
         copyFile('README.md', "${prefix}/src/py-client-ticking")
         copyFile('src/', "${prefix}/src/py-client-ticking/src/")
+        copyFile('wheels/', "${prefix}/src/py-client-ticking/in-wheels")
         runCommand("PREFIX=${prefix}; " +
                    '''set -eux ; \
                      cd "${PREFIX}/src/py-client-ticking"; \
@@ -51,13 +65,14 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
                        LDFLAGS="-L${DHCPP}/lib" \
                        python3 setup.py build_ext -i; \
                      python3 setup.py bdist_wheel; \
+                     pip3 install in-wheels/*.whl; \
                      pip3 install --force --no-deps dist/*.whl; \
                      ln dist/*.whl /out; \
                      cd /; \
                      rm -fr "${PREFIX}/src/py-client-ticking"
                    ''')
     }
-    parentContainers = [ project.tasks.getByPath(':py-client:pyClient') ]
+    parentContainers = [ project.tasks.getByPath(':cpp-client:cppClient') ]
 }
 
 def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTicking') {
@@ -72,7 +87,7 @@ def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTickin
         from('deephaven/py-client-ticking:local-build')
         runCommand("PREFIX=${prefix}; " +
                    '''set -eux ; \
-                      pip3 install --force --no-deps /out/*.whl; \
+                      pip3 install unittest-xml-reporting; \
                       rm -fr /out; \
                       mkdir -p \
                         /out/report \
