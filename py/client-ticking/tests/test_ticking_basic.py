@@ -13,14 +13,21 @@ class TickingBasicTestCase(unittest.TestCase):
         session = dh.Session()
         half_second_in_nanos = 500 * 1000 * 1000
         table = session.time_table(period=half_second_in_nanos).update(formulas=["Col1 = i"])
-        table_added_count = 0
+        table_added_last_col1_seen = -1
+        table_added_update_count = 0
         def update_table_added(added):
-            nonlocal table_added_count
-            table_added_count += len(added)
-        listener_handle = dhtl.listen(table, lambda update : update_table_added(update.added()))
+            nonlocal table_added_update_count
+            nonlocal table_added_last_col1_seen
+            for value in added.to_pylist():
+                prev = table_added_last_col1_seen
+                table_added_last_col1_seen = value
+                if prev != -1:
+                    self.assertTrue(prev + 1 == table_added_last_col1_seen)
+            table_added_update_count += 1
+        listener_handle = dhtl.listen(table, lambda update : update_table_added(update.added('Col1')))
         listener_handle.start()
         time.sleep(3)
-        self.assertTrue(4 <= table_added_count and table_added_count <= 10)
+        self.assertTrue(2 >= table_added_update_count)
         listener_handle.stop()
         session.close()
 
