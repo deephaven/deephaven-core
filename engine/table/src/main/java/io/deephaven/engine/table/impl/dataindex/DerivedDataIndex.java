@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl.dataindex;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -16,7 +15,6 @@ import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.WrappedRowSetRowRedirection;
-import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,8 +45,6 @@ public class DerivedDataIndex extends AbstractDataIndex {
 
     private SoftReference<PositionLookup> cachedPositionLookup = new SoftReference<>(null);
     private long cachedPositionLookupStep = -1;
-    /** Provides fast lookup from keys to positions in the table **/
-    private TObjectIntHashMap<Object> cachedPositionMap;
 
     public static DerivedDataIndex from(@NotNull final DataIndex index,
             @Nullable final RowSet intersectRowSet,
@@ -293,24 +289,47 @@ public class DerivedDataIndex extends AbstractDataIndex {
                 for (int ii = 0; ii < rs.size(); ii++) {
                     final RowSet permutedRowSet = mutator.apply(indexChunk.get(ii));
                     if (permutedRowSet != null && permutedRowSet.isNonempty()) {
+                        // We'll include this row set in the mutated result table.
                         resultIndexSource.set(outputPosition++, permutedRowSet);
                         redirectionBuilder.appendKey(rsChunk.get(ii));
                     }
                 }
             }
 
-            final WrappedRowSetRowRedirection redirection =
-                    new WrappedRowSetRowRedirection(redirectionBuilder.build().toTracking());
-
+            // Build the redirection row set, note that we may not actually use it.
+            final WritableRowSet redirRowSet = redirectionBuilder.build();
             final Map<String, ColumnSource<?>> csm = new LinkedHashMap<>();
 
-            // Add a redirected column source for each key column.
-            for (Map.Entry<ColumnSource<?>, String> entry : this.keyColumnMap().entrySet()) {
-                csm.put(entry.getValue(),
-                        RedirectedColumnSource.maybeRedirect(redirection, entry.getKey()));
+            if (redirRowSet.size() == indexTable.size()) {
+                // We are including all rows from the index table, we don't need Redirected sources.
+                for (Map.Entry<String, ? extends ColumnSource<?>> entry : indexTable.getColumnSourceMap().entrySet()) {
+                    final String columnName = entry.getKey();
+                    if (columnName.equals(INDEX_COL_NAME)) {
+                        // Add the result row set column source.
+                        csm.put(columnName, resultIndexSource);
+                    } else {
+                        csm.put(columnName, entry.getValue());
+                    }
+                }
+
+                // Close the temporary row set.
+                redirRowSet.close();
+            } else {
+                final WrappedRowSetRowRedirection redirection =
+                        new WrappedRowSetRowRedirection(redirRowSet.toTracking());
+
+                // Add a redirected column source for each key column.
+                for (Map.Entry<String, ? extends ColumnSource<?>> entry : indexTable.getColumnSourceMap().entrySet()) {
+                    final String columnName = entry.getKey();
+                    if (columnName.equals(INDEX_COL_NAME)) {
+                        // Add the result row set column source.
+                        csm.put(columnName, resultIndexSource);
+                    } else {
+                        csm.put(columnName,
+                                RedirectedColumnSource.maybeRedirect(redirection, entry.getValue()));
+                    }
+                }
             }
-            // Add the result row set column source.
-            csm.put(INDEX_COL_NAME, resultIndexSource);
 
             return new QueryTable(RowSetFactory.flat(outputPosition).toTracking(), csm);
         }

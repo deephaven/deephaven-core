@@ -5,9 +5,10 @@ import io.deephaven.api.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.PrevColumnSource;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.by.AggregationControl;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -35,7 +36,6 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
     @NotNull
     final String[] keyColumnNames;
 
-    @NotNull
     private AggregationRowLookup lookupFunction;
 
     public TableBackedDataIndexImpl(@NotNull final QueryTable sourceTable,
@@ -91,7 +91,11 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
             indexTable = QueryPerformanceRecorder
                     .withNugget("Build Table Backed Data Index [" + String.join(", ", keyColumnNames) + "]", () -> {
                         final Table groupedTable = sourceTable
-                                .aggNoMemo(AggregationProcessor.forExposeGroupRowSets(), false, null,
+                                .aggNoMemo(
+                                        AggregationControl.IGNORE_GROUPING,
+                                        AggregationProcessor.forExposeGroupRowSets(),
+                                        false,
+                                        null,
                                         ColumnName.from(keyColumnNames));
 
                         lookupFunction = AggregationProcessor.getRowLookup(groupedTable);

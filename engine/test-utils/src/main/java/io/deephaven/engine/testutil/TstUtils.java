@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -570,6 +571,16 @@ public class TstUtils {
         final Map<String, ColumnSource<?>> columns = getColumnSourcesFromHolders(rowSet, columnHolders);
         QueryTable queryTable = new QueryTable(rowSet, columns);
         queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
+
+        // Add grouping indexes for the grouping columns.
+        final DataIndexer dataIndexer = DataIndexer.of(rowSet);;
+        for (int i = 0; i < columnHolders.length; i++) {
+            if (columnHolders[i].grouped) {
+                final ColumnSource<?> groupedSource = queryTable.getColumnSource(columnHolders[i].name);
+                dataIndexer.createDataIndex(queryTable, groupedSource);
+            }
+        }
+
         return queryTable;
     }
 
@@ -587,6 +598,16 @@ public class TstUtils {
         final QueryTable queryTable = testTable(rowSet, columnHolders);
         queryTable.setRefreshing(true);
         queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
+
+        // Add grouping indexes for the grouping columns.
+        final DataIndexer dataIndexer = DataIndexer.of(rowSet);;
+        for (int i = 0; i < columnHolders.length; i++) {
+            if (columnHolders[i].grouped) {
+                final ColumnSource<?> groupedSource = queryTable.getColumnSource(columnHolders[i].name);
+                dataIndexer.createDataIndex(queryTable, groupedSource);
+            }
+        }
+
         return queryTable;
     }
 

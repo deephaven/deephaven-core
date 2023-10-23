@@ -25,7 +25,14 @@ public class AggregationControl {
     public static final AggregationControl DEFAULT_FOR_OPERATOR = new AggregationControl() {
         @Override
         public boolean considerGrouping(@NotNull Table table, @NotNull ColumnSource<?>[] sources) {
-            return sources.length == 1;
+            return true;
+        }
+    };
+
+    public static final AggregationControl IGNORE_GROUPING = new AggregationControl() {
+        @Override
+        public boolean considerGrouping(@NotNull Table table, @NotNull ColumnSource<?>[] sources) {
+            return false;
         }
     };
 

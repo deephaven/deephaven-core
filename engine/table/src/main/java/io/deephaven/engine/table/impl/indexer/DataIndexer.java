@@ -4,16 +4,12 @@
 package io.deephaven.engine.table.impl.indexer;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.impl.ImmutableColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndexImpl;
-import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,47 +36,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
     @Override
     public void rowSetChanged() {
-        if (clearStaticIndexes(dataIndexes) == 0) {
-            Assert.eqTrue(dataIndexes.isEmpty(), "dataIndexes.isEmpty()");
-            dataIndexes = null;
-        }
-    }
-
-    /** Recursively release all static indexes in this map and return the count of refreshing indexes that remain. **/
-    private int clearStaticIndexes(WeakHashMap<ColumnSource<?>, DataIndexCache> indexMap) {
-        int refreshingIndexCount = 0;
-        final Iterator<Map.Entry<ColumnSource<?>, DataIndexCache>> iterator = indexMap.entrySet().iterator();
-
-        while (iterator.hasNext()) {
-            final Map.Entry<ColumnSource<?>, DataIndexCache> entry = iterator.next();
-            final DataIndexCache cache = entry.getValue();
-
-            // Count how many refreshing indexes are at or below this level.
-            int cacheRefreshingIndexCount = 0;
-            if (cache.dataIndexes != null) {
-                final int subRefreshingIndexCount = clearStaticIndexes(cache.dataIndexes);
-                if (subRefreshingIndexCount == 0) {
-                    Assert.eqTrue(cache.dataIndexes.isEmpty(), "cache.dataIndexes.isEmpty()");
-                    cache.dataIndexes = null;
-                }
-                cacheRefreshingIndexCount += subRefreshingIndexCount;
-            }
-            if (cache.index != null && cache.index.isRefreshing()) {
-                ++cacheRefreshingIndexCount;
-            } else {
-                cache.index = null;
-            }
-
-            // If we have no more use for this cache, kill it.
-            if (cacheRefreshingIndexCount == 0) {
-                iterator.remove();
-            }
-
-            // Accumulate the count of refreshing indexes.
-            refreshingIndexCount += cacheRefreshingIndexCount;
-        }
-
-        return refreshingIndexCount;
+        // TODO: do we even need this call?
     }
 
     private static class DataIndexCache {
@@ -112,6 +68,10 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     public boolean hasDataIndex(final List<ColumnSource<?>> keyColumns) {
         if (keyColumns.size() == 0) {
             return true;
+        }
+
+        if (dataIndexes == null) {
+            return false;
         }
 
         return findIndex(dataIndexes, keyColumns) != null;
@@ -197,6 +157,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
         // Create an index, add it to the correct map and return it.
         final DataIndex index = new TableBackedDataIndexImpl(tableToUse, keys);
+        if (dataIndexes == null) {
+            dataIndexes = new WeakHashMap<>();
+        }
         addIndex(dataIndexes, keys, index);
         return index;
     }
@@ -216,7 +179,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     public List<DataIndex> dataIndexes() {
         final List<DataIndex> result = new ArrayList<>();
 
-        addIndexesToList(dataIndexes, result);
+        if (dataIndexes != null) {
+            addIndexesToList(dataIndexes, result);
+        }
 
         return result;
     }

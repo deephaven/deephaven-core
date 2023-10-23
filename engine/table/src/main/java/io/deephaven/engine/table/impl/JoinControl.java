@@ -49,8 +49,8 @@ public class JoinControl {
         return DEFAULT_TARGET_LOAD_FACTOR;
     }
 
-    static boolean useDataIndex(Table leftTable, ColumnSource<?>[] leftSources) {
-        return DataIndexer.of(leftTable.getRowSet()).hasDataIndex(leftSources);
+    static boolean useDataIndex(Table table, ColumnSource<?>[] sources) {
+        return DataIndexer.of(table.getRowSet()).hasDataIndex(sources);
     }
 
     boolean buildLeft(QueryTable leftTable, Table rightTable) {
