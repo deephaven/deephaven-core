@@ -29,6 +29,7 @@ public abstract class JettyConfig implements ServerConfig {
     public static final String HTTP_STREAM_TIMEOUT = "http2.stream.idleTimeoutMs";
     public static final String HTTP_COMPRESSION = "http.compression";
     public static final String SNI_HOST_CHECK = "https.sniHostCheck";
+    public static final String HTTP_JSPLUGINS = "http.jsPlugins";
 
     /**
      * Values to indicate what kind of websocket support should be offered.
@@ -80,8 +81,10 @@ public abstract class JettyConfig implements ServerConfig {
      * <p>
      * Additionally, parses the property {@value HTTP_WEBSOCKETS} into {@link Builder#websockets(WebsocketsSupport)},
      * {@value HTTP_HTTP1} into {@link Builder#http1(Boolean)}, {@value HTTP_STREAM_TIMEOUT} into
-     * {@link Builder#http2StreamIdleTimeout(long)}, and {@value HTTP_COMPRESSION} into
-     * {@link Builder#httpCompression(Boolean)}
+     * {@link Builder#http2StreamIdleTimeout(long)}, {@value HTTP_COMPRESSION} into
+     * {@link Builder#httpCompression(Boolean)}, {@value SNI_HOST_CHECK} into {@link Builder#sniHostCheck(boolean)},
+     * {@value HTTP_STREAM_TIMEOUT} into {@link Builder#http2StreamIdleTimeout(long)}, and {@value HTTP_JSPLUGINS} into
+     * {@link Builder#jsPlugins(boolean)}.
      *
      * @param config the config
      * @return the builder
@@ -93,6 +96,7 @@ public abstract class JettyConfig implements ServerConfig {
         String httpCompression = config.getStringWithDefault(HTTP_COMPRESSION, null);
         String sniHostCheck = config.getStringWithDefault(SNI_HOST_CHECK, null);
         String h2StreamIdleTimeout = config.getStringWithDefault(HTTP_STREAM_TIMEOUT, null);
+        String jsPlugins = config.getStringWithDefault(HTTP_JSPLUGINS, null);
         if (httpWebsockets != null) {
             switch (httpWebsockets.toLowerCase()) {
                 case "true":// backwards compatible
@@ -121,6 +125,9 @@ public abstract class JettyConfig implements ServerConfig {
         }
         if (sniHostCheck != null) {
             builder.sniHostCheck(Boolean.parseBoolean(sniHostCheck));
+        }
+        if (jsPlugins != null) {
+            builder.jsPlugins(Boolean.parseBoolean(jsPlugins));
         }
         return builder;
     }
@@ -163,10 +170,16 @@ public abstract class JettyConfig implements ServerConfig {
     public abstract Boolean httpCompression();
 
     /**
+     * Include JS plugins.
+     */
+    @Nullable
+    public abstract Boolean jsPlugins();
+
+    /**
      * How long can a stream be idle in milliseconds before it should be shut down. Non-positive values disable this
      * feature. Default is zero.
      */
-    public long http2StreamIdleTimeoutOrDefault() {
+    public final long http2StreamIdleTimeoutOrDefault() {
         return http2StreamIdleTimeout().orElse(0);
     }
 
@@ -212,6 +225,14 @@ public abstract class JettyConfig implements ServerConfig {
         return httpCompression == null || httpCompression;
     }
 
+    /**
+     * Returns {@link #jsPlugins()} if explicitly set, otherwise returns {@code true}.
+     */
+    public final boolean jsPluginsOrDefault() {
+        final Boolean jsPlugins = jsPlugins();
+        return jsPlugins == null || jsPlugins;
+    }
+
     public interface Builder extends ServerConfig.Builder<JettyConfig, Builder> {
 
         Builder websockets(WebsocketsSupport websockets);
@@ -223,5 +244,7 @@ public abstract class JettyConfig implements ServerConfig {
         Builder http2StreamIdleTimeout(long timeoutInMillis);
 
         Builder sniHostCheck(boolean sniHostCheck);
+
+        Builder jsPlugins(Boolean jsPlugins);
     }
 }

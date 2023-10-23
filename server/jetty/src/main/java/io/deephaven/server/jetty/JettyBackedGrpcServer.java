@@ -94,10 +94,14 @@ public class JettyBackedGrpcServer implements GrpcServer {
             final GrpcFilter filter) {
         jetty = new Server();
         jetty.addConnector(createConnector(jetty, config));
-        try {
-            jsPlugins = JsPlugins.create();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        if (config.jsPluginsOrDefault()) {
+            try {
+                jsPlugins = JsPlugins.create();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        } else {
+            jsPlugins = null;
         }
 
         final WebAppContext context =
@@ -182,10 +186,12 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // Wire up the provided grpc filter
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
 
-        // Wire up /js-plugins/*
-        // TODO(deephaven-core#4620): Add js-plugins version-aware caching
-        context.addFilter(NoCacheFilter.class, JS_PLUGINS_PATH_SPEC, EnumSet.noneOf(DispatcherType.class));
-        context.addServlet(servletHolder("js-plugins", jsPlugins.filesystem()), JS_PLUGINS_PATH_SPEC);
+        if (jsPlugins != null) {
+            // Wire up /js-plugins/*
+            // TODO(deephaven-core#4620): Add js-plugins version-aware caching
+            context.addFilter(NoCacheFilter.class, JS_PLUGINS_PATH_SPEC, EnumSet.noneOf(DispatcherType.class));
+            context.addServlet(servletHolder("js-plugins", jsPlugins.filesystem()), JS_PLUGINS_PATH_SPEC);
+        }
 
         // Set up websockets for grpc-web - depending on configuration, we can register both in case we encounter a
         // client using "vanilla"
@@ -247,7 +253,10 @@ public class JettyBackedGrpcServer implements GrpcServer {
     }
 
     public Consumer<JsPlugin> jsPluginConsumer() {
-        return jsPlugins;
+        return jsPlugins == null
+                ? jsPlugin -> {
+                }
+                : jsPlugins;
     }
 
     @Override
