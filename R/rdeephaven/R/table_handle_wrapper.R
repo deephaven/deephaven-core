@@ -1,12 +1,101 @@
 #' @title Deephaven TableHandles
+#' @md
 #' @description
 #' A TableHandle holds a reference to a Deephaven Table on the server, and provides methods for operating on that table.
 #' Note that TableHandles should not be instantiated directly by user code, but rather by server calls accessible from
-#' the `Client` class. See `?Client` for more information.
+#' the [`Client`][Client] class. See `?Client` for more information.
+#'
+#' @section
+#' Naming tables on the server:
+#' When a TableHandle is created, it is not automatically bound to a variable name on the server. This means that the
+#' TableHandle that gets created is _the only_ reference to the table that's been created. Importantly, the variable
+#' name given to the TableHandle is purely a _local_ variable, and has no relationship to that table's name on the server.
+#' For this reason, code like the following:
+#' ```r
+#' client <- Client$new(...)
+#' df1 <- data.frame(x = 1:10, y = 11:20)
+#' t1 <- client$import_table(df1)
+#' client$run_script("t2 = t1.update('z = x + y')")
+#' ```
+#' will not run, because the table referenced by the local variable `t1` is not named on the server at all. To
+#' make the table referenced by `t1` accessible by name on the server (e.g., from within query strings), you must
+#' _bind it to a variable_ with the method `bind_to_variable()`. We adopt the convention of calling _local TableHandles_
+#' `th1`, `th2`, etc., and _server-side tables_ `t1`, `t2`, etc., to help distinguish between the two. So, the above
+#' code should be written as:
+#' ```r
+#' client <- Client$new(...)
+#' df1 <- data.frame(x = 1:10, y = 11:20)
+#' th1 <- client$import_table(df1)
+#' th1$bind_to_variable("t1")
+#' client$run_script("t2 = t1.update('z = x + y')")
+#' ```
+#' You can then create a local TableHandle to reference `t2` as follows:
+#' ```r
+#' th2 <- client$open_table("t2")
+#' ```
+#' The above code is not best practice; calling `update()` directly on `t1` would be preferred to running a script.
+#' It is, however, more illustrative of the relationship between local TableHandles and server-side tables. The best
+#' way to accomplish the above would be the following:
+#' ```r
+#' client <- Client$new(...)
+#' df1 <- data.frame(x = 1:10, y = 11:20)
+#' th1 <- client$import_table(df1)
+#' th2 <- th1$update("z = x + y")
+#'
+#' # this is necessary to access the tables from within query strings
+#' th1$bind_to_variable("t1")
+#' th2$bind_to_variable("t2")
+#' ```
 #'
 #' @usage NULL
 #' @format NULL
 #' @docType class
+#'
+#' @examples
+#' \dontrun{
+#' library(rdeephaven)
+#'
+#' # connecting to Deephaven server
+#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#'
+#' # create a data frame, push it to the server, and retrieve a TableHandle referencing the new table
+#' df <- data.frame(
+#'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:50],
+#'   boolCol = sample(c(TRUE,FALSE), 50, TRUE),
+#'   col1 = sample(1000, size = 50, replace = TRUE),
+#'   col2 = sample(1000, size = 50, replace = TRUE),
+#'   col3 = 1:50
+#' )
+#' th <- client$import_table(df)
+#'
+#' # get the dimension of the table
+#' dim(th)
+#'
+#' # get the last 10 rows of the table
+#' th2 <- tail(th, 10)
+#' as.data.frame(th2)
+#'
+#' # create several new columns
+#' th3 <- th$update(c("col4 = col1 + col2", "charCol = col3 % 2 == 0 ? `A` : `B`"))
+#' as.data.frame(th3)
+#'
+#' # filter based on parity of col3
+#' th4 <- th3$where("charCol == `A`")
+#' as.data.frame(th4)
+#'
+#' # select a subset of columns
+#' th5 <- th3$select(c("timeCol", "col1", "col4"))
+#' as.data.frame(th5)
+#'
+#' # drop timestamp column and get sum of remaining columns grouped by boolCol and charCol
+#' th6 <- th3$
+#'   drop_columns("timeCol")$
+#'   sum_by(c("boolCol", "charCol"))
+#' as.data.frame(th6)
+#'
+#' client$close()
+#' }
+#'
 #' @export
 TableHandle <- R6Class("TableHandle",
   cloneable = FALSE,
@@ -74,7 +163,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Gets the dimensions of the table referenced by this TableHandle. Equivalent to c(nrow, ncol).
+    #' Gets the dimensions of the table referenced by this TableHandle. Equivalent to `c(nrow, ncol)`.
     #' @return A vector of length 2, where the first element is the number of rows in the table and the second
     #' element is the number of columns in the table.
     dim = function() {
@@ -82,7 +171,7 @@ TableHandle <- R6Class("TableHandle",
     },
 
     #' @description
-    #' Merges several tables into one table on the server. The tables must have the same schema as this table, and can
+    #' Merges several tables into one table on the server. All tables must have the same schema as this table, and can
     #' be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
     #' @param ... Arbitrary number of TableHandles or vectors of TableHandles with a schema matching this table.
     #' @return A TableHandle referencing the new table.
@@ -216,8 +305,8 @@ TableHandle <- R6Class("TableHandle",
     #' The aggregations are defined by the provided operations, which support incremental aggregations over the
     #' corresponding rows in the table. The aggregations will apply position or time-based windowing and compute the
     #' results over the entire table or each row group as identified by the provided key columns.
-    #' See `?UpdateBy` for more information.
-    #' @param ops UpdateByOp or list of UpdateByOps to perform on non-grouping columns.
+    #' See more detailed documentation [here][UpdateBy] or run `?UpdateBy`.
+    #' @param ops `UpdateByOp` or list of `UpdateByOp`s to perform on non-grouping columns.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     update_by = function(ops, by = character()) {
@@ -230,8 +319,8 @@ TableHandle <- R6Class("TableHandle",
 
     #' @description
     #' Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
-    #' aggregation(s) specified. See `?Aggregations` for more information.
-    #' @param aggs AggOp or list of AggOps to perform on non-grouping columns.
+    #' aggregation(s) specified. See more detailed documentation [here][AggBy] or run `?AggBy`.
+    #' @param aggs `AggOp` or list of `AggOp`s to perform on non-grouping columns.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     agg_by = function(aggs, by = character()) {
@@ -249,10 +338,10 @@ TableHandle <- R6Class("TableHandle",
 
     #' @description
     #' Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
-    #' aggregation(s) specified. See `?Aggregations` for more information.
-    #' This method applies the aggregation to all columns of the table, so it can only
+    #' aggregation(s) specified. See more detailed documentation [here][AggBy] or run `?AggBy`.
+    #' This method applies the aggregation to all non-grouping columns of the table, so it can only
     #' accept one aggregation at a time.
-    #' @param agg Aggregation to perform on non-grouping columns.
+    #' @param agg `AggOp` to perform on non-grouping columns.
     #' @param by String or list of strings denoting the names of the columns to group by.
     #' @return A TableHandle referencing the new table.
     agg_all_by = function(agg, by = character()) {
@@ -506,11 +595,23 @@ dim.TableHandle <- function(x) {
   return(x$dim())
 }
 
+
+#' @name
+#' merge_tables
+#' @title
+#' Merge tables with the same schema
+#' @md
+#'
 #' @description
-#' Merges several tables into one table on the server. The tables must have the same schema, and can
+#' Merges several tables into one table on the server. All tables must have the same schema, and can
 #' be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
-#' @param ... Arbitrary number of TableHandles or vectors of TableHandles with a uniform schema.
+#'
+#' @param ... Arbitrary number of TableHandles or vectors of TableHandles with a schema matching this table.
 #' @return A TableHandle referencing the new table.
+#'
+#' @examples
+#' print("hello!")
+#'
 #' @export
 merge_tables <- function(...) {
   table_list <- unlist(c(...))

@@ -7,7 +7,99 @@
 \description{
 A TableHandle holds a reference to a Deephaven Table on the server, and provides methods for operating on that table.
 Note that TableHandles should not be instantiated directly by user code, but rather by server calls accessible from
-the `Client` class. See `?Client` for more information.
+the \code{\link{Client}} class. See \code{?Client} for more information.
+}
+\section{Naming tables on the server}{
+
+When a TableHandle is created, it is not automatically bound to a variable name on the server. This means that the
+TableHandle that gets created is \emph{the only} reference to the table that's been created. Importantly, the variable
+name given to the TableHandle is purely a \emph{local} variable, and has no relationship to that table's name on the server.
+For this reason, code like the following:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{client <- Client$new(...)
+df1 <- data.frame(x = 1:10, y = 11:20)
+t1 <- client$import_table(df1)
+client$run_script("t2 = t1.update('z = x + y')")
+}\if{html}{\out{</div>}}
+
+will not run, because the table referenced by the local variable \code{t1} is not named on the server at all. To
+make the table referenced by \code{t1} accessible by name on the server (e.g., from within query strings), you must
+\emph{bind it to a variable} with the method \code{bind_to_variable()}. We adopt the convention of calling \emph{local TableHandles}
+\code{th1}, \code{th2}, etc., and \emph{server-side tables} \code{t1}, \code{t2}, etc., to help distinguish between the two. So, the above
+code should be written as:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{client <- Client$new(...)
+df1 <- data.frame(x = 1:10, y = 11:20)
+th1 <- client$import_table(df1)
+th1$bind_to_variable("t1")
+client$run_script("t2 = t1.update('z = x + y')")
+}\if{html}{\out{</div>}}
+
+You can then create a local TableHandle to reference \code{t2} as follows:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{th2 <- client$open_table("t2")
+}\if{html}{\out{</div>}}
+
+The above code is not best practice; calling \code{update()} directly on \code{t1} would be preferred to running a script.
+It is, however, more illustrative of the relationship between local TableHandles and server-side tables. The best
+way to accomplish the above would be the following:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{client <- Client$new(...)
+df1 <- data.frame(x = 1:10, y = 11:20)
+th1 <- client$import_table(df1)
+th2 <- th1$update("z = x + y")
+
+# this is necessary to access the tables from within query strings
+th1$bind_to_variable("t1")
+th2$bind_to_variable("t2")
+}\if{html}{\out{</div>}}
+}
+
+\examples{
+\dontrun{
+library(rdeephaven)
+
+# connecting to Deephaven server
+client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+
+# create a data frame, push it to the server, and retrieve a TableHandle referencing the new table
+df <- data.frame(
+  timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:50],
+  boolCol = sample(c(TRUE,FALSE), 50, TRUE),
+  col1 = sample(1000, size = 50, replace = TRUE),
+  col2 = sample(1000, size = 50, replace = TRUE),
+  col3 = 1:50
+)
+th <- client$import_table(df)
+
+# get the dimension of the table
+dim(th)
+
+# get the last 10 rows of the table
+th2 <- tail(th, 10)
+as.data.frame(th2)
+
+# create several new columns
+th3 <- th$update(c("col4 = col1 + col2", "charCol = col3 \% 2 == 0 ? `A` : `B`"))
+as.data.frame(th3)
+
+# filter based on parity of col3
+th4 <- th3$where("charCol == `A`")
+as.data.frame(th4)
+
+# select a subset of columns
+th5 <- th3$select(c("timeCol", "col1", "col4"))
+as.data.frame(th5)
+
+# drop timestamp column and get sum of remaining columns grouped by boolCol and charCol
+th6 <- th3$
+  drop_columns("timeCol")$
+  sum_by(c("boolCol", "charCol"))
+as.data.frame(th6)
+
+client$close()
+}
+
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -33,6 +125,7 @@ the `Client` class. See `?Client` for more information.
 \item \href{#method-TableHandle-where}{\code{TableHandle$where()}}
 \item \href{#method-TableHandle-group_by}{\code{TableHandle$group_by()}}
 \item \href{#method-TableHandle-ungroup}{\code{TableHandle$ungroup()}}
+\item \href{#method-TableHandle-update_by}{\code{TableHandle$update_by()}}
 \item \href{#method-TableHandle-agg_by}{\code{TableHandle$agg_by()}}
 \item \href{#method-TableHandle-agg_all_by}{\code{TableHandle$agg_all_by()}}
 \item \href{#method-TableHandle-first_by}{\code{TableHandle$first_by()}}
@@ -107,7 +200,7 @@ Binds the table referenced by this TableHandle to a variable on the server, so t
 \if{html}{\out{<a id="method-TableHandle-head"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-head}{}}}
 \subsection{Method \code{head()}}{
-Creates a new table containing the first `n` rows of this table.
+Creates a new table containing the first \code{n} rows of this table.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$head(n)}\if{html}{\out{</div>}}
 }
@@ -127,7 +220,7 @@ A TableHandle referencing the new table.
 \if{html}{\out{<a id="method-TableHandle-tail"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-tail}{}}}
 \subsection{Method \code{tail()}}{
-Creates a new table containing the last `n` rows of this table.
+Creates a new table containing the last \code{n} rows of this table.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$tail(n)}\if{html}{\out{</div>}}
 }
@@ -173,7 +266,7 @@ The number of columns in the table.
 \if{html}{\out{<a id="method-TableHandle-dim"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-dim}{}}}
 \subsection{Method \code{dim()}}{
-Gets the dimensions of the table referenced by this TableHandle. Equivalent to c(nrow, ncol).
+Gets the dimensions of the table referenced by this TableHandle. Equivalent to \code{c(nrow, ncol)}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$dim()}\if{html}{\out{</div>}}
 }
@@ -187,7 +280,7 @@ element is the number of columns in the table.
 \if{html}{\out{<a id="method-TableHandle-merge"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-merge}{}}}
 \subsection{Method \code{merge()}}{
-Merges several tables into one table on the server. The tables must have the same schema as this table, and can
+Merges several tables into one table on the server. All tables must have the same schema as this table, and can
 be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$merge(...)}\if{html}{\out{</div>}}
@@ -342,7 +435,7 @@ A TableHandle referencing the new table.
 \if{latex}{\out{\hypertarget{method-TableHandle-drop_columns}{}}}
 \subsection{Method \code{drop_columns()}}{
 Creates a new table that has the same number of rows as this table,
-but omits the columns specified in `cols`.
+but omits the columns specified in \code{cols}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$drop_columns(cols = character())}\if{html}{\out{</div>}}
 }
@@ -421,11 +514,37 @@ A TableHandle referencing the new table.
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-update_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-update_by}{}}}
+\subsection{Method \code{update_by()}}{
+Creates a table with additional columns calculated from window-based aggregations of columns in this table.
+The aggregations are defined by the provided operations, which support incremental aggregations over the
+corresponding rows in the table. The aggregations will apply position or time-based windowing and compute the
+results over the entire table or each row group as identified by the provided key columns.
+See more detailed documentation \link[=UpdateBy]{here} or run \code{?UpdateBy}.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$update_by(ops, by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{ops}}{\code{UpdateByOp} or list of \code{UpdateByOp}s to perform on non-grouping columns.}
+
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TableHandle-agg_by"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-agg_by}{}}}
 \subsection{Method \code{agg_by()}}{
 Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
-aggregation(s) specified. See `?Aggregations` for more information.
+aggregation(s) specified. See more detailed documentation \link[=AggBy]{here} or run \code{?AggBy}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$agg_by(aggs, by = character())}\if{html}{\out{</div>}}
 }
@@ -433,7 +552,7 @@ aggregation(s) specified. See `?Aggregations` for more information.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{aggs}}{Aggregation or list of Aggregations to perform on non-grouping columns.}
+\item{\code{aggs}}{\code{AggOp} or list of \code{AggOp}s to perform on non-grouping columns.}
 
 \item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
 }
@@ -448,8 +567,8 @@ A TableHandle referencing the new table.
 \if{latex}{\out{\hypertarget{method-TableHandle-agg_all_by}{}}}
 \subsection{Method \code{agg_all_by()}}{
 Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
-aggregation(s) specified. See `?Aggregations` for more information.
-This method applies the aggregation to all columns of the table, so it can only
+aggregation(s) specified. See more detailed documentation \link[=AggBy]{here} or run \code{?AggBy}.
+This method applies the aggregation to all non-grouping columns of the table, so it can only
 accept one aggregation at a time.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$agg_all_by(agg, by = character())}\if{html}{\out{</div>}}
@@ -458,7 +577,7 @@ accept one aggregation at a time.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{agg}}{Aggregation to perform on non-grouping columns.}
+\item{\code{agg}}{\code{AggOp} to perform on non-grouping columns.}
 
 \item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
 }
@@ -512,7 +631,7 @@ A TableHandle referencing the new table.
 \if{html}{\out{<a id="method-TableHandle-head_by"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-head_by}{}}}
 \subsection{Method \code{head_by()}}{
-Creates a new table containing the first `num_rows` rows of each group.
+Creates a new table containing the first \code{num_rows} rows of each group.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$head_by(num_rows, by = character())}\if{html}{\out{</div>}}
 }
@@ -534,7 +653,7 @@ A TableHandle referencing the new table.
 \if{html}{\out{<a id="method-TableHandle-tail_by"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-tail_by}{}}}
 \subsection{Method \code{tail_by()}}{
-Creates a new table containing the last `num_rows` rows of each group.
+Creates a new table containing the last \code{num_rows} rows of each group.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$tail_by(num_rows, by = character())}\if{html}{\out{</div>}}
 }
@@ -797,7 +916,7 @@ specified, every combination of left and right table rows is included.
 
 \item{\code{on}}{String or list of strings denoting the names of the columns to join on.}
 
-\item{\code{joins}}{String or list of strings denoting the names of the columns to add from `table`.}
+\item{\code{joins}}{String or list of strings denoting the names of the columns to add from \code{table}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -824,7 +943,7 @@ If there is no matching key in the right table, appended row values are NULL.
 
 \item{\code{on}}{String or list of strings denoting the names of the columns to join on.}
 
-\item{\code{joins}}{String or list of strings denoting the names of the columns to add from `table`.}
+\item{\code{joins}}{String or list of strings denoting the names of the columns to add from \code{table}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -850,7 +969,7 @@ right table where the key values in the left and right tables are equal.
 
 \item{\code{on}}{String or list of strings denoting the names of the columns to join on.}
 
-\item{\code{joins}}{String or list of strings denoting the names of the columns to add from `table`.}
+\item{\code{joins}}{String or list of strings denoting the names of the columns to add from \code{table}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -873,10 +992,10 @@ Creates a new table containing all the rows and columns of this table, sorted by
 \item{\code{order_by}}{String or list of strings denoting the names of the columns to sort by.}
 
 \item{\code{descending}}{Boolean or list of booleans denoting whether to sort in descending order.
-If a list is supplied, it must be the same length as `order_by`.}
+If a list is supplied, it must be the same length as \code{order_by}.}
 
 \item{\code{abs_sort}}{Boolean or list of booleans denoting whether to sort by absolute value.
-If a list is supplied, it must be the same length as `order_by`.}
+If a list is supplied, it must be the same length as \code{order_by}.}
 }
 \if{html}{\out{</div>}}
 }
