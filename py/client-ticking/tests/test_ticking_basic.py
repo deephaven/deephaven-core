@@ -5,7 +5,6 @@
 import unittest
 
 import pydeephaven as dh
-import pydeephaven_ticking.table_listener as dhtl
 import time
 
 class TickingBasicTestCase(unittest.TestCase):
@@ -24,7 +23,7 @@ class TickingBasicTestCase(unittest.TestCase):
                 if prev != -1:
                     self.assertTrue(prev + 1 == table_added_last_col1_seen)
             table_added_update_count += 1
-        listener_handle = dhtl.listen(table, lambda update : update_table_added(update.added('Col1')))
+        listener_handle = dh.listen(table, lambda update : update_table_added(update.added('Col1')))
         listener_handle.start()
         time.sleep(3)
         self.assertTrue(2 >= table_added_update_count)

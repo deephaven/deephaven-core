@@ -7,7 +7,7 @@ import pydeephaven as pyd
 import pyarrow as pa
 import time
 from typing import Dict, List, Tuple
-from pydeephaven_ticking import TableListener, TableUpdate, listen
+from pydeephaven import TableListener, TableUpdate, listen
 
 session = pyd.Session(host="localhost", port=10000)
 
