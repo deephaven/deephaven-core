@@ -31,23 +31,23 @@ import io.grpc.stub.ClientCalls;
 import io.grpc.stub.ClientResponseObserver;
 import org.apache.arrow.flight.impl.Flight.FlightData;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.locks.Condition;
 
 /**
  * This class is an intermediary helper class that uses a {@code DoExchange} to populate a {@link BarrageTable} using
  * snapshot data from a remote server.
  * <p>
- * Users may call {@link #entireTable}, or {@link #partialTable}, to initiate the gRPC call to the server. These methods
- * return the eventually populated {@code BarrageTable} to the user. The user must either set {@code blockUntilComplete}
- * to {@code true} or call {@link #blockUntilComplete()} to ensure that the {@code BarrageTable} is fully populated
- * before using it.
+ * Users may call {@link #entireTable} or {@link #partialTable} to initiate the gRPC call to the server. These methods
+ * return a {@link Future <BarrageTable>} to the user.
  */
 public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements BarrageSnapshot {
     private static final Logger log = LoggerFactory.getLogger(BarrageSnapshotImpl.class);
@@ -58,20 +58,14 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     private final ClientCallStreamObserver<FlightData> observer;
 
     private final BarrageTable resultTable;
+    private final CompletableFuture<Table> future;
 
     private volatile BitSet expectedColumns;
-
-    private volatile Condition completedCondition;
-    private volatile boolean completedSuccessfully = false;
-    private volatile Throwable exceptionWhileCompleting = null;
 
     private volatile int connected = 1;
     private static final AtomicIntegerFieldUpdater<BarrageSnapshotImpl> CONNECTED_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(BarrageSnapshotImpl.class, "connected");
-    private volatile int completed = 0;
-    private static final AtomicIntegerFieldUpdater<BarrageSnapshotImpl> COMPLETED_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater(BarrageSnapshotImpl.class, "completed");
-    private boolean prevUsed = false;
+    private boolean alreadyUsed = false;
 
     /**
      * Represents a BarrageSnapshot.
@@ -93,6 +87,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         final TableDefinition tableDefinition = schema.tableDef;
         resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, new CheckForCompletion());
+        future = new CompletableFuture<>();
 
         final MethodDescriptor<FlightData, BarrageMessage> snapshotDescriptor =
                 getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
@@ -174,51 +169,32 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 return;
             }
 
-            trySignalCompletion();
+            future.complete(resultTable);
             cleanup();
         }
     }
 
     @Override
-    public boolean isCompleted() {
-        return completedSuccessfully || exceptionWhileCompleting != null;
+    public Future<Table> entireTable() {
+        return partialTable(null, null, false);
     }
 
     @Override
-    public Table entireTable() throws InterruptedException {
-        return partialTable(null, null, false, true);
+    public Future<Table> partialTable(RowSet viewport, BitSet columns) {
+        return partialTable(viewport, columns, false);
     }
 
     @Override
-    public Table entireTable(boolean blockUntilComplete) throws InterruptedException {
-        return partialTable(null, null, false, blockUntilComplete);
-    }
-
-    @Override
-    public Table partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
-        return partialTable(viewport, columns, false, true);
-    }
-
-    @Override
-    public Table partialTable(
-            RowSet viewport, BitSet columns, boolean reverseViewport) throws InterruptedException {
-        return partialTable(viewport, columns, reverseViewport, true);
-    }
-
-    @Override
-    public Table partialTable(
-            RowSet viewport, BitSet columns, boolean reverseViewport, boolean blockUntilComplete)
-            throws InterruptedException {
+    public Future<Table> partialTable(
+            RowSet viewport, BitSet columns, boolean reverseViewport) {
         synchronized (this) {
             if (!isConnected()) {
-                throw new UncheckedDeephavenException(this + " is not connected");
+                throw new UncheckedDeephavenException(this + " is no longer connected and cannot be retained further");
             }
-
-            // notify user when connection has already been used and closed
-            if (prevUsed) {
-                throw new UnsupportedOperationException("Snapshot object already used");
+            if (alreadyUsed) {
+                throw new UnsupportedOperationException("Barrage snapshot objects cannot be reused");
             }
-            prevUsed = true;
+            alreadyUsed = true;
         }
 
         // store this for streamreader parser
@@ -231,54 +207,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         observer.onCompleted();
 
-        if (blockUntilComplete) {
-            return blockUntilComplete();
-        }
-
-        return resultTable;
-    }
-
-    private boolean checkIfCompleteOrThrow() {
-        if (exceptionWhileCompleting != null) {
-            throw new UncheckedDeephavenException("Error while handling subscription", exceptionWhileCompleting);
-        }
-        return completedSuccessfully;
-    }
-
-    @Override
-    public Table blockUntilComplete() throws InterruptedException {
-        if (checkIfCompleteOrThrow()) {
-            return resultTable;
-        }
-
-        // test lock conditions
-        if (resultTable.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
-            throw new UnsupportedOperationException(
-                    "Cannot wait for snapshot to complete while holding the UpdateGraph shared lock");
-        }
-
-        final boolean holdingUpdateGraphLock = resultTable.getUpdateGraph().exclusiveLock().isHeldByCurrentThread();
-        if (completedCondition == null && holdingUpdateGraphLock) {
-            synchronized (this) {
-                if (completedCondition == null) {
-                    completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
-                }
-            }
-        }
-
-        if (holdingUpdateGraphLock) {
-            while (!checkIfCompleteOrThrow()) {
-                completedCondition.await();
-            }
-        } else {
-            synchronized (this) {
-                while (!checkIfCompleteOrThrow()) {
-                    wait(); // BarrageSnapshotImpl lock
-                }
-            }
-        }
-
-        return resultTable;
+        return future;
     }
 
     private boolean isConnected() {
@@ -289,26 +218,11 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         return CONNECTED_UPDATER.compareAndSet(this, 1, 0);
     }
 
-    private void trySignalCompletion() {
-        trySignalCompletion(null);
-    }
-
-    private void trySignalCompletion(@Nullable final Throwable t) {
-        if (!COMPLETED_UPDATER.compareAndSet(BarrageSnapshotImpl.this, 0, 1)) {
-            return;
-        }
-        if (t != null) {
-            exceptionWhileCompleting = t;
+    private void tryCompleteFuture(@Nullable final Throwable t) {
+        if (t == null) {
+            future.complete(resultTable);
         } else {
-            completedSuccessfully = true;
-        }
-
-        final Condition localCondition = completedCondition;
-        if (localCondition != null) {
-            resultTable.getUpdateGraph().requestSignal(localCondition);
-        }
-        synchronized (this) {
-            notifyAll();
+            future.completeExceptionally(t);
         }
     }
 
@@ -318,14 +232,15 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         cancel();
     }
 
-    @Override
-    public void cancel() {
+    private void cancel() {
         if (!tryRecordDisconnect()) {
             return;
         }
 
-        resultTable.handleBarrageError(new RequestCancelledException("Barrage subscription cancelled by client"));
-        GrpcUtil.safelyCancel(observer, "Barrage snapshot is cancelled", exceptionWhileCompleting);
+        final RequestCancelledException requestCancelled =
+                new RequestCancelledException("Barrage subscription cancelled by client");
+        resultTable.handleBarrageError(requestCancelled);
+        GrpcUtil.safelyCancel(observer, "Barrage snapshot is cancelled", requestCancelled);
         cleanup();
     }
 
@@ -450,8 +365,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         }
 
         @Override
-        public void onError(Throwable t) {
-            trySignalCompletion(t);
+        public void onError(@NotNull final Throwable t) {
+            future.completeExceptionally(t);
         }
     }
 }

@@ -74,7 +74,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
          *
          * @param t the error
          */
-        void onError(Throwable t);
+        void onError(@NotNull Throwable t);
     }
 
     public static final boolean DEBUG_ENABLED =

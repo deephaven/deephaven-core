@@ -62,13 +62,13 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
             final Table subscriptionTable;
             if (headerSize > 0) {
                 // create a Table subscription with forward viewport of the specified size
-                subscriptionTable = subscription.partialTable(RowSetFactory.flat(headerSize), null, false);
+                subscriptionTable = subscription.partialTable(RowSetFactory.flat(headerSize), null, false).get();
             } else if (tailSize > 0) {
                 // create a Table subscription with reverse viewport of the specified size
-                subscriptionTable = subscription.partialTable(RowSetFactory.flat(tailSize), null, true);
+                subscriptionTable = subscription.partialTable(RowSetFactory.flat(tailSize), null, true).get();
             } else {
                 // create a Table subscription of the entire Table
-                subscriptionTable = subscription.entireTable();
+                subscriptionTable = subscription.entireTable().get();
             }
 
             System.out.println("Subscription established");
@@ -107,9 +107,6 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
             });
 
             countDownLatch.await();
-
-            // inform the server we're done with the subscription
-            subscription.cancel();
 
             // Note that when the LivenessScope, which is opened in the try-with-resources block, is closed the
             // listener, resultTable, and subscription objects will be destroyed.

@@ -49,7 +49,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             System.out.println("Requesting all rows, all columns");
 
             // expect this to block until all reading complete
-            final Table table = snapshot.entireTable();
+            final Table table = snapshot.entireTable().get();
 
             System.out.println("Table info: rows = " + table.size()
                     + ", cols = " + table.numColumns());
@@ -67,7 +67,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
 
             // expect this to block until all reading complete
             final RowSet viewport = RowSetFactory.fromRange(0, 5); // range inclusive
-            final Table table = snapshot.partialTable(viewport, null);
+            final Table table = snapshot.partialTable(viewport, null).get();
 
             System.out.println("Table info: rows = " + table.size()
                     + ", cols = " + table.numColumns());
@@ -85,7 +85,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
 
             // expect this to block until all reading complete
             final RowSet viewport = RowSetFactory.fromRange(6, 10); // range inclusive
-            final Table table = snapshot.partialTable(viewport, null);
+            final Table table = snapshot.partialTable(viewport, null).get();
 
             System.out.println("Table info: rows = " + table.size()
                     + ", cols = " + table.numColumns());
@@ -105,7 +105,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             final BitSet columns = new BitSet();
             columns.set(0, 2); // range not inclusive (sets bits 0-1)
 
-            final Table table = snapshot.partialTable(null, columns);
+            final Table table = snapshot.partialTable(null, columns).get();
 
             System.out.println("Table info: rows = " + table.size()
                     + ", cols = " + table.numColumns());
@@ -126,7 +126,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             final BitSet columns = new BitSet();
             columns.set(0, 2); // range not inclusive (sets bits 0-1)
 
-            final Table table = snapshot.partialTable(viewport, columns);
+            final Table table = snapshot.partialTable(viewport, columns).get();
 
             System.out.println("Table info: rows = " + table.size()
                     + ", cols = " + table.numColumns());
@@ -145,7 +145,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             System.out.println("Requesting rows from end 0-4, all columns");
 
             // expect this to block until all reading complete
-            final Table table = snapshot.partialTable(viewport, null, true);
+            final Table table = snapshot.partialTable(viewport, null, true).get();
 
             System.out.println("Table info: rows = " + table.size()
                     + ", cols = " + table.numColumns());
@@ -167,7 +167,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             columns.set(0, 2); // range not inclusive (sets bits 0-1)
 
             // expect this to block until all reading complete
-            final Table table = snapshot.partialTable(viewport, columns, true);
+            final Table table = snapshot.partialTable(viewport, columns, true).get();
 
             System.out.println("Table info: rows = " + table.size()
                     + ", cols = " + table.numColumns());
@@ -189,7 +189,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
 
             System.out.println("Snapshot created");
 
-            final Table table = subscription.snapshotEntireTable();
+            final Table table = subscription.snapshotEntireTable().get();
 
             System.out.println(
                     "Table info: rows = " + table.size() + ", cols = " + DataAccessHelpers.getColumns(table).length);
