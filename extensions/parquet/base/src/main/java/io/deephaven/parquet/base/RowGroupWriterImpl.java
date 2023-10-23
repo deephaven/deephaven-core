@@ -30,21 +30,6 @@ public class RowGroupWriterImpl implements RowGroupWriter {
             MessageType type,
             int targetPageSize,
             ByteBufferAllocator allocator,
-            CompressorAdapter compressorAdapter,
-            String path) {
-        this(bufferedOutput, type, targetPageSize, allocator, blockWithPath(path), compressorAdapter);
-    }
-
-    private static BlockMetaData blockWithPath(String path) {
-        BlockMetaData blockMetaData = new BlockMetaData();
-        blockMetaData.setPath(path);
-        return blockMetaData;
-    }
-
-    RowGroupWriterImpl(PositionedBufferedOutputStream bufferedOutput,
-            MessageType type,
-            int targetPageSize,
-            ByteBufferAllocator allocator,
             CompressorAdapter compressorAdapter) {
         this(bufferedOutput, type, targetPageSize, allocator, new BlockMetaData(), compressorAdapter);
     }

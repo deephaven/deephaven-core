@@ -28,13 +28,12 @@ import static org.apache.parquet.format.Util.writeFileMetaData;
 public final class ParquetFileWriter {
     private static final ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
     private static final int VERSION = 1;
-    private static final int OUTPUT_BUFFER_SIZE = 1 << 18; // TODO Benchmark this
+    private static final int OUTPUT_BUFFER_SIZE = 1 << 18;
 
-    private PositionedBufferedOutputStream bufferedOutput;
+    private final PositionedBufferedOutputStream bufferedOutput;
     private final MessageType type;
     private final int targetPageSize;
     private final ByteBufferAllocator allocator;
-    private final SeekableChannelsProvider channelsProvider;
     private final CompressorAdapter compressorAdapter;
     private final Map<String, String> extraMetaData;
     private final List<BlockMetaData> blocks = new ArrayList<>();
@@ -55,19 +54,7 @@ public final class ParquetFileWriter {
                 OUTPUT_BUFFER_SIZE);
         bufferedOutput.write(ParquetFileReader.MAGIC);
         this.type = type;
-        this.channelsProvider = channelsProvider;
         this.compressorAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName(codecName);
-    }
-
-    @SuppressWarnings("unused")
-    RowGroupWriter addRowGroup(final String path, final boolean append) throws IOException {
-        bufferedOutput.close();
-        bufferedOutput =
-                new PositionedBufferedOutputStream(channelsProvider.getWriteChannel(path, append), OUTPUT_BUFFER_SIZE);
-        final RowGroupWriter rowGroupWriter =
-                new RowGroupWriterImpl(bufferedOutput, type, targetPageSize, allocator, compressorAdapter, path);
-        blocks.add(rowGroupWriter.getBlock());
-        return rowGroupWriter;
     }
 
     public RowGroupWriter addRowGroup(final long size) {
