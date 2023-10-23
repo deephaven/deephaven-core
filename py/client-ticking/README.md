@@ -80,11 +80,10 @@ Run python from the venv while in this directory, and try this sample Python pro
 
 ```
 import pydeephaven as dh
-import pydeephaven_ticking.table_listener as dhtl
 import time
 session = dh.Session() # assuming Deephaven Community Edition is running locally with the default configuration
 table = session.time_table(period=1000000000).update(formulas=["Col1 = i"])
-listener_handle = dhtl.listen(table, lambda update : print(update.added()))
+listener_handle = dh.listen(table, lambda update : print(update.added()))
 listener_handle.start()
 # data starts printing asynchronously here
 time.sleep(10)
