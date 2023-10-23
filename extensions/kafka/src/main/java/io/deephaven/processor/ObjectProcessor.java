@@ -74,7 +74,7 @@ public interface ObjectProcessor<T> {
      * output chunks sizes.
      *
      * @param outputTypes the output types
-     * @param fillWithNullValue if the output chunks should be filled with the appropriate null value;
+     * @param fillWithNullValue if the output chunks should be filled with the appropriate null value
      * @return the no-op object processor
      * @param <T> the object type
      */
