@@ -4,7 +4,6 @@
 #include <iostream>
 #include "deephaven/client/client.h"
 
-using deephaven::client::NumCol;
 using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::TableHandleManager;
@@ -29,24 +28,23 @@ int main() {
 namespace {
 void Doit(const TableHandleManager &manager) {
   auto table = manager.EmptyTable(10).Update("X = ii % 2", "Y = ii");
-  auto [x, y] = table.GetCols<NumCol, NumCol>("X", "Y");
   // This example will dispose each table individually.
 
-  auto t1 = table.Where(y < 5);
+  auto t1 = table.Where("y < 5");
   std::cout << "This is t1:\n" << t1.Stream(true) << '\n';
 
   {
-    TableHandle t2Copy;
+    TableHandle t2_copy;
     {
-      auto t2 = t1.CountBy(x);
+      auto t2 = t1.CountBy("X");
       std::cout << "This is t2:\n" << t2.Stream(true) << '\n';
 
-      t2Copy = t2;
+      t2_copy = t2;
 
       // The variable 't2' will be destructed here, but the server resource will stay alive
-      // because 't2Copy' is still live.
+      // because 't2_copy' is still live.
     }
-    std::cout << "t2Copy still alive:\n" << t2Copy.Stream(true) << '\n';
+    std::cout << "t2_copy still alive:\n" << t2_copy.Stream(true) << '\n';
 
     // t2Copy will be destructed here. As it is the last owner of the server resource,
     // the server resource will be released here.

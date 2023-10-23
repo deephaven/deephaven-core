@@ -352,9 +352,9 @@ def to_j_zdt(dt: Union[None, ZonedDateTime, str, datetime.datetime, numpy.dateti
     a numpy.datetime64, or a pandas.Timestamp.
 
     Date time strings can be formatted according to the ISO 8601 date time format
-    '{@code 'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
+    ``'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ'`` and others.
     Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
-    from the Epoch.  Expected date ranges are used to infer the units.
+    from the Epoch. Expected date ranges are used to infer the units.
 
     Converting a datetime.datetime or pandas.Timestamp to a ZonedDateTime will use the datetime's timezone information.
     Converting a numpy.datetime64 to a ZonedDateTime will use the Deephaven default time zone.
@@ -411,14 +411,14 @@ def to_j_duration(dt: Union[None, Duration, int, str, datetime.timedelta, numpy.
     begin with a negative sign.
 
     Examples:
-       "PT20.345S" -- parses as "20.345 seconds"
-       "PT15M"     -- parses as "15 minutes" (where a minute is 60 seconds)
-       "PT10H"     -- parses as "10 hours" (where an hour is 3600 seconds)
-       "P2D"       -- parses as "2 days" (where a day is 24 hours or 86400 seconds)
-       "P2DT3H4M"  -- parses as "2 days, 3 hours and 4 minutes"
-       "PT-6H3M"    -- parses as "-6 hours and +3 minutes"
-       "-PT6H3M"    -- parses as "-6 hours and -3 minutes"
-       "-PT-6H+3M"  -- parses as "+6 hours and -3 minutes"
+        "PT20.345S" -- parses as "20.345 seconds"
+        "PT15M"     -- parses as "15 minutes" (where a minute is 60 seconds)
+        "PT10H"     -- parses as "10 hours" (where an hour is 3600 seconds)
+        "P2D"       -- parses as "2 days" (where a day is 24 hours or 86400 seconds)
+        "P2DT3H4M"  -- parses as "2 days, 3 hours and 4 minutes"
+        "PT-6H3M"    -- parses as "-6 hours and +3 minutes"
+        "-PT6H3M"    -- parses as "-6 hours and -3 minutes"
+        "-PT-6H+3M"  -- parses as "+6 hours and -3 minutes"
 
     Args:
         dt (Union[None, Duration, int, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]):
@@ -469,13 +469,13 @@ def to_j_period(dt: Union[None, Period, str, datetime.timedelta, numpy.timedelta
     begin with a negative sign.
 
     Examples:
-      "P2Y"             -- 2 Years
-      "P3M"             -- 3 Months
-      "P4W"             -- 4 Weeks
-      "P5D"             -- 5 Days
-      "P1Y2M3D"         -- 1 Year, 2 Months, 3 Days
-      "P-1Y2M"          -- -1 Year, 2 Months
-      "-P1Y2M"          -- -1 Year, -2 Months
+        "P2Y"             -- 2 Years
+        "P3M"             -- 3 Months
+        "P4W"             -- 4 Weeks
+        "P5D"             -- 5 Days
+        "P1Y2M3D"         -- 1 Year, 2 Months, 3 Days
+        "P-1Y2M"          -- -1 Year, 2 Months
+        "-P1Y2M"          -- -1 Year, -2 Months
 
     Args:
         dt (Union[None, Period, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]):

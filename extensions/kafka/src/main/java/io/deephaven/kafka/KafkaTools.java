@@ -16,6 +16,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.annotations.SingletonStyle;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -122,7 +123,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.*;
+import java.util.function.Function;
+import java.util.function.IntPredicate;
+import java.util.function.IntToLongFunction;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static io.deephaven.kafka.ingest.KafkaStreamPublisher.NULL_COLUMN_INDEX;
 
@@ -568,6 +573,42 @@ public class KafkaTools {
         @SuppressWarnings("unused")
         public static KeyOrValueSpec rawSpec(ColumnHeader<?> header, Class<? extends Deserializer<?>> deserializer) {
             return new RawConsume(ColumnDefinition.from(header), deserializer);
+        }
+
+        /**
+         * Creates a kafka key or value spec implementation from an {@link ObjectProcessor}.
+         *
+         * <p>
+         * The respective column definitions are derived from the combination of {@code columnNames} and
+         * {@link ObjectProcessor#outputTypes()}.
+         *
+         * @param deserializer the deserializer
+         * @param processor the object processor
+         * @param columnNames the column names
+         * @return the Kafka key or value spec
+         * @param <T> the object type
+         */
+        public static <T> KeyOrValueSpec objectProcessorSpec(
+                Deserializer<? extends T> deserializer,
+                ObjectProcessor<? super T> processor,
+                List<String> columnNames) {
+            return new KeyOrValueSpecObjectProcessorImpl<>(deserializer, processor, columnNames);
+        }
+
+        /**
+         * Creates a kafka key or value spec implementation from a byte-array {@link ObjectProcessor}.
+         *
+         * <p>
+         * Equivalent to {@code objectProcessorSpec(new ByteArrayDeserializer(), processor, columnNames)}.
+         *
+         * @param processor the byte-array object processor
+         * @param columnNames the column names
+         * @return the Kafka key or value spec
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec objectProcessorSpec(ObjectProcessor<? super byte[]> processor,
+                List<String> columnNames) {
+            return objectProcessorSpec(new ByteArrayDeserializer(), processor, columnNames);
         }
     }
 
@@ -1566,7 +1607,6 @@ public class KafkaTools {
                 } else {
                     result = definitionFactory.apply(commonColumnName);
                 }
-                consumerProperties.remove(nameProperty);
             } else if (nameDefault == null) {
                 result = null;
             } else {

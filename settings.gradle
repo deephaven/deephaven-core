@@ -23,6 +23,7 @@ String[] mods = [
         'go',
         'authentication',
         'cpp-client',
+        'R',
 ]
 
         // new web projects; these modules are intended to form a complete, modular web application,
@@ -147,6 +148,8 @@ include(':Container')
 include(':codegen')
 
 include(':cpp-client')
+
+include(':R')
 
 include(':replication-util')
 project(':replication-util').projectDir = file('replication/util')

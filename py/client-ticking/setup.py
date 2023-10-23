@@ -13,7 +13,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name='pydeephaven-ticking',
-    version='0.29.0.dev',
+    version='0.30.0.dev0',
     description='The Deephaven Python Client for Ticking Tables',
     long_description=README,
     long_description_content_type="text/markdown",
@@ -44,5 +44,5 @@ setup(
                    libraries=["dhcore"]
         )]),
     python_requires='>=3.8',
-    install_requires=['pydeephaven==0.29.0']
+    install_requires=['pydeephaven==0.30.0']
 )

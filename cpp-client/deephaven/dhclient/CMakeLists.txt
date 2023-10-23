@@ -18,27 +18,15 @@ set(ALL_FILES
     include/private/deephaven/client/server/server.h
 
     src/impl/aggregate_impl.cc
-    src/impl/boolean_expression_impl.cc
     src/impl/client_impl.cc
-    src/impl/columns_impl.cc
-    src/impl/datetime_expression_impl.cc
     src/impl/escape_utils.cc
-    src/impl/expression_impl.cc
-    src/impl/numeric_expression_impl.cc
-    src/impl/string_expression_impl.cc
     src/impl/table_handle_impl.cc
     src/impl/table_handle_manager_impl.cc
     src/impl/update_by_operation_impl.cc
 
     include/private/deephaven/client/impl/aggregate_impl.h
-    include/private/deephaven/client/impl/boolean_expression_impl.h
     include/private/deephaven/client/impl/client_impl.h
-    include/private/deephaven/client/impl/columns_impl.h
-    include/private/deephaven/client/impl/datetime_expression_impl.h
     include/private/deephaven/client/impl/escape_utils.h
-    include/private/deephaven/client/impl/expression_impl.h
-    include/private/deephaven/client/impl/numeric_expression_impl.h
-    include/private/deephaven/client/impl/string_expression_impl.h
     include/private/deephaven/client/impl/table_handle_impl.h
     include/private/deephaven/client/impl/table_handle_manager_impl.h
     include/private/deephaven/client/impl/update_by_operation_impl.h
@@ -48,15 +36,11 @@ set(ALL_FILES
     include/private/deephaven/client/arrowutil/arrow_value_converter.h
     include/private/deephaven/client/arrowutil/arrow_visitors.h
 
-    src/columns.cc
-    src/expressions.cc
     src/client_options.cc
     src/client.cc
     src/flight.cc
     src/update_by.cc
 
-    include/public/deephaven/client/columns.h
-    include/public/deephaven/client/expressions.h
     include/public/deephaven/client/client.h
     include/public/deephaven/client/client_options.h
     include/public/deephaven/client/flight.h

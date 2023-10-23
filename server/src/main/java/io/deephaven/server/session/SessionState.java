@@ -49,7 +49,6 @@ import javax.inject.Provider;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -286,16 +285,21 @@ public class SessionState {
 
         final ExportObject<T> result;
 
-        // If this a non-export or server side export, then it must already exist or else is a user error.
-        if (exportId <= NON_EXPORT_ID) {
+        if (exportId < NON_EXPORT_ID) {
+            // If this a server-side export then it must already exist or else is a user error.
             result = (ExportObject<T>) exportMap.get(exportId);
 
             if (result == null) {
                 throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                         "Export id " + exportId + " does not exist and cannot be used out-of-order!");
             }
-        } else {
+        } else if (exportId > NON_EXPORT_ID) {
+            // If this a client-side export we'll allow an out-of-order request by creating a new export object.
             result = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+        } else {
+            // If this is a non-export request, then it is a user error.
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Export id " + exportId + " refers to a non-export and cannot be requested!");
         }
 
         return result;

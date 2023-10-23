@@ -69,13 +69,14 @@ public class BlinkTableTools {
             }
 
             final BaseTable<?> baseBlinkTable = (BaseTable<?>) blinkTable.coalesce();
-            final SwapListener swapListener = baseBlinkTable.createSwapListenerIfRefreshing(SwapListener::new);
+            final OperationSnapshotControl snapshotControl =
+                    baseBlinkTable.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
             // blink tables must tick
-            Assert.neqNull(swapListener, "swapListener");
+            Assert.neqNull(snapshotControl, "snapshotControl");
 
             final Mutable<QueryTable> resultHolder = new MutableObject<>();
 
-            ConstructSnapshot.callDataSnapshotFunction("blinkToAppendOnly", swapListener.makeSnapshotControl(),
+            ConstructSnapshot.callDataSnapshotFunction("blinkToAppendOnly", snapshotControl,
                     (boolean usePrev, long beforeClockValue) -> {
                         final Map<String, WritableColumnSource<?>> columns = new LinkedHashMap<>();
                         final Map<String, ? extends ColumnSource<?>> columnSourceMap =
@@ -119,7 +120,7 @@ public class BlinkTableTools {
 
                         Assert.leq(result.size(), "result.size()", sizeLimit, "sizeLimit");
 
-                        swapListener.setListenerAndResult(new BaseTable.ListenerImpl("streamToAppendOnly",
+                        snapshotControl.setListenerAndResult(new BaseTable.ListenerImpl("streamToAppendOnly",
                                 baseBlinkTable, result) {
                             @Override
                             public void onUpdate(TableUpdate upstream) {

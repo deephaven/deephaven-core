@@ -33,18 +33,6 @@ public class SwitchColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Table table) {
-        if (realColumn == null) {
-            if (table.getDefinition().getColumn(expression) != null) {
-                realColumn = new SourceColumn(expression, columnName);
-            } else {
-                realColumn = FormulaColumn.createFormulaColumn(columnName, expression, parser);
-            }
-        }
-        return realColumn.initInputs(table);
-    }
-
-    @Override
     public List<String> initInputs(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         if (realColumn == null) {
             if (columnsOfInterest.get(expression) != null) {

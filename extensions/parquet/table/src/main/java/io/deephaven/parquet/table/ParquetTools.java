@@ -714,7 +714,7 @@ public class ParquetTools {
         return readPartitionedTable(layout, layout.getInstructions(), layout.getTableDefinition());
     }
 
-    private static final SimpleTypeMap<Class<?>> DB_ARRAY_TYPE_MAP = SimpleTypeMap.create(
+    private static final SimpleTypeMap<Class<?>> VECTOR_TYPE_MAP = SimpleTypeMap.create(
             null, CharVector.class, ByteVector.class, ShortVector.class, IntVector.class, LongVector.class,
             FloatVector.class, DoubleVector.class, ObjectVector.class);
 
@@ -748,7 +748,7 @@ public class ParquetTools {
                 if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.StringSet) {
                     colDef = ColumnDefinition.fromGenericType(parquetColDef.name, StringSet.class, null);
                 } else if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.Vector) {
-                    final Class<?> vectorType = DB_ARRAY_TYPE_MAP.get(baseType);
+                    final Class<?> vectorType = VECTOR_TYPE_MAP.get(baseType);
                     if (vectorType != null) {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, vectorType, baseType);
                     } else {

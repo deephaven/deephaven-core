@@ -59,13 +59,10 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.util.annotations.InternalUseOnly;
-import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.vector.Vector;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.Liveness;
-import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.locations.GroupingProvider;
@@ -149,8 +146,8 @@ public class QueryTable extends BaseTable<QueryTable> {
          */
         String getLogPrefix();
 
-        default SwapListener newSwapListener(final QueryTable queryTable) {
-            return new SwapListener(queryTable);
+        default OperationSnapshotControl newSnapshotControl(final QueryTable queryTable) {
+            return new OperationSnapshotControl(queryTable);
         }
 
         /**
@@ -757,6 +754,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      * @param tableColumns the table columns
      * @return the aggregation, if non-empty
      */
+    @VisibleForTesting
     static Optional<Aggregation> singleAggregation(
             AggSpec spec, Collection<? extends ColumnName> groupByColumns,
             Collection<? extends ColumnName> tableColumns) {
@@ -1213,11 +1211,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
 
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
-                        final SwapListener swapListener =
-                                createSwapListenerIfRefreshing(SwapListener::new);
+                        final OperationSnapshotControl snapshotControl =
+                                createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
                         final Mutable<QueryTable> result = new MutableObject<>();
-                        initializeWithSnapshot("where", swapListener,
+                        initializeWithSnapshot("where", snapshotControl,
                                 (prevRequested, beforeClock) -> {
                                     final boolean usePrev = prevRequested && isRefreshing();
                                     final RowSet rowSetToUse = usePrev ? rowSet.prev() : rowSet;
@@ -1297,7 +1295,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         }
                                     }
 
-                                    if (swapListener != null) {
+                                    if (snapshotControl != null) {
                                         final ListenerRecorder recorder = new ListenerRecorder(
                                                 "where(" + Arrays.toString(filters) + ")", QueryTable.this,
                                                 filteredTable);
@@ -1305,7 +1303,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                                 log, this, recorder, filteredTable, filters);
                                         filteredTable.setWhereListener(whereListener);
                                         recorder.setMergedListener(whereListener);
-                                        swapListener.setListenerAndResult(recorder, filteredTable);
+                                        snapshotControl.setListenerAndResult(recorder, filteredTable);
                                         filteredTable.addParentReference(whereListener);
                                     } else if (refreshingFilters) {
                                         final WhereListener whereListener = new WhereListener(
@@ -1647,9 +1645,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                         updateDescription, sizeForInstrumentation(), () -> {
                             final Mutable<Table> result = new MutableObject<>();
 
-                            final SwapListener swapListener =
-                                    createSwapListenerIfRefreshing(SwapListener::new);
-                            initializeWithSnapshot(humanReadablePrefix, swapListener, (usePrev, beforeClockValue) -> {
+                            final OperationSnapshotControl sc =
+                                    createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
+                            initializeWithSnapshot(humanReadablePrefix, sc, (usePrev, beforeClockValue) -> {
                                 final boolean publishTheseSources = flavor == Flavor.UpdateView;
                                 final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
                                         this, SelectAndViewAnalyzer.Mode.VIEW_EAGER, columns, rowSet,
@@ -1658,11 +1656,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         .toArray(SelectColumn[]::new);
                                 QueryTable queryTable = new QueryTable(
                                         rowSet, analyzerWrapper.getPublishedColumnResources());
-                                if (swapListener != null) {
+                                if (sc != null) {
                                     final Map<String, String[]> effects = analyzerWrapper.calcEffects();
                                     final TableUpdateListener listener =
                                             new ViewOrUpdateViewListener(updateDescription, this, queryTable, effects);
-                                    swapListener.setListenerAndResult(listener, queryTable);
+                                    sc.setListenerAndResult(listener, queryTable);
                                 }
 
                                 propagateFlatness(queryTable);
@@ -1787,10 +1785,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                             newColumns.remove(columnName);
                         }
 
-                        final SwapListener swapListener =
-                                createSwapListenerIfRefreshing(SwapListener::new);
+                        final OperationSnapshotControl snapshotControl =
+                                createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
-                        initializeWithSnapshot("dropColumns", swapListener, (usePrev, beforeClockValue) -> {
+                        initializeWithSnapshot("dropColumns", snapshotControl, (usePrev, beforeClockValue) -> {
                             final QueryTable resultTable = new QueryTable(rowSet, newColumns);
                             propagateFlatness(resultTable);
 
@@ -1799,7 +1797,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     resultTable.getDefinition().getColumnNameMap()::containsKey);
                             maybeCopyColumnDescriptions(resultTable);
 
-                            if (swapListener != null) {
+                            if (snapshotControl != null) {
                                 final ModifiedColumnSet.Transformer mcsTransformer =
                                         newModifiedColumnSetTransformer(resultTable,
                                                 resultTable.getColumnSourceMap().keySet()
@@ -1825,7 +1823,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         resultTable.notifyListeners(downstream);
                                     }
                                 };
-                                swapListener.setListenerAndResult(listener, resultTable);
+                                snapshotControl.setListenerAndResult(listener, resultTable);
                             }
 
                             result.setValue(resultTable);
@@ -3354,16 +3352,17 @@ public class QueryTable extends BaseTable<QueryTable> {
             return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
                 final Mutable<QueryTable> result = new MutableObject<>();
 
-                final SwapListener swapListener = createSwapListenerIfRefreshing(SwapListener::new);
-                initializeWithSnapshot("copy", swapListener, (usePrev, beforeClockValue) -> {
+                final OperationSnapshotControl snapshotControl =
+                        createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
+                initializeWithSnapshot("copy", snapshotControl, (usePrev, beforeClockValue) -> {
                     final QueryTable resultTable = new CopiedTable(definition, this);
                     propagateFlatness(resultTable);
                     if (shouldCopy != StandardOptions.COPY_NONE) {
                         copyAttributes(resultTable, shouldCopy);
                     }
-                    if (swapListener != null) {
+                    if (snapshotControl != null) {
                         final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
-                        swapListener.setListenerAndResult(listener, resultTable);
+                        snapshotControl.setListenerAndResult(listener, resultTable);
                     }
 
                     result.setValue(resultTable);
@@ -3538,23 +3537,22 @@ public class QueryTable extends BaseTable<QueryTable> {
         return QueryPerformanceRecorder.withNugget(operation.getDescription(), sizeForInstrumentation(), () -> {
             final Mutable<T> resultTable = new MutableObject<>();
 
-            final SwapListener swapListener;
+            final OperationSnapshotControl snapshotControl;
             if (isRefreshing() && operation.snapshotNeeded()) {
-                swapListener = operation.newSwapListener(this);
-                swapListener.subscribeForUpdates();
+                snapshotControl = operation.newSnapshotControl(this);
             } else {
-                swapListener = null;
+                snapshotControl = null;
             }
 
-            initializeWithSnapshot(operation.getLogPrefix(), swapListener, (usePrev, beforeClockValue) -> {
+            initializeWithSnapshot(operation.getLogPrefix(), snapshotControl, (usePrev, beforeClockValue) -> {
                 final Operation.Result<T> result = operation.initialize(usePrev, beforeClockValue);
                 if (result == null) {
                     return false;
                 }
 
                 resultTable.setValue(result.resultNode);
-                if (swapListener != null) {
-                    swapListener.setListenerAndResult(Require.neqNull(result.resultListener, "resultListener"),
+                if (snapshotControl != null) {
+                    snapshotControl.setListenerAndResult(Require.neqNull(result.resultListener, "resultListener"),
                             result.resultNode);
                 }
 

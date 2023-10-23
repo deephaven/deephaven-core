@@ -7,7 +7,11 @@ plugins {
     id 'license'
 }
 
-evaluationDependsOn Docker.registryProject('cpp-client-base')
+// We use the cpp-clients-fat-base image instead of the cpp-client-base,
+// so that the test tasks in py/client-ticking and R can in turn use the
+// image we will generate here as a base.
+// See https://github.com/deephaven/deephaven-base-images/tree/main/cpp-clients-fat
+evaluationDependsOn Docker.registryProject('cpp-clients-fat-base')
 
 configurations {
     cpp {}
@@ -57,10 +61,11 @@ deephavenDocker {
     networkName.set "cpp-test-network-${randomSuffix}"
 }
 
-def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
+def prefix = '/opt/deephaven'
+
+def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
     // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
-
     copyIn {
         from(layout.projectDirectory) {
             include 'cpp-tests-to-junit.sh'
@@ -71,12 +76,10 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
             include 'deephaven/tests/**'
         }
     }
-    copyOut {
-        into layout.buildDirectory.dir('test-results')
-    }
-    def prefix = '/opt/deephaven'
+
     dockerfile {
-        from('deephaven/cpp-client-base:local-build')
+        // See comment at the beginning of this file for why we use this base image.
+        from('deephaven/cpp-clients-fat-base:local-build')
         //
         // Build and install client.
         //
@@ -92,7 +95,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         copyFile('deephaven/examples/', "${prefix}/src/deephaven/examples/")
         copyFile('deephaven/tests/', "${prefix}/src/deephaven/tests/")
         copyFile('cpp-tests-to-junit.sh', "${prefix}/bin/dhcpp")
-        runCommand("PREFIX=\"" + prefix + "\"; \\\n" +
+        runCommand("PREFIX=${prefix}; " +
                    '''set -eux; \\
                       rm -fr ${PREFIX}/src/deephaven/build; \\
                       mkdir -p ${PREFIX}/src/deephaven/build; \\
@@ -108,19 +111,35 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
                       cd ..; \\
                       rm -fr ${PREFIX}/src/deephaven/build
                    ''')
+        // Note environment variables defined here are inherited by other images
+        // using this image as a base.
+        environmentVariable 'DH_PREFIX', prefix
+        environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
+    }
+    parentContainers = [ Docker.registryTask(project, 'cpp-clients-fat-base') ]
+}
+
+def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
+    // Only tested on x86-64, and we only build dependencies for x86-64
+    platform = 'linux/amd64'
+    copyIn {}
+    copyOut {
+        into layout.buildDirectory.dir('test-results')
+    }
+    dockerfile {
+        from('deephaven/cpp-client:local-build')
         //
         // Setup for test run.
         //
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
-        environmentVariable 'DH_PREFIX', prefix
-        environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
-    parentContainers = [ Docker.registryTask(project, 'cpp-client-base') ]
+    parentContainers = [ project.tasks.getByName('cppClient') ]
     entrypoint = ["${prefix}/bin/dhcpp/cpp-tests-to-junit.sh", '/out/cpp-test.xml', '/out/cpp-test.log']
 }
+
 deephavenDocker.shouldLogIfTaskFails testCppClient
 tasks.check.dependsOn(testCppClient)

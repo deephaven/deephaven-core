@@ -13,21 +13,22 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
-import io.deephaven.functions.ToBooleanFunction;
 import io.deephaven.functions.ToByteFunction;
 import io.deephaven.functions.ToCharFunction;
-import io.deephaven.functions.ToDoubleFunction;
 import io.deephaven.functions.ToFloatFunction;
-import io.deephaven.functions.ToIntFunction;
-import io.deephaven.functions.ToLongFunction;
-import io.deephaven.functions.ToObjectFunction;
 import io.deephaven.functions.ToShortFunction;
 
-class ChunkUtils {
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.ToDoubleFunction;
+import java.util.function.ToIntFunction;
+import java.util.function.ToLongFunction;
+
+public class ChunkUtils {
 
     public static <T> void applyInto(
-            ToBooleanFunction<T> booleanFunction,
-            ObjectChunk<T, ?> src,
+            Predicate<? super T> booleanFunction,
+            ObjectChunk<? extends T, ?> src,
             int srcOffset,
             WritableBooleanChunk<?> dest,
             int destOffset,
@@ -38,8 +39,8 @@ class ChunkUtils {
     }
 
     public static <T> void applyInto(
-            ToByteFunction<T> byteFunction,
-            ObjectChunk<T, ?> src,
+            ToByteFunction<? super T> byteFunction,
+            ObjectChunk<? extends T, ?> src,
             int srcOffset,
             WritableByteChunk<?> dest,
             int destOffset,
@@ -50,8 +51,8 @@ class ChunkUtils {
     }
 
     public static <T> void applyInto(
-            ToCharFunction<T> charFunction,
-            ObjectChunk<T, ?> src,
+            ToCharFunction<? super T> charFunction,
+            ObjectChunk<? extends T, ?> src,
             int srcOffset,
             WritableCharChunk<?> dest,
             int destOffset,
@@ -62,8 +63,8 @@ class ChunkUtils {
     }
 
     public static <T> void applyInto(
-            ToShortFunction<T> shortFunction,
-            ObjectChunk<T, ?> src,
+            ToShortFunction<? super T> shortFunction,
+            ObjectChunk<? extends T, ?> src,
             int srcOffset,
             WritableShortChunk<?> dest,
             int destOffset,
@@ -74,8 +75,8 @@ class ChunkUtils {
     }
 
     public static <T> void applyInto(
-            ToIntFunction<T> intFunction,
-            ObjectChunk<T, ?> src,
+            ToIntFunction<? super T> intFunction,
+            ObjectChunk<? extends T, ?> src,
             int srcOffset,
             WritableIntChunk<?> dest,
             int destOffset,
@@ -85,10 +86,9 @@ class ChunkUtils {
         }
     }
 
-
     public static <T> void applyInto(
-            ToLongFunction<T> longFunction,
-            ObjectChunk<T, ?> src,
+            ToLongFunction<? super T> longFunction,
+            ObjectChunk<? extends T, ?> src,
             int srcOffset,
             WritableLongChunk<?> dest,
             int destOffset,
@@ -99,8 +99,8 @@ class ChunkUtils {
     }
 
     public static <T> void applyInto(
-            ToFloatFunction<T> floatFunction,
-            ObjectChunk<T, ?> src,
+            ToFloatFunction<? super T> floatFunction,
+            ObjectChunk<? extends T, ?> src,
             int srcOffset,
             WritableFloatChunk<?> dest,
             int destOffset,
@@ -111,8 +111,8 @@ class ChunkUtils {
     }
 
     public static <T> void applyInto(
-            ToDoubleFunction<T> doubleFunction,
-            ObjectChunk<T, ?> src,
+            ToDoubleFunction<? super T> doubleFunction,
+            ObjectChunk<? extends T, ?> src,
             int srcOffset,
             WritableDoubleChunk<?> dest,
             int destOffset,
@@ -123,8 +123,8 @@ class ChunkUtils {
     }
 
     public static <T, R> void applyInto(
-            ToObjectFunction<T, R> objFunction,
-            ObjectChunk<T, ?> src,
+            Function<? super T, ? extends R> objFunction,
+            ObjectChunk<? extends T, ?> src,
             int srcOffset,
             WritableObjectChunk<R, ?> dest,
             int destOffset,
