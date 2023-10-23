@@ -14,9 +14,9 @@ import static junit.framework.TestCase.assertTrue;
 @SuppressWarnings({"UnnecessaryBoxing"})
 public class TestOpenAddressedCanonicalizationCache {
 
-    private static final int MAX_SPIN_CLEANUP_COUNT = 10_000;
+    private static final int MAX_SPIN_CLEANUP_COUNT = 100_000_000;
 
-    @Test
+    @Test(timeout = 10_000)
     public void testDefaultAdapter() {
         final OpenAddressedCanonicalizationCache SUT = new OpenAddressedCanonicalizationCache(1, 0.9f);
 
@@ -77,10 +77,10 @@ public class TestOpenAddressedCanonicalizationCache {
         System.gc();
         for (int i = 0; i < MAX_SPIN_CLEANUP_COUNT && SUT.getOccupiedSlots() != 3 * cachedIntegers.length / 2; ++i) {
             assertSame(cachedIntegers[0], SUT.getCachedItem(cachedIntegers[0])); // Force cleanup
+            Thread.onSpinWait();
         }
-        assertEquals(SUT.getOccupiedSlots(), 3 * cachedIntegers.length / 2);
-        assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
         assertEquals(3 * cachedIntegers.length / 2, SUT.getOccupiedSlots());
+        assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
 
         for (int ii = 0; ii < cachedIntegers.length; ++ii) {
             if ((ii & 1) == 1) {
@@ -152,7 +152,7 @@ public class TestOpenAddressedCanonicalizationCache {
                 }
             };
 
-    @Test
+    @Test(timeout = 10_000)
     public void testSpecialAdapters() {
         final OpenAddressedCanonicalizationCache SUT = new OpenAddressedCanonicalizationCache(1, 0.9f);
 
@@ -195,10 +195,10 @@ public class TestOpenAddressedCanonicalizationCache {
         System.gc();
         for (int i = 0; i < MAX_SPIN_CLEANUP_COUNT && SUT.getOccupiedSlots() != cachedStrings.length / 2; ++i) {
             assertSame(cachedStrings[0], SUT.getCachedItem(cachedStrings[0])); // Force cleanup
+            Thread.onSpinWait();
         }
-        assertEquals(SUT.getOccupiedSlots(), cachedStrings.length / 2);
-        assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
         assertEquals(cachedStrings.length / 2, SUT.getOccupiedSlots());
+        assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
 
         for (int ii = 0; ii < cachedStrings.length; ii += 2) {
             final String intString = SUT.getCachedItem(ii, OSA);
