@@ -79,20 +79,18 @@ public class UpdateGraphAwareCompletableFuture<T> implements Future<T> {
         return getInternal(timeout, unit);
     }
 
-    private T getInternal(long timeout, @Nullable TimeUnit unit)
+    private T getInternal(final long timeout, @Nullable final TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
         // test lock conditions
         if (updateGraph.sharedLock().isHeldByCurrentThread()) {
             throw new UnsupportedOperationException(
-                    "Cannot Future#get while holding the " + updateGraph + " shared lock");
+                    "Cannot Future.get(...) while holding the " + updateGraph + " shared lock");
         }
 
         final boolean holdingUpdateGraphLock = updateGraph.exclusiveLock().isHeldByCurrentThread();
-        if (updateGraphCondition == null && holdingUpdateGraphLock) {
-            try (final SafeCloseable ignored = lock.lockCloseable()) {
-                if (updateGraphCondition == null) {
-                    updateGraphCondition = updateGraph.exclusiveLock().newCondition();
-                }
+        if (holdingUpdateGraphLock) {
+            if (updateGraphCondition == null) {
+                updateGraphCondition = updateGraph.exclusiveLock().newCondition();
             }
         } else if (lockCondition == null) {
             try (final SafeCloseable ignored = lock.lockCloseable()) {
@@ -148,15 +146,17 @@ public class UpdateGraphAwareCompletableFuture<T> implements Future<T> {
     }
 
     private boolean trySignalCompletion(@NotNull final ThrowingSupplier<T, ExecutionException> result) {
-        if (!RESULT_UPDATER.compareAndSet(UpdateGraphAwareCompletableFuture.this, null, result)) {
+        if (!RESULT_UPDATER.compareAndSet(this, null, result)) {
             return false;
         }
 
-        final Condition localCondition = updateGraphCondition;
-        try (final SafeCloseable ignored = lock.lockCloseable()) {
-            if (localCondition != null) {
-                updateGraph.requestSignal(localCondition);
-            }
+        final Condition localUpdateGraphCondition = updateGraphCondition;
+        if (localUpdateGraphCondition != null) {
+            updateGraph.requestSignal(localUpdateGraphCondition);
+        }
+        final Condition localLockCondition = lockCondition;
+        if (localLockCondition != null) {
+            lock.doLocked(localLockCondition::signalAll);
         }
 
         return true;
