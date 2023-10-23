@@ -528,30 +528,31 @@ public class WorkerConnection {
     }
 
     private void subscribeToTerminationNotification() {
-        terminationStream = sessionServiceClient.terminationNotification(new TerminationNotificationRequest(), metadata(),
-                (fail, success) -> {
-                    if (state == State.Disconnected) {
-                        // already disconnected, no need to respond
-                        return;
-                    }
-                    if (fail != null) {
-                        // Errors are treated like connection issues, won't signal any shutdown
-                        if (checkStatus((ResponseStreamWrapper.ServiceError) fail)) {
-                            // restart the termination notification
-                            subscribeToTerminationNotification();
-                        } else {
-                            info.notifyConnectionError(Js.cast(fail));
+        terminationStream =
+                sessionServiceClient.terminationNotification(new TerminationNotificationRequest(), metadata(),
+                        (fail, success) -> {
+                            if (state == State.Disconnected) {
+                                // already disconnected, no need to respond
+                                return;
+                            }
+                            if (fail != null) {
+                                // Errors are treated like connection issues, won't signal any shutdown
+                                if (checkStatus((ResponseStreamWrapper.ServiceError) fail)) {
+                                    // restart the termination notification
+                                    subscribeToTerminationNotification();
+                                } else {
+                                    info.notifyConnectionError(Js.cast(fail));
+                                    connectionLost();
+                                }
+                                return;
+                            }
+                            assert success != null;
+
+                            // welp; the server is gone -- let everyone know
                             connectionLost();
-                        }
-                        return;
-                    }
-                    assert success != null;
 
-                    // welp; the server is gone -- let everyone know
-                    connectionLost();
-
-                    info.notifyServerShutdown(success);
-                });
+                            info.notifyServerShutdown(success);
+                        });
     }
 
     // @Override
