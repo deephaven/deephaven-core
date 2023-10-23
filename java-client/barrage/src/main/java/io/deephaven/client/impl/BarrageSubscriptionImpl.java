@@ -345,8 +345,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         // if we are building a snapshot via a growing viewport subscription, then cancel our subscription
         if (isSnapshot) {
-            tryRecordDisconnect();
-            GrpcUtil.safelyCancel(observer, "Barrage snapshot is complete", null);
+            if (tryRecordDisconnect()) {
+                GrpcUtil.safelyCancel(observer, "Barrage snapshot is complete", null);
+            }
         }
 
         final Condition localCondition = completedCondition;
