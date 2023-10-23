@@ -39,9 +39,9 @@ public interface BarrageSubscription {
     }
 
     /**
-     * This call will return false until all rows for the subscribed table are available.
+     * This call will return false until all rows for the subscribed table are available or the subscription failed.
      *
-     * @return true when all rows for the subscribed table are available, false otherwise
+     * @return true when all rows for the subscribed table are available or the subscription failed, false otherwise
      */
     boolean isCompleted();
 

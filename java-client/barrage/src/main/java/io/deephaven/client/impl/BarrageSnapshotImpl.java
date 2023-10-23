@@ -68,7 +68,9 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     private volatile int connected = 1;
     private static final AtomicIntegerFieldUpdater<BarrageSnapshotImpl> CONNECTED_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(BarrageSnapshotImpl.class, "connected");
-
+    private volatile int completed = 0;
+    private static final AtomicIntegerFieldUpdater<BarrageSnapshotImpl> COMPLETED_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(BarrageSnapshotImpl.class, "completed");
     private boolean prevUsed = false;
 
     /**
@@ -153,24 +155,33 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         @Override
         public void onError(final Throwable t) {
+            if (!tryRecordDisconnect()) {
+                return;
+            }
+
             log.error().append(BarrageSnapshotImpl.this)
                     .append(": Error detected in snapshot: ")
                     .append(t).endl();
 
-            if (!isConnected()) {
-                return;
-            }
-
             // this error will always be propagated to our CheckForCompletion#onError callback
             resultTable.handleBarrageError(t);
+            cleanup();
         }
 
         @Override
         public void onCompleted() {
-            if (tryRecordDisconnect()) {
-                signalCompletion();
+            if (!tryRecordDisconnect()) {
+                return;
             }
+
+            trySignalCompletion();
+            cleanup();
         }
+    }
+
+    @Override
+    public boolean isCompleted() {
+        return completedSuccessfully || exceptionWhileCompleting != null;
     }
 
     @Override
@@ -278,14 +289,14 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         return CONNECTED_UPDATER.compareAndSet(this, 1, 0);
     }
 
-    private void signalCompletion() {
-        signalCompletion(null);
+    private void trySignalCompletion() {
+        trySignalCompletion(null);
     }
 
-    /**
-     * This method will only be invoked once using the CAS of {@code connected} from 1 to 0 as a guard.
-     */
-    private void signalCompletion(@Nullable final Throwable t) {
+    private void trySignalCompletion(@Nullable final Throwable t) {
+        if (!COMPLETED_UPDATER.compareAndSet(BarrageSnapshotImpl.this, 0, 1)) {
+            return;
+        }
         if (t != null) {
             exceptionWhileCompleting = t;
         } else {
@@ -299,8 +310,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         synchronized (this) {
             notifyAll();
         }
-
-        cleanup();
     }
 
     @Override
@@ -317,6 +326,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         resultTable.handleBarrageError(new RequestCancelledException("Barrage subscription cancelled by client"));
         GrpcUtil.safelyCancel(observer, "Barrage snapshot is cancelled", exceptionWhileCompleting);
+        cleanup();
     }
 
     private void cleanup() {
@@ -441,9 +451,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         @Override
         public void onError(Throwable t) {
-            if (tryRecordDisconnect()) {
-                signalCompletion(t);
-            }
+            trySignalCompletion(t);
         }
     }
 }

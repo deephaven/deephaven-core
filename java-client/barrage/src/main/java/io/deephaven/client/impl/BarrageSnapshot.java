@@ -39,6 +39,13 @@ public interface BarrageSnapshot {
     }
 
     /**
+     * This call will return false until all rows for the result table are available or the snapshot failed.
+     *
+     * @return true when all rows for the result table are available or the snapshot failed, false otherwise
+     */
+    boolean isCompleted();
+
+    /**
      * Request a full snapshot of the data and populate a {@link Table} with the data that is received.
      *
      * @return the {@code Table}
