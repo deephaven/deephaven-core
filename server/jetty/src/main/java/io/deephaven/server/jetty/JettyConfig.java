@@ -84,7 +84,7 @@ public abstract class JettyConfig implements ServerConfig {
      * {@link Builder#http2StreamIdleTimeout(long)}, {@value HTTP_COMPRESSION} into
      * {@link Builder#httpCompression(Boolean)}, {@value SNI_HOST_CHECK} into {@link Builder#sniHostCheck(boolean)},
      * {@value HTTP_STREAM_TIMEOUT} into {@link Builder#http2StreamIdleTimeout(long)}, and {@value HTTP_JSPLUGINS} into
-     * {@link Builder#jsPlugins(boolean)}.
+     * {@link Builder#jsPlugins(Boolean)}.
      *
      * @param config the config
      * @return the builder
