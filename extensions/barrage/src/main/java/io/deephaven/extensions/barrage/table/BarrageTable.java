@@ -566,6 +566,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     @Override
     protected void destroy() {
         super.destroy();
+        discardAnyPendingUpdates();
         if (stats != null) {
             stats.stop();
         }

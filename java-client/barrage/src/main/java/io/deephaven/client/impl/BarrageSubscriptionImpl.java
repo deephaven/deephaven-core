@@ -236,15 +236,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         return CONNECTED_UPDATER.compareAndSet(this, 1, 0);
     }
 
-    private boolean onFutureCancel(boolean cancelResult) {
-        if (!cancelResult) {
-            return false;
-        }
-
-        cancel();
-        return true;
-    }
-
     private void onFutureComplete() {
         // if we are building a snapshot via a growing viewport subscription, then cancel our subscription
         if (isSnapshot && tryRecordDisconnect()) {
@@ -263,8 +254,13 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             return;
         }
 
-        resultTable.handleBarrageError(new RequestCancelledException("Barrage subscription cancelled by client"));
-        GrpcUtil.safelyCancel(observer, "Barrage subscription is cancelled", null);
+        final RequestCancelledException cancelledException =
+                new RequestCancelledException("Barrage subscription cancelled by client");
+        if (!isSnapshot) {
+            // Stop our result table from processing any more data.
+            resultTable.forceReferenceCountToZero();
+        }
+        GrpcUtil.safelyCancel(observer, "Barrage subscription is cancelled", cancelledException);
         cleanup();
     }
 
@@ -457,7 +453,11 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private class CompletableFutureAdapter extends CompletableFuture<Table> implements FutureAdapter {
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
-            return onFutureCancel(super.cancel(mayInterruptIfRunning));
+            if (super.cancel(mayInterruptIfRunning)) {
+                BarrageSubscriptionImpl.this.cancel();
+                return true;
+            }
+            return false;
         }
     }
 
@@ -469,7 +469,11 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
-            return onFutureCancel(super.cancel(mayInterruptIfRunning));
+            if (super.cancel(mayInterruptIfRunning)) {
+                BarrageSubscriptionImpl.this.cancel();
+                return true;
+            }
+            return false;
         }
     }
 }

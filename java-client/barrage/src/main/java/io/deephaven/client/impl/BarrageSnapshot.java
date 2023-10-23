@@ -41,9 +41,11 @@ public interface BarrageSnapshot {
     /**
      * Request a full snapshot of the data and populate a {@link Table} with the data that is received.
      *
-     * @return the {@code Table}
+     * @return a {@link Future
+     *         <Table>
+     *         } that will be populated with the snapshot
      */
-    Future<Table> entireTable() throws InterruptedException;
+    Future<Table> entireTable();
 
     /**
      * Request a partial snapshot of the data limited by viewport or column set and populate a {@link Table} with the
@@ -52,9 +54,11 @@ public interface BarrageSnapshot {
      * @param viewport the position-space viewport to use for the snapshot
      * @param columns the columns to include in the snapshot
      *
-     * @return the {@code Table}
+     * @return a {@link Future
+     *         <Table>
+     *         } that will be populated with the snapshot
      */
-    Future<Table> partialTable(RowSet viewport, BitSet columns) throws InterruptedException;
+    Future<Table> partialTable(RowSet viewport, BitSet columns);
 
     /**
      * Request a partial snapshot of the data limited by viewport or column set and populate a {@link Table} with the
@@ -65,7 +69,9 @@ public interface BarrageSnapshot {
      * @param reverseViewport Whether to treat {@code posRowSet} as offsets from
      *        {@link io.deephaven.engine.table.Table#size()} rather than {@code 0}
      *
-     * @return the {@code Table}
+     * @return a {@link Future
+     *         <Table>
+     *         } that will be populated with the snapshot
      */
-    Future<Table> partialTable(RowSet viewport, BitSet columns, boolean reverseViewport) throws InterruptedException;
+    Future<Table> partialTable(RowSet viewport, BitSet columns, boolean reverseViewport);
 }

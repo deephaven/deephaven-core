@@ -87,7 +87,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         final TableDefinition tableDefinition = schema.tableDef;
         resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, new CheckForCompletion());
-        future = new CompletableFuture<>();
+        future = new SnapshotCompletableFuture();
 
         final MethodDescriptor<FlightData, BarrageMessage> snapshotDescriptor =
                 getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
@@ -218,14 +218,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         return CONNECTED_UPDATER.compareAndSet(this, 1, 0);
     }
 
-    private void tryCompleteFuture(@Nullable final Throwable t) {
-        if (t == null) {
-            future.complete(resultTable);
-        } else {
-            future.completeExceptionally(t);
-        }
-    }
-
     @Override
     protected void destroy() {
         super.destroy();
@@ -237,10 +229,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             return;
         }
 
-        final RequestCancelledException requestCancelled =
-                new RequestCancelledException("Barrage subscription cancelled by client");
-        resultTable.handleBarrageError(requestCancelled);
-        GrpcUtil.safelyCancel(observer, "Barrage snapshot is cancelled", requestCancelled);
+        GrpcUtil.safelyCancel(observer, "Barrage snapshot is cancelled",
+                new RequestCancelledException("Barrage snapshot cancelled by client"));
         cleanup();
     }
 
@@ -367,6 +357,18 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         @Override
         public void onError(@NotNull final Throwable t) {
             future.completeExceptionally(t);
+        }
+    }
+
+    private class SnapshotCompletableFuture extends CompletableFuture<Table> {
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            if (super.cancel(mayInterruptIfRunning)) {
+                BarrageSnapshotImpl.this.cancel();
+                return true;
+            }
+
+            return false;
         }
     }
 }
