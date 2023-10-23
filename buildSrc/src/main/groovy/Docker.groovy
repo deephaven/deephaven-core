@@ -77,6 +77,11 @@ class Docker {
         private Action<? super Sync> copyOut;
         private File dockerfileFile;
         private Action<? super Dockerfile> dockerfileAction;
+
+        /**
+         * Declares tasks that this group of tasks should depend on or be
+         * finalized by.
+         */
         TaskDependencies containerDependencies = new TaskDependencies();
 
         /**
