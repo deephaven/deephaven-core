@@ -6,7 +6,7 @@ plugins {
     id 'io.deephaven.deephaven-in-docker'
 }
 
-evaluationDependsOn Docker.registryProject('python')
+evaluationDependsOn(':cpp-client')
 
 wheel {
     src 'pydeephaven'
