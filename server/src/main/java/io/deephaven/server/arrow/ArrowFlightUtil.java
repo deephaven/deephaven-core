@@ -494,6 +494,11 @@ public class ArrowFlightUtil {
                                 metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                                 metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
+                                if (table.isFailed()) {
+                                    throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                                            "Table is already failed");
+                                }
+
                                 // push the schema to the listener
                                 listener.onNext(streamGeneratorFactory.getSchemaView(
                                         fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
