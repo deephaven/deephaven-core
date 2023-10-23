@@ -3,12 +3,16 @@
  */
 package io.deephaven.base.cache;
 
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-@SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase", "UnnecessaryBoxing"})
-public class TestOpenAddressedCanonicalizationCache extends TestCase {
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNotSame;
+import static junit.framework.TestCase.assertSame;
+import static junit.framework.TestCase.assertTrue;
+
+@SuppressWarnings({"UnnecessaryBoxing"})
+public class TestOpenAddressedCanonicalizationCache {
 
     private static final int MAX_SPIN_CLEANUP_COUNT = 10_000;
 
@@ -141,7 +145,10 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
 
                 @Override
                 public String makeCacheableItem(@NotNull Object inputItem) {
-                    return inputItem.toString();
+                    // Explicitly make our own copy of the input.toString(), so we can be sure there are no uncontrolled
+                    // referrers to cached items.
+                    // noinspection StringOperationCanBeSimplified
+                    return new String(inputItem.toString());
                 }
             };
 
