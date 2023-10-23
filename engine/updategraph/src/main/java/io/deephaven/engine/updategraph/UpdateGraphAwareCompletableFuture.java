@@ -7,6 +7,7 @@ import io.deephaven.util.locks.FunctionalReentrantLock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
@@ -57,6 +58,8 @@ public class UpdateGraphAwareCompletableFuture<T> implements Future<T> {
 
     @Override
     public T get() throws InterruptedException, ExecutionException {
+        checkSharedLockState();
+
         if (resultSupplier != null) {
             return resultSupplier.get();
         }
@@ -70,6 +73,8 @@ public class UpdateGraphAwareCompletableFuture<T> implements Future<T> {
     @Override
     public T get(final long timeout, @NotNull final TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
+        checkSharedLockState();
+
         if (resultSupplier != null) {
             return resultSupplier.get();
         }
@@ -81,12 +86,6 @@ public class UpdateGraphAwareCompletableFuture<T> implements Future<T> {
 
     private T getInternal(final long timeout, @Nullable final TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
-        // test lock conditions
-        if (updateGraph.sharedLock().isHeldByCurrentThread()) {
-            throw new UnsupportedOperationException(
-                    "Cannot Future.get(...) while holding the " + updateGraph + " shared lock");
-        }
-
         final boolean holdingUpdateGraphLock = updateGraph.exclusiveLock().isHeldByCurrentThread();
         if (holdingUpdateGraphLock) {
             if (updateGraphCondition == null) {
@@ -109,6 +108,13 @@ public class UpdateGraphAwareCompletableFuture<T> implements Future<T> {
         }
 
         return resultSupplier.get();
+    }
+
+    private void checkSharedLockState() {
+        if (updateGraph.sharedLock().isHeldByCurrentThread()) {
+            throw new UnsupportedOperationException(
+                    "Cannot Future.get(...) while holding the " + updateGraph + " shared lock");
+        }
     }
 
     private void waitForResult(final Condition condition, final long timeout, @Nullable final TimeUnit unit)
@@ -138,9 +144,7 @@ public class UpdateGraphAwareCompletableFuture<T> implements Future<T> {
     }
 
     public boolean completeExceptionally(Throwable ex) {
-        if (ex == null) {
-            throw new NullPointerException();
-        }
+        Objects.requireNonNull(ex);
         return trySignalCompletion(() -> {
             throw new ExecutionException(ex);
         });

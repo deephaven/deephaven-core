@@ -658,6 +658,12 @@ public class ArrowFlightUtil {
                 final Object export = parent.get();
                 if (export instanceof QueryTable) {
                     final QueryTable table = (QueryTable) export;
+
+                    if (table.isFailed()) {
+                        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                                "Table is already failed");
+                    }
+
                     final UpdateGraph ug = table.getUpdateGraph();
                     try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
                         bmp = table.getResult(bmpOperationFactory.create(table, minUpdateIntervalMs));

@@ -250,8 +250,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     protected void destroy() {
         super.destroy();
         cancel("no longer live");
-        if (future != null) {
-            future.completeExceptionally(new RequestCancelledException("Barrage subscription is no longer live"));
+        final FutureAdapter localFuture = future;
+        if (localFuture != null) {
+            localFuture.completeExceptionally(new RequestCancelledException("Barrage subscription is no longer live"));
         }
     }
 
