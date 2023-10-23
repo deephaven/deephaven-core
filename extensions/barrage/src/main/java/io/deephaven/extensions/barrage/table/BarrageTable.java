@@ -341,6 +341,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             }
             // once we notify on error we are done, we can not notify any further, we are failed
             cleanup();
+            // we are quite certain the shadow copies should have been drained on the last run
+            Assert.eqZero(shadowPendingUpdates.size(), "shadowPendingUpdates.size()");
             return;
         }
 
@@ -390,8 +392,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
         // release any pending snapshots, as we will never process them
         discardAnyPendingUpdates();
-        // we are quite certain the shadow copies should have been drained on the last run
-        Assert.eqZero(shadowPendingUpdates.size(), "shadowPendingUpdates.size()");
     }
 
     @Override
@@ -566,10 +566,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     @Override
     protected void destroy() {
         super.destroy();
-        discardAnyPendingUpdates();
-        if (stats != null) {
-            stats.stop();
-        }
+        cleanup();
     }
 
     public LongConsumer getDeserializationTmConsumer() {

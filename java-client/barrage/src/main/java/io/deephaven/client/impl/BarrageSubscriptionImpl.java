@@ -194,20 +194,23 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     @Override
     public Future<Table> partialTable(RowSet viewport, BitSet columns, boolean reverseViewport) {
         synchronized (this) {
-            if (!isConnected()) {
-                throw new UncheckedDeephavenException(this + " is no longer connected and cannot be retained further");
-            }
             if (subscribed) {
                 throw new UncheckedDeephavenException("Barrage subscription objects cannot be reused");
             }
             subscribed = true;
         }
 
+        // we must create the future before checking `isConnected` to guarantee `future` visibility in `destroy`
         if (isSnapshot) {
             future = new CompletableFutureAdapter();
         } else {
             future = new UpdateGraphAwareFutureAdapter(resultTable.getUpdateGraph());
         }
+
+        if (!isConnected()) {
+            throw new UncheckedDeephavenException(this + " is no longer connected and cannot be retained further");
+        }
+        // the future we'll return below is now guaranteed to be seen by `destroy`
 
         checkForCompletion.setExpected(
                 viewport == null ? null : viewport.copy(),
@@ -246,21 +249,23 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     @Override
     protected void destroy() {
         super.destroy();
-        cancel();
+        cancel("no longer live");
+        if (future != null) {
+            future.completeExceptionally(new RequestCancelledException("Barrage subscription is no longer live"));
+        }
     }
 
-    private void cancel() {
+    private void cancel(final String reason) {
         if (!tryRecordDisconnect()) {
             return;
         }
 
-        final RequestCancelledException cancelledException =
-                new RequestCancelledException("Barrage subscription cancelled by client");
         if (!isSnapshot) {
             // Stop our result table from processing any more data.
             resultTable.forceReferenceCountToZero();
         }
-        GrpcUtil.safelyCancel(observer, "Barrage subscription is cancelled", cancelledException);
+        GrpcUtil.safelyCancel(observer, "Barrage subscription is " + reason,
+                new RequestCancelledException("Barrage subscription is " + reason));
         cleanup();
     }
 
@@ -454,7 +459,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
             if (super.cancel(mayInterruptIfRunning)) {
-                BarrageSubscriptionImpl.this.cancel();
+                BarrageSubscriptionImpl.this.cancel("cancelled by user");
                 return true;
             }
             return false;
@@ -470,7 +475,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
             if (super.cancel(mayInterruptIfRunning)) {
-                BarrageSubscriptionImpl.this.cancel();
+                BarrageSubscriptionImpl.this.cancel("cancelled by user");
                 return true;
             }
             return false;

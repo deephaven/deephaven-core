@@ -39,39 +39,35 @@ public interface BarrageSnapshot {
     }
 
     /**
-     * Request a full snapshot of the data and populate a {@link Table} with the data that is received.
+     * Request a full snapshot of the data and populate a {@link Table} with the data that is received. The returned
+     * future will block until all rows for the snapshot table are available.
      *
-     * @return a {@link Future
-     *         <Table>
-     *         } that will be populated with the snapshot
+     * @return a {@link Future} that will be populated with the result {@link Table}
      */
     Future<Table> entireTable();
 
     /**
      * Request a partial snapshot of the data limited by viewport or column set and populate a {@link Table} with the
-     * data that is received.
+     * data that is received. The returned future will block until the snapshot table viewport is satisfied.
      *
      * @param viewport the position-space viewport to use for the snapshot
      * @param columns the columns to include in the snapshot
      *
-     * @return a {@link Future
-     *         <Table>
-     *         } that will be populated with the snapshot
+     * @return a {@link Future} that will be populated with the result {@link Table}
      */
     Future<Table> partialTable(RowSet viewport, BitSet columns);
 
     /**
      * Request a partial snapshot of the data limited by viewport or column set and populate a {@link Table} with the
-     * data that is received. Allows the viewport to be reversed.
+     * data that is received. Allows the viewport to be reversed. The returned future will block until the snapshot
+     * table viewport is satisfied.
      *
      * @param viewport the position-space viewport to use for the snapshot
      * @param columns the columns to include in the snapshot
      * @param reverseViewport Whether to treat {@code posRowSet} as offsets from
      *        {@link io.deephaven.engine.table.Table#size()} rather than {@code 0}
      *
-     * @return a {@link Future
-     *         <Table>
-     *         } that will be populated with the snapshot
+     * @return a {@link Future} that will be populated with the result {@link Table}
      */
     Future<Table> partialTable(RowSet viewport, BitSet columns, boolean reverseViewport);
 }

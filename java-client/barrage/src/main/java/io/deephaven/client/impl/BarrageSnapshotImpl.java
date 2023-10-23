@@ -221,16 +221,16 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     @Override
     protected void destroy() {
         super.destroy();
-        cancel();
+        cancel("no longer live");
     }
 
-    private void cancel() {
+    private void cancel(@NotNull final String reason) {
         if (!tryRecordDisconnect()) {
             return;
         }
 
-        GrpcUtil.safelyCancel(observer, "Barrage snapshot is cancelled",
-                new RequestCancelledException("Barrage snapshot cancelled by client"));
+        GrpcUtil.safelyCancel(observer, "Barrage snapshot is " + reason,
+                new RequestCancelledException("Barrage snapshot is " + reason));
         cleanup();
     }
 
@@ -364,7 +364,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
             if (super.cancel(mayInterruptIfRunning)) {
-                BarrageSnapshotImpl.this.cancel();
+                BarrageSnapshotImpl.this.cancel("cancelled by user");
                 return true;
             }
 

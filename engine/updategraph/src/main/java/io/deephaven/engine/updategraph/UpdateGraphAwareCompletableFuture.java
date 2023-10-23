@@ -138,8 +138,9 @@ public class UpdateGraphAwareCompletableFuture<T> implements Future<T> {
     }
 
     public boolean completeExceptionally(Throwable ex) {
-        if (ex == null)
+        if (ex == null) {
             throw new NullPointerException();
+        }
         return trySignalCompletion(() -> {
             throw new ExecutionException(ex);
         });

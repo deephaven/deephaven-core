@@ -40,78 +40,68 @@ public interface BarrageSubscription {
 
     /**
      * Request a full subscription of the data and populate a {@link Table} with the incrementally updating data that is
-     * received.
+     * received. The returned future will block until all rows for the subscribed table are available.
      *
-     * @return a {@link Future
-     *         <Table>
-     *         } that will be populated when the result table is ready
+     * @return a {@link Future} that will be populated with the result {@link Table}
      */
     Future<Table> entireTable();
 
     // TODO (deephaven-core#712): java-client viewport support
     /**
      * Request a partial subscription of the data limited by viewport or column set and populate a {@link Table} with
-     * the data that is received.
+     * the data that is received. The returned future will block until the subscribed table viewport is satisfied.
      *
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
      *
-     * @return a {@link Future
-     *         <Table>
-     *         } that will be populated when the result table is ready
+     * @return a {@link Future} that will be populated with the result {@link Table}
      */
     Future<Table> partialTable(RowSet viewport, BitSet columns);
 
     /**
      * Request a partial subscription of the data limited by viewport or column set and populate a {@link Table} with
-     * the data that is received. Allows the viewport to be reversed.
+     * the data that is received. Allows the viewport to be reversed. The returned future will block until the
+     * subscribed table viewport is satisfied.
      *
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
      * @param reverseViewport Whether to treat {@code posRowSet} as offsets from
      *        {@link io.deephaven.engine.table.Table#size()} rather than {@code 0}
      *
-     * @return a {@link Future
-     *         <Table>
-     *         } that will be populated when the result table is ready
+     * @return a {@link Future} that will be populated with the result {@link Table}
      */
     Future<Table> partialTable(RowSet viewport, BitSet columns, boolean reverseViewport);
 
     /**
      * Request a full snapshot of the data and populate a {@link Table} with the incrementally updating data that is
-     * received.
+     * received. The returned future will block until all rows for the snapshot table are available.
      *
-     * @return a {@link Future
-     *         <Table>
-     *         } that will be populated when the result snapshot table is ready
+     * @return a {@link Future} that will be populated with the result {@link Table}
      */
     Future<Table> snapshotEntireTable();
 
     /**
      * Request a partial snapshot of the data limited by viewport or column set and populate a {@link Table} with the
-     * data that is received.
+     * data that is received. The returned future will block until the snapshot table viewport is satisfied.
      *
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
      *
-     * @return a {@link Future
-     *         <Table>
-     *         } that will be populated when the result snapshot table is ready
+     * @return a {@link Future} that will be populated with the result {@link Table}
      */
     Future<Table> snapshotPartialTable(RowSet viewport, BitSet columns);
 
     /**
      * Request a partial snapshot of the data limited by viewport or column set and populate a {@link Table} with the
-     * data that is received. Allows the viewport to be reversed.
+     * data that is received. Allows the viewport to be reversed. The returned future will block until the snapshot
+     * table viewport is satisfied.
      *
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
      * @param reverseViewport Whether to treat {@code posRowSet} as offsets from
      *        {@link io.deephaven.engine.table.Table#size()} rather than {@code 0}
      *
-     * @return a {@link Future
-     *         <Table>
-     *         } that will be populated when the result snapshot table is ready
+     * @return a {@link Future} that will be populated with the result {@link Table}
      */
     Future<Table> snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport);
 }
