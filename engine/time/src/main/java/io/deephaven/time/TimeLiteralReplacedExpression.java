@@ -138,7 +138,8 @@ public class TimeLiteralReplacedExpression {
                 newVariables.put("_timeZone" + tzIndex, ZoneId.class);
                 tzIndex++;
             } else {
-                throw new Exception("Cannot parse datetime/time/period : " + s);
+                throw new Exception(
+                        "Cannot parse literal as a datetime, date, time, duration, period, or timezone: " + s);
             }
         }
 
