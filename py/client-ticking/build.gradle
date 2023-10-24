@@ -87,7 +87,6 @@ def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTickin
         from('deephaven/py-client-ticking:local-build')
         runCommand("PREFIX=${prefix}; " +
                    '''set -eux ; \
-                      pip3 install unittest-xml-reporting; \
                       rm -fr /out; \
                       mkdir -p \
                         /out/report \
