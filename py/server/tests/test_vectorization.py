@@ -4,6 +4,7 @@
 import random
 import unittest
 
+from typing import Optional
 import numpy as np
 
 import deephaven
@@ -264,6 +265,15 @@ class VectorizationTestCase(BaseTestCase):
 
         t = empty_table(100).update(["X = 0.1 * i", "SincXS=((sinc2(X)))"])
         self.assertEqual(t.columns[1].data_type, dtypes.PyObject)
+
+    def test_optional_annotations(self):
+        def pyfunc(p1: np.int32, p2: np.int32, p3: Optional[np.int32]) -> Optional[int]:
+            return p1 + p2 + p3
+
+        t = empty_table(1).update("X = i").update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
+        self.assertEqual(deephaven.table._vectorized_count, 2)
+        self.assertIn("33", t.to_string(cols=["Y"]))
+        self.assertIn("66", t.to_string(cols=["Z"]))
 
 
 if __name__ == "__main__":
