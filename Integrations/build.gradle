@@ -45,6 +45,11 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
     Docker.registerDockerTask(project, name) {
         copyIn {
             from(sourcePath) {
+                include 'deephaven/**'
+                include 'deephaven_internal/**'
+                include 'test_helper/**'
+                include 'tests/**'
+                include 'setup.py'
                 into 'python'
             }
             from(test.runtimeClasspath) {
