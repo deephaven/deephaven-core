@@ -5,6 +5,10 @@ plugins {
 spotless {
     java {
         eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
+
+        licenseHeader '''/*
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+ */'''
     }
 }
 
