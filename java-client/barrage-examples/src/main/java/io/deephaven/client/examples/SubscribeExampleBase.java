@@ -7,15 +7,17 @@ import io.deephaven.client.impl.BarrageSession;
 import io.deephaven.client.impl.BarrageSubscription;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.qst.TableCreationLogic;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import picocli.CommandLine;
 
@@ -53,19 +55,20 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
         final TableHandleManager subscriptionManager = mode == null ? client.session()
                 : mode.batch ? client.session().batch() : client.session().serial();
 
-        try (final TableHandle handle = subscriptionManager.executeLogic(logic());
-                final BarrageSubscription subscription = client.subscribe(handle, options)) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final TableHandle handle = subscriptionManager.executeLogic(logic())) {
+            final BarrageSubscription subscription = client.subscribe(handle, options);
 
-            final BarrageTable subscriptionTable;
+            final Table subscriptionTable;
             if (headerSize > 0) {
                 // create a Table subscription with forward viewport of the specified size
-                subscriptionTable = subscription.partialTable(RowSetFactory.flat(headerSize), null, false);
+                subscriptionTable = subscription.partialTable(RowSetFactory.flat(headerSize), null, false).get();
             } else if (tailSize > 0) {
                 // create a Table subscription with reverse viewport of the specified size
-                subscriptionTable = subscription.partialTable(RowSetFactory.flat(tailSize), null, true);
+                subscriptionTable = subscription.partialTable(RowSetFactory.flat(tailSize), null, true).get();
             } else {
                 // create a Table subscription of the entire Table
-                subscriptionTable = subscription.entireTable();
+                subscriptionTable = subscription.entireTable().get();
             }
 
             System.out.println("Subscription established");
@@ -76,7 +79,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
             subscriptionTable.addUpdateListener(listener = new InstrumentedTableUpdateListener("example-listener") {
                 @ReferentialIntegrity
-                final BarrageTable tableRef = subscriptionTable;
+                final Table tableRef = subscriptionTable;
                 {
                     // Maintain a liveness ownership relationship with subscriptionTable for the lifetime of the
                     // listener
@@ -105,8 +108,8 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
             countDownLatch.await();
 
-            // For a "real" implementation, we would use liveness tracking for the listener, and ensure that it was
-            // destroyed and unreachable when we no longer needed it.
+            // Note that when the LivenessScope, which is opened in the try-with-resources block, is closed the
+            // listener, resultTable, and subscription objects will be destroyed.
             listener = null;
         }
     }
