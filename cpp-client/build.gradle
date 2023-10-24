@@ -10,7 +10,7 @@ plugins {
 spotless {
     cpp {
         target '**/*.cc', '**/*.h'
-        targetExclude '**/Barrage_generated.h', '**/third_party/**'
+        targetExclude '**/Barrage_generated.h', '**/third_party/**', '**/*.pb.*'
         licenseHeader '''/*
  * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */'''
