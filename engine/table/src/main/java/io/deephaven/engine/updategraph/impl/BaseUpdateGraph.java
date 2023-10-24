@@ -860,6 +860,15 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     }
 
     /**
+     * In unit tests it can be convenient to force the update performance tracker to flush, without waiting for the
+     * complete REPORT_INTERVAL_MILLIS to elapse.
+     */
+    @TestUseOnly
+    public void resetNextFlushTime() {
+        nextUpdatePerformanceTrackerFlushTime = 0;
+    }
+
+    /**
      * The UpdatePerformanceTracker requires a common update graph for all operations, to avoid spanning update graphs.
      * @return a context suitable for operating on the updatePerformanceTracker.
      */

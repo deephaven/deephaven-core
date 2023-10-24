@@ -144,44 +144,43 @@ public class TestEventDrivenUpdateGraph {
     public void testUpdatePerformanceTracker() {
         final Table upt = UpdatePerformanceTracker.getQueryTable();
 
-        final long start = System.currentTimeMillis();
 
         final EventDrivenUpdateGraph eventDrivenUpdateGraph1 = new EventDrivenUpdateGraph.Builder("TestEDUG1").build();
         final EventDrivenUpdateGraph eventDrivenUpdateGraph2 = new EventDrivenUpdateGraph.Builder("TestEDUG2").build();
 
-        final int count1 = 100;
-        final int count2 = 200;
+        // first empty flush
+        eventDrivenUpdateGraph1.requestRefresh();
+        eventDrivenUpdateGraph2.requestRefresh();
+
+        final long start = System.currentTimeMillis();
+
+        final int count1 = 10;
+        final int count2 = 20;
         final int time1 = 10;
         final int time2 = 5;
 
-        doWork(eventDrivenUpdateGraph1, count1, time1);
-        doWork(eventDrivenUpdateGraph2, count2, time2);
+        // the work we care about
+        final Object ref1 = doWork(eventDrivenUpdateGraph1, time1, count1 - 1);
+        final Object ref2 = doWork(eventDrivenUpdateGraph2, time2, count2 - 1);
 
-        do {
-            final long now = System.currentTimeMillis();
-            final long end = start + UpdatePerformanceTracker.REPORT_INTERVAL_MILLIS;
-            if (end < now) {
-                break;
-            }
-            System.out.println("Did work, waiting for performance cycle to complete: " + (end - now) + " ms");
-            SleepUtil.sleep(end - now);
-        } while (true);
-
-        doWork(eventDrivenUpdateGraph1, 1, 0);
-        doWork(eventDrivenUpdateGraph2, 1, 0);
+        // force a flush
+        eventDrivenUpdateGraph1.resetNextFlushTime();
+        eventDrivenUpdateGraph2.resetNextFlushTime();
+        eventDrivenUpdateGraph1.requestRefresh();
+        eventDrivenUpdateGraph2.requestRefresh();
 
         defaultUpdateGraph.requestRefresh();
 
-        final Table uptAgged = upt.aggBy(Aggregation.AggSum("EntryIntervalUsage", "EntryIntervalInvocationCount", "EntryIntervalModified"), "UpdateGraph", "EntryId");
+        final Table inRange;
         final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(defaultUpdateGraph)
                 .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
-        final Table inRange;
         try (final SafeCloseable ignored = context.open()) {
-            inRange = defaultUpdateGraph.sharedLock().computeLocked(() -> uptAgged.update("EIUExpectedMillis = UpdateGraph==`TestEDUG1` ? (" + time1 + " * EntryIntervalInvocationCount) : (" + time2 + " * EntryIntervalInvocationCount)", "InRange=EntryIntervalUsage > 0.9 * EIUExpectedMillis && EntryIntervalUsage < 1.1 * EIUExpectedMillis"));
+            final Table uptAgged = upt.where("!isNull(EntryId)").aggBy(Aggregation.AggSum("EntryIntervalUsage", "EntryIntervalInvocationCount", "EntryIntervalModified"), "UpdateGraph", "EntryId");
+            inRange = defaultUpdateGraph.sharedLock().computeLocked(() -> uptAgged.update("EIUExpectedMillis = UpdateGraph==`TestEDUG1` ? " + time1 + " : " + time2, "TotalExpectedTime=EntryIntervalInvocationCount * EIUExpectedMillis * 1_000_000L", "InRange=(EntryIntervalUsage > 0.9 * TotalExpectedTime) && (EntryIntervalUsage < 1.5 * TotalExpectedTime)"));
         }
         TableTools.show(inRange);
 
-        final Table compare = inRange.dropColumns("EntryId", "EntryIntervalUsage", "EIUExpectedMillis");
+        final Table compare = inRange.dropColumns("EntryId", "EntryIntervalUsage", "EIUExpectedMillis", "TotalExpectedTime");
         TableTools.show(compare);
 
         final Table expect = TableTools.newTable(stringCol("UpdateGraph", "TestEDUG1", "TestEDUG2"), longCol("EntryIntervalInvocationCount", count1, count2), longCol("EntryIntervalModified", count1, count2), booleanCol("InRange", true, true));
@@ -203,7 +202,7 @@ public class TestEventDrivenUpdateGraph {
         return retVal;
     }
 
-    private void doWork(final EventDrivenUpdateGraph eventDrivenUpdateGraph, final int durationMillis, final int steps) {
+    private Object doWork(final EventDrivenUpdateGraph eventDrivenUpdateGraph, final int durationMillis, final int steps) {
         final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(eventDrivenUpdateGraph)
                 .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
         try (final SafeCloseable ignored = context.open()) {
@@ -215,8 +214,11 @@ public class TestEventDrivenUpdateGraph {
             do {
                 TestCase.assertEquals(1, updated.size());
                 eventDrivenUpdateGraph.requestRefresh();
-            } while (step++ < steps);
+            } while (++step < steps);
             TestCase.assertEquals(1, updated.size());
+
+            // so that we do not lose the reference
+            return updated;
         }
     }
 }
