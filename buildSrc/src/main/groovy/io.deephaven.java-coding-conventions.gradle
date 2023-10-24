@@ -1,3 +1,5 @@
+import com.diffplug.spotless.generic.LicenseHeaderStep
+
 plugins {
     id 'com.diffplug.spotless'
 }
@@ -8,7 +10,7 @@ spotless {
 
         licenseHeader '''/*
  * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */'''
+ */''', LicenseHeaderStep.DEFAULT_JAVA_HEADER_DELIMITER + '|/\\*\\*\\*\\*\\*'
     }
 }
 
