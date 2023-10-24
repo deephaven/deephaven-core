@@ -1,7 +1,6 @@
-/**
+/*
  * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
-
 #include "deephaven/dhcore/column/column_source_utils.h"
 #include "deephaven/dhcore/utility/utility.h"
 
