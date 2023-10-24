@@ -3642,7 +3642,6 @@ public class QueryTableTest extends QueryTableTestBase {
         }
 
         @Override
-        public void stop() {
-        }
+        public void stop() {}
     }
 }

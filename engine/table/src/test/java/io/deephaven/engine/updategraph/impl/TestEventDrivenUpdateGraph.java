@@ -33,7 +33,7 @@ public class TestEventDrivenUpdateGraph {
     public void before() {
         // the default update is necessary for the update performance tracker
         clearUpdateGraphInstances();
-        defaultUpdateGraph = new EventDrivenUpdateGraph.Builder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).build();
+        defaultUpdateGraph = EventDrivenUpdateGraph.newBuilder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).build();
     }
 
     @After
@@ -79,7 +79,7 @@ public class TestEventDrivenUpdateGraph {
 
         public SourceThatModifiesItself(UpdateGraph updateGraph) {
             super(RowSetFactory.fromKeys(42).toTracking(), Collections.singletonMap("V", new LongSingleValueSource()));
-            svcs = (LongSingleValueSource)getColumnSource("V", long.class);
+            svcs = (LongSingleValueSource) getColumnSource("V", long.class);
             svcs.startTrackingPrevValues();
             updateGraph.addSource(this);
             svcs.set(0L);
@@ -101,7 +101,7 @@ public class TestEventDrivenUpdateGraph {
 
     @Test
     public void testSimpleAdd() {
-        final EventDrivenUpdateGraph eventDrivenUpdateGraph = new EventDrivenUpdateGraph.Builder("TestEDUG").build();
+        final EventDrivenUpdateGraph eventDrivenUpdateGraph = EventDrivenUpdateGraph.newBuilder("TestEDUG").build();
 
         final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(eventDrivenUpdateGraph)
                 .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
@@ -141,7 +141,7 @@ public class TestEventDrivenUpdateGraph {
 
                 final TrackingRowSet rowSet = updated.getRowSet();
                 System.out.println("Step = " + steps);
-                final long xv = xcs.getLong (rowSet.firstRowKey());
+                final long xv = xcs.getLong(rowSet.firstRowKey());
                 TestCase.assertEquals(2L * (steps + 1), xv);
             } while (steps++ < 100);
             TestCase.assertEquals(1, updated.size());
@@ -153,8 +153,8 @@ public class TestEventDrivenUpdateGraph {
         final Table upt = UpdatePerformanceTracker.getQueryTable();
 
 
-        final EventDrivenUpdateGraph eventDrivenUpdateGraph1 = new EventDrivenUpdateGraph.Builder("TestEDUG1").build();
-        final EventDrivenUpdateGraph eventDrivenUpdateGraph2 = new EventDrivenUpdateGraph.Builder("TestEDUG2").build();
+        final EventDrivenUpdateGraph eventDrivenUpdateGraph1 = EventDrivenUpdateGraph.newBuilder("TestEDUG1").build();
+        final EventDrivenUpdateGraph eventDrivenUpdateGraph2 = EventDrivenUpdateGraph.newBuilder("TestEDUG2").build();
 
         // first empty flush
         eventDrivenUpdateGraph1.requestRefresh();
@@ -183,15 +183,23 @@ public class TestEventDrivenUpdateGraph {
         final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(defaultUpdateGraph)
                 .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
         try (final SafeCloseable ignored = context.open()) {
-            final Table uptAgged = upt.where("!isNull(EntryId)").aggBy(Aggregation.AggSum("EntryIntervalUsage", "EntryIntervalInvocationCount", "EntryIntervalModified"), "UpdateGraph", "EntryId");
-            inRange = defaultUpdateGraph.sharedLock().computeLocked(() -> uptAgged.update("EIUExpectedMillis = UpdateGraph==`TestEDUG1` ? " + time1 + " : " + time2, "TotalExpectedTime=EntryIntervalInvocationCount * EIUExpectedMillis * 1_000_000L", "InRange=(EntryIntervalUsage > 0.9 * TotalExpectedTime) && (EntryIntervalUsage < 1.5 * TotalExpectedTime)"));
+            final Table uptAgged = upt.where("!isNull(EntryId)").aggBy(
+                    Aggregation.AggSum("EntryIntervalUsage", "EntryIntervalInvocationCount", "EntryIntervalModified"),
+                    "UpdateGraph", "EntryId");
+            inRange = defaultUpdateGraph.sharedLock().computeLocked(() -> uptAgged.update(
+                    "EIUExpectedMillis = UpdateGraph==`TestEDUG1` ? " + time1 + " : " + time2,
+                    "TotalExpectedTime=EntryIntervalInvocationCount * EIUExpectedMillis * 1_000_000L",
+                    "InRange=(EntryIntervalUsage > 0.9 * TotalExpectedTime) && (EntryIntervalUsage < 1.5 * TotalExpectedTime)"));
         }
         TableTools.show(inRange);
 
-        final Table compare = inRange.dropColumns("EntryId", "EntryIntervalUsage", "EIUExpectedMillis", "TotalExpectedTime");
+        final Table compare =
+                inRange.dropColumns("EntryId", "EntryIntervalUsage", "EIUExpectedMillis", "TotalExpectedTime");
         TableTools.show(compare);
 
-        final Table expect = TableTools.newTable(stringCol("UpdateGraph", "TestEDUG1", "TestEDUG2"), longCol("EntryIntervalInvocationCount", count1, count2), longCol("EntryIntervalModified", count1, count2), booleanCol("InRange", true, true));
+        final Table expect = TableTools.newTable(stringCol("UpdateGraph", "TestEDUG1", "TestEDUG2"),
+                longCol("EntryIntervalInvocationCount", count1, count2),
+                longCol("EntryIntervalModified", count1, count2), booleanCol("InRange", true, true));
         TstUtils.assertTableEquals(expect, compare);
     }
 
@@ -210,13 +218,15 @@ public class TestEventDrivenUpdateGraph {
         return retVal;
     }
 
-    private Object doWork(final EventDrivenUpdateGraph eventDrivenUpdateGraph, final int durationMillis, final int steps) {
+    private Object doWork(final EventDrivenUpdateGraph eventDrivenUpdateGraph, final int durationMillis,
+            final int steps) {
         final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(eventDrivenUpdateGraph)
                 .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
         try (final SafeCloseable ignored = context.open()) {
             final SourceThatModifiesItself modifySource = new SourceThatModifiesItself(eventDrivenUpdateGraph);
             final Table updated =
-                    eventDrivenUpdateGraph.sharedLock().computeLocked(() -> modifySource.update("X=" + getClass().getName() + ".sleepValue(" + (1000L * 1000L * durationMillis) + ", 2 * V)"));
+                    eventDrivenUpdateGraph.sharedLock().computeLocked(() -> modifySource.update("X="
+                            + getClass().getName() + ".sleepValue(" + (1000L * 1000L * durationMillis) + ", 2 * V)"));
 
             int step = 0;
             do {

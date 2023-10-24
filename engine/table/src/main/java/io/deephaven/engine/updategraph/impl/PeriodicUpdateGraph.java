@@ -359,7 +359,8 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
         running = false;
         notificationProcessor.shutdown();
         // ensure that any outstanding cycle has completed
-        exclusiveLock().doLocked(() -> {});
+        exclusiveLock().doLocked(() -> {
+        });
     }
 
     /**

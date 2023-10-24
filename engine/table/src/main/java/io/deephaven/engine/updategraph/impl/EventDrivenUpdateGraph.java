@@ -13,13 +13,25 @@ import org.jetbrains.annotations.NotNull;
 /**
  * An EventDrivenUpdateGraph provides an isolated refresh processor.
  *
- * <p>As with a {@link PeriodicUpdateGraph}, the EventDrivenUpdateGraph contains a set of sources, but it is refreshed only
+ * <p>
+ * As with a {@link PeriodicUpdateGraph}, the EventDrivenUpdateGraph contains a set of sources, but it is refreshed only
  * when a call to {@link #requestRefresh()} is made. All sources are synchronously refreshed on that thread; and then
- * the resultant notifications are also synchronously processed.</p>
+ * the resultant notifications are also synchronously processed.
+ * </p>
  */
 public class EventDrivenUpdateGraph extends BaseUpdateGraph {
     private static final Logger log = LoggerFactory.getLogger(EventDrivenUpdateGraph.class);
     private boolean started = false;
+
+    /**
+     * Create a builder for an EventDrivenUpdateGraph with the given name.
+     *
+     * @param name the name of the new EventDrivenUpdateGraph
+     * @return a builder for the EventDrivenUpdateGraph
+     */
+    public static EventDrivenUpdateGraph.Builder newBuilder(final String name) {
+        return new EventDrivenUpdateGraph.Builder(name);
+    }
 
     private EventDrivenUpdateGraph(String name, long minimumCycleDurationToLogNanos) {
         super(name, false, log, minimumCycleDurationToLogNanos);
@@ -44,8 +56,10 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
     /**
      * {@inheritDoc}
      *
-     * <p>When a refresh is requested, the EventDrivenUpdateGraph refreshes all source tables and then executes
-     * the resulting notifications synchronously on this thread.</p>
+     * <p>
+     * When a refresh is requested, the EventDrivenUpdateGraph refreshes all source tables and then executes the
+     * resulting notifications synchronously on this thread.
+     * </p>
      */
     @Override
     public void requestRefresh() {
@@ -62,9 +76,9 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
     }
 
     /**
-     * We defer starting the update performance tracker until our first cycle.  This is essential when we are the
-     * DEFAULT graph used for UPT publishing, as the UPT requires the publication graph to be in the BaseUpdateGraph
-     * map, which is not done until after our constructor completes.
+     * We defer starting the update performance tracker until our first cycle. This is essential when we are the DEFAULT
+     * graph used for UPT publishing, as the UPT requires the publication graph to be in the BaseUpdateGraph map, which
+     * is not done until after our constructor completes.
      */
     private void maybeStart() {
         if (started) {
@@ -80,12 +94,17 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
     public void stop() {
         running = false;
         // if we wait for the lock to be done, then we should have completed our cycle and will not execute again
-        exclusiveLock().doLocked(() -> {});
+        exclusiveLock().doLocked(() -> {
+        });
     }
 
+    /**
+     * Builds or retrieves a new EventDrivenUpdateGraph.
+     */
     public static class Builder {
         private final String name;
         private long minimumCycleDurationToLogNanos = DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS;
+
         public Builder(String name) {
             this.name = name;
         }
@@ -115,8 +134,13 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
         }
 
         /**
-         * Returns an existing EventDrivenUpdateGraph with the name provided to this Builder, if one exists, else returns a
-         * new EventDrivenUpdateGraph.
+         * Returns an existing EventDrivenUpdateGraph with the name provided to this Builder, if one exists, else
+         * returns a new EventDrivenUpdateGraph.
+         *
+         * <p>
+         * If the options for the existing graph are different than the options specified in this Builder, this
+         * Builder's options are ignored.
+         * </p>
          *
          * @return the EventDrivenUpdateGraph
          * @throws ClassCastException if the existing graph is not an EventDrivenUpdateGraph

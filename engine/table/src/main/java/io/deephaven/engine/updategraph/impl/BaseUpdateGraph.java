@@ -44,7 +44,7 @@ import java.util.function.Function;
  */
 public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendable {
     public static final String DEFAULT_UPDATE_GRAPH_NAME = "DEFAULT";
-    
+
     /**
      * If the provided update graph is a {@link PeriodicUpdateGraph} then create a PerformanceEntry using the given
      * description. Otherwise, return null.
@@ -870,10 +870,12 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
 
     /**
      * The UpdatePerformanceTracker requires a common update graph for all operations, to avoid spanning update graphs.
+     * 
      * @return a context suitable for operating on the updatePerformanceTracker.
      */
     static SafeCloseable openContextForUpdatePerformanceTracker() {
-        return ExecutionContext.getContext().withUpdateGraph(BaseUpdateGraph.getInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)).open();
+        return ExecutionContext.getContext()
+                .withUpdateGraph(BaseUpdateGraph.getInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)).open();
     }
 
     /**
@@ -922,7 +924,9 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     /**
      * Pre-refresh is called after the lock is taken, but before refresh processing is initiated.
      *
-     * <p>If this update graph is no longer running, returns false to prevent further processing.</p>
+     * <p>
+     * If this update graph is no longer running, returns false to prevent further processing.
+     * </p>
      *
      * @return true if the refresh cycle should be processed, if false, the refresh cycle is not executed.
      */
@@ -1014,7 +1018,9 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     /**
      * Clear a named instance of an update graph.
      *
-     * <p>In addition to removing the update graph from the instances, an attempt is made to shut it down.</p>
+     * <p>
+     * In addition to removing the update graph from the instances, an attempt is made to shut it down.
+     * </p>
      *
      * @param name the name of the update graph to clear
      * @return true if the update graph was found
@@ -1032,8 +1038,8 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     }
 
     /**
-     * Inserts the given UpdateGraph into the INSTANCES array. It is an error to do so if instance already exists
-     * with the name provided to this builder.
+     * Inserts the given UpdateGraph into the INSTANCES array. It is an error to do so if instance already exists with
+     * the name provided to this builder.
      *
      * @param updateGraph the update graph to insert into INSTANCES
      *
@@ -1051,8 +1057,8 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     }
 
     /**
-     * Returns an existing PeriodicUpdateGraph with the name provided to this Builder, if one exists, else returns a
-     * new PeriodicUpdateGraph.
+     * Returns an existing PeriodicUpdateGraph with the name provided to this Builder, if one exists, else returns a new
+     * PeriodicUpdateGraph.
      *
      * @return the PeriodicUpdateGraph
      */
