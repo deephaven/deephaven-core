@@ -43,6 +43,8 @@ import java.util.function.Function;
  * TODO: write an explanation.
  */
 public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendable {
+    public static final String DEFAULT_UPDATE_GRAPH_NAME = "DEFAULT";
+    
     /**
      * If the provided update graph is a {@link PeriodicUpdateGraph} then create a PerformanceEntry using the given
      * description. Otherwise, return null.
@@ -862,7 +864,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
      * @return a context suitable for operating on the updatePerformanceTracker.
      */
     static SafeCloseable openContextForUpdatePerformanceTracker() {
-        return ExecutionContext.getContext().withUpdateGraph(PeriodicUpdateGraph.getInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)).open();
+        return ExecutionContext.getContext().withUpdateGraph(BaseUpdateGraph.getInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)).open();
     }
 
     /**
@@ -885,6 +887,9 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
         final long lockStartTimeNanos = System.nanoTime();
         exclusiveLock().doLocked(() -> {
             currentCycleLockWaitTotalNanos += System.nanoTime() - lockStartTimeNanos;
+            if (!preRefresh()) {
+                return;
+            }
             synchronized (pendingNormalNotifications) {
                 Assert.eqZero(pendingNormalNotifications.size(), "pendingNormalNotifications.size()");
             }
@@ -903,6 +908,17 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             logDependencies().append("Completed PeriodicUpdateGraph cycle step=")
                     .append(logicalClock.currentStep()).endl();
         });
+    }
+
+    /**
+     * Pre-refresh is called after the lock is taken, but before refresh processing is initiated.
+     *
+     * <p>If this update graph is no longer running, returns false to prevent further processing.</p>
+     *
+     * @return true if the refresh cycle should be processed, if false, the refresh cycle is not executed.
+     */
+    boolean preRefresh() {
+        return running;
     }
 
     /**
@@ -984,6 +1000,26 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
 
     public static UpdateGraph getInstance(final String name) {
         return INSTANCES.get(name);
+    }
+
+    /**
+     * Clear a named instance of an update graph.
+     *
+     * <p>In addition to removing the update graph from the instances, an attempt is made to shut it down.</p>
+     *
+     * @param name the name of the update graph to clear
+     * @return true if the update graph was found
+     */
+    public static boolean clearInstance(final String name) {
+        final UpdateGraph graph;
+        synchronized (INSTANCES) {
+            graph = INSTANCES.removeKey(name);
+            if (graph == null) {
+                return false;
+            }
+        }
+        graph.stop();
+        return true;
     }
 
     /**

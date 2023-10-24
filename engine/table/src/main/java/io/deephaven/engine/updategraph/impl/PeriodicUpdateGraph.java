@@ -52,7 +52,6 @@ import java.util.function.LongConsumer;
  */
 public class PeriodicUpdateGraph extends BaseUpdateGraph {
 
-    public static final String DEFAULT_UPDATE_GRAPH_NAME = "DEFAULT";
     public static final int NUM_THREADS_DEFAULT_UPDATE_GRAPH =
             Configuration.getInstance().getIntegerWithDefault("PeriodicUpdateGraph.updateThreads", -1);
 
@@ -359,6 +358,8 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
     public void stop() {
         running = false;
         notificationProcessor.shutdown();
+        // ensure that any outstanding cycle has completed
+        exclusiveLock().doLocked(() -> {});
     }
 
     /**
@@ -410,6 +411,9 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
      */
     @Override
     public void requestRefresh() {
+        if (!running) {
+            throw new IllegalStateException("Cannot request refresh when UpdateGraph is no longer running.");
+        }
         refreshRequested.set(true);
         synchronized (refreshRequested) {
             refreshRequested.notify();
@@ -1175,7 +1179,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
          * name provided to this builder.
          *
          * @return the new PeriodicUpdateGraph
-         * @throws IllegalStateException if a PeriodicUpdateGraph with the provided name already exists
+         * @throws IllegalStateException if a UpdateGraph with the provided name already exists
          */
         public PeriodicUpdateGraph build() {
             final PeriodicUpdateGraph newUpdateGraph = construct(name);
@@ -1188,6 +1192,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
          * new PeriodicUpdateGraph.
          *
          * @return the PeriodicUpdateGraph
+         * @throws ClassCastException if the existing graph is not a PeriodicUpdateGraph
          */
         public PeriodicUpdateGraph existingOrBuild() {
             return BaseUpdateGraph.existingOrBuild(name, this::construct).cast();

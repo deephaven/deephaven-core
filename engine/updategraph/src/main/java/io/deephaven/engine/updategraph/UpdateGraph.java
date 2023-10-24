@@ -185,6 +185,11 @@ public interface UpdateGraph extends UpdateSourceRegistrar, NotificationQueue, N
                 currentThreadProcessesUpdates()));
     }
 
+    /**
+     * Attempt to stop this update graph, and cease processing further notifications.
+     */
+    void stop();
+
     // endregion thread control
 
     // region refresh control

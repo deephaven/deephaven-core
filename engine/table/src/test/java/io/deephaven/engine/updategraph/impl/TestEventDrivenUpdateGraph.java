@@ -1,10 +1,10 @@
 package io.deephaven.engine.updategraph.impl;
 
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.configuration.DataDir;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -13,7 +13,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.LongSingleValueSource;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
@@ -24,21 +24,25 @@ import org.junit.*;
 import java.nio.file.Path;
 import java.util.Collections;
 
+import static io.deephaven.engine.util.TableTools.*;
+
 public class TestEventDrivenUpdateGraph {
+    EventDrivenUpdateGraph defaultUpdateGraph;
+
     @Before
     public void before() {
         // the default update is necessary for the update performance tracker
-        final UpdateGraph updateGraph = PeriodicUpdateGraph.newBuilder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)
-                .numUpdateThreads(PeriodicUpdateGraph.NUM_THREADS_DEFAULT_UPDATE_GRAPH)
-                .existingOrBuild();
-        final PeriodicUpdateGraph pug = updateGraph.cast();
-        pug.enableUnitTestMode();
-        pug.resetForUnitTests(false);
+        BaseUpdateGraph.clearInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME);
+        BaseUpdateGraph.clearInstance("TestEDUG");
+        BaseUpdateGraph.clearInstance("TestEDUG1");
+        BaseUpdateGraph.clearInstance("TestEDUG2");
+
+        defaultUpdateGraph = new EventDrivenUpdateGraph.Builder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).build();
     }
 
     @After
     public void after() {
-        PeriodicUpdateGraph.getInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).resetForUnitTests(true);
+        BaseUpdateGraph.clearInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME);
     }
 
 
@@ -89,9 +93,7 @@ public class TestEventDrivenUpdateGraph {
 
     @Test
     public void testSimpleAdd() {
-
-        final EventDrivenUpdateGraph eventDrivenUpdateGraph = new EventDrivenUpdateGraph("TestEDUG",
-                BaseUpdateGraph.DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS);
+        final EventDrivenUpdateGraph eventDrivenUpdateGraph = new EventDrivenUpdateGraph.Builder("TestEDUG").build();
 
         final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(eventDrivenUpdateGraph)
                 .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
@@ -111,9 +113,7 @@ public class TestEventDrivenUpdateGraph {
 
     @Test
     public void testSimpleModify() {
-
-        final EventDrivenUpdateGraph eventDrivenUpdateGraph = new EventDrivenUpdateGraph("TestEDUG",
-                BaseUpdateGraph.DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS);
+        final EventDrivenUpdateGraph eventDrivenUpdateGraph = new EventDrivenUpdateGraph.Builder("TestEDUG").build();
 
         final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(eventDrivenUpdateGraph)
                 .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
@@ -135,29 +135,27 @@ public class TestEventDrivenUpdateGraph {
                 System.out.println("Step = " + steps);
                 final long xv = xcs.getLong (rowSet.firstRowKey());
                 TestCase.assertEquals(2L * (steps + 1), xv);
-
-                Thread.sleep(1000);
             } while (steps++ < 100);
             TestCase.assertEquals(1, updated.size());
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }
     }
 
     @Test
     public void testUpdatePerformanceTracker() {
         final Table upt = UpdatePerformanceTracker.getQueryTable();
-        TableTools.showWithRowSet(upt);
 
         final long start = System.currentTimeMillis();
 
-        final EventDrivenUpdateGraph eventDrivenUpdateGraph1 = new EventDrivenUpdateGraph("TestEDUG1",
-                BaseUpdateGraph.DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS);
-        final EventDrivenUpdateGraph eventDrivenUpdateGraph2 = new EventDrivenUpdateGraph("TestEDUG2",
-                BaseUpdateGraph.DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS);
+        final EventDrivenUpdateGraph eventDrivenUpdateGraph1 = new EventDrivenUpdateGraph.Builder("TestEDUG1").build();
+        final EventDrivenUpdateGraph eventDrivenUpdateGraph2 = new EventDrivenUpdateGraph.Builder("TestEDUG2").build();
 
-        doWork(eventDrivenUpdateGraph1, 100, 10);
-        doWork(eventDrivenUpdateGraph2, 200, 5);
+        final int count1 = 100;
+        final int count2 = 200;
+        final int time1 = 10;
+        final int time2 = 5;
+
+        doWork(eventDrivenUpdateGraph1, count1, time1);
+        doWork(eventDrivenUpdateGraph2, count2, time2);
 
         do {
             final long now = System.currentTimeMillis();
@@ -169,15 +167,25 @@ public class TestEventDrivenUpdateGraph {
             SleepUtil.sleep(end - now);
         } while (true);
 
-        doWork(eventDrivenUpdateGraph1, 100, 1);
-        doWork(eventDrivenUpdateGraph2, 2, 100);
+        doWork(eventDrivenUpdateGraph1, 1, 0);
+        doWork(eventDrivenUpdateGraph2, 1, 0);
 
-        PeriodicUpdateGraph instance = PeriodicUpdateGraph.getInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).cast();
-        instance.requestRefresh();
+        defaultUpdateGraph.requestRefresh();
 
-        SleepUtil.sleep(1000);
+        final Table uptAgged = upt.aggBy(Aggregation.AggSum("EntryIntervalUsage", "EntryIntervalInvocationCount", "EntryIntervalModified"), "UpdateGraph", "EntryId");
+        final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(defaultUpdateGraph)
+                .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
+        final Table inRange;
+        try (final SafeCloseable ignored = context.open()) {
+            inRange = defaultUpdateGraph.sharedLock().computeLocked(() -> uptAgged.update("EIUExpectedMillis = UpdateGraph==`TestEDUG1` ? (" + time1 + " * EntryIntervalInvocationCount) : (" + time2 + " * EntryIntervalInvocationCount)", "InRange=EntryIntervalUsage > 0.9 * EIUExpectedMillis && EntryIntervalUsage < 1.1 * EIUExpectedMillis"));
+        }
+        TableTools.show(inRange);
 
-        TableTools.showWithRowSet(upt);
+        final Table compare = inRange.dropColumns("EntryId", "EntryIntervalUsage", "EIUExpectedMillis");
+        TableTools.show(compare);
+
+        final Table expect = TableTools.newTable(stringCol("UpdateGraph", "TestEDUG1", "TestEDUG2"), longCol("EntryIntervalInvocationCount", count1, count2), longCol("EntryIntervalModified", count1, count2), booleanCol("InRange", true, true));
+        TstUtils.assertTableEquals(expect, compare);
     }
 
     @ReflexiveUse(referrers = "TestEventDrivenUpdateGraph")

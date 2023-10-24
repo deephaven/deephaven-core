@@ -1,6 +1,7 @@
 package io.deephaven.engine.updategraph.impl;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
@@ -12,19 +13,17 @@ import org.jetbrains.annotations.NotNull;
 /**
  * An EventDrivenUpdateGraph provides an isolated refresh processor.
  *
- * As with a {@link PeriodicUpdateGraph}, the EventDrivenUpdateGraph contains a set of sources, but it is refreshed only
+ * <p>As with a {@link PeriodicUpdateGraph}, the EventDrivenUpdateGraph contains a set of sources, but it is refreshed only
  * when a call to {@link #requestRefresh()} is made. All sources are synchronously refreshed on that thread; and then
- * the resultant notifications are also synchronously processed.
+ * the resultant notifications are also synchronously processed.</p>
  */
 public class EventDrivenUpdateGraph extends BaseUpdateGraph {
     private static final Logger log = LoggerFactory.getLogger(EventDrivenUpdateGraph.class);
+    private boolean started = false;
 
-    public EventDrivenUpdateGraph(String name, long minimumCycleDurationToLogNanos) {
+    private EventDrivenUpdateGraph(String name, long minimumCycleDurationToLogNanos) {
         super(name, false, log, minimumCycleDurationToLogNanos);
         notificationProcessor = new QueueNotificationProcessor();
-        try (final SafeCloseable ignored = openContextForUpdatePerformanceTracker()) {
-            updatePerformanceTracker.start();
-        }
     }
 
     @Override
@@ -50,14 +49,88 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
      */
     @Override
     public void requestRefresh() {
+        maybeStart();
         // do the work to refresh everything, on this thread
         isUpdateThread.set(true);
-        try (final SafeCloseable ignored = ExecutionContext.newBuilder().setUpdateGraph(this).build().open())  {
+        try (final SafeCloseable ignored = ExecutionContext.newBuilder().setUpdateGraph(this).build().open()) {
             refreshAllTables();
         } finally {
             isUpdateThread.remove();
         }
         final long now = CommBase.getScheduler().currentTimeMillis();
         checkUpdatePerformanceFlush(now, now);
+    }
+
+    /**
+     * We defer starting the update performance tracker until our first cycle.  This is essential when we are the
+     * DEFAULT graph used for UPT publishing, as the UPT requires the publication graph to be in the BaseUpdateGraph
+     * map, which is not done until after our constructor completes.
+     */
+    private void maybeStart() {
+        if (started) {
+            return;
+        }
+        try (final SafeCloseable ignored = openContextForUpdatePerformanceTracker()) {
+            updatePerformanceTracker.start();
+        }
+        started = true;
+    }
+
+    @Override
+    public void stop() {
+        running = false;
+        // if we wait for the lock to be done, then we should have completed our cycle and will not execute again
+        exclusiveLock().doLocked(() -> {});
+    }
+
+    public static class Builder {
+        private final String name;
+        private long minimumCycleDurationToLogNanos = DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS;
+        public Builder(String name) {
+            this.name = name;
+        }
+
+        /**
+         * Set the minimum duration of an update cycle that should be logged at the INFO level.
+         *
+         * @param minimumCycleDurationToLogNanos threshold to log a slow cycle
+         * @return this builder
+         */
+        public Builder minimumCycleDurationToLogNanos(long minimumCycleDurationToLogNanos) {
+            this.minimumCycleDurationToLogNanos = minimumCycleDurationToLogNanos;
+            return this;
+        }
+
+        /**
+         * Constructs and returns a EventDrivenUpdateGraph. It is an error to do so an instance already exists with the
+         * name provided to this builder.
+         *
+         * @return the new EventDrivenUpdateGraph
+         * @throws IllegalStateException if a UpdateGraph with the provided name already exists
+         */
+        public EventDrivenUpdateGraph build() {
+            final EventDrivenUpdateGraph newUpdateGraph = construct(name);
+            BaseUpdateGraph.insertInstance(newUpdateGraph);
+            return newUpdateGraph;
+        }
+
+        /**
+         * Returns an existing EventDrivenUpdateGraph with the name provided to this Builder, if one exists, else returns a
+         * new EventDrivenUpdateGraph.
+         *
+         * @return the EventDrivenUpdateGraph
+         * @throws ClassCastException if the existing graph is not an EventDrivenUpdateGraph
+         */
+        public EventDrivenUpdateGraph existingOrBuild() {
+            return BaseUpdateGraph.existingOrBuild(name, this::construct).cast();
+        }
+
+        private EventDrivenUpdateGraph construct(String name) {
+            // we are passing the object through, so it should be identical
+            Assert.eq(name, "name", this.name, "this.name");
+            return new EventDrivenUpdateGraph(
+                    name,
+                    minimumCycleDurationToLogNanos);
+        }
     }
 }
