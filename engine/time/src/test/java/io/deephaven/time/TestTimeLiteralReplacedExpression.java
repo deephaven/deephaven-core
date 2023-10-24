@@ -85,6 +85,32 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
                 tlre.getInstanceVariablesString());
     }
 
+    public void testConvertExpressionTimeZone() throws Exception {
+        final TimeLiteralReplacedExpression tlre = TimeLiteralReplacedExpression.convertExpression("'America/Denver'");
+        TestCase.assertEquals("_timeZone0", tlre.getConvertedFormula());
+
+        final HashMap<String, Class<?>> newVars = new HashMap<>();
+        newVars.put("_timeZone0", ZoneId.class);
+        TestCase.assertEquals(newVars, tlre.getNewVariables());
+
+        TestCase.assertEquals(
+                "        private java.time.ZoneId _timeZone0=DateTimeUtils.parseTimeZone(\"America/Denver\");\n",
+                tlre.getInstanceVariablesString());
+    }
+
+    public void testConvertExpressionTimeZone2() throws Exception {
+        final TimeLiteralReplacedExpression tlre = TimeLiteralReplacedExpression.convertExpression("'NY'");
+        TestCase.assertEquals("_timeZone0", tlre.getConvertedFormula());
+
+        final HashMap<String, Class<?>> newVars = new HashMap<>();
+        newVars.put("_timeZone0", ZoneId.class);
+        TestCase.assertEquals(newVars, tlre.getNewVariables());
+
+        TestCase.assertEquals(
+                "        private java.time.ZoneId _timeZone0=DateTimeUtils.parseTimeZone(\"NY\");\n",
+                tlre.getInstanceVariablesString());
+    }
+
     public void testConvertExpressionUnknown() throws Exception {
         final TimeLiteralReplacedExpression tlre = TimeLiteralReplacedExpression.convertExpression("'g'");
         TestCase.assertEquals("'g'", tlre.getConvertedFormula());
