@@ -23,6 +23,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -304,5 +305,12 @@ public class UpdatePerformanceTracker {
     @NotNull
     public static QueryTable getQueryTable() {
         return (QueryTable) BlinkTableTools.blinkToAppendOnly(getInternalState().blink);
+    }
+
+    @TestUseOnly
+    public static void resetForUnitTests() {
+        synchronized (UpdatePerformanceTracker.class) {
+            INSTANCE = null;
+        }
     }
 }

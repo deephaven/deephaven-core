@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.assertEquals;
 
 public class TestEventDrivenUpdateGraph {
     EventDrivenUpdateGraph defaultUpdateGraph;
@@ -33,12 +34,14 @@ public class TestEventDrivenUpdateGraph {
     public void before() {
         // the default update is necessary for the update performance tracker
         clearUpdateGraphInstances();
+        UpdatePerformanceTracker.resetForUnitTests();
         defaultUpdateGraph = EventDrivenUpdateGraph.newBuilder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).build();
     }
 
     @After
     public void after() {
         clearUpdateGraphInstances();
+        UpdatePerformanceTracker.resetForUnitTests();
     }
 
     private static void clearUpdateGraphInstances() {
@@ -186,6 +189,7 @@ public class TestEventDrivenUpdateGraph {
             final Table uptAgged = upt.where("!isNull(EntryId)").aggBy(
                     Aggregation.AggSum("EntryIntervalUsage", "EntryIntervalInvocationCount", "EntryIntervalModified"),
                     "UpdateGraph", "EntryId");
+            assertEquals(defaultUpdateGraph, uptAgged.getUpdateGraph());
             inRange = defaultUpdateGraph.sharedLock().computeLocked(() -> uptAgged.update(
                     "EIUExpectedMillis = UpdateGraph==`TestEDUG1` ? " + time1 + " : " + time2,
                     "TotalExpectedTime=EntryIntervalInvocationCount * EIUExpectedMillis * 1_000_000L",
