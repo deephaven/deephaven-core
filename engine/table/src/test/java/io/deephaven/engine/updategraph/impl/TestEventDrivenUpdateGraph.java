@@ -48,6 +48,9 @@ public class TestEventDrivenUpdateGraph {
         BaseUpdateGraph.clearInstance("TestEDUG2");
     }
 
+    /**
+     * QueryTable that adds one row per cycle.
+     */
     final static class SourceThatRefreshes extends QueryTable implements Runnable {
         public SourceThatRefreshes(UpdateGraph updateGraph) {
             super(RowSetFactory.empty().toTracking(), Collections.emptyMap());
@@ -68,6 +71,9 @@ public class TestEventDrivenUpdateGraph {
         }
     }
 
+    /**
+     * QueryTable that modifies its single row on each cycle.
+     */
     final static class SourceThatModifiesItself extends QueryTable implements Runnable {
         final LongSingleValueSource svcs;
 
