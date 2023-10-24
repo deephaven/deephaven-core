@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.*;
 
 /**
- * Created by rbasralian on 10/14/22
+ * This is a wrapper for {@link JSONToTableWriterAdapterBuilder} that also handles setting up the in-memory tables.
  */
 public class JSONToInMemoryTableAdapterBuilder {
 
