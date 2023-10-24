@@ -372,6 +372,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
     @Override
     public void addSource(@NotNull Runnable updateSource) {
         if (allowUnitTestMode) {
+            // if we are in unit test mode we never want to start the UpdateGraph
             if (updateSource instanceof DynamicNode) {
                 ((DynamicNode) updateSource).setRefreshing(true);
             }
@@ -735,7 +736,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
     }
 
     /**
-     * If the run thread is waiting in to lushNormalNotificationsAndCompleteCycle() or
+     * If the run thread is waiting in flushNormalNotificationsAndCompleteCycle() or
      * {@link #flushAllNormalNotificationsForUnitTests(BooleanSupplier, long)}, wake it up.
      */
     @TestUseOnly

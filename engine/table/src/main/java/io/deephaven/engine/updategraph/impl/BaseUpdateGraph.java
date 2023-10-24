@@ -40,7 +40,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 /**
- * TODO: write an explanation.
+ * The BaseUpdateGraph contains common code for other UpdateGraph implementations and a map of named UpdateGraph
+ * instances.
  */
 public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendable {
     public static final String DEFAULT_UPDATE_GRAPH_NAME = "DEFAULT";
@@ -58,9 +59,9 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             final UpdateGraph updateGraph,
             final String description) {
         if (updateGraph instanceof BaseUpdateGraph) {
-            final BaseUpdateGraph aug = (BaseUpdateGraph) updateGraph;
-            if (aug.updatePerformanceTracker != null) {
-                return aug.updatePerformanceTracker.getEntry(description);
+            final BaseUpdateGraph bug = (BaseUpdateGraph) updateGraph;
+            if (bug.updatePerformanceTracker != null) {
+                return bug.updatePerformanceTracker.getEntry(description);
             }
             throw new IllegalStateException("Cannot create a performance entry for a PeriodicUpdateGraph that has "
                     + "not been completely constructed.");
@@ -338,7 +339,6 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             ((DynamicNode) updateSource).setRefreshing(true);
         }
 
-        // if we are in unit test mode we never want to start the UpdateGraph
         sources.add(updateSource);
     }
 
@@ -979,10 +979,6 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
         }
     }
 
-    public void takeAccumulatedCycleStats(AccumulatedCycleStats updateGraphAccumCycleStats) {
-        accumulatedCycleStats.take(updateGraphAccumCycleStats);
-    }
-
     public LogEntry logDependencies() {
         if (printDependencyInformation) {
             return log.info();
@@ -1011,9 +1007,15 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
         }
     }
 
+    public void takeAccumulatedCycleStats(AccumulatedCycleStats updateGraphAccumCycleStats) {
+        accumulatedCycleStats.take(updateGraphAccumCycleStats);
+    }
+
     public static UpdateGraph getInstance(final String name) {
         return INSTANCES.get(name);
     }
+
+
 
     /**
      * Clear a named instance of an update graph.
