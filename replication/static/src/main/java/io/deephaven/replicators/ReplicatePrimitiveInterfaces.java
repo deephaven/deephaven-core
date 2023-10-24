@@ -76,7 +76,7 @@ public class ReplicatePrimitiveInterfaces {
     private static String removeExtraCopyrightHeader(@NotNull final String path) throws IOException {
         final File file = new File(path);
         final List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-        IntStream.of(5, 5, 5, 5, 5).forEach(lines::remove);
+        IntStream.of(3, 3, 3).forEach(lines::remove);
         FileUtils.writeLines(file, lines);
         return path;
     }
