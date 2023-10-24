@@ -452,7 +452,7 @@ def _py_udf(fn: Callable):
         elif dh_dtype == dtypes.PyObject:
             return ret
         else:
-            return _scalar(ret)
+            return _scalar(ret, dh_dtype)
 
     wrapper.j_name = dh_dtype.j_name
     ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(dh_dtype) if return_array else dh_dtype
@@ -483,6 +483,10 @@ def dh_vectorize(fn):
     and (3) the input arrays.
     """
     signature = _encode_signature(fn)
+    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
+        dh_dtype = dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
+    else:
+        dh_dtype = dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
 
     @wraps(fn)
     def wrapper(*args):
@@ -498,10 +502,10 @@ def dh_vectorize(fn):
             vectorized_args = zip(*args[2:])
             for i in range(chunk_size):
                 scalar_args = next(vectorized_args)
-                chunk_result[i] = _scalar(fn(*scalar_args))
+                chunk_result[i] = _scalar(fn(*scalar_args), dh_dtype)
         else:
             for i in range(chunk_size):
-                chunk_result[i] = fn()
+                chunk_result[i] = _scalar(fn(), dh_dtype)
 
         return chunk_result
 

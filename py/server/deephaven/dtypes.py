@@ -329,30 +329,36 @@ _NUMPY_INT_TYPE_CODES = ["i", "l", "h", "b"]
 _NUMPY_FLOATING_TYPE_CODES = ["f", "d"]
 
 
-def _scalar(x):
+def _scalar(x: Any, dtype: DType) -> Any:
     """Converts a Python value to a Java scalar value. It converts the numpy primitive types, string to
     their Python equivalents so that JPY can handle them. For datetime values, it converts them to Java Instant.
     Otherwise, it returns the value as is."""
-    if hasattr(x, "dtype"):
-        if x.dtype.char in _NUMPY_INT_TYPE_CODES:
-            return int(x)
-        elif x.dtype.char in _NUMPY_FLOATING_TYPE_CODES:
-            return float(x)
-        elif x.dtype.char == '?':
-            return bool(x)
-        elif x.dtype.char == 'U':
-            return str(x)
-        elif x.dtype.char == 'O':
-            return x
-        elif x.dtype.char == 'M':
-            from deephaven.time import to_j_instant
-            return to_j_instant(x)
+    # NULL_BOOL will appear in Java as a byte value which causes a cast error. We just let JPY converts it to Java null
+    # and the engine has casting logic to handle it.
+    if x is None and dtype != bool_ and _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
+        return _PRIMITIVE_DTYPE_NULL_MAP[dtype]
+
+    try:
+        if hasattr(x, "dtype"):
+            if x.dtype.char in _NUMPY_INT_TYPE_CODES:
+                return int(x)
+            elif x.dtype.char in _NUMPY_FLOATING_TYPE_CODES:
+                return float(x)
+            elif x.dtype.char == '?':
+                return bool(x)
+            elif x.dtype.char == 'U':
+                return str(x)
+            elif x.dtype.char == 'O':
+                return x
+            elif x.dtype.char == 'M':
+                from deephaven.time import to_j_instant
+                return to_j_instant(x)
         else:
-            raise TypeError(f"Unsupported dtype: {x.dtype}")
-    else:
-        if isinstance(x, (datetime.datetime, pd.Timestamp)):
-            from deephaven.time import to_j_instant
-            return to_j_instant(x)
+            if isinstance(x, (datetime.datetime, pd.Timestamp)):
+                from deephaven.time import to_j_instant
+                return to_j_instant(x)
+        return x
+    except:
         return x
 
 
