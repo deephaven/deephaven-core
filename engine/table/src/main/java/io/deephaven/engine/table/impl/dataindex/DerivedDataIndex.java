@@ -383,13 +383,14 @@ public class DerivedDataIndex extends AbstractDataIndex {
                                 columnSource.getComponentType());
                 cloneSources.add(columnSource);
                 cloneDestinations.add(immutableColumnSource);
+                columnSourceMap.put(columnName, immutableColumnSource);
             }
         }
 
         final WritableRowSet outputRowSet = RowSetFactory.flat(size);
         if (!cloneSources.isEmpty()) {
-            ColumnSource<?>[] cloneSourceArr = (ColumnSource<?>[]) cloneSources.toArray();
-            WritableColumnSource<?>[] cloneDestinationArr = (WritableColumnSource<?>[]) cloneDestinations.toArray();
+            ColumnSource<?>[] cloneSourceArr = cloneSources.toArray(ColumnSource<?>[]::new);
+            WritableColumnSource<?>[] cloneDestinationArr = cloneDestinations.toArray(WritableColumnSource<?>[]::new);
 
             ChunkUtils.copyData(cloneSourceArr, indexTable.getRowSet(),
                     cloneDestinationArr, outputRowSet,

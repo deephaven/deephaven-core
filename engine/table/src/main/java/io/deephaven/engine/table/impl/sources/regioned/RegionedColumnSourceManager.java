@@ -227,13 +227,13 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 entry.processInitial(addedRowSetBuilder, entryToInclude.initialRowSet);
 
                 // We have a new location, add the row set to the table and mark the row as added.
-                locationSource.ensureCapacity(entry.regionIndex);
+                locationSource.ensureCapacity(entry.regionIndex + 1);
                 locationSource.set(entry.regionIndex, entry.location);
 
-                offsetSource.ensureCapacity(entry.regionIndex);
+                offsetSource.ensureCapacity(entry.regionIndex + 1);
                 offsetSource.set(entry.regionIndex, RegionedColumnSource.getFirstRowKey(entry.regionIndex));
 
-                rowSetSource.ensureCapacity(entry.regionIndex);
+                rowSetSource.ensureCapacity(entry.regionIndex + 1);
                 rowSetSource.set(entry.regionIndex, entryToInclude.initialRowSet);
 
                 added.insert(entry.regionIndex);

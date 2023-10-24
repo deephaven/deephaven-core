@@ -573,7 +573,7 @@ public class TstUtils {
         queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
 
         // Add grouping indexes for the grouping columns.
-        final DataIndexer dataIndexer = DataIndexer.of(rowSet);;
+        final DataIndexer dataIndexer = DataIndexer.of(rowSet);
         for (int i = 0; i < columnHolders.length; i++) {
             if (columnHolders[i].grouped) {
                 final ColumnSource<?> groupedSource = queryTable.getColumnSource(columnHolders[i].name);
@@ -598,15 +598,6 @@ public class TstUtils {
         final QueryTable queryTable = testTable(rowSet, columnHolders);
         queryTable.setRefreshing(true);
         queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
-
-        // Add grouping indexes for the grouping columns.
-        final DataIndexer dataIndexer = DataIndexer.of(rowSet);;
-        for (int i = 0; i < columnHolders.length; i++) {
-            if (columnHolders[i].grouped) {
-                final ColumnSource<?> groupedSource = queryTable.getColumnSource(columnHolders[i].name);
-                dataIndexer.createDataIndex(queryTable, groupedSource);
-            }
-        }
 
         return queryTable;
     }
