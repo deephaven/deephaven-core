@@ -32,19 +32,21 @@ public class TestEventDrivenUpdateGraph {
     @Before
     public void before() {
         // the default update is necessary for the update performance tracker
-        BaseUpdateGraph.clearInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME);
-        BaseUpdateGraph.clearInstance("TestEDUG");
-        BaseUpdateGraph.clearInstance("TestEDUG1");
-        BaseUpdateGraph.clearInstance("TestEDUG2");
-
+        clearUpdateGraphInstances();
         defaultUpdateGraph = new EventDrivenUpdateGraph.Builder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).build();
     }
 
     @After
     public void after() {
-        BaseUpdateGraph.clearInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME);
+        clearUpdateGraphInstances();
     }
 
+    private static void clearUpdateGraphInstances() {
+        BaseUpdateGraph.clearInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME);
+        BaseUpdateGraph.clearInstance("TestEDUG");
+        BaseUpdateGraph.clearInstance("TestEDUG1");
+        BaseUpdateGraph.clearInstance("TestEDUG2");
+    }
 
     final static class SourceThatRefreshes extends QueryTable implements Runnable {
         public SourceThatRefreshes(UpdateGraph updateGraph) {
