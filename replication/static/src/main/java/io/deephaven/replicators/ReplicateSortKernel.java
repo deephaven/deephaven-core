@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.replicators;
 
@@ -339,10 +339,10 @@ public class ReplicateSortKernel {
         }
 
         lines.addAll(insertionPoint, Arrays.asList(
-                "/* ---------------------------------------------------------------------------------------------------------------------",
-                " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + oldName
+                "/****************************************************************************************************************************",
+                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + oldName
                         + " and regenerate",
-                " * ------------------------------------------------------------------------------------------------------------------ */"));
+                " ****************************************************************************************************************************/"));
 
         FileUtils.writeLines(new File(newPath), lines);
     }
