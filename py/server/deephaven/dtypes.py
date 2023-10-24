@@ -235,7 +235,7 @@ def _instant_array(data: Sequence) -> jpy.JType:
     return jpy.array(Instant.j_type, data)
 
 
-def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jpy.JType:
+def array(dtype: DType, seq: Optional[Sequence], remap: Callable[[Any], Any] = None) -> Optional[jpy.JType]:
     """ Creates a Java array of the specified data type populated with values from a sequence.
 
     Note:
@@ -253,6 +253,9 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
     Raises:
         DHError
     """
+    if seq is None:
+        return None
+
     if isinstance(seq, np.ndarray) and seq.ndim > 1:
         raise ValueError("array() does not support multi-dimensional arrays")
 

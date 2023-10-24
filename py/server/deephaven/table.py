@@ -12,7 +12,7 @@ import inspect
 from enum import Enum
 from enum import auto
 from functools import wraps
-from typing import Any, Optional, Callable, Dict
+from typing import Any, Optional, Callable, Dict, _GenericAlias
 from typing import Sequence, List, Union, Protocol
 
 import jpy
@@ -366,6 +366,20 @@ def _j_py_script_session() -> _JPythonScriptSession:
 _SUPPORTED_NP_TYPE_CODES = ["i", "l", "h", "f", "d", "b", "?", "U", "M", "O"]
 
 
+def _parse_annotation(annotation: Any) -> Any:
+    """Parse a Python annotation, for now mostly to extract the non-None type from an Optional(Union) annotation,
+    otherwise return the original annotation. """
+    if isinstance(annotation, _GenericAlias) and annotation.__origin__ == Union and len(annotation.__args__) == 2:
+        if annotation.__args__[1] == type(None):  # noqa: E721
+            return annotation.__args__[0]
+        elif annotation.__args__[0] == type(None):  # noqa: E721
+            return annotation.__args__[1]
+        else:
+            return annotation
+    else:
+        return annotation
+
+
 def _encode_signature(fn: Callable) -> str:
     """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
     type to numpy dtype chars (i,l,h,f,d,b,?,U,M,O), and pack them into a string with parameter type chars first,
@@ -377,9 +391,11 @@ def _encode_signature(fn: Callable) -> str:
 
     np_type_codes = []
     for n, p in sig.parameters.items():
-        np_type_codes.append(_np_dtype_char(p.annotation))
+        p_annotation = _parse_annotation(p.annotation)
+        np_type_codes.append(_np_dtype_char(p_annotation))
 
-    return_type_code = _np_dtype_char(sig.return_annotation)
+    return_annotation = _parse_annotation(sig.return_annotation)
+    return_type_code = _np_dtype_char(return_annotation)
     np_type_codes = [c if c in _SUPPORTED_NP_TYPE_CODES else "O" for c in np_type_codes]
     return_type_code = return_type_code if return_type_code in _SUPPORTED_NP_TYPE_CODES else "O"
 
@@ -421,7 +437,8 @@ def _py_udf(fn: Callable):
         if rtype:
             return_array = True
     else:
-        component_type = _component_np_dtype_char(inspect.signature(fn).return_annotation)
+        return_annotation = _parse_annotation(inspect.signature(fn).return_annotation)
+        component_type = _component_np_dtype_char(return_annotation)
         if component_type:
             dh_dtype = dtypes.from_np_dtype(np.dtype(component_type))
             if dh_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
