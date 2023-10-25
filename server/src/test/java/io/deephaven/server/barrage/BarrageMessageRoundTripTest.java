@@ -1287,7 +1287,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                         public void createTable() {
                             columnInfo = initColumnInfos(
                                     new String[] {"longCol", "intCol", "objCol", "byteCol", "doubleCol", "floatCol",
-                                            "shortCol", "charCol", "boolCol", "strArrCol", "datetimeCol"},
+                                            "shortCol", "charCol", "boolCol", "strArrCol", "datetimeCol",
+                                            "bytePrimArray", "intPrimArray"},
                                     new SortedLongGenerator(0, Long.MAX_VALUE - 1),
                                     new IntGenerator(10, 100, 0.1),
                                     new SetGenerator<>("a", "b", "c", "d"), // covers object
@@ -1301,7 +1302,11 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                             new String[] {}, null),
                                     new UnsortedInstantGenerator(
                                             DateTimeUtils.parseInstant("2020-02-14T00:00:00 NY"),
-                                            DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY")));
+                                            DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY")),
+                                    // uses var binary encoding
+                                    new ByteArrayGenerator(Byte.MIN_VALUE, Byte.MAX_VALUE, 0, 32),
+                                    // uses var list encoding
+                                    new IntArrayGenerator(0, Integer.MAX_VALUE, 0, 32));
                             sourceTable = getTable(size / 4, random, columnInfo);
                         }
                     };
