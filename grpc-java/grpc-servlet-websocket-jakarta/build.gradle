@@ -13,5 +13,10 @@ dependencies {
     implementation 'jakarta.websocket:jakarta.websocket-api:2.0.0'
 
     Classpaths.inheritGuava(project)
+}
 
+spotless {
+    java {
+        targetExclude '**/*'
+    }
 }
