@@ -217,8 +217,8 @@ def to_j_local_date(dt: Union[None, LocalDate, str, datetime.date, datetime.time
     Date strings can be formatted according to the ISO 8601 date time format as 'YYYY-MM-DD'.
 
     Args:
-        dt (Union[None, LocalDate, str, datetime.date, datetime.time, datetime.datetime, numpy.datetime64,
-        pandas.Timestamp]): A date time value.  If None is provided, None is returned.
+        dt (Union[None, LocalDate, str, datetime.date, datetime.time, datetime.datetime, numpy.datetime64, pandas.Timestamp]): 
+            A date time value. If None is provided, None is returned.
 
     Returns:
         LocalDate

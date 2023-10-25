@@ -439,7 +439,7 @@ def json_spec(col_defs: Union[Dict[str, DType], List[Tuple[str, DType]]], mappin
             ISSN: 2070-1721 for details, essentially nested fields are represented like "/parent/nested").
             Fields not starting with a '/' character are interpreted as toplevel field names.
             If the mapping argument is not present or None, a 1:1 mapping between JSON fields and Deephaven
-           table column names is assumed.
+            table column names is assumed.
 
     Returns:
         a KeyValueSpec
