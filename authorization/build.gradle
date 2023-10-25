@@ -15,3 +15,9 @@ dependencies {
 
     implementation project(':log-factory')
 }
+
+spotless {
+    java {
+        targetExclude '**/impl/*'
+    }
+}
