@@ -226,6 +226,9 @@ public class StatsCPUCollector {
         int nb = 0;
         fileChannel.position(0);
 
+        // Filesystem entries in /proc can only be read all at once to avoid races, so using too big of a buffer isn't a
+        // problem, but too small is. Attempt to read with the current buffer. If we filled the buffer we resize it and
+        // read again from start.
         while (true) {
             final int thisNb = fileChannel.read(statBuffer);
 
@@ -234,10 +237,9 @@ public class StatsCPUCollector {
             }
             nb += thisNb;
             if (!statBuffer.hasRemaining()) {
-                // allocate larger read-buffer, and continue reading
-                ByteBuffer resized = ByteBuffer.allocate(statBuffer.capacity() * 2);
-                resized.put(statBuffer.flip());
-                statBuffer = resized;
+                // allocate larger read-buffer, and read again from start
+                statBuffer = ByteBuffer.allocate(statBuffer.capacity() * 2);
+                fileChannel.position(0);
             }
         }
 
