@@ -232,22 +232,19 @@ public class StatsCPUCollector {
         while (true) {
             final int nb = fileChannel.read(statBuffer);
 
-            if (nb == -1) {
-                // EOF means success, set position to zero and limit to the data read
+            if (nb <= 0) {
+                // zero bytes read is an error, -1 is EOF
+                throw new IOException(fileName + " could not be read, or was empty");
+            }
+            if (statBuffer.hasRemaining()) {
+                Assert.eq(statBuffer.position(), "statBuffer.position()", nb, "nb");
                 statBuffer.flip();
                 return;
             }
-            if (nb == 0) {
-                // zero bytes read is an error, proc isn't working correctly?
-                throw new IOException(fileName + " zero read");
-            }
-            if (!statBuffer.hasRemaining()) {
-                // allocate larger read-buffer, and read again from start
-                statBuffer = ByteBuffer.allocate(statBuffer.capacity() * 2);
-                fileChannel.position(0);
-            } else {
-                Assert.eq(statBuffer.position(), "statBuffer.position()", nb, "nb");
-            }
+
+            // allocate larger read-buffer, and read again from start
+            statBuffer = ByteBuffer.allocate(statBuffer.capacity() * 2);
+            fileChannel.position(0);
         }
     }
 
