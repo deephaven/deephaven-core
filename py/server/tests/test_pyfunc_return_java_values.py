@@ -4,7 +4,7 @@
 import datetime
 import typing
 import unittest
-from typing import List, Union, Tuple, Sequence
+from typing import List, Union, Tuple, Sequence, Optional
 
 import numba as nb
 import numpy as np
@@ -237,6 +237,39 @@ foo = Foo()
 
         t = empty_table(10).update(["X1 = f2()"])
         self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
+
+        def f3() -> Union[None, None]:
+            return np.array([1, 2], dtype=np.int64)
+
+        t = empty_table(10).update(["X1 = f3()"])
+        self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
+
+    def test_optional_scalar_return(self):
+        for dh_dtype, np_dtype in _J_TYPE_NP_DTYPE_MAP.items():
+            with self.subTest(dh_dtype=dh_dtype, np_dtype=np_dtype):
+                func_str = f"""
+def fn(col) -> Optional[{np_dtype}]:
+    return None if col % 2 == 0 else {np_dtype}(col)
+"""
+                exec(func_str, globals())
+
+                t = empty_table(10).update("X = i").update(f"Y= fn(X + 1)")
+                self.assertEqual(t.columns[1].data_type, dh_dtype)
+                self.assertEqual(t.to_string().count("null"), 5)
+
+    def test_optional_array_return(self):
+        def f() -> Optional[np.ndarray[np.int64]]:
+            return np.array([1, 2], dtype=np.int64)
+
+        t = empty_table(10).update(["X1 = f()"])
+        self.assertEqual(t.columns[0].data_type, dtypes.long_array)
+
+        def f1(col) -> Optional[List[int]]:
+            return None if col % 2 == 0 else [col]
+
+        t = empty_table(10).update(["X1 = f1(i)"])
+        self.assertEqual(t.columns[0].data_type, dtypes.long_array)
+        self.assertEqual(t.to_string().count("null"), 5)
 
 
 if __name__ == '__main__':
