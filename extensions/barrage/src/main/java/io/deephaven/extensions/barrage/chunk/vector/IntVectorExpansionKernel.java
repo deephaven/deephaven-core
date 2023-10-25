@@ -8,6 +8,8 @@
  */
 package io.deephaven.extensions.barrage.chunk.vector;
 
+import java.util.function.IntConsumer;
+
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
@@ -18,7 +20,8 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.chunk.sized.SizedIntChunk;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.IntVectorDirect;
 import io.deephaven.vector.Vector;
@@ -37,24 +40,31 @@ public class IntVectorExpansionKernel implements VectorExpansionKernel {
         }
 
         final ObjectChunk<IntVector, A> typedSource = source.asObjectChunk();
-        final SizedIntChunk<A> resultWrapper = new SizedIntChunk<>();
 
-        int lenWritten = 0;
+        long totalSize = 0;
+        for (int i = 0; i < typedSource.size(); ++i) {
+            final IntVector row = typedSource.get(i);
+            totalSize += row == null ? 0 : row.size();
+        }
+        final WritableIntChunk<A> result = WritableIntChunk.makeWritableChunk(
+                LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
+        result.setSize(0);
+
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final IntVector row = typedSource.get(i);
-            final int len = row == null ? 0 : row.intSize("IntVectorExpansionKernel");
-            perElementLengthDest.set(i, lenWritten);
-            final WritableIntChunk<A> result = resultWrapper.ensureCapacityPreserve(lenWritten + len);
-            for (int j = 0; j < len; ++j) {
-                result.set(lenWritten + j, row.get(j));
+            perElementLengthDest.set(i, result.size());
+            if (row == null) {
+                continue;
             }
-            lenWritten += len;
-            result.setSize(lenWritten);
+            final IntConsumer consumer = result::add;
+            try (final CloseablePrimitiveIteratorOfInt iter = row.iterator()) {
+                iter.forEachRemaining(consumer);
+            }
         }
-        perElementLengthDest.set(typedSource.size(), lenWritten);
+        perElementLengthDest.set(typedSource.size(), result.size());
 
-        return resultWrapper.get();
+        return result;
     }
 
     @Override
@@ -81,15 +91,13 @@ public class IntVectorExpansionKernel implements VectorExpansionKernel {
 
         int lenRead = 0;
         for (int i = 0; i < itemsInBatch; ++i) {
-            final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
-            if (ROW_LEN == 0) {
+            final int rowLen = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
+            if (rowLen == 0) {
                 result.set(outOffset + i, ZERO_LENGTH_VECTOR);
             } else {
-                final int[] row = new int[ROW_LEN];
-                for (int j = 0; j < ROW_LEN; ++j) {
-                    row[j] = typedSource.get(lenRead + j);
-                }
-                lenRead += ROW_LEN;
+                final int[] row = new int[rowLen];
+                typedSource.copyToArray(lenRead, row, 0, rowLen);
+                lenRead += rowLen;
                 result.set(outOffset + i, new IntVectorDirect(row));
             }
         }
