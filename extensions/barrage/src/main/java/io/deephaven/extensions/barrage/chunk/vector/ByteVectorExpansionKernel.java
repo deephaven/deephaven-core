@@ -18,6 +18,8 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.engine.primitive.function.ByteConsumer;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.ByteVectorDirect;
@@ -45,20 +47,21 @@ public class ByteVectorExpansionKernel implements VectorExpansionKernel {
         }
         final WritableByteChunk<A> result = WritableByteChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
+        result.setSize(0);
 
-        int lenWritten = 0;
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final ByteVector row = typedSource.get(i);
-            final int len = row == null ? 0 : row.intSize("ByteVectorExpansionKernel");
-            perElementLengthDest.set(i, lenWritten);
-            for (int j = 0; j < len; ++j) {
-                result.set(lenWritten + j, row.get(j));
+            perElementLengthDest.set(i, result.size());
+            if (row == null) {
+                continue;
             }
-            lenWritten += len;
-            result.setSize(lenWritten);
+            final ByteConsumer consumer = result::add;
+            try (final CloseablePrimitiveIteratorOfByte iter = row.iterator()) {
+                iter.forEachRemaining(consumer);
+            }
         }
-        perElementLengthDest.set(typedSource.size(), lenWritten);
+        perElementLengthDest.set(typedSource.size(), result.size());
 
         return result;
     }

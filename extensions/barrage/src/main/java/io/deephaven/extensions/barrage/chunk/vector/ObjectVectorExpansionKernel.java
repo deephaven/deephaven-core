@@ -11,6 +11,9 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.engine.primitive.function.CharConsumer;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
@@ -42,21 +45,21 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel {
         }
         final WritableObjectChunk<T, A> result = WritableObjectChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
+        result.setSize(0);
 
-        int lenWritten = 0;
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final ObjectVector<?> row = typedSource.get(i);
-            final int len = row == null ? 0 : row.intSize("ObjectVectorExpansionKernel");
-            perElementLengthDest.set(i, lenWritten);
-            for (int j = 0; j < len; ++j) {
-                // noinspection unchecked
-                result.set(lenWritten + j, (T) row.get(j));
+            perElementLengthDest.set(i, result.size());
+            if (row == null) {
+                continue;
             }
-            lenWritten += len;
-            result.setSize(lenWritten);
+            try (final CloseableIterator<?> iter = row.iterator()) {
+                // noinspection unchecked
+                iter.forEachRemaining(v -> result.add((T) v));
+            }
         }
-        perElementLengthDest.set(typedSource.size(), lenWritten);
+        perElementLengthDest.set(typedSource.size(), result.size());
 
         return result;
     }

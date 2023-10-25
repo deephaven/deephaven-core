@@ -8,6 +8,8 @@
  */
 package io.deephaven.extensions.barrage.chunk.vector;
 
+import java.util.function.DoubleConsumer;
+
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
@@ -18,6 +20,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.DoubleVectorDirect;
@@ -45,20 +48,21 @@ public class DoubleVectorExpansionKernel implements VectorExpansionKernel {
         }
         final WritableDoubleChunk<A> result = WritableDoubleChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
+        result.setSize(0);
 
-        int lenWritten = 0;
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final DoubleVector row = typedSource.get(i);
-            final int len = row == null ? 0 : row.intSize("DoubleVectorExpansionKernel");
-            perElementLengthDest.set(i, lenWritten);
-            for (int j = 0; j < len; ++j) {
-                result.set(lenWritten + j, row.get(j));
+            perElementLengthDest.set(i, result.size());
+            if (row == null) {
+                continue;
             }
-            lenWritten += len;
-            result.setSize(lenWritten);
+            final DoubleConsumer consumer = result::add;
+            try (final CloseablePrimitiveIteratorOfDouble iter = row.iterator()) {
+                iter.forEachRemaining(consumer);
+            }
         }
-        perElementLengthDest.set(typedSource.size(), lenWritten);
+        perElementLengthDest.set(typedSource.size(), result.size());
 
         return result;
     }
