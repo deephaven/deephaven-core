@@ -30,26 +30,26 @@ import java.util.stream.StreamSupport;
  */
 class TableHandleManagerBatch extends TableHandleManagerBase {
 
-    public static TableHandleManagerBatch of(Session session, boolean mixinStacktraces) {
-        return new TableHandleManagerBatch(session, mixinStacktraces);
+    public static TableHandleManagerBatch of(ExportService exportService, boolean mixinStacktraces) {
+        return new TableHandleManagerBatch(exportService, mixinStacktraces);
     }
 
     private final boolean mixinStacktraces;
 
-    private TableHandleManagerBatch(Session session, boolean mixinStacktraces) {
-        super(session, null);
+    private TableHandleManagerBatch(ExportService exportService, boolean mixinStacktraces) {
+        super(exportService, null);
         this.mixinStacktraces = mixinStacktraces;
     }
 
     @Override
     public TableHandle execute(TableSpec table) throws TableHandleException, InterruptedException {
-        return TableHandle.of(session, table, lifecycle);
+        return TableHandle.of(exportService, table, lifecycle);
     }
 
     @Override
     public List<TableHandle> execute(Iterable<TableSpec> tables)
             throws TableHandleException, InterruptedException {
-        return TableHandle.of(session, tables, lifecycle);
+        return TableHandle.of(exportService, tables, lifecycle);
     }
 
     @Override

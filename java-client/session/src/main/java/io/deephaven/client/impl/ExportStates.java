@@ -31,7 +31,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 
-final class ExportStates {
+final class ExportStates implements ExportService {
 
     private final SessionImpl session;
     private final SessionServiceStub sessionStub;
@@ -39,8 +39,6 @@ final class ExportStates {
 
     private final Map<TableSpec, State> exports;
     private final ExportTicketCreator exportTicketCreator;
-    private long batchCount;
-    private long releaseCount;
 
     ExportStates(SessionImpl session, SessionServiceStub sessionStub, TableServiceStub tableStub,
             ExportTicketCreator exportTicketCreator) {
@@ -58,14 +56,6 @@ final class ExportStates {
         this.tableStub = Objects.requireNonNull(tableStub);
         this.exportTicketCreator = Objects.requireNonNull(exportTicketCreator);
         this.exports = new HashMap<>();
-    }
-
-    long batchCount() {
-        return batchCount;
-    }
-
-    long releaseCount() {
-        return releaseCount;
     }
 
     /**
@@ -92,7 +82,8 @@ final class ExportStates {
         return searchUnreferenceableTable(request).isPresent();
     }
 
-    synchronized List<Export> export(ExportsRequest requests) {
+    @Override
+    public synchronized List<Export> export(ExportsRequest requests) {
         ensureNoUnreferenceableTables(requests);
 
         final Set<TableSpec> oldExports = new HashSet<>(exports.keySet());
@@ -133,11 +124,7 @@ final class ExportStates {
             if (request.getOpsCount() == 0) {
                 throw new IllegalStateException();
             }
-
-            // log.info("Sending batch: {}", request);
-
             tableStub.batch(request, new BatchHandler(newStates));
-            ++batchCount;
         }
 
         return results;
@@ -174,11 +161,15 @@ final class ExportStates {
     private void ensureNoUnreferenceableTables(ExportsRequest requests) {
         final Optional<TableSpec> unreferenceable = searchUnreferenceableTable(requests);
         if (unreferenceable.isPresent()) {
-            // todo: potentially extend engine Table api and Ticket resolver to be able to take an
-            // existing export and a list of parent indices to rehydrate an "unreferenceable" table?
-            // Alternatively, our impl could export everything.
+            // TODO(deephaven-core#4733): Add RPC to export a Table's parent(s)
+            // Alternatively, we could have an implementation that exports everything along the chain.
             throw new IllegalArgumentException(String.format(
-                    "Unable to complete request, contains an unreferenceable table: %s",
+                    "Unable to complete request, contains an unreferenceable table: %s. This is an indication that the"
+                            + " query is trying to export a strict sub-DAG of the existing exports; this is problematic"
+                            + " because there isn't (currently) a way to construct a query that guarantees the returned"
+                            + " export would refer to the same physical table that the existing exports are based on."
+                            + " See https://github.com/deephaven/deephaven-core/issues/4733 for future improvements in"
+                            + " this regard.",
                     unreferenceable.get()));
         }
     }
@@ -213,6 +204,10 @@ final class ExportStates {
             return exportId;
         }
 
+        ExportStates exportStates() {
+            return ExportStates.this;
+        }
+
         synchronized Export newReference(Listener listener) {
             if (released) {
                 throw new IllegalStateException(
@@ -233,7 +228,6 @@ final class ExportStates {
                 sessionStub.release(
                         ReleaseRequest.newBuilder().setId(ExportTicketHelper.wrapExportIdInTicket(exportId)).build(),
                         new TicketReleaseHandler(exportId));
-                ++releaseCount;
             }
         }
 

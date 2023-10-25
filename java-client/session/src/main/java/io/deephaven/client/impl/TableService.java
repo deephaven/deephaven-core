@@ -6,7 +6,6 @@ package io.deephaven.client.impl;
 import io.deephaven.qst.table.TableSpec;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public interface TableService extends TableHandleManager {
 
@@ -21,6 +20,7 @@ public interface TableService extends TableHandleManager {
      * @param table the table
      * @return the export
      */
+    @Deprecated
     Export export(TableSpec table);
 
     /**
@@ -29,6 +29,7 @@ public interface TableService extends TableHandleManager {
      * @param request the request
      * @return the exports
      */
+    @Deprecated
     List<Export> export(ExportsRequest request);
 
     // ----------------------------------------------------------

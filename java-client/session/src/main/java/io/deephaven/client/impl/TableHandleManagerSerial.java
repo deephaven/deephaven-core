@@ -34,22 +34,22 @@ import java.util.Set;
  */
 final class TableHandleManagerSerial extends TableHandleManagerBase {
 
-    public static TableHandleManagerSerial of(Session session) {
-        return new TableHandleManagerSerial(session);
+    public static TableHandleManagerSerial of(ExportService exportService) {
+        return new TableHandleManagerSerial(exportService);
     }
 
-    private TableHandleManagerSerial(Session session) {
-        super(session, null);
+    private TableHandleManagerSerial(ExportService exportService) {
+        super(exportService, null);
     }
 
-    private TableHandleManagerSerial(Session session, Lifecycle lifecycle) {
-        super(session, lifecycle);
+    private TableHandleManagerSerial(ExportService exportService, Lifecycle lifecycle) {
+        super(exportService, lifecycle);
     }
 
     @Override
     public TableHandle execute(TableSpec table) throws TableHandleException, InterruptedException {
         final Tracker tracker = new Tracker();
-        final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
+        final TableHandleManager manager = new TableHandleManagerSerial(exportService, tracker);
         final TableAdapterResults<TableHandle, TableHandle> results;
         try {
             // noinspection RedundantTypeArguments
@@ -66,7 +66,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
     @Override
     public List<TableHandle> execute(Iterable<TableSpec> tables) throws TableHandleException, InterruptedException {
         final Tracker tracker = new Tracker();
-        final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
+        final TableHandleManager manager = new TableHandleManagerSerial(exportService, tracker);
         final TableAdapterResults<TableHandle, TableHandle> results;
         try {
             // noinspection RedundantTypeArguments
@@ -88,7 +88,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
     @Override
     public TableHandle executeLogic(TableCreationLogic logic) throws TableHandleException, InterruptedException {
         final Tracker tracker = new Tracker();
-        final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
+        final TableHandleManager manager = new TableHandleManagerSerial(exportService, tracker);
         final TableHandle out;
         try {
             out = checked(() -> logic.create(manager));
@@ -104,7 +104,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
     public List<TableHandle> executeLogic(Iterable<TableCreationLogic> logics)
             throws TableHandleException, InterruptedException {
         final Tracker tracker = new Tracker();
-        final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
+        final TableHandleManager manager = new TableHandleManagerSerial(exportService, tracker);
         final List<TableHandle> out = new ArrayList<>();
         try {
             for (TableCreationLogic logic : logics) {
@@ -122,7 +122,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
     public LabeledValues<TableHandle> executeLogic(TableCreationLabeledLogic logic)
             throws TableHandleException, InterruptedException {
         final Tracker tracker = new Tracker();
-        final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
+        final TableHandleManager manager = new TableHandleManagerSerial(exportService, tracker);
         final LabeledValues<TableHandle> out;
         try {
             out = checked(() -> logic.create(manager));

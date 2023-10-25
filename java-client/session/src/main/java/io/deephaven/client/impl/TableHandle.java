@@ -49,7 +49,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
      * @throws InterruptedException if the current thread is interrupted while waiting
      * @throws TableHandleException if there is a table creation exception
      */
-    public static TableHandle of(Session session, TableSpec table)
+    public static TableHandle of(ExportService session, TableSpec table)
             throws InterruptedException, TableHandleException {
         return of(session, Collections.singletonList(table), null).get(0);
     }
@@ -59,16 +59,16 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
      * on return. The given {@code lifecycle} will be called on initialization and on release. Derived table handles
      * will inherit the same {@code lifecycle}.
      *
-     * @param session the session
+     * @param exportService the export service
      * @param table the table
      * @param lifecycle the lifecycle
      * @return the successful table handle
      * @throws InterruptedException if the current thread is interrupted while waiting
      * @throws TableHandleException if there is a table creation exception
      */
-    public static TableHandle of(Session session, TableSpec table, Lifecycle lifecycle)
+    public static TableHandle of(ExportService exportService, TableSpec table, Lifecycle lifecycle)
             throws InterruptedException, TableHandleException {
-        return of(session, Collections.singletonList(table), lifecycle).get(0);
+        return of(exportService, Collections.singletonList(table), lifecycle).get(0);
     }
 
     /**
@@ -76,16 +76,16 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
      * successful} on return. The given {@code lifecycle} will be called on initialization and on release. Derived table
      * handles will inherit the same {@code lifecycle}.
      *
-     * @param session the session
+     * @param exportService the export service
      * @param tables the tables
      * @param lifecycle the lifecycle
      * @return the successful table handles
      * @throws InterruptedException if the current thread is interrupted while waiting
      * @throws TableHandleException if there is a table creation exception
      */
-    public static List<TableHandle> of(Session session, Iterable<TableSpec> tables,
+    public static List<TableHandle> of(ExportService exportService, Iterable<TableSpec> tables,
             Lifecycle lifecycle) throws InterruptedException, TableHandleException {
-        List<TableHandle> handles = impl(session, tables, lifecycle);
+        List<TableHandle> handles = impl(exportService, tables, lifecycle);
         for (TableHandle handle : handles) {
             handle.await();
             handle.throwOnError();
@@ -93,9 +93,9 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
         return handles;
     }
 
-    static TableHandle ofUnchecked(Session session, TableSpec table, Lifecycle lifecycle) {
+    static TableHandle ofUnchecked(ExportService exportService, TableSpec table, Lifecycle lifecycle) {
         final TableHandle handle = new TableHandle(table, lifecycle);
-        List<Export> exports = session.export(ExportsRequest.of(handle.exportRequest()));
+        List<Export> exports = exportService.export(ExportsRequest.of(handle.exportRequest()));
         if (exports.size() != 1) {
             throw new IllegalStateException();
         }
@@ -105,7 +105,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
         return handle;
     }
 
-    private static List<TableHandle> impl(Session session, Iterable<TableSpec> specs,
+    private static List<TableHandle> impl(ExportService exportService, Iterable<TableSpec> specs,
             Lifecycle lifecycle) {
         ExportsRequest.Builder exportBuilder = ExportsRequest.builder();
         List<TableHandle> handles = new ArrayList<>();
@@ -115,7 +115,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
             exportBuilder.addRequests(handle.exportRequest());
         }
         ExportsRequest request = exportBuilder.build();
-        List<Export> exports = session.export(request);
+        List<Export> exports = exportService.export(request);
         if (exports.size() != handles.size()) {
             throw new IllegalStateException();
         }
@@ -133,7 +133,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
     private ExportedTableCreationResponse response;
     private Throwable error;
 
-    private TableHandle(TableSpec table, Lifecycle lifecycle) {
+    TableHandle(TableSpec table, Lifecycle lifecycle) {
         super(table);
         this.lifecycle = lifecycle;
         this.doneLatch = new CountDownLatch(1);
@@ -271,8 +271,8 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
     /**
      * Must be called after construction, before {@code this} is returned to the user.
      */
-    private void init(Export export) {
-        this.export = export;
+    void init(Export export) {
+        this.export = Objects.requireNonNull(export);
         if (lifecycle != null) {
             lifecycle.onInit(this);
         }
@@ -280,13 +280,13 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
 
     @Override
     protected TableHandle adapt(TableSpec table) {
-        return ofUnchecked(export.session(), table, lifecycle);
+        return ofUnchecked(export.exportStates(), table, lifecycle);
     }
 
     @Override
     protected TableSpec adapt(TableHandle rhs) {
-        if (export.session() != rhs.export.session()) {
-            throw new IllegalArgumentException("Can't mix multiple Sessions with TableHandle");
+        if (export.exportStates() != rhs.export.exportStates()) {
+            throw new IllegalArgumentException("Can't mix multiple exportStates() with TableHandle");
         }
         return rhs.export.table();
     }
@@ -307,11 +307,11 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
         }
     }
 
-    private ResponseAdapter responseAdapter() {
+    ResponseAdapter responseAdapter() {
         return new ResponseAdapter();
     }
 
-    private class ResponseAdapter implements Listener {
+    class ResponseAdapter implements Listener {
 
         @Override
         public void onNext(ExportedTableCreationResponse response) {

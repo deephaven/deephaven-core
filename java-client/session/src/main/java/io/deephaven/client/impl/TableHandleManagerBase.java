@@ -19,11 +19,11 @@ import java.util.Objects;
 
 public abstract class TableHandleManagerBase implements TableHandleManager {
 
-    protected final Session session;
+    protected final ExportService exportService;
     protected final Lifecycle lifecycle;
 
-    protected TableHandleManagerBase(Session session, Lifecycle lifecycle) {
-        this.session = Objects.requireNonNull(session);
+    protected TableHandleManagerBase(ExportService exportService, Lifecycle lifecycle) {
+        this.exportService = Objects.requireNonNull(exportService);
         this.lifecycle = lifecycle;
     }
 
@@ -68,6 +68,6 @@ public abstract class TableHandleManagerBase implements TableHandleManager {
     }
 
     private TableHandle handle(TableSpec table) {
-        return TableHandle.ofUnchecked(session, table, lifecycle);
+        return TableHandle.ofUnchecked(exportService, table, lifecycle);
     }
 }

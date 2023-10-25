@@ -25,6 +25,7 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
+import io.deephaven.qst.table.TableSpec;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
@@ -108,9 +109,6 @@ public final class SessionImpl extends SessionBase {
     // Needed for downstream flight workarounds
     private final BearerHandler bearerHandler;
     private final ExportTicketCreator exportTicketCreator;
-    private final ExportStates states;
-    private final TableHandleManagerSerial serialManager;
-    private final TableHandleManagerBatch batchManager;
     private final ScheduledFuture<?> pingJob;
 
     private SessionImpl(SessionImplConfig config, DeephavenChannel bearerChannel, Duration pingFrequency,
@@ -119,9 +117,6 @@ public final class SessionImpl extends SessionBase {
         this.bearerChannel = Objects.requireNonNull(bearerChannel);
         this.bearerHandler = Objects.requireNonNull(bearerHandler);
         this.exportTicketCreator = new ExportTicketCreator();
-        this.states = new ExportStates(this, bearerChannel.session(), bearerChannel.table(), exportTicketCreator);
-        this.serialManager = TableHandleManagerSerial.of(this);
-        this.batchManager = TableHandleManagerBatch.of(this, config.mixinStacktrace());
         this.pingJob = config.executor().scheduleAtFixedRate(
                 () -> bearerChannel.config().getConfigurationConstants(
                         ConfigurationConstantsRequest.getDefaultInstance(), PingObserverNoOp.INSTANCE),
@@ -134,8 +129,9 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    public List<Export> export(ExportsRequest request) {
-        return states.export(request);
+    public TableServices tableServices() {
+        return new TableServicesImpl(
+                new ExportStates(this, bearerChannel.session(), bearerChannel.table(), exportTicketCreator));
     }
 
     @Override
@@ -282,26 +278,10 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    protected TableHandleManager delegate() {
-        return config.delegateToBatch() ? batchManager : serialManager;
-    }
-
-    @Override
-    public TableHandleManager batch() {
-        return batchManager;
-    }
-
-    @Override
-    public TableHandleManager batch(boolean mixinStacktrace) {
-        if (this.config.mixinStacktrace() == mixinStacktrace) {
-            return batchManager;
-        }
-        return TableHandleManagerBatch.of(this, mixinStacktrace);
-    }
-
-    @Override
-    public TableHandleManager serial() {
-        return serialManager;
+    protected TableServices delegate() {
+        // Session.execute / Session.executeAsync will create one-off TableServices for exporting
+        // Session.batch / Session.serial will create stateful TableHandleManagers
+        return tableServices();
     }
 
     @Override
@@ -355,14 +335,6 @@ public final class SessionImpl extends SessionBase {
 
     public ScheduledExecutorService executor() {
         return config.executor();
-    }
-
-    public long batchCount() {
-        return states.batchCount();
-    }
-
-    public long releaseCount() {
-        return states.releaseCount();
     }
 
     @Override
@@ -542,6 +514,61 @@ public final class SessionImpl extends SessionBase {
         @Override
         public void onClose() {
             serverObserver.onCompleted();
+        }
+    }
+
+    private class TableServicesImpl extends TableHandleManagerDelegate implements TableServices {
+
+        private final ExportStates exportStates;
+
+        TableServicesImpl(ExportStates exportStates) {
+            this.exportStates = Objects.requireNonNull(exportStates);
+        }
+
+        // ---------------------------------------------------
+
+        @Override
+        public TableHandleAsync executeAsync(TableSpec tableSpec) {
+            return TableServiceAsyncImpl.executeAsync(exportStates, tableSpec);
+        }
+
+        @Override
+        public List<? extends TableHandleAsync> executeAsync(List<TableSpec> tableSpecs) {
+            return TableServiceAsyncImpl.executeAsync(exportStates, tableSpecs);
+        }
+
+        // ---------------------------------------------------
+
+        @Override
+        public List<Export> export(ExportsRequest request) {
+            return exportStates.export(request);
+        }
+
+        @Override
+        public Export export(TableSpec table) {
+            return exportStates.export(ExportsRequest.logging(table)).get(0);
+        }
+
+        // ---------------------------------------------------
+
+        @Override
+        protected TableHandleManager delegate() {
+            return config.delegateToBatch() ? batch() : serial();
+        }
+
+        @Override
+        public TableHandleManager batch() {
+            return TableHandleManagerBatch.of(exportStates, config.mixinStacktrace());
+        }
+
+        @Override
+        public TableHandleManager batch(boolean mixinStacktrace) {
+            return TableHandleManagerBatch.of(exportStates, mixinStacktrace);
+        }
+
+        @Override
+        public TableHandleManager serial() {
+            return TableHandleManagerSerial.of(exportStates);
         }
     }
 }
