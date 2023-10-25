@@ -333,6 +333,7 @@ def _scalar(x: Any, dtype: DType) -> Any:
     """Converts a Python value to a Java scalar value. It converts the numpy primitive types, string to
     their Python equivalents so that JPY can handle them. For datetime values, it converts them to Java Instant.
     Otherwise, it returns the value as is."""
+
     # NULL_BOOL will appear in Java as a byte value which causes a cast error. We just let JPY converts it to Java null
     # and the engine has casting logic to handle it.
     if x is None and dtype != bool_ and _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
@@ -353,8 +354,7 @@ def _scalar(x: Any, dtype: DType) -> Any:
             elif x.dtype.char == 'M':
                 from deephaven.time import to_j_instant
                 return to_j_instant(x)
-        else:
-            if isinstance(x, (datetime.datetime, pd.Timestamp)):
+        elif isinstance(x, (datetime.datetime, pd.Timestamp)):
                 from deephaven.time import to_j_instant
                 return to_j_instant(x)
         return x

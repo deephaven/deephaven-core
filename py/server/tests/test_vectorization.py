@@ -275,6 +275,8 @@ class VectorizationTestCase(BaseTestCase):
         self.assertEqual(deephaven.table._vectorized_count, 2)
         self.assertIn("13", t.to_string(cols=["Y"]))
         self.assertIn("null", t.to_string())
+        self.assertEqual(t.columns[1].data_type, dtypes.long)
+        self.assertEqual(t.columns[2].data_type, dtypes.long)
 
 
 if __name__ == "__main__":

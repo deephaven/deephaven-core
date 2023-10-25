@@ -403,6 +403,13 @@ def _encode_signature(fn: Callable) -> str:
     return "".join(np_type_codes)
 
 
+def _udf_return_dtype(fn):
+    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
+        return dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
+    else:
+        return dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
+
+
 def _py_udf(fn: Callable):
     """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
     Python and Java. This decorator is intended for use by the Deephaven query engine and should not be used by
@@ -421,12 +428,7 @@ def _py_udf(fn: Callable):
 
     if hasattr(fn, "return_type"):
         return fn
-
-    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
-        dh_dtype = dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
-    else:
-        dh_dtype = dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
-
+    ret_dtype = _udf_return_dtype(fn)
     return_array = False
 
     # If the function is a numba guvectorized function, examine the signature of the function to determine if it
@@ -440,27 +442,27 @@ def _py_udf(fn: Callable):
         return_annotation = _parse_annotation(inspect.signature(fn).return_annotation)
         component_type = _component_np_dtype_char(return_annotation)
         if component_type:
-            dh_dtype = dtypes.from_np_dtype(np.dtype(component_type))
-            if dh_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
+            ret_dtype = dtypes.from_np_dtype(np.dtype(component_type))
+            if ret_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
                 return_array = True
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
         ret = fn(*args, **kwargs)
         if return_array:
-            return dtypes.array(dh_dtype, ret)
-        elif dh_dtype == dtypes.PyObject:
+            return dtypes.array(ret_dtype, ret)
+        elif ret_dtype == dtypes.PyObject:
             return ret
         else:
-            return _scalar(ret, dh_dtype)
+            return _scalar(ret, ret_dtype)
 
-    wrapper.j_name = dh_dtype.j_name
-    ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(dh_dtype) if return_array else dh_dtype
+    wrapper.j_name = ret_dtype.j_name
+    real_ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype) if return_array else ret_dtype
 
-    if hasattr(dh_dtype.j_type, 'jclass'):
-        j_class = ret_dtype.j_type.jclass
+    if hasattr(ret_dtype.j_type, 'jclass'):
+        j_class = real_ret_dtype.j_type.jclass
     else:
-        j_class = ret_dtype.qst_type.clazz()
+        j_class = real_ret_dtype.qst_type.clazz()
 
     wrapper.return_type = j_class
 
@@ -483,10 +485,7 @@ def dh_vectorize(fn):
     and (3) the input arrays.
     """
     signature = _encode_signature(fn)
-    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
-        dh_dtype = dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
-    else:
-        dh_dtype = dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
+    ret_dtype = _udf_return_dtype(fn)
 
     @wraps(fn)
     def wrapper(*args):
@@ -502,10 +501,10 @@ def dh_vectorize(fn):
             vectorized_args = zip(*args[2:])
             for i in range(chunk_size):
                 scalar_args = next(vectorized_args)
-                chunk_result[i] = _scalar(fn(*scalar_args), dh_dtype)
+                chunk_result[i] = _scalar(fn(*scalar_args), ret_dtype)
         else:
             for i in range(chunk_size):
-                chunk_result[i] = _scalar(fn(), dh_dtype)
+                chunk_result[i] = _scalar(fn(), ret_dtype)
 
         return chunk_result
 
