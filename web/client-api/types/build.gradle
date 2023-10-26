@@ -1,5 +1,3 @@
-import com.bmuschko.gradle.docker.tasks.image.Dockerfile
-
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
@@ -15,7 +13,7 @@ dependencies {
 Docker.registerDockerTask(project, 'typedoc') {
     copyIn {
         from(configurations.dts) {
-            into 'src'
+            into 'dist'
         }
         from 'tsconfig.json'
         from 'package.json'
@@ -30,13 +28,17 @@ Docker.registerDockerTask(project, 'typedoc') {
 
         runCommand('''set -eux; \\
                       cd /project/; \\
+                      mv dist/types.d.ts dist/index.d.ts; \\
                       npm ci; \\
-                      node_modules/.bin/typedoc src/types.d.ts --out /documentation --skipErrorChecking
+                      npm pack; \\
+                      mkdir /out; \\
+                      mv deephaven-jsapi-types*.tgz /out/; \\
+                      node_modules/.bin/typedoc dist/index.d.ts --out /out/documentation --skipErrorChecking
                       ''')
     }
     parentContainers = [ Docker.registryTask(project, 'node') ] // deephaven/node
-    containerOutPath = '/documentation'
+    containerOutPath = '/out'
     copyOut {
-        into "$buildDir/documentation"
+        into "$buildDir/"
     }
 }
