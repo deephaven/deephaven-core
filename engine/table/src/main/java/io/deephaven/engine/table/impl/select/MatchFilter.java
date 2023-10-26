@@ -17,6 +17,7 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
 
 import java.time.Instant;
@@ -52,38 +53,53 @@ public class MatchFilter extends WhereFilterImpl {
         MatchCase, IgnoreCase
     }
 
-    public MatchFilter(MatchType matchType, @NotNull String columnName, Object... values) {
-        this.columnName = columnName;
-        this.values = values;
-        this.strValues = null;
-        this.invertMatch = (matchType == MatchType.Inverted);
-        this.caseInsensitive = false;
-    }
-
-    public MatchFilter(String columnName, Object... values) {
-        this(MatchType.Regular, columnName, values);
-    }
-
-    public MatchFilter(CaseSensitivity sensitivity, String columnName, String... strValues) {
-        this(sensitivity, MatchType.Regular, columnName, strValues);
-    }
-
-    public MatchFilter(CaseSensitivity sensitivity, MatchType matchType, String columnName, String... strValues) {
-        this.columnName = columnName;
-        this.strValues = strValues;
-        this.caseInsensitive = (sensitivity == CaseSensitivity.IgnoreCase);
-        this.invertMatch = (matchType == MatchType.Inverted);
-    }
-
-    public MatchFilter(@NotNull final CaseSensitivity sensitivity,
+    public MatchFilter(
             @NotNull final MatchType matchType,
             @NotNull final String columnName,
             @NotNull final Object... values) {
-        this.columnName = columnName;
-        this.values = values;
-        this.strValues = null;
+        this(CaseSensitivity.IgnoreCase, matchType, columnName, null, values);
+    }
+
+    public MatchFilter(
+            @NotNull final String columnName,
+            @NotNull final Object... values) {
+        this(CaseSensitivity.IgnoreCase, MatchType.Regular, columnName, values, null);
+    }
+
+    public MatchFilter(
+            @NotNull final CaseSensitivity sensitivity,
+            @NotNull final String columnName,
+            @NotNull final String... strValues) {
+        this(sensitivity, MatchType.Regular, columnName, strValues, null);
+    }
+
+    public MatchFilter(
+            @NotNull final CaseSensitivity sensitivity,
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @NotNull final String... strValues) {
+        this(sensitivity, matchType, columnName, strValues, null);
+    }
+
+    public MatchFilter(
+            @NotNull final CaseSensitivity sensitivity,
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @NotNull final Object... values) {
+        this(sensitivity, matchType, columnName, null, values);
+    }
+
+    private MatchFilter(
+            @NotNull final CaseSensitivity sensitivity,
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @Nullable String[] strValues,
+            @Nullable final Object[] values) {
         this.caseInsensitive = sensitivity == CaseSensitivity.IgnoreCase;
         this.invertMatch = (matchType == MatchType.Inverted);
+        this.columnName = columnName;
+        this.strValues = strValues;
+        this.values = values;
     }
 
     public MatchFilter renameFilter(String newName) {

@@ -60,7 +60,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
     public void testPreserveGrouping() {
         final Table x = TstUtils.testTable(TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6));
-        
+
         final DataIndexer xIndexer = DataIndexer.of(x.getRowSet());
         assertTrue(xIndexer.hasDataIndex(x.getColumnSource("Sym")));
         assertFalse(xIndexer.hasDataIndex(x.getColumnSource("Sentinel")));

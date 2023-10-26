@@ -12,10 +12,7 @@ import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -252,12 +249,16 @@ public class TimeTableTest extends RefreshingTableTestCase {
         final DataIndexer dataIndexer = DataIndexer.of(timeTable.getRowSet());
 
         // Asking for a data index will cause it to be created when it does not exist.
-        final DataIndex dataIndex = dataIndexer.getDataIndex(dtColumn).applyIntersect(RowSetFactory.fromRange(100, 109));
+        final DataIndex dataIndex =
+                dataIndexer.getDataIndex(dtColumn).transform(
+                        DataIndexTransformer.builder()
+                                .intersectRowSet(RowSetFactory.fromRange(100, 109))
+                                .build());
         final Table indexTable = dataIndex.table();
 
         Assert.assertEquals(indexTable.size(), 10);
         try (final CloseableIterator<Instant> keyIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0]);
-             final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0])) {
+                final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0])) {
             while (keyIt.hasNext()) {
                 final Instant key = keyIt.next();
                 final RowSet rs = rsIt.next();
@@ -266,12 +267,17 @@ public class TimeTableTest extends RefreshingTableTestCase {
             }
         }
 
-        final DataIndex longDataIndex = dataIndexer.getDataIndex(column).applyIntersect(RowSetFactory.fromRange(100, 109));
+        final DataIndex longDataIndex =
+                dataIndexer.getDataIndex(column).transform(
+                        DataIndexTransformer.builder()
+                                .intersectRowSet(RowSetFactory.fromRange(100, 109))
+                                .build());
         final Table longIndexTable = longDataIndex.table();
 
         Assert.assertEquals(longIndexTable.size(), 10);
         try (final CloseableIterator<Long> keyIt = longIndexTable.columnIterator(longDataIndex.keyColumnNames()[0]);
-             final CloseableIterator<RowSet> rsIt = longIndexTable.columnIterator(longDataIndex.keyColumnNames()[0])) {
+                final CloseableIterator<RowSet> rsIt =
+                        longIndexTable.columnIterator(longDataIndex.keyColumnNames()[0])) {
             while (keyIt.hasNext()) {
                 final Long key = keyIt.next();
                 final RowSet rs = rsIt.next();

@@ -4,10 +4,19 @@
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.api.SortColumn;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.SortPair;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
+import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
+import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
+import io.deephaven.parquet.base.ColumnChunkReader;
+import io.deephaven.parquet.base.ParquetFileReader;
+import io.deephaven.parquet.base.RowGroupReader;
+import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetSchemaReader;
 import io.deephaven.parquet.table.ParquetTools;
@@ -15,16 +24,6 @@ import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.parquet.base.ColumnChunkReader;
-import io.deephaven.parquet.base.ParquetFileReader;
-import io.deephaven.parquet.base.RowGroupReader;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -187,7 +186,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
 
     @Override
-    public boolean hasDataIndexFor(@NotNull final String... columns) {
+    public boolean hasDataIndex(@NotNull final String... columns) {
         // Check if the column names match any of the data indexes
         for (final DataIndexInfo dataIndex : dataIndexes) {
             if (dataIndex.matchesColumns(columns)) {

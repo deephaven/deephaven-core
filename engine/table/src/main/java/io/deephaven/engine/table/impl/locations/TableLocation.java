@@ -7,7 +7,6 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.SortPair;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.NamedImplementation;
@@ -97,7 +96,7 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
      * @param columns the set of columns to check for.
      * @return true if the table has a Data Index for the specified columns
      */
-    boolean hasDataIndexFor(@NotNull String... columns);
+    boolean hasDataIndex(@NotNull String... columns);
 
     /**
      * Get the data index table for the specified set of columns. Note that the order of columns does not matter here.
@@ -124,7 +123,8 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
      */
     @NotNull
     @FinalDefault
-    default <CL extends ColumnLocation> CL getColumnLocation(@NotNull final CharSequence name,
+    default <CL extends ColumnLocation> CL getColumnLocation(
+            @NotNull final CharSequence name,
             @SuppressWarnings("unused") Class<CL> locationType) {
         return getColumnLocation(name).cast();
     }

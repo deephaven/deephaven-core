@@ -576,8 +576,7 @@ public class TstUtils {
         final DataIndexer dataIndexer = DataIndexer.of(rowSet);
         for (int i = 0; i < columnHolders.length; i++) {
             if (columnHolders[i].grouped) {
-                final ColumnSource<?> groupedSource = queryTable.getColumnSource(columnHolders[i].name);
-                dataIndexer.createDataIndex(queryTable, groupedSource);
+                dataIndexer.createDataIndex(queryTable, columnHolders[i].name);
             }
         }
 

@@ -1631,7 +1631,10 @@ public class QueryTable extends BaseTable<QueryTable> {
             }
 
             // Create a new DataIndex using the new column sources as keys.
-            final DataIndex remappedIndex = dataIndex.applyColumnRemap(oldToNewMap);
+            final DataIndex remappedIndex = dataIndex.transform(
+                    DataIndexTransformer.builder()
+                            .putAllKeyColumnRemap(oldToNewMap)
+                            .build());
 
             // Add the new index to the DataIndexer.
             dataIndexer.addIndex(remappedIndex);

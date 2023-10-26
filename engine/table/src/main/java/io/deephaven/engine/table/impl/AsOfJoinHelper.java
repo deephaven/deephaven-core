@@ -150,14 +150,18 @@ public class AsOfJoinHelper {
 
         if (control.useDataIndex(leftTable, leftSources)) {
             leftDataIndex = DataIndexer.of(leftTable.getRowSet())
-                    .getDataIndex(leftSources)
-                    .applyIntersect(leftTable.getRowSet());
+                    .getDataIndex(leftSources).transform(
+                            DataIndexTransformer.builder()
+                                    .intersectRowSet(leftTable.getRowSet())
+                                    .build());
             leftIndexTable = leftDataIndex.table();
 
             if (control.useDataIndex(rightTable, rightSources)) {
                 rightDataIndex = DataIndexer.of(rightTable.getRowSet())
-                        .getDataIndex(rightSources)
-                        .applyIntersect(rightTable.getRowSet());
+                        .getDataIndex(rightSources).transform(
+                                DataIndexTransformer.builder()
+                                        .intersectRowSet(rightTable.getRowSet())
+                                        .build());
                 rightIndexTable = rightDataIndex.table();
 
                 buildLeft = leftIndexTable.size() < rightIndexTable.size();
@@ -171,10 +175,11 @@ public class AsOfJoinHelper {
             }
         } else if (control.useDataIndex(rightTable, rightSources)) {
             rightDataIndex = DataIndexer.of(rightTable.getRowSet())
-                    .getDataIndex(rightSources)
-                    .applyIntersect(rightTable.getRowSet());
+                    .getDataIndex(rightSources).transform(
+                            DataIndexTransformer.builder()
+                                    .intersectRowSet(rightTable.getRowSet())
+                                    .build());
             rightIndexTable = rightDataIndex.table();
-
 
             leftIndexTable = null;
             leftDataIndex = null;

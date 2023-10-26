@@ -116,7 +116,7 @@ public class TestPartitioningColumns {
         }
 
         @Override
-        public boolean hasDataIndexFor(@NotNull String... columns) {
+        public boolean hasDataIndex(@NotNull String... columns) {
             return false;
         }
 

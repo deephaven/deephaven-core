@@ -6,16 +6,12 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Array;
-import java.util.Collections;
-import java.util.Map;
 
 import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.getFirstRowKey;
 import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.getLastRowKey;
@@ -131,23 +127,6 @@ public abstract class TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR extends V
             TestCase.assertNull(doLookupRegion(getLastRowKey(9)));
         } catch (ArrayIndexOutOfBoundsException expected) {
         }
-    }
-
-    @Test
-    public void testDeferredGrouping() {
-        assertFalse(SUT.hasGrouping());
-
-        final Map<DATA_TYPE, RowSet> dummyGrouping = Collections.singletonMap(null, RowSetFactory.flat(1));
-        SUT.setGroupingProvider(StaticGroupingProvider.buildFrom(dummyGrouping, "Key"));
-        assertEquals(dummyGrouping, SUT.getGroupingBuilder().buildGroupingMap());
-        SUT.setGroupingProvider(null);
-        assertFalse(SUT.hasGrouping());
-
-        SUT.setGroupingProvider(StaticGroupingProvider.buildFrom(dummyGrouping, "Key"));
-        assertEquals(dummyGrouping, SUT.getGroupingBuilder().buildGroupingMap());
-        assertEquals(dummyGrouping, SUT.getGroupingBuilder().buildGroupingMap());
-        SUT.setGroupingProvider(null);
-        assertFalse(SUT.hasGrouping());
     }
 
     @Test

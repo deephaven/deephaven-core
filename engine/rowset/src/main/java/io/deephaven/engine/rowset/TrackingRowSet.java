@@ -91,12 +91,6 @@ public interface TrackingRowSet extends RowSet {
      * Minimal interface for optional, opaque indexer objects hosted by TrackingRowSet instances.
      */
     interface Indexer {
-
-        /**
-         * Callback for the host TrackingRowSet to report a modification that may invalidate cached indexing
-         * information.
-         */
-        void rowSetChanged();
     }
 
     /**

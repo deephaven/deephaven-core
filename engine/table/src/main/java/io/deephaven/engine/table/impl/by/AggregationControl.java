@@ -24,14 +24,14 @@ public class AggregationControl {
     public static final AggregationControl DEFAULT = new AggregationControl();
     public static final AggregationControl DEFAULT_FOR_OPERATOR = new AggregationControl() {
         @Override
-        public boolean considerGrouping(@NotNull Table table, @NotNull ColumnSource<?>[] sources) {
+        public boolean considerIndexing(@NotNull Table table, @NotNull ColumnSource<?>[] sources) {
             return true;
         }
     };
 
     public static final AggregationControl IGNORE_GROUPING = new AggregationControl() {
         @Override
-        public boolean considerGrouping(@NotNull Table table, @NotNull ColumnSource<?>[] sources) {
+        public boolean considerIndexing(@NotNull Table table, @NotNull ColumnSource<?>[] sources) {
             return false;
         }
     };
@@ -49,7 +49,7 @@ public class AggregationControl {
         return DEFAULT_MAX_LOAD_FACTOR;
     }
 
-    public boolean considerGrouping(@NotNull final Table inputTable, @NotNull final ColumnSource<?>[] sources) {
+    public boolean considerIndexing(@NotNull final Table inputTable, @NotNull final ColumnSource<?>[] sources) {
         return true;
     }
 

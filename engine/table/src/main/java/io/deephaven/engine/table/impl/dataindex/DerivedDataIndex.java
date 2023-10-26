@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.dataindex;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -28,12 +29,8 @@ public class DerivedDataIndex extends AbstractDataIndex {
     private static final int CHUNK_SIZE = 2048;
     @NotNull
     final DataIndex parentIndex;
-    @Nullable
-    final RowSet intersectRowSet;
-    @Nullable
-    final RowSet invertRowSet;
-    final boolean sortByFirstRowKey;
-    final boolean immutableResult;
+    @NotNull
+    final DataIndexTransformer transformer;
 
     final Map<ColumnSource<?>, String> columnNameMap;
 
@@ -47,29 +44,17 @@ public class DerivedDataIndex extends AbstractDataIndex {
     private long cachedPositionLookupStep = -1;
 
     public static DerivedDataIndex from(@NotNull final DataIndex index,
-            @Nullable final RowSet intersectRowSet,
-            @Nullable final RowSet invertRowSet,
-            final boolean sortByFirstRowKey,
-            @Nullable final Map<ColumnSource<?>, ColumnSource<?>> oldToNewMap,
-            final boolean immutableResult) {
-        return new DerivedDataIndex(index, intersectRowSet, invertRowSet, sortByFirstRowKey, oldToNewMap,
-                immutableResult);
+            @NotNull final DataIndexTransformer transformer) {
+        return new DerivedDataIndex(index, transformer);
     }
 
     private DerivedDataIndex(@NotNull final DataIndex parentIndex,
-            @Nullable final RowSet intersectRowSet,
-            @Nullable final RowSet invertRowSet,
-            final boolean sortByFirstRowKey,
-            @Nullable final Map<ColumnSource<?>, ColumnSource<?>> oldToNewMap,
-            final boolean immutableResult) {
+            @NotNull final DataIndexTransformer transformer) {
         this.parentIndex = parentIndex;
-        this.intersectRowSet = intersectRowSet;
-        this.invertRowSet = invertRowSet;
-        this.sortByFirstRowKey = sortByFirstRowKey;
-        this.immutableResult = immutableResult;
+        this.transformer = transformer;
 
         // Handle the column source remapping if needed.
-        if (oldToNewMap != null && !oldToNewMap.isEmpty()) {
+        if (!transformer.keyColumnRemap().isEmpty()) {
             // Build a new map of column sources to index table key column names using either the original column
             // sources or the remapped column sources.
             columnNameMap = new LinkedHashMap<>();
@@ -78,7 +63,7 @@ public class DerivedDataIndex extends AbstractDataIndex {
                 final ColumnSource<?> originalColumnSource = entry.getKey();
                 // Use the remapped column source (or the original source if not remapped) as the key.
                 columnNameMap.put(
-                        oldToNewMap.getOrDefault(originalColumnSource, originalColumnSource),
+                        transformer.keyColumnRemap().getOrDefault(originalColumnSource, originalColumnSource),
                         entry.getValue());
             }
         } else {
@@ -102,17 +87,38 @@ public class DerivedDataIndex extends AbstractDataIndex {
     }
 
     @Override
-    public @Nullable Table table() {
-        // Return a valid cached table if possible. If the index is static or was computed on this cycle, it remains
+    public @NotNull Table table(final boolean usePrev) {
+        Table resultTable;
+        if (usePrev && isRefreshing()) {
+            // Return a valid cached table if possible. If the index was computed on this cycle, it remains
+            // valid. Otherwise, we need to recompute the index from its parent.
+            final Table cached = cachedPrevTable.get();
+            if (cached != null && (cached.getUpdateGraph().clock().currentStep() == cachedPrevTableStep)) {
+                return cached;
+            }
+
+            // Get the parent index table and resolve our operations.
+            resultTable = parentIndex.table(usePrev);
+
+            resultTable = maybeIntersectAndInvert(resultTable);
+            resultTable = maybeSortByFirsKey(resultTable);
+            resultTable = maybeMakeImmutable(resultTable);
+
+            // Cache the result table.
+            cachedPrevTable = new SoftReference<>(resultTable);
+            cachedPrevTableStep = resultTable.getUpdateGraph().clock().currentStep();
+
+            return resultTable;
+        }
+
+        // Return a valid cached table if possible. If the index was computed on this cycle, it remains
         // valid. Otherwise, we need to recompute the index from its parent.
         final Table cached = cachedTable.get();
-        if (cached != null
-                && (!isRefreshing() || cached.getUpdateGraph().clock().currentStep() == cachedTableStep)) {
+        if (cached != null && (cached.getUpdateGraph().clock().currentStep() == cachedTableStep)) {
             return cached;
         }
 
-        // Get the parent index table and resolve our operations.
-        Table resultTable = parentIndex.table();
+        resultTable = parentIndex.table();
 
         resultTable = maybeIntersectAndInvert(resultTable);
         resultTable = maybeSortByFirsKey(resultTable);
@@ -126,45 +132,17 @@ public class DerivedDataIndex extends AbstractDataIndex {
     }
 
     @Override
-    public @Nullable Table prevTable() {
-        if (!isRefreshing()) {
-            // This index is static, so prev==current
-            return table();
-        }
-
-        // Return a valid cached table if possible. If the index is static or was computed on this cycle, it remains
-        // valid. Otherwise, we need to recompute the index from its parent.
-        final Table cached = cachedPrevTable.get();
-        if (cached != null
-                && (cached.getUpdateGraph().clock().currentStep() == cachedPrevTableStep)) {
-            return cached;
-        }
-
-        // Get the parent index table and resolve our operations.
-        Table resultTable = parentIndex.prevTable();
-
-        resultTable = maybeIntersectAndInvert(resultTable);
-        resultTable = maybeSortByFirsKey(resultTable);
-        resultTable = maybeMakeImmutable(resultTable);
-
-        // Cache the result table.
-        cachedPrevTable = new SoftReference<>(resultTable);
-        cachedPrevTableStep = resultTable.getUpdateGraph().clock().currentStep();
-
-        return resultTable;
-    }
-
-    @Override
-    public @Nullable RowSetLookup rowSetLookup() {
+    public @NotNull RowSetLookup rowSetLookup() {
         // Assuming the parent lookup function is fast and efficient, we will leverage the parent's function
         // and apply the mutator to the retrieved result.
         final RowSetLookup lookup = parentIndex.rowSetLookup();
-        if (intersectRowSet == null && invertRowSet == null) {
+        if (transformer.intersectRowSet().isEmpty() && transformer.invertRowSet().isEmpty()) {
             // No need to mutate retrieved row set.
             return lookup;
         }
 
-        final Function<RowSet, RowSet> mutator = getMutator(intersectRowSet, invertRowSet);
+        final Function<RowSet, RowSet> mutator =
+                getMutator(transformer.intersectRowSet().orElse(null), transformer.invertRowSet().orElse(null));
         return (Object o) -> {
             final RowSet rowSet = lookup.apply(o);
             return rowSet == null ? null : mutator.apply(rowSet);
@@ -214,31 +192,32 @@ public class DerivedDataIndex extends AbstractDataIndex {
     }
 
     @Override
-    public DataIndex apply(@Nullable final RowSet intersectRowSet,
-            @Nullable final RowSet invertRowSet,
-            final boolean sortByFirstRowKey,
-            @Nullable final Map<ColumnSource<?>, ColumnSource<?>> keyColumnRemap,
-            final boolean immutableResult) {
-        return DerivedDataIndex.from(this, intersectRowSet, invertRowSet, sortByFirstRowKey, keyColumnRemap,
-                immutableResult);
+    public DataIndex transform(final DataIndexTransformer transformer) {
+        return DerivedDataIndex.from(this, transformer);
     }
 
     /** Return true if the set of operations may modify the parent index table row set. **/
     private boolean mayModifyParentIndexRowSet() {
-        return intersectRowSet != null || invertRowSet != null;
+        return transformer.intersectRowSet().isPresent()
+                || transformer.invertRowSet().isPresent()
+                || transformer.sortByFirstRowKey();
     }
 
 
     // region DataIndex materialization operations
-    private static Function<RowSet, RowSet> getMutator(@Nullable final RowSet intersectRowSet,
+    private static Function<RowSet, RowSet> getMutator(
+            @Nullable final RowSet intersectRowSet,
             @Nullable final RowSet invertRowSet) {
         final Function<RowSet, RowSet> mutator;
         if (invertRowSet == null) {
             // Only intersect.
-            mutator = rs -> rs.intersect(intersectRowSet);
+            mutator = rs -> {
+                Assert.neqNull(intersectRowSet, "intersectRowSet");
+                return rs.intersect(intersectRowSet);
+            };
         } else if (intersectRowSet == null) {
             // Only invert.
-            mutator = index -> invertRowSet.invert(index);
+            mutator = invertRowSet::invert;
         } else {
             // Intersect and invert.
             mutator = index -> {
@@ -257,11 +236,12 @@ public class DerivedDataIndex extends AbstractDataIndex {
      * @return the table with intersections and inversions applied.
      */
     private Table maybeIntersectAndInvert(@NotNull final Table indexTable) {
-        if (intersectRowSet == null && invertRowSet == null) {
+        if (transformer.intersectRowSet().isEmpty() && transformer.invertRowSet().isEmpty()) {
             return indexTable;
         }
 
-        final Function<RowSet, RowSet> mutator = getMutator(intersectRowSet, invertRowSet);
+        final Function<RowSet, RowSet> mutator =
+                getMutator(transformer.intersectRowSet().orElse(null), transformer.invertRowSet().orElse(null));
 
         // Build a new table with redirected column sources for the key column(s) and an in-memory column for the
         // mutated output row sets.
@@ -342,7 +322,7 @@ public class DerivedDataIndex extends AbstractDataIndex {
      * @return the table sorted by first key, if requested.
      */
     protected Table maybeSortByFirsKey(final @NotNull Table indexTable) {
-        if (!sortByFirstRowKey) {
+        if (!transformer.sortByFirstRowKey()) {
             return indexTable;
         }
 
@@ -358,7 +338,7 @@ public class DerivedDataIndex extends AbstractDataIndex {
      * @return the table sorted by first key, if requested.
      */
     protected Table maybeMakeImmutable(final @NotNull Table indexTable) {
-        if (!immutableResult) {
+        if (!transformer.immutable()) {
             return indexTable;
         }
 

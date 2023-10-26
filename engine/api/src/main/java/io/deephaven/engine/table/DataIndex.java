@@ -1,30 +1,32 @@
 package io.deephaven.engine.table;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
 
 /**
- * This interface provides a data index for a table. The index is a table containing the key column(s) and the RowSets
- * that contain these values. DataIndexes may be loaded from storage or created using aggregations.
+ * This interface provides a data index for a {@link Table}. The index itself is a Table containing the key column(s)
+ * and the RowSets associated with each unique combination of values. DataIndexes may be loaded from persistent storage
+ * or created using aggregations.
  */
 public interface DataIndex {
+    /** Provides a lookup function from {@code key} to the position in the index table. */
     interface PositionLookup {
         int apply(Object key);
     }
 
+    /** Provides a lookup function from {@code key} to the {@link RowSet} containing the matching table rows. */
     interface RowSetLookup {
         RowSet apply(Object key);
     }
 
-    /** Get the key column sources for this index. */
+    /** Get the column source names that were indexed to produce this DataIndex. */
     String[] keyColumnNames();
 
-    /** Get the key column sources for this index. */
+    /** Get the column sources that were indexed to produce this DataIndex. */
     Map<ColumnSource<?>, String> keyColumnMap();
 
     /** Get the output row set column name for this index. */
@@ -35,6 +37,10 @@ public interface DataIndex {
     default ColumnSource<?>[] indexKeyColumns(ColumnSource<?>[] tableSources) {
         final Table indexTable = table();
         final Map<ColumnSource<?>, String> columnNameMap = this.keyColumnMap();
+        // Assert that the provided sources match the sources of the index.
+        Set<ColumnSource<?>> providedSources = new HashSet<>(Arrays.asList(tableSources));
+        Assert.eqTrue(Objects.equals(providedSources, columnNameMap.keySet()),
+                "provided key column sources == index key column sources");
         return Arrays.stream(tableSources)
                 .map(columnNameMap::get)
                 .map(indexTable::getColumnSource)
@@ -49,113 +55,49 @@ public interface DataIndex {
     }
 
     /** Get the index as a table. */
-    @Nullable
-    Table table();
+    @NotNull
+    @FinalDefault
+    default Table table() {
+        return table(false);
+    }
 
     /**
-     * Build a lookup function of the index values based on the current configuration of this index.
+     * Get the index as a table.
      *
-     * @return a function that provides map-like lookup of positional from a given index key.
+     * @param usePrev whether to use previous values and row keys.
+     *
+     * @return the index as a table.
      */
-    @Nullable
+    @NotNull
+    Table table(final boolean usePrev);
+
+    /**
+     * Build a lookup function of index row sets for this index.
+     *
+     * @return a function that provides map-like lookup of matching rows from an index key.
+     */
+    @NotNull
     RowSetLookup rowSetLookup();
 
     /**
-     * Build a lookup function of positions on the current configuration of this index.
+     * Build a lookup function of positions for this index.
      *
-     * @return a function that provides map-like lookup of positional from a given index key.
+     * @return a function that provides map-like lookup of index table positions from an index key.
      */
     @NotNull
     PositionLookup positionLookup();
 
-    /** Get the index as a table using previous values and row keys. */
-    @Nullable
-    Table prevTable();
-
     /**
-     * Transform and return a new {@link DataIndex} with the provided {@link RowSet} operations applied.
+     * Transform and return a new {@link DataIndex} with the provided transform operations applied.
      *
-     * @param intersectRowSet the {@link RowSet} to {@link RowSet#intersect(RowSet) intersect} with each output row set.
-     *        Provide null to skip intersection.
-     * @param invertRowSet convert the output rows to positions in the provided {@link RowSet}. Provide null to skip
-     *        inversion.
-     * @param sortByFirstRowKey sort by the first key within each row set. This can be useful to maintain visitation
-     *        order.
-     * @param keyColumnRemap a map providing lookup from derived key column sources to original key columns.
+     * @param transformer the {@link DataIndexTransformer} containing the desired transformations.
      *
      * @return the transformed {@link DataIndex}
      */
-
-    DataIndex apply(@Nullable final RowSet intersectRowSet,
-            @Nullable final RowSet invertRowSet,
-            final boolean sortByFirstRowKey,
-            @Nullable final Map<ColumnSource<?>, ColumnSource<?>> keyColumnRemap,
-            final boolean immutableResult);
+    DataIndex transform(final @NotNull DataIndexTransformer transformer);
 
     /**
-     * Transform and return a new {@link DataIndex} with the provided {@link RowSet} operations applied.
-     *
-     * @param intersectRowSet the {@link RowSet} to {@link RowSet#intersect(RowSet) intersect} with each output row set.
-     *
-     * @return the transformed {@link DataIndex}
-     */
-
-    @FinalDefault
-    default DataIndex applyIntersect(@NotNull final RowSet intersectRowSet) {
-        return apply(intersectRowSet, null, false, null, false);
-    }
-
-    /**
-     * Transform and return a new {@link DataIndex} with the provided {@link RowSet} operations applied.
-     *
-     * @param invertRowSet convert the output rows to positions in the provided {@link RowSet}. Provide null to skip
-     *        inversion.
-     *
-     * @return the transformed {@link DataIndex}
-     */
-
-    @FinalDefault
-    default DataIndex applyInvert(@NotNull final RowSet invertRowSet) {
-        return apply(null, invertRowSet, false, null, false);
-    }
-
-    /**
-     * Transform and return a new {@link DataIndex} with the provided {@link RowSet} operations applied.
-     *
-     * @return the transformed {@link DataIndex}
-     */
-
-    @FinalDefault
-    default DataIndex applySortByFirstRowKey() {
-        return apply(null, null, true, null, false);
-    }
-
-    /**
-     * Transform and return a new {@link DataIndex} with the provided {@link RowSet} operations applied.
-     *
-     * @return the transformed {@link DataIndex}
-     */
-
-    @FinalDefault
-    default DataIndex applyColumnRemap(final Map<ColumnSource<?>, ColumnSource<?>> keyColumnRemap) {
-        return apply(null, null, false, keyColumnRemap, false);
-    }
-
-
-    /**
-     * Transform and return a new {@link DataIndex} with the provided {@link RowSet} operations applied.
-     *
-     * @return the transformed {@link DataIndex}
-     */
-
-    @FinalDefault
-    default DataIndex immutable() {
-        return apply(null, null, false, null, true);
-    }
-
-    /**
-     * Return whether the data index is refreshing or static. All storage backed indexes are static, while indexes
-     * created from aggregations reflect whether the underlying data table is refreshing.
+     * Return whether the data index is refreshing (i.e. not static).
      *
      * @return true when the underlying index is refreshing, false otherwise.
      */

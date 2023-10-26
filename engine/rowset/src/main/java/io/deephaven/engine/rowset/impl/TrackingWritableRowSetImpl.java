@@ -81,12 +81,7 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
     }
 
     @Override
-    protected void postMutationHook() {
-        final TrackingRowSet.Indexer localIndexer = indexer;
-        if (localIndexer != null) {
-            localIndexer.rowSetChanged();
-        }
-    }
+    protected void postMutationHook() {}
 
     @Override
     public TrackingWritableRowSet toTracking() {

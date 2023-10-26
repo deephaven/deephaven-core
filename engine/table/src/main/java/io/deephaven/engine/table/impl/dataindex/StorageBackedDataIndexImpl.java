@@ -8,8 +8,9 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.impl.by.AggregationProcessor;
+import io.deephaven.engine.table.impl.ColumnSourceManager;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
@@ -20,7 +21,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.SoftReference;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 
 /**
@@ -158,7 +162,12 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public Table table() {
+    public Table table(final boolean usePrev) {
+        if (usePrev && isRefreshing()) {
+            throw new UnsupportedOperationException(
+                    "usePrev==true is not supported for refreshing storage-backed data index tables");
+        }
+
         if (indexTable == null) {
             indexTable = QueryPerformanceRecorder
                     .withNugget("Build Storage Backed Data Index [" + String.join(", ", keyColumnNames) + "]", () -> {
@@ -263,12 +272,6 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
             cachedPositionLookup = cachedPositionMap::get;
         }
         return cachedPositionLookup;
-    }
-
-    @Override
-    public @Nullable Table prevTable() {
-        // This index is static, so prev==current
-        return table();
     }
 
     @Override

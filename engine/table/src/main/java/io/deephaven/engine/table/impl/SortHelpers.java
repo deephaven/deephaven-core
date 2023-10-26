@@ -585,7 +585,9 @@ public class SortHelpers {
         // Can we utilize existing index on the first column
         if (rowSet.isTracking() && DataIndexer.of(rowSet.trackingCast()).hasDataIndex(columnSources[0])) {
             final DataIndex dataIndex = DataIndexer.of(rowSet.trackingCast()).getDataIndex(columnSources[0])
-                    .applyIntersect(rowSet);
+                    .transform(DataIndexTransformer.builder()
+                            .intersectRowSet(rowSet)
+                            .build());
             Table indexTable = dataIndex.table();
             final String firstColumnName = dataIndex.keyColumnNames()[0];
 

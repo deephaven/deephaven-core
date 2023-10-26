@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GROUP_ROW_SETS;
 
@@ -39,28 +40,19 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
     private AggregationRowLookup lookupFunction;
 
     public TableBackedDataIndexImpl(@NotNull final QueryTable sourceTable,
-            @NotNull final List<ColumnSource<?>> keySources) {
+            @NotNull final String[] keyColumnNames) {
 
         this.sourceTable = sourceTable;
-
-        // Create an array to hold the key column names from the source table (and replicated into the index table).
-        keyColumnNames = new String[keySources.size()];
+        this.keyColumnNames = keyColumnNames;
+        List<ColumnSource<?>> keySources = Arrays.stream(keyColumnNames).map(sourceTable::getColumnSource)
+                .collect(Collectors.toList());
 
         // Create an in-order reverse lookup map for the key columnn names.
         keyColumnMap = new WeakHashMap<>(keySources.size());
         for (int ii = 0; ii < keySources.size(); ii++) {
-            ColumnSource<?> keySource = keySources.get(ii);
-
-            // Find the column name in the source table and add to the map.
-            for (final Map.Entry<String, ? extends ColumnSource<?>> entry : sourceTable.getColumnSourceMap()
-                    .entrySet()) {
-                if (keySource == entry.getValue()) {
-                    final String columnName = entry.getKey();
-                    keyColumnMap.put(keySource, columnName);
-                    keyColumnNames[ii] = columnName;
-                    break;
-                }
-            }
+            final ColumnSource<?> keySource = keySources.get(ii);
+            final String keyColumnName = keyColumnNames[ii];
+            keyColumnMap.put(keySource, keyColumnName);
         }
 
         // We will defer the actual index creation until it is needed.
@@ -82,7 +74,20 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public @Nullable Table table() {
+    public @Nullable Table table(final boolean usePrev) {
+        if (usePrev && isRefreshing()) {
+            final Table indexTable = table();
+
+            // Return a table containing the previous values of the index table.
+            final TrackingRowSet prevRowSet = indexTable.getRowSet().copyPrev().toTracking();
+            final Map<String, ColumnSource<?>> prevColumnSourceMap = new LinkedHashMap<>();
+            indexTable.getColumnSourceMap().forEach((columnName, columnSource) -> {
+                prevColumnSourceMap.put(columnName, columnSource.getPrevSource());
+            });
+
+            return new QueryTable(prevRowSet, prevColumnSourceMap);
+        }
+
         if (indexTable == null) {
             // TODO: break the hard reference from the index table to the source table. Otherwise this index will keep
             // the source table from being garbage collected.
@@ -123,25 +128,6 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
             // Pass the object to the aggregation lookup, then return the resulting position
             return lookupFunction.get(key);
         };
-    }
-
-    @Override
-    public @Nullable Table prevTable() {
-        if (!isRefreshing()) {
-            // This index is static, so prev==current
-            return table();
-        }
-        final Table indexTable = table();
-
-        // Return a table containing the previous values of the index table.
-        final TrackingRowSet prevRowSet = indexTable.getRowSet().copyPrev().toTracking();
-        final Map<String, ColumnSource<?>> prevColumnSourceMap = new LinkedHashMap<>();
-        indexTable.getColumnSourceMap().forEach((columnName, columnSource) -> {
-            prevColumnSourceMap.put(columnName, columnSource.getPrevSource());
-        });
-
-        final Table prevTable = new QueryTable(prevRowSet, prevColumnSourceMap);
-        return prevTable;
     }
 
     @Override

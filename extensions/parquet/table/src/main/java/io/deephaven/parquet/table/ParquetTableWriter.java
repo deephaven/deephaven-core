@@ -164,7 +164,10 @@ public class ParquetTableWriter {
                             .toArray(ColumnSource[]::new);
 
                     // This will retrieve an existing index if one exists, or create a new one if not.
-                    final DataIndex dataIndex = dataIndexer.getDataIndex((QueryTable) t, indexColumns);
+                    if (!dataIndexer.hasDataIndex(indexColumns)) {
+                        dataIndexer.createDataIndex((QueryTable) t, indexColumnNames);
+                    }
+                    final DataIndex dataIndex = dataIndexer.getDataIndex((QueryTable) t, indexColumnNames);
                     final Table indexTable = dataIndex.table();
 
                     final String[] parquetColumnNames = info.parquetColumnNames;

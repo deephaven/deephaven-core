@@ -3,17 +3,19 @@
  */
 package io.deephaven.engine.table.impl.indexer;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndexImpl;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Indexer that provides single and multi-column clustering indexes for a table, linked to a {@link TrackingRowSet}.
@@ -34,28 +36,20 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      */
     WeakHashMap<ColumnSource<?>, DataIndexCache> dataIndexes;
 
-    @Override
-    public void rowSetChanged() {
-        // TODO: do we even need this call?
-    }
-
     private static class DataIndexCache {
 
         /** The index at this level. */
         @Nullable
-        DataIndex index;
+        private volatile DataIndex index;
 
         /** The sub-indexes below this level. */
-        @Nullable
-        WeakHashMap<ColumnSource<?>, DataIndexCache> dataIndexes;
+        private final WeakHashMap<ColumnSource<?>, DataIndexCache> dataIndexes;
 
-        DataIndexCache(@Nullable final DataIndex index,
-                @Nullable final WeakHashMap<ColumnSource<?>, DataIndexCache> dataIndexes) {
+        DataIndexCache(@Nullable final DataIndex index) {
             this.index = index;
-            this.dataIndexes = dataIndexes;
+            this.dataIndexes = new WeakHashMap<>();
         }
     }
-
 
     public DataIndexer(@NotNull final TrackingRowSet rowSet) {
         this.rowSet = rowSet;
@@ -65,8 +59,8 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         return hasDataIndex(Arrays.asList(keyColumns));
     }
 
-    public boolean hasDataIndex(final List<ColumnSource<?>> keyColumns) {
-        if (keyColumns.size() == 0) {
+    public boolean hasDataIndex(final Collection<ColumnSource<?>> keyColumns) {
+        if (keyColumns.isEmpty()) {
             return true;
         }
 
@@ -77,91 +71,79 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         return findIndex(dataIndexes, keyColumns) != null;
     }
 
-    public boolean canMakeDataIndex(final ColumnSource<?>... keyColumns) {
-        return canMakeDataIndex(Arrays.asList(keyColumns));
+    public boolean canMakeDataIndex(final Table table, final String... keyColumnNames) {
+        return canMakeDataIndex(table, Arrays.asList(keyColumnNames));
     }
 
-    public boolean canMakeDataIndex(final List<ColumnSource<?>> keyColumns) {
+    public boolean canMakeDataIndex(final Table table, final Collection<String> keyColumnNames) {
         return true;
     }
 
     /**
      * Return a DataIndex for the given key columns, or null if no such index exists.
      *
-     * @param keyColumns the column sources for which to retrieve or create a DataIndex
-     * @return the DataIndex, or null
+     * @param keyColumns the column sources for which to retrieve a DataIndex
+     * @return the DataIndex, or null if one does not exist
      */
     public DataIndex getDataIndex(final ColumnSource<?>... keyColumns) {
-        return getDataIndex(null, keyColumns);
+        return findIndex(dataIndexes, Arrays.asList(keyColumns));
     }
 
     /**
      * Return a DataIndex for the given key columns, or null if no such index exists.
      *
      * @param sourceTable the table to index (if a new index is created by this operation)
-     * @param keyColumns the column sources for which to retrieve or create a DataIndex
-     * @return the DataIndex, or null
+     * @param keyColumnNames the column sources for which to retrieve a DataIndex
+     * @return the DataIndex, or null if one does not exist
      */
-    public DataIndex getDataIndex(final QueryTable sourceTable, final ColumnSource<?>... keyColumns) {
-        final List<ColumnSource<?>> keys = Arrays.asList(keyColumns);
-        // Return an index if one exists.
-        DataIndex result = findIndex(dataIndexes, keys);
-        if (result != null) {
-            return result;
+    public DataIndex getDataIndex(final QueryTable sourceTable, final String... keyColumnNames) {
+        final Map<String, ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
+        // Verify all the key columns belong to the source table.
+        final Collection<String> missingKeys = Arrays.stream(keyColumnNames)
+                .filter(key -> !columnSourceMap.containsKey(key)).collect(Collectors.toList());
+        if (!missingKeys.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "The following columns were not found in the provide table: " + missingKeys);
         }
-        // Make a new index.
-        return createDataIndex(sourceTable, keyColumns);
+
+        // Create a collection of the table key columns.
+        final Collection<ColumnSource<?>> keyColumns = Arrays.stream(keyColumnNames)
+                .map(columnSourceMap::get).collect(Collectors.toList());
+
+        // Return an index if one exists.
+        return findIndex(dataIndexes, keyColumns);
     }
 
     /**
-     * Create a static DataIndex for the given key columns, returns null if no such index can be created.
-     *
-     * @param keyColumns the column sources to include in the index
-     * @return the DataIndex, or null
-     */
-    public DataIndex createDataIndex(final ColumnSource<?>... keyColumns) {
-        return createDataIndex(null, keyColumns);
-    }
-
-    /**
-     * Create a refreshing DataIndex for the given table and key columns, returns null if no such index can be created.
+     * Create a refreshing DataIndex for the given table and key columns.
      *
      * @param sourceTable the table to index
-     * @param keyColumns the column sources to include in the index
-     * @return the DataIndex, or null
+     * @param keyColumnNames the column sources to include in the index
      */
-    public DataIndex createDataIndex(final QueryTable sourceTable, final ColumnSource<?>... keyColumns) {
-        final List<ColumnSource<?>> keys = Arrays.asList(keyColumns);
+    public void createDataIndex(final QueryTable sourceTable, final String... keyColumnNames) {
+        final List<String> keys = Arrays.asList(keyColumnNames);
+        final List<ColumnSource<?>> keyColumns =
+                keys.stream().map(sourceTable::getColumnSource).collect(Collectors.toList());
 
-        if (!canMakeDataIndex(keyColumns)) {
-            // If we can't create an index, return null.
-            return null;
+        if (hasDataIndex(keyColumns)) {
+            // If we already have an index, throw an exception.
+            throw new UnsupportedOperationException(
+                    String.format("An index for %s already exists.", Arrays.toString(keyColumnNames)));
         }
 
-        final QueryTable tableToUse;
-        if (sourceTable != null) {
-            tableToUse = sourceTable;
-        } else {
-            // Create a dummy table for this index.
-            int keyIndex = 0;
-            final Map<String, ColumnSource<?>> cmp = new LinkedHashMap<>(keys.size());
-            for (final ColumnSource<?> keySource : keys) {
-                final String keyColumnName = "key" + keyIndex++;
-                cmp.put(keyColumnName, keySource);
-            }
-            tableToUse = new QueryTable(rowSet, cmp);
-
-            // Mark static so the created index table becomes static.
-            tableToUse.setRefreshing(false);
+        if (!canMakeDataIndex(sourceTable, keyColumnNames)) {
+            // If we can't create an index, return an exception.
+            throw new UnsupportedOperationException(
+                    String.format("Cannot create index for %s", Arrays.toString(keyColumnNames)));
         }
 
-        // Create an index, add it to the correct map and return it.
-        final DataIndex index = new TableBackedDataIndexImpl(tableToUse, keys);
+        // Create an index, add it to the map and return it.
+        QueryTable coalesced = (QueryTable) sourceTable.coalesce();
+        final DataIndex index = new TableBackedDataIndexImpl(coalesced, keyColumnNames);
         if (dataIndexes == null) {
             dataIndexes = new WeakHashMap<>();
         }
-        addIndex(dataIndexes, keys, index);
-        return index;
+        addIndex(dataIndexes, keyColumns, index, 0);
     }
 
     /**
@@ -173,7 +155,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         final ColumnSource<?>[] keyColumns = index.keyColumnMap().keySet().toArray(ColumnSource<?>[]::new);
         final List<ColumnSource<?>> keys = Arrays.asList(keyColumns);
 
-        addIndex(dataIndexes, keys, index);
+        addIndex(dataIndexes, keys, index, 0);
     }
 
     public List<DataIndex> dataIndexes() {
@@ -201,35 +183,28 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         }
     }
 
-    /** Remove the item at the specified index from a list. */
-    private static <T> List<T> removeItem(List<T> items, int index) {
-        List<T> result = new ArrayList<T>(items.size() - 1);
-        result.addAll(items.subList(0, index));
-        result.addAll(items.subList(index + 1, items.size() + 1));
-        return result;
-    }
-
     /** Check a specified map for an index with these column sources. */
     private static DataIndex findIndex(
-            final WeakHashMap<ColumnSource<?>, DataIndexCache> map,
-            final List<ColumnSource<?>> keyColumnSources) {
-        if (map == null) {
-            return null;
-        }
+            final WeakHashMap<ColumnSource<?>, DataIndexCache> indexMap,
+            final Collection<ColumnSource<?>> keyColumnSources) {
         // Looking for a single key.
         if (keyColumnSources.size() == 1) {
-            final DataIndexCache cache = map.get(keyColumnSources.get(0));
-            return cache == null ? null : cache.index;
+            final ColumnSource<?> keyColumnSource = keyColumnSources.iterator().next();
+            synchronized (indexMap) {
+                final DataIndexCache cache = indexMap.get(keyColumnSource);
+                return cache == null ? null : cache.index;
+            }
         }
 
         // Test every column source in the map for a match. This handles mis-ordered keys.
-        for (int ii = 0; ii < keyColumnSources.size(); ++ii) {
-            final ColumnSource<?> keyColumnSource = keyColumnSources.get(ii);
-            final DataIndexCache cache = map.get(keyColumnSources.get(0));
+        for (final ColumnSource<?> keySource : keyColumnSources) {
+            final DataIndexCache cache = indexMap.get(keySource);
             if (cache != null) {
-                final List<ColumnSource<?>> sliced = removeItem(keyColumnSources, ii);
+                // Create a new collection without the current key source.
+                final Collection<ColumnSource<?>> sliced =
+                        keyColumnSources.stream().filter(s -> s != keySource).collect(Collectors.toList());
 
-                // Recursively search for the remaining keys.
+                // Recursively search for the remaining key sources.
                 final DataIndex index = findIndex(cache.dataIndexes, sliced);
                 if (index != null) {
                     return index;
@@ -241,29 +216,28 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
     /** Add an index to the specified map. */
     private static void addIndex(
-            final WeakHashMap<ColumnSource<?>, DataIndexCache> dataIndexes,
+            final WeakHashMap<ColumnSource<?>, DataIndexCache> indexMap,
             final List<ColumnSource<?>> keyColumnSources,
-            final DataIndex index) {
-        // Only a single key remains.
-        if (keyColumnSources.size() == 1) {
-            final DataIndexCache cache = dataIndexes.get(keyColumnSources.get(0));
-            if (cache != null) {
-                // We should not be overwriting an existing index.
-                Assert.eqNull(cache.index, "cache.index");
-                cache.index = index;
-            } else {
-                dataIndexes.put(keyColumnSources.get(0), new DataIndexCache(index, null));
+            final DataIndex index,
+            final int nextColumnSourceIndex) {
+        final ColumnSource<?> nextColumnSource = keyColumnSources.get(nextColumnSourceIndex);
+        final boolean isLast = nextColumnSourceIndex == keyColumnSources.size() - 1;
+        final DataIndexCache cache;
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (indexMap) {
+            final MutableBoolean created = new MutableBoolean(false);
+            cache = indexMap.computeIfAbsent(
+                    nextColumnSource,
+                    ignored -> {
+                        created.setTrue();
+                        return new DataIndexCache(isLast ? index : null);
+                    });
+            if (!created.booleanValue()) {
+                cache.index = index; // Optimistically overwrite, it's volatile
             }
-            return;
         }
-
-        DataIndexCache cache = dataIndexes.get(keyColumnSources.get(0));
-        if (cache == null) {
-            final WeakHashMap<ColumnSource<?>, DataIndexCache> subIndexes = new WeakHashMap<>();
-            cache = new DataIndexCache(null, subIndexes);
-            dataIndexes.put(keyColumnSources.get(0), cache);
+        if (!isLast) {
+            addIndex(cache.dataIndexes, keyColumnSources, index, nextColumnSourceIndex + 1);
         }
-        final List<ColumnSource<?>> sliced = removeItem(keyColumnSources, 0);
-        addIndex(cache.dataIndexes, sliced, index);
     }
 }

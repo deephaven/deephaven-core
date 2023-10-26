@@ -158,8 +158,10 @@ class NaturalJoinHelper {
                         }
 
                         final DataIndex leftDataIndex = DataIndexer.of(leftTable.getRowSet())
-                                .getDataIndex(bucketingContext.leftSources)
-                                .applyIntersect(leftTable.getRowSet());
+                                .getDataIndex(bucketingContext.leftSources).transform(
+                                        DataIndexTransformer.builder()
+                                                .intersectRowSet(leftTable.getRowSet())
+                                                .build());
                         final Table leftIndexTable = leftDataIndex.table();
 
                         groupingSize = leftIndexTable.intSize();
@@ -208,7 +210,9 @@ class NaturalJoinHelper {
 
                     final DataIndex leftDataIndex = DataIndexer.of(leftTable.getRowSet())
                             .getDataIndex(bucketingContext.leftSources)
-                            .applyIntersect(leftTable.getRowSet());
+                            .transform(DataIndexTransformer.builder()
+                                    .intersectRowSet(leftTable.getRowSet())
+                                    .build());
                     final Table leftIndexTable = leftDataIndex.table();
 
                     final int groupingSize = leftIndexTable.intSize();

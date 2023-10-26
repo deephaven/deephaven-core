@@ -22,7 +22,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * This data index is from a grouping column, one that contains
@@ -40,11 +39,10 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
 
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
     private final Table indexTable;
-    private WritableColumnSource<Object> indexKeySource;
-    private ObjectArraySource<RowSet> indexRowSetSource;
+    private final ObjectArraySource<RowSet> indexRowSetSource;
 
     /** Provides fast lookup from keys to positions in the table **/
-    private TObjectIntHashMap<Object> cachedPositionMap;
+    private final TObjectIntHashMap<Object> cachedPositionMap;
 
     public PartitioningColumnDataIndexImpl(@NotNull final QueryTable sourceTable,
             @NotNull final List<ColumnSource<?>> keySources) {
@@ -73,8 +71,9 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
 
         // Build the index table and the position lookup map.
         final Table locationTable = columnSourceManager.locationTable();
-        indexKeySource = (WritableColumnSource<Object>) ArrayBackedColumnSource.getMemoryColumnSource(10,
-                keySource.getType(), null);
+        WritableColumnSource<Object> indexKeySource =
+                (WritableColumnSource<Object>) ArrayBackedColumnSource.getMemoryColumnSource(10,
+                        keySource.getType(), null);
         indexRowSetSource =
                 (ObjectArraySource<RowSet>) ArrayBackedColumnSource.getMemoryColumnSource(10, RowSet.class, null);
 
@@ -161,25 +160,19 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public @Nullable Table table() {
-        return indexTable;
-    }
+    public @Nullable Table table(final boolean usePrev) {
+        if (usePrev && isRefreshing()) {
+            // Return a table containing the previous values of the index table.
+            final TrackingRowSet prevRowSet = indexTable.getRowSet().copyPrev().toTracking();
+            final Map<String, ColumnSource<?>> prevColumnSourceMap = new LinkedHashMap<>();
+            indexTable.getColumnSourceMap().forEach((columnName, columnSource) -> {
+                prevColumnSourceMap.put(columnName, columnSource.getPrevSource());
+            });
 
-    @Override
-    public @Nullable Table prevTable() {
-        if (!isRefreshing()) {
-            // This index is static, so prev==current
-            return table();
+            final Table prevTable = new QueryTable(prevRowSet, prevColumnSourceMap);
+            return prevTable;
         }
-        // Return a table containing the previous values of the index table.
-        final TrackingRowSet prevRowSet = indexTable.getRowSet().copyPrev().toTracking();
-        final Map<String, ColumnSource<?>> prevColumnSourceMap = new LinkedHashMap<>();
-        indexTable.getColumnSourceMap().forEach((columnName, columnSource) -> {
-            prevColumnSourceMap.put(columnName, columnSource.getPrevSource());
-        });
-
-        final Table prevTable = new QueryTable(prevRowSet, prevColumnSourceMap);
-        return prevTable;
+        return indexTable;
     }
 
     @Override

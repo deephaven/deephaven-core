@@ -144,7 +144,7 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
         final ColumnSource[] groupColumns = getColumnSources(indexToCheck, source);
 
         final DataIndex index = DataIndexer.of(rowSet).getDataIndex(groupColumns);
-        final Table indexTable = index.prevTable();
+        final Table indexTable = index.table(true);
 
         // Create column iterators for the keys and the row set
         final CloseableIterator<?>[] keyIterators =

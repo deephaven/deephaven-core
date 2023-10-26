@@ -3,17 +3,14 @@ package io.deephaven.engine.table.impl.dataindex;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.DataIndexTransformer;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.Map;
 
 /**
  * This class provides a data index for a table. The index is a table containing the key column(s) and the RowSets that
@@ -24,15 +21,9 @@ public abstract class AbstractDataIndex implements DataIndex {
     public static final String INDEX_COL_NAME = "dh_row_set";
 
     @Override
-    public DataIndex apply(@Nullable final RowSet intersectRowSet,
-            @Nullable final RowSet invertRowSet,
-            final boolean sortByFirstRowKey,
-            @Nullable final Map<ColumnSource<?>, ColumnSource<?>> keyColumnRemap,
-            final boolean immutableResult) {
-        return DerivedDataIndex.from(this, intersectRowSet, invertRowSet, sortByFirstRowKey, keyColumnRemap,
-                immutableResult);
+    public DataIndex transform(@NotNull final DataIndexTransformer transformer) {
+        return DerivedDataIndex.from(this, transformer);
     }
-
 
     static TObjectIntHashMap<Object> buildPositionMap(final Table indexTable, final String[] keyColumnNames) {
         TObjectIntHashMap<Object> result = new TObjectIntHashMap<>(indexTable.intSize());

@@ -199,13 +199,8 @@ public class QueryTableAggregationTest {
         final Table input1 = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
         DataIndexer indexer1 = DataIndexer.of(input1.getRowSet());
 
-        ColumnSource<?> cs;
-
-        cs = input1.getColumnSource("A");
-        indexer1.createDataIndex((QueryTable) input1, cs);
-
-        cs = input1.getColumnSource("B");
-        indexer1.createDataIndex((QueryTable) input1, cs);
+        indexer1.createDataIndex((QueryTable) input1, "A");
+        indexer1.createDataIndex((QueryTable) input1, "B");
 
         individualStaticByTest(input1, null, "A");
         individualStaticByTest(input1, null, "B");
@@ -215,11 +210,8 @@ public class QueryTableAggregationTest {
         final Table input2 = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
         DataIndexer indexer2 = DataIndexer.of(input2.getRowSet());
 
-        cs = input2.getColumnSource("A");
-        indexer2.createDataIndex(cs);
-
-        cs = input2.getColumnSource("B");
-        indexer2.createDataIndex(cs);
+        indexer1.createDataIndex((QueryTable) input1, "A");
+        indexer1.createDataIndex((QueryTable) input1, "B");
 
         individualStaticByTest(input2, null, "A");
         individualStaticByTest(input2, null, "B");
@@ -1728,33 +1720,31 @@ public class QueryTableAggregationTest {
         final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").sumBy()),
                 EvalNugget.Sorted.from(() -> queryTable.sumBy("Sym"), "Sym"),
-                // EvalNugget.Sorted.from(() -> queryTable.sort("Sym").sumBy("Sym"), "Sym"),
-                // EvalNugget.Sorted.from(() -> queryTable.dropColumns("Sym").sort("intCol").sumBy("intCol"), "intCol"),
-                // EvalNugget.Sorted.from(() -> queryTable.sort("Sym", "intCol").sumBy("Sym", "intCol"), "Sym",
-                // "intCol"),
-                // EvalNugget.Sorted.from(() -> queryTable.sort("Sym").update("x=intCol+1").sumBy("Sym"), "Sym"),
-                // EvalNugget.Sorted.from(() ->
-                // queryTable.sortDescending("intCol").update("x=intCol+1").dropColumns("Sym")
-                // .sumBy("intCol"), "intCol"),
-                // EvalNugget.Sorted.from(
-                // () -> queryTable.sort("Sym", "intCol").update("x=intCol+1").sumBy("Sym", "intCol"), "Sym",
-                // "intCol"),
-                // EvalNugget.Sorted.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").sumBy("Sym"),
-                // "Sym"),
-                // EvalNugget.Sorted.from(() -> queryTable.sort("Sym").absSumBy("Sym"), "Sym"),
-                // EvalNugget.Sorted.from(() -> queryTable.dropColumns("Sym").sort("intCol").absSumBy("intCol"),
-                // "intCol"),
-                // EvalNugget.Sorted.from(() -> queryTable.sort("Sym", "intCol").absSumBy("Sym", "intCol"), "Sym",
-                // "intCol"),
-                // EvalNugget.Sorted.from(() -> queryTable.sort("Sym").update("x=intCol+1").absSumBy("Sym"), "Sym"),
-                // EvalNugget.Sorted.from(() ->
-                // queryTable.sortDescending("intCol").update("x=intCol+1").dropColumns("Sym")
-                // .absSumBy("intCol"), "intCol"),
-                // EvalNugget.Sorted.from(
-                // () -> queryTable.sort("Sym", "intCol").update("x=intCol+1").absSumBy("Sym", "intCol"), "Sym",
-                // "intCol"),
-                // EvalNugget.Sorted.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").absSumBy("Sym"),
-                // "Sym"),
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").sumBy("Sym"), "Sym"),
+                EvalNugget.Sorted.from(() -> queryTable.dropColumns("Sym").sort("intCol").sumBy("intCol"), "intCol"),
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym", "intCol").sumBy("Sym", "intCol"), "Sym",
+                        "intCol"),
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").update("x=intCol+1").sumBy("Sym"), "Sym"),
+                EvalNugget.Sorted.from(() -> queryTable.sortDescending("intCol").update("x=intCol+1").dropColumns("Sym")
+                        .sumBy("intCol"), "intCol"),
+                EvalNugget.Sorted.from(
+                        () -> queryTable.sort("Sym", "intCol").update("x=intCol+1").sumBy("Sym", "intCol"), "Sym",
+                        "intCol"),
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").sumBy("Sym"),
+                        "Sym"),
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").absSumBy("Sym"), "Sym"),
+                EvalNugget.Sorted.from(() -> queryTable.dropColumns("Sym").sort("intCol").absSumBy("intCol"),
+                        "intCol"),
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym", "intCol").absSumBy("Sym", "intCol"), "Sym",
+                        "intCol"),
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").update("x=intCol+1").absSumBy("Sym"), "Sym"),
+                EvalNugget.Sorted.from(() -> queryTable.sortDescending("intCol").update("x=intCol+1").dropColumns("Sym")
+                        .absSumBy("intCol"), "intCol"),
+                EvalNugget.Sorted.from(
+                        () -> queryTable.sort("Sym", "intCol").update("x=intCol+1").absSumBy("Sym", "intCol"), "Sym",
+                        "intCol"),
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").absSumBy("Sym"),
+                        "Sym"),
         };
 
         for (int step = 0; step < 50; step++) {
@@ -3770,13 +3760,13 @@ public class QueryTableAggregationTest {
         final Table data = testTable(col("S", "A", "A", "B", "B"), col("I", 10, 20, 30, 40));
         final DataIndexer dataIndexer = DataIndexer.of(data.getRowSet());
 
-        dataIndexer.createDataIndex((QueryTable) data, data.getColumnSource("S"));
+        dataIndexer.createDataIndex((QueryTable) data, "S");
         final Table distinct = data.selectDistinct("S");
         assertTableEquals(testTable(col("S", "A", "B")), distinct);
 
         final Table reversed = data.reverse();
         final DataIndexer reversedIndexer = DataIndexer.of(reversed.getRowSet());
-        reversedIndexer.createDataIndex((QueryTable) reversed, reversed.getColumnSource("S"));
+        reversedIndexer.createDataIndex((QueryTable) reversed, "S");
         final Table initializedDistinct =
                 data.aggBy(List.of(Count.of("C")), false, reversed, ColumnName.from("S")).dropColumns("C");
         assertTableEquals(testTable(col("S", "B", "A")), initializedDistinct);

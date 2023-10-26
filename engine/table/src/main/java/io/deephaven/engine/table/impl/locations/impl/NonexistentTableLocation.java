@@ -4,13 +4,12 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.api.SortColumn;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.SortPair;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
-import io.deephaven.engine.rowset.RowSetFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,7 +55,7 @@ public final class NonexistentTableLocation extends AbstractTableLocation {
     }
 
     @Override
-    public boolean hasDataIndexFor(@NotNull String... columns) {
+    public boolean hasDataIndex(@NotNull String... columns) {
         throw new UnsupportedOperationException();
     }
 }
