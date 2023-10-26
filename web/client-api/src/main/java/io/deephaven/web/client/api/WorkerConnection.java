@@ -673,7 +673,10 @@ public class WorkerConnection {
         }
 
         newSessionReconnect.disconnected();
-        DomGlobal.clearTimeout(scheduledAuthUpdate);
+        if (scheduledAuthUpdate != null) {
+            DomGlobal.clearTimeout(scheduledAuthUpdate);
+            scheduledAuthUpdate = null;
+        }
     }
 
     public void setSessionTimeoutMs(double sessionTimeoutMs) {
