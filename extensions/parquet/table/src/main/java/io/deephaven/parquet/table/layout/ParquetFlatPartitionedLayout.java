@@ -44,7 +44,7 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
     @Override
     public synchronized void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
         try (final DirectoryStream<Path> parquetFileStream =
-                Files.newDirectoryStream(tableRootDirectory.toPath(), ParquetFileHelper::parquetFileFilter)) {
+                Files.newDirectoryStream(tableRootDirectory.toPath(), ParquetFileHelper::fileNameMatches)) {
             for (final Path parquetFilePath : parquetFileStream) {
                 ParquetTableLocationKey locationKey = cache.get(parquetFilePath);
                 if (locationKey == null) {

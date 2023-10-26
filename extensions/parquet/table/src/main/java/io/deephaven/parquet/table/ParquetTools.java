@@ -294,7 +294,7 @@ public class ParquetTools {
     }
 
     /**
-     * Roll back any changes made in the {@link #installShadowFile} in the best effort manner
+     * Roll back any changes made in the {@link #installShadowFile} in best-effort manner
      */
     private static void rollbackFile(@NotNull final File destFile) {
         final File backupDestFile = getBackupFile(destFile);
