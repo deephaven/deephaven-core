@@ -207,7 +207,7 @@ def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.date
         raise DHError(e) from e
 
 
-def to_j_local_date(dt: Union[None, LocalDate, str, datetime.date, datetime.time, datetime.datetime,
+def to_j_local_date(dt: Union[None, LocalDate, str, datetime.date, datetime.datetime,
                               numpy.datetime64, pandas.Timestamp]) -> Optional[LocalDate]:
     """
     Converts a date time value to a Java LocalDate.
