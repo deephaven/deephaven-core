@@ -69,9 +69,10 @@ class UpdateProcessor final : public SubscriptionHandle {
 public:
   [[nodiscard]]
   static std::shared_ptr<UpdateProcessor> startThread(std::unique_ptr<FlightStreamReader> fsr,
-      std::shared_ptr<Schema> schema, std::shared_ptr<TickingCallback> callback);
+      std::unique_ptr<FlightStreamWriter> fsw, std::shared_ptr<Schema> schema,
+      std::shared_ptr<TickingCallback> callback);
 
-  UpdateProcessor(std::unique_ptr<FlightStreamReader> fsr,
+  UpdateProcessor(std::unique_ptr<FlightStreamReader> fsr, std::unique_ptr<FlightStreamWriter> fsw,
       std::shared_ptr<Schema> schema, std::shared_ptr<TickingCallback> callback);
   ~UpdateProcessor() final;
 
@@ -82,6 +83,10 @@ public:
 
 private:
   std::unique_ptr<FlightStreamReader> fsr_;
+  // The FlightStreamWriter is not used inside the thread, but arrow Flight >= 8.0.0 seems to
+  // require that it stay alive (along with the FlightStreamReader) for the duration of the
+  // DoExchange session.
+  std::unique_ptr<FlightStreamWriter> fsw_;
   std::shared_ptr<Schema> schema_;
   std::shared_ptr<TickingCallback> callback_;
 
@@ -163,24 +168,27 @@ std::shared_ptr<SubscriptionHandle> SubscribeState::InvokeHelper() {
   OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->WriteMetadata(std::move(buffer))));
 
   // Run forever (until error or cancellation)
-  auto processor = UpdateProcessor::startThread(std::move(fsr), std::move(schema_),
+  auto processor = UpdateProcessor::startThread(std::move(fsr), std::move(fsw), std::move(schema_),
       std::move(callback_));
   return processor;
 }
 
 std::shared_ptr<UpdateProcessor> UpdateProcessor::startThread(
-    std::unique_ptr<FlightStreamReader> fsr, std::shared_ptr<Schema> schema,
+    std::unique_ptr<FlightStreamReader> fsr,
+    std::unique_ptr<FlightStreamWriter> fsw,
+    std::shared_ptr<Schema> schema,
     std::shared_ptr<TickingCallback> callback) {
-  auto result = std::make_shared<UpdateProcessor>(std::move(fsr), std::move(schema),
-      std::move(callback));
+  auto result = std::make_shared<UpdateProcessor>(std::move(fsr), std::move(fsw),
+      std::move(schema), std::move(callback));
   result->thread_ = std::thread(&RunUntilCancelled, result);
   return result;
 }
 
 UpdateProcessor::UpdateProcessor(std::unique_ptr<FlightStreamReader> fsr,
+    std::unique_ptr<FlightStreamWriter> fsw,
     std::shared_ptr<Schema> schema, std::shared_ptr<TickingCallback> callback) :
-    fsr_(std::move(fsr)), schema_(std::move(schema)), callback_(std::move(callback)),
-    cancelled_(false) {}
+    fsr_(std::move(fsr)), fsw_(std::move(fsw)), schema_(std::move(schema)),
+    callback_(std::move(callback)), cancelled_(false) {}
 
 UpdateProcessor::~UpdateProcessor() {
   Cancel();
