@@ -69,7 +69,7 @@ public class ColumnStatisticsGrpcImpl extends GrpcTableOperation<ColumnStatistic
                 columnSource = ReinterpretUtils.zonedDateTimeToLongSource(table.getColumnSource(columnName));
             } else {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Datetime columns must be Instant or ZonedDateTime");
+                        "DateTime columns must be Instant or ZonedDateTime");
             }
         } else if (TypeUtils.isNumeric(type)) {
             // Numeric types have a variety of statistics recorded
