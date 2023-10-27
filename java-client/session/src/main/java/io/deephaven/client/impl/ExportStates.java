@@ -78,12 +78,8 @@ final class ExportStates implements ExportService {
                 unreferenceableTables::contains);
     }
 
-    synchronized boolean hasUnreferenceableTable(ExportsRequest request) {
-        return searchUnreferenceableTable(request).isPresent();
-    }
-
     @Override
-    public synchronized List<Export> export(ExportsRequest requests) {
+    public synchronized ExportServiceRequest exportRequest(ExportsRequest requests) {
         ensureNoUnreferenceableTables(requests);
 
         final Set<TableSpec> oldExports = new HashSet<>(exports.keySet());
@@ -113,7 +109,7 @@ final class ExportStates implements ExportService {
             newStates.put(exportId, state);
             results.add(newExport);
         }
-
+        final Runnable send;
         if (!newSpecs.isEmpty()) {
             final List<TableSpec> postOrder = postOrderNewDependencies(oldExports, newSpecs);
             if (postOrder.isEmpty()) {
@@ -124,10 +120,23 @@ final class ExportStates implements ExportService {
             if (request.getOpsCount() == 0) {
                 throw new IllegalStateException();
             }
-            tableStub.batch(request, new BatchHandler(newStates));
+            final BatchHandler batchHandler = new BatchHandler(newStates);
+            send = () -> tableStub.batch(request, batchHandler);
+        } else {
+            send = () -> {
+            };
         }
+        return new ExportServiceRequest() {
+            @Override
+            public List<Export> exports() {
+                return results;
+            }
 
-        return results;
+            @Override
+            public Runnable send() {
+                return send;
+            }
+        };
     }
 
     private synchronized void release(State state) {

@@ -23,8 +23,13 @@ final class TableServiceAsyncImpl {
     static TableHandleAsync executeAsync(ExportService exportService, TableSpec tableSpec) {
         final TableHandleAsyncImpl impl = new TableHandleAsyncImpl(tableSpec);
         final ExportRequest request = ExportRequest.of(tableSpec, impl);
-        final Export export = exportService.export(ExportsRequest.of(request)).get(0);
-        impl.init(export);
+        final ExportServiceRequest esr = exportService.exportRequest(ExportsRequest.of(request));
+        final List<Export> exports = esr.exports();
+        if (exports.size() != 1) {
+            throw new IllegalStateException();
+        }
+        impl.init(exports.get(0));
+        esr.send();
         return impl;
     }
 
@@ -37,34 +42,42 @@ final class TableServiceAsyncImpl {
             builder.addRequests(ExportRequest.of(tableSpec, impl));
             impls.add(impl);
         }
-        final List<Export> exports = exportService.export(builder.build());
+        final ExportServiceRequest esr = exportService.exportRequest(builder.build());
+        final List<Export> exports = esr.exports();
         if (exports.size() != size) {
             throw new IllegalStateException();
         }
         for (int i = 0; i < size; ++i) {
             impls.get(i).init(exports.get(i));
         }
+        esr.send();
         return impls;
     }
 
     private static class TableHandleAsyncImpl implements TableHandleAsync, Listener {
         private final TableSpec tableSpec;
-        private final CompletableFuture<TableHandle> future;
+        private final CompletableFuture<TableHandle> userFuture;
         private TableHandle handle;
         private Export export;
 
         TableHandleAsyncImpl(TableSpec tableSpec) {
             this.tableSpec = Objects.requireNonNull(tableSpec);
-            this.future = new CompletableFuture<>();
+            this.userFuture = new CompletableFuture<>();
         }
 
         synchronized void init(Export export) {
             this.export = Objects.requireNonNull(export);
-            this.future.whenComplete((tableHandle, throwable) -> {
-                if (throwable != null) {
-                    // When there is an error, are we actually responsible for releasing the export?
-                    // It _probably_ doesn't exist on the server.
+            this.userFuture.whenComplete((tableHandle, throwable) -> {
+                if (throwable == null) {
+                    // User now owns TableHandle, responsible for closing as appropriate
+                    return;
+                }
+                if (isCancelled()) {
                     export.release();
+                } else {
+                    // When there is a "real" error, are we actually responsible for releasing the export?
+                    // It _probably_ doesn't exist on the server.
+                    // export.release();
                 }
             });
             maybeComplete();
@@ -75,7 +88,7 @@ final class TableServiceAsyncImpl {
                 return;
             }
             handle.init(export);
-            future.complete(handle);
+            userFuture.complete(handle);
             handle = null;
             export = null;
         }
@@ -90,7 +103,7 @@ final class TableServiceAsyncImpl {
             responseAdapter.onCompleted();
             final TableHandleException error = handle.error().orElse(null);
             if (error != null) {
-                future.completeExceptionally(error);
+                userFuture.completeExceptionally(error);
             } else {
                 // It's possible that onNext comes before #init; either in the case where it was already cached from
                 // io.deephaven.client.impl.ExportService.export, or where the RPC comes in asynchronously. In either
@@ -104,13 +117,13 @@ final class TableServiceAsyncImpl {
 
         @Override
         public void onError(Throwable t) {
-            future.completeExceptionally(t);
+            userFuture.completeExceptionally(t);
         }
 
         @Override
         public void onCompleted() {
-            if (!future.isDone()) {
-                future.completeExceptionally(new IllegalStateException("onCompleted without future.isDone()"));
+            if (!userFuture.isDone()) {
+                userFuture.completeExceptionally(new IllegalStateException("onCompleted without future.isDone()"));
             }
         }
 
@@ -118,28 +131,28 @@ final class TableServiceAsyncImpl {
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
-            return future.cancel(mayInterruptIfRunning);
+            return userFuture.cancel(mayInterruptIfRunning);
         }
 
         @Override
         public boolean isCancelled() {
-            return future.isCancelled();
+            return userFuture.isCancelled();
         }
 
         @Override
         public boolean isDone() {
-            return future.isDone();
+            return userFuture.isDone();
         }
 
         @Override
         public TableHandle get() throws InterruptedException, ExecutionException {
-            return future.get();
+            return userFuture.get();
         }
 
         @Override
         public TableHandle get(long timeout, TimeUnit unit)
                 throws InterruptedException, ExecutionException, TimeoutException {
-            return future.get(timeout, unit);
+            return userFuture.get(timeout, unit);
         }
     }
 }

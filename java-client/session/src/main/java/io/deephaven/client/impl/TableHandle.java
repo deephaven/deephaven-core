@@ -41,21 +41,6 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
 
     /**
      * Create a table handle, exporting {@code table}. The table handle will be {@linkplain #isSuccessful() successful}
-     * on return.
-     *
-     * @param session the session
-     * @param table the table
-     * @return the successful table handle
-     * @throws InterruptedException if the current thread is interrupted while waiting
-     * @throws TableHandleException if there is a table creation exception
-     */
-    static TableHandle of(ExportService session, TableSpec table)
-            throws InterruptedException, TableHandleException {
-        return of(session, Collections.singletonList(table), null).get(0);
-    }
-
-    /**
-     * Create a table handle, exporting {@code table}. The table handle will be {@linkplain #isSuccessful() successful}
      * on return. The given {@code lifecycle} will be called on initialization and on release. Derived table handles
      * will inherit the same {@code lifecycle}.
      *
@@ -95,11 +80,13 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
 
     static TableHandle ofUnchecked(ExportService exportService, TableSpec table, Lifecycle lifecycle) {
         final TableHandle handle = new TableHandle(table, lifecycle);
-        List<Export> exports = exportService.export(ExportsRequest.of(handle.exportRequest()));
+        final ExportServiceRequest request = exportService.exportRequest(ExportsRequest.of(handle.exportRequest()));
+        List<Export> exports = request.exports();
         if (exports.size() != 1) {
             throw new IllegalStateException();
         }
         handle.init(exports.get(0));
+        request.send();
         handle.awaitUnchecked();
         handle.throwOnErrorUnchecked();
         return handle;
@@ -114,8 +101,8 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
             handles.add(handle);
             exportBuilder.addRequests(handle.exportRequest());
         }
-        ExportsRequest request = exportBuilder.build();
-        List<Export> exports = exportService.export(request);
+        final ExportServiceRequest request = exportService.exportRequest(exportBuilder.build());
+        final List<Export> exports = request.exports();
         if (exports.size() != handles.size()) {
             throw new IllegalStateException();
         }
@@ -123,6 +110,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
         for (int i = 0; i < L; ++i) {
             handles.get(i).init(exports.get(i));
         }
+        request.send();
         return handles;
     }
 
