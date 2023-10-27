@@ -211,13 +211,13 @@ def to_j_local_date(dt: Union[None, LocalDate, str, datetime.date, datetime.date
                               numpy.datetime64, pandas.Timestamp]) -> Optional[LocalDate]:
     """
     Converts a date time value to a Java LocalDate.
-    Date time values can be None, a Java LocalDate, a string, a datetime.date, a datetime.time, a datetime.datetime,
+    Date time values can be None, a Java LocalDate, a string, a datetime.date, a datetime.datetime,
     a numpy.datetime64, or a pandas.Timestamp.
 
     Date strings can be formatted according to the ISO 8601 date time format as 'YYYY-MM-DD'.
 
     Args:
-        dt (Union[None, LocalDate, str, datetime.date, datetime.time, datetime.datetime, numpy.datetime64, pandas.Timestamp]): 
+        dt (Union[None, LocalDate, str, datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]): 
             A date time value. If None is provided, None is returned.
 
     Returns:
@@ -296,7 +296,7 @@ def to_j_instant(dt: Union[None, Instant, int, str, datetime.datetime, numpy.dat
         Optional[Instant]:
     """
     Converts a date time value to a Java Instant.
-    Date time values can be None, a Java Instant, an int, a string, a datetime.time, a datetime.datetime,
+    Date time values can be None, a Java Instant, an int, a string, a datetime.datetime,
     a numpy.datetime64, or a pandas.Timestamp.
 
     int values are the number of nanoseconds since the Epoch.
@@ -348,7 +348,7 @@ def to_j_zdt(dt: Union[None, ZonedDateTime, str, datetime.datetime, numpy.dateti
         Optional[ZonedDateTime]:
     """
     Converts a date time value to a Java ZonedDateTime.
-    Date time values can be None, a Java ZonedDateTime, a string, a datetime.time, a datetime.datetime,
+    Date time values can be None, a Java ZonedDateTime, a string, a datetime.datetime,
     a numpy.datetime64, or a pandas.Timestamp.
 
     Date time strings can be formatted according to the ISO 8601 date time format
