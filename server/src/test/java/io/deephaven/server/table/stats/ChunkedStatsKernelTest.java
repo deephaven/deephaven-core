@@ -14,6 +14,7 @@ import io.deephaven.engine.testutil.generator.LongGenerator;
 import io.deephaven.engine.testutil.generator.ShortGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.util.QueryConstants;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -21,6 +22,7 @@ import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -64,14 +66,14 @@ public class ChunkedStatsKernelTest {
                 initColumnInfos(
                         new String[] {"shortCol", "byteCol", "intCol", "longCol", "floatCol", "doubleCol", "bigIntCol",
                                 "bigDecimalCol"},
-                        new ShortGenerator(),
-                        new ByteGenerator(),
-                        new IntGenerator(),
-                        new LongGenerator(),
-                        new FloatGenerator(),
-                        new DoubleGenerator(),
-                        new BigIntegerGenerator(),
-                        new BigDecimalGenerator()));
+                        new ShortGenerator(QueryConstants.MIN_SHORT, QueryConstants.MAX_SHORT, 0.01),
+                        new ByteGenerator(QueryConstants.MIN_BYTE, QueryConstants.MAX_BYTE, 0.01),
+                        new IntGenerator(QueryConstants.MIN_INT / 2, QueryConstants.MAX_INT / 2, 0.01),
+                        new LongGenerator(QueryConstants.MIN_LONG / 2, QueryConstants.MAX_LONG / 2, 0.01),
+                        new FloatGenerator(QueryConstants.NULL_FLOAT + 1, Float.MAX_VALUE, 0.01),
+                        new DoubleGenerator(QueryConstants.NULL_DOUBLE + 1, Double.MAX_VALUE, 0.01),
+                        new BigIntegerGenerator(0.01),
+                        new BigDecimalGenerator(0.01)));
 
         final Table stdDev = queryTable.aggAllBy(AggSpec.std());
 
@@ -118,6 +120,7 @@ public class ChunkedStatsKernelTest {
         final double actualDouble = actual.doubleValue();
 
         final double epsilon = (Math.abs(expectedDouble - actualDouble)) / Math.min(expectedDouble, actualDouble);
+        assertEquals(actualDouble, expectedDouble, .000001);
         return epsilon < .000001;
     }
 }
