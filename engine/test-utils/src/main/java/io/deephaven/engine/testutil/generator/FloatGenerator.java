@@ -69,7 +69,7 @@ public class FloatGenerator extends AbstractGenerator<Float> {
                 return Float.POSITIVE_INFINITY;
             }
         }
-        return from + (random.nextFloat() * to - from);
+        return (from / 2 + (random.nextFloat() * (to / 2 - from / 2))) * 2;
     }
 
     @Override

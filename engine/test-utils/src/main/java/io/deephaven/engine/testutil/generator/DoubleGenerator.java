@@ -74,7 +74,7 @@ public class DoubleGenerator extends AbstractGenerator<Double> {
                 return Double.POSITIVE_INFINITY;
             }
         }
-        return from + (random.nextDouble() * to - from);
+        return (from / 2 + (random.nextDouble() * (to / 2 - from / 2))) * 2;
     }
 
     @Override
