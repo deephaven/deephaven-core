@@ -86,8 +86,7 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
         runCommand("""mkdir -p \\
                         /out \\
                         ${prefix}/bin/dhcpp \\
-                        ${prefix}/log \\
-                        ${prefix}/src/deephaven/{dhcore,dhclient,examples,tests}
+                        ${prefix}/log
                    """)
         copyFile('deephaven/CMakeLists.txt',  "${prefix}/src/deephaven/")
         copyFile('deephaven/dhcore/',  "${prefix}/src/deephaven/dhcore/")
