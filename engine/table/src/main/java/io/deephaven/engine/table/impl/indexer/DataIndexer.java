@@ -55,6 +55,11 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         this.rowSet = rowSet;
     }
 
+    public boolean hasDataIndex(final QueryTable table, final String... keyColumnNames) {
+        final DataIndex index = getDataIndex(table, keyColumnNames);
+        return index != null;
+    }
+
     public boolean hasDataIndex(final ColumnSource<?>... keyColumns) {
         return hasDataIndex(Arrays.asList(keyColumns));
     }

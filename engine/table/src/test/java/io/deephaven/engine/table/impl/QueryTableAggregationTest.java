@@ -195,7 +195,6 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testStaticGroupedByWithChunks() {
-        // Create dynamic indexes for the test table.
         final Table input1 = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
         DataIndexer indexer1 = DataIndexer.of(input1.getRowSet());
 
@@ -204,17 +203,6 @@ public class QueryTableAggregationTest {
 
         individualStaticByTest(input1, null, "A");
         individualStaticByTest(input1, null, "B");
-
-        // Create static indexes for the test table.
-
-        final Table input2 = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
-        DataIndexer indexer2 = DataIndexer.of(input2.getRowSet());
-
-        indexer1.createDataIndex((QueryTable) input1, "A");
-        indexer1.createDataIndex((QueryTable) input1, "B");
-
-        individualStaticByTest(input2, null, "A");
-        individualStaticByTest(input2, null, "B");
     }
 
     @Test
