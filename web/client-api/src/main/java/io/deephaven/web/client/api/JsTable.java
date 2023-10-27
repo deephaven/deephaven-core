@@ -741,10 +741,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * Gets the currently visible viewport. If the current set of operations has not yet resulted in data, it will not
-     * resolve until that data is ready.
+     * resolve until that data is ready. If this table is closed before the promise resolves, it will be rejected - to
+     * separate the lifespan of this promise from the table itself, call
+     * {@link TableViewportSubscription#getViewportData()} on the result from {@link #setViewport(double, double)}.
      * 
      * @return Promise of {@link TableData}
-     *
      */
     @JsMethod
     public Promise<TableData> getViewportData() {
@@ -752,7 +753,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         if (subscription == null) {
             return Promise.reject("No viewport currently set");
         }
-        return subscription.getViewportData();
+        return subscription.getInternalViewportData();
     }
 
     public Promise<TableData> getInternalViewportData() {
@@ -760,7 +761,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         final ClientTableState active = state();
         active.onRunning(state -> {
             if (currentViewportData == null) {
-                // no viewport data received yet; let's setup a one-shot UPDATED event listener
+                // no viewport data received yet; let's set up a one-shot UPDATED event listener
                 addEventListenerOneShot(EVENT_UPDATED, ignored -> promise.succeed(currentViewportData));
             } else {
                 promise.succeed(currentViewportData);
@@ -1997,8 +1998,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                             && existingSubscription.getStatus() != TableViewportSubscription.Status.DONE) {
                         JsLog.debug("closing old viewport", state(), existingSubscription.state());
                         // with the replacement state successfully running, we can shut down the old viewport (unless
-                        // something
-                        // external retained it)
+                        // something external retained it)
                         existingSubscription.internalClose();
                     }
                 }

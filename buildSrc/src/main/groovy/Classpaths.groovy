@@ -46,7 +46,7 @@ class Classpaths {
     static final String COMMONS_GROUP = 'org.apache.commons'
 
     static final String ARROW_GROUP = 'org.apache.arrow'
-    static final String ARROW_VERSION = '12.0.1'
+    static final String ARROW_VERSION = '13.0.0'
 
     static final String SLF4J_GROUP = 'org.slf4j'
     static final String SLF4J_VERSION = '2.0.6'
@@ -118,7 +118,7 @@ class Classpaths {
 
     static final String JETTY11_GROUP = 'org.eclipse.jetty'
     static final String JETTY11_NAME = 'jetty-bom'
-    static final String JETTY11_VERSION = '11.0.16'
+    static final String JETTY11_VERSION = '11.0.17'
 
     static final String GUAVA_GROUP = 'com.google.guava'
     static final String GUAVA_NAME = 'guava'
