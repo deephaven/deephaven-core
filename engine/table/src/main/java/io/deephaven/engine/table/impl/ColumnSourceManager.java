@@ -35,10 +35,12 @@ public interface ColumnSourceManager {
 
     /**
      * Observe size changes in the previously added table locations, and update the managed column sources accordingly.
-     * 
+     *
+     * @param initializing Whether we are initializing the column manager
+     *
      * @return The RowSet of added keys
      */
-    WritableRowSet refresh();
+    WritableRowSet refresh(final boolean initializing);
 
     /**
      * Get the added locations, first the ones that have been "included" (found to exist with non-zero size) in order of
@@ -57,7 +59,7 @@ public interface ColumnSourceManager {
     Collection<TableLocation> includedLocations();
 
     /**
-     * Get the added locations that have been found to exist and have non-zero size as a table along with the table
+     * Get the added locations that have been found to exist and have non-zero size as a table containing the
      * {@link io.deephaven.engine.rowset.RowSet row sets} for each location.
      *
      * @return The added locations that have been found to exist and have non-zero size

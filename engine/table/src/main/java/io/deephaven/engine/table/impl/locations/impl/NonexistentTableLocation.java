@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -51,11 +52,16 @@ public final class NonexistentTableLocation extends AbstractTableLocation {
     @Override
     @NotNull
     public List<SortColumn> getSortedColumns() {
-        throw new UnsupportedOperationException();
+        return Collections.EMPTY_LIST;
+    }
+
+    @Override
+    public @NotNull List<String[]> getDataIndexColumns() {
+        return Collections.EMPTY_LIST;
     }
 
     @Override
     public boolean hasDataIndex(@NotNull String... columns) {
-        throw new UnsupportedOperationException();
+        return false;
     }
 }

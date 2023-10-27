@@ -4,18 +4,17 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.table.GroupingProvider;
-import io.deephaven.engine.util.TableTools;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.util.TableTools;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Map;
 
 public class TestParquetGrouping extends RefreshingTableTestCase {
 
@@ -41,22 +40,38 @@ public class TestParquetGrouping extends RefreshingTableTestCase {
 
             final Table tableR = ParquetTools.readTable(dest);
             assertEquals(data.length, tableR.size());
-            final GroupingProvider provider = tableR.getColumnSource("V").getGroupingProvider();
-            final Table allGroupingTable = provider.getGroupingBuilder().buildTable();
+            final DataIndexer dataIndexer = DataIndexer.of(tableR.getRowSet());
+            final DataIndex dataIndex = dataIndexer.getDataIndex(tableR, "V");
+            Assert.neqNull(dataIndex, "dataIndex");
+            final Table allGroupingTable = dataIndex.table();
+
             assertNotNull(allGroupingTable);
             assertEquals(80_000 * 4, tableR.getRowSet().size());
             assertEquals(80_000, allGroupingTable.size());
-            assertEquals(80_000,
-                    provider.getGroupingBuilder().clampToIndex(tableR.getRowSet(), true).buildTable().size());
-            assertEquals(80_000, provider.getGroupingBuilder()
-                    .clampToIndex(tableR.getRowSet().subSetByPositionRange(0, tableR.size())).buildTable().size());
-            final Map mapper = provider.getGroupingBuilder().buildGroupingMap();
+
+            final DataIndex.PositionLookup posLookup = dataIndex.positionLookup();
+            final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup();
+
+            final ColumnSource<RowSet> rowSetColumnSource = dataIndex.rowSetColumn();
+
             for (int i = 0; i < data.length / 4; i++) {
-                assertEquals(mapper.get(i), RowSetFactory.fromRange(i * 4, i * 4 + 3));
+                assertEquals(rowSetLookup.apply(i), RowSetFactory.fromRange(i * 4, i * 4 + 3));
+                int pos = posLookup.apply(i);
+                assertEquals(rowSetColumnSource.get(pos), RowSetFactory.fromRange(i * 4, i * 4 + 3));
             }
+
+            // Clamp the index rowset and assert it is still correct.
+            Table clampedTable = dataIndex.transform(DataIndexTransformer.builder()
+                    .intersectRowSet(tableR.getRowSet())
+                    .build()).table();
+            assertEquals(80_000, clampedTable.size());
+
+            clampedTable = dataIndex.transform(DataIndexTransformer.builder()
+                    .intersectRowSet(tableR.getRowSet().subSetByPositionRange(0, tableR.size()))
+                    .build()).table();
+            assertEquals(80_000, clampedTable.size());
         } finally {
             FileUtils.deleteRecursively(directory);
         }
-
     }
 }

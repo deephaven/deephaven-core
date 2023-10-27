@@ -27,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,12 +108,16 @@ public class TestPartitioningColumns {
 
         @Override
         public void refresh() {
-
         }
 
         @Override
         public @NotNull List<SortColumn> getSortedColumns() {
-            return null;
+            return Collections.EMPTY_LIST;
+        }
+
+        @Override
+        public @NotNull List<String[]> getDataIndexColumns() {
+            return Collections.EMPTY_LIST;
         }
 
         @Override
@@ -200,7 +205,7 @@ public class TestPartitioningColumns {
 
         @Override
         protected @Nullable Table loadDataIndex(@NotNull String... columns) {
-            return null;
+            throw new UnsupportedOperationException();
         }
     }
 }

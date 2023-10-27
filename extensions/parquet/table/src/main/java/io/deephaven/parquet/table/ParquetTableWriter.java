@@ -101,34 +101,6 @@ public class ParquetTableWriter {
     }
 
     /**
-     * Helper struct used to pass information about where to write the grouping files for each grouping column
-     */
-    public static class GroupingColumnWritingInfo {
-        /**
-         * Parquet name of this grouping column
-         */
-        public final String parquetColumnName;
-        /**
-         * File path to be added in the grouping metadata of main parquet file
-         */
-        public final File metadataFilePath;
-
-        /**
-         * Destination path for writing the grouping file. The two filenames can differ because we write grouping files
-         * to shadow file paths first and then place them at the final path once the write is complete. But the metadata
-         * should always hold the accurate path.
-         */
-        public final File destFile;
-
-        public GroupingColumnWritingInfo(final String parquetColumnName, final File metadataFilePath,
-                final File destFile) {
-            this.parquetColumnName = parquetColumnName;
-            this.metadataFilePath = metadataFilePath;
-            this.destFile = destFile;
-        }
-    }
-
-    /**
      * Writes a table in parquet format under a given path
      *
      * @param t The table to write
@@ -165,9 +137,9 @@ public class ParquetTableWriter {
 
                     // This will retrieve an existing index if one exists, or create a new one if not.
                     if (!dataIndexer.hasDataIndex(indexColumns)) {
-                        dataIndexer.createDataIndex((QueryTable) t, indexColumnNames);
+                        dataIndexer.createDataIndex(t, indexColumnNames);
                     }
-                    final DataIndex dataIndex = dataIndexer.getDataIndex((QueryTable) t, indexColumnNames);
+                    final DataIndex dataIndex = dataIndexer.getDataIndex(t, indexColumnNames);
                     final Table indexTable = dataIndex.table();
 
                     final String[] parquetColumnNames = info.parquetColumnNames;

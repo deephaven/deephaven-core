@@ -53,6 +53,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
     public DataIndexer(@NotNull final TrackingRowSet rowSet) {
         this.rowSet = rowSet;
+        this.dataIndexes = new WeakHashMap<>();
     }
 
     public boolean hasDataIndex(final QueryTable table, final String... keyColumnNames) {
@@ -101,8 +102,8 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @param keyColumnNames the column sources for which to retrieve a DataIndex
      * @return the DataIndex, or null if one does not exist
      */
-    public DataIndex getDataIndex(final QueryTable sourceTable, final String... keyColumnNames) {
-        final Map<String, ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
+    public DataIndex getDataIndex(final Table sourceTable, final String... keyColumnNames) {
+        final Map<String, ? extends ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
         // Verify all the key columns belong to the source table.
         final Collection<String> missingKeys = Arrays.stream(keyColumnNames)
                 .filter(key -> !columnSourceMap.containsKey(key)).collect(Collectors.toList());
@@ -125,7 +126,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @param sourceTable the table to index
      * @param keyColumnNames the column sources to include in the index
      */
-    public void createDataIndex(final QueryTable sourceTable, final String... keyColumnNames) {
+    public void createDataIndex(final Table sourceTable, final String... keyColumnNames) {
         final List<String> keys = Arrays.asList(keyColumnNames);
         final List<ColumnSource<?>> keyColumns =
                 keys.stream().map(sourceTable::getColumnSource).collect(Collectors.toList());
@@ -156,7 +157,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      *
      * @param index the index to add
      */
-    public void addIndex(final DataIndex index) {
+    public void addDataIndex(final DataIndex index) {
         final ColumnSource<?>[] keyColumns = index.keyColumnMap().keySet().toArray(ColumnSource<?>[]::new);
         final List<ColumnSource<?>> keys = Arrays.asList(keyColumns);
 

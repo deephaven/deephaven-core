@@ -10,8 +10,10 @@ import io.deephaven.engine.table.impl.ColumnSourceManager;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.dataindex.DataIndexBuilder;
-import io.deephaven.engine.table.impl.locations.*;
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
+import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
+import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
@@ -78,9 +80,9 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     private final ObjectArraySource<TableLocation> locationSource;
     private final LongArraySource offsetSource;
     private final ObjectArraySource<RowSet> rowSetSource;
-    private final String LOCATION_COLUMN_NAME = "Location";
-    private final String OFFSET_COLUMN_NAME = "Offset";
-    private final String ROWSET_COLUMN_NAME = "RowSet";
+    private final String LOCATION_COLUMN_NAME = "dh_location";
+    private final String OFFSET_COLUMN_NAME = "dh_offset";
+    private final String ROWSET_COLUMN_NAME = "dh_rowset";
     private final ModifiedColumnSet locationModifiedColumnSet;
     private final ModifiedColumnSet rowSetModifiedColumnSet;
 
@@ -182,14 +184,12 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     }
 
     @Override
-    public synchronized WritableRowSet refresh() {
+    public synchronized WritableRowSet refresh(final boolean initializing) {
         final RowSetBuilderSequential addedRowSetBuilder = RowSetFactory.builderSequential();
 
         final WritableRowSet added = RowSetFactory.empty();
         final WritableRowSet modified = RowSetFactory.empty();
-        final TableUpdate update = new TableUpdateImpl(
-                added, RowSetFactory.empty(), modified, RowSetShiftData.EMPTY,
-                orderedLocationsTable.getModifiedColumnSetForUpdates());
+
 
         // Ordering matters, since we're using a sequential builder.
         for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) {
@@ -197,9 +197,6 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 // Changes were detected, update the row set in the table and mark the row/column as modified.
                 rowSetSource.set(entry.regionIndex, entry.location.getRowSet());
                 modified.insert(entry.regionIndex);
-            }
-            if (modified.isNonempty()) {
-                update.modifiedColumnSet().setAll(rowSetModifiedColumnSet);
             }
         }
 
@@ -236,6 +233,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 rowSetSource.ensureCapacity(entry.regionIndex + 1);
                 rowSetSource.set(entry.regionIndex, entryToInclude.initialRowSet);
 
+                orderedLocationsTable.getRowSet().writableCast().insert(entry.regionIndex);
+
                 added.insert(entry.regionIndex);
             }
         }
@@ -243,7 +242,13 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             emptyTableLocations.clear();
         } else {
             // Send the downstream updates to any listeners of the table.
-            if (!update.empty()) {
+            if ((added.isNonempty() || modified.isNonempty()) & !initializing) {
+                final TableUpdate update = new TableUpdateImpl(
+                        added, RowSetFactory.empty(), modified, RowSetShiftData.EMPTY,
+                        orderedLocationsTable.getModifiedColumnSetForUpdates());
+                if (modified.isNonempty()) {
+                    update.modifiedColumnSet().setAll(rowSetModifiedColumnSet);
+                }
                 orderedLocationsTable.notifyListeners(update);
             }
         }
@@ -378,37 +383,23 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             final long regionFirstKey = RegionedColumnSource.getFirstRowKey(regionIndex);
             initialRowSet.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedRowSetBuilder
                     .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
-            RowSet addRowSetInTable = null;
-            try {
-                for (final ColumnDefinition columnDefinition : columnDefinitions) {
-                    // noinspection unchecked
-                    final ColumnLocationState state = new ColumnLocationState(
-                            columnDefinition,
-                            columnSources.get(columnDefinition.getName()),
-                            location.getColumnLocation(columnDefinition.getName()));
-                    columnLocationStates.add(state);
-                    state.regionAllocated(regionIndex);
-                }
-            } finally {
-                if (addRowSetInTable != null) {
-                    addRowSetInTable.close();
-                }
+
+            for (final ColumnDefinition columnDefinition : columnDefinitions) {
+                // noinspection unchecked
+                final ColumnLocationState state = new ColumnLocationState(
+                        columnDefinition,
+                        columnSources.get(columnDefinition.getName()),
+                        location.getColumnLocation(columnDefinition.getName()));
+                columnLocationStates.add(state);
+                state.regionAllocated(regionIndex);
             }
+
             rowSetAtLastUpdate = initialRowSet;
         }
 
         /** Returns {@code true} if there were changes to the row set for this location. */
         private boolean pollUpdates(final RowSetBuilderSequential addedRowSetBuilder) {
             Assert.neqNull(subscriptionBuffer, "subscriptionBuffer"); // Effectively, this is asserting "isRefreshing".
-            try {
-                if (!subscriptionBuffer.processPending()) {
-                    return false;
-                }
-            } catch (Exception ex) {
-                invalidate();
-                throw ex;
-            }
-
             try {
                 if (!subscriptionBuffer.processPending()) {
                     return false;

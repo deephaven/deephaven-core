@@ -14,12 +14,12 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.table.impl.TimeTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.time.DateTimeUtils;
 import org.junit.Assert;
@@ -27,7 +27,6 @@ import org.junit.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Map;
 
 public class TimeTableTest extends RefreshingTableTestCase {
 
@@ -247,8 +246,9 @@ public class TimeTableTest extends RefreshingTableTestCase {
         Assert.assertEquals(timeTable.size(), 201);
 
         final DataIndexer dataIndexer = DataIndexer.of(timeTable.getRowSet());
+        // Create the index for this table and column.
+        dataIndexer.createDataIndex(timeTable, "Timestamp");
 
-        // Asking for a data index will cause it to be created when it does not exist.
         final DataIndex dataIndex =
                 dataIndexer.getDataIndex(dtColumn).transform(
                         DataIndexTransformer.builder()

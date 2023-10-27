@@ -24,7 +24,7 @@ import java.util.Map;
 public abstract class AbstractTableLocation
         extends SubscriptionAggregator<TableLocation.Listener>
         implements TableLocation {
-    protected static final SoftReference<Table> NO_GROUPING_SENTINEL = new SoftReference<>(null);
+    protected static final SoftReference<Table> NO_INDEX_SENTINEL = new SoftReference<>(null);
 
     private final ImmutableTableKey tableKey;
     private final ImmutableTableLocationKey tableLocationKey;
@@ -33,8 +33,8 @@ public abstract class AbstractTableLocation
     private final KeyedObjectHashMap<CharSequence, ColumnLocation> columnLocations =
             new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
 
-    /** A map of grouping (or data index) columns to the materialized */
-    protected volatile Map<List<String>, SoftReference<Table>> cachedGroupings;
+    /** A map of data index columns to materialized index tables for this location. */
+    protected volatile Map<List<String>, SoftReference<Table>> cachedIndexes;
 
     /**
      * @param tableKey Table key for the table this location belongs to
@@ -47,6 +47,7 @@ public abstract class AbstractTableLocation
         super(supportsSubscriptions);
         this.tableKey = Require.neqNull(tableKey, "tableKey").makeImmutable();
         this.tableLocationKey = Require.neqNull(tableLocationKey, "tableLocationKey").makeImmutable();
+        cachedIndexes = new HashMap<>();
     }
 
     @Override
@@ -155,46 +156,46 @@ public abstract class AbstractTableLocation
     @Override
     public final Table getDataIndex(@NotNull final String... columns) {
         final List<String> colNames = Arrays.asList(columns);
-        Table grouping = null;
-        if (cachedGroupings != null) {
-            final SoftReference<Table> cachedGrouping = cachedGroupings.get(colNames);
-            if (cachedGrouping == NO_GROUPING_SENTINEL) {
+        Table indexTable = null;
+        if (cachedIndexes != null) {
+            final SoftReference<Table> cachedIndex = cachedIndexes.get(colNames);
+            if (cachedIndex == NO_INDEX_SENTINEL) {
                 return null;
             }
 
-            if (cachedGrouping != null) {
-                grouping = cachedGrouping.get();
-                if (grouping != null) {
-                    return grouping;
+            if (cachedIndex != null) {
+                indexTable = cachedIndex.get();
+                if (indexTable != null) {
+                    return indexTable;
                 }
             }
         }
 
         synchronized (this) {
-            if (cachedGroupings == null) {
-                cachedGroupings = new HashMap<>();
+            if (cachedIndexes == null) {
+                cachedIndexes = new HashMap<>();
             }
 
-            final SoftReference<Table> cachedGrouping = cachedGroupings.get(colNames);
-            if (cachedGrouping == NO_GROUPING_SENTINEL) {
+            final SoftReference<Table> cachedGrouping = cachedIndexes.get(colNames);
+            if (cachedGrouping == NO_INDEX_SENTINEL) {
                 return null;
             }
 
             if (cachedGrouping != null) {
-                grouping = cachedGrouping.get();
+                indexTable = cachedGrouping.get();
             }
 
-            if (grouping == null) {
-                grouping = loadDataIndex(columns);
+            if (indexTable == null) {
+                indexTable = loadDataIndex(columns);
 
-                if (grouping == null || grouping.isEmpty()) {
-                    cachedGroupings.put(colNames, NO_GROUPING_SENTINEL);
+                if (indexTable == null || indexTable.isEmpty()) {
+                    cachedIndexes.put(colNames, NO_INDEX_SENTINEL);
                 } else {
-                    cachedGroupings.put(colNames, new SoftReference<>(grouping));
+                    cachedIndexes.put(colNames, new SoftReference<>(indexTable));
                 }
             }
 
-            return grouping;
+            return indexTable;
         }
     }
 

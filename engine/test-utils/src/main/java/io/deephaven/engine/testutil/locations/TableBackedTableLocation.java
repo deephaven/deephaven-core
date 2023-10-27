@@ -12,6 +12,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.List;
 
 public final class TableBackedTableLocation extends AbstractTableLocation {
@@ -63,23 +64,31 @@ public final class TableBackedTableLocation extends AbstractTableLocation {
     }
 
     @Override
-    public @NotNull List<SortColumn> getSortedColumns() {
+    @NotNull
+    public List<SortColumn> getSortedColumns() {
         throw new NotImplementedException("TODO: implement me");
     }
 
     @Override
-    protected @NotNull ColumnLocation makeColumnLocation(@NotNull final String name) {
+    @NotNull
+    protected ColumnLocation makeColumnLocation(@NotNull final String name) {
         return new TableBackedColumnLocation(this, name);
     }
 
     @Override
-    protected @Nullable Table loadDataIndex(@NotNull String... columns) {
+    @Nullable
+    protected Table loadDataIndex(@NotNull String... columns) {
         return null;
+    }
+
+    @Override
+    @NotNull
+    public List<String[]> getDataIndexColumns() {
+        return Collections.EMPTY_LIST;
     }
 
     @Override
     public boolean hasDataIndex(@NotNull String... columns) {
         return false;
     }
-
 }

@@ -32,6 +32,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ParquetTableLocation extends AbstractTableLocation {
@@ -127,10 +128,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return groupingColumns;
     }
 
-    public List<DataIndexInfo> getDataIndexes() {
-        return dataIndexes;
-    }
-
     public Map<String, ColumnTypeInfo> getColumnTypes() {
         return columnTypes;
     }
@@ -184,6 +181,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return sequentialBuilder.build();
     }
 
+    @Override
+    public List<String[]> getDataIndexColumns() {
+        return dataIndexes.stream().map(di -> di.columns().toArray(String[]::new)).collect(Collectors.toList());
+    }
 
     @Override
     public boolean hasDataIndex(@NotNull final String... columns) {

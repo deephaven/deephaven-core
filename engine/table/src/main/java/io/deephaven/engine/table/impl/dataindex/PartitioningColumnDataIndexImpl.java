@@ -20,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,7 +34,7 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
 
     private final ColumnSourceManager columnSourceManager;
 
-    private final QueryTable sourceTable;
+    private final Table sourceTable;
 
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
     private final Table indexTable;
@@ -44,13 +43,11 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     /** Provides fast lookup from keys to positions in the table **/
     private final TObjectIntHashMap<Object> cachedPositionMap;
 
-    public PartitioningColumnDataIndexImpl(@NotNull final QueryTable sourceTable,
-            @NotNull final List<ColumnSource<?>> keySources) {
-        Assert.eq(keySources.size(), "keySources.size()", 1, "1");
-        Assert.eqTrue(keySources.get(0) instanceof RegionedColumnSource,
+    public PartitioningColumnDataIndexImpl(@NotNull final Table sourceTable,
+            @NotNull final String keyColumnName) {
+        keySource = (RegionedColumnSource<?>) sourceTable.getColumnSource(keyColumnName);
+        Assert.eqTrue(keySource instanceof RegionedColumnSource,
                 "keySources.get(0) instanceof RegionedColumnSource");
-
-        this.keySource = (RegionedColumnSource<?>) keySources.get(0);
 
         String matchedColumnName = null;
         // Find the column name in the source table and add to the map.
@@ -62,10 +59,10 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
         }
         Assert.eqTrue(matchedColumnName != null, "key column source was not found in the source table");
 
-        keyColumnName = matchedColumnName;
+        this.keyColumnName = matchedColumnName;
 
         // Store the column source manager for later use.
-        columnSourceManager = ((RegionedColumnSource) keySources.get(0)).getColumnSourceManager();
+        columnSourceManager = keySource.getColumnSourceManager();
 
         this.sourceTable = sourceTable;
 
@@ -93,7 +90,7 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
                 final long offset = offsetIt.next();
                 final RowSet shiftedRowSet = rowSetIt.next().shift(offset);
 
-                final Object key = location.getKey().getPartitionValue(keyColumnName);
+                final Object key = location.getKey().getPartitionValue(this.keyColumnName);
                 final Class<?> clazz = key.getClass();
 
                 final int pos = cachedPositionMap.get(key);
@@ -133,7 +130,7 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
                 position.increment();
             }
             indexTable = new QueryTable(RowSetFactory.flat(position.getValue()).toTracking(), Map.of(
-                    keyColumnName, indexKeySource,
+                    this.keyColumnName, indexKeySource,
                     INDEX_COL_NAME, indexRowSetSource));
         }
         if (sourceTable.isRefreshing()) {

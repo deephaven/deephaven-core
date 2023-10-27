@@ -364,8 +364,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final ColumnSource<?> flatGrouped = leftFlat.getColumnSource("I1");
         final TrackingRowSet flatRowSet = leftFlat.getRowSet();
 
-        // Asking for a data index will cause it to be created when it does not exist.
-        DataIndexer.of(flatRowSet).getDataIndex(flatGrouped);
+        // Create the data index for this table and column.
+        DataIndexer.of(flatRowSet).createDataIndex(leftFlat, "I1");
 
         final Table resultFlat = leftFlat.naturalJoin(rightTable, "I1", "LC1=C1,LC2=C2");
         assertTableEquals(noGroupingResult, resultFlat);

@@ -29,8 +29,8 @@ public abstract class AbstractDataIndex implements DataIndex {
         TObjectIntHashMap<Object> result = new TObjectIntHashMap<>(indexTable.intSize());
 
         // If we have only one key column, we will push values directly int the hashmap.
-        if (keyColumnNames.length == 0) {
-            try (final CloseableIterator<Object> keyIterator = indexTable.columnIterator(INDEX_COL_NAME)) {
+        if (keyColumnNames.length == 1) {
+            try (final CloseableIterator<Object> keyIterator = indexTable.columnIterator(keyColumnNames[0])) {
                 int position = 0;
                 while (keyIterator.hasNext()) {
                     result.put(keyIterator.next(), position++);
@@ -39,7 +39,6 @@ public abstract class AbstractDataIndex implements DataIndex {
             }
         } else {
             // Use Object[] as the keys for the map.
-
             ColumnIterator<?>[] keyIterators = Arrays.stream(keyColumnNames)
                     .map(indexTable::columnIterator).toArray(ColumnIterator[]::new);
 

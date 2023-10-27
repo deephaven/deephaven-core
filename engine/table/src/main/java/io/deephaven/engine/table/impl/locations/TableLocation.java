@@ -91,6 +91,14 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
     List<SortColumn> getSortedColumns();
 
     /**
+     * Get a list of the columns by which this location is indexed
+     *
+     * @return a non-null list of {@code String[]} arrays containing the keys for each existing index
+     */
+    @NotNull
+    List<String[]> getDataIndexColumns();
+
+    /**
      * Check if this location has a data index for the specified columns.
      * 
      * @param columns the set of columns to check for.

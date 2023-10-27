@@ -6,9 +6,10 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.TableUpdateListener;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.dataindex.PartitioningColumnDataIndexImpl;
+import io.deephaven.engine.table.impl.dataindex.StorageBackedDataIndexImpl;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -178,7 +179,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             QueryPerformanceRecorder.withNugget(description + ".initializeLocationSizes()", sizeForInstrumentation(),
                     () -> {
                         Assert.eqNull(rowSet, "rowSet");
-                        rowSet = refreshLocationSizes().toTracking();
+                        rowSet = refreshLocationSizes(true).toTracking();
                         if (!isRefreshing()) {
                             return;
                         }
@@ -192,9 +193,9 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
     }
 
-    private WritableRowSet refreshLocationSizes() {
+    private WritableRowSet refreshLocationSizes(final boolean initializing) {
         try {
-            return columnSourceManager.refresh();
+            return columnSourceManager.refresh(initializing);
         } catch (Exception e) {
             throw new TableDataException("Error refreshing location sizes", e);
         }
@@ -227,7 +228,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     return;
                 }
 
-                final RowSet added = refreshLocationSizes();
+                final RowSet added = refreshLocationSizes(false);
                 if (added.isEmpty()) {
                     return;
                 }
@@ -255,6 +256,37 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     protected Collection<ImmutableTableLocationKey> filterLocationKeys(
             @NotNull final Collection<ImmutableTableLocationKey> foundLocationKeys) {
         return foundLocationKeys;
+    }
+
+    @Override
+    protected final void postCoalesceAction() {
+        // As part of coalescing, create the RowSet-level data indexes for partitioning and indexed columns.
+        final DataIndexer dataIndexer = DataIndexer.of(rowSet);
+
+        // Add the partitioning columns as trivial data indexes
+        final TableDefinition tableDefinition = getDefinition();
+        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
+            if (columnDefinition.isPartitioning()) {
+                final DataIndex dataIndex = new PartitioningColumnDataIndexImpl(
+                        this,
+                        columnDefinition.getName());
+                dataIndexer.addDataIndex(dataIndex);
+            }
+        }
+
+        // Inspect the locations to see what other data indexes exist.
+        final Collection<TableLocation> locations = columnSourceManager.allLocations();
+        if (!locations.isEmpty()) {
+            // Use the first location as a proxy for the whole table
+            final TableLocation firstLocation = locations.iterator().next();
+
+            for (final String[] keyArr : firstLocation.getDataIndexColumns()) {
+                final DataIndex dataIndex = new StorageBackedDataIndexImpl(
+                        this,
+                        keyArr);
+                dataIndexer.addDataIndex(dataIndex);
+            }
+        }
     }
 
     @Override

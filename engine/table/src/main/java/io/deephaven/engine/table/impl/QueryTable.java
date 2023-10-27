@@ -1637,7 +1637,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             .build());
 
             // Add the new index to the DataIndexer.
-            dataIndexer.addIndex(remappedIndex);
+            dataIndexer.addDataIndex(remappedIndex);
         }
     }
 

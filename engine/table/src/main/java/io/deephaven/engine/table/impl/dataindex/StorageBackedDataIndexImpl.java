@@ -21,10 +21,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.SoftReference;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -45,7 +43,7 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
 
     private final ColumnSourceManager columnSourceManager;
 
-    private final QueryTable sourceTable;
+    private final Table sourceTable;
 
     @NotNull
     final String[] keyColumnNames;
@@ -59,11 +57,14 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     private PositionLookup cachedPositionLookup;
     private RowSetLookup cachedRowSetLookup;
 
-    public StorageBackedDataIndexImpl(@NotNull final QueryTable sourceTable,
-            @NotNull final List<ColumnSource<?>> keySources) {
+    public StorageBackedDataIndexImpl(@NotNull final Table sourceTable,
+            @NotNull final String[] keyColumnNames) {
 
-        // Create an array to hold the key column names from the source table (and replicated into the index table).
-        keyColumnNames = new String[keySources.size()];
+        this.sourceTable = sourceTable;
+        this.keyColumnNames = keyColumnNames;
+
+        List<ColumnSource<?>> keySources = Arrays.stream(keyColumnNames).map(sourceTable::getColumnSource)
+                .collect(Collectors.toList());
 
         // Create an in-order reverse lookup map for the key columnn names.
         keyColumnMap = new WeakHashMap<>(keySources.size());
@@ -86,8 +87,6 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
 
         // Store the column source manager for later use.
         columnSourceManager = ((RegionedColumnSource) keySources.get(0)).getColumnSourceManager();
-
-        this.sourceTable = sourceTable;
 
         // Get the location table from the Regioned Column Source Manager.
         final Table locationTable = columnSourceManager.locationTable();
@@ -148,7 +147,7 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
 
     @Override
     public String[] keyColumnNames() {
-        return new String[0];
+        return keyColumnNames;
     }
 
     @Override
@@ -263,11 +262,11 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
         final Table indexTable = table();
         if (indexTable.size() >= BIN_SEARCH_THRESHOLD) {
             // Use a binary search strategy rather than consume memory for the hashmap.
-            cachedPositionLookup = buildPositionLookup(indexTable, keyColumnNames());
+            cachedPositionLookup = buildPositionLookup(indexTable, keyColumnNames);
         } else {
             // Build or use the hashmap
             if (cachedPositionMap == null) {
-                cachedPositionMap = buildPositionMap(indexTable, keyColumnNames());
+                cachedPositionMap = buildPositionMap(indexTable, keyColumnNames);
             }
             cachedPositionLookup = cachedPositionMap::get;
         }

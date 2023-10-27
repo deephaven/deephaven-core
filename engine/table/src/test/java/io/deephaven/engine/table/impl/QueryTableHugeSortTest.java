@@ -87,8 +87,8 @@ public class QueryTableHugeSortTest {
 
         final ColumnSource<Object> captainSource = (ColumnSource<Object>) grouped.getColumnSource("Captain");
 
-        // Asking for a data index will cause it to be created when it does not exist.
-        DataIndexer.of(grouped.getRowSet()).getDataIndex(captainSource);
+        // Create the index for this table and column.
+        DataIndexer.of(grouped.getRowSet()).createDataIndex(grouped, "Captain");
 
         final long sortStart = System.currentTimeMillis();
         final Table sortedGrouped = grouped.sortDescending("Captain");
