@@ -457,7 +457,9 @@ class TableService final {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(PrepareAsyncMetaTableRaw(context, request, cq));
     }
     // *
-    // Returns a new table representing statistics about a single column of the provided table.
+    // Returns a new table representing statistics about a single column of the provided table. This
+    // result table will be static - use Aggregation() instead for updating results. Presently, the
+    // primary use case for this is the Deephaven Web UI.
     virtual ::grpc::Status ComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> AsyncComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(AsyncComputeColumnStatisticsRaw(context, request, cq));
@@ -662,7 +664,9 @@ class TableService final {
       virtual void MetaTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void MetaTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // *
-      // Returns a new table representing statistics about a single column of the provided table.
+      // Returns a new table representing statistics about a single column of the provided table. This
+      // result table will be static - use Aggregation() instead for updating results. Presently, the
+      // primary use case for this is the Deephaven Web UI.
       virtual void ComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void ComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
@@ -1470,7 +1474,9 @@ class TableService final {
     // Returns the meta table of a table.
     virtual ::grpc::Status MetaTable(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response);
     // *
-    // Returns a new table representing statistics about a single column of the provided table.
+    // Returns a new table representing statistics about a single column of the provided table. This
+    // result table will be static - use Aggregation() instead for updating results. Presently, the
+    // primary use case for this is the Deephaven Web UI.
     virtual ::grpc::Status ComputeColumnStatistics(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response);
   };
   template <class BaseClass>

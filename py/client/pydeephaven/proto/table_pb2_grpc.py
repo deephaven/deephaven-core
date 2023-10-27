@@ -609,7 +609,9 @@ class TableServiceServicer(object):
 
     def ComputeColumnStatistics(self, request, context):
         """*
-        Returns a new table representing statistics about a single column of the provided table.
+        Returns a new table representing statistics about a single column of the provided table. This
+        result table will be static - use Aggregation() instead for updating results. Presently, the
+        primary use case for this is the Deephaven Web UI.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
