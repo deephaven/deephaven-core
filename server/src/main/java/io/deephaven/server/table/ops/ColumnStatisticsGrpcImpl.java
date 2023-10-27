@@ -4,6 +4,7 @@ import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.NotificationStepSource;
@@ -53,7 +54,12 @@ public class ColumnStatisticsGrpcImpl extends GrpcTableOperation<ColumnStatistic
     public Table create(ColumnStatisticsRequest request, List<SessionState.ExportObject<Table>> sourceTables) {
         Table table = sourceTables.get(0).get().coalesce();
         String columnName = request.getColumnName();
-        final Class<?> type = table.getDefinition().getColumn(columnName).getDataType();
+        ColumnDefinition<Object> column = table.getDefinition().getColumn(columnName);
+        if (column == null) {
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Table doesn't have a column with the specified name");
+        }
+        final Class<?> type = column.getDataType();
 
         // Based on the column type, make a stats function and get a column source
         final ChunkedStatsKernel statsFunc;

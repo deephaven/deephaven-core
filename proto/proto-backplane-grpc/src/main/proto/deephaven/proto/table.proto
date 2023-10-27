@@ -255,7 +255,9 @@ service TableService {
   rpc MetaTable(MetaTableRequest) returns (ExportedTableCreationResponse) {}
 
   /**
-   * Returns a new table representing statistics about a single column of the provided table.
+   * Returns a new table representing statistics about a single column of the provided table. This
+   * result table will be static - use Aggregation() instead for updating results. Presently, the
+   * primary use case for this is the Deephaven Web UI.
    */
   rpc ComputeColumnStatistics(ColumnStatisticsRequest) returns (ExportedTableCreationResponse) {}
 }
