@@ -10,5 +10,5 @@ import io.deephaven.engine.table.Table;
 public interface ChunkedStatsKernel {
     int CHUNK_SIZE = 2048;
 
-    Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev);
+    Table processChunks(RowSet rowSet, ColumnSource<?> columnSource, boolean usePrev);
 }

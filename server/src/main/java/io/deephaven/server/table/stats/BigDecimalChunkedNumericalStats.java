@@ -100,7 +100,7 @@ public class BigDecimalChunkedNumericalStats implements ChunkedNumericalStatsKer
                 new ColumnHolder<>("MIN_ABS", BigDecimal.class, null, false, absMin),
                 new ColumnHolder<>("MAX_ABS", BigDecimal.class, null, false, absMax),
                 new ColumnHolder<>("AVG", BigDecimal.class, null, false, avg),
-                new ColumnHolder<>("AVG_SUM", BigDecimal.class, null, false, absAvg),
+                new ColumnHolder<>("AVG_ABS", BigDecimal.class, null, false, absAvg),
                 new ColumnHolder<>("STD_DEV", BigDecimal.class, null, false, stdDev));
     }
 }

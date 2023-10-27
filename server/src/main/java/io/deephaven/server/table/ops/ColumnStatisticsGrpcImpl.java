@@ -51,7 +51,7 @@ public class ColumnStatisticsGrpcImpl extends GrpcTableOperation<ColumnStatistic
 
     @Override
     public Table create(ColumnStatisticsRequest request, List<SessionState.ExportObject<Table>> sourceTables) {
-        Table table = sourceTables.get(0).get();
+        Table table = sourceTables.get(0).get().coalesce();
         String columnName = request.getColumnName();
         final Class<?> type = table.getDefinition().getColumn(columnName).getDataType();
 
@@ -79,7 +79,7 @@ public class ColumnStatisticsGrpcImpl extends GrpcTableOperation<ColumnStatistic
             // For remaining types the best we can do is count/track unique values in the column
             final int maxUnique;
             if (request.hasUniqueValueLimit()) {
-                maxUnique = Math.max(request.getUniqueValueLimit(), MAX_UNIQUE_LIMIT);
+                maxUnique = Math.min(request.getUniqueValueLimit(), MAX_UNIQUE_LIMIT);
             } else {
                 maxUnique = DEFAULT_UNIQUE_LIMIT;
             }
@@ -93,7 +93,7 @@ public class ColumnStatisticsGrpcImpl extends GrpcTableOperation<ColumnStatistic
 
         // Execute the function in a snapshot
         final Mutable<Table> resultHolder = new MutableObject<>();
-        ConstructSnapshot.callDataSnapshotFunction("GenerateDBDateTimeStats()",
+        ConstructSnapshot.callDataSnapshotFunction("GenerateColumnStats()",
                 ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(), (NotificationStepSource) table),
                 (usePrev, beforeClockValue) -> {
                     final RowSet rowSet = usePrev ? table.getRowSet().prev() : table.getRowSet();

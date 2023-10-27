@@ -29,7 +29,7 @@ public interface ChunkedNumericalStatsKernel extends ChunkedStatsKernel {
             return new ByteChunkedNumericalStats();
         } else {
             throw new IllegalStateException(
-                    "Invalid type for ChunkedNumericalStatsFactory: " + type.getCanonicalName());
+                    "Invalid type for ChunkedNumericalStatsKernel: " + type.getCanonicalName());
         }
     }
 
