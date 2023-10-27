@@ -49,7 +49,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
      * @throws InterruptedException if the current thread is interrupted while waiting
      * @throws TableHandleException if there is a table creation exception
      */
-    public static TableHandle of(ExportService session, TableSpec table)
+    static TableHandle of(ExportService session, TableSpec table)
             throws InterruptedException, TableHandleException {
         return of(session, Collections.singletonList(table), null).get(0);
     }
@@ -66,7 +66,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
      * @throws InterruptedException if the current thread is interrupted while waiting
      * @throws TableHandleException if there is a table creation exception
      */
-    public static TableHandle of(ExportService exportService, TableSpec table, Lifecycle lifecycle)
+    static TableHandle of(ExportService exportService, TableSpec table, Lifecycle lifecycle)
             throws InterruptedException, TableHandleException {
         return of(exportService, Collections.singletonList(table), lifecycle).get(0);
     }
@@ -83,7 +83,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
      * @throws InterruptedException if the current thread is interrupted while waiting
      * @throws TableHandleException if there is a table creation exception
      */
-    public static List<TableHandle> of(ExportService exportService, Iterable<TableSpec> tables,
+    static List<TableHandle> of(ExportService exportService, Iterable<TableSpec> tables,
             Lifecycle lifecycle) throws InterruptedException, TableHandleException {
         List<TableHandle> handles = impl(exportService, tables, lifecycle);
         for (TableHandle handle : handles) {

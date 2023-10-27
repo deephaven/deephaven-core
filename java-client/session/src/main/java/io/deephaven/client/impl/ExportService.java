@@ -8,9 +8,9 @@ import java.util.List;
 // todo: this should not be public?
 
 /**
- * This is a low-level service for directly
+ * This is a low-level service for directly interacting with
  */
-public interface ExportService {
+interface ExportService {
 
     /**
      * Creates new exports according to the {@code request}.
@@ -19,7 +19,4 @@ public interface ExportService {
      * @return the exports
      */
     List<Export> export(ExportsRequest request);
-
-    // todo: support interface for cancelling
-    // todo: support interface for actually executing after return
 }

@@ -540,18 +540,6 @@ public final class SessionImpl extends SessionBase {
         // ---------------------------------------------------
 
         @Override
-        public List<Export> export(ExportsRequest request) {
-            return exportStates.export(request);
-        }
-
-        @Override
-        public Export export(TableSpec table) {
-            return exportStates.export(ExportsRequest.logging(table)).get(0);
-        }
-
-        // ---------------------------------------------------
-
-        @Override
         protected TableHandleManager delegate() {
             return config.delegateToBatch() ? batch() : serial();
         }

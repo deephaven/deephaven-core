@@ -30,7 +30,7 @@ import java.util.stream.StreamSupport;
  */
 class TableHandleManagerBatch extends TableHandleManagerBase {
 
-    public static TableHandleManagerBatch of(ExportService exportService, boolean mixinStacktraces) {
+    static TableHandleManagerBatch of(ExportService exportService, boolean mixinStacktraces) {
         return new TableHandleManagerBatch(exportService, mixinStacktraces);
     }
 

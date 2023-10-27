@@ -15,18 +15,6 @@ abstract class TableServicesDelegateBase extends TableHandleManagerDelegate impl
     // ---------------------------------------------------
 
     @Override
-    public Export export(TableSpec table) {
-        return delegate().export(table);
-    }
-
-    @Override
-    public List<Export> export(ExportsRequest request) {
-        return delegate().export(request);
-    }
-
-    // ---------------------------------------------------
-
-    @Override
     public TableHandleManager batch() {
         return delegate().batch();
     }

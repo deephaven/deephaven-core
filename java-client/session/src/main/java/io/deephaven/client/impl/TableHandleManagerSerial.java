@@ -34,7 +34,7 @@ import java.util.Set;
  */
 final class TableHandleManagerSerial extends TableHandleManagerBase {
 
-    public static TableHandleManagerSerial of(ExportService exportService) {
+    static TableHandleManagerSerial of(ExportService exportService) {
         return new TableHandleManagerSerial(exportService);
     }
 

@@ -20,7 +20,7 @@ import java.util.concurrent.TimeoutException;
 
 final class TableServiceAsyncImpl {
 
-    public static TableHandleAsync executeAsync(ExportService exportService, TableSpec tableSpec) {
+    static TableHandleAsync executeAsync(ExportService exportService, TableSpec tableSpec) {
         final TableHandleAsyncImpl impl = new TableHandleAsyncImpl(tableSpec);
         final ExportRequest request = ExportRequest.of(tableSpec, impl);
         final Export export = exportService.export(ExportsRequest.of(request)).get(0);
@@ -28,8 +28,7 @@ final class TableServiceAsyncImpl {
         return impl;
     }
 
-    public static List<? extends TableHandleAsync> executeAsync(ExportService exportService,
-            List<TableSpec> tableSpecs) {
+    static List<? extends TableHandleAsync> executeAsync(ExportService exportService, List<TableSpec> tableSpecs) {
         final int size = tableSpecs.size();
         final List<TableHandleAsyncImpl> impls = new ArrayList<>(size);
         final ExportsRequest.Builder builder = ExportsRequest.builder();
