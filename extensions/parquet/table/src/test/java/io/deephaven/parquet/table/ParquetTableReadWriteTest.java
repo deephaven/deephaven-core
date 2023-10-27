@@ -815,6 +815,45 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void legacyGroupingFileReadTest() {
+        final String path =
+                ParquetTableReadWriteTest.class.getResource("/ParquetDataWithLegacyGroupingInfo.parquet").getFile();
+        final File destFile = new File(path);
+
+        // Read the legacy file and verify that grouping column is read correctly
+        final Table fromDisk;
+        try {
+            fromDisk = ParquetTools.readTable(destFile);
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof InvalidParquetFileException) {
+                final String InvalidParquetFileErrorMsgString = "Invalid parquet file detected, please ensure the " +
+                        "file is fetched properly from Git LFS. Run commands 'git lfs install; git lfs pull' inside " +
+                        "the repo to pull the files from LFS. Check cause of exception for more details.";
+                throw new UncheckedDeephavenException(InvalidParquetFileErrorMsgString, e.getCause());
+            }
+            throw e;
+        }
+        final String groupingColName = "gcol";
+        assertTrue(fromDisk.getDefinition().getColumn(groupingColName).isGrouping());
+
+        // Verify that the key-value metadata in the file has the correct legacy grouping file name
+        final ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(destFile, 0, null);
+        final String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
+        String groupingFileName = ParquetTools.legacyGroupingFileName(destFile, groupingColName);
+        assertTrue(metadataString.contains(groupingFileName));
+
+        // Following is how this file was generated, so verify the table read from disk against this
+        Integer data[] = new Integer[500 * 4];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = i / 4;
+        }
+        final TableDefinition tableDefinition =
+                TableDefinition.of(ColumnDefinition.ofInt(groupingColName).withGrouping());
+        final Table table = TableTools.newTable(tableDefinition, TableTools.col(groupingColName, data));
+        TstUtils.assertTableEquals(fromDisk, table);
+    }
+
+    @Test
     public void parquetDirectoryWithDotFilesTest() throws IOException {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");

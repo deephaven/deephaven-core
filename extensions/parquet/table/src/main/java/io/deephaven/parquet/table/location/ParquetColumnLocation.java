@@ -162,15 +162,24 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                     : groupingColumnInfo.groupingTablePath();
             final String groupingFilePath =
                     parquetFile.toPath().getParent().resolve(groupingFileRelativePath).toString();
-            final ParquetFileReader parquetFileReader;
+            ParquetFileReader parquetFileReader;
             try {
                 parquetFileReader = new ParquetFileReader(groupingFilePath, tl().getChannelProvider());
-            } catch (IOException e) {
-                log.warn().append("Failed to read expected grouping file ").append(groupingFilePath)
-                        .append(" for table location ").append(tl()).append(", column ")
-                        .append(getName())
-                        .endl();
-                return null;
+            } catch (final UncheckedIOException e1) {
+                // Try the legacy path
+                final String legacyGroupingFileName =
+                        ParquetTools.legacyGroupingFileName(parquetFile, parquetColumnName);
+                final File legacyGroupingFile = new File(parquetFile.getParent(), legacyGroupingFileName);
+                try {
+                    parquetFileReader =
+                            new ParquetFileReader(legacyGroupingFile.getAbsolutePath(), tl().getChannelProvider());
+                } catch (final UncheckedIOException e2) {
+                    log.warn().append("Failed to read expected grouping file ").append(groupingFilePath)
+                            .append(" for table location ").append(tl()).append(", column ")
+                            .append(getName())
+                            .endl();
+                    return null;
+                }
             }
             final Map<String, ColumnTypeInfo> columnTypes = ParquetSchemaReader.parseMetadata(
                     new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData)

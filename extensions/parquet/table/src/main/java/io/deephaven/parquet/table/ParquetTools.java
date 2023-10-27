@@ -252,6 +252,21 @@ public class ParquetTools {
     }
 
     /**
+     * Legacy method for generating a grouping file name. We used to place grouping files right next to the original
+     * table destination.
+     *
+     * @param tableDest Destination path for the main table containing these grouping columns
+     * @param columnName Name of the grouping column
+     *
+     * @return The relative grouping file path. For example, for table {@code "A"} with destination {@code "A.parquet"}
+     *         and grouping column {@code "g"}, the method will return {@code "A_g_grouping.parquet"}
+     */
+    public static String legacyGroupingFileName(@NotNull final File tableDest, @NotNull final String columnName) {
+        final String prefix = minusParquetSuffix(tableDest.getName());
+        return prefix + "_" + columnName + "_grouping.parquet";
+    }
+
+    /**
      * Delete any old backup files created for this destination, and throw an exception on failure
      */
     private static void deleteBackupFile(@NotNull final File destFile) {
