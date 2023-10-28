@@ -86,8 +86,7 @@ target_include_directories(dhcore_objlib PRIVATE third_party/flatbuffers/include
 target_include_directories(dhcore_objlib PRIVATE third_party/roaring/include)
 target_include_directories(dhcore_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 
-# Protos and flatbuf are doing their own thing.
-target_include_directories(dhcore_objlib PRIVATE "./proto")
+# The flatbuf include directory is in its own part of the tree.
 target_include_directories(dhcore_objlib PRIVATE "./flatbuf")
 
 target_link_libraries(dhcore_objlib PUBLIC immer)
