@@ -105,7 +105,7 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
                         -DCMAKE_BUILD_TYPE=Release \\
                         -DBUILD_SHARED_LIBS=ON \\
                         .. ; \\
-                      make -j${NCPUS} install 2>&1 | gzip > ${PREFIX}/log/make-install.log.gz; \\
+                      VERBOSE=1 make -j${NCPUS} install 2>&1 | gzip > ${PREFIX}/log/make-install.log.gz; \\
                       cp -f ${PREFIX}/src/deephaven/build/tests/tests ${PREFIX}/bin/dhcpp/tests; \\
                       cd ..; \\
                       rm -fr ${PREFIX}/src/deephaven/build
