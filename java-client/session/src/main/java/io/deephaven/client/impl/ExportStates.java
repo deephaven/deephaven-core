@@ -126,6 +126,7 @@ final class ExportStates implements ExportService {
             send = () -> {
             };
         }
+        // todo: do we want / need to keep lock until post send?
         return new ExportServiceRequest() {
             @Override
             public List<Export> exports() {
@@ -133,8 +134,8 @@ final class ExportStates implements ExportService {
             }
 
             @Override
-            public Runnable send() {
-                return send;
+            public void send() {
+                send.run();
             }
         };
     }

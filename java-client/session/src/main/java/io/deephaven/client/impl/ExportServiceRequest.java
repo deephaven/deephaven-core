@@ -8,5 +8,7 @@ import java.util.List;
 interface ExportServiceRequest {
     List<Export> exports();
 
-    Runnable send();
+    // Note: not providing cancel() or Runnable as return here; we don't really want to cancel a Batch request, we'll
+    // plumb through releases per export.
+    void send();
 }
