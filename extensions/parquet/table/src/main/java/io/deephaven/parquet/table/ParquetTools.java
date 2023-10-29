@@ -52,6 +52,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.StreamSupport;
 
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
@@ -571,11 +572,13 @@ public class ParquetTools {
             }
             final Path firstEntryPath;
             try (final DirectoryStream<Path> sourceStream = Files.newDirectoryStream(sourcePath)) {
-                final Iterator<Path> entryIterator = sourceStream.iterator();
-                if (!entryIterator.hasNext()) {
+                // Lexicographical comparison
+                firstEntryPath = StreamSupport.stream(sourceStream.spliterator(), false)
+                        .min(Path::compareTo)
+                        .orElse(null);
+                if (firstEntryPath == null) {
                     throw new TableDataException("Source directory " + source + " is empty");
                 }
-                firstEntryPath = entryIterator.next();
             } catch (IOException e) {
                 throw new TableDataException("Error reading source directory " + source, e);
             }
