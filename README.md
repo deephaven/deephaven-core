@@ -18,7 +18,7 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 - ![Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/check-ci.yml/badge.svg?branch=main)
 - ![Nightly Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-check-ci.yml/badge.svg?branch=main)
 
-This README is intended to provide a high level overview of the installation and use of Deephaven Community Core. For more detailed guides on the topics presented below, see our [Community documentation](https://deephaven.io/core/docs).
+This README is intended to provide a high-level overview of the installation and use of Deephaven Community Core. For more detailed guides on the topics presented below, see our [Community documentation](https://deephaven.io/core/docs).
 
 ## Supported Languages
 
@@ -52,7 +52,7 @@ The Deephaven server can be installed and instantiated [from Docker](#from-docke
 
 ### From Docker
 
-This is the easiest way to get started with Deephaven. For full instructions, see our [quickstart for Docker](https://deephaven.io/core/docs/tutorials/quickstart/). The table below shows installation dependencies.
+This is the easiest way to get started with Deephaven. For complete instructions, see our [quickstart for Docker](https://deephaven.io/core/docs/tutorials/quickstart/). The table below shows installation dependencies.
 
 | Dependency     | Version  | OS      | Required/Recommended |
 | -------------- | -------- | --------| -------------------- |
@@ -61,16 +61,16 @@ This is the easiest way to get started with Deephaven. For full instructions, se
 | Windows        | 10+      | Windows | Required             |
 | WSL            | ^2       | Windows | Required             |
 
-The quickest way to install and run Deephaven from Docker is with a single Docker command.
+The quickest way to install and run Deephaven from Docker is with a single Docker command:
 
-#### Python without Docker Compose
+**Python without Docker Compose**
 
 ```sh
 # Python
 docker run --rm --name deephaven -p 10000:10000 ghcr.io/deephaven/server:latest
 ```
 
-#### Groovy without Docker Compose
+**Groovy without Docker Compose**
 
 ```sh
 # Groovy
@@ -79,7 +79,7 @@ docker run --rm name deephaven -p 10000:10000 ghcr.io/deephaven/server-slim:late
 
 Users who wish to customize their deployment should use Docker Compose. Deephaven offers a multitude of pre-made [docker-compose.yml files](https://deephaven.io/core/docs/tutorials/quickstart/#choose-a-deployment) to choose from. To get started, all that's required is to download a file, pull the images, and start the server.
 
-#### Python with Docker Compose
+**Python with Docker Compose**
 
 The base Python `docker-compose.yml` file can be found [here](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/base/docker-compose.yml).
 
@@ -93,7 +93,7 @@ docker compose pull
 docker compose up
 ```
 
-#### Groovy with Docker Compose
+**Groovy with Docker Compose**
 
 The base Groovy `docker-compose.yml` file can be found [here](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/groovy/docker-compose.yml).
 
@@ -127,7 +127,7 @@ The input arguments to `Server` specify to connect to the Deephaven server on po
 
 ### Built from source
 
-Users who wish to modify source code and contribute to the project should build Deephaven from source. For full instructions, see [How to build Deephaven from source](https://deephaven.io/core/docs/how-to-guides/launch-build/).
+Users who wish to modify source code and contribute to the project should build Deephaven from source. For complete instructions, see [How to build Deephaven from source](https://deephaven.io/core/docs/how-to-guides/launch-build/).
 
 Building and running Deephaven requires a few software packages.
 
@@ -185,7 +185,7 @@ cd deephaven-core
 
 ## Get the authentication key
 
-Deephaven, by default, uses pre-shared key authentication to authenticate against unauthorized access. 
+Deephaven, by default, uses [pre-shared key authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-psk/) to authenticate against unauthorized access. 
 
 ### Deephaven run from Docker
 
@@ -212,7 +212,7 @@ Clients that attempt to connect to a server using pre-shared key authentication 
 
 ## Connect to the server
 
-The Deephaven UI is accessible from a web browser. For a server running locally on port 10000, it can be connected to via `https://localhost:10000/ide`. For a server running remotely on port 10000, it can be connected to via `https://<hostname>:10000/ide`. If using authentication, enter credentials to gain access to the IDE. For information on what browsers are supported, see [here](https://github.com/deephaven/web-client-ui#browser-support).
+The Deephaven UI is accessible from a web browser. For a server running locally on port 10000, it can be connected to via `https://localhost:10000/ide`. For a server running remotely on port 10000, it can be connected to via `https://<hostname>:10000/ide`. If using authentication, enter credentials to gain access to the IDE. For information on supported browsers, see [here](https://github.com/deephaven/web-client-ui#browser-support).
 
 ## First query
 
