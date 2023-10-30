@@ -3,7 +3,7 @@
  */
 package io.deephaven.client.impl;
 
-import io.deephaven.client.impl.TableHandle.Lifecycle;
+import io.deephaven.client.impl.TableServiceImpl.Lifecycle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.qst.LabeledValues;
 import io.deephaven.qst.table.EmptyTable;
@@ -68,6 +68,6 @@ public abstract class TableHandleManagerBase implements TableHandleManager {
     }
 
     private TableHandle handle(TableSpec table) {
-        return TableHandle.ofUnchecked(exportService, table, lifecycle);
+        return TableServiceImpl.ofUnchecked(exportService, table, lifecycle);
     }
 }

@@ -3,7 +3,7 @@
  */
 package io.deephaven.client.impl;
 
-import io.deephaven.client.impl.TableHandle.Lifecycle;
+import io.deephaven.client.impl.TableServiceImpl.Lifecycle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.client.impl.TableHandle.UncheckedInterruptedException;
 import io.deephaven.client.impl.TableHandle.UncheckedTableHandleException;

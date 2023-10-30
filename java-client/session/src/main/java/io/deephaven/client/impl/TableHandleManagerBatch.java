@@ -43,13 +43,13 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
 
     @Override
     public TableHandle execute(TableSpec table) throws TableHandleException, InterruptedException {
-        return TableHandle.of(exportService, table, lifecycle);
+        return TableServiceImpl.of(exportService, table, lifecycle);
     }
 
     @Override
     public List<TableHandle> execute(Iterable<TableSpec> tables)
             throws TableHandleException, InterruptedException {
-        return TableHandle.of(exportService, tables, lifecycle);
+        return TableServiceImpl.of(exportService, tables, lifecycle);
     }
 
     @Override

@@ -4,15 +4,13 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.ExportRequest.Listener;
+import io.deephaven.client.impl.TableServiceImpl.Lifecycle;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TableSpecAdapter;
 
 import java.io.Closeable;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -32,87 +30,6 @@ import java.util.concurrent.TimeUnit;
  * @see TableHandleManager
  */
 public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle> implements HasExportId, Closeable {
-
-    public interface Lifecycle {
-        void onInit(TableHandle handle);
-
-        void onRelease(TableHandle handle);
-    }
-
-    /**
-     * Create a table handle, exporting {@code table}. The table handle will be {@linkplain #isSuccessful() successful}
-     * on return. The given {@code lifecycle} will be called on initialization and on release. Derived table handles
-     * will inherit the same {@code lifecycle}.
-     *
-     * @param exportService the export service
-     * @param table the table
-     * @param lifecycle the lifecycle
-     * @return the successful table handle
-     * @throws InterruptedException if the current thread is interrupted while waiting
-     * @throws TableHandleException if there is a table creation exception
-     */
-    static TableHandle of(ExportService exportService, TableSpec table, Lifecycle lifecycle)
-            throws InterruptedException, TableHandleException {
-        return of(exportService, Collections.singletonList(table), lifecycle).get(0);
-    }
-
-    /**
-     * Create the table handles, exporting {@code tables}. The table handles will be {@linkplain #isSuccessful()
-     * successful} on return. The given {@code lifecycle} will be called on initialization and on release. Derived table
-     * handles will inherit the same {@code lifecycle}.
-     *
-     * @param exportService the export service
-     * @param tables the tables
-     * @param lifecycle the lifecycle
-     * @return the successful table handles
-     * @throws InterruptedException if the current thread is interrupted while waiting
-     * @throws TableHandleException if there is a table creation exception
-     */
-    static List<TableHandle> of(ExportService exportService, Iterable<TableSpec> tables,
-            Lifecycle lifecycle) throws InterruptedException, TableHandleException {
-        List<TableHandle> handles = impl(exportService, tables, lifecycle);
-        for (TableHandle handle : handles) {
-            handle.await();
-            handle.throwOnError();
-        }
-        return handles;
-    }
-
-    static TableHandle ofUnchecked(ExportService exportService, TableSpec table, Lifecycle lifecycle) {
-        final TableHandle handle = new TableHandle(table, lifecycle);
-        final ExportServiceRequest request = exportService.exportRequest(ExportsRequest.of(handle.exportRequest()));
-        List<Export> exports = request.exports();
-        if (exports.size() != 1) {
-            throw new IllegalStateException();
-        }
-        handle.init(exports.get(0));
-        request.send();
-        handle.awaitUnchecked();
-        handle.throwOnErrorUnchecked();
-        return handle;
-    }
-
-    private static List<TableHandle> impl(ExportService exportService, Iterable<TableSpec> specs,
-            Lifecycle lifecycle) {
-        ExportsRequest.Builder exportBuilder = ExportsRequest.builder();
-        List<TableHandle> handles = new ArrayList<>();
-        for (TableSpec spec : specs) {
-            TableHandle handle = new TableHandle(spec, lifecycle);
-            handles.add(handle);
-            exportBuilder.addRequests(handle.exportRequest());
-        }
-        final ExportServiceRequest request = exportService.exportRequest(exportBuilder.build());
-        final List<Export> exports = request.exports();
-        if (exports.size() != handles.size()) {
-            throw new IllegalStateException();
-        }
-        final int L = exports.size();
-        for (int i = 0; i < L; ++i) {
-            handles.get(i).init(exports.get(i));
-        }
-        request.send();
-        return handles;
-    }
 
     private final Lifecycle lifecycle;
     private Export export;
@@ -252,7 +169,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
         }
     }
 
-    private ExportRequest exportRequest() {
+    ExportRequest exportRequest() {
         return ExportRequest.of(table(), responseAdapter());
     }
 
@@ -268,7 +185,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
 
     @Override
     protected TableHandle adapt(TableSpec table) {
-        return ofUnchecked(export.exportStates(), table, lifecycle);
+        return TableServiceImpl.ofUnchecked(export.exportStates(), table, lifecycle);
     }
 
     @Override
