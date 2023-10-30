@@ -212,7 +212,7 @@ Clients that attempt to connect to a server using pre-shared key authentication 
 
 ## Connect to the server
 
-The Deephaven UI is accessible from a web browser. For a server running locally on port 10000, it can be connected to via `https://localhost:10000/ide`. For a server running remotely on port 10000, it can be connected to via `https://<hostname>:10000/ide`. If using authentication, enter credentials to gain access to the IDE. Deephaven recommends Chrome or Firefox for use. Other browsers are not officially supported.
+The Deephaven UI is accessible from a web browser. For a server running locally on port 10000, it can be connected to via `https://localhost:10000/ide`. For a server running remotely on port 10000, it can be connected to via `https://<hostname>:10000/ide`. If using authentication, enter credentials to gain access to the IDE. For information on what browsers are supported, see [here](https://github.com/deephaven/web-client-ui#browser-support).
 
 ## First query
 
