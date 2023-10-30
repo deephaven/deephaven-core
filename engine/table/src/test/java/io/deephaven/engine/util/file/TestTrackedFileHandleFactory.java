@@ -35,13 +35,15 @@ public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
 
         scheduler = mock(ScheduledExecutorService.class);
 
-        checking(new Expectations() {{
-            one(scheduler).scheduleAtFixedRate(
-                    with(any(Runnable.class)),
-                    with(equal(60000L)),
-                    with(equal(60000L)),
-                    with(equal(TimeUnit.MILLISECONDS)));
-        }});
+        checking(new Expectations() {
+            {
+                one(scheduler).scheduleAtFixedRate(
+                        with(any(Runnable.class)),
+                        with(equal(60000L)),
+                        with(equal(60000L)),
+                        with(equal(TimeUnit.MILLISECONDS)));
+            }
+        });
 
         FHCUT = new TrackedFileHandleFactory(scheduler, CAPACITY, TARGET_USAGE_RATIO, 60000);
         TestCase.assertEquals(scheduler, FHCUT.getScheduler());
