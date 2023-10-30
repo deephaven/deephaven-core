@@ -45,7 +45,7 @@ public class BusinessPeriod<T extends Comparable<T> & Temporal> {
     }
 
     /**
-     * start of the period.
+     * Start of the period.
      *
      * @return start of the period
      */
