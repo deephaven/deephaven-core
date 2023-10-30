@@ -809,10 +809,14 @@ class BatchTableRequestBuilder {
         public Condition visit(FilterComparison comparison) {
             FilterComparison preferred = comparison.maybeTranspose();
             Operator operator = preferred.operator();
-            if (operator == Operator.EQUALS) {
-                // Processing as single FilterIn is currently the more efficient server impl.
-                // See io.deephaven.server.table.ops.filter.FilterFactory
-                return visit(FilterIn.of(preferred.lhs(), preferred.rhs()));
+            // Processing as single FilterIn is currently the more efficient server impl.
+            // See FilterTableGrpcImpl
+            // See io.deephaven.server.table.ops.filter.FilterFactory
+            switch (operator) {
+                case EQUALS:
+                    return visit(FilterIn.of(preferred.lhs(), preferred.rhs()));
+                case NOT_EQUALS:
+                    return visit(Filter.not(FilterIn.of(preferred.lhs(), preferred.rhs())));
             }
             return Condition.newBuilder()
                     .setCompare(CompareCondition.newBuilder()
@@ -825,12 +829,6 @@ class BatchTableRequestBuilder {
 
         @Override
         public Condition visit(FilterIn in) {
-            // Note: we might think that simplifying into an equals comparison would be simpler than a FilterIn, but the
-            // current implementation does not optimize an EQUALS FilterComparison, but _does_ optimize InCondition.
-            // See io.deephaven.server.table.ops.filter.FilterFactory
-            // if (in.values().size() == 1) {
-            // return visit(in.asEquals());
-            // }
             final InCondition.Builder builder = InCondition.newBuilder()
                     .setTarget(ExpressionAdapter.adapt(in.expression()));
             for (Expression value : in.values()) {
