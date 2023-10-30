@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
@@ -28,6 +29,8 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.vector.CharVector;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.IntVector;
+import junit.framework.TestCase;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.math.BigDecimal;
@@ -37,6 +40,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -52,6 +56,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         super.setUp();
     }
 
+    @Test
     public void testBy() {
         ColumnHolder<?> aHolder = col("A", 0, 0, 1, 1, 0, 0, 1, 1, 0, 0);
         ColumnHolder<?> bHolder = col("B", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
@@ -133,6 +138,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         show(percentilesAll);
     }
 
+    @Test
     public void testComboByMinMaxTypes() {
         final Random random = new Random(0);
         final int size = 10;
@@ -175,6 +181,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testComboByIncremental() {
         for (int size = 10; size <= 1000; size *= 10) {
             testComboByIncremental("size-" + size, size);
@@ -363,6 +370,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testComboByDoubleClaim() {
         final int size = 10;
         final Random random = new Random(0);
@@ -389,6 +397,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testComboByDistinct() {
         QueryTable dataTable = TstUtils.testRefreshingTable(
                 intCol("Grp", 1, 2, 3, 4),
@@ -479,6 +488,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new char[] {'l', 'p', 't'}, cs.get(3).toArray());
     }
 
+    @Test
     public void testComboByCountDistinct() {
         QueryTable dataTable = TstUtils.testRefreshingTable(
                 col("USym", "AAPL", "AAPL", "AAPL", "GOOG", "GOOG", "SPY", "SPY", "SPY", "SPY", "VXX"),
@@ -538,6 +548,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new Object[] {"SPY", 3L, 3L}, DataAccessHelpers.getRecord(countNulls, 2));
     }
 
+    @Test
     public void testComboByAggUnique() {
         final Instant dtDefault = DateTimeUtils.parseInstant("1987-10-20T07:45:00.000 NY");
         final Instant dt1 = DateTimeUtils.parseInstant("2021-01-01T00:00:01.000 NY");
@@ -625,6 +636,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new Object[] {"VXX", -1L, 50, dtDefault}, DataAccessHelpers.getRecord(countNulls, 4));
     }
 
+    @Test
     public void testAggUniqueDefaultValues() {
         final Instant dt1 = DateTimeUtils.parseInstant("2021-01-01T00:01:02.000 NY");
         final Instant dt2 = DateTimeUtils.parseInstant("2021-02-02T00:02:03.000 NY");
@@ -788,5 +800,36 @@ public class TestAggBy extends RefreshingTableTestCase {
         }
 
         return keys.size() == 1 ? keys.iterator().next() : NULL_DOUBLE;
+    }
+
+    @Test
+    public void testAggAllByWithFormatColumn() {
+        String doubleColName = "Doubles";
+        String intColName = "Integers";
+        QueryTable dataTable = TstUtils.testRefreshingTable(
+                doubleCol("Doubles", 3.1, 5.45, 4.2),
+                intCol("Integers", 1, 2, 3));
+
+        Table result = dataTable.formatColumns("Doubles=Decimal(`##0.00%`)").aggAllBy(AggSpec.median());
+        assertEquals(1, result.size());
+        ColumnSource<?> cs = result.getColumnSource("Doubles");
+        assertEquals(4.2, cs.get(0));
+        cs = result.getColumnSource("Integers");
+        assertEquals(2.0, cs.get(0));
+
+        result = dataTable.formatColumns("Doubles=Decimal(`##0.00%`)").headBy(1);
+        Set<String> columnNames = result.getColumnSourceMap().keySet();
+        assertEquals(3, columnNames.size()); // Additional column for formatting information of "Doubles"
+        for (String colName : columnNames) {
+            if (!colName.equalsIgnoreCase(doubleColName) && !colName.equalsIgnoreCase(intColName) &&
+                    !ColumnFormatting.isFormattingColumn(colName)) {
+                TestCase.fail("Result table should have two original columns and one formatting column");
+            }
+        }
+        assertEquals(1, result.size());
+        cs = result.getColumnSource("Doubles");
+        assertEquals(3.1, cs.get(0));
+        cs = result.getColumnSource("Integers");
+        assertEquals(1, cs.get(0));
     }
 }

@@ -18,6 +18,7 @@ import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -234,14 +235,28 @@ public interface Table extends
     <T> ColumnSource<T> getColumnSource(String sourceName);
 
     /**
-     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast casts} it to the target class {@code clazz}.
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class) casts} it to the target class {@code clazz}.
      *
      * @param sourceName The name of the column
      * @param clazz The target type
      * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return The column source for {@code sourceName}, parameterized by {@code T}
+     * @see ColumnSource#cast(Class)
      */
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz);
+
+    /**
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class)} casts} it to the target class
+     * {@code clazz} and {@code componentType}.
+     *
+     * @param sourceName The name of the column
+     * @param clazz The target type
+     * @param componentType The target component type, may be null
+     * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
+     * @return The column source for {@code sourceName}, parameterized by {@code T}
+     * @see ColumnSource#cast(Class, Class)
+     */
+    <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz, @Nullable Class<?> componentType);
 
     Map<String, ? extends ColumnSource<?>> getColumnSourceMap();
 
@@ -774,6 +789,16 @@ public interface Table extends
      * @param listener listener for updates
      */
     void addUpdateListener(TableUpdateListener listener);
+
+    /**
+     * Subscribe for updates to this table if its last notification step matches {@code requiredLastNotificationStep}.
+     * {@code listener} will be invoked via the {@link NotificationQueue} associated with this Table.
+     *
+     * @param listener listener for updates
+     * @param requiredLastNotificationStep the expected last notification step to match
+     * @return true if the listener was added, false if the last notification step requirement was not met
+     */
+    boolean addUpdateListener(final TableUpdateListener listener, final long requiredLastNotificationStep);
 
     /**
      * Unsubscribe the supplied listener.

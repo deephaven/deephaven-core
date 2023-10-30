@@ -79,7 +79,7 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
 
     @Override
     public final FloatType componentType() {
-        return FloatType.instance();
+        return FloatType.of();
     }
 
     @Override

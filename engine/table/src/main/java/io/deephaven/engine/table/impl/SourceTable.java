@@ -8,11 +8,10 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableUpdateListener;
+import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
-import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -137,7 +136,11 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 if (isRefreshing()) {
                     final TableLocationSubscriptionBuffer locationBuffer =
                             new TableLocationSubscriptionBuffer(locationProvider);
-                    maybeAddLocations(locationBuffer.processPending());
+                    final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
+                            locationBuffer.processPending();
+
+                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+                    maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                     updateSourceRegistrar.addSource(locationChangePoller = new LocationChangePoller(locationBuffer));
                 } else {
                     locationProvider.refresh();
@@ -154,6 +157,17 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
         filterLocationKeys(locationKeys)
                 .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk)));
+    }
+
+    private ImmutableTableLocationKey[] maybeRemoveLocations(
+            @NotNull final Collection<ImmutableTableLocationKey> removedKeys) {
+        if (removedKeys.isEmpty()) {
+            return ImmutableTableLocationKey.ZERO_LENGTH_IMMUTABLE_TABLE_LOCATION_KEY_ARRAY;
+        }
+
+        return filterLocationKeys(removedKeys).stream()
+                .filter(columnSourceManager::removeLocationKey)
+                .toArray(ImmutableTableLocationKey[]::new);
     }
 
     private void initializeLocationSizes() {
@@ -191,35 +205,47 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     }
 
     private class LocationChangePoller extends InstrumentedUpdateSource {
-
         private final TableLocationSubscriptionBuffer locationBuffer;
 
         private LocationChangePoller(@NotNull final TableLocationSubscriptionBuffer locationBuffer) {
-            super(description + ".rowSetUpdateSource");
+            super(updateGraph, description + ".rowSetUpdateSource");
             this.locationBuffer = locationBuffer;
         }
 
         @Override
         protected void instrumentedRefresh() {
             try {
-                maybeAddLocations(locationBuffer.processPending());
+                final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
+                final ImmutableTableLocationKey[] removedKeys =
+                        maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+                if (removedKeys.length > 0) {
+                    throw new TableLocationRemovedException("Source table does not support removed locations",
+                            removedKeys);
+                }
+                maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
+
                 // NB: This class previously had functionality to notify "location listeners", but it was never used.
                 // Resurrect from git history if needed.
                 if (!locationSizesInitialized) {
                     // We don't want to start polling size changes until the initial RowSet has been computed.
                     return;
                 }
+
                 final RowSet added = refreshLocationSizes();
-                if (added.size() == 0) {
+                if (added.isEmpty()) {
                     return;
                 }
+
                 rowSet.insert(added);
                 notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
             } catch (Exception e) {
+                updateSourceRegistrar.removeSource(this);
+
                 // Notify listeners to the SourceTable when we had an issue refreshing available locations.
                 notifyListenersOnError(e, null);
             }
         }
+
     }
 
     /**
@@ -239,32 +265,24 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     protected final QueryTable doCoalesce() {
         initialize();
 
-        final SwapListener swapListener =
-                createSwapListenerIfRefreshing((final BaseTable<?> parent) -> new SwapListener(parent) {
+        final OperationSnapshotControl snapshotControl =
+                createSnapshotControlIfRefreshing((final BaseTable<?> parent) -> new OperationSnapshotControl(parent) {
 
                     @Override
-                    public void destroy() {
-                        // NB: We can't call super.destroy() because we don't want to try to remove ourselves from the
-                        // coalesced table (see override for removeUpdateListener), but we are probably not missing
-                        // anything by not having super.destroy() invoke its own super.destroy().
-                        removeUpdateListenerUncoalesced(this);
-                    }
-
-                    @Override
-                    public void subscribeForUpdates() {
-                        addUpdateListenerUncoalesced(this);
+                    public boolean subscribeForUpdates(@NotNull final TableUpdateListener listener) {
+                        return addUpdateListenerUncoalesced(listener, lastNotificationStep);
                     }
                 });
 
         final Mutable<QueryTable> result = new MutableObject<>();
-        initializeWithSnapshot("SourceTable.coalesce", swapListener, (usePrev, beforeClockValue) -> {
+        initializeWithSnapshot("SourceTable.coalesce", snapshotControl, (usePrev, beforeClockValue) -> {
             final QueryTable resultTable = new QueryTable(definition, rowSet, columnSourceManager.getColumnSources());
             copyAttributes(resultTable, CopyAttributeOperation.Coalesce);
             if (rowSet.isEmpty()) {
                 resultTable.setAttribute(INITIALLY_EMPTY_COALESCED_SOURCE_TABLE_ATTRIBUTE, true);
             }
 
-            if (swapListener != null) {
+            if (snapshotControl != null) {
                 final ListenerImpl listener =
                         new ListenerImpl("SourceTable.coalesce", this, resultTable) {
 
@@ -275,7 +293,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                                 removeUpdateListenerUncoalesced(this);
                             }
                         };
-                swapListener.setListenerAndResult(listener, resultTable);
+                snapshotControl.setListenerAndResult(listener, resultTable);
             }
 
             result.setValue(resultTable);

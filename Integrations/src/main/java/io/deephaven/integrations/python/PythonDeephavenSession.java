@@ -43,7 +43,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -87,7 +86,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         scope = pythonEvaluator.getScope();
         executionContext.getQueryLibrary().importClass(org.jpy.PyObject.class);
         try (final SafeCloseable ignored = executionContext.open()) {
-            module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
+            module = (PythonScriptSessionModule) PyModule.importModule("deephaven_internal.script_session")
                     .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
         }
         scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
@@ -116,7 +115,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         evaluator = null;
         this.scope = (PythonScope<PyObject>) scope;
         try (final SafeCloseable ignored = executionContext.open()) {
-            module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
+            module = (PythonScriptSessionModule) PyModule.importModule("deephaven_internal.script_session")
                     .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
         }
         scriptFinder = null;
@@ -261,7 +260,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         if (o == null) {
             return null;
         }
-        final Object javaObject = module.unwrap_to_java_type(o);
+        final Object javaObject = module.javaify(o);
         if (javaObject != null) {
             return javaObject;
         }
@@ -310,7 +309,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     public Object unwrapObject(Object object) {
         if (object instanceof PyObject) {
             final PyObject pyObject = (PyObject) object;
-            final Object unwrapped = module.unwrap_to_java_type(pyObject);
+            final Object unwrapped = module.javaify(pyObject);
             if (unwrapped != null) {
                 return unwrapped;
             }
@@ -322,7 +321,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     interface PythonScriptSessionModule extends Closeable {
         PyObject create_change_list(PyObject from, PyObject to);
 
-        Object unwrap_to_java_type(PyObject object);
+        Object javaify(PyObject object);
 
         void close();
     }

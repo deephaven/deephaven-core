@@ -6,11 +6,4 @@
 #include "deephaven/dhcore/utility/utility.h"
 
 namespace deephaven::dhcore::column {
-
-using deephaven::dhcore::utility::stringf;
-using deephaven::dhcore::utility::trueOrThrow;
-
-namespace internal {
-
-}  // namespace internal
 }  // namespace deephaven::dhcore::column

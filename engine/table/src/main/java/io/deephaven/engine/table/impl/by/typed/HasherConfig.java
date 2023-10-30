@@ -12,7 +12,6 @@ import io.deephaven.chunk.ChunkType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -101,17 +100,40 @@ public class HasherConfig<T> {
     }
 
     static class BuildSpec {
+        @FunctionalInterface
+        public interface MethodBuilder {
+            void accept(HasherConfig<?> config, CodeBlock.Builder builder);
+        }
+
+        @FunctionalInterface
+        public interface MethodBuilderWithChunkTypes {
+            void accept(HasherConfig<?> config, ChunkType[] chunkTypes, CodeBlock.Builder builder);
+        }
+
         final String name;
         final String stateValueName;
         final boolean requiresRowKeyChunk;
         final boolean allowAlternates;
         final FoundMethodBuilder found;
-        final BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert;
+        final MethodBuilderWithChunkTypes insert;
         final ParameterSpec[] params;
 
         public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
                 boolean allowAlternates, FoundMethodBuilder found,
-                BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert, ParameterSpec... params) {
+                MethodBuilder insert, ParameterSpec... params) {
+            // Convert the MethodBuilder to MethodBuilderWithChunkTypes.
+            this(name,
+                    stateValueName,
+                    requiresRowKeyChunk,
+                    allowAlternates,
+                    found,
+                    (config, chunkTypes, builder) -> insert.accept(config, builder),
+                    params);
+        }
+
+        public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
+                boolean allowAlternates, FoundMethodBuilder found,
+                MethodBuilderWithChunkTypes insert, ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
             this.requiresRowKeyChunk = requiresRowKeyChunk;

@@ -6,6 +6,7 @@ package io.deephaven.client.impl;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BooleanType;
+import io.deephaven.qst.type.BoxedType;
 import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
@@ -80,6 +81,10 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
         return field(name, MinorType.VARCHAR.getType(), "java.lang.String");
     }
 
+    public static Field byteVectorField(String name) {
+        return field(name, MinorType.VARBINARY.getType(), "byte[]");
+    }
+
     public static Field instantField(String name) {
         return field(name, new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC"), "java.time.Instant");
     }
@@ -108,6 +113,11 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
     public Field visit(GenericType<?> generic) {
         return generic.walk(new Visitor<Field>() {
             @Override
+            public Field visit(BoxedType<?> boxedType) {
+                return FieldAdapter.this.visit(boxedType.primitiveType());
+            }
+
+            @Override
             public Field visit(StringType stringType) {
                 return stringField(name);
             }
@@ -119,7 +129,11 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
 
             @Override
             public Field visit(ArrayType<?, ?> arrayType) {
-                throw new UnsupportedOperationException();
+                if (arrayType.componentType().equals(Type.find(byte.class))) {
+                    return byteVectorField(name);
+                } else {
+                    throw new UnsupportedOperationException();
+                }
             }
 
             @Override

@@ -11,23 +11,20 @@ import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.engine.exceptions.RequestCancelledException;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraphAwareCompletableFuture;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
@@ -45,9 +42,18 @@ import org.jetbrains.annotations.Nullable;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
-import java.util.concurrent.locks.Condition;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * This class is an intermediary helper class that uses a {@code DoExchange} to populate a {@link BarrageTable} using
+ * subscription data from a remote server, propagating updates if the request is a subscription.
+ * <p>
+ * Users may call {@link #entireTable} or {@link #partialTable} to initiate the gRPC call to the server. These methods
+ * return a {@link Future<BarrageTable>} to the user.
+ */
 public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implements BarrageSubscription {
     private static final Logger log = LoggerFactory.getLogger(BarrageSubscriptionImpl.class);
 
@@ -55,18 +61,17 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private final TableHandle tableHandle;
     private final BarrageSubscriptionOptions options;
     private final ClientCallStreamObserver<FlightData> observer;
+    private final CheckForCompletion checkForCompletion;
+    private final BarrageTable resultTable;
 
-    private BarrageTable resultTable;
+    private volatile FutureAdapter future;
+    private boolean subscribed;
+    private boolean isSnapshot;
 
-    private volatile Condition completedCondition;
-    private volatile boolean completed = false;
-    private volatile long rowsReceived = 0L;
-    private volatile Throwable exceptionWhileCompleting = null;
-    private InstrumentedTableUpdateListener listener = null;
 
-    private boolean subscribed = false;
-    private volatile boolean connected = true;
-    private boolean isSnapshot = false;
+    private volatile int connected = 1;
+    private static final AtomicIntegerFieldUpdater<BarrageSubscriptionImpl> CONNECTED_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(BarrageSubscriptionImpl.class, "connected");
 
     /**
      * Represents a BarrageSubscription.
@@ -82,13 +87,13 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         super(false);
 
         this.logName = tableHandle.exportId().toString();
-        this.options = options;
         this.tableHandle = tableHandle;
+        this.options = options;
 
         final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         final TableDefinition tableDefinition = schema.tableDef;
-        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, -1);
-        resultTable.addParentReference(this);
+        checkForCompletion = new CheckForCompletion();
+        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, checkForCompletion);
 
         final MethodDescriptor<FlightData, BarrageMessage> subscribeDescriptor =
                 getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
@@ -125,256 +130,148 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 return;
             }
             try (barrageMessage) {
-                final Listener localResultTable = resultTable;
-                if (!connected || localResultTable == null) {
+                if (!isConnected()) {
+                    GrpcUtil.safelyCancel(observer, "Barrage subscription is closed", null);
                     return;
                 }
 
-                long numRows = barrageMessage.rowsIncluded.size();
-                rowsReceived += numRows;
-                localResultTable.handleBarrageMessage(barrageMessage);
-
-                // if the message was empty, then BaseTable prevents propagating the empty update, and our listener was
-                // not invoked, so let's invoke it ourselves
-                if (numRows == 0) {
-                    final TableUpdate emptyUpdate = new TableUpdateImpl(
-                            RowSetFactory.empty(), RowSetFactory.empty(), RowSetFactory.empty(), RowSetShiftData.EMPTY,
-                            ModifiedColumnSet.EMPTY);
-                    listener.onUpdate(emptyUpdate);
-                    emptyUpdate.release();
-                }
+                resultTable.handleBarrageMessage(barrageMessage);
             }
         }
 
         @Override
         public void onError(final Throwable t) {
+            if (!tryRecordDisconnect()) {
+                return;
+            }
+
             log.error().append(BarrageSubscriptionImpl.this)
                     .append(": Error detected in subscription: ")
                     .append(t).endl();
 
-            final Listener listener = resultTable;
-            if (!connected || listener == null) {
-                return;
-            }
-            listener.handleBarrageError(t);
-            handleDisconnect();
+            resultTable.handleBarrageError(t);
+            cleanup();
         }
 
         @Override
         public void onCompleted() {
-            handleDisconnect();
-        }
-    }
-
-    @Override
-    public boolean isCompleted() {
-        return completed;
-    }
-
-    @Override
-    public long getRowsReceived() {
-        return rowsReceived;
-    }
-
-    @Override
-    public BarrageTable entireTable() throws InterruptedException {
-        return entireTable(true);
-    }
-
-    @Override
-    public BarrageTable entireTable(boolean blockUntilComplete) throws InterruptedException {
-        return partialTable(null, null, false, blockUntilComplete);
-    }
-
-    @Override
-    public BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
-        return partialTable(viewport, columns, false, true);
-    }
-
-    @Override
-    public BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
-            throws InterruptedException {
-        return partialTable(viewport, columns, reverseViewport, true);
-    }
-
-    @Override
-    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport,
-            boolean blockUntilComplete) throws InterruptedException {
-        if (!connected) {
-            throw new UncheckedDeephavenException(
-                    this + " is no longer an active subscription and cannot be retained further");
-        }
-        if (subscribed) {
-            throw new UncheckedDeephavenException(
-                    "BarrageSubscription objects cannot be reused.");
-        } else {
-            // test lock conditions
-            if (resultTable.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
-                throw new UnsupportedOperationException(
-                        "Cannot create subscription while holding the UpdateGraph shared lock");
+            if (!tryRecordDisconnect()) {
+                return;
             }
 
-            if (resultTable.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
-                completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
-            }
-
-            // Send the initial subscription:
-            observer.onNext(FlightData.newBuilder()
-                    .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(
-                            viewport, columns, reverseViewport, options, tableHandle.ticketId().bytes())))
-                    .build());
-            subscribed = true;
-
-            // use a listener to decide when the table is complete
-            listener = new InstrumentedTableUpdateListener("completeness-listener") {
-                @ReferentialIntegrity
-                final BarrageTable tableRef = resultTable;
-                {
-                    // Maintain a liveness ownership relationship with resultTable for the lifetime of the
-                    // listener
-                    manage(tableRef);
-                }
-
-                @Override
-                protected void destroy() {
-                    super.destroy();
-                    tableRef.removeUpdateListener(this);
-                }
-
-                @Override
-                protected void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
-                    exceptionWhileCompleting = originalException;
-                    if (completedCondition != null) {
-                        resultTable.getUpdateGraph().requestSignal(completedCondition);
-                    } else {
-                        synchronized (BarrageSubscriptionImpl.this) {
-                            BarrageSubscriptionImpl.this.notifyAll();
-                        }
-                    }
-                }
-
-                @Override
-                public void onUpdate(final TableUpdate upstream) {
-                    boolean isComplete = false;
-
-                    // test to see if the viewport matches the requested
-                    if (viewport == null && resultTable.getServerViewport() == null) {
-                        isComplete = true;
-                    } else if (viewport != null && resultTable.getServerViewport() != null
-                            && reverseViewport == resultTable.getServerReverseViewport()) {
-                        isComplete = viewport.subsetOf(resultTable.getServerViewport());
-                    }
-
-                    if (isComplete) {
-                        if (isSnapshot) {
-                            resultTable.sealTable(() -> {
-                                // signal that we are closing the connection
-                                observer.onCompleted();
-                                signalCompletion();
-                            }, () -> {
-                                exceptionWhileCompleting = new Exception();
-                            });
-                        } else {
-                            signalCompletion();
-                        }
-
-                        // no longer need to listen for completion
-                        resultTable.removeUpdateListener(this);
-                        listener = null;
-                    }
-                }
-            };
-
-            resultTable.addUpdateListener(listener);
-
-            if (blockUntilComplete) {
-                while (!completed && exceptionWhileCompleting == null) {
-                    // handle the condition where this function may have the exclusive lock
-                    if (completedCondition != null) {
-                        completedCondition.await();
-                    } else {
-                        wait(); // barragesubscriptionimpl lock
-                    }
-                }
-            }
-        }
-
-        if (exceptionWhileCompleting == null) {
-            return resultTable;
-        } else {
-            throw new UncheckedDeephavenException("Error while handling subscription:", exceptionWhileCompleting);
-        }
-    }
-
-    private void signalCompletion() {
-        completed = true;
-        if (completedCondition != null) {
-            resultTable.getUpdateGraph().requestSignal(completedCondition);
-        } else {
-            synchronized (BarrageSubscriptionImpl.this) {
-                BarrageSubscriptionImpl.this.notifyAll();
-            }
+            log.error().append(BarrageSubscriptionImpl.this).append(": unexpectedly closed by other host").endl();
+            resultTable.handleBarrageError(new RequestCancelledException("Barrage subscription closed by server"));
+            cleanup();
         }
     }
 
     @Override
-    public BarrageTable snapshotEntireTable() throws InterruptedException {
-        return snapshotEntireTable(true);
+    public Future<Table> entireTable() {
+        return partialTable(null, null, false);
     }
 
     @Override
-    public BarrageTable snapshotEntireTable(boolean blockUntilComplete) throws InterruptedException {
-        return snapshotPartialTable(null, null, false, blockUntilComplete);
+    public Future<Table> partialTable(RowSet viewport, BitSet columns) {
+        return partialTable(viewport, columns, false);
     }
 
     @Override
-    public BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns) throws InterruptedException {
-        return snapshotPartialTable(viewport, columns, false, true);
+    public Future<Table> snapshotEntireTable() {
+        return snapshotPartialTable(null, null, false);
     }
 
     @Override
-    public BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
-            throws InterruptedException {
-        return snapshotPartialTable(viewport, columns, reverseViewport, true);
+    public Future<Table> snapshotPartialTable(RowSet viewport, BitSet columns) {
+        return snapshotPartialTable(viewport, columns, false);
     }
 
     @Override
-    public synchronized BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport,
-            boolean blockUntilComplete) throws InterruptedException {
+    public Future<Table> snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport) {
         isSnapshot = true;
-        return partialTable(viewport, columns, reverseViewport, blockUntilComplete);
+        return partialTable(viewport, columns, reverseViewport);
+    }
+
+    @Override
+    public Future<Table> partialTable(RowSet viewport, BitSet columns, boolean reverseViewport) {
+        synchronized (this) {
+            if (subscribed) {
+                throw new UncheckedDeephavenException("Barrage subscription objects cannot be reused");
+            }
+            subscribed = true;
+        }
+
+        // we must create the future before checking `isConnected` to guarantee `future` visibility in `destroy`
+        if (isSnapshot) {
+            future = new CompletableFutureAdapter();
+        } else {
+            future = new UpdateGraphAwareFutureAdapter(resultTable.getUpdateGraph());
+        }
+
+        if (!isConnected()) {
+            throw new UncheckedDeephavenException(this + " is no longer connected and cannot be retained further");
+        }
+        // the future we'll return below is now guaranteed to be seen by `destroy`
+
+        checkForCompletion.setExpected(
+                viewport == null ? null : viewport.copy(),
+                columns == null ? null : (BitSet) (columns.clone()),
+                reverseViewport);
+
+        if (!isSnapshot) {
+            resultTable.addSourceToRegistrar();
+            resultTable.addParentReference(this);
+        }
+
+        // Send the initial subscription:
+        observer.onNext(FlightData.newBuilder()
+                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(
+                        viewport, columns, reverseViewport, options, tableHandle.ticketId().bytes())))
+                .build());
+
+        return future;
+    }
+
+    private boolean isConnected() {
+        return connected == 1;
+    }
+
+    private boolean tryRecordDisconnect() {
+        return CONNECTED_UPDATER.compareAndSet(this, 1, 0);
+    }
+
+    private void onFutureComplete() {
+        // if we are building a snapshot via a growing viewport subscription, then cancel our subscription
+        if (isSnapshot && tryRecordDisconnect()) {
+            GrpcUtil.safelyCancel(observer, "Barrage snapshot is complete", null);
+        }
     }
 
     @Override
     protected void destroy() {
         super.destroy();
-        close();
+        cancel("no longer live");
+        final FutureAdapter localFuture = future;
+        if (localFuture != null) {
+            localFuture.completeExceptionally(new RequestCancelledException("Barrage subscription is no longer live"));
+        }
     }
 
-    private void handleDisconnect() {
-        if (!connected) {
+    private void cancel(final String reason) {
+        if (!tryRecordDisconnect()) {
             return;
         }
-        // log an error only when doing a true subscription (not snapshot)
+
         if (!isSnapshot) {
-            log.error().append(this).append(": unexpectedly closed by other host").endl();
+            // Stop our result table from processing any more data.
+            resultTable.forceReferenceCountToZero();
         }
-        cleanup();
-    }
-
-    @Override
-    public synchronized void close() {
-        if (!connected) {
-            return;
-        }
-        GrpcUtil.safelyComplete(observer);
+        GrpcUtil.safelyCancel(observer, "Barrage subscription is " + reason,
+                new RequestCancelledException("Barrage subscription is " + reason));
         cleanup();
     }
 
     private void cleanup() {
-        this.connected = false;
-        this.tableHandle.close();
-        resultTable = null;
+        tableHandle.close();
     }
 
     @Override
@@ -389,7 +286,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             @Nullable final BitSet columns,
             boolean reverseViewport,
             @Nullable BarrageSubscriptionOptions options,
-            @NotNull byte[] ticketId) {
+            byte @NotNull [] ticketId) {
 
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
@@ -486,6 +383,103 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         @Override
         public BarrageMessage parse(final InputStream stream) {
             return streamReader.safelyParseFrom(options, null, columnChunkTypes, columnTypes, componentTypes, stream);
+        }
+    }
+
+    private class CheckForCompletion implements BarrageTable.ViewportChangedCallback {
+        private RowSet expectedViewport;
+        private BitSet expectedColumns;
+        private boolean expectedReverseViewport;
+
+        private synchronized void setExpected(RowSet viewport, BitSet columns, boolean reverseViewport) {
+            expectedViewport = viewport == null ? null : viewport.copy();
+            expectedColumns = columns == null ? null : (BitSet) (columns.clone());
+            expectedReverseViewport = reverseViewport;
+        }
+
+        @Override
+        public synchronized boolean viewportChanged(
+                @Nullable final RowSet serverViewport,
+                @Nullable final BitSet serverColumns,
+                final boolean serverReverseViewport) {
+            if (future.isDone()) {
+                return false;
+            }
+
+            // @formatter:off
+            final boolean correctColumns =
+                    // all columns are expected
+                    (expectedColumns == null
+                        && (serverColumns == null || serverColumns.cardinality() == resultTable.numColumns()))
+                    // only specific set of columns are expected
+                    || (expectedColumns != null && expectedColumns.equals(serverColumns));
+
+            final boolean isComplete =
+                    // Full subscription is completed
+                    (correctColumns && expectedViewport == null && serverViewport == null)
+                    // Viewport subscription is completed
+                    || (correctColumns && expectedViewport != null
+                        && expectedReverseViewport == resultTable.getServerReverseViewport()
+                        && expectedViewport.equals(serverViewport));
+            // @formatter:on
+
+            if (isComplete) {
+                // remove all unpopulated rows from viewport snapshots
+                if (isSnapshot && serverViewport != null) {
+                    // noinspection resource
+                    WritableRowSet currentRowSet = resultTable.getRowSet().writableCast();
+                    try (final RowSet populated =
+                            currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {
+                        currentRowSet.retain(populated);
+                    }
+                }
+
+                if (future.complete(resultTable)) {
+                    onFutureComplete();
+                }
+            }
+
+            return !isComplete;
+        }
+
+        @Override
+        public void onError(@NotNull final Throwable t) {
+            if (future.completeExceptionally(t)) {
+                onFutureComplete();
+            }
+        }
+    }
+
+    private interface FutureAdapter extends Future<Table> {
+        boolean complete(Table value);
+
+        boolean completeExceptionally(Throwable ex);
+    }
+
+    private class CompletableFutureAdapter extends CompletableFuture<Table> implements FutureAdapter {
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            if (super.cancel(mayInterruptIfRunning)) {
+                BarrageSubscriptionImpl.this.cancel("cancelled by user");
+                return true;
+            }
+            return false;
+        }
+    }
+
+    private class UpdateGraphAwareFutureAdapter extends UpdateGraphAwareCompletableFuture<Table>
+            implements FutureAdapter {
+        public UpdateGraphAwareFutureAdapter(@NotNull final UpdateGraph updateGraph) {
+            super(updateGraph);
+        }
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            if (super.cancel(mayInterruptIfRunning)) {
+                BarrageSubscriptionImpl.this.cancel("cancelled by user");
+                return true;
+            }
+            return false;
         }
     }
 }

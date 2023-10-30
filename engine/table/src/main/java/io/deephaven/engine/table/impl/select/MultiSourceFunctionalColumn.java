@@ -9,6 +9,8 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.PrevColumnSource;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.chunk.attributes.Values;
@@ -39,8 +41,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     @NotNull
     private final Class<?> componentType;
 
-    boolean usesPython;
-
     public MultiSourceFunctionalColumn(@NotNull List<String> sourceNames,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
@@ -67,11 +67,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     @Override
     public String toString() {
         return "function(" + String.join(",", sourceNames) + ',' + destName + ')';
-    }
-
-    @Override
-    public List<String> initInputs(Table table) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -172,7 +167,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
                     @NotNull final WritableChunk<? super Values> destination,
                     @NotNull final RowSequence rowSequence) {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
-                ctx.chunkFiller.fillByIndices(this, rowSequence, destination);
+                ctx.chunkFiller.fillPrevByIndices(this, rowSequence, destination);
             }
         }, false);
     }
@@ -203,13 +198,13 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     @Override
-    public WritableColumnSource<?> newDestInstance(long size) {
-        throw new UnsupportedOperationException();
+    public final WritableColumnSource<?> newDestInstance(final long size) {
+        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, destDataType);
     }
 
     @Override
-    public WritableColumnSource<?> newFlatDestInstance(long size) {
-        throw new UnsupportedOperationException();
+    public final WritableColumnSource<?> newFlatDestInstance(final long size) {
+        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, destDataType, componentType);
     }
 
     @Override

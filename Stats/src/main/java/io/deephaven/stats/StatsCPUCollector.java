@@ -3,6 +3,7 @@
  */
 package io.deephaven.stats;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -12,9 +13,12 @@ import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
 
-import java.io.FileInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.lang.management.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
 
 /**
  * Collects statistic related to CPU and memory usage of the entire system, the process, and each thread in the process.
@@ -24,6 +28,9 @@ public class StatsCPUCollector {
 
     public static final boolean MEASURE_PER_THREAD_CPU =
             Configuration.getInstance().getBoolean("measurement.per_thread_cpu");
+    private static final String PROC_STAT_PSEUDOFILE = "/proc/stat";
+    private static final String PROC_SELF_STAT_PSEUDOFILE = "/proc/self/stat";
+    private static final String PROC_STAT_FD_PSUEDOFILE = "/proc/self/fd";
 
     private static final long NANOS = 1000000000;
     private static final long MILLIS = 1000;
@@ -32,13 +39,13 @@ public class StatsCPUCollector {
     private final long divisor;
 
     // true, if we can open /proc/stat
-    boolean hasProcStat = true;
+    private boolean hasProcStat = true;
 
     // true, if we can open /proc/self/stat
-    boolean hasProcPidStat = true;
+    private boolean hasProcPidStat = true;
 
     // true, if we can list the contents of /proc/self/fd
-    boolean hasProcFd = true;
+    private boolean hasProcFd = true;
 
     // state for the machine as a whole
     private Counter statSysUserJiffies = null;
@@ -60,7 +67,7 @@ public class StatsCPUCollector {
     private State statProcRSS = null;
     private State statProcNumFDs = null;
     private State statProcMaxFD = null;
-    private byte[] statBuffer = null;
+    private ByteBuffer statBuffer = null;
 
     // the interval between updates
     private final long interval;
@@ -71,8 +78,10 @@ public class StatsCPUCollector {
         this.getFdStats = getFdStats;
         long seconds = interval / MILLIS;
         this.divisor = NANOS / (seconds * 10);
-        Stats.makeGroup("Kernel", "Unix kernel statistics, as read from /proc/stat");
-        Stats.makeGroup("Proc", "Unix process statistics, as read from /proc/self/stat and /proc/self/fd");
+        Stats.makeGroup("Kernel", "Unix kernel statistics, as read from " + PROC_STAT_PSEUDOFILE);
+        Stats.makeGroup("Proc",
+                "Unix process statistics, as read from " + PROC_SELF_STAT_PSEUDOFILE + " and "
+                        + PROC_STAT_FD_PSUEDOFILE);
         Stats.makeGroup("CPU", "JMX CPU usage data, per-thread and for the entire process");
 
         if (OSUtil.runningMacOS() || OSUtil.runningWindows()) {
@@ -121,7 +130,7 @@ public class StatsCPUCollector {
         };
 
         public static KeyedLongObjectHash.ValueFactory<ThreadState> factory =
-                new KeyedLongObjectHash.ValueFactory<ThreadState>() {
+                new KeyedLongObjectHash.ValueFactory<>() {
                     public ThreadState newValue(long key) {
                         return new ThreadState(key);
                     }
@@ -133,7 +142,7 @@ public class StatsCPUCollector {
     }
 
     /** the map containing all thread states */
-    private static KeyedLongObjectHashMap<ThreadState> threadStates =
+    private static final KeyedLongObjectHashMap<ThreadState> threadStates =
             new KeyedLongObjectHashMap<>(100, ThreadState.keyDef);
 
     /** the user time for the process as a whole */
@@ -142,92 +151,123 @@ public class StatsCPUCollector {
     /** the system time for the process as a whole */
     private State processSystemTime;
 
-
-    private boolean startsWith(String match, int nb) {
+    private boolean startsWith(String match) {
+        if (match.length() > statBuffer.remaining()) {
+            return false;
+        }
         for (int i = 0; i < match.length(); i++) {
-            if (i + statBufferIndex < nb && statBuffer[i + statBufferIndex] != match.charAt(i)) {
+            final int nextIdx = i + statBuffer.position();
+            if (statBuffer.get(nextIdx) != match.charAt(i)) {
                 return false;
             }
         }
         return true;
     }
 
-    private boolean skipWhiteSpace(int nb) {
-        while (statBuffer[statBufferIndex] == ' ') {
-            if (statBufferIndex >= nb || statBuffer[statBufferIndex] == '\n') {
+    private boolean skipWhiteSpace() {
+        while (statBuffer.hasRemaining() && statBuffer.get(statBuffer.position()) == ' ') {
+            statBuffer.position(statBuffer.position() + 1);
+        }
+        return statBuffer.hasRemaining();
+    }
+
+    private boolean skipNextField() {
+        while (statBuffer.hasRemaining() && statBuffer.get(statBuffer.position()) != ' ') {
+            if (statBuffer.get(statBuffer.position()) == '\n') {
                 return false;
             }
-            statBufferIndex++;
+            statBuffer.position(statBuffer.position() + 1);
         }
-        return statBufferIndex < nb;
+        return skipWhiteSpace();
     }
 
-    private boolean skipNextField(int nb) {
-        while (statBuffer[statBufferIndex] != ' ') {
-            if (statBufferIndex >= nb || statBuffer[statBufferIndex] == '\n') {
-                return false;
-            }
-            statBufferIndex++;
-        }
-        return skipWhiteSpace(nb);
+    private void getNextFieldSampleKilobytes(State v) {
+        v.sample(getNextFieldLong() / 1024);
+        skipWhiteSpace();
     }
 
-    private boolean getNextFieldSampleKilobytes(State v, int nb) {
-        v.sample(getNextFieldLong(nb) / 1024);
-        return skipWhiteSpace(nb);
+    private boolean getNextFieldDeltaJiffies(Counter v) {
+        v.incrementFromSample(getNextFieldLong() * (10 * MILLIS) / interval);
+        return skipWhiteSpace();
     }
 
-    private boolean getNextFieldDeltaJiffies(Counter v, int nb) {
-        v.incrementFromSample(getNextFieldLong(nb) * (10 * MILLIS) / interval);
-        return skipWhiteSpace(nb);
+    private boolean getNextFieldDelta(Counter v) {
+        v.incrementFromSample(getNextFieldLong());
+        return skipWhiteSpace();
     }
 
-    private boolean getNextFieldDelta(Counter v, int nb) {
-        v.incrementFromSample(getNextFieldLong(nb));
-        return skipWhiteSpace(nb);
+    private void getNextFieldSample(State v) {
+        v.sample(getNextFieldLong());
+        skipWhiteSpace();
     }
 
-    private boolean getNextFieldSample(State v, int nb) {
-        v.sample(getNextFieldLong(nb));
-        return skipWhiteSpace(nb);
-    }
-
-    private long getNextFieldLong(int nb) {
+    private long getNextFieldLong() {
         long result = 0;
-        while (statBufferIndex < nb && statBuffer[statBufferIndex] >= '0' && statBuffer[statBufferIndex] <= '9') {
+        while (peekNextLong()) {
             result *= 10;
-            result += statBuffer[statBufferIndex] - '0';
-            statBufferIndex++;
+            result += statBuffer.get() - '0';
         }
         return result;
     }
 
-    private boolean peekNextLong(int nb) {
-        return statBufferIndex < nb && statBuffer[statBufferIndex] >= '0' && statBuffer[statBufferIndex] <= '9';
+    private boolean peekNextLong() {
+        return statBuffer.hasRemaining() && statBuffer.get(statBuffer.position()) >= '0'
+                && statBuffer.get(statBuffer.position()) <= '9';
+    }
+
+    /**
+     * Reads the entire contents of the specified FileChannel into the shared buffer, resizing it if necessary.
+     * 
+     * @param fileChannel the channel to read contents from
+     * @param fileName the file name to use when throwing an error message
+     * @throws IOException if there is an error in reading the file
+     */
+    private void readToBuffer(FileChannel fileChannel, String fileName) throws IOException {
+        statBuffer.clear();
+        fileChannel.position(0);
+
+        // Filesystem entries in /proc can only be read all at once to avoid races, so using too big of a buffer isn't a
+        // problem, but too small is. Attempt to read with the current buffer. If we filled the buffer we resize it and
+        // read again from start.
+        while (true) {
+            final int nb = fileChannel.read(statBuffer);
+
+            if (nb <= 0) {
+                // zero bytes read is an error, -1 is EOF
+                throw new IOException(fileName + " could not be read, or was empty");
+            }
+            if (statBuffer.hasRemaining()) {
+                Assert.eq(statBuffer.position(), "statBuffer.position()", nb, "nb");
+                statBuffer.flip();
+                return;
+            }
+
+            // allocate larger read-buffer, and read again from start
+            statBuffer = ByteBuffer.allocate(statBuffer.capacity() * 2);
+            fileChannel.position(0);
+        }
     }
 
     /**
      * Update the system-wide kernel statistics
      */
-    int statBufferIndex;
-    FileInputStream statFile;
+    private FileChannel statFile;
 
     private void updateSys() {
         if (hasProcStat) {
             try {
                 if (statFile == null) {
-                    statFile = new FileInputStream("/proc/stat");
+                    statFile = FileChannel.open(Path.of(PROC_STAT_PSEUDOFILE));
                 }
-                int nb = statFile.read(statBuffer, 0, statBuffer.length);
-                statFile.getChannel().position(0);
 
-                statBufferIndex = 0;
-                while (statBufferIndex < nb) {
-                    while (statBufferIndex < nb && statBuffer[statBufferIndex] < 33) {
-                        statBufferIndex++;
+                readToBuffer(statFile, PROC_STAT_PSEUDOFILE);
+
+                while (statBuffer.hasRemaining()) {
+                    while (statBuffer.hasRemaining() && statBuffer.get(statBuffer.position()) < '!') {
+                        statBuffer.position(statBuffer.position() + 1);
                     }
-                    if (startsWith("cpu ", nb)) {
-                        if (skipNextField(nb) && peekNextLong(nb)) {
+                    if (startsWith("cpu ")) {
+                        if (skipNextField() && peekNextLong()) {
                             if (statSysUserJiffies == null) {
                                 statSysUserJiffies = Stats
                                         .makeItem("Kernel", "UserJiffies", Counter.FACTORY,
@@ -238,67 +278,76 @@ public class StatsCPUCollector {
                                                 "System jiffies per 10 second interval (1000 equals 1 full CPU)")
                                         .getValue();
                             }
-                            if (getNextFieldDeltaJiffies(statSysUserJiffies, nb) && skipNextField(nb)
-                                    && peekNextLong(nb)) {
-                                if (getNextFieldDeltaJiffies(statSysSystemJiffies, nb) && skipNextField(nb)
-                                        && skipNextField(nb) && peekNextLong(nb)) {
+                            if (getNextFieldDeltaJiffies(statSysUserJiffies) && skipNextField()
+                                    && peekNextLong()) {
+                                if (getNextFieldDeltaJiffies(statSysSystemJiffies) && skipNextField()
+                                        && skipNextField() && peekNextLong()) {
                                     if (statSysIOWait == null) {
                                         statSysIOWait = Stats.makeItem("Kernel", "IOWait", Counter.FACTORY,
                                                 "IOWait jiffies per 10 second interval (1000 equals 1 full CPU)")
                                                 .getValue();
                                     }
-                                    getNextFieldDeltaJiffies(statSysIOWait, nb);
+                                    getNextFieldDeltaJiffies(statSysIOWait);
                                 }
                             }
                         }
-                    } else if (startsWith("page", nb)) {
-                        if (skipNextField(nb) && peekNextLong(nb)) {
+                    } else if (startsWith("page")) {
+                        if (skipNextField() && peekNextLong()) {
                             if (statSysPageIn == null) {
                                 statSysPageIn = Stats.makeItem("Kernel", "PageIn", Counter.FACTORY,
                                         "Number of pages read in from disk").getValue();
                                 statSysPageOut = Stats.makeItem("Kernel", "PageOut", Counter.FACTORY,
                                         "Number of pages written to disk").getValue();
                             }
-                            if (getNextFieldDelta(statSysPageIn, nb) && peekNextLong(nb)) {
-                                getNextFieldDelta(statSysPageOut, nb);
+                            if (getNextFieldDelta(statSysPageIn) && peekNextLong()) {
+                                getNextFieldDelta(statSysPageOut);
                             }
                         }
-                    } else if (startsWith("swap", nb)) {
+                    } else if (startsWith("swap")) {
                         if (statSysSwapIn == null) {
                             statSysSwapIn = Stats.makeItem("Kernel", "SwapIn", Counter.FACTORY,
                                     "Number of pages read from swap space").getValue();
                             statSysSwapOut = Stats.makeItem("Kernel", "SwapOut", Counter.FACTORY,
                                     "Number of pages written to swap space").getValue();
                         }
-                        if (skipNextField(nb) && getNextFieldDelta(statSysSwapIn, nb) && peekNextLong(nb)) {
-                            getNextFieldDelta(statSysSwapOut, nb);
+                        if (skipNextField() && getNextFieldDelta(statSysSwapIn) && peekNextLong()) {
+                            getNextFieldDelta(statSysSwapOut);
                         }
-                    } else if (startsWith("intr", nb)) {
+                    } else if (startsWith("intr")) {
                         if (statSysInterrupts == null) {
                             statSysInterrupts =
                                     Stats.makeItem("Kernel", "Interrupts", Counter.FACTORY, "Number of interrupts")
                                             .getValue();
                         }
-                        if (skipNextField(nb)) {
-                            getNextFieldDelta(statSysInterrupts, nb);
+                        if (skipNextField()) {
+                            getNextFieldDelta(statSysInterrupts);
                         }
-                    } else if (startsWith("ctxt", nb)) {
+                    } else if (startsWith("ctxt")) {
                         if (statSysCtxt == null) {
                             statSysCtxt =
                                     Stats.makeItem("Kernel", "Ctxt", Counter.FACTORY, "Number of context switches")
                                             .getValue();
                         }
-                        if (skipNextField(nb)) {
-                            getNextFieldDelta(statSysCtxt, nb);
+                        if (skipNextField()) {
+                            getNextFieldDelta(statSysCtxt);
                         }
                     }
-                    while (statBufferIndex < nb && statBuffer[statBufferIndex++] != '\n') {
+                    // noinspection StatementWithEmptyBody - deliberately empty, get() will advance position
+                    while (statBuffer.hasRemaining() && statBuffer.get() != '\n') {
                     }
                 }
             } catch (Exception x) {
+                if (statFile != null) {
+                    try {
+                        statFile.close();
+                    } catch (final IOException ignore) {
+                    }
+                    statFile = null;
+                }
+
                 // if we get any exception, don't try to read it again
                 if (hasProcStat) {
-                    log.error().append("got an exception reading /proc/stat: ").append(x).endl();
+                    log.error("got an exception reading " + PROC_STAT_PSEUDOFILE + ": " + x);
                 }
                 hasProcStat = false;
             }
@@ -308,15 +357,14 @@ public class StatsCPUCollector {
     /**
      * Update the per-process statistics
      */
-    FileInputStream procFile;
+    private FileChannel procFile;
 
     private void updateProc() {
         if (hasProcPidStat) {
             try {
                 if (procFile == null) {
-                    procFile = new FileInputStream("/proc/self/stat");
+                    procFile = FileChannel.open(Path.of(PROC_SELF_STAT_PSEUDOFILE));
                 }
-                procFile.getChannel().position(0);
                 if (statProcMinorFaults == null) {
                     statProcMinorFaults = Stats
                             .makeItem("Proc", "MinorFaults", Counter.FACTORY, "Minor faults the process has incurred")
@@ -335,24 +383,35 @@ public class StatsCPUCollector {
                             Stats.makeItem("Proc", "RSS", State.FACTORY, "Resident set size of the process in pages")
                                     .getValue();
                 }
-                statBufferIndex = 0;
-                int nb = procFile.read(statBuffer, 0, statBuffer.length);
+                readToBuffer(procFile, PROC_SELF_STAT_PSEUDOFILE);
+
                 for (int i = 0; i < 9; i++) {
-                    skipNextField(nb);
+                    skipNextField();
                 }
-                getNextFieldDelta(statProcMinorFaults, nb);
-                skipNextField(nb);
-                getNextFieldDelta(statProcMajorFaults, nb);
-                skipNextField(nb);
-                getNextFieldDeltaJiffies(statProcUserJiffies, nb);
-                getNextFieldDeltaJiffies(statProcSystemJiffies, nb);
+                getNextFieldDelta(statProcMinorFaults);
+                skipNextField();
+                getNextFieldDelta(statProcMajorFaults);
+                skipNextField();
+                getNextFieldDeltaJiffies(statProcUserJiffies);
+                getNextFieldDeltaJiffies(statProcSystemJiffies);
                 for (int i = 15; i < 22; i++) {
-                    skipNextField(nb);
+                    skipNextField();
                 }
-                getNextFieldSampleKilobytes(statProcVSZ, nb);
-                getNextFieldSample(statProcRSS, nb);
+                getNextFieldSampleKilobytes(statProcVSZ);
+                getNextFieldSample(statProcRSS);
             } catch (Exception x) {
+                if (procFile != null) {
+                    try {
+                        procFile.close();
+                    } catch (final IOException ignore) {
+                    }
+                    procFile = null;
+                }
+
                 // if we get any exception, don't try to read it again
+                if (hasProcPidStat) {
+                    log.error("got an exception reading " + PROC_SELF_STAT_PSEUDOFILE + ": " + x);
+                }
                 hasProcPidStat = false;
             }
         }
@@ -364,7 +423,7 @@ public class StatsCPUCollector {
     private void updateProcFD() {
         if (hasProcFd) {
             try {
-                File procFd = new File("/proc/self/fd");
+                File procFd = new File(PROC_STAT_FD_PSUEDOFILE);
                 String[] entries = procFd.list();
                 if (entries == null) {
                     // if the directory is not readable, don't try to read it again
@@ -453,7 +512,7 @@ public class StatsCPUCollector {
      */
     public void update() {
         if (statBuffer == null) {
-            statBuffer = new byte[4096];
+            statBuffer = ByteBuffer.allocate(4096);
         }
         updateSys();
         updateProc();

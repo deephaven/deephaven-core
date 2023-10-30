@@ -8,6 +8,7 @@ import io.deephaven.parquet.base.util.Helpers;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
@@ -26,13 +27,15 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
 
     private final ByteBufferAllocator allocator;
 
-    ByteBuffer innerBuffer;
+    private ByteBuffer innerBuffer;
+    private IntBuffer nullOffsets;
 
-    public PlainBinaryChunkedWriter(final int pageSize, @NotNull final ByteBufferAllocator allocator) {
+    PlainBinaryChunkedWriter(final int pageSize, @NotNull final ByteBufferAllocator allocator) {
         innerBuffer = allocator.allocate(pageSize);
         innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
         this.allocator = allocator;
         innerBuffer.mark();
+        nullOffsets = IntBuffer.allocate(4);
     }
 
     @Override
@@ -86,9 +89,13 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
     }
 
     @Override
-    public void writeBulk(@NotNull Binary[] bulkValues, int rowCount) {
+    public void writeBulk(@NotNull Binary[] bulkValues,
+                          final int rowCount,
+                          @NotNull final Statistics<?> statistics) {
         for (int i = 0; i < rowCount; i++) {
-            writeBytes(bulkValues[i]);
+            final Binary v = bulkValues[i];
+            writeBytes(v);
+            statistics.updateStats(v);
         }
     }
 
@@ -96,12 +103,16 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final Binary[] bulkValues,
                                             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
-                                            final int rowCount) throws IOException {
+                                            final int rowCount,
+                                            @NotNull final Statistics<?> statistics) throws IOException {
         for (int i = 0; i < rowCount; i++) {
             if (bulkValues[i] != null) {
-                writeBytes(bulkValues[i]);
+                final Binary v = bulkValues[i];
+                writeBytes(v);
+                statistics.updateStats(v);
                 dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
+                statistics.incrementNumNulls();
                 dlEncoder.writeInt(DL_ITEM_NULL);
             }
         }
@@ -109,33 +120,38 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
     }
 
     @Override
-    public @NotNull WriteResult writeBulkFilterNulls(@NotNull Binary[] bulkValues, int nonNullLeafCount) {
-        IntBuffer nullOffsets = IntBuffer.allocate(4);
+    public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull Binary[] bulkValues,
+                                                           final int nonNullLeafCount,
+                                                           @NotNull final Statistics<?> statistics) {
+        nullOffsets.clear();
         for (int i = 0; i < nonNullLeafCount; i++) {
             if (bulkValues[i] != null) {
-                writeBytes(bulkValues[i]);
+                final Binary v = bulkValues[i];
+                writeBytes(v);
+                statistics.updateStats(v);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
+                statistics.incrementNumNulls();
             }
         }
         return new WriteResult(nonNullLeafCount, nullOffsets);
     }
 
     private void ensureCapacityFor(@NotNull final Binary v) {
-        if(v.length() == 0 || innerBuffer.remaining() >= v.length() + Integer.BYTES) {
+        if (v.length() == 0 || innerBuffer.remaining() >= v.length() + Integer.BYTES) {
             return;
         }
 
         final int currentCapacity = innerBuffer.capacity();
         final int currentPosition = innerBuffer.position();
         final long requiredCapacity = (long)currentPosition + v.length() + Integer.BYTES;
-        if(requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
+        if (requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
             throw new IllegalStateException("Unable to write " + requiredCapacity + " values. (Maximum capacity: " + MAXIMUM_TOTAL_CAPACITY + ".)");
         }
 
         int newCapacity = currentCapacity;
-        while(newCapacity < requiredCapacity) {
+        while (newCapacity < requiredCapacity) {
             newCapacity = (int) Math.min(MAXIMUM_TOTAL_CAPACITY, newCapacity * 2L);
         }
 

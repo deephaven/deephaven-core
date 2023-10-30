@@ -2,7 +2,6 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
-import jpy
 import unittest
 
 from deephaven import time_table, DHError, merge

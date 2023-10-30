@@ -7,6 +7,9 @@ import io.deephaven.client.impl.BarrageSession;
 import io.deephaven.client.impl.BarrageSessionFactory;
 import io.deephaven.client.impl.BarrageSubcomponent.Builder;
 import io.deephaven.client.impl.DaggerDeephavenBarrageRoot;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
@@ -36,6 +39,22 @@ abstract class BarrageClientExampleBase implements Callable<Void> {
         Runtime.getRuntime()
                 .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
 
+        // Note that a DEFAULT update graph is required for engine operation. Users may wish to create additional update
+        // graphs for their own purposes, but the DEFAULT must be created first.
+        final PeriodicUpdateGraph updateGraph =
+                PeriodicUpdateGraph.newBuilder("DEFAULT").existingOrBuild();
+
+        // Prepare this thread for client-side Deephaven engine. We don't intend to create any subtables, so we'll use
+        // an empty query scope, an empty query library, a poisoned query compiler, and the update graph we just made.
+        // Note that it's a good habit to mark the most basic execution context as systemic, so that it's not
+        // accidentally used in contexts when the calling-code should be providing their own context.
+        final ExecutionContext executionContext = ExecutionContext.newBuilder()
+                .markSystemic()
+                .emptyQueryScope()
+                .newQueryLibrary()
+                .setUpdateGraph(updateGraph)
+                .build();
+
         final Builder builder = DaggerDeephavenBarrageRoot.create().factoryBuilder()
                 .managedChannel(managedChannel)
                 .scheduler(scheduler)
@@ -46,7 +65,7 @@ abstract class BarrageClientExampleBase implements Callable<Void> {
         final BarrageSessionFactory barrageFactory = builder.build();
         final BarrageSession deephavenSession = barrageFactory.newBarrageSession();
         try {
-            try {
+            try (final SafeCloseable ignored = executionContext.open()) {
                 execute(deephavenSession);
             } finally {
                 deephavenSession.close();

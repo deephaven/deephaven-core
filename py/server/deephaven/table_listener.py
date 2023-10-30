@@ -22,7 +22,6 @@ from deephaven.numpy import column_to_numpy_array
 from deephaven.table import Table
 from deephaven.update_graph import UpdateGraph
 
-_JPythonListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonListenerAdapter")
 _JPythonReplayListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
 _JTableUpdate = jpy.get_type("io.deephaven.engine.table.TableUpdate")
 _JTableUpdateDataReader = jpy.get_type("io.deephaven.integrations.python.PythonListenerTableUpdateDataReader")
@@ -101,7 +100,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, List[str]]: the columns(s) for which to return the added rows
+            cols (Union[str, List[str]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -139,7 +138,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, List[str]]: the columns(s) for which to return the added rows
+            cols (Union[str, List[str]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -177,7 +176,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, List[str]]: the columns(s) for which to return the added rows
+            cols (Union[str, List[str]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -215,7 +214,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, List[str]]: the columns(s) for which to return the added rows
+            cols (Union[str, List[str]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -335,8 +334,9 @@ def listen(t: Table, listener: Union[Callable, TableListener], description: str 
     return table_listener_handle
 
 
-class TableListenerHandle:
+class TableListenerHandle(JObjectWrapper):
     """A handle to manage a table listener's lifecycle."""
+    j_object_type = _JPythonReplayListenerAdapter
 
     def __init__(self, t: Table, listener: Union[Callable, TableListener], description: str = None):
         """Creates a new table listener handle.
@@ -349,7 +349,7 @@ class TableListenerHandle:
         * (update: TableUpdate, is_replay: bool): support replaying the initial table snapshot and normal table updates
         The 'update' parameter is an object that describes the table update;
         The 'is_replay' parameter is used only by replay listeners, it is set to 'true' when replaying the initial
-            snapshot and 'false' during normal updates.
+        snapshot and 'false' during normal updates.
 
         Args:
             t (Table): table to listen to
@@ -408,3 +408,7 @@ class TableListenerHandle:
             return
         self.t.j_table.removeUpdateListener(self.listener)
         self.started = False
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.listener

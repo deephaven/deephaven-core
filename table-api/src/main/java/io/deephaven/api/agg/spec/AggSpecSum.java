@@ -3,7 +3,7 @@
  */
 package io.deephaven.api.agg.spec;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Immutable;
 
@@ -21,7 +21,7 @@ import org.immutables.value.Value.Immutable;
  * @see TableOperations#sumBy
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class AggSpecSum extends AggSpecEmptyBase {
 
     public static AggSpecSum of() {

@@ -67,11 +67,6 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     @Override
-    public List<String> initInputs(Table table) {
-        return initInputs(table.getRowSet(), table.getColumnSourceMap());
-    }
-
-    @Override
     public Class<?> getReturnedType() {
         return returnedType;
     }
@@ -110,7 +105,8 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     protected void applyUsedVariables(Map<String, ColumnDefinition<?>> columnDefinitionMap, Set<String> variablesUsed) {
-        columnDefinitions = columnDefinitionMap;
+        // the column definition map passed in is being mutated by the caller, so we need to make a copy
+        columnDefinitions = Map.copyOf(columnDefinitionMap);
 
         final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();

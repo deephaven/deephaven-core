@@ -8,14 +8,23 @@ description 'Kafka: Integrating Engine tables with Kafka'
 dependencies {
     api project(':engine-table')
 
-    api 'org.apache.avro:avro:1.11.1'
+    api 'org.apache.avro:avro:1.11.2'
 
     // Using io.confluent dependencies requires code in the toplevel build.gradle to add their maven repository.
     // Note: the -ccs flavor is provided by confluent as their community edition. It is equivalent to the maven central
     // version, but has a different version to make it easier to keep confluent dependencies aligned.
-    api 'org.apache.kafka:kafka-clients:7.3.0-ccs'
-    api 'io.confluent:kafka-avro-serializer:7.3.0'
-    runtimeOnly 'io.confluent:kafka-protobuf-serializer:7.3.0'
+    api 'org.apache.kafka:kafka-clients:7.4.0-ccs'
+    api 'io.confluent:kafka-avro-serializer:7.4.0'
+    api 'io.confluent:kafka-protobuf-serializer:7.4.0'
+
+    // When updating the kafka implementation, it may be useful to test out the minimum kafka version that our code
+    // compiles, tests, and runs with. If we want to offer more strict guarantees in these regards in the future, at
+    // that time we can setup explicit scaffolding to compile and test with other versions.
+    // api 'org.apache.kafka:kafka-clients:5.5.15-ccs'
+    // api 'io.confluent:kafka-avro-serializer:5.5.15'
+    // api 'io.confluent:kafka-protobuf-serializer:5.5.15'
+
+    api project(':extensions-protobuf')
 
     implementation project(':Configuration')
     implementation project(':log-factory')
@@ -31,6 +40,8 @@ dependencies {
             project(path: ':configs'),
             project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+
+    Classpaths.inheritAssertJ(project)
 }
 
 spotless {

@@ -11,10 +11,12 @@ import contextlib
 import inspect
 from enum import Enum
 from enum import auto
-from typing import Any, Optional, Callable, Dict
+from functools import wraps
+from typing import Any, Optional, Callable, Dict, _GenericAlias
 from typing import Sequence, List, Union, Protocol
 
 import jpy
+import numba
 import numpy as np
 
 from deephaven import DHError
@@ -29,10 +31,12 @@ from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict
 from deephaven.jcompat import to_sequence, j_array_list
 from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
+from deephaven.dtypes import _BUILDABLE_ARRAY_DTYPE_MAP, _scalar, _np_dtype_char, \
+    _component_np_dtype_char
 
 # Table
 _J_Table = jpy.get_type("io.deephaven.engine.table.Table")
-_JLiveAttributeMap = jpy.get_type("io.deephaven.engine.table.impl.LiveAttributeMap")
+_JAttributeMap = jpy.get_type("io.deephaven.engine.table.AttributeMap")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
@@ -42,6 +46,7 @@ _JPair = jpy.get_type("io.deephaven.api.Pair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
 _JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
+_JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
 
 # PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
@@ -70,6 +75,11 @@ _JFormatOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchica
 _JSortOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.SortOperationsRecorder")
 _JFilterOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.FilterOperationsRecorder")
 
+# MultiJoin Table and input
+_JMultiJoinInput = jpy.get_type("io.deephaven.engine.table.MultiJoinInput")
+_JMultiJoinTable = jpy.get_type("io.deephaven.engine.table.MultiJoinTable")
+_JMultiJoinFactory = jpy.get_type("io.deephaven.engine.table.MultiJoinFactory")
+
 # For unittest vectorization
 _test_vectorization = False
 _vectorized_count = 0
@@ -82,7 +92,7 @@ class NodeType(Enum):
     leaf) level. These nodes have column names and types that result from applying aggregations on the source table 
     of the RollupTable. """
     CONSTITUENT = _JNodeType.Constituent
-    """Nodes at the leaf level when meth:`~deephaven.table.Table.rollup` method is called with 
+    """Nodes at the leaf level when :meth:`~deephaven.table.Table.rollup` method is called with 
     include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names 
     and types from the source table of the RollupTable. """
 
@@ -353,38 +363,110 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return None
 
 
-_numpy_type_codes = ["i", "l", "h", "f", "d", "b", "?", "U", "O"]
+_SUPPORTED_NP_TYPE_CODES = ["i", "l", "h", "f", "d", "b", "?", "U", "M", "O"]
+
+
+def _parse_annotation(annotation: Any) -> Any:
+    """Parse a Python annotation, for now mostly to extract the non-None type from an Optional(Union) annotation,
+    otherwise return the original annotation. """
+    if isinstance(annotation, _GenericAlias) and annotation.__origin__ == Union and len(annotation.__args__) == 2:
+        if annotation.__args__[1] == type(None):  # noqa: E721
+            return annotation.__args__[0]
+        elif annotation.__args__[0] == type(None):  # noqa: E721
+            return annotation.__args__[1]
+        else:
+            return annotation
+    else:
+        return annotation
 
 
 def _encode_signature(fn: Callable) -> str:
     """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
-    type to numpy dtype chars (i,l,h,f,d,b,?,U,O), and pack them into a string with parameter type chars first,
+    type to numpy dtype chars (i,l,h,f,d,b,?,U,M,O), and pack them into a string with parameter type chars first,
     in their original order, followed by the delimiter string '->', then the return type_char.
 
     If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
     """
     sig = inspect.signature(fn)
 
-    parameter_types = []
+    np_type_codes = []
     for n, p in sig.parameters.items():
-        try:
-            np_dtype = np.dtype(p.annotation if p.annotation else "object")
-            parameter_types.append(np_dtype)
-        except TypeError:
-            parameter_types.append(np.dtype("object"))
+        p_annotation = _parse_annotation(p.annotation)
+        np_type_codes.append(_np_dtype_char(p_annotation))
 
-    try:
-        return_type = np.dtype(sig.return_annotation if sig.return_annotation else "object")
-    except TypeError:
-        return_type = np.dtype("object")
-
-    np_type_codes = [np.dtype(p).char for p in parameter_types]
-    np_type_codes = [c if c in _numpy_type_codes else "O" for c in np_type_codes]
-    return_type_code = np.dtype(return_type).char
-    return_type_code = return_type_code if return_type_code in _numpy_type_codes else "O"
+    return_annotation = _parse_annotation(sig.return_annotation)
+    return_type_code = _np_dtype_char(return_annotation)
+    np_type_codes = [c if c in _SUPPORTED_NP_TYPE_CODES else "O" for c in np_type_codes]
+    return_type_code = return_type_code if return_type_code in _SUPPORTED_NP_TYPE_CODES else "O"
 
     np_type_codes.extend(["-", ">", return_type_code])
     return "".join(np_type_codes)
+
+
+def _udf_return_dtype(fn):
+    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
+        return dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
+    else:
+        return dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
+
+
+def _py_udf(fn: Callable):
+    """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
+    Python and Java. This decorator is intended for use by the Deephaven query engine and should not be used by
+    users.
+
+    For now, this decorator is only capable of converting Python function return values to Java values. It
+    does not yet convert Java values in arguments to usable Python object (e.g. numpy arrays) or properly translate
+    Deephaven primitive null values.
+
+    For properly annotated functions, including numba vectorized and guvectorized ones, this decorator inspects the
+    signature of the function and determines its return type, including supported primitive types and arrays of
+    the supported primitive types. It then converts the return value of the function to the corresponding Java value
+    of the same type. For unsupported types, the decorator returns the original Python value which appears as
+    org.jpy.PyObject in Java.
+    """
+
+    if hasattr(fn, "return_type"):
+        return fn
+    ret_dtype = _udf_return_dtype(fn)
+    return_array = False
+
+    # If the function is a numba guvectorized function, examine the signature of the function to determine if it
+    # returns an array.
+    if isinstance(fn, numba.np.ufunc.gufunc.GUFunc):
+        sig = fn.signature
+        rtype = sig.split("->")[-1].strip("()")
+        if rtype:
+            return_array = True
+    else:
+        return_annotation = _parse_annotation(inspect.signature(fn).return_annotation)
+        component_type = _component_np_dtype_char(return_annotation)
+        if component_type:
+            ret_dtype = dtypes.from_np_dtype(np.dtype(component_type))
+            if ret_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
+                return_array = True
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        ret = fn(*args, **kwargs)
+        if return_array:
+            return dtypes.array(ret_dtype, ret)
+        elif ret_dtype == dtypes.PyObject:
+            return ret
+        else:
+            return _scalar(ret, ret_dtype)
+
+    wrapper.j_name = ret_dtype.j_name
+    real_ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype) if return_array else ret_dtype
+
+    if hasattr(ret_dtype.j_type, 'jclass'):
+        j_class = real_ret_dtype.j_type.jclass
+    else:
+        j_class = real_ret_dtype.qst_type.clazz()
+
+    wrapper.return_type = j_class
+
+    return wrapper
 
 
 def dh_vectorize(fn):
@@ -403,7 +485,9 @@ def dh_vectorize(fn):
     and (3) the input arrays.
     """
     signature = _encode_signature(fn)
+    ret_dtype = _udf_return_dtype(fn)
 
+    @wraps(fn)
     def wrapper(*args):
         if len(args) != len(signature) - len("->?") + 2:
             raise ValueError(
@@ -417,10 +501,10 @@ def dh_vectorize(fn):
             vectorized_args = zip(*args[2:])
             for i in range(chunk_size):
                 scalar_args = next(vectorized_args)
-                chunk_result[i] = fn(*scalar_args)
+                chunk_result[i] = _scalar(fn(*scalar_args), ret_dtype)
         else:
             for i in range(chunk_size):
-                chunk_result[i] = fn()
+                chunk_result[i] = _scalar(fn(), ret_dtype)
 
         return chunk_result
 
@@ -539,6 +623,11 @@ class Table(JObjectWrapper):
         return self._is_refreshing
 
     @property
+    def is_blink(self) -> bool:
+        """Whether this table is a blink table."""
+        return _JBlinkTableTools.isBlink(self.j_table)
+
+    @property
     def update_graph(self) -> UpdateGraph:
         """The update graph of the table."""
         if self._update_graph is None:
@@ -570,9 +659,22 @@ class Table(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_table
 
+    def has_columns(self, cols: Union[str, Sequence[str]]):
+        """Whether this table contains a column for each of the provided names, return False if any of the columns is
+        not in the table.
+
+        Args:
+            cols (Union[str, Sequence[str]]): the column name(s)
+
+        Returns:
+            bool
+        """
+        cols = to_sequence(cols)
+        return self.j_table.hasColumns(cols)
+
     def attributes(self) -> Dict[str, Any]:
         """Returns all the attributes defined on the table."""
-        j_map = jpy.cast(self.j_table, _JLiveAttributeMap).getAttributes()
+        j_map = jpy.cast(self.j_table, _JAttributeMap).getAttributes()
         return j_map_to_dict(j_map)
 
     def with_attributes(self, attrs: Dict[str, Any]) -> Table:
@@ -594,9 +696,28 @@ class Table(JObjectWrapper):
         """
         try:
             j_map = j_hashmap(attrs)
-            return Table(j_table=jpy.cast(self.j_table, _JLiveAttributeMap).withAttributes(j_map))
+            return Table(j_table=jpy.cast(self.j_table, _JAttributeMap).withAttributes(j_map))
         except Exception as e:
             raise DHError(e, "failed to create a table with attributes.") from e
+
+    def without_attributes(self, attrs: Union[str, Sequence[str]]) -> Table:
+        """Returns a new Table that shares the underlying data and schema with this table but with the specified
+        attributes removed.
+
+        Args:
+            attrs (Union[str, Sequence[str]]): the attribute name(s) to be removed
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            attrs = j_array_list(to_sequence(attrs))
+            return Table(j_table=jpy.cast(self.j_table, _JAttributeMap).withoutAttributes(attrs))
+        except Exception as e:
+            raise DHError(e, "failed to create a table without attributes.") from e
 
     def to_string(self, num_rows: int = 10, cols: Union[str, Sequence[str]] = None) -> str:
         """Returns the first few rows of a table as a pipe-delimited string.
@@ -1078,8 +1199,8 @@ class Table(JObjectWrapper):
             raise DHError(e, "table restrict_sort_to operation failed.") from e
 
     def sort_descending(self, order_by: Union[str, Sequence[str]]) -> Table:
-        """The sort_descending method creates a new table where rows in a table are sorted in a largest to smallest
-        order based on the order_by column(s).
+        """The sort_descending method creates a new table where rows in a table are sorted in descending order based on
+        the order_by column(s).
 
         Args:
             order_by (Union[str, Sequence[str]], optional): the column name(s)
@@ -2055,19 +2176,19 @@ class Table(JObjectWrapper):
     def slice(self, start: int, stop: int) -> Table:
         """Extracts a subset of a table by row positions into a new Table.
 
-          If both the start and the stop are positive, then both are counted from the beginning of the table.
-          The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
-          The start must be less than or equal to the stop.
+        If both the start and the stop are positive, then both are counted from the beginning of the table.
+        The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
+        The start must be less than or equal to the stop.
 
-          If the start is positive and the stop is negative, then the start is counted from the beginning of the
-          table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
-          rows but the first and last. If the stop is before the start, the result is an empty table.
+        If the start is positive and the stop is negative, then the start is counted from the beginning of the
+        table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
+        rows but the first and last. If the stop is before the start, the result is an empty table.
 
-          If the start is negative, and the stop is zero, then the start is counted from the end of the table,
-          and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
+        If the start is negative, and the stop is zero, then the start is counted from the end of the table,
+        and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
 
-          If the start is negative and the stop is negative, they are both counted from the end of the
-          table. For example, slice(-2, -1) returns the second to last row of the table.
+        If the start is negative and the stop is negative, they are both counted from the end of the
+        table. For example, slice(-2, -1) returns the second to last row of the table.
 
         Args:
             start (int): the first row position to include in the result
@@ -2111,12 +2232,12 @@ class Table(JObjectWrapper):
                include_constituents: bool = False) -> RollupTable:
         """Creates a rollup table.
 
-         A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
-         using one less by column on each level. The column that is no longer part of the aggregation key is
-         replaced with null on each level.
+        A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
+        using one less by column on each level. The column that is no longer part of the aggregation key is
+        replaced with null on each level.
 
-         Note some aggregations can not be used in creating a rollup tables, these include: group, partition, median,
-         pct, weighted_avg
+        Note some aggregations can not be used in creating a rollup tables, these include: group, partition, median,
+        pct, weighted_avg
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
@@ -2246,12 +2367,13 @@ class PartitionedTable(JObjectWrapper):
         Note: key_cols, unique_keys, constituent_column, constituent_table_columns,
         constituent_changes_permitted must either be all None or all have values. When they are None, their values will
         be inferred as follows:
-            key_cols: the names of all columns with a non-Table data type
-            unique_keys: False
-            constituent_column: the name of the first column with a Table data type
-            constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
-                column. Consequently the constituent column can't be empty
-            constituent_changes_permitted: the value of table.is_refreshing
+
+        |    * key_cols: the names of all columns with a non-Table data type
+        |    * unique_keys: False
+        |    * constituent_column: the name of the first column with a Table data type
+        |    * constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
+            column. Consequently, the constituent column can't be empty.
+        |    * constituent_changes_permitted: the value of table.is_refreshing
 
 
         Args:
@@ -2259,7 +2381,7 @@ class PartitionedTable(JObjectWrapper):
             key_cols (Union[str, List[str]]): the key column name(s) of 'table'
             unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
             constituent_column (str): the constituent column name in 'table'
-            constituent_table_columns (list[Column]): the column definitions of the constituent table
+            constituent_table_columns (List[Column]): the column definitions of the constituent table
             constituent_changes_permitted (bool): whether the values of the constituent column can change
 
         Returns:
@@ -2373,7 +2495,7 @@ class PartitionedTable(JObjectWrapper):
 
     @property
     def constituent_table_columns(self) -> List[Column]:
-        """The column definitions for constituent tables.  All constituent tables in a partitioned table have the
+        """The column definitions for constituent tables. All constituent tables in a partitioned table have the
         same column definitions."""
         if not self._schema:
             self._schema = _td_to_columns(self.j_partitioned_table.constituentDefinition())
@@ -2445,17 +2567,17 @@ class PartitionedTable(JObjectWrapper):
         """The sort method creates a new partitioned table where the rows are ordered based on values in a specified
         set of columns. Sort can not use the constituent column.
 
-         Args:
-             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
-             order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
+        Args:
+            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
+            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
                 each sort column, default is None, meaning ascending order for all the sort columns.
 
-         Returns:
-             a new PartitionedTable
+        Returns:
+            a new PartitionedTable
 
-         Raises:
-             DHError
-         """
+        Raises:
+            DHError
+        """
 
         try:
             order_by = to_sequence(order_by)
@@ -2505,7 +2627,7 @@ class PartitionedTable(JObjectWrapper):
         if the Table underlying this PartitionedTable changes, a corresponding change will propagate to the result.
 
         Args:
-            func (Callable[[Table], Table]: a function which takes a Table as input and returns a new Table
+            func (Callable[[Table], Table]): a function which takes a Table as input and returns a new Table
 
         Returns:
             a PartitionedTable
@@ -2533,7 +2655,7 @@ class PartitionedTable(JObjectWrapper):
         Args:
             other (PartitionedTable): the other Partitioned table whose constituent tables will be passed in as the 2nd
                 argument to the provided function
-            func (Callable[[Table, Table], Table]: a function which takes two Tables as input and returns a new Table
+            func (Callable[[Table, Table], Table]): a function which takes two Tables as input and returns a new Table
 
         Returns:
             a PartitionedTable
@@ -2558,8 +2680,8 @@ class PartitionedTable(JObjectWrapper):
                 present when an operation uses this PartitionedTable and another PartitionedTable as inputs for a
                 :meth:`~PartitionedTable.partitioned_transform`, default is True
             sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs
-            in exactly one constituent table of the underlying partitioned table. If the other table argument is also a
-            PartitionedTableProxy, its constituents will also be subjected to this constraint.
+                in exactly one constituent table of the underlying partitioned table. If the other table argument is also a
+                PartitionedTableProxy, its constituents will also be subjected to this constraint.
         """
         return PartitionedTableProxy(
             j_pt_proxy=self.j_partitioned_table.proxy(require_matching_keys, sanity_check_joins))
@@ -3523,3 +3645,105 @@ class PartitionedTableProxy(JObjectWrapper):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateBy(j_array_list(ops), *by))
         except Exception as e:
             raise DHError(e, "update-by operation on the PartitionedTableProxy failed.") from e
+
+class MultiJoinInput(JObjectWrapper):
+    """A MultiJoinInput represents the input tables, key columns and additional columns to be used in the multi-table
+    natural join. """
+    j_object_type = _JMultiJoinInput
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_multijoininput
+
+    def __init__(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None):
+        """Creates a new MultiJoinInput containing the table to include for the join, the key columns from the table to
+        match with other table keys plus additional columns containing data from the table. Rows containing unique keys
+        will be added to the output table, otherwise the data from these columns will be added to the existing output
+        rows.
+
+        Args:
+            table (Table): the right table to include in the join
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+                i.e. "col_a = col_b" for different column names
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the this table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
+
+        Raises:
+            DHError
+        """
+        try:
+            self.table = table
+            on = to_sequence(on)
+            joins = to_sequence(joins)
+            self.j_multijoininput = _JMultiJoinInput.of(table.j_table, on, joins)
+        except Exception as e:
+            raise DHError(e, "failed to build a MultiJoinInput object.") from e
+
+
+class MultiJoinTable(JObjectWrapper):
+    """A MultiJoinTable is an object that contains the result of a multi-table natural join. To retrieve the underlying
+    result Table, use the table() method. """
+    j_object_type = _JMultiJoinTable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_multijointable
+
+    def table(self) -> Table:
+        """Returns the Table containing the multi-table natural join output. """
+        return Table(j_table=self.j_multijointable.table())
+
+    def __init__(self, input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
+                 on: Union[str, Sequence[str]] = None):
+        """Creates a new MultiJoinTable. The join can be specified in terms of either tables or MultiJoinInputs.
+
+        Args:
+            input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects
+                specifying the tables and columns to include in the join.
+            on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality
+                expression that matches every input table, i.e. "col_a = col_b" to rename output column names. Note:
+                When MultiJoinInput objects are supplied, this parameter must be omitted.
+
+        Raises:
+            DHError
+        """
+        try:
+            if isinstance(input, Table) or (isinstance(input, Sequence) and all(isinstance(t, Table) for t in input)):
+                tables = to_sequence(input, wrapped=True)
+                with auto_locking_ctx(*tables):
+                    j_tables = to_sequence(input)
+                    self.j_multijointable = _JMultiJoinFactory.of(on, *j_tables)
+            elif isinstance(input, MultiJoinInput) or (isinstance(input, Sequence) and all(isinstance(ji, MultiJoinInput) for ji in input)):
+                if on is not None:
+                    raise DHError(message="on parameter is not permitted when MultiJoinInput objects are provided.")
+                wrapped_input = to_sequence(input, wrapped=True)
+                tables = [ji.table for ji in wrapped_input]
+                with auto_locking_ctx(*tables):
+                    input = to_sequence(input)
+                    self.j_multijointable = _JMultiJoinFactory.of(*input)
+            else:
+                raise DHError(message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs.")
+
+        except Exception as e:
+            raise DHError(e, "failed to build a MultiJoinTable object.") from e
+
+
+
+def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
+               on: Union[str, Sequence[str]] = None) -> MultiJoinTable:
+    """ The multi_join method creates a new table by performing a multi-table natural join on the input tables.  The result
+    consists of the set of distinct keys from the input tables natural joined to each input table. Input tables need not
+    have a matching row for each key, but they may not have multiple matching rows for a given key.
+
+    Args:
+        input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying the
+            tables and columns to include in the join.
+        on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality expression
+            that matches every input table, i.e. "col_a = col_b" to rename output column names. Note: When
+            MultiJoinInput objects are supplied, this parameter must be omitted.
+
+    Returns:
+        MultiJoinTable: the result of the multi-table natural join operation. To access the underlying Table, use the
+            table() method.
+    """
+    return MultiJoinTable(input, on)

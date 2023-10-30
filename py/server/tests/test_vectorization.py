@@ -4,6 +4,7 @@
 import random
 import unittest
 
+from typing import Optional
 import numpy as np
 
 import deephaven
@@ -143,7 +144,7 @@ class VectorizationTestCase(BaseTestCase):
             return p1 + p2 + p3
 
         t = empty_table(1).update("X = i").update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
-        self.assertEqual(deephaven.table._vectorized_count, 3)
+        self.assertEqual(deephaven.table._vectorized_count, 1)
         self.assertIn("33", t.to_string(cols=["Y"]))
         self.assertIn("66", t.to_string(cols=["Z"]))
 
@@ -186,11 +187,11 @@ class VectorizationTestCase(BaseTestCase):
         conditions = ["pyfunc_bool(I, 3, J)", "pyfunc_bool(i, 10, ii)"]
         filters = Filter.from_(conditions)
         t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where(filters)
-        self.assertEqual(3, deephaven.table._vectorized_count)
+        self.assertEqual(1, deephaven.table._vectorized_count)
 
         filter_and = and_(filters)
         t1 = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where(filter_and)
-        self.assertEqual(5, deephaven.table._vectorized_count)
+        self.assertEqual(1, deephaven.table._vectorized_count)
         self.assertEqual(t1.size, t.size)
         self.assertEqual(9, t.size)
 
@@ -264,6 +265,18 @@ class VectorizationTestCase(BaseTestCase):
 
         t = empty_table(100).update(["X = 0.1 * i", "SincXS=((sinc2(X)))"])
         self.assertEqual(t.columns[1].data_type, dtypes.PyObject)
+
+    def test_optional_annotations(self):
+        def pyfunc(p1: np.int32, p2: np.int32, p3: Optional[np.int32]) -> Optional[int]:
+            total = p1 + p2 + p3
+            return None if total % 3 == 0 else total
+
+        t = empty_table(10).update("X = i").update(["Y = pyfunc(X, i, 13)", "Z = pyfunc(X, ii, 66)"])
+        self.assertEqual(deephaven.table._vectorized_count, 2)
+        self.assertIn("13", t.to_string(cols=["Y"]))
+        self.assertIn("null", t.to_string())
+        self.assertEqual(t.columns[1].data_type, dtypes.long)
+        self.assertEqual(t.columns[2].data_type, dtypes.long)
 
 
 if __name__ == "__main__":

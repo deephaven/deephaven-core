@@ -264,7 +264,7 @@ def ema_tick(decay_ticks: float, cols: Union[str, List[str]],
 
 def ema_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
-    """Creates an EMA(exponential moving average) UpdateByOperation for the supplied column names, using time as the
+    """Creates an EMA (exponential moving average) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
@@ -603,11 +603,11 @@ def rolling_sum_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
         rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
         rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
         rev_ticks = 10, fwd_ticks = 10 - contains the previous 9 rows, the current row and the 10 rows following
-        rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+        rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before the
             current row (inclusive)
         rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows following the
             current row (inclusive)
 
     Args:
@@ -644,8 +644,8 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
 
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
-            inclusive)
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp
+            (inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
         rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
@@ -1376,7 +1376,7 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         raise DHError(e, "failed to create a rolling standard deviation (time) UpdateByOperation.") from e
 
 
-def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
+def rolling_wavg_tick(wcol: str, cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
     """Creates a rolling weighted average UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
     is considered to belong to the reverse window but not the forward window. Also, negative values are allowed and
@@ -1397,7 +1397,7 @@ def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: i
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
-        weight_col (str):  the column containing the weight values
+        wcol (str):  the column containing the weight values
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -1412,7 +1412,7 @@ def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: i
         fwd_window_scale = _GrpcUpdateByWindowScale(ticks=_GrpcUpdateByWindowTicks(ticks=fwd_ticks))
         ub_rolling = _GrpcUpdateByRollingWAvg(reverse_window_scale=rev_window_scale,
                                               forward_window_scale=fwd_window_scale,
-                                              weight_column=weight_col)
+                                              weight_column=wcol)
         ub_spec = _GrpcUpdateBySpec(rolling_wavg=ub_rolling)
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
         return UpdateByOperation(ub_column=ub_column)
@@ -1420,7 +1420,7 @@ def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: i
         raise DHError(e, "failed to create a rolling weighted average (tick) UpdateByOperation.") from e
 
 
-def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
+def rolling_wavg_time(ts_col: str, wcol: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                       fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling weighted average UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
@@ -1445,7 +1445,7 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
-        weight_col (str):  the column containing the weight values
+        wcol (str):  the column containing the weight values
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
         fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
@@ -1470,7 +1470,7 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
 
         ub_rolling = _GrpcUpdateByRollingWAvg(reverse_window_scale=rev_window_scale,
                                               forward_window_scale=fwd_window_scale,
-                                              weight_column=weight_col)
+                                              weight_column=wcol)
         ub_spec = _GrpcUpdateBySpec(rolling_wavg=ub_rolling)
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
         return UpdateByOperation(ub_column=ub_column)

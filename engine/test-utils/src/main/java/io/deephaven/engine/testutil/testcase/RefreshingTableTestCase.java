@@ -13,16 +13,15 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.process.ProcessEnvironment;
 import junit.framework.TestCase;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,6 +36,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     private static final boolean ENABLE_QUERY_COMPILER_LOGGING = Configuration.getInstance()
             .getBooleanForClassWithDefault(RefreshingTableTestCase.class, "QueryCompile.logEnabled", false);
 
+    private ProcessEnvironment oldProcessEnvironment;
     private boolean oldMemoize;
     private UpdateErrorReporter oldReporter;
     private boolean expectError = false;
@@ -55,6 +55,9 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     public void setUp() throws Exception {
         super.setUp();
 
+        oldProcessEnvironment = ProcessEnvironment.tryGet();
+        ProcessEnvironment.set(FakeProcessEnvironment.INSTANCE, true);
+
         // initialize the unit test's execution context
         executionContext = TestExecutionContext.createForUnitTests().open();
 
@@ -69,7 +72,6 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
 
         oldLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
         oldSerialSafe = updateGraph.setSerialTableOperationsSafe(true);
-        UpdatePerformanceTracker.getInstance().enableUnitTestMode();
         AsyncErrorLogger.init();
         ChunkPoolReleaseTracking.enableStrict();
     }
@@ -88,6 +90,12 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         AsyncClientErrorNotifier.setReporter(oldReporter);
         QueryTable.setMemoizeResults(oldMemoize);
         updateGraph.resetForUnitTests(true);
+
+        if (oldProcessEnvironment == null) {
+            ProcessEnvironment.clear();
+        } else {
+            ProcessEnvironment.set(oldProcessEnvironment, true);
+        }
 
         super.tearDown();
     }

@@ -12,7 +12,7 @@
 
 namespace deephaven::dhcore::clienttable {
 /**
- * Declaration provided in deephaven/dhcore/schema/schema.h
+ * Declaration provided in deephaven/dhcore/schema/Schema.h
  */
 class Schema;
 /**
@@ -22,22 +22,23 @@ class ClientTable;
 
 namespace internal {
 class TableStreamAdaptor {
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
+  using RowSequence = deephaven::dhcore::container::RowSequence;
 public:
   TableStreamAdaptor(const ClientTable &table,
-      std::vector<std::shared_ptr<RowSequence>> rowSequences, bool wantHeaders, bool wantRowNumbers,
-      bool highlightCells) : table_(table), rowSequences_(std::move(rowSequences)),
-      wantHeaders_(wantHeaders), wantRowNumbers_(wantRowNumbers), highlightCells_(highlightCells) {}
+      std::vector<std::shared_ptr<RowSequence>> row_sequences, bool want_headers,
+      bool want_row_numbers, bool highlight_cells) : table_(table),
+      row_sequences_(std::move(row_sequences)), want_headers_(want_headers),
+      want_row_numbers_(want_row_numbers), highlight_cells_(highlight_cells) {}
   TableStreamAdaptor(const TableStreamAdaptor &) = delete;
   TableStreamAdaptor &operator=(const TableStreamAdaptor &) = delete;
   ~TableStreamAdaptor() = default;
 
 private:
   const ClientTable &table_;
-  std::vector<std::shared_ptr<RowSequence>> rowSequences_;
-  bool wantHeaders_ = false;
-  bool wantRowNumbers_ = false;
-  bool highlightCells_ = false;
+  std::vector<std::shared_ptr<RowSequence>> row_sequences_;
+  bool want_headers_ = false;
+  bool want_row_numbers_ = false;
+  bool highlight_cells_ = false;
 
   friend std::ostream &operator<<(std::ostream &s, const TableStreamAdaptor &o);
 };
@@ -52,12 +53,11 @@ public:
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::column::ColumnSource ColumnSource;
+  using ColumnSource = deephaven::dhcore::column::ColumnSource;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
-
+  using RowSequence = deephaven::dhcore::container::RowSequence;
   /**
    * Constructor.
    */
@@ -70,12 +70,14 @@ public:
   /**
    * Get the RowSequence (in position space) that underlies this Table.
    */
-  virtual std::shared_ptr<RowSequence> getRowSequence() const = 0;
+  [[nodiscard]]
+  virtual std::shared_ptr<RowSequence> GetRowSequence() const = 0;
   /**
    * Gets a ColumnSource from the clienttable by index.
-   * @param columnIndex Must be in the half-open interval [0, numColumns).
+   * @param column_index Must be in the half-open interval [0, NumColumns).
    */
-  virtual std::shared_ptr<ColumnSource> getColumn(size_t columnIndex) const = 0;
+  [[nodiscard]]
+  virtual std::shared_ptr<ColumnSource> GetColumn(size_t column_index) const = 0;
 
   /**
    * Gets a ColumnSource from the clienttable by name. 'strict' controls whether the method
@@ -85,7 +87,8 @@ public:
    * @return If 'name' was found, returns the ColumnSource. If 'name' was not found and 'strict'
    * is true, throws an exception. If 'name' was not found and 'strict' is false, returns nullptr.
    */
-  std::shared_ptr<ColumnSource> getColumn(std::string_view name, bool strict) const;
+  [[nodiscard]]
+  std::shared_ptr<ColumnSource> GetColumn(std::string_view name, bool strict) const;
   /**
    * Gets the index of a ColumnSource from the clienttable by name. 'strict' controls whether the method
    * must succeed.
@@ -95,56 +98,66 @@ public:
    * 'strict' is true, throws an exception. If 'name' was not found and 'strict' is false, returns
    * an empty optional.
    */
-  std::optional<size_t> getColumnIndex(std::string_view name, bool strict) const;
+  [[nodiscard]]
+  std::optional<size_t> GetColumnIndex(std::string_view name, bool strict) const;
 
   /**
    * Number of rows in the clienttable.
    */
-  virtual size_t numRows() const = 0;
+  [[nodiscard]]
+  virtual size_t NumRows() const = 0;
   /**
    * Number of columns in the clienttable.
    */
-  virtual size_t numColumns() const = 0;
+  [[nodiscard]]
+  virtual size_t NumColumns() const = 0;
   /**
    * The clienttable schema.
    */
-  virtual std::shared_ptr<Schema> schema() const = 0;
+  [[nodiscard]]
+  virtual std::shared_ptr<deephaven::dhcore::clienttable::Schema> Schema() const = 0;
 
   /**
    * Creates an 'ostream adaptor' to use when printing the clienttable. Example usage:
-   * std::cout << myTable.stream(true, false).
+   * std::cout << myTable.Stream(true, false).
    */
-  internal::TableStreamAdaptor stream(bool wantHeaders, bool wantRowNumbers) const;
+  [[nodiscard]]
+  internal::TableStreamAdaptor Stream(bool want_headers, bool want_row_numbers) const;
 
   /**
    * Creates an 'ostream adaptor' to use when printing the clienttable. Example usage:
-   * std::cout << myTable.stream(true, false, rowSeq).
+   * std::cout << myTable.Stream(true, false, rowSeq).
    */
-  internal::TableStreamAdaptor stream(bool wantHeaders, bool wantRowNumbers,
-      std::shared_ptr<RowSequence> rowSequence) const;
+  [[nodiscard]]
+  internal::TableStreamAdaptor Stream(bool want_headers, bool want_row_numbers,
+      std::shared_ptr<RowSequence> row_sequence) const;
 
   /**
    * Creates an 'ostream adaptor' to use when printing the clienttable. Example usage:
-   * std::cout << myTable.stream(true, false, rowSequences).
+   * std::cout << myTable.Stream(true, false, rowSequences).
    */
-  internal::TableStreamAdaptor stream(bool wantHeaders, bool wantRowNumbers,
-      std::vector<std::shared_ptr<RowSequence>> rowSequences) const;
+  [[nodiscard]]
+  internal::TableStreamAdaptor Stream(bool want_headers, bool want_row_numbers,
+      std::vector<std::shared_ptr<RowSequence>> row_sequences) const;
 
   /**
    * For debugging and demos.
    */
-   std::string toString(bool wantHeaders, bool wantRowNumbers) const;
+  [[nodiscard]]
+  std::string ToString(bool want_headers, bool want_row_numbers) const;
 
   /**
    * For debugging and demos.
    */
-  std::string toString(bool wantHeaders, bool wantRowNumbers,
-      std::shared_ptr<RowSequence> rowSequence) const;
+  [[nodiscard]]
+  std::string ToString(bool want_headers, bool want_row_numbers,
+      std::shared_ptr<RowSequence> row_sequence) const;
 
   /**
    * For debugging and demos.
    */
-  std::string toString(bool wantHeaders, bool wantRowNumbers,
-      std::vector<std::shared_ptr<RowSequence>> rowSequences) const;
+  [[nodiscard]]
+  std::string ToString(bool want_headers, bool want_row_numbers,
+      std::vector<std::shared_ptr<RowSequence>> row_sequences) const;
 };
 }  // namespace deephaven::dhcore::clienttable

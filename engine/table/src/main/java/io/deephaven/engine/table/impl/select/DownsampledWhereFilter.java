@@ -12,6 +12,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.ColumnSource;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -86,8 +87,13 @@ public class DownsampledWhereFilter extends WhereFilterImpl {
     @Override
     public void init(TableDefinition tableDefinition) {}
 
+    @NotNull
     @Override
-    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(
+            @NotNull final RowSet selection,
+            @NotNull final RowSet fullSet,
+            @NotNull final Table table,
+            final boolean usePrev) {
         if (DynamicNode.isDynamicAndIsRefreshing(table)) {
             throw new UnsupportedOperationException("Can not do a DownsampledWhereFilter on a refreshing table!");
         }

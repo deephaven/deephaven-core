@@ -226,6 +226,13 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
+        public void invalidate() {
+            for(int ii = 0; ii < getRegionCount(); ii++) {
+                getRegion(ii).invalidate();
+            }
+        }
+
+        @Override
         public DATA_TYPE getObject(final long elementIndex) {
             return lookupRegion(elementIndex).getObject(elementIndex);
         }
@@ -304,6 +311,11 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         private DictionaryKeysWrapper(final long prefixBits, @NotNull final ColumnRegionLong<DictionaryKeys> wrapped) {
             this.prefixBits = prefixBits;
             this.wrapped = wrapped;
+        }
+
+        @Override
+        public void invalidate() {
+            wrapped.invalidate();
         }
 
         @Override

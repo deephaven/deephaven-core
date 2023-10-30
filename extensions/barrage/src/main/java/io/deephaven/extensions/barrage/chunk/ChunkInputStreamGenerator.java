@@ -30,6 +30,7 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.Iterator;
 
 public interface ChunkInputStreamGenerator extends SafeCloseable {
@@ -63,7 +64,12 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 return new DoubleChunkInputStreamGenerator(chunk.asDoubleChunk(), Double.BYTES, rowOffset);
             case Object:
                 if (type.isArray()) {
-                    return new VarListChunkInputStreamGenerator<>(type, chunk.asObjectChunk(), rowOffset);
+                    if (componentType == byte.class) {
+                        return new VarBinaryChunkInputStreamGenerator<>(chunk.asObjectChunk(), rowOffset,
+                                (out, item) -> out.write((byte[]) item));
+                    } else {
+                        return new VarListChunkInputStreamGenerator<>(type, chunk.asObjectChunk(), rowOffset);
+                    }
                 }
                 if (Vector.class.isAssignableFrom(type)) {
                     //noinspection unchecked
@@ -204,8 +210,18 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                         Double.BYTES, options,fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Object:
                 if (type.isArray()) {
-                   return VarListChunkInputStreamGenerator.extractChunkFromInputStream(
-                           options, type, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                    if (componentType == byte.class) {
+                        return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
+                              is,
+                              fieldNodeIter,
+                              bufferInfoIter,
+                              (buf, off, len) -> Arrays.copyOfRange(buf, off, off + len),
+                              outChunk, outOffset, totalRows
+                        );
+                    } else {
+                        return VarListChunkInputStreamGenerator.extractChunkFromInputStream(
+                              options, type, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                    }
                 }
                 if (Vector.class.isAssignableFrom(type)) {
                     //noinspection unchecked

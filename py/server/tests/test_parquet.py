@@ -4,18 +4,17 @@
 
 import os
 import shutil
-import unittest
 import tempfile
+import unittest
 
 import pandas
-from deephaven.pandas import to_pandas, to_table
+import pyarrow.parquet
 
-from deephaven import empty_table, dtypes, new_table
+from deephaven import DHError, empty_table, dtypes, new_table
+from deephaven import arrow as dharrow
 from deephaven.column import InputColumn
+from deephaven.pandas import to_pandas, to_table
 from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction
-from deephaven.table import Table
-from deephaven.time import epoch_nanos_to_instant
-
 from tests.testbase import BaseTestCase
 
 
@@ -24,12 +23,14 @@ class ParquetTestCase(BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         # define a junk table workspace directory
         cls.temp_dir = tempfile.TemporaryDirectory()
 
     @classmethod
     def tearDownClass(cls):
         cls.temp_dir.cleanup()
+        super().tearDownClass()
 
     def test_crd(self):
         """ Test suite for reading, writing, and deleting a table to disk """
@@ -147,11 +148,30 @@ class ParquetTestCase(BaseTestCase):
         self.assertTrue(os.path.exists(file_location))
         shutil.rmtree(base_dir)
 
-    def test_round_trip_data(self):
-        """
-        Pass data between DH and pandas via pyarrow, making sure each side can read data the other side writes
-        """
+    def test_int96_timestamps(self):
+        """ Tests for int96 timestamp values """
+        dh_table = empty_table(5).update(formulas=[
+            "nullInstantColumn = (Instant)null",
+            "someInstantColumn = DateTimeUtils.now() + i",
+        ])
+        # Writing Int96 based timestamps are not supported in deephaven parquet code, therefore we use pyarrow to do that
+        dataframe = to_pandas(dh_table)
+        table = pyarrow.Table.from_pandas(dataframe)
+        pyarrow.parquet.write_table(table, 'data_from_pa.parquet', use_deprecated_int96_timestamps=True)
+        from_disk_int96 = read('data_from_pa.parquet')
+        self.assert_table_equals(dh_table, from_disk_int96)
 
+        # Read the parquet file as a pandas dataframe, and ensure all values are written as null
+        dataframe = pandas.read_parquet("data_from_pa.parquet")
+        dataframe_null_columns = dataframe[["nullInstantColumn"]]
+        self.assertTrue(dataframe_null_columns.isnull().values.all())
+
+        # Write the timestamps as int64 using deephaven writing code and compare with int96 table
+        write(dh_table, "data_from_dh.parquet")
+        from_disk_int64 = read('data_from_dh.parquet')
+        self.assert_table_equals(from_disk_int64, from_disk_int96)
+
+    def get_table_data(self):
         # create a table with columns to test different types and edge cases
         dh_table = empty_table(20).update(formulas=[
             "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
@@ -183,29 +203,99 @@ class ParquetTestCase(BaseTestCase):
             # "nullBigDecColumn = (java.math.BigDecimal)null",
             # "nullBigIntColumn = (java.math.BigInteger)null"
         ])
+        return dh_table
+
+    def get_table_with_array_data(self):
+        # create a table with columns to test different types and edge cases
+        dh_table = empty_table(20).update(formulas=[
+            "someStringArrayColumn = new String[] {i % 10 == 0 ? null : (`` + (i % 101))}",
+            "someIntArrayColumn = new int[] {i % 10 == 0 ? null : i}",
+            "someLongArrayColumn = new long[] {i % 10 == 0 ? null : i}",
+            "someDoubleArrayColumn = new double[] {i % 10 == 0 ? null : i*1.1}",
+            "someFloatArrayColumn = new float[] {i % 10 == 0 ? null : (float)(i*1.1)}",
+            "someBoolArrayColumn = new Boolean[] {i % 3 == 0 ? true :i % 3 == 1 ? false : null}",
+            "someShorArrayColumn = new short[] {i % 10 == 0 ? null : (short)i}",
+            "someByteArrayColumn = new byte[] {i % 10 == 0 ? null : (byte)i}",
+            "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
+            "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
+            "someBiColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
+            "nullStringArrayColumn = new String[] {(String)null}",
+            "nullIntArrayColumn = new int[] {(int)null}",
+            "nullLongArrayColumn = new long[] {(long)null}",
+            "nullDoubleArrayColumn = new double[] {(double)null}",
+            "nullFloatArrayColumn = new float[] {(float)null}",
+            "nullBoolArrayColumn = new Boolean[] {(Boolean)null}",
+            "nullShorArrayColumn = new short[] {(short)null}",
+            "nullByteArrayColumn = new byte[] {(byte)null}",
+            "nullCharArrayColumn = new char[] {(char)null}",
+            "nullTimeArrayColumn = new Instant[] {(Instant)null}",
+            "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"
+        ])
+        return dh_table
+
+    def test_round_trip_data(self):
+        """
+        Pass data between DH and pandas via pyarrow, making sure each side can read data the other side writes
+        """
         # These tests are done with each of the fully-supported compression formats
+        dh_table = self.get_table_data()
         self.round_trip_with_compression("UNCOMPRESSED", dh_table)
         self.round_trip_with_compression("SNAPPY", dh_table)
-        # LZO is not fully supported in python/c++
-        # self.round_trip_with_compression("LZO", dh_table)
-        # TODO(deephaven-core#3148): LZ4_RAW parquet support
-        # self.round_trip_with_compression("LZ4", dh_table)
+        self.round_trip_with_compression("LZO", dh_table)
+        self.round_trip_with_compression("LZ4", dh_table)
+        self.round_trip_with_compression("LZ4_RAW", dh_table)
+        self.round_trip_with_compression("LZ4RAW", dh_table)
         self.round_trip_with_compression("GZIP", dh_table)
         self.round_trip_with_compression("ZSTD", dh_table)
 
-    def round_trip_with_compression(self, compression_codec_name, dh_table):
+        # Perform group_by to convert columns to vector format
+        dh_table_vector_format = dh_table.group_by()
+        self.round_trip_with_compression("UNCOMPRESSED", dh_table_vector_format, True)
+
+        # Perform similar tests on table with array columns
+        dh_table_array_format = self.get_table_with_array_data()
+        self.round_trip_with_compression("UNCOMPRESSED", dh_table_array_format, True)
+
+    def round_trip_with_compression(self, compression_codec_name, dh_table, vector_columns=False):
         # dh->parquet->dataframe (via pyarrow)->dh
         write(dh_table, "data_from_dh.parquet", compression_codec_name=compression_codec_name)
+
+        # Read the parquet file using deephaven.parquet and compare
+        result_table = read('data_from_dh.parquet')
+        self.assert_table_equals(dh_table, result_table)
+
+        # LZO is not fully supported in pyarrow, so we can't do the rest of the tests
+        if compression_codec_name is 'LZO':
+            return
+
+        # Read the parquet file as a pandas dataframe, convert it to deephaven table and compare
         if pandas.__version__.split('.')[0] == "1":
             dataframe = pandas.read_parquet("data_from_dh.parquet", use_nullable_dtypes=True)
         else:
             dataframe = pandas.read_parquet("data_from_dh.parquet", dtype_backend="numpy_nullable")
 
+        # All null columns should all be stored as "null" in the parquet file, and not as NULL_INT or NULL_CHAR, etc.
+        dataframe_null_columns = dataframe.iloc[:, -10:]
+        if vector_columns:
+            for column in dataframe_null_columns:
+                df = pandas.DataFrame(dataframe_null_columns.at[0, column])
+                self.assertTrue(df.isnull().values.all())
+            return
+        else:
+            self.assertTrue(dataframe_null_columns.isnull().values.all())
+
+        # Convert the dataframe to deephaven table and compare
+        # These steps are not done for tables with vector columns since we don't automatically convert python lists to
+        # java vectors.
         result_table = to_table(dataframe)
         self.assert_table_equals(dh_table, result_table)
 
-        # dh->parquet->dataframe (via pyarrow)->parquet->dh
-        dataframe.to_parquet('data_from_pandas.parquet', compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
+        # Write the pandas dataframe back to parquet (via pyarraow) and read it back using deephaven.parquet to compare
+        # Pandas references LZ4_RAW as LZ4, so we need to convert the name
+        dataframe.to_parquet('data_from_pandas.parquet',
+                             compression=None if compression_codec_name == 'UNCOMPRESSED' else
+                             "LZ4" if compression_codec_name == 'LZ4_RAW' or compression_codec_name == 'LZ4RAW'
+                             else compression_codec_name)
         result_table = read('data_from_pandas.parquet')
         self.assert_table_equals(dh_table, result_table)
 
@@ -215,6 +305,55 @@ class ParquetTestCase(BaseTestCase):
         # dataframe.to_parquet('data_from_pandas.parquet', compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
         # result_table = read('data_from_pandas.parquet')
         # self.assert_table_equals(dh_table, result_table)
+
+    def test_writing_lists_via_pyarrow(self):
+        # This function tests that we can write tables with list types to parquet files via pyarrow and read them back
+        # through deephaven's parquet reader code with no exceptions
+        pa_table = pyarrow.table({'numList': [[2, 2, 4]],
+                                  'stringList': [["Flamingo", "Parrot", "Dog"]]})
+        pyarrow.parquet.write_table(pa_table, 'data_from_pa.parquet')
+        from_disk = read('data_from_pa.parquet').select()
+        pa_table_from_disk = dharrow.to_arrow(from_disk)
+        self.assertTrue(pa_table.equals(pa_table_from_disk))
+
+    def test_writing_time_via_pyarrow(self):
+        def _test_writing_time_helper(filename):
+            metadata = pyarrow.parquet.read_metadata(filename)
+            if "isAdjustedToUTC=false" in str(metadata.row_group(0).column(0)):
+                # TODO(deephaven-core#976): Unable to read non UTC adjusted timestamps
+                with self.assertRaises(DHError) as e:
+                    read(filename)
+                self.assertIn("ParquetFileReaderException", e.exception.root_cause)
+
+        df = pandas.DataFrame({
+            "f": pandas.date_range("20130101", periods=3),
+        })
+        df.to_parquet("pyarrow_26.parquet", engine='pyarrow', compression=None, version='2.6')
+        _test_writing_time_helper("pyarrow_26.parquet")
+        df.to_parquet("pyarrow_24.parquet", engine='pyarrow', compression=None, version='2.4')
+        _test_writing_time_helper("pyarrow_24.parquet")
+        df.to_parquet("pyarrow_10.parquet", engine='pyarrow', compression=None, version='1.0')
+        _test_writing_time_helper("pyarrow_10.parquet")
+
+    def test_dictionary_encoding(self):
+        dh_table = empty_table(10).update(formulas=[
+            "shortStringColumn = `Row ` + i",
+            "longStringColumn = `This is row ` + i",
+            "someIntColumn = i"
+        ])
+        # Force "longStringColumn" to use non-dictionary encoding
+        write(dh_table, "data_from_dh.parquet", max_dictionary_size=100)
+        from_disk = read('data_from_dh.parquet')
+        self.assert_table_equals(dh_table, from_disk)
+
+        metadata = pyarrow.parquet.read_metadata("data_from_dh.parquet")
+        self.assertTrue((metadata.row_group(0).column(0).path_in_schema == 'shortStringColumn') &
+                        ('RLE_DICTIONARY' in str(metadata.row_group(0).column(0).encodings)))
+        self.assertTrue((metadata.row_group(0).column(1).path_in_schema == 'longStringColumn') &
+                        ('RLE_DICTIONARY' not in str(metadata.row_group(0).column(2).encodings)))
+        self.assertTrue((metadata.row_group(0).column(2).path_in_schema == 'someIntColumn') &
+                        ('RLE_DICTIONARY' not in str(metadata.row_group(0).column(2).encodings)))
+
 
 if __name__ == '__main__':
     unittest.main()

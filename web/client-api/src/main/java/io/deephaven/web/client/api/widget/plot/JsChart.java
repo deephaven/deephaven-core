@@ -18,8 +18,14 @@ import jsinterop.base.Js;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Provide the details for a chart.
+ */
 @JsType(name = "Chart", namespace = "dh.plot")
 public class JsChart extends HasEventHandling {
+    /**
+     * a new series was added to this chart as part of a multi-series. The series instance is the detail for this event.
+     */
     public static final String EVENT_SERIES_ADDED = "seriesadded";
 
     private final ChartDescriptor descriptor;
@@ -66,12 +72,22 @@ public class JsChart extends HasEventHandling {
         return descriptor.getRowspan();
     }
 
+    /**
+     * The type of this chart, see <b>ChartType</b> enum for more details.
+     * 
+     * @return int
+     */
     @JsProperty
     @TsTypeRef(JsChartType.class)
     public int getChartType() {
         return descriptor.getChartType();
     }
 
+    /**
+     * The title of the chart.
+     * 
+     * @return String
+     */
     @JsProperty
     @JsNullable
     public String getTitle() {
@@ -123,16 +139,31 @@ public class JsChart extends HasEventHandling {
         return multiSeries;
     }
 
+    /**
+     * The series data for display in this chart.
+     * 
+     * @return dh.plot.Series
+     */
     @JsIgnore
     public JsSeries[] getSeries() {
         return series;
     }
 
+    /**
+     * The multi-series data for display in this chart
+     * 
+     * @return dh.plot.MultiSeries
+     */
     @JsIgnore
     public JsMultiSeries[] getMultiSeries() {
         return multiSeries;
     }
 
+    /**
+     * The axes used in this chart.
+     * 
+     * @return dh.plot.Axis
+     */
     @JsProperty
     public JsAxis[] getAxes() {
         return axes;

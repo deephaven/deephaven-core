@@ -32,7 +32,6 @@ import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
-import io.deephaven.extensions.barrage.BarragePerformanceLog.WriteMetricsConsumer;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
@@ -245,7 +244,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      * This is the last step on which the UG-synced RowSet was updated. This is used only for consistency checking
      * between our initial creation and subsequent updates.
      */
-    private long lastIndexClockStep = 0;
+    private long lastUpdateClockStep = 0;
 
     private Throwable pendingError = null;
     private final List<Delta> pendingDeltas = new ArrayList<>();
@@ -449,7 +448,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         private Subscription(final StreamObserver<MessageView> listener,
                 final BarrageSubscriptionOptions options,
                 final BitSet subscribedColumns,
-                final @Nullable RowSet initialViewport,
+                @Nullable final RowSet initialViewport,
                 final boolean reverseViewport) {
             this.options = options;
             this.listener = listener;
@@ -476,8 +475,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      */
     public void addSubscription(final StreamObserver<MessageView> listener,
             final BarrageSubscriptionOptions options,
-            final @Nullable BitSet columnsToSubscribe,
-            final @Nullable RowSet initialViewport,
+            @Nullable final BitSet columnsToSubscribe,
+            @Nullable final RowSet initialViewport,
             final boolean reverseViewport) {
         synchronized (this) {
             final boolean hasSubscription = activeSubscriptions.stream().anyMatch(item -> item.listener == listener)
@@ -543,13 +542,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     }
 
     public boolean updateSubscription(final StreamObserver<MessageView> listener,
-            final @Nullable RowSet newViewport, final @Nullable BitSet columnsToSubscribe) {
+            @Nullable final RowSet newViewport, @Nullable final BitSet columnsToSubscribe) {
         // assume forward viewport when not specified
         return updateSubscription(listener, newViewport, columnsToSubscribe, false);
     }
 
-    public boolean updateSubscription(final StreamObserver<MessageView> listener, final @Nullable RowSet newViewport,
-            final @Nullable BitSet columnsToSubscribe, final boolean newReverseViewport) {
+    public boolean updateSubscription(final StreamObserver<MessageView> listener, @Nullable final RowSet newViewport,
+            @Nullable final BitSet columnsToSubscribe, final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
@@ -595,7 +594,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private class DeltaListener extends InstrumentedTableUpdateListener {
 
         DeltaListener() {
-            super("BarrageMessageProducer");
+            super("BarrageMessageProducer(" + parent.getReferentDescription() + ")");
             Assert.assertion(parentIsRefreshing, "parent.isRefreshing()");
             manage(parent);
             addParentReference(this);
@@ -604,33 +603,39 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         @Override
         public void onUpdate(final TableUpdate upstream) {
             synchronized (BarrageMessageProducer.this) {
-                if (lastIndexClockStep >= parent.getUpdateGraph().clock().currentStep()) {
-                    throw new IllegalStateException(logPrefix + "lastIndexClockStep=" + lastIndexClockStep
-                            + " >= notification on "
-                            + parent.getUpdateGraph().clock().currentStep());
-                }
-
-                final boolean shouldEnqueueDelta = !activeSubscriptions.isEmpty();
-                if (shouldEnqueueDelta) {
-                    final long startTm = System.nanoTime();
-                    enqueueUpdate(upstream);
-                    recordMetric(stats -> stats.enqueue, System.nanoTime() - startTm);
-                    schedulePropagation();
-                }
-                parentTableSize = parent.size();
-
-                // mark when the last indices are from, so that terminal notifications can make use of them if required
-                lastIndexClockStep = parent.getUpdateGraph().clock().currentStep();
-                if (log.isDebugEnabled()) {
-                    try (final RowSet prevRowSet = parent.getRowSet().copyPrev()) {
-                        log.debug().append(logPrefix)
-                                .append("lastIndexClockStep=").append(lastIndexClockStep)
-                                .append(", upstream=").append(upstream).append(", shouldEnqueueDelta=")
-                                .append(shouldEnqueueDelta)
-                                .append(", rowSet=").append(parent.getRowSet()).append(", prevRowSet=")
-                                .append(prevRowSet)
-                                .endl();
+                try {
+                    if (lastUpdateClockStep >= parent.getUpdateGraph().clock().currentStep()) {
+                        throw new IllegalStateException(logPrefix + "lastUpdateClockStep=" + lastUpdateClockStep
+                                + " >= notification on "
+                                + parent.getUpdateGraph().clock().currentStep());
                     }
+
+                    final boolean shouldEnqueueDelta = !activeSubscriptions.isEmpty();
+                    if (shouldEnqueueDelta) {
+                        final long startTm = System.nanoTime();
+                        enqueueUpdate(upstream);
+                        recordMetric(stats -> stats.enqueue, System.nanoTime() - startTm);
+                        schedulePropagation();
+                    }
+                    parentTableSize = parent.size();
+
+                    lastUpdateClockStep = parent.getUpdateGraph().clock().currentStep();
+                    if (log.isDebugEnabled()) {
+                        try (final RowSet prevRowSet = parent.getRowSet().copyPrev()) {
+                            log.debug().append(logPrefix)
+                                    .append("lastUpdateClockStep=").append(lastUpdateClockStep)
+                                    .append(", upstream=").append(upstream).append(", shouldEnqueueDelta=")
+                                    .append(shouldEnqueueDelta)
+                                    .append(", rowSet=").append(parent.getRowSet()).append(", prevRowSet=")
+                                    .append(prevRowSet)
+                                    .endl();
+                        }
+                    }
+                } catch (Exception err) {
+                    // the BMP is failing not the parent table; so we need to remove the BMP from the update graph
+                    forceReferenceCountToZero();
+                    pendingError = err;
+                    schedulePropagation();
                 }
             }
         }
@@ -638,10 +643,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         @Override
         protected void onFailureInternal(final Throwable originalException, Entry sourceEntry) {
             synchronized (BarrageMessageProducer.this) {
-                if (pendingError != null) {
-                    pendingError = originalException;
-                    schedulePropagation();
-                }
+                pendingError = originalException;
+                schedulePropagation();
             }
         }
 
@@ -2121,13 +2124,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         postSnapshotColumns.clear();
     }
 
-    private synchronized long getLastIndexClockStep() {
-        return lastIndexClockStep;
+    private synchronized long getLastUpdateClockStep() {
+        return lastUpdateClockStep;
     }
 
     private class SnapshotControl implements ConstructSnapshot.SnapshotControl {
-        long capturedLastIndexClockStep;
-        long step = -1;
+        long capturedLastUpdateClockStep;
+        long resultValidStep = -1;
         final List<Subscription> snapshotSubscriptions;
 
         SnapshotControl(final List<Subscription> snapshotSubscriptions) {
@@ -2141,24 +2144,25 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 return false;
             }
 
-            capturedLastIndexClockStep = getLastIndexClockStep();
+            capturedLastUpdateClockStep = getLastUpdateClockStep();
 
             final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
             if (beforeState == LogicalClock.State.Idle) {
-                this.step = beforeStep;
+                resultValidStep = beforeStep;
                 return false;
             }
 
-            final boolean notifiedOnThisStep = step == capturedLastIndexClockStep;
+            final boolean notifiedOnThisStep = beforeStep == capturedLastUpdateClockStep;
             final boolean usePrevious = !notifiedOnThisStep;
 
-            this.step = notifiedOnThisStep ? step : step - 1;
+            resultValidStep = notifiedOnThisStep ? beforeStep : beforeStep - 1;
 
             if (log.isDebugEnabled()) {
                 log.debug().append(logPrefix)
-                        .append("previousValuesAllowed usePrevious=").append(usePrevious)
-                        .append(", step=").append(step).append(", validStep=").append(this.step).endl();
+                        .append("usePreviousValues: usePrevious=").append(usePrevious)
+                        .append(", beforeStep=").append(beforeStep)
+                        .append(", lastUpdateStep=").append(capturedLastUpdateClockStep).endl();
             }
 
             return usePrevious;
@@ -2169,7 +2173,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             if (!parentIsRefreshing) {
                 return true;
             }
-            return capturedLastIndexClockStep == getLastIndexClockStep();
+            return capturedLastUpdateClockStep == getLastUpdateClockStep();
         }
 
         @Override
@@ -2179,7 +2183,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 success = snapshotConsistent(afterClockValue, usedPreviousValues);
 
                 if (!success) {
-                    step = -1;
+                    resultValidStep = -1;
                 } else {
                     flipSnapshotStateForSubscriptions(snapshotSubscriptions);
                     finalizeSnapshotForSubscriptions(snapshotSubscriptions);
@@ -2191,9 +2195,14 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
             if (log.isDebugEnabled()) {
                 log.debug().append(logPrefix)
-                        .append("success=").append(success).append(", step=").append(step).endl();
+                        .append("success=").append(success).append(", validStep=").append(resultValidStep).endl();
             }
             return success;
+        }
+
+        @Override
+        public UpdateGraph getUpdateGraph() {
+            return parent.getUpdateGraph();
         }
     }
 
@@ -2332,6 +2341,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     @Override
     public synchronized void setLastNotificationStep(final long lastNotificationStep) {
-        lastIndexClockStep = Math.max(lastNotificationStep, lastIndexClockStep);
+        lastUpdateClockStep = Math.max(lastNotificationStep, lastUpdateClockStep);
     }
 }

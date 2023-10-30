@@ -873,7 +873,7 @@ public class GenerateAxesPlotMethods {
             out.print(newcode);
             out.close();
 
-            log.warning(file + " written");
+            log.info(file + " written");
         }
     }
 
@@ -892,7 +892,7 @@ public class GenerateAxesPlotMethods {
         }
 
         log.setLevel(Level.WARNING);
-        log.warning("Running GenerateAxesPlotMethods assertNoChange=" + assertNoChange);
+        log.info("Running GenerateAxesPlotMethods assertNoChange=" + assertNoChange);
 
         final String fileIface = devroot + "/Plot/src/main/java/io/deephaven/plot/Axes.java";
         final String fileImpl = devroot + "/Plot/src/main/java/io/deephaven/plot/AxesImpl.java";

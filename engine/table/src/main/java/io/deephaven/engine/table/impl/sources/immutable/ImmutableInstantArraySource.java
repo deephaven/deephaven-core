@@ -20,11 +20,11 @@ public class ImmutableInstantArraySource extends ImmutableNanosBasedTimeArraySou
         super(Instant.class);
     }
 
-    public ImmutableInstantArraySource(final @NotNull long[] nanos) {
+    public ImmutableInstantArraySource(@NotNull final long[] nanos) {
         super(Instant.class, new ImmutableLongArraySource(nanos));
     }
 
-    public ImmutableInstantArraySource(final @NotNull ImmutableLongArraySource nanoSource) {
+    public ImmutableInstantArraySource(@NotNull final ImmutableLongArraySource nanoSource) {
         super(Instant.class, nanoSource);
     }
 

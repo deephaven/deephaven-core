@@ -3,8 +3,9 @@
  */
 package io.deephaven.parquet.base;
 
-import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.parquet.compress.CompressorAdapter;
+import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
@@ -18,7 +19,9 @@ import org.apache.parquet.hadoop.metadata.ColumnPath;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.internal.column.columnindex.OffsetIndexBuilder;
 import org.apache.parquet.io.ParquetEncodingException;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,7 +29,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.channels.Channels;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,15 +36,17 @@ import java.util.Set;
 import static org.apache.parquet.bytes.BytesUtils.getWidthFromMaxInt;
 import static org.apache.parquet.format.Util.writePageHeader;
 
-public class ColumnWriterImpl implements ColumnWriter {
+public final class ColumnWriterImpl implements ColumnWriter {
 
     private static final int MIN_SLAB_SIZE = 64;
-    private final SeekableByteChannel writeChannel;
+
+    private final PositionedBufferedOutputStream bufferedOutput;
     private final ColumnDescriptor column;
     private final RowGroupWriterImpl owner;
     private final CompressorAdapter compressorAdapter;
     private boolean hasDictionary;
     private int pageCount = 0;
+    private Statistics<?> statistics;
     private static final ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
 
 
@@ -64,12 +68,12 @@ public class ColumnWriterImpl implements ColumnWriter {
 
     ColumnWriterImpl(
             final RowGroupWriterImpl owner,
-            final SeekableByteChannel writeChannel,
+            final PositionedBufferedOutputStream bufferedOutput,
             final ColumnDescriptor column,
             final CompressorAdapter compressorAdapter,
             final int targetPageSize,
             final ByteBufferAllocator allocator) {
-        this.writeChannel = writeChannel;
+        this.bufferedOutput = bufferedOutput;
         this.column = column;
         this.compressorAdapter = compressorAdapter;
         this.targetPageSize = targetPageSize;
@@ -82,13 +86,17 @@ public class ColumnWriterImpl implements ColumnWriter {
                         getWidthFromMaxInt(column.getMaxRepetitionLevel()), MIN_SLAB_SIZE, targetPageSize, allocator);
         this.owner = owner;
         offsetIndexBuilder = OffsetIndexBuilder.getBuilder();
+        statistics = Statistics.createStats(column.getPrimitiveType());
     }
 
     @Override
-    public void addPageNoNulls(final Object pageData, final int valuesCount) throws IOException {
+    public void addPageNoNulls(@NotNull final Object pageData,
+            final int valuesCount,
+            @NotNull final Statistics<?> statistics)
+            throws IOException {
         initWriter();
         // noinspection unchecked
-        bulkWriter.writeBulk(pageData, valuesCount);
+        bulkWriter.writeBulk(pageData, valuesCount, statistics);
         if (dlEncoder != null) {
             for (int i = 0; i < valuesCount; i++) {
                 dlEncoder.writeInt(1); // TODO implement a bulk RLE writer
@@ -112,7 +120,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     @Override
-    public void addDictionaryPage(final Object dictionaryValues, final int valuesCount) throws IOException {
+    public void addDictionaryPage(@NotNull final Object dictionaryValues, final int valuesCount) throws IOException {
         if (pageCount > 0) {
             throw new IllegalStateException("Attempting to add dictionary past the first page");
         }
@@ -123,38 +131,37 @@ public class ColumnWriterImpl implements ColumnWriter {
         final BulkWriter dictionaryWriter = getWriter(column.getPrimitiveType());
 
         // noinspection unchecked
-        dictionaryWriter.writeBulk(dictionaryValues, valuesCount);
-        dictionaryOffset = writeChannel.position();
+        dictionaryWriter.writeBulk(dictionaryValues, valuesCount, NullStatistics.INSTANCE);
+        dictionaryOffset = bufferedOutput.position();
         writeDictionaryPage(dictionaryWriter.getByteBufferView(), valuesCount);
         pageCount++;
         hasDictionary = true;
         dictionaryPage = new DictionaryPageHeader(valuesCount, org.apache.parquet.format.Encoding.PLAIN);
-
     }
 
-    public void writeDictionaryPage(final ByteBuffer dictionaryBuffer, final int valuesCount) throws IOException {
-        long currentChunkDictionaryPageOffset = writeChannel.position();
-        int uncompressedSize = dictionaryBuffer.remaining();
+    private void writeDictionaryPage(final ByteBuffer dictionaryBuffer, final int valuesCount) throws IOException {
+        final long currentChunkDictionaryPageOffset = bufferedOutput.position();
+        final int uncompressedSize = dictionaryBuffer.remaining();
 
         compressorAdapter.reset();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (WritableByteChannel channel = Channels.newChannel(compressorAdapter.compress(baos))) {
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (final WritableByteChannel channel = Channels.newChannel(compressorAdapter.compress(baos))) {
             channel.write(dictionaryBuffer);
         }
-        BytesInput compressedBytes = BytesInput.from(baos);
+        final BytesInput compressedBytes = BytesInput.from(baos);
 
-        int compressedPageSize = (int) compressedBytes.size();
+        final int compressedPageSize = (int) compressedBytes.size();
 
         metadataConverter.writeDictionaryPageHeader(
                 uncompressedSize,
                 compressedPageSize,
                 valuesCount,
                 Encoding.PLAIN,
-                Channels.newOutputStream(writeChannel));
-        long headerSize = writeChannel.position() - currentChunkDictionaryPageOffset;
+                bufferedOutput);
+        final long headerSize = bufferedOutput.position() - currentChunkDictionaryPageOffset;
         this.uncompressedLength += uncompressedSize + headerSize;
         this.compressedLength += compressedPageSize + headerSize;
-        writeChannel.write(compressedBytes.toByteBuffer());
+        compressedBytes.writeAllTo(bufferedOutput);
         encodings.add(Encoding.PLAIN);
     }
 
@@ -164,6 +171,17 @@ public class ColumnWriterImpl implements ColumnWriter {
             case FIXED_LEN_BYTE_ARRAY:
                 throw new UnsupportedOperationException("No support for writing FIXED_LENGTH or INT96 types");
             case INT32:
+                final LogicalTypeAnnotation annotation = primitiveType.getLogicalTypeAnnotation();
+                if (annotation != null) {
+                    // Appropriately set the null value for different type of integers
+                    if (LogicalTypeAnnotation.intType(8, true).equals(annotation)) {
+                        return new PlainIntChunkedWriter(targetPageSize, allocator, QueryConstants.NULL_BYTE);
+                    } else if (LogicalTypeAnnotation.intType(16, true).equals(annotation)) {
+                        return new PlainIntChunkedWriter(targetPageSize, allocator, QueryConstants.NULL_SHORT);
+                    } else if (LogicalTypeAnnotation.intType(16, false).equals(annotation)) {
+                        return new PlainIntChunkedWriter(targetPageSize, allocator, QueryConstants.NULL_CHAR);
+                    }
+                }
                 return new PlainIntChunkedWriter(targetPageSize, allocator);
             case INT64:
                 return new PlainLongChunkedWriter(targetPageSize, allocator);
@@ -182,21 +200,25 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     @Override
-    public void addPage(final Object pageData, final int valuesCount) throws IOException {
+    public void addPage(@NotNull final Object pageData,
+            final int valuesCount,
+            @NotNull Statistics<?> statistics)
+            throws IOException {
         if (dlEncoder == null) {
             throw new IllegalStateException("Null values not supported");
         }
         initWriter();
         // noinspection unchecked
-        bulkWriter.writeBulkFilterNulls(pageData, dlEncoder, valuesCount);
+        bulkWriter.writeBulkFilterNulls(pageData, dlEncoder, valuesCount, statistics);
         writePage(bulkWriter.getByteBufferView(), valuesCount);
         bulkWriter.reset();
     }
 
     public void addVectorPage(
-            final Object pageData,
-            final IntBuffer repeatCount,
-            final int nonNullValueCount) throws IOException {
+            @NotNull final Object pageData,
+            @NotNull final IntBuffer repeatCount,
+            final int nonNullValueCount,
+            @NotNull final Statistics<?> statistics) throws IOException {
         if (dlEncoder == null) {
             throw new IllegalStateException("Null values not supported");
         }
@@ -205,8 +227,8 @@ public class ColumnWriterImpl implements ColumnWriter {
         }
         initWriter();
         // noinspection unchecked
-        int valueCount =
-                bulkWriter.writeBulkVector(pageData, repeatCount, rlEncoder, dlEncoder, nonNullValueCount);
+        final int valueCount =
+                bulkWriter.writeBulkVector(pageData, repeatCount, rlEncoder, dlEncoder, nonNullValueCount, statistics);
         writePage(bulkWriter.getByteBufferView(), valueCount);
         bulkWriter.reset();
     }
@@ -237,12 +259,12 @@ public class ColumnWriterImpl implements ColumnWriter {
             final int rlByteLength,
             final int dlByteLength) {
         // TODO: pageHeader.crc = ...;
-        DataPageHeaderV2 dataPageHeaderV2 = new DataPageHeaderV2(
+        final DataPageHeaderV2 dataPageHeaderV2 = new DataPageHeaderV2(
                 valueCount, nullCount, rowCount,
                 hasDictionary ? org.apache.parquet.format.Encoding.PLAIN_DICTIONARY
                         : org.apache.parquet.format.Encoding.PLAIN,
                 dlByteLength, rlByteLength);
-        PageHeader pageHeader = new PageHeader(PageType.DATA_PAGE_V2, uncompressedSize, compressedSize);
+        final PageHeader pageHeader = new PageHeader(PageType.DATA_PAGE_V2, uncompressedSize, compressedSize);
         pageHeader.setData_page_header_v2(dataPageHeaderV2);
         if (hasDictionary) {
             pageHeader.setDictionary_page_header(dictionaryPage);
@@ -259,19 +281,19 @@ public class ColumnWriterImpl implements ColumnWriter {
             final BytesInput repetitionLevels,
             final BytesInput definitionLevels,
             final ByteBuffer data) throws IOException {
-        int rlByteLength = (int) repetitionLevels.size();
-        int dlByteLength = (int) definitionLevels.size();
-        int uncompressedDataSize = data.remaining();
-        int uncompressedSize = (int) (uncompressedDataSize + repetitionLevels.size() + definitionLevels.size());
+        final int rlByteLength = (int) repetitionLevels.size();
+        final int dlByteLength = (int) definitionLevels.size();
+        final int uncompressedDataSize = data.remaining();
+        final int uncompressedSize = (int) (uncompressedDataSize + repetitionLevels.size() + definitionLevels.size());
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (WritableByteChannel channel = Channels.newChannel(compressorAdapter.compress(baos))) {
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (final WritableByteChannel channel = Channels.newChannel(compressorAdapter.compress(baos))) {
             channel.write(data);
         }
-        BytesInput compressedData = BytesInput.from(baos);
-        int compressedSize = (int) (compressedData.size() + repetitionLevels.size() + definitionLevels.size());
+        final BytesInput compressedData = BytesInput.from(baos);
+        final int compressedSize = (int) (compressedData.size() + repetitionLevels.size() + definitionLevels.size());
 
-        long initialOffset = writeChannel.position();
+        final long initialOffset = bufferedOutput.position();
         if (firstDataPageOffset == -1) {
             firstDataPageOffset = initialOffset;
         }
@@ -280,25 +302,25 @@ public class ColumnWriterImpl implements ColumnWriter {
                 valueCount, nullCount, rowCount,
                 rlByteLength,
                 dlByteLength,
-                Channels.newOutputStream(writeChannel));
-        long headerSize = writeChannel.position() - initialOffset;
+                bufferedOutput);
+        final long headerSize = bufferedOutput.position() - initialOffset;
         this.uncompressedLength += (uncompressedSize + headerSize);
         this.compressedLength += (compressedSize + headerSize);
         this.totalValueCount += valueCount;
         this.pageCount += 1;
 
-        writeChannel.write(definitionLevels.toByteBuffer());
-        writeChannel.write(compressedData.toByteBuffer());
+        definitionLevels.writeAllTo(bufferedOutput);
+        compressedData.writeAllTo(bufferedOutput);
     }
 
     private void writePage(final BytesInput bytes, final int valueCount, final Encoding valuesEncoding)
             throws IOException {
-        long initialOffset = writeChannel.position();
+        final long initialOffset = bufferedOutput.position();
         if (firstDataPageOffset == -1) {
             firstDataPageOffset = initialOffset;
         }
 
-        long uncompressedSize = bytes.size();
+        final long uncompressedSize = bytes.size();
         if (uncompressedSize > Integer.MAX_VALUE) {
             throw new ParquetEncodingException(
                     "Cannot write page larger than Integer.MAX_VALUE bytes: " +
@@ -307,13 +329,13 @@ public class ColumnWriterImpl implements ColumnWriter {
 
         compressorAdapter.reset();
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (OutputStream cos = compressorAdapter.compress(baos)) {
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (final OutputStream cos = compressorAdapter.compress(baos)) {
             bytes.writeAllTo(cos);
         }
-        BytesInput compressedBytes = BytesInput.from(baos);
+        final BytesInput compressedBytes = BytesInput.from(baos);
 
-        long compressedSize = compressedBytes.size();
+        final long compressedSize = compressedBytes.size();
         if (compressedSize > Integer.MAX_VALUE) {
             throw new ParquetEncodingException(
                     "Cannot write compressed page larger than Integer.MAX_VALUE bytes: "
@@ -324,15 +346,15 @@ public class ColumnWriterImpl implements ColumnWriter {
                 (int) compressedSize,
                 valueCount,
                 valuesEncoding,
-                Channels.newOutputStream(writeChannel));
-        long headerSize = writeChannel.position() - initialOffset;
+                bufferedOutput);
+        final long headerSize = bufferedOutput.position() - initialOffset;
         this.uncompressedLength += (uncompressedSize + headerSize);
         this.compressedLength += (compressedSize + headerSize);
         this.totalValueCount += valueCount;
         this.pageCount += 1;
 
-        writeChannel.write(compressedBytes.toByteBuffer());
-        offsetIndexBuilder.add((int) (writeChannel.position() - initialOffset), valueCount);
+        compressedBytes.writeAllTo(bufferedOutput);
+        offsetIndexBuilder.add((int) (bufferedOutput.position() - initialOffset), valueCount);
         encodings.add(valuesEncoding);
         encodingStatsBuilder.addDataEncoding(valuesEncoding);
     }
@@ -349,12 +371,12 @@ public class ColumnWriterImpl implements ColumnWriter {
                 valuesEncoding), to);
     }
 
-    private PageHeader newDataPageHeader(
+    private static PageHeader newDataPageHeader(
             final int uncompressedSize,
             final int compressedSize,
             final int valueCount,
             final Encoding valuesEncoding) {
-        PageHeader pageHeader = new PageHeader(PageType.DATA_PAGE, uncompressedSize, compressedSize);
+        final PageHeader pageHeader = new PageHeader(PageType.DATA_PAGE, uncompressedSize, compressedSize);
 
         pageHeader.setData_page_header(new DataPageHeader(
                 valueCount,
@@ -373,11 +395,11 @@ public class ColumnWriterImpl implements ColumnWriter {
         try {
             BytesInput bytes = BytesInput.from(encodedData);
             if (dlEncoder != null) {
-                BytesInput dlBytesInput = dlEncoder.toBytes();
+                final BytesInput dlBytesInput = dlEncoder.toBytes();
                 bytes = BytesInput.concat(BytesInput.fromInt((int) dlBytesInput.size()), dlBytesInput, bytes);
             }
             if (rlEncoder != null) {
-                BytesInput rlBytesInput = rlEncoder.toBytes();
+                final BytesInput rlBytesInput = rlEncoder.toBytes();
                 bytes = BytesInput.concat(BytesInput.fromInt((int) rlBytesInput.size()), rlBytesInput, bytes);
             }
             writePage(
@@ -402,19 +424,32 @@ public class ColumnWriterImpl implements ColumnWriter {
                         compressorAdapter.getCodecName(),
                         encodingStatsBuilder.build(),
                         encodings,
-                        Statistics.createStats(column.getPrimitiveType()),
+                        statistics,
                         firstDataPageOffset,
                         dictionaryOffset,
                         totalValueCount,
                         compressedLength,
                         uncompressedLength));
+
+        // We do not call bout.close() because it closes the underlying writeChannel, and this class does not own the
+        // writeChannel. Also, we are assuming that all the buffered data has already been flushed to the writeChannel.
     }
 
     public ColumnDescriptor getColumn() {
         return column;
     }
 
-    public OffsetIndex getOffsetIndex() {
+    OffsetIndex getOffsetIndex() {
         return offsetIndexBuilder.build(firstDataPageOffset);
+    }
+
+    @Override
+    public void resetStats() {
+        statistics = Statistics.createStats(column.getPrimitiveType());
+    }
+
+    @Override
+    public Statistics<?> getStats() {
+        return statistics;
     }
 }

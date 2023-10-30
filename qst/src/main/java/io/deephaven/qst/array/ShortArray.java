@@ -79,7 +79,7 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
 
     @Override
     public final ShortType componentType() {
-        return ShortType.instance();
+        return ShortType.of();
     }
 
     @Override

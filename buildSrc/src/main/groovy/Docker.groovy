@@ -336,6 +336,24 @@ class Docker {
                     outputDir.set(project.file(dockerCopyLocation))
                 }
             }
+
+            // Handle copying failure. This is now distinct from the "actual" Sync task that depends directly
+            // on the CombinedDockerRunTask.
+            def syncAfterFail = project.tasks.register("${taskName}SyncAfterFail", Sync) { sync ->
+                sync.with {
+                    // run the provided closure first
+                    cfg.copyOut.execute(sync)
+
+                    // then set the from location
+                    from dockerCopyLocation
+
+                    onlyIf { buildAndRun.get().state.failure != null }
+                }
+            }
+            buildAndRun.configure {t ->
+                t.finalizedBy syncAfterFail
+            }
+
             // Sync outputs to the desired location
             return project.tasks.register(taskName, Sync) { sync ->
                 sync.with {

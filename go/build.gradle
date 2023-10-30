@@ -28,17 +28,20 @@ def compare = tasks.register('compareProtobuf', DiffTask) {
         exclude 'internal/proto/**'
     }
 }
-// fail a "check" build if these are out of date
-tasks.getByName('quick').dependsOn(compare)
+// Note that we've disabled updating the Go protobuf wiring until we have a maintainer to use the generated code correctly.
 
-tasks.register('updateProtobuf', Sync) {
-    finalizedBy compare
-    from configurations.go
-    into layout.projectDirectory
-    preserve {
-        exclude 'internal/proto/**'
-    }
-}
+// Normally, we would fail a "check" build if these are out of date, but for now we will rely on integration tests.
+//tasks.getByName('quick').dependsOn(compare)
+
+// Also disable the update task so no one accidentally runs it from the root project
+//tasks.register('updateProtobuf', Sync) {
+//    finalizedBy compare
+//    from configurations.go
+//    into layout.projectDirectory
+//    preserve {
+//        exclude 'internal/proto/**'
+//    }
+//}
 
 
 // start a grpc-api server
@@ -83,5 +86,5 @@ def testGoClient = Docker.registerDockerTask(project, 'testGoClient') {
     parentContainers = [ Docker.registryTask(project, 'go') ]
     entrypoint = ['./go-test-to-junit.sh', '/out/go-test.xml', '/out/go.log']
 }
-deephavenDocker.shouldLogIfTaskFails tasks.named('testGoClientRun')
+deephavenDocker.shouldLogIfTaskFails testGoClient
 tasks.check.dependsOn(testGoClient)

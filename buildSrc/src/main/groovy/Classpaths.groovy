@@ -46,7 +46,7 @@ class Classpaths {
     static final String COMMONS_GROUP = 'org.apache.commons'
 
     static final String ARROW_GROUP = 'org.apache.arrow'
-    static final String ARROW_VERSION = '12.0.1'
+    static final String ARROW_VERSION = '13.0.0'
 
     static final String SLF4J_GROUP = 'org.slf4j'
     static final String SLF4J_VERSION = '2.0.6'
@@ -96,7 +96,7 @@ class Classpaths {
     static final String GRPC_GROUP = 'io.grpc'
     static final String GRPC_NAME = 'grpc-bom'
     // Only bump this in concert w/ BORINGSSL_VERSION
-    static final String GRPC_VERSION = '1.50.1'
+    static final String GRPC_VERSION = '1.58.0'
 
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
     static final String PROTOBUF_GROUP = 'com.google.protobuf'
@@ -107,7 +107,7 @@ class Classpaths {
     static final String BORINGSSL_GROUP = 'io.netty'
     static final String BORINGSSL_NAME = 'netty-tcnative-boringssl-static'
     // Only bump this in concert w/ GRPC_VERSION
-    static final String BORINGSSL_VERSION = '2.0.54.Final'
+    static final String BORINGSSL_VERSION = '2.0.61.Final'
 
     static final String JACKSON_GROUP = 'com.fasterxml.jackson'
     static final String JACKSON_NAME = 'jackson-bom'
@@ -118,7 +118,7 @@ class Classpaths {
 
     static final String JETTY11_GROUP = 'org.eclipse.jetty'
     static final String JETTY11_NAME = 'jetty-bom'
-    static final String JETTY11_VERSION = '11.0.15'
+    static final String JETTY11_VERSION = '11.0.17'
 
     static final String GUAVA_GROUP = 'com.google.guava'
     static final String GUAVA_NAME = 'guava'
@@ -286,5 +286,33 @@ class Classpaths {
     static void inheritGuava(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, GUAVA_GROUP, GUAVA_NAME, GUAVA_VERSION)
+    }
+
+    static void inheritParquetHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, 'org.apache.parquet', 'parquet-hadoop', '1.13.0')
+    }
+
+    /** configName controls only the Configuration's classpath, all transitive dependencies are runtimeOnly */
+    static void inheritParquetHadoopConfiguration(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, 'org.apache.hadoop', 'hadoop-common', '3.3.3') {
+            it.setTransitive(false)
+            // Do not take any extra dependencies of this project transitively. We just want a few classes for
+            // configuration and compression codecs. For any additional required dependencies, add them separately, as
+            // done for woodstox, shaded-guava, etc. below. Or we can replace setTransitive(false) here with more
+            // exclusions (we want to avoid pulling in netty, loggers, jetty-util, guice and asm).
+        }
+
+        Configuration runtimeOnly = p.configurations.getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
+        addDependency(runtimeOnly, 'com.fasterxml.woodstox', 'woodstox-core', '6.4.0') {
+            it.because('hadoop-common required dependency for Configuration')
+        }
+        addDependency(runtimeOnly, 'org.apache.hadoop.thirdparty', 'hadoop-shaded-guava', '1.1.1') {
+            it.because('hadoop-common required dependency for Configuration')
+        }
+        addDependency(runtimeOnly, 'commons-collections', 'commons-collections', '3.2.2') {
+            it.because('hadoop-common required dependency for Configuration')
+        }
     }
 }

@@ -5,60 +5,213 @@
 \alias{Client}
 \title{The Deephaven Client}
 \description{
-The Deephaven Client class is responsible for establishing and maintaining
-a connection to a running Deephaven server and facilitating basic server requests.
+A Client is the entry point for interacting with the Deephaven server. It is used to create new tables,
+import data to and export data from the server, and run queries on the server.
 }
 \examples{
+\dontrun{
+library(rdeephaven)
 
-# connect to the Deephaven server running on "localhost:10000" using anonymous 'default' authentication
-client_options <- ClientOptions$new()
-client <- Client$new(target="localhost:10000", client_options=client_options)
+# connecting to Deephaven server
+client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 
-# open a table that already exists on the server
-new_table_handle1 <- client$open_table("table_on_the_server")
+# create a data frame and push it to the server, retrieve a reference to it as a TableHandle
+df <- data.frame(
+  col1 = c(1, 2, 3),
+  col2 = c("a", "b", "c"),
+  col3 = c(TRUE, FALSE, TRUE)
+)
+th1 <- client$import_table(df)
+as.data.frame(th1)
 
-# create a new dataframe, import onto the server, and retrieve a reference
-new_data_frame <- data.frame(matrix(rnorm(10 * 1000), nrow = 10))
-new_table_handle2 <- client$import_table(new_data_frame)
+# give table referenced by 'th' a name on the server
+th1$bind_to_variable("server_table")
 
-# run a python script on the server (default client options specify a Python console)
-client$run_script("print([i for i in range(10)])")
+# use client to execute script
+client$run_script('server_table_new = server_table.update("col4 = col1 + 1")')
+
+# retrieve reference to new table on the server
+th2 <- client$open_table("server_table_new")
+as.data.frame(th2)
+
+# create table on server directly with table API and retrieve a reference to it as a TableHandle
+th3 <- client$empty_table(10)$update("col1 = i")
+as.data.frame(th3)
+
+# create ticking table on the server and retrieve a reference to it as a TableHandle
+th4 <- client$time_table("PT1S")$update("col1 = i")
+Sys.sleep(5)
+as.data.frame(th4)
+Sys.sleep(5)
+as.data.frame(th4)
+Sys.sleep(5)
+as.data.frame(th4)
+
+# close client connection
+client$close()
+}
+
 }
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-Client-new}{\code{Client$new()}}
+\item \href{#method-Client-initialize_for_xptr}{\code{Client$initialize_for_xptr()}}
+\item \href{#method-Client-initialize_for_target}{\code{Client$initialize_for_target()}}
+\item \href{#method-Client-empty_table}{\code{Client$empty_table()}}
+\item \href{#method-Client-time_table}{\code{Client$time_table()}}
 \item \href{#method-Client-open_table}{\code{Client$open_table()}}
 \item \href{#method-Client-import_table}{\code{Client$import_table()}}
+\item \href{#method-Client-ticket_to_table}{\code{Client$ticket_to_table()}}
 \item \href{#method-Client-run_script}{\code{Client$run_script()}}
-\item \href{#method-Client-clone}{\code{Client$clone()}}
+\item \href{#method-Client-close}{\code{Client$close()}}
 }
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Client-new"></a>}}
 \if{latex}{\out{\hypertarget{method-Client-new}{}}}
 \subsection{Method \code{new()}}{
-Connect to a running Deephaven server.
+Calls \code{initialize_for_xptr()} if the first argument is an external pointer, and \code{initialize_for_target()} if the
+first argument is a string. In the latter case, the remaining keyword arguments are passed to \code{initialize_for_target()}.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Client$new(target, client_options)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Client$new(...)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{target}}{The address of the Deephaven server.}
-
-\item{\code{client_options}}{ClientOptions instance with the parameters needed to connect to the server.
-See ?ClientOptions for more information.}
+\item{\code{...}}{Either an external pointer to an existing client connection, or a string denoting the address
+of a running Deephaven server followed by keyword arguments to \code{initialize_from_target()}.}
 }
 \if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Client-initialize_for_xptr"></a>}}
+\if{latex}{\out{\hypertarget{method-Client-initialize_for_xptr}{}}}
+\subsection{Method \code{initialize_for_xptr()}}{
+Initializes a Client object using a pointer to an existing client connection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Client$initialize_for_xptr(xptr)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{xptr}}{External pointer to an existing client connection.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Client-initialize_for_target"></a>}}
+\if{latex}{\out{\hypertarget{method-Client-initialize_for_target}{}}}
+\subsection{Method \code{initialize_for_target()}}{
+Initializes a Client object and connects to a Deephaven server.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Client$initialize_for_target(
+  target,
+  auth_type = "anonymous",
+  username = "",
+  password = "",
+  auth_token = "",
+  session_type = "python",
+  use_tls = FALSE,
+  tls_root_certs = "",
+  int_options = list(),
+  string_options = list(),
+  extra_headers = list()
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{target}}{String denoting the address of a Deephaven server, formatted as \code{"ip:port"}.}
+
+\item{\code{auth_type}}{String denoting the authentication type. Can be \code{"anonymous"}, \code{"basic"}, \code{"psk"},
+or any custom-built authenticator supported by the server. Default is \code{"anonymous"}.}
+
+\item{\code{username}}{String denoting the username, which only applies if \code{auth_type} is \code{"basic"}.
+Username and password should not be used in conjunction with \code{auth_token}. Defaults to an empty string.}
+
+\item{\code{password}}{String denoting the password, which only applies if \code{auth_type} is \code{"basic"}.
+Username and password should not be used in conjunction with \code{auth_token}. Defaults to an empty string.}
+
+\item{\code{auth_token}}{String denoting the authentication token. When \code{auth_type}
+is \code{"anonymous"}, it will be ignored; when \code{auth_type} is \code{"basic"}, it must be
+\code{"user:password"} or left blank; when \code{auth_type} \code{"psk"}, it must be the pre-shared key, when \code{auth_type}
+is a custom-built authenticator, it must conform to the specific requirement of that authenticator.
+This should not be used in conjunction with \code{username} and \code{password}. Defaults to an empty string.}
+
+\item{\code{session_type}}{String denoting the session type supported on the server.
+Currently, \code{"python"} and \code{"groovy"} are supported. Defaults to \code{"python"}.}
+
+\item{\code{use_tls}}{Whether or not to use a TLS connection. Defaults to \code{FALSE}.}
+
+\item{\code{tls_root_certs}}{String denoting PEM encoded root certificates to use for TLS connection,
+or \code{""} to use system defaults. Only used if \code{use_tls == TRUE}. Defaults to system defaults.}
+
+\item{\code{int_options}}{List of name-value pairs for int-valued options to the underlying
+grpc channel creation. Defaults to an empty list, which implies not using any channel options.}
+
+\item{\code{string_options}}{List of name-value pairs for string-valued options to the underlying
+grpc channel creation. Defaults to an empty list, which implies not using any channel options.}
+
+\item{\code{extra_headers}}{List of name-value pairs for additional headers and values
+to add to server requests. Defaults to an empty list, which implies not using any extra headers.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Client-empty_table"></a>}}
+\if{latex}{\out{\hypertarget{method-Client-empty_table}{}}}
+\subsection{Method \code{empty_table()}}{
+Creates an empty table on the server with \code{size} rows and no columns.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Client$empty_table(size)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{size}}{Non-negative integer specifying the number of rows for the new table.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+TableHandle reference to the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Client-time_table"></a>}}
+\if{latex}{\out{\hypertarget{method-Client-time_table}{}}}
+\subsection{Method \code{time_table()}}{
+Creates a ticking table on the server.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Client$time_table(period, start_time = "now")}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{period}}{ISO-8601-formatted string specifying the update frequency of the new table.}
+
+\item{\code{start_time}}{Optional ISO-8601-formatted string specifying the start time of the table.
+Defaults to now.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+TableHandle reference to the new table.
 }
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Client-open_table"></a>}}
 \if{latex}{\out{\hypertarget{method-Client-open_table}{}}}
 \subsection{Method \code{open_table()}}{
-Opens a table named 'name' from the server if it exists.
+Retrieves a reference to a named table on the server using its name.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Client$open_table(name)}\if{html}{\out{</div>}}
 }
@@ -66,12 +219,12 @@ Opens a table named 'name' from the server if it exists.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{name}}{Name of the table to open from the server, passed as a string.}
+\item{\code{name}}{String denoting the name of the table to retrieve.}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-TableHandle reference to the requested table.
+TableHandle reference to the named table.
 }
 }
 \if{html}{\out{<hr>}}
@@ -79,7 +232,7 @@ TableHandle reference to the requested table.
 \if{latex}{\out{\hypertarget{method-Client-import_table}{}}}
 \subsection{Method \code{import_table()}}{
 Imports a new table to the Deephaven server. Note that this new table is not automatically bound to
-a variable name on the server. See `?TableHandle` for more information.
+a variable name on the server. See \code{?TableHandle} for more information.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Client$import_table(table_object)}\if{html}{\out{</div>}}
 }
@@ -87,13 +240,33 @@ a variable name on the server. See `?TableHandle` for more information.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{table_object}}{An R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow RecordBatchReader
+\item{\code{table_object}}{R Data Frame, dplyr Tibble, Arrow Table, Arrow RecordBatchReader, or other supported table
 containing the data to import to the server.}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
 TableHandle reference to the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Client-ticket_to_table"></a>}}
+\if{latex}{\out{\hypertarget{method-Client-ticket_to_table}{}}}
+\subsection{Method \code{ticket_to_table()}}{
+Retrieves a reference to a named table in the server using its Arrow Flight ticket.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Client$ticket_to_table(ticket)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{ticket}}{String denoting the Arrow Flight ticket.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+TableHandle reference to the table.
 }
 }
 \if{html}{\out{<hr>}}
@@ -108,26 +281,20 @@ Runs a script on the server. The script must be in the language that the server 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{script}}{Code to be executed on the server, passed as a string.}
+\item{\code{script}}{String containing the code to be executed on the server.}
 }
 \if{html}{\out{</div>}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Client-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-Client-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
+\if{html}{\out{<a id="method-Client-close"></a>}}
+\if{latex}{\out{\hypertarget{method-Client-close}{}}}
+\subsection{Method \code{close()}}{
+Closes the client connection. After this method is called, any further server calls will
+be undefined and will likely result in an error.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Client$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Client$close()}\if{html}{\out{</div>}}
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
 }
 }

@@ -18,7 +18,6 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 ![Docs CI](https://github.com/deephaven/deephaven-core/actions/workflows/docs-ci.yml/badge.svg?branch=main)
 ![Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/check-ci.yml/badge.svg?branch=main)
 ![Nightly Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-check-ci.yml/badge.svg?branch=main)
-![Nightly Benchmarks](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-benchmarks.yml/badge.svg?branch=main)
 
 ## Supported Languages
 
@@ -60,6 +59,12 @@ docker run hello-world
 
 If any dependencies are missing or unsupported versions are installed, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/quickstart#prerequisites) for installation instructions.
 
+
+For running the unit tests, you will also need to install [Git LFS](https://git-lfs.com/) and fetch all the required files. Run the following commands from inside the directory:
+```
+git lfs install
+git lfs pull
+```
 
 ### Create deployment
 
@@ -295,6 +300,6 @@ with any additional questions or comments.
 
 ## License
 
-Copyright (c) Deephaven Data Labs. All rights reserved.
+Copyright © 2016-2023 Deephaven Data Labs and Patent Pending. All rights reserved.
 
 Provided under the [Deephaven Community License](LICENSE.md).

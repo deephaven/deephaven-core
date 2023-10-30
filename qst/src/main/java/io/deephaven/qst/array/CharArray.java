@@ -79,7 +79,7 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
 
     @Override
     public final CharType componentType() {
-        return CharType.instance();
+        return CharType.of();
     }
 
     @Override

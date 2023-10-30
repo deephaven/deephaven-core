@@ -11,12 +11,12 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -52,7 +52,8 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     private final Iterable<NotificationQueue.Dependency> dependencies;
     private final String listenerDescription;
     protected final QueryTable result;
-    private final PerformanceEntry entry;
+    @Nullable
+    protected final PerformanceEntry entry;
     private final String logPrefix;
 
     @SuppressWarnings("FieldMayBeFinal")
@@ -67,17 +68,17 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     private Runnable delayedErrorReference;
 
     protected MergedListener(
-            Iterable<? extends ListenerRecorder> recorders,
-            Iterable<NotificationQueue.Dependency> dependencies,
-            String listenerDescription,
-            QueryTable result) {
+            final Iterable<? extends ListenerRecorder> recorders,
+            final Iterable<NotificationQueue.Dependency> dependencies,
+            final String listenerDescription,
+            @Nullable final QueryTable result) {
         this.updateGraph = ExecutionContext.getContext().getUpdateGraph();
         this.recorders = recorders;
         recorders.forEach(this::manage);
         this.dependencies = dependencies;
         this.listenerDescription = listenerDescription;
         this.result = result;
-        this.entry = UpdatePerformanceTracker.getInstance().getEntry(listenerDescription);
+        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(this.updateGraph, listenerDescription);
         this.logPrefix = System.identityHashCode(this) + " " + listenerDescription + " Merged Listener: ";
     }
 
@@ -133,11 +134,19 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         getUpdateGraph().addNotification(new MergedNotification());
     }
 
-    private void propagateError(
-            final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+    /**
+     * Propagate an error to downstream listeners.
+     *
+     * @param uncaughtExceptionFromProcess true if the exception was thrown from {@link #process()}, false otherwise
+     * @param error the error to propagate
+     * @param entry the {@link io.deephaven.engine.table.TableListener.Entry} that threw the error.
+     */
+    protected void propagateError(
+            final boolean uncaughtExceptionFromProcess,
+            @NotNull final Throwable error,
+            @Nullable final TableListener.Entry entry) {
         forceReferenceCountToZero();
-        recorders.forEach(ListenerRecorder::forceReferenceCountToZero);
-        propagateErrorDownstream(fromProcess, error, entry);
+        propagateErrorDownstream(uncaughtExceptionFromProcess, error, entry);
         try {
             if (systemicResult()) {
                 AsyncClientErrorNotifier.reportError(error);
@@ -149,6 +158,11 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     protected boolean systemicResult() {
         return SystemicObjectTracker.isSystemic(result);
+    }
+
+    @Override
+    protected void destroy() {
+        recorders.forEach(ListenerRecorder::forceReferenceCountToZero);
     }
 
     protected void propagateErrorDownstream(
@@ -282,7 +296,9 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     }
 
     protected void accumulatePeformanceEntry(BasePerformanceEntry subEntry) {
-        entry.accumulate(subEntry);
+        if (entry != null) {
+            entry.accumulate(subEntry);
+        }
     }
 
     private class MergedNotification extends AbstractNotification {
@@ -321,7 +337,9 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                     }
                 }
 
-                entry.onUpdateStart(added, removed, modified, shifted);
+                if (entry != null) {
+                    entry.onUpdateStart(added, removed, modified, shifted);
+                }
                 try {
                     synchronized (MergedListener.this) {
                         if (notificationStep == lastEnqueuedStep) {
@@ -337,7 +355,9 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                             .append("MergedListener has completed execution ")
                             .append(this).endl();
                 } finally {
-                    entry.onUpdateEnd();
+                    if (entry != null) {
+                        entry.onUpdateEnd();
+                    }
                 }
             } catch (Exception updateException) {
                 handleUncaughtException(updateException);

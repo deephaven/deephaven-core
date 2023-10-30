@@ -39,9 +39,14 @@ def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
     environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
     environmentVariable 'DEEPHAVEN_VERSION', project.version
 
+    // For the time being we lock the sphinx version to 7.1.2
+    // This works around the bug described in
+    // https://github.com/sphinx-doc/sphinx/issues/11605
+    // We should leave this here until 'breathe' updates their code to be
+    // compatible with the breaking sphinx change.
     runCommand '''set -eux; \\
                   mkdir /tmp/workspace; \\
-                  python -m pip install sphinx sphinx-autodoc-typehints pyarrow protobuf grpcio bitstring /wheel/*.whl breathe furo
+                  python -m pip install sphinx==7.1.2 sphinx-autodoc-typehints pyarrow protobuf grpcio bitstring /wheel/*.whl breathe furo
                   '''
 }
 
@@ -144,7 +149,7 @@ tasks.named('cppClientDocsPrepareDocker').configure {
 }
 
 makePyDocTask('cppExamplesDocs', 'cpp-examples', [
-        ("$rootDir/cpp-examples/doc".toString()):'source',
+        ("$rootDir/cpp-client/deephaven/examples/doc".toString()):'source',
         ("$buildDir/cppClientDocs".toString()):'cpp'
 ], "$buildDir/cppExamplesDocs") {
     it.containerDependencies.dependsOn = cppClientDocs

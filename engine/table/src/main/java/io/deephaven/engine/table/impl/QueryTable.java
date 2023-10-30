@@ -54,19 +54,15 @@ import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobSchedul
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
-import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.vector.Vector;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.Liveness;
-import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.locations.GroupingProvider;
@@ -90,7 +86,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -135,7 +130,7 @@ public class QueryTable extends BaseTable<QueryTable> {
              * @param resultListener the listener that should be attached to the parent (or null)
              */
             public Result(@NotNull final T resultNode,
-                    final @Nullable TableUpdateListener resultListener) {
+                    @Nullable final TableUpdateListener resultListener) {
                 this.resultNode = resultNode;
                 this.resultListener = resultListener;
             }
@@ -151,8 +146,8 @@ public class QueryTable extends BaseTable<QueryTable> {
          */
         String getLogPrefix();
 
-        default SwapListener newSwapListener(final QueryTable queryTable) {
-            return new SwapListener(queryTable);
+        default OperationSnapshotControl newSnapshotControl(final QueryTable queryTable) {
+            return new OperationSnapshotControl(queryTable);
         }
 
         /**
@@ -733,22 +728,45 @@ public class QueryTable extends BaseTable<QueryTable> {
             }
             final List<ColumnName> groupByList = Arrays.asList(groupByColumns);
             final List<ColumnName> tableColumns = definition.getTypedColumnNames();
-            final Optional<Aggregation> agg = AggregateAllTable.singleAggregation(spec, groupByList, tableColumns);
+            final Optional<Aggregation> agg = singleAggregation(spec, groupByList, tableColumns);
             if (agg.isEmpty()) {
                 throw new IllegalArgumentException(
                         "aggAllBy has no columns to aggregate: spec=" + spec + ", groupByColumns="
                                 + toString(groupByList));
             }
-            final QueryTable tableToUse = (QueryTable) AggAllByUseTable.of(this, spec);
             final List<? extends Aggregation> aggs = List.of(agg.get());
             final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(aggs, false, null, groupByList);
-            return tableToUse.memoizeResult(aggKey, () -> {
+            return memoizeResult(aggKey, () -> {
                 final QueryTable result =
-                        tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), false, null, groupByList);
+                        aggNoMemo(AggregationProcessor.forAggregation(aggs), false, null, groupByList);
                 spec.walk(new AggAllByCopyAttributes(this, result));
                 return result;
             });
         }
+    }
+
+    /**
+     * Computes the single-aggregation from the agg-all implied by the {@code spec} and {@code groupByColumns} by
+     * removing the {@code groupByColumns} and any extra columns implied by the {@code spec}.
+     *
+     * @param spec the spec
+     * @param groupByColumns the group by columns
+     * @param tableColumns the table columns
+     * @return the aggregation, if non-empty
+     */
+    @VisibleForTesting
+    static Optional<Aggregation> singleAggregation(
+            AggSpec spec, Collection<? extends ColumnName> groupByColumns,
+            Collection<? extends ColumnName> tableColumns) {
+        Set<ColumnName> exclusions = AggregateAllExclusions.of(spec, groupByColumns, tableColumns);
+        List<ColumnName> columnsToAgg = new ArrayList<>(tableColumns.size());
+        for (ColumnName column : tableColumns) {
+            if (exclusions.contains(column)) {
+                continue;
+            }
+            columnsToAgg.add(column);
+        }
+        return columnsToAgg.isEmpty() ? Optional.empty() : Optional.of(spec.aggregation(columnsToAgg));
     }
 
     @Override
@@ -826,8 +844,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         Require.gtZero(nRows, "nRows");
 
-        Set<String> groupByColsSet = new HashSet<>(Arrays.asList(groupByColumns)); // TODO: WTF?
-        List<String> colNames = getDefinition().getColumnNames();
+        final Set<String> groupByColsSet = new HashSet<>(Arrays.asList(groupByColumns));
+        final List<String> colNames = getDefinition().getColumnNames();
 
         // Iterate through the columns and build updateView() arguments that will trim the columns to nRows rows
         String[] updates = new String[colNames.size() - groupByColumns.length];
@@ -843,24 +861,30 @@ public class QueryTable extends BaseTable<QueryTable> {
                             // colName = isNull(colName) ? null
                             // : colName.size() > nRows ? colName.subVector(0, nRows)
                             // : colName
-                            colName + '=' + "isNull(" + colName + ") ? null" +
-                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subVector(0, " + nRows
-                                    + ')' +
-                                    ':' + colName;
+                            String.format(
+                                    "%s=isNull(%s) ? null" +
+                                            ":%s.size() > %d ? %s.subVector(0, %d)" +
+                                            ":%s",
+                                    colName, colName, colName, nRows, colName, nRows, colName);
                 else
                     updates[j++] =
                             // Get the last nRows rows:
                             // colName = isNull(colName) ? null
                             // : colName.size() > nRows ? colName.subVector(colName.size() - nRows, colName.size())
                             // : colName
-                            colName + '=' + "isNull(" + colName + ") ? null" +
-                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subVector(" + colName
-                                    + ".size() - " + nRows + ", " + colName + ".size())" +
-                                    ':' + colName;
+                            String.format(
+                                    "%s=isNull(%s) ? null" +
+                                            ":%s.size() > %d ? %s.subVector(%s.size() - %d, %s.size())" +
+                                            ":%s",
+                                    colName, colName, colName, nRows, colName, colName, nRows, colName, colName);
             }
         }
 
-        return groupBy(groupByColumns).updateView(updates).ungroup().updateView(casting);
+        final List<Aggregation> aggs = colNames.stream()
+                .filter(cn -> !groupByColsSet.contains(cn))
+                .map(Aggregation::AggGroup)
+                .collect(Collectors.toList());
+        return aggBy(aggs, groupByColumns).updateView(updates).ungroup().updateView(casting);
     }
 
     @NotNull
@@ -950,21 +974,13 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     public static class FilteredTable extends QueryTable implements WhereFilter.RecomputeListener {
         private final QueryTable source;
-        private final WhereFilter[] filters;
         private boolean refilterMatchedRequested = false;
         private boolean refilterUnmatchedRequested = false;
         private MergedListener whereListener;
 
-        public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source,
-                final WhereFilter[] filters) {
+        public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source) {
             super(source.getDefinition(), currentMapping, source.columns, null, null);
             this.source = source;
-            this.filters = filters;
-            for (final WhereFilter f : filters) {
-                if (f instanceof LivenessReferent) {
-                    manage((LivenessReferent) f);
-                }
-            }
         }
 
         @Override
@@ -1195,11 +1211,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
 
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
-                        final SwapListener swapListener =
-                                createSwapListenerIfRefreshing(SwapListener::new);
+                        final OperationSnapshotControl snapshotControl =
+                                createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
                         final Mutable<QueryTable> result = new MutableObject<>();
-                        initializeWithSnapshot("where", swapListener,
+                        initializeWithSnapshot("where", snapshotControl,
                                 (prevRequested, beforeClock) -> {
                                     final boolean usePrev = prevRequested && isRefreshing();
                                     final RowSet rowSetToUse = usePrev ? rowSet.prev() : rowSet;
@@ -1261,8 +1277,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     }
                                     currentMapping.initializePreviousValue();
 
-                                    final FilteredTable filteredTable =
-                                            new FilteredTable(currentMapping, this, filters);
+                                    final FilteredTable filteredTable = new FilteredTable(currentMapping, this);
 
                                     for (final WhereFilter filter : filters) {
                                         filter.setRecomputeListener(filteredTable);
@@ -1280,29 +1295,19 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         }
                                     }
 
-                                    final List<NotificationQueue.Dependency> dependencies = Stream.concat(
-                                            Stream.of(filters)
-                                                    .filter(f -> f instanceof NotificationQueue.Dependency)
-                                                    .map(f -> (NotificationQueue.Dependency) f),
-                                            Stream.of(filters)
-                                                    .filter(f -> f instanceof DependencyStreamProvider)
-                                                    .flatMap(f -> ((DependencyStreamProvider) f)
-                                                            .getDependencyStream()))
-                                            .collect(Collectors.toList());
-                                    if (swapListener != null) {
+                                    if (snapshotControl != null) {
                                         final ListenerRecorder recorder = new ListenerRecorder(
                                                 "where(" + Arrays.toString(filters) + ")", QueryTable.this,
                                                 filteredTable);
                                         final WhereListener whereListener = new WhereListener(
-                                                log, this, recorder, dependencies, filteredTable, filters);
+                                                log, this, recorder, filteredTable, filters);
                                         filteredTable.setWhereListener(whereListener);
                                         recorder.setMergedListener(whereListener);
-                                        swapListener.setListenerAndResult(recorder, filteredTable);
-                                        filteredTable.addParentReference(swapListener);
+                                        snapshotControl.setListenerAndResult(recorder, filteredTable);
                                         filteredTable.addParentReference(whereListener);
                                     } else if (refreshingFilters) {
                                         final WhereListener whereListener = new WhereListener(
-                                                log, this, null, dependencies, filteredTable, filters);
+                                                log, this, null, filteredTable, filters);
                                         filteredTable.setWhereListener(whereListener);
                                         filteredTable.addParentReference(whereListener);
                                     }
@@ -1312,22 +1317,6 @@ public class QueryTable extends BaseTable<QueryTable> {
                         return result.getValue();
                     });
                 });
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    protected WritableRowSet filterRows(RowSet currentMapping, RowSet fullSet, boolean usePrev,
-            WhereFilter... filters) {
-        WritableRowSet matched = currentMapping.copy();
-
-        for (WhereFilter filter : filters) {
-            if (Thread.interrupted()) {
-                throw new CancellationException("interrupted while filtering");
-            }
-            try (final SafeCloseable ignored = matched) { // Ensure we close old matched
-                matched = filter.filter(matched, fullSet, this, usePrev);
-            }
-        }
-        return matched;
     }
 
     @Override
@@ -1376,18 +1365,17 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table flatten() {
+        if (!flat && !isRefreshing() && rowSet.isFlat()) {
+            // We're already flat, and we'll never update; so we can just return a flat copy
+            final QueryTable copyWithFlat = copy();
+            copyWithFlat.setFlat();
+            return copyWithFlat;
+        }
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            if (!isFlat() && !isRefreshing() && rowSet.size() - 1 == rowSet.lastRowKey()) {
-                // We're already flat, and we'll never update; so we can just return ourselves, after setting ourselves
-                // flat
-                setFlat();
-            }
-
             if (isFlat()) {
                 return prepareReturnThis();
             }
-
             return getResult(new FlattenOperation(this));
         }
     }
@@ -1399,9 +1387,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public boolean isFlat() {
         if (flat) {
-            Assert.assertion(rowSet.lastRowKey() == rowSet.size() - 1, "rowSet.lastRowKey() == rowSet.size() - 1",
-                    rowSet,
-                    "rowSet");
+            Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()", rowSet, "rowSet");
         }
         return flat;
     }
@@ -1659,9 +1645,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                         updateDescription, sizeForInstrumentation(), () -> {
                             final Mutable<Table> result = new MutableObject<>();
 
-                            final SwapListener swapListener =
-                                    createSwapListenerIfRefreshing(SwapListener::new);
-                            initializeWithSnapshot(humanReadablePrefix, swapListener, (usePrev, beforeClockValue) -> {
+                            final OperationSnapshotControl sc =
+                                    createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
+                            initializeWithSnapshot(humanReadablePrefix, sc, (usePrev, beforeClockValue) -> {
                                 final boolean publishTheseSources = flavor == Flavor.UpdateView;
                                 final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
                                         this, SelectAndViewAnalyzer.Mode.VIEW_EAGER, columns, rowSet,
@@ -1670,11 +1656,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         .toArray(SelectColumn[]::new);
                                 QueryTable queryTable = new QueryTable(
                                         rowSet, analyzerWrapper.getPublishedColumnResources());
-                                if (swapListener != null) {
+                                if (sc != null) {
                                     final Map<String, String[]> effects = analyzerWrapper.calcEffects();
                                     final TableUpdateListener listener =
                                             new ViewOrUpdateViewListener(updateDescription, this, queryTable, effects);
-                                    swapListener.setListenerAndResult(listener, queryTable);
+                                    sc.setListenerAndResult(listener, queryTable);
                                 }
 
                                 propagateFlatness(queryTable);
@@ -1799,10 +1785,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                             newColumns.remove(columnName);
                         }
 
-                        final SwapListener swapListener =
-                                createSwapListenerIfRefreshing(SwapListener::new);
+                        final OperationSnapshotControl snapshotControl =
+                                createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
-                        initializeWithSnapshot("dropColumns", swapListener, (usePrev, beforeClockValue) -> {
+                        initializeWithSnapshot("dropColumns", snapshotControl, (usePrev, beforeClockValue) -> {
                             final QueryTable resultTable = new QueryTable(rowSet, newColumns);
                             propagateFlatness(resultTable);
 
@@ -1811,7 +1797,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     resultTable.getDefinition().getColumnNameMap()::containsKey);
                             maybeCopyColumnDescriptions(resultTable);
 
-                            if (swapListener != null) {
+                            if (snapshotControl != null) {
                                 final ModifiedColumnSet.Transformer mcsTransformer =
                                         newModifiedColumnSetTransformer(resultTable,
                                                 resultTable.getColumnSourceMap().keySet()
@@ -1837,7 +1823,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         resultTable.notifyListeners(downstream);
                                     }
                                 };
-                                swapListener.setListenerAndResult(listener, resultTable);
+                                snapshotControl.setListenerAndResult(listener, resultTable);
                             }
 
                             result.setValue(resultTable);
@@ -1867,8 +1853,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     checkInitiateOperation();
 
-                    Map<String, String> pairLookup = new HashMap<>();
-                    for (MatchPair pair : pairs) {
+                    final Map<String, String> pairLookup = new HashMap<>();
+                    for (final MatchPair pair : pairs) {
                         if (pair.leftColumn == null || pair.leftColumn.equals("")) {
                             throw new IllegalArgumentException(
                                     "Bad left column in rename pair \"" + pair + "\"");
@@ -1882,10 +1868,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                     int mcsPairIdx = 0;
                     final MatchPair[] modifiedColumnSetPairs = new MatchPair[columns.size()];
 
-                    Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>();
-                    for (Map.Entry<String, ? extends ColumnSource<?>> entry : columns.entrySet()) {
-                        String oldName = entry.getKey();
-                        ColumnSource<?> columnSource = entry.getValue();
+                    final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>();
+                    for (final Map.Entry<String, ? extends ColumnSource<?>> entry : columns.entrySet()) {
+                        final String oldName = entry.getKey();
+                        final ColumnSource<?> columnSource = entry.getValue();
                         String newName = pairLookup.get(oldName);
                         if (newName == null) {
                             newName = oldName;
@@ -2548,37 +2534,6 @@ public class QueryTable extends BaseTable<QueryTable> {
     private static void throwColumnConflictMessage(Set<String> left, Set<String> right) {
         Iterable<String> conflicts = left.stream().filter(right::contains)::iterator;
         throw new RuntimeException("Column name conflicts: " + IterableUtils.makeCommaSeparatedList(conflicts));
-    }
-
-    /**
-     * If we have a column source that is a complex type, but can be reinterpreted or transformed into a simpler type,
-     * do the transformation, otherwise return the original column source.
-     *
-     * @param columnSource the column source to possibly reinterpret
-     * @return the transformed column source, or the original column source if there is not a relevant transformation
-     */
-    static ColumnSource<?> maybeTransformToPrimitive(final ColumnSource<?> columnSource) {
-        if (Instant.class.isAssignableFrom(columnSource.getType())) {
-            if (columnSource.allowsReinterpret(long.class)) {
-                return columnSource.reinterpret(long.class);
-            } else {
-                // noinspection unchecked
-                final ColumnSource<Instant> columnSourceAsInstant = (ColumnSource<Instant>) columnSource;
-                return new InstantAsLongColumnSource(columnSourceAsInstant);
-            }
-        }
-
-        if (Boolean.class.isAssignableFrom(columnSource.getType())) {
-            if (columnSource.allowsReinterpret(byte.class)) {
-                return columnSource.reinterpret(byte.class);
-            } else {
-                // noinspection unchecked
-                final ColumnSource<Boolean> columnSourceAsBoolean = (ColumnSource<Boolean>) columnSource;
-                return new BooleanAsByteColumnSource(columnSourceAsBoolean);
-            }
-        }
-
-        return columnSource;
     }
 
     @Override
@@ -3397,16 +3352,17 @@ public class QueryTable extends BaseTable<QueryTable> {
             return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
                 final Mutable<QueryTable> result = new MutableObject<>();
 
-                final SwapListener swapListener = createSwapListenerIfRefreshing(SwapListener::new);
-                initializeWithSnapshot("copy", swapListener, (usePrev, beforeClockValue) -> {
+                final OperationSnapshotControl snapshotControl =
+                        createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
+                initializeWithSnapshot("copy", snapshotControl, (usePrev, beforeClockValue) -> {
                     final QueryTable resultTable = new CopiedTable(definition, this);
                     propagateFlatness(resultTable);
                     if (shouldCopy != StandardOptions.COPY_NONE) {
                         copyAttributes(resultTable, shouldCopy);
                     }
-                    if (swapListener != null) {
+                    if (snapshotControl != null) {
                         final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
-                        swapListener.setListenerAndResult(listener, resultTable);
+                        snapshotControl.setListenerAndResult(listener, resultTable);
                     }
 
                     result.setValue(resultTable);
@@ -3581,23 +3537,22 @@ public class QueryTable extends BaseTable<QueryTable> {
         return QueryPerformanceRecorder.withNugget(operation.getDescription(), sizeForInstrumentation(), () -> {
             final Mutable<T> resultTable = new MutableObject<>();
 
-            final SwapListener swapListener;
+            final OperationSnapshotControl snapshotControl;
             if (isRefreshing() && operation.snapshotNeeded()) {
-                swapListener = operation.newSwapListener(this);
-                swapListener.subscribeForUpdates();
+                snapshotControl = operation.newSnapshotControl(this);
             } else {
-                swapListener = null;
+                snapshotControl = null;
             }
 
-            initializeWithSnapshot(operation.getLogPrefix(), swapListener, (usePrev, beforeClockValue) -> {
+            initializeWithSnapshot(operation.getLogPrefix(), snapshotControl, (usePrev, beforeClockValue) -> {
                 final Operation.Result<T> result = operation.initialize(usePrev, beforeClockValue);
                 if (result == null) {
                     return false;
                 }
 
                 resultTable.setValue(result.resultNode);
-                if (swapListener != null) {
-                    swapListener.setListenerAndResult(Require.neqNull(result.resultListener, "resultListener"),
+                if (snapshotControl != null) {
+                    snapshotControl.setListenerAndResult(Require.neqNull(result.resultListener, "resultListener"),
                             result.resultNode);
                 }
 

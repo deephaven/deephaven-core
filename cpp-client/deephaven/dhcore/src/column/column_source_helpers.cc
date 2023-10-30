@@ -1,16 +1,14 @@
 #include "deephaven/dhcore/column/column_source_helpers.h"
 
-namespace deephaven::dhcore::column {
-namespace internal {
-const char HumanReadableTypeNames::charName[] = "char";
-const char HumanReadableTypeNames::int8Name[] = "int8_t";
-const char HumanReadableTypeNames::int16Name[] = "int16_t";
-const char HumanReadableTypeNames::int32Name[] = "int32_t";
-const char HumanReadableTypeNames::int64Name[] = "int64_t";
-const char HumanReadableTypeNames::floatName[] = "float";
-const char HumanReadableTypeNames::doubleName[] = "double";
-const char HumanReadableTypeNames::boolName[] = "bool";
-const char HumanReadableTypeNames::stringName[] = "string";
-const char HumanReadableTypeNames::dateTimeName[] = "DateTime";
-}  // namespace internal
-}  // namespace deephaven::dhcore::column
+namespace deephaven::dhcore::column::internal {
+const char HumanReadableTypeNames::kCharName[] = "char";
+const char HumanReadableTypeNames::kInt8Name[] = "int8_t";
+const char HumanReadableTypeNames::kInt16Name[] = "int16_t";
+const char HumanReadableTypeNames::kInt32Name[] = "int32_t";
+const char HumanReadableTypeNames::kInt64Name[] = "int64_t";
+const char HumanReadableTypeNames::kFloatName[] = "float";
+const char HumanReadableTypeNames::kDoubleName[] = "double";
+const char HumanReadableTypeNames::kBoolName[] = "bool";
+const char HumanReadableTypeNames::kStringName[] = "string";
+const char HumanReadableTypeNames::kDateTimeName[] = "DateTime";
+}  // namespace deephaven::dhcore::column::internal

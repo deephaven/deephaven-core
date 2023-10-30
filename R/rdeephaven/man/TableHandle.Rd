@@ -5,57 +5,172 @@
 \alias{TableHandle}
 \title{Deephaven TableHandles}
 \description{
-Deephaven TableHandles are references to tables living on a Deephaven server. They provide an
-interface for interacting with tables on the server.
+A TableHandle holds a reference to a Deephaven Table on the server, and provides methods for operating on that table.
+Note that TableHandles should not be instantiated directly by user code, but rather by server calls accessible from
+the \code{\link{Client}} class. See \code{?Client} for more information.
 }
+\section{Naming tables on the server}{
+
+When a TableHandle is created, it is not automatically bound to a variable name on the server. This means that the
+TableHandle that gets created is \emph{the only} reference to the table that's been created. Importantly, the variable
+name given to the TableHandle is purely a \emph{local} variable, and has no relationship to that table's name on the server.
+For this reason, code like the following:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{client <- Client$new(...)
+df1 <- data.frame(x = 1:10, y = 11:20)
+t1 <- client$import_table(df1)
+client$run_script("t2 = t1.update('z = x + y')")
+}\if{html}{\out{</div>}}
+
+will not run, because the table referenced by the local variable \code{t1} is not named on the server at all. To
+make the table referenced by \code{t1} accessible by name on the server (e.g., from within query strings), you must
+\emph{bind it to a variable} with the method \code{bind_to_variable()}. We adopt the convention of calling \emph{local TableHandles}
+\code{th1}, \code{th2}, etc., and \emph{server-side tables} \code{t1}, \code{t2}, etc., to help distinguish between the two. So, the above
+code should be written as:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{client <- Client$new(...)
+df1 <- data.frame(x = 1:10, y = 11:20)
+th1 <- client$import_table(df1)
+th1$bind_to_variable("t1")
+client$run_script("t2 = t1.update('z = x + y')")
+}\if{html}{\out{</div>}}
+
+You can then create a local TableHandle to reference \code{t2} as follows:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{th2 <- client$open_table("t2")
+}\if{html}{\out{</div>}}
+
+The above code is not best practice; calling \code{update()} directly on \code{t1} would be preferred to running a script.
+It is, however, more illustrative of the relationship between local TableHandles and server-side tables. The best
+way to accomplish the above would be the following:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{client <- Client$new(...)
+df1 <- data.frame(x = 1:10, y = 11:20)
+th1 <- client$import_table(df1)
+th2 <- th1$update("z = x + y")
+
+# this is necessary to access the tables from within query strings
+th1$bind_to_variable("t1")
+th2$bind_to_variable("t2")
+}\if{html}{\out{</div>}}
+}
+
 \examples{
+\dontrun{
+library(rdeephaven)
 
-# connect to the Deephaven server running on "localhost:10000" using anonymous 'default' authentication
-client_options <- ClientOptions$new()
-client <- Client$new(target="localhost:10000", client_options=client_options)
+# connecting to Deephaven server
+client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
 
-# open a table that already exists on the server
-new_table_handle1 <- client$open_table("table_on_the_server")
+# create a data frame, push it to the server, and retrieve a TableHandle referencing the new table
+df <- data.frame(
+  timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:50],
+  boolCol = sample(c(TRUE,FALSE), 50, TRUE),
+  col1 = sample(1000, size = 50, replace = TRUE),
+  col2 = sample(1000, size = 50, replace = TRUE),
+  col3 = 1:50
+)
+th <- client$import_table(df)
 
-# convert the Deephaven table to an R data frame
-new_data_frame <- new_table_handle1$to_data_frame()
+# get the dimension of the table
+dim(th)
 
-# modify new data frame in R
-new_data_frame$New_Int_Col <- c(1, 2, 3, 4, 5)
-new_data_frame$New_String_Col <- c("I", "am", "a", "string", "column")
+# get the last 10 rows of the table
+th2 <- tail(th, 10)
+as.data.frame(th2)
 
-# push new data frame to the server and name it "new_table"
-new_table_handle2 <- client$import_table(new_data_frame)
-new_table_handle2$bind_to_variable("new_table")
+# create several new columns
+th3 <- th$update(c("col4 = col1 + col2", "charCol = col3 \% 2 == 0 ? `A` : `B`"))
+as.data.frame(th3)
+
+# filter based on parity of col3
+th4 <- th3$where("charCol == `A`")
+as.data.frame(th4)
+
+# select a subset of columns
+th5 <- th3$select(c("timeCol", "col1", "col4"))
+as.data.frame(th5)
+
+# drop timestamp column and get sum of remaining columns grouped by boolCol and charCol
+th6 <- th3$
+  drop_columns("timeCol")$
+  sum_by(c("boolCol", "charCol"))
+as.data.frame(th6)
+
+client$close()
+}
+
 }
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-TableHandle-new}{\code{TableHandle$new()}}
 \item \href{#method-TableHandle-is_static}{\code{TableHandle$is_static()}}
-\item \href{#method-TableHandle-nrow}{\code{TableHandle$nrow()}}
 \item \href{#method-TableHandle-bind_to_variable}{\code{TableHandle$bind_to_variable()}}
-\item \href{#method-TableHandle-to_arrow_record_batch_stream_reader}{\code{TableHandle$to_arrow_record_batch_stream_reader()}}
-\item \href{#method-TableHandle-to_arrow_table}{\code{TableHandle$to_arrow_table()}}
-\item \href{#method-TableHandle-to_tibble}{\code{TableHandle$to_tibble()}}
-\item \href{#method-TableHandle-to_data_frame}{\code{TableHandle$to_data_frame()}}
-\item \href{#method-TableHandle-clone}{\code{TableHandle$clone()}}
+\item \href{#method-TableHandle-head}{\code{TableHandle$head()}}
+\item \href{#method-TableHandle-tail}{\code{TableHandle$tail()}}
+\item \href{#method-TableHandle-nrow}{\code{TableHandle$nrow()}}
+\item \href{#method-TableHandle-ncol}{\code{TableHandle$ncol()}}
+\item \href{#method-TableHandle-dim}{\code{TableHandle$dim()}}
+\item \href{#method-TableHandle-merge}{\code{TableHandle$merge()}}
+\item \href{#method-TableHandle-as_record_batch_reader}{\code{TableHandle$as_record_batch_reader()}}
+\item \href{#method-TableHandle-as_arrow_table}{\code{TableHandle$as_arrow_table()}}
+\item \href{#method-TableHandle-as_tibble}{\code{TableHandle$as_tibble()}}
+\item \href{#method-TableHandle-as_data_frame}{\code{TableHandle$as_data_frame()}}
+\item \href{#method-TableHandle-select}{\code{TableHandle$select()}}
+\item \href{#method-TableHandle-view}{\code{TableHandle$view()}}
+\item \href{#method-TableHandle-update}{\code{TableHandle$update()}}
+\item \href{#method-TableHandle-update_view}{\code{TableHandle$update_view()}}
+\item \href{#method-TableHandle-drop_columns}{\code{TableHandle$drop_columns()}}
+\item \href{#method-TableHandle-where}{\code{TableHandle$where()}}
+\item \href{#method-TableHandle-group_by}{\code{TableHandle$group_by()}}
+\item \href{#method-TableHandle-ungroup}{\code{TableHandle$ungroup()}}
+\item \href{#method-TableHandle-update_by}{\code{TableHandle$update_by()}}
+\item \href{#method-TableHandle-agg_by}{\code{TableHandle$agg_by()}}
+\item \href{#method-TableHandle-agg_all_by}{\code{TableHandle$agg_all_by()}}
+\item \href{#method-TableHandle-first_by}{\code{TableHandle$first_by()}}
+\item \href{#method-TableHandle-last_by}{\code{TableHandle$last_by()}}
+\item \href{#method-TableHandle-head_by}{\code{TableHandle$head_by()}}
+\item \href{#method-TableHandle-tail_by}{\code{TableHandle$tail_by()}}
+\item \href{#method-TableHandle-min_by}{\code{TableHandle$min_by()}}
+\item \href{#method-TableHandle-max_by}{\code{TableHandle$max_by()}}
+\item \href{#method-TableHandle-sum_by}{\code{TableHandle$sum_by()}}
+\item \href{#method-TableHandle-abs_sum_by}{\code{TableHandle$abs_sum_by()}}
+\item \href{#method-TableHandle-avg_by}{\code{TableHandle$avg_by()}}
+\item \href{#method-TableHandle-w_avg_by}{\code{TableHandle$w_avg_by()}}
+\item \href{#method-TableHandle-median_by}{\code{TableHandle$median_by()}}
+\item \href{#method-TableHandle-var_by}{\code{TableHandle$var_by()}}
+\item \href{#method-TableHandle-std_by}{\code{TableHandle$std_by()}}
+\item \href{#method-TableHandle-percentile_by}{\code{TableHandle$percentile_by()}}
+\item \href{#method-TableHandle-count_by}{\code{TableHandle$count_by()}}
+\item \href{#method-TableHandle-join}{\code{TableHandle$join()}}
+\item \href{#method-TableHandle-natural_join}{\code{TableHandle$natural_join()}}
+\item \href{#method-TableHandle-exact_join}{\code{TableHandle$exact_join()}}
+\item \href{#method-TableHandle-sort}{\code{TableHandle$sort()}}
 }
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TableHandle-new"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-new}{}}}
 \subsection{Method \code{new()}}{
+Initializes a new TableHandle from an internal Deephaven TableHandle.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$new(table_handle)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{table_handle}}{Internal Deephaven TableHandle.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TableHandle-is_static"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-is_static}{}}}
 \subsection{Method \code{is_static()}}{
-Whether the table referenced by this TableHandle is static or not.
+Determines whether the table referenced by this TableHandle is static or not.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$is_static()}\if{html}{\out{</div>}}
 }
@@ -65,24 +180,10 @@ TRUE if the table is static, or FALSE if the table is ticking.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-nrow"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-nrow}{}}}
-\subsection{Method \code{nrow()}}{
-Number of rows in the table referenced by this TableHandle, currently only implemented for static tables.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$nrow()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-The number of rows in the table.
-}
-}
-\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TableHandle-bind_to_variable"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-bind_to_variable}{}}}
 \subsection{Method \code{bind_to_variable()}}{
-Binds the table referenced by this TableHandle to a variable on the server,
-enabling it to be accessed by that name from any Deephaven API.
+Binds the table referenced by this TableHandle to a variable on the server, so that it can be referenced by that name.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$bind_to_variable(name)}\if{html}{\out{</div>}}
 }
@@ -96,72 +197,810 @@ enabling it to be accessed by that name from any Deephaven API.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-to_arrow_record_batch_stream_reader"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-to_arrow_record_batch_stream_reader}{}}}
-\subsection{Method \code{to_arrow_record_batch_stream_reader()}}{
-Imports the table referenced by this TableHandle into an Arrow RecordBatchStreamReader.
+\if{html}{\out{<a id="method-TableHandle-head"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-head}{}}}
+\subsection{Method \code{head()}}{
+Creates a new table containing the first \code{n} rows of this table.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$to_arrow_record_batch_stream_reader()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-A RecordBatchStreamReader containing the data from the table referenced by this TableHandle.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-to_arrow_table"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-to_arrow_table}{}}}
-\subsection{Method \code{to_arrow_table()}}{
-Imports the table referenced by this TableHandle into an Arrow Table.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$to_arrow_table()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-A Table containing the data from the table referenced by this TableHandle.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-to_tibble"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-to_tibble}{}}}
-\subsection{Method \code{to_tibble()}}{
-Imports the table referenced by this TableHandle into a dplyr Tibble.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$to_tibble()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-A Tibble containing the data from the table referenced by this TableHandle.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-to_data_frame"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-to_data_frame}{}}}
-\subsection{Method \code{to_data_frame()}}{
-Imports the table referenced by this TableHandle into an R Data Frame.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$to_data_frame()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-A Data Frame containing the data from the table referenced by this TableHandle.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$head(n)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{deep}}{Whether to make a deep clone.}
+\item{\code{n}}{Positive integer specifying the number of rows to return.}
 }
 \if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-tail"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-tail}{}}}
+\subsection{Method \code{tail()}}{
+Creates a new table containing the last \code{n} rows of this table.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$tail(n)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{n}}{Positive integer specifying the number of rows to return.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table consisting of the last n rows of the parent table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-nrow"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-nrow}{}}}
+\subsection{Method \code{nrow()}}{
+Gets the number of rows in the table referenced by this TableHandle.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$nrow()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+The number of rows in the table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-ncol"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-ncol}{}}}
+\subsection{Method \code{ncol()}}{
+Gets the number of columns in the table referenced by this TableHandle.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$ncol()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+The number of columns in the table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-dim"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-dim}{}}}
+\subsection{Method \code{dim()}}{
+Gets the dimensions of the table referenced by this TableHandle. Equivalent to \code{c(nrow, ncol)}.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$dim()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A vector of length 2, where the first element is the number of rows in the table and the second
+element is the number of columns in the table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-merge"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-merge}{}}}
+\subsection{Method \code{merge()}}{
+Merges several tables into one table on the server. All tables must have the same schema as this table, and can
+be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$merge(...)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{...}}{Arbitrary number of TableHandles or vectors of TableHandles with a schema matching this table.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-as_record_batch_reader"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-as_record_batch_reader}{}}}
+\subsection{Method \code{as_record_batch_reader()}}{
+Converts the table referenced by this TableHandle to an Arrow RecordBatchStreamReader.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$as_record_batch_reader()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+An Arrow RecordBatchStreamReader constructed from the data of this TableHandle.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-as_arrow_table"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-as_arrow_table}{}}}
+\subsection{Method \code{as_arrow_table()}}{
+Converts the table referenced by this TableHandle to an Arrow Table.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$as_arrow_table()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+An Arrow Table constructed from the data of this TableHandle.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-as_tibble"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-as_tibble}{}}}
+\subsection{Method \code{as_tibble()}}{
+Converts the table referenced by this TableHandle to a dplyr tibble.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$as_tibble()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A dplyr tibble constructed from the data of this TableHandle.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-as_data_frame"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-as_data_frame}{}}}
+\subsection{Method \code{as_data_frame()}}{
+Converts the table referenced by this TableHandle to an R data frame.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$as_data_frame()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+An R data frame constructed from the data of this TableHandle.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-select"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-select}{}}}
+\subsection{Method \code{select()}}{
+Creates a new in-memory table that includes one column for each formula.
+If no formula is specified, all columns will be included.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$select(formulas = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{formulas}}{String or list of strings denoting the column formulas.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-view"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-view}{}}}
+\subsection{Method \code{view()}}{
+Creates a new formula table that includes one column for each formula.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$view(formulas = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{formulas}}{String or list of strings denoting the column formulas.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-update"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-update}{}}}
+\subsection{Method \code{update()}}{
+Creates a new table containing a new, in-memory column for each formula.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$update(formulas = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{formulas}}{String or list of strings denoting the column formulas.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-update_view"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-update_view}{}}}
+\subsection{Method \code{update_view()}}{
+Creates a new table containing a new formula column for each formula.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$update_view(formulas = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{formulas}}{String or list of strings denoting the column formulas.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-drop_columns"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-drop_columns}{}}}
+\subsection{Method \code{drop_columns()}}{
+Creates a new table that has the same number of rows as this table,
+but omits the columns specified in \code{cols}.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$drop_columns(cols = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{cols}}{String or list of strings denoting the names of the columns to drop.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-where"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-where}{}}}
+\subsection{Method \code{where()}}{
+Creates a new table containing only the rows meeting the filter condition.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$where(filter)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{filter}}{String denoting the filter condition.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-group_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-group_by}{}}}
+\subsection{Method \code{group_by()}}{
+Creates a new table containing grouping columns and grouped data, with column content is grouped into arrays.
+If no group-by column is given, the content of each column is grouped into its own array.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$group_by(by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-ungroup"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-ungroup}{}}}
+\subsection{Method \code{ungroup()}}{
+Creates a new table in which array columns from the source table are unwrapped into separate rows.
+The ungroup columns should be of array types.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$ungroup(by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{by}}{String or list of strings denoting the names of the columns to ungroup.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-update_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-update_by}{}}}
+\subsection{Method \code{update_by()}}{
+Creates a table with additional columns calculated from window-based aggregations of columns in this table.
+The aggregations are defined by the provided operations, which support incremental aggregations over the
+corresponding rows in the table. The aggregations will apply position or time-based windowing and compute the
+results over the entire table or each row group as identified by the provided key columns.
+See more detailed documentation \link[=UpdateBy]{here} or run \code{?UpdateBy}.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$update_by(ops, by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{ops}}{\code{UpdateByOp} or list of \code{UpdateByOp}s to perform on non-grouping columns.}
+
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-agg_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-agg_by}{}}}
+\subsection{Method \code{agg_by()}}{
+Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
+aggregation(s) specified. See more detailed documentation \link[=AggBy]{here} or run \code{?AggBy}.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$agg_by(aggs, by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{aggs}}{\code{AggOp} or list of \code{AggOp}s to perform on non-grouping columns.}
+
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-agg_all_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-agg_all_by}{}}}
+\subsection{Method \code{agg_all_by()}}{
+Creates a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
+aggregation(s) specified. See more detailed documentation \link[=AggBy]{here} or run \code{?AggBy}.
+This method applies the aggregation to all non-grouping columns of the table, so it can only
+accept one aggregation at a time.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$agg_all_by(agg, by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{agg}}{\code{AggOp} to perform on non-grouping columns.}
+
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-first_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-first_by}{}}}
+\subsection{Method \code{first_by()}}{
+Creates a new table containing the first row of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$first_by(by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-last_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-last_by}{}}}
+\subsection{Method \code{last_by()}}{
+Creates a new table containing the last row of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$last_by(by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-head_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-head_by}{}}}
+\subsection{Method \code{head_by()}}{
+Creates a new table containing the first \code{num_rows} rows of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$head_by(num_rows, by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{num_rows}}{Positive integer specifying the number of rows to return.}
+
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-tail_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-tail_by}{}}}
+\subsection{Method \code{tail_by()}}{
+Creates a new table containing the last \code{num_rows} rows of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$tail_by(num_rows, by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{num_rows}}{Positive integer specifying the number of rows to return.}
+
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-min_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-min_by}{}}}
+\subsection{Method \code{min_by()}}{
+Creates a new table containing the column-wise minimum of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$min_by(by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-max_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-max_by}{}}}
+\subsection{Method \code{max_by()}}{
+Creates a new table containing the column-wise maximum of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$max_by(by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-sum_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-sum_by}{}}}
+\subsection{Method \code{sum_by()}}{
+Creates a new table containing the column-wise sum of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$sum_by(by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-abs_sum_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-abs_sum_by}{}}}
+\subsection{Method \code{abs_sum_by()}}{
+Creates a new table containing the column-wise absolute sum of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$abs_sum_by(by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-avg_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-avg_by}{}}}
+\subsection{Method \code{avg_by()}}{
+Creates a new table containing the column-wise average of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$avg_by(by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-w_avg_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-w_avg_by}{}}}
+\subsection{Method \code{w_avg_by()}}{
+Creates a new table containing the column-wise weighted average of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$w_avg_by(wcol, by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{wcol}}{String denoting the name of the column to use as weights.}
+
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-median_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-median_by}{}}}
+\subsection{Method \code{median_by()}}{
+Creates a new table containing the column-wise median of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$median_by(by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-var_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-var_by}{}}}
+\subsection{Method \code{var_by()}}{
+Creates a new table containing the column-wise variance of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$var_by(by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-std_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-std_by}{}}}
+\subsection{Method \code{std_by()}}{
+Creates a new table containing the column-wise standard deviation of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$std_by(by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-percentile_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-percentile_by}{}}}
+\subsection{Method \code{percentile_by()}}{
+Creates a new table containing the column-wise percentile of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$percentile_by(percentile, by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{percentile}}{Numeric scalar between 0 and 1 denoting the percentile to compute.}
+
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-count_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-count_by}{}}}
+\subsection{Method \code{count_by()}}{
+Creates a new table containing the number of rows in each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$count_by(col, by = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{col}}{String denoting the name of the new column to hold the counts of each group.}
+
+\item{\code{by}}{String or list of strings denoting the names of the columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-join"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-join}{}}}
+\subsection{Method \code{join()}}{
+Creates a new table containing rows that have matching values in both tables. Rows that do not have matching
+criteria will not be included in the result. If there are multiple matches between a row from the left table
+and rows from the right table, all matching combinations will be included. If no columns to match (on) are
+specified, every combination of left and right table rows is included.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$join(table, on = character(), joins = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{table}}{TableHandle referencing the table to join with.}
+
+\item{\code{on}}{String or list of strings denoting the names of the columns to join on.}
+
+\item{\code{joins}}{String or list of strings denoting the names of the columns to add from \code{table}.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-natural_join"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-natural_join}{}}}
+\subsection{Method \code{natural_join()}}{
+Creates a new table containing all the rows and columns of this table, plus additional columns containing data
+from the right table. For columns appended to the left table (joins), row values equal the row values from the
+right table where the key values in the left and right tables are equal.
+If there is no matching key in the right table, appended row values are NULL.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$natural_join(table, on = character(), joins = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{table}}{TableHandle referencing the table to join with.}
+
+\item{\code{on}}{String or list of strings denoting the names of the columns to join on.}
+
+\item{\code{joins}}{String or list of strings denoting the names of the columns to add from \code{table}.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-exact_join"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-exact_join}{}}}
+\subsection{Method \code{exact_join()}}{
+Creates a new table containing all the rows and columns of this table, plus additional columns containing data
+from the right table. For columns appended to the left table (joins), row values equal the row values from the
+right table where the key values in the left and right tables are equal.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$exact_join(table, on = character(), joins = character())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{table}}{TableHandle referencing the table to join with.}
+
+\item{\code{on}}{String or list of strings denoting the names of the columns to join on.}
+
+\item{\code{joins}}{String or list of strings denoting the names of the columns to add from \code{table}.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-sort"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-sort}{}}}
+\subsection{Method \code{sort()}}{
+Creates a new table containing all the rows and columns of this table, sorted by the specified columns.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$sort(order_by, descending = FALSE, abs_sort = FALSE)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{order_by}}{String or list of strings denoting the names of the columns to sort by.}
+
+\item{\code{descending}}{Boolean or list of booleans denoting whether to sort in descending order.
+If a list is supplied, it must be the same length as \code{order_by}.}
+
+\item{\code{abs_sort}}{Boolean or list of booleans denoting whether to sort by absolute value.
+If a list is supplied, it must be the same length as \code{order_by}.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
 }
 }
 }

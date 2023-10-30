@@ -16,6 +16,8 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.ZoneId;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 /**
  * Parquet {@link ToPage} implementation for {@link Instant}s stored as Int96s representing an Impala
  * format Timestamp (nanoseconds of day and Julian date encoded as 8 bytes and 4 bytes, respectively)
@@ -91,6 +93,10 @@ public class ToInstantPageFromInt96<ATTR extends Any> implements ToPage<ATTR, lo
         final long[] resultLongs = new long[resultLength];
 
         for (int ri = 0; ri < resultLength; ++ri) {
+            if (results[ri] == null) {
+                resultLongs[ri] = NULL_LONG;
+                continue;
+            }
             final ByteBuffer resultBuffer = ByteBuffer.wrap(results[ri].getBytesUnsafe());
             resultBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN);
             final long nanos = resultBuffer.getLong();

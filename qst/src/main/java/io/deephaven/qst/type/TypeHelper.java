@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,19 +26,15 @@ class TypeHelper {
     }
 
     static List<Type<?>> knownTypes() {
-        return Stream.concat(primitiveTypes(), genericTypes()).collect(Collectors.toList());
-    }
-
-    static Stream<PrimitiveType<?>> primitiveTypes() {
-        return Stream.of(BooleanType.instance(), ByteType.instance(), CharType.instance(),
-                ShortType.instance(), IntType.instance(), LongType.instance(), FloatType.instance(),
-                DoubleType.instance());
+        return Stream.concat(PrimitiveType.instances(), genericTypes()).collect(Collectors.toList());
     }
 
     static Stream<GenericType<?>> genericTypes() {
-        return Stream.concat(
-                Stream.of(StringType.instance(), InstantType.instance()),
-                primitiveVectorTypes());
+        return Stream.of(
+                BoxedType.instances(),
+                Stream.of(StringType.of(), InstantType.of()),
+                primitiveVectorTypes())
+                .flatMap(Function.identity());
     }
 
     static Stream<PrimitiveVectorType<?, ?>> primitiveVectorTypes() {
@@ -73,13 +70,18 @@ class TypeHelper {
         @Override
         public Void visit(PrimitiveType<?> primitiveType) {
             addUnchecked(primitiveType.clazz(), primitiveType);
-            addUnchecked(primitiveType.boxedClass(), primitiveType);
             return null;
         }
 
         @Override
         public Void visit(GenericType<?> genericType) {
             genericType.walk((GenericType.Visitor<Void>) this);
+            return null;
+        }
+
+        @Override
+        public Void visit(BoxedType<?> boxedType) {
+            addUnchecked(boxedType.clazz(), boxedType);
             return null;
         }
 

@@ -33,7 +33,7 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             if (isMax) {
-                aggMinMax = new AggregatingDoubleRingBuffer(BUFFER_INITIAL_CAPACITY, Double.MIN_VALUE, (a, b) -> {
+                aggMinMax = new AggregatingDoubleRingBuffer(BUFFER_INITIAL_CAPACITY, NULL_DOUBLE, (a, b) -> {
                     if (a == NULL_DOUBLE) {
                         return b;
                     } else if (b == NULL_DOUBLE) {
@@ -51,7 +51,7 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
                     return (double)Math.min(a, b);
                 });
             }
-            curVal = isMax ? Double.MIN_VALUE : Double.MAX_VALUE;
+            curVal = isMax ? NULL_DOUBLE : Double.MAX_VALUE;
             evaluationNeeded = false;
         }
 
@@ -126,7 +126,7 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
         public void reset() {
             super.reset();
             aggMinMax.clear();
-            curVal = isMax ? Double.MIN_VALUE : Double.MAX_VALUE;
+            curVal = isMax ? NULL_DOUBLE : Double.MAX_VALUE;
             evaluationNeeded = false;
         }
     }

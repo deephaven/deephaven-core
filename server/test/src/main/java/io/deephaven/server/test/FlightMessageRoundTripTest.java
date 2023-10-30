@@ -49,6 +49,7 @@ import io.deephaven.qst.table.TicketTable;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.console.ScopeTicketResolver;
 import io.deephaven.server.runner.GrpcServer;
+import io.deephaven.server.runner.MainHelper;
 import io.deephaven.server.session.*;
 import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
@@ -74,6 +75,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -202,6 +204,11 @@ public abstract class FlightMessageRoundTripTest {
     private ManagedChannel clientChannel;
     private ScheduledExecutorService clientScheduler;
     private FlightSession clientSession;
+
+    @BeforeClass
+    public static void setupOnce() throws IOException {
+        MainHelper.bootstrapProjectDirectories();
+    }
 
     @Before
     public void setup() throws IOException {

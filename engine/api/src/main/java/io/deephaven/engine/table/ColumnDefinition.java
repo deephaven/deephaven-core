@@ -9,6 +9,7 @@ import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BooleanType;
+import io.deephaven.qst.type.BoxedType;
 import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
@@ -299,6 +300,12 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         @Override
         public ColumnDefinition<?> visit(DoubleType doubleType) {
             return ofDouble(name);
+        }
+
+        @Override
+        public ColumnDefinition<?> visit(BoxedType<?> boxedType) {
+            // treat the same as primitive type
+            return visit(boxedType.primitiveType());
         }
 
         @Override

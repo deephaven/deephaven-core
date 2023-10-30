@@ -179,8 +179,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
             this.barrageTable = BarrageTable.make(updateSourceCombiner,
                     ExecutionContext.getContext().getUpdateGraph(),
-                    null, barrageMessageProducer.getTableDefinition(), new HashMap<>(),
-                    viewport == null ? -1 : viewport.size());
+                    null, barrageMessageProducer.getTableDefinition(), new HashMap<>(), null);
+            this.barrageTable.addSourceToRegistrar();
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
                     .useDeephavenNulls(useDeephavenNulls)
@@ -1199,8 +1199,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         final BitSet allColumns = new BitSet(1);
         allColumns.set(0);
 
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(0).toTracking(), col("intCol", 0));
-        TstUtils.removeRows(queryTable, i(0));
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(i().toTracking());
+        final Table queryTable = sourceTable.updateView("data = (short) k");
 
         final RemoteNugget remoteNugget = new RemoteNugget(() -> queryTable);
 
@@ -1226,15 +1226,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         final int numDeltas = 4;
         for (int ii = 0; ii < numDeltas; ++ii) {
             final RowSetBuilderSequential newRowsBuilder = RowSetFactory.builderSequential();
-            final Integer[] values = new Integer[sz / numDeltas];
             for (int jj = ii; jj < sz; jj += numDeltas) {
                 newRowsBuilder.appendKey(jj);
-                values[jj / numDeltas] = ii;
             }
-            final RowSet newRows = newRowsBuilder.build();
             updateGraph.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(queryTable, newRows, col("intCol", values));
-                queryTable.notifyListeners(new TableUpdateImpl(
+                final RowSet newRows = newRowsBuilder.build();
+                TstUtils.addToTable(sourceTable, newRows);
+                sourceTable.notifyListeners(new TableUpdateImpl(
                         newRows,
                         RowSetFactory.empty(),
                         RowSetFactory.empty(),
@@ -1251,18 +1249,14 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         // Modify all of our rows spread over multiple deltas.
         for (int ii = 0; ii < numDeltas; ++ii) {
             final RowSetBuilderSequential modRowsBuilder = RowSetFactory.builderSequential();
-            final Integer[] values = new Integer[sz / numDeltas];
             for (int jj = ii; jj < sz; jj += numDeltas) {
                 modRowsBuilder.appendKey(jj);
-                values[jj / numDeltas] = numDeltas + ii;
             }
-            final RowSet modRows = modRowsBuilder.build();
             updateGraph.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(queryTable, modRows, col("intCol", values));
-                queryTable.notifyListeners(new TableUpdateImpl(
+                sourceTable.notifyListeners(new TableUpdateImpl(
                         RowSetFactory.empty(),
                         RowSetFactory.empty(),
-                        modRows,
+                        modRowsBuilder.build(),
                         RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
             });
         }
@@ -1293,7 +1287,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                         public void createTable() {
                             columnInfo = initColumnInfos(
                                     new String[] {"longCol", "intCol", "objCol", "byteCol", "doubleCol", "floatCol",
-                                            "shortCol", "charCol", "boolCol", "strArrCol", "datetimeCol"},
+                                            "shortCol", "charCol", "boolCol", "strArrCol", "datetimeCol",
+                                            "bytePrimArray", "intPrimArray"},
                                     new SortedLongGenerator(0, Long.MAX_VALUE - 1),
                                     new IntGenerator(10, 100, 0.1),
                                     new SetGenerator<>("a", "b", "c", "d"), // covers object
@@ -1307,7 +1302,11 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                             new String[] {}, null),
                                     new UnsortedInstantGenerator(
                                             DateTimeUtils.parseInstant("2020-02-14T00:00:00 NY"),
-                                            DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY")));
+                                            DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY")),
+                                    // uses var binary encoding
+                                    new ByteArrayGenerator(Byte.MIN_VALUE, Byte.MAX_VALUE, 0, 32),
+                                    // uses var list encoding
+                                    new IntArrayGenerator(0, Integer.MAX_VALUE, 0, 32));
                             sourceTable = getTable(size / 4, random, columnInfo);
                         }
                     };
