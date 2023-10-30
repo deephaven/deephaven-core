@@ -51,7 +51,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.function.Function;
 
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
@@ -238,7 +237,7 @@ public class ParquetTools {
     }
 
     /**
-     * Generates a grouping file path relative to the table destination file path.
+     * Generates the index file path relative to the table destination file path.
      *
      * @param tableDest Destination path for the main table containing these grouping columns
      * @param columnName Name of the grouping column
@@ -247,7 +246,7 @@ public class ParquetTools {
      *         and grouping column {@code "g"}, the method will return
      *         {@code ".dh_metadata/indexes/g/index_g_A.parquet"}
      */
-    public static String getRelativeGroupingFilePath(@NotNull final File tableDest, @NotNull final String columnName) {
+    public static String getRelativeIndexFilePath(@NotNull final File tableDest, @NotNull final String columnName) {
         return String.format(".dh_metadata/indexes/%s/index_%s_%s", columnName, columnName, tableDest.getName());
     }
 
@@ -387,13 +386,13 @@ public class ParquetTools {
         for (int gci = 0; gci < groupingColumnNames.length; gci++) {
             final String groupingColumnName = groupingColumnNames[gci];
             final String parquetColumnName = parquetColumnNames[gci];
-            final String groupingFileRelativePath = getRelativeGroupingFilePath(destFile, parquetColumnName);
-            final File groupingFile = new File(destFile.getParent(), groupingFileRelativePath);
-            prepareDestinationFileLocation(groupingFile);
-            deleteBackupFile(groupingFile);
-            final File shadowGroupingFile = getShadowFile(groupingFile);
+            final String indexFileRelativePath = getRelativeIndexFilePath(destFile, parquetColumnName);
+            final File indexFile = new File(destFile.getParent(), indexFileRelativePath);
+            prepareDestinationFileLocation(indexFile);
+            deleteBackupFile(indexFile);
+            final File shadowIndexFile = getShadowFile(indexFile);
             gcwim.put(groupingColumnName, new ParquetTableWriter.GroupingColumnWritingInfo(parquetColumnName,
-                    groupingFile, shadowGroupingFile));
+                    indexFile, shadowIndexFile));
         }
         return gcwim;
     }
@@ -423,7 +422,7 @@ public class ParquetTools {
         }
         Arrays.stream(destinations).forEach(ParquetTools::deleteBackupFile);
 
-        // Write tables and grouping files at temporary shadow file paths in the same directory to prevent overwriting
+        // Write tables and index files at temporary shadow file paths in the same directory to prevent overwriting
         // any existing files
         final File[] shadowDestFiles =
                 Arrays.stream(destinations).map(ParquetTools::getShadowFile).toArray(File[]::new);
@@ -447,7 +446,7 @@ public class ParquetTools {
                             Collections.emptyMap(), (Map<String, ParquetTableWriter.GroupingColumnWritingInfo>) null);
                 }
             } else {
-                // Create grouping info for each table, and write the table and grouping files to shadow path
+                // Create grouping info for each table, and write the table and index files to shadow path
                 groupingColumnWritingInfoMaps = new ArrayList<>(sources.length);
 
                 // Same parquet column names across all tables
@@ -480,10 +479,10 @@ public class ParquetTools {
                     final Map<String, ParquetTableWriter.GroupingColumnWritingInfo> gcwim =
                             groupingColumnWritingInfoMaps.get(tableIdx);
                     for (final ParquetTableWriter.GroupingColumnWritingInfo gfwi : gcwim.values()) {
-                        final File groupingDestFile = gfwi.metadataFilePath;
-                        final File shadowGroupingFile = gfwi.destFile;
-                        destFiles.add(groupingDestFile);
-                        installShadowFile(groupingDestFile, shadowGroupingFile);
+                        final File indexDestFile = gfwi.metadataFilePath;
+                        final File shadowIndexFile = gfwi.destFile;
+                        destFiles.add(indexDestFile);
+                        installShadowFile(indexDestFile, shadowIndexFile);
                     }
                 }
             }

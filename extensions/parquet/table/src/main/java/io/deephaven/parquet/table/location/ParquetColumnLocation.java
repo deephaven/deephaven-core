@@ -147,38 +147,54 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private static final ColumnDefinition<Long> LAST_KEY_COL_DEF =
             ColumnDefinition.ofLong("__lastKey__");
 
+    /**
+     * Helper method for logging a warning on failure in reading an index file
+     */
+    private void logWarnFailedToRead(final String indexFilePath) {
+        log.warn().append("Failed to read expected index file ").append(indexFilePath)
+                .append(" for table location ").append(tl()).append(", column ")
+                .append(getName())
+                .endl();
+    }
+
     @Override
     @Nullable
-    public <METADATA_TYPE> METADATA_TYPE getMetadata(
-            @NotNull final ColumnDefinition<?> columnDefinition) {
+    public <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull final ColumnDefinition<?> columnDefinition) {
         if (!hasGroupingTable) {
             return null;
         }
         final File parquetFile = tl().getParquetFile();
         try {
-            final GroupingColumnInfo groupingColumnInfo = tl().getGroupingColumns().get(parquetColumnName);
-            final String groupingFileRelativePath = groupingColumnInfo == null
-                    ? ParquetTools.getRelativeGroupingFilePath(parquetFile, parquetColumnName)
-                    : groupingColumnInfo.groupingTablePath();
-            final String groupingFilePath =
-                    parquetFile.toPath().getParent().resolve(groupingFileRelativePath).toString();
             ParquetFileReader parquetFileReader;
-            try {
-                parquetFileReader = new ParquetFileReader(groupingFilePath, tl().getChannelProvider());
-            } catch (final UncheckedIOException e1) {
-                // Try the legacy path
-                final String legacyGroupingFileName =
-                        ParquetTools.legacyGroupingFileName(parquetFile, parquetColumnName);
-                final File legacyGroupingFile = new File(parquetFile.getParent(), legacyGroupingFileName);
+            final String indexFilePath;
+            final GroupingColumnInfo groupingColumnInfo = tl().getGroupingColumns().get(parquetColumnName);
+            if (groupingColumnInfo != null) {
+                final String indexFileRelativePath = groupingColumnInfo.groupingTablePath();
+                indexFilePath = parquetFile.toPath().getParent().resolve(indexFileRelativePath).toString();
                 try {
-                    parquetFileReader =
-                            new ParquetFileReader(legacyGroupingFile.getAbsolutePath(), tl().getChannelProvider());
-                } catch (final UncheckedIOException e2) {
-                    log.warn().append("Failed to read expected grouping file ").append(groupingFilePath)
-                            .append(" for table location ").append(tl()).append(", column ")
-                            .append(getName())
-                            .endl();
+                    parquetFileReader = new ParquetFileReader(indexFilePath, tl().getChannelProvider());
+                } catch (final RuntimeException e) {
+                    logWarnFailedToRead(indexFilePath);
                     return null;
+                }
+            } else {
+                final String relativeIndexFilePath =
+                        ParquetTools.getRelativeIndexFilePath(parquetFile, parquetColumnName);
+                indexFilePath = parquetFile.toPath().getParent().resolve(relativeIndexFilePath).toString();
+                try {
+                    parquetFileReader = new ParquetFileReader(indexFilePath, tl().getChannelProvider());
+                } catch (final RuntimeException e1) {
+                    // Retry with legacy grouping file path
+                    final String legacyGroupingFileName =
+                            ParquetTools.legacyGroupingFileName(parquetFile, parquetColumnName);
+                    final File legacyGroupingFile = new File(parquetFile.getParent(), legacyGroupingFileName);
+                    try {
+                        parquetFileReader =
+                                new ParquetFileReader(legacyGroupingFile.getAbsolutePath(), tl().getChannelProvider());
+                    } catch (final RuntimeException e2) {
+                        logWarnFailedToRead(indexFilePath);
+                        return null;
+                    }
                 }
             }
             final Map<String, ColumnTypeInfo> columnTypes = ParquetSchemaReader.parseMetadata(
@@ -194,7 +210,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             final ColumnChunkReader endPosReader =
                     rowGroupReader.getColumnChunk(Collections.singletonList(END_POS));
             if (groupingKeyReader == null || beginPosReader == null || endPosReader == null) {
-                log.warn().append("Grouping file ").append(groupingFilePath)
+                log.warn().append("Grouping file ").append(indexFilePath)
                         .append(" is missing one or more expected columns for table location ")
                         .append(tl()).append(", column ").append(getName());
                 return null;

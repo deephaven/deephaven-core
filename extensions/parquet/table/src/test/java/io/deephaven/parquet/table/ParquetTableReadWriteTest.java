@@ -613,7 +613,7 @@ public final class ParquetTableReadWriteTest {
             table.getDefinition(), new File[] {destFile});
 
     /**
-     * Verify that the parent directory contains the expected parquet files and grouping files in the right directory
+     * Verify that the parent directory contains the expected parquet files and index files in the right directory
      * structure.
      */
     private static void verifyFilesInDir(final File parentDir, final String[] expectedDataFiles,
@@ -634,15 +634,15 @@ public final class ParquetTableReadWriteTest {
                 && indexesDir.list().length == groupingColumnToFileMap.size());
         for (Map.Entry<String, String[]> set : groupingColumnToFileMap.entrySet()) {
             final String groupingColName = set.getKey();
-            final String[] groupingFilePaths = set.getValue();
+            final String[] indexFilePaths = set.getValue();
             final File groupingColDir = new File(indexesDir, groupingColName);
             assertTrue(groupingColDir.exists() && groupingColDir.isDirectory()
-                    && groupingColDir.list().length == groupingFilePaths.length);
+                    && groupingColDir.list().length == indexFilePaths.length);
             final List filesInGroupingColDir = Arrays.asList(groupingColDir.list());
-            for (final String groupingFilePath : groupingFilePaths) {
-                final File groupingFile = new File(parentDir, groupingFilePath);
-                assertTrue(groupingFile.exists() && groupingFile.isFile() && groupingFile.length() > 0 &&
-                        filesInGroupingColDir.contains(groupingFile.getName()));
+            for (final String indexFilePath : indexFilePaths) {
+                final File indexFile = new File(parentDir, indexFilePath);
+                assertTrue(indexFile.exists() && indexFile.isFile() && indexFile.length() > 0 &&
+                        filesInGroupingColDir.contains(indexFile.getName()));
             }
         }
     }
@@ -785,8 +785,8 @@ public final class ParquetTableReadWriteTest {
         final String destFilename = "groupingColumnsWriteTests.parquet";
         final File destFile = new File(parentDir, destFilename);
         writer.writeTable(tableToSave, destFile);
-        String vvvGroupingFilePath = ".dh_metadata/indexes/vvv/index_vvv_groupingColumnsWriteTests.parquet";
-        verifyFilesInDir(parentDir, new String[] {destFilename}, Map.of("vvv", new String[] {vvvGroupingFilePath}));
+        String vvvIndexFilePath = ".dh_metadata/indexes/vvv/index_vvv_groupingColumnsWriteTests.parquet";
+        verifyFilesInDir(parentDir, new String[] {destFilename}, Map.of("vvv", new String[] {vvvIndexFilePath}));
 
         Table fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(fromDisk, tableToSave);
@@ -794,7 +794,7 @@ public final class ParquetTableReadWriteTest {
         // Verify that the key-value metadata in the file has the correct name
         ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(destFile, 0, null);
         String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
-        assertTrue(metadataString.contains(vvvGroupingFilePath));
+        assertTrue(metadataString.contains(vvvIndexFilePath));
 
         // Write another table but this write should fail
         final TableDefinition badTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("www").withGrouping());
@@ -808,7 +808,7 @@ public final class ParquetTableReadWriteTest {
         }
 
         // Make sure that original file is preserved and no temporary files
-        verifyFilesInDir(parentDir, new String[] {destFilename}, Map.of("vvv", new String[] {vvvGroupingFilePath}));
+        verifyFilesInDir(parentDir, new String[] {destFilename}, Map.of("vvv", new String[] {vvvIndexFilePath}));
         fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(fromDisk, tableToSave);
         FileUtils.deleteRecursively(parentDir);
@@ -870,8 +870,8 @@ public final class ParquetTableReadWriteTest {
         final String destFilename = "data.parquet";
         final File destFile = new File(parentDir, destFilename);
         ParquetTools.writeTable(tableToSave, destFile);
-        String vvvGroupingFilePath = ".dh_metadata/indexes/vvv/index_vvv_data.parquet";
-        verifyFilesInDir(parentDir, new String[] {destFilename}, Map.of("vvv", new String[] {vvvGroupingFilePath}));
+        String vvvIndexFilePath = ".dh_metadata/indexes/vvv/index_vvv_data.parquet";
+        verifyFilesInDir(parentDir, new String[] {destFilename}, Map.of("vvv", new String[] {vvvIndexFilePath}));
 
         // Call readTable on parent directory
         Table fromDisk = ParquetTools.readTable(parentDir);
@@ -959,18 +959,18 @@ public final class ParquetTableReadWriteTest {
 
         ParquetTools.writeTables(tablesToSave, firstTable.getDefinition(), destFiles);
 
-        String firstGroupingFilePath = ".dh_metadata/indexes/vvv/index_vvv_firstTable.parquet";
-        String secondGroupingFilePath = ".dh_metadata/indexes/vvv/index_vvv_secondTable.parquet";
+        String firstIndexFilePath = ".dh_metadata/indexes/vvv/index_vvv_firstTable.parquet";
+        String secondIndexFilePath = ".dh_metadata/indexes/vvv/index_vvv_secondTable.parquet";
         verifyFilesInDir(parentDir, new String[] {firstFilename, secondFilename},
-                Map.of("vvv", new String[] {firstGroupingFilePath, secondGroupingFilePath}));
+                Map.of("vvv", new String[] {firstIndexFilePath, secondIndexFilePath}));
 
         // Verify that the key-value metadata in the file has the correct name
         ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(firstDestFile, 0, null);
         String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
-        assertTrue(metadataString.contains(firstGroupingFilePath));
+        assertTrue(metadataString.contains(firstIndexFilePath));
         tableLocationKey = new ParquetTableLocationKey(secondDestFile, 0, null);
         metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
-        assertTrue(metadataString.contains(secondGroupingFilePath));
+        assertTrue(metadataString.contains(secondIndexFilePath));
 
         // Read back the files and verify contents match
         TstUtils.assertTableEquals(ParquetTools.readTable(firstDestFile), firstTable);
@@ -999,43 +999,43 @@ public final class ParquetTableReadWriteTest {
         final String destFilename = "groupingColumnsWriteTests.parquet";
         final File destFile = new File(parentDir, destFilename);
         writer.writeTable(tableToSave, destFile);
-        String vvvGroupingFilePath = ".dh_metadata/indexes/vvv/index_vvv_groupingColumnsWriteTests.parquet";
+        String vvvIndexFilePath = ".dh_metadata/indexes/vvv/index_vvv_groupingColumnsWriteTests.parquet";
 
         // Write a new table successfully at the same position with different grouping columns
         final TableDefinition anotherTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("xxx").withGrouping());
         Table anotherTableToSave = TableTools.newTable(anotherTableDefinition, TableTools.col("xxx", data));
         writer.writeTable(anotherTableToSave, destFile);
-        final String xxxGroupingFilePath = ".dh_metadata/indexes/xxx/index_xxx_groupingColumnsWriteTests.parquet";
+        final String xxxIndexFilePath = ".dh_metadata/indexes/xxx/index_xxx_groupingColumnsWriteTests.parquet";
 
         // The directory now should contain the updated table, its grouping file for column xxx, and old grouping file
         // for column vvv
         verifyFilesInDir(parentDir, new String[] {destFilename},
-                Map.of("vvv", new String[] {vvvGroupingFilePath},
-                        "xxx", new String[] {xxxGroupingFilePath}));
+                Map.of("vvv", new String[] {vvvIndexFilePath},
+                        "xxx", new String[] {xxxIndexFilePath}));
 
         Table fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(fromDisk, anotherTableToSave);
 
         ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(destFile, 0, null);
         String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
-        assertTrue(metadataString.contains(xxxGroupingFilePath) && !metadataString.contains(vvvGroupingFilePath));
+        assertTrue(metadataString.contains(xxxIndexFilePath) && !metadataString.contains(vvvIndexFilePath));
 
         // Overwrite the table
         writer.writeTable(anotherTableToSave, destFile);
 
         // The directory should still contain the updated table, its grouping file for column xxx, and old grouping file
         // for column vvv
-        final File xxxGroupingFile = new File(parentDir, xxxGroupingFilePath);
-        final File backupXXXGroupingFile = ParquetTools.getBackupFile(xxxGroupingFile);
-        final String backupXXXGroupingFileName = backupXXXGroupingFile.getName();
+        final File xxxIndexFile = new File(parentDir, xxxIndexFilePath);
+        final File backupXXXIndexFile = ParquetTools.getBackupFile(xxxIndexFile);
+        final String backupXXXIndexFileName = backupXXXIndexFile.getName();
         verifyFilesInDir(parentDir, new String[] {destFilename},
-                Map.of("vvv", new String[] {vvvGroupingFilePath},
-                        "xxx", new String[] {xxxGroupingFilePath}));
+                Map.of("vvv", new String[] {vvvIndexFilePath},
+                        "xxx", new String[] {xxxIndexFilePath}));
 
         tableLocationKey = new ParquetTableLocationKey(destFile, 0, null);
         metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
-        assertTrue(metadataString.contains(xxxGroupingFilePath) && !metadataString.contains(vvvGroupingFilePath)
-                && !metadataString.contains(backupXXXGroupingFileName));
+        assertTrue(metadataString.contains(xxxIndexFilePath) && !metadataString.contains(vvvIndexFilePath)
+                && !metadataString.contains(backupXXXIndexFileName));
         FileUtils.deleteRecursively(parentDir);
     }
 
