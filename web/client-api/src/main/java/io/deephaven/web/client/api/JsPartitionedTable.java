@@ -209,8 +209,9 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * Open a new table that is the result of merging all constituent tables.
-     * See {@link io.deephaven.engine.table.PartitionedTable#merge()} for details.
+     * Open a new table that is the result of merging all constituent tables. See
+     * {@link io.deephaven.engine.table.PartitionedTable#merge()} for details.
+     * 
      * @return A merged representation of the constituent tables.
      */
     public Promise<JsTable> getMergedTable() {
