@@ -43,7 +43,7 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
                 if (instance == null) {
                     instance = new TrackedFileHandleFactory(
                             Executors.newSingleThreadScheduledExecutor(
-                                    new NamingThreadFactory(TrackedFileHandleFactory.class, "cleanup", true)),
+                                    new NamingThreadFactory(TrackedFileHandleFactory.class, "cleanupScheduler", true)),
                             Configuration.getInstance().getInteger("TrackedFileHandleFactory.maxOpenFiles")) {
 
                         @Override
