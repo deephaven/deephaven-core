@@ -18,6 +18,8 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 - ![Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/check-ci.yml/badge.svg?branch=main)
 - ![Nightly Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-check-ci.yml/badge.svg?branch=main)
 
+This README is intended to provide a high level overview of the installation and use of Deephaven Community Core. For more detailed guides on the topics presented below, see our [Community documentation](https://deephaven.io/core/docs).
+
 ## Supported Languages
 
 | Language      | Server Application | Client Application |
@@ -29,13 +31,9 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 | Go            | No                 | Yes                |
 | R             | No                 | Yes                |
 
-## Installation
+Deephaven's client APIs use [gRPC](https://grpc.io/), [protobuf](https://github.com/deephaven/deephaven-core/tree/main/proto/proto-backplane-grpc/src/main/proto/deephaven/proto), [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html), and [Barrage](https://github.com/deephaven/barrage) to handle ticking data. Users who wish to build their own client APIs can use these tools to do so.
 
-Deephaven Community Core offers two server-side APIs: Python and Groovy. There are also client-side APIs for Python, Java, JavaScript, Go, and R.
-
-The server-side APIs connect directly to the Deephaven server, allowing users to execute commands on it. Client-side APIs connect to an already-running server through a client application.
-
-See the following documentation links for installation instructions and more:
+The following list contains documentation links for installation instructions and more:
 
 - Python
   - [Run from Docker](https://deephaven.io/core/docs/tutorials/quickstart/)
@@ -48,35 +46,73 @@ See the following documentation links for installation instructions and more:
 - [Go client](https://pkg.go.dev/github.com/deephaven/deephaven-core/go)
 - [R client](https://github.com/deephaven/deephaven-core/blob/main/R/rdeephaven/README.md)
 
-Deephaven's client APIs use [gRPC](https://grpc.io/), [protobuf](https://github.com/deephaven/deephaven-core/tree/main/proto/proto-backplane-grpc/src/main/proto/deephaven/proto), [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html), and [Barrage](https://github.com/deephaven/barrage) to handle ticking data. Users who wish to build their own client APIs can use these tools to do so.
+## Install and run Deephaven
 
-## Run the Deephaven server
-
-The Deephaven server can be instantiated [from Docker](#from-docker), [from Python](#from-python), or [from source code](#built-from-source).
+The Deephaven server can be installed and instantiated [from Docker](#from-docker), [from Python](#from-python), or [from source code](#built-from-source).
 
 ### From Docker
 
-This is the easiest way to get started with Deephaven. For full instructions, see our [quickstart for Docker](https://deephaven.io/core/docs/tutorials/quickstart/).
+This is the easiest way to get started with Deephaven. For full instructions, see our [quickstart for Docker](https://deephaven.io/core/docs/tutorials/quickstart/). The table below shows installation dependencies.
 
-#### Python
+| Dependency     | Version  | OS      | Required/Recommended |
+| -------------- | -------- | --------| -------------------- |
+| Docker         | ^20.10.8 | All     | Required             |
+| Docker compose | ^2       | All     | Recommended          |
+| Windows        | 10+      | Windows | Required             |
+| WSL            | ^2       | Windows | Required             |
+
+The quickest way to install and run Deephaven from Docker is with a single Docker command.
+
+#### Python without Docker Compose
 
 ```sh
 # Python
 docker run --rm --name deephaven -p 10000:10000 ghcr.io/deephaven/server:latest
 ```
 
-#### Groovy
+#### Groovy without Docker Compose
 
 ```sh
 # Groovy
 docker run --rm name deephaven -p 10000:10000 ghcr.io/deephaven/server-slim:latest
 ```
 
-### From Python
+Users who wish to customize their deployment should use Docker Compose. Deephaven offers a multitude of pre-made [docker-compose.yml files](https://deephaven.io/core/docs/tutorials/quickstart/#choose-a-deployment) to choose from. To get started, all that's required is to download a file, pull the images, and start the server.
+
+#### Python with Docker Compose
+
+The base Python `docker-compose.yml` file can be found [here](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/base/docker-compose.yml).
+
+```sh
+mkdir deephaven-deployment
+cd deephaven.deployment
+
+curl -O https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/base/docker-compose.yml
+
+docker compose pull
+docker compose up
+```
+
+#### Groovy with Docker Compose
+
+The base Groovy `docker-compose.yml` file can be found [here](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/groovy/docker-compose.yml).
+
+```sh
+mkdir deephaven-deployment
+cd deephaven-deployment
+
+curl -O https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/groovy/docker-compose.yml
+
+docker compose pull
+docker compose up
+```
+
+### pip-installed Deephaven
 
 Users who wish to use Python but not Docker should use [pip-installed Deephaven](https://deephaven.io/core/docs/tutorials/quickstart-pip/).
 
 ```sh
+pip install --upgrade pip setuptools wheel
 pip install deephaven-server deephaven-ipywidgets
 ```
 
@@ -93,18 +129,16 @@ The input arguments to `Server` specify to connect to the Deephaven server on po
 
 Users who wish to modify source code and contribute to the project should build Deephaven from source. For full instructions, see [How to build Deephaven from source](https://deephaven.io/core/docs/how-to-guides/launch-build/).
 
-#### Required dependencies
-
 Building and running Deephaven requires a few software packages.
 
-| Package        | Version                       | OS           |
-| -------------- | ----------------------------- | ------------ |
-| git            | ^2.25.0                       | All          |
-| java           | >=11, <20                     | All          |
-| docker         | ^20.10.8                      | All          |
-| docker compose | ^2                            | All          |
-| Windows        | 10 (OS build 20262 or higher) | Only Windows |
-| WSL            | 2                             | Only Windows |
+| Package        | Version                       | OS           | Required/Recommended |
+| -------------- | ----------------------------- | ------------ | -------------------- |
+| git            | ^2.25.0                       | All          | Required             |
+| java           | >=11, <20                     | All          | Required             |
+| docker         | ^20.10.8                      | All          | Required             |
+| docker compose | ^2                            | All          | Recommended          |
+| Windows        | 10 (OS build 20262 or higher) | Only Windows | Required             |
+| WSL            | 2                             | Only Windows | Required             |
 
 You can check if these packages are installed and functioning by running:
 
@@ -127,7 +161,7 @@ On Windows, all commands must be run inside a WSL 2 terminal.
 
 #### Python
 
-A Python virtual environment is highly recommended for building Deephaven from source. Additionally, the wheel is installed with [gradle](https://gradle.org/) and built with [pip](https://pypi.org/project/pip/). If you don't want autocomplete, remove `[autocomplete]` from the pip install command below.
+A Python virtual environment is highly recommended for building Deephaven from source. Additionally, the wheel is installed with [pip](https://pypi.org/project/pip/) and built with [Gradle](https://gradle.org/).
 
 ```sh
 git clone https://github.com/deephaven/deephaven-core.git
@@ -141,7 +175,7 @@ pip install "py/server/build/wheel/deephaven_core-<version>-py3-non-any.whl[auto
 
 #### Groovy
 
-The Groovy server is built with [gradle](https://gradle.org/). `-Pgroovy` builds the Groovy server instead of Python.
+The Groovy server is built with [Gradle](https://gradle.org/). `-Pgroovy` builds the Groovy server instead of Python.
 
 ```sh
 git clone https://github.com/deephaven/deephaven-core.git
@@ -165,7 +199,7 @@ docker compose logs -f | grep "access through pre-shared key"
 
 ### Deephaven run from Python
 
-When a Deephaven server is started from Python, executing Deephaven queries from Python does _not_ require the key. However, if you wish to connect to the IDE via your web browser, you will need the pre-shared key. If you don't set the key, you won't be able to access it, since Deephaven servers started from Python don't generate Docker logs. To set the pre-shared key, add `"-Dauthentication.psk=<YourKey>"` as an additional JVM parameter to the server. The following example sets the key to `MyPreSharedKey`:
+When a Deephaven server is started from Python, executing Deephaven queries from Python does _not_ require the key. However, if you wish to connect to the IDE via your web browser, you will need the pre-shared key. You will not be able to get the pre-shared key unless you set it yourself. To set the pre-shared key, add `"-Dauthentication.psk=<YourKey>"` as an additional JVM parameter to the server. The following example sets the key to `MyPreSharedKey`:
 
 ```python
 from deephaven_server import Server
@@ -174,21 +208,11 @@ s = Server(port=10000, jvm_args=["-Xmx4g", "-Dauthentication.psk=MyPreSharedKey"
 
 ### Client APIs
 
-Clients that attempt to connect to a server using pre-shared key authentication will need to supply the key to complete the connection.
-
-### Documentation
-
-For more information on supported authentication methods:
-
-- [How to configure and use pre-shared key authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-psk/)
-- [How to configure and use anonymous authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-anon/)
-- [How to configure and use username/password authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-uname-pw/)
-- [How to configure and use mTLS authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-mtls/)
-- [How to configure and use Keycload/OpenID authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-keycloak/)
+Clients that attempt to connect to a server using pre-shared key authentication will need to supply the key to complete the connection. The key is the same for a client connection as it is for connecting directly to the server. For instance, in the [above example](#deephaven-run-from-python), the key for a client connection would also be `MyPreSharedKey`.
 
 ## Connect to the server
 
-The Deephaven UI is accessible from a web browser. For a server running locally on port 10000, it can be connected to via `http://localhost:10000/ide`. For a server running remotely on port 10000, it can be connected to via `<hostname>:10000/ide`. If using authentication, enter credentials to gain access to the IDE.
+The Deephaven UI is accessible from a web browser. For a server running locally on port 10000, it can be connected to via `https://localhost:10000/ide`. For a server running remotely on port 10000, it can be connected to via `https://<hostname>:10000/ide`. If using authentication, enter credentials to gain access to the IDE. Deephaven recommends Chrome or Firefox for use. Other browsers are not officially supported.
 
 ## First query
 
