@@ -19,12 +19,16 @@ class TickingBasicTestCase(unittest.TestCase):
         def update_table_added(added):
             nonlocal table_added_update_count
             nonlocal table_added_last_col1_seen
+            table_added_update_count += 1
+            if not added:
+                # Only allow the initial snapshot (if it was fast enough) to be empty.
+                self.assertTrue(table_added_update_count == 1)
+                return
             for value in added['Col1'].to_pylist():
                 prev = table_added_last_col1_seen
                 table_added_last_col1_seen = value
                 if prev != -1:
                     self.assertTrue(prev + 1 == table_added_last_col1_seen)
-            table_added_update_count += 1
         listener_handle = dh.listen(table, lambda update : update_table_added(update.added('Col1')))
         listener_handle.start()
         seen_rows = 0
