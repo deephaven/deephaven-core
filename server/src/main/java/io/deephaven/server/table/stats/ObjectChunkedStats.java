@@ -6,6 +6,7 @@
 package io.deephaven.server.table.stats;
 
 import gnu.trove.map.hash.TObjectLongHashMap;
+import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -44,7 +45,7 @@ public class ObjectChunkedStats implements ChunkedStatsKernel {
         long count = 0;
         int uniqueCount = 0;
 
-        final TObjectLongHashMap<Object> countValues = new TObjectLongHashMap<>();
+        final TObjectLongHashMap<Object> countValues = new TObjectLongHashMap<Object>();
         boolean useSet = false;
         final Set<Object> uniqueValues = new HashSet<>();
 

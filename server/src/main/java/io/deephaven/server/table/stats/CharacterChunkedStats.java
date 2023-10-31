@@ -1,6 +1,9 @@
 package io.deephaven.server.table.stats;
 
+import gnu.trove.map.hash.TCharLongHashMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
+import gnu.trove.set.TCharSet;
+import gnu.trove.set.hash.TCharHashSet;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -39,9 +42,9 @@ public class CharacterChunkedStats implements ChunkedStatsKernel {
         long count = 0;
         int uniqueCount = 0;
 
-        final TObjectLongHashMap<Object> countValues = new TObjectLongHashMap<>();
+        final TCharLongHashMap countValues = new TCharLongHashMap();
         boolean useSet = false;
-        final Set<Object> uniqueValues = new HashSet<>();
+        final TCharSet uniqueValues = new TCharHashSet();
 
         try (CharacterColumnIterator iterator = new ChunkedCharacterColumnIterator(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {
             while (iterator.hasNext()) {

@@ -1,6 +1,7 @@
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -37,10 +38,18 @@ public class ReplicateColumnStats {
 
     private static void fixupObjectChunk(final String objectPath) throws IOException {
         final File objectFile = new File(objectPath);
-        final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        FileUtils.writeLines(objectFile, globalReplacements(lines,
+        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+        lines = ReplicationUtils.removeImport(lines,
+                "import gnu.trove.set.TObjectSet;",
+                "import gnu.trove.set.hash.TObjectHashSet;"
+        );
+        lines = globalReplacements(lines,
                 "QueryConstants.NULL_OBJECT", "null",
                 "\\? extends Attributes.Values", "?, ? extends Attributes.Values",
-                "ObjectChunk<[?] ", "ObjectChunk<?, ? "));
+                "ObjectChunk<[?] ", "ObjectChunk<?, ? ",
+                " TObjectLongHashMap", " TObjectLongHashMap<Object>",
+                " TObjectSet", " Set<Object>",
+                " TObjectHashSet", " HashSet<>");
+        FileUtils.writeLines(objectFile, lines);
     }
 }
