@@ -1899,6 +1899,14 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 DateTimeUtils.upperBin(DateTimeUtils.upperBin(zdt, second, second), second, second));
     }
 
+    public void testPlusLocalDate() {
+        final LocalDate d = LocalDate.of(2010, 1, 2);
+        TestCase.assertEquals(LocalDate.of(2010, 1, 5), DateTimeUtils.plus(d, 3));
+        TestCase.assertEquals(LocalDate.of(2009, 12, 30), DateTimeUtils.plus(d, -3));
+        TestCase.assertEquals(LocalDate.of(2010, 1, 5), DateTimeUtils.plus(d, Period.ofDays(3)));
+        TestCase.assertEquals(LocalDate.of(2009, 12, 30), DateTimeUtils.plus(d, Period.ofDays(-3)));
+    }
+
     public void testPlus() {
         final Instant instant = DateTimeUtils.parseInstant("2010-01-01T12:13:14.999123456 JP");
         final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(instant, TZ_AL);
@@ -2045,6 +2053,14 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
 
+    }
+
+    public void testMinusLocalDate() {
+        final LocalDate d = LocalDate.of(2010, 1, 2);
+        TestCase.assertEquals(LocalDate.of(2009, 12, 30), DateTimeUtils.minus(d, 3));
+        TestCase.assertEquals(LocalDate.of(2010, 1, 5), DateTimeUtils.minus(d, -3));
+        TestCase.assertEquals(LocalDate.of(2009, 12, 30), DateTimeUtils.minus(d, Period.ofDays(3)));
+        TestCase.assertEquals(LocalDate.of(2010, 1, 5), DateTimeUtils.minus(d, Period.ofDays(-3)));
     }
 
     public void testMinus() {

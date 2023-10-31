@@ -1362,6 +1362,52 @@ public class DateTimeUtils {
     // region Arithmetic
 
     /**
+     * Adds days to a {@link LocalDate}.
+     *
+     * @param date starting date
+     * @param days number of days to add
+     * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
+     *         date plus the specified number of days
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate plus(@Nullable final LocalDate date, final long days) {
+        if (date == null || days == NULL_LONG) {
+            return null;
+        }
+
+        try {
+            return date.plusDays(days);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Adds a time period to a {@link LocalDate}.
+     *
+     * @param date starting date
+     * @param period time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting
+     *         date plus the specified time period
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate plus(@Nullable final LocalDate date, final Period period) {
+        if (date == null || period == null) {
+            return null;
+        }
+
+        try {
+            return date.plus(period);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
      * Adds nanoseconds to an {@link Instant}.
      *
      * @param instant starting instant value
@@ -1494,6 +1540,52 @@ public class DateTimeUtils {
 
         try {
             return dateTime.plus(period);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts days from a {@link LocalDate}.
+     *
+     * @param date starting date
+     * @param days number of days to subtract
+     * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
+     *         date plus the specified number of days
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate minus(@Nullable final LocalDate date, final long days) {
+        if (date == null || days == NULL_LONG) {
+            return null;
+        }
+
+        try {
+            return date.minusDays(days);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts a time period from a {@link LocalDate}.
+     *
+     * @param date starting date
+     * @param period time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting
+     *         date minus the specified time period
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate minus(@Nullable final LocalDate date, final Period period) {
+        if (date == null || period == null) {
+            return null;
+        }
+
+        try {
+            return date.minus(period);
         } catch (Exception ex) {
             throw new DateTimeOverflowException(ex);
         }
