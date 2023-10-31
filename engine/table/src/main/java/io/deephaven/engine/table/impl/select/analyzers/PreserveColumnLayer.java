@@ -24,11 +24,13 @@ import java.util.Map;
  */
 final public class PreserveColumnLayer extends DependencyLayerBase {
     private final BitSet dependencyBitSet;
+    private final boolean flattenedResult;
 
     PreserveColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc, ColumnSource<?> cs, String[] deps,
-            ModifiedColumnSet mcsBuilder) {
+            ModifiedColumnSet mcsBuilder, boolean flattenedResult) {
         super(inner, name, sc, cs, deps, mcsBuilder);
         this.dependencyBitSet = new BitSet();
+        this.flattenedResult = flattenedResult;
         Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
     }
 
@@ -75,6 +77,16 @@ final public class PreserveColumnLayer extends DependencyLayerBase {
                 .append("}");
     }
 
+    @Override
+    public boolean flattenedResult() {
+        return flattenedResult;
+    }
+
+    @Override
+    public boolean alreadyFlattenedSources() {
+        // we can only preserve a flat source if it was already made flat
+        return flattenedResult;
+    }
 
     @Override
     public boolean allowCrossColumnParallelization() {

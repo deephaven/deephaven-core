@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.RowSet;
@@ -100,6 +101,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         boolean shiftColumnHasPositiveOffset = false;
 
         final HashSet<String> resultColumns = flattenedResult ? new HashSet<>() : null;
+        final HashMap<String, ColumnSource<?>> resultAlias = flattenedResult ? new HashMap<>() : null;
         for (final SelectColumn sc : selectColumns) {
             if (remainingCols != null) {
                 remainingCols.add(sc);
@@ -121,8 +123,12 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
                 // we must re-initialize the column inputs as they may have changed post-flatten
                 sc.initInputs(rowSet, analyzer.getAllColumnSources());
-            } else if (!flatResult && flattenedResult) {
+            }
+
+            if (flattenedResult) {
                 resultColumns.add(sc.getName());
+                // this shadows any known alias
+                resultAlias.remove(sc.getName());
             }
 
             final Stream<String> allDependencies =
@@ -156,18 +162,45 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 continue;
             }
 
+            final SourceColumn realColumn;
+            if (sc instanceof SourceColumn) {
+                realColumn = (SourceColumn) sc;
+            } else if ((sc instanceof SwitchColumn) && ((SwitchColumn) sc).getRealColumn() instanceof SourceColumn) {
+                realColumn = (SourceColumn) ((SwitchColumn) sc).getRealColumn();
+            } else {
+                realColumn = null;
+            }
+
             if (shouldPreserve(sc)) {
-                if (numberOfInternallyFlattenedColumns > 0) {
+                // this must be a source column to be preserved
+                Assert.neqNull(realColumn, "realColumn");
+
+                boolean sourceIsNew = resultColumns != null && resultColumns.contains(realColumn.getSourceName());
+                if (!sourceIsNew && numberOfInternallyFlattenedColumns > 0) {
                     // we must preserve this column, but have already created an analyzer for the internally flattened
                     // column, therefore must start over without permitting internal flattening
                     return create(sourceTable, mode, columnSources, originalRowSet, parentMcs, publishTheseSources,
-                            false, selectColumns);
+                            useShiftedColumns, false, selectColumns);
                 }
-                analyzer =
-                        analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
-                // we can not flatten future columns because we are preserving this column
-                flattenedResult = false;
+
+                analyzer = analyzer.createLayerForPreserve(
+                        sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder, flatResult && flattenedResult);
+
+                if (!sourceIsNew) {
+                    // we can not flatten future columns because we are preserving this column
+                    flattenedResult = false;
+                }
                 continue;
+            }
+
+            if (flattenedResult && realColumn != null) {
+                // this could be a duplicate of a previously flattened column
+                final ColumnSource<?> alias = resultAlias.get(realColumn.getSourceName());
+                if (alias != null) {
+                    analyzer = analyzer.createLayerForPreserve(
+                            sc.getName(), sc, alias, distinctDeps, mcsBuilder, flatResult);
+                    continue;
+                }
             }
 
             final long targetDestinationCapacity =
@@ -189,6 +222,12 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     final WritableColumnSource<?> scs =
                             flatResult || flattenedResult ? sc.newFlatDestInstance(targetDestinationCapacity)
                                     : sc.newDestInstance(targetDestinationCapacity);
+
+                    if (flattenedResult && realColumn != null && !resultColumns.contains(realColumn.getSourceName())) {
+                        // this source column a candidate for preservation if referenced again
+                        resultAlias.put(realColumn.getSourceName(), scs);
+                    }
+
                     analyzer = analyzer.createLayerForSelect(updateGraph, rowSet, sc.getName(), sc, scs, null,
                             distinctDeps, mcsBuilder, false, flattenedResult, flatResult && flattenedResult);
                     if (flattenedResult) {
@@ -350,8 +389,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     }
 
     private SelectAndViewAnalyzer createLayerForPreserve(String name, SelectColumn sc, ColumnSource<?> cs,
-            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder) {
-        return new PreserveColumnLayer(this, name, sc, cs, parentColumnDependencies, mcsBuilder);
+            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean flatResult) {
+        return new PreserveColumnLayer(this, name, sc, cs, parentColumnDependencies, mcsBuilder, flatResult);
     }
 
     abstract void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy);

@@ -33,6 +33,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.vector.LongVector;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
@@ -1114,5 +1115,101 @@ public class QueryTableSelectUpdateTest {
                 TableTools.col("Or", true, true, true));
 
         assertTableEquals(expected, result);
+    }
+
+    @Test
+    public void testStaticSelectPreserveAlreadyFlattenedColumns() {
+        final Table source = emptyTable(10).updateView("I = ii").where("I % 2 == 0");
+        final Table result = source.select("Foo = I", "Bar = Foo", "Baz = I");
+
+        Assert.assertTrue(result.isFlat());
+
+        final ColumnSource<?> foo = result.getColumnSource("Foo");
+        final ColumnSource<?> bar = result.getColumnSource("Bar");
+        final ColumnSource<?> baz = result.getColumnSource("Baz");
+        result.getRowSet().forAllRowKeys(rowKey -> {
+            Assert.assertEquals(rowKey * 2, foo.getLong(rowKey));
+            Assert.assertEquals(rowKey * 2, bar.getLong(rowKey));
+            Assert.assertEquals(rowKey * 2, baz.getLong(rowKey));
+        });
+
+        Assert.assertEquals(foo, bar);
+        Assert.assertEquals(foo, baz);
+    }
+
+    @Test
+    public void testStaticSelectPreserveColumn() {
+        final Table source = emptyTable(10).select("I = ii").where("I % 2 == 0");
+        final Table result = source.select("Foo = I", "Bar = Foo", "Baz = I");
+
+        Assert.assertFalse(result.isFlat());
+
+        final ColumnSource<?> orig = source.getColumnSource("I");
+        final ColumnSource<?> foo = result.getColumnSource("Foo");
+        final ColumnSource<?> bar = result.getColumnSource("Bar");
+        final ColumnSource<?> baz = result.getColumnSource("Baz");
+        result.getRowSet().forAllRowKeys(rowKey -> {
+            Assert.assertEquals(rowKey, foo.getLong(rowKey));
+            Assert.assertEquals(rowKey, bar.getLong(rowKey));
+            Assert.assertEquals(rowKey, baz.getLong(rowKey));
+        });
+
+        // These columns were preserved and no flattening occurred.
+        Assert.assertEquals(orig, foo);
+        Assert.assertEquals(orig, bar);
+        Assert.assertEquals(orig, baz);
+    }
+
+    @Test
+    public void testStaticSelectFlattenNotReusedWithRename() {
+        final Table source = emptyTable(10).updateView("I = ii").where("I % 2 == 0");
+        // we must use a vector column to prevent the inner column from being preserved
+        final Table result = source.select(
+                "Foo = I", "I = new io.deephaven.vector.LongVectorDirect(0L, 1L)", "Baz = I");
+
+        Assert.assertTrue(result.isFlat());
+
+        final ColumnSource<?> orig = source.getColumnSource("I");
+        final ColumnSource<?> foo = result.getColumnSource("Foo");
+        final ColumnSource<?> newI = result.getColumnSource("I");
+        final ColumnSource<?> baz = result.getColumnSource("Baz");
+        result.getRowSet().forAllRowKeys(rowKey -> {
+            Assert.assertEquals(rowKey * 2, foo.getLong(rowKey));
+            for (int ii = 0; ii < 2; ++ii) {
+                Assert.assertEquals(ii, ((LongVector) newI.get(rowKey)).get(ii));
+                Assert.assertEquals(ii, ((LongVector) baz.get(rowKey)).get(ii));
+            }
+        });
+
+        Assert.assertNotEquals(orig, foo); // this column was flattened
+        Assert.assertNotEquals(newI, baz); // vector columns cannot be preserved; so this should be a copy
+    }
+
+    @Test
+    public void testStaticSelectRevertInternalFlatten() {
+        // there is some special logic that prevents an internal flatten if it also needs to preserve an original column
+        final Table source = emptyTable(10)
+                .select("I = ii")
+                .updateView("J = ii")
+                .where("I % 2 == 0");
+
+        // here `Foo` should be flattened, but `Bar` must be preserved; `Baz` is just for fun
+        final Table result = source.select("Foo = J", "Bar = I", "Baz = Foo");
+
+        Assert.assertFalse(result.isFlat());
+
+        final ColumnSource<?> foo = result.getColumnSource("Foo");
+        final ColumnSource<?> bar = result.getColumnSource("Bar");
+        final ColumnSource<?> baz = result.getColumnSource("Baz");
+        result.getRowSet().forAllRowKeys(rowKey -> {
+            Assert.assertEquals(rowKey, foo.getLong(rowKey));
+            Assert.assertEquals(rowKey, bar.getLong(rowKey));
+            Assert.assertEquals(rowKey, baz.getLong(rowKey));
+        });
+
+        // Note that Foo is still being "selected" and therefore "brought into memory"
+        Assert.assertNotEquals(foo, source.getColumnSource("J"));
+        Assert.assertEquals(bar, source.getColumnSource("I"));
+        Assert.assertEquals(baz, foo);
     }
 }
