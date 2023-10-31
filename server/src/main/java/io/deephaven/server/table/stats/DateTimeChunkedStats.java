@@ -7,6 +7,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
+import io.deephaven.engine.table.iterators.LongColumnIterator;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -18,37 +20,27 @@ public class DateTimeChunkedStats implements ChunkedStatsKernel {
         long min = QueryConstants.NULL_LONG;
         long max = QueryConstants.NULL_LONG;
 
-        try (final ChunkSource.GetContext getContext =
-                columnSource.makeGetContext(ChunkedNumericalStatsKernel.CHUNK_SIZE)) {
-            final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
+        try (LongColumnIterator iterator = new ChunkedLongColumnIterator(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {
+            while (iterator.hasNext()) {
+                long val = iterator.nextLong();
 
-            while (rsIt.hasMore()) {
-                final RowSequence nextKeys = rsIt.getNextRowSequenceWithLength(ChunkedNumericalStatsKernel.CHUNK_SIZE);
-                final LongChunk<? extends Values> chunk = (usePrev ? columnSource.getPrevChunk(getContext, nextKeys)
-                        : columnSource.getChunk(getContext, nextKeys)).asLongChunk();
-
-                final int chunkSize = chunk.size();
-                for (int ii = 0; ii < chunkSize; ii++) {
-                    final long val = chunk.get(ii);
-
-                    if (val == QueryConstants.NULL_LONG) {
-                        continue;
-                    }
-
-                    if (count == 0) {
-                        min = max = val;
-                    } else {
-                        if (val < min) {
-                            min = val;
-                        }
-
-                        if (val > max) {
-                            max = val;
-                        }
-                    }
-
-                    count++;
+                if (val == QueryConstants.NULL_LONG) {
+                    continue;
                 }
+
+                if (count == 0) {
+                    min = max = val;
+                } else {
+                    if (val < min) {
+                        min = val;
+                    }
+
+                    if (val > max) {
+                        max = val;
+                    }
+                }
+
+                count++;
             }
         }
 
