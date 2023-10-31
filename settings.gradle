@@ -137,8 +137,6 @@ include(':DataStructures')
 
 include(':Configuration')
 
-include(':Net')
-
 include(':Stats')
 
 include(':Container')
