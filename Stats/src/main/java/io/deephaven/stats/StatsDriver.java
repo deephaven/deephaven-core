@@ -174,7 +174,7 @@ public class StatsDriver {
         // now that the StatsDriver is completely constructed, we can schedule the update job
         if (Configuration.getInstance().getBoolean("statsdriver.enabled")) {
             scheduler = Executors.newSingleThreadScheduledExecutor(
-                    new NamingThreadFactory(StatsDriver.class, "statsUpdater", true));
+                    new NamingThreadFactory(StatsDriver.class, "updateScheduler", true));
             updateJobFuture = scheduler.scheduleAtFixedRate(this::update, delay, STEP, TimeUnit.MILLISECONDS);
         } else {
             scheduler = null;
