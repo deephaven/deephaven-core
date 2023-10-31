@@ -1584,7 +1584,6 @@ public class QueryTable extends BaseTable<QueryTable> {
     /**
      * Data indexes on select source columns may be valid in the result table. Add new mappings so the data indexes are
      * retrievable from the result table column sources.
-     *
      */
     private void propagateDataIndexes(SelectColumn[] selectColumns, QueryTable resultTable) {
         // Get a list of all the data indexes in the source table.
@@ -1594,8 +1593,20 @@ public class QueryTable extends BaseTable<QueryTable> {
             return;
         }
 
-        final Set<String> usedOutputColumns = new HashSet<>();
-        final Map<ColumnSource<?>, ColumnSource<?>> oldToNewMap = new HashMap<>();
+        // Make a set containing only the columns that were part of indexes.
+        Set<ColumnSource<?>> indexedColumns = new HashSet<>();
+        dataIndexes.forEach(di -> {
+            indexedColumns.addAll(di.keyColumnMap().keySet());
+        });
+
+        final Set<ColumnSource<?>> usedOutputColumns = new HashSet<>();
+
+        // Maintain a list of unique old to new mappings. NOTE: this is complex because select() may return
+        // multiple aliases for the same source column. Until/unless we have a guarantee that only a single
+        // alias is creating, we must create a new data index for each alias and this requires generating all
+        // unique mappings for these columns.
+        final List<Map<ColumnSource<?>, ColumnSource<?>>> oldToNewMaps = new ArrayList<>();
+
         for (SelectColumn selectColumn : selectColumns) {
             if (selectColumn instanceof SwitchColumn) {
                 selectColumn = ((SwitchColumn) selectColumn).getRealColumn();
@@ -1605,39 +1616,74 @@ public class QueryTable extends BaseTable<QueryTable> {
             if (selectColumn instanceof SourceColumn) {
                 sourceColumn = (SourceColumn) selectColumn;
             }
-            if (sourceColumn != null && !usedOutputColumns.contains(sourceColumn.getSourceName())) {
-                final ColumnSource<?> originalColumnSource = ReinterpretUtils.maybeConvertToPrimitive(
-                        getColumnSource(sourceColumn.getSourceName()));
-                final ColumnSource<?> selectedColumnSource = ReinterpretUtils.maybeConvertToPrimitive(
-                        resultTable.getColumnSource(sourceColumn.getName()));
-
-                if (originalColumnSource != selectedColumnSource) {
-                    // Map original source to the new source.
-                    oldToNewMap.put(originalColumnSource, selectedColumnSource);
+            if (sourceColumn != null) {
+                final ColumnSource<?> resultSource = resultTable.getColumnSource(sourceColumn.getName());
+                if (usedOutputColumns.contains(resultSource)) {
+                    // We already handled this result source.
+                    continue;
                 }
+                final ColumnSource<?> originalSource = getColumnSource(sourceColumn.getSourceName());
+                if (!indexedColumns.contains(originalSource)) {
+                    // Not part of an index, ignore this column.
+                    continue;
+                }
+
+                final ColumnSource<?> reinterpOriginalColumnSource = ReinterpretUtils.maybeConvertToPrimitive(
+                        originalSource);
+                final ColumnSource<?> reinterpSelectedColumnSource = ReinterpretUtils.maybeConvertToPrimitive(
+                        resultSource);
+
+                if (reinterpOriginalColumnSource != reinterpSelectedColumnSource) {
+                    if (oldToNewMaps.isEmpty()) {
+                        oldToNewMaps.add(new HashMap<>());
+                    }
+
+                    // Map original source to the new source.
+                    final Map<ColumnSource<?>, ColumnSource<?>> firstMap = oldToNewMaps.get(0);
+                    if (firstMap.containsKey(originalSource)) {
+                        // We have a collision, which means our mapping won't be unique. We need to clone
+                        // conflicting mappings with a new map containing our updated target.
+                        final ColumnSource<?> prevValue = firstMap.get(originalSource);
+                        final List<Map<ColumnSource<?>, ColumnSource<?>>> newMaps = new ArrayList<>();
+                        oldToNewMaps.stream().filter(map -> map.get(originalSource) == prevValue).forEach(map -> {
+                            final Map<ColumnSource<?>, ColumnSource<?>> newMap = new HashMap<>(map);
+                            newMap.put(originalSource, resultSource);
+                            newMaps.add(newMap);
+                        });
+                        oldToNewMaps.addAll(newMaps);
+                    } else {
+                        oldToNewMaps.forEach(map -> map.put(originalSource, resultSource));
+                    }
+                }
+                usedOutputColumns.add(resultSource);
             }
-            usedOutputColumns.add(selectColumn.getName());
         }
 
-        if (oldToNewMap.isEmpty()) {
+        if (oldToNewMaps.isEmpty()) {
             return;
         }
 
+        // NOTE: When the row set is the same for the result table, this is also the source indexer.
+        final DataIndexer resultIndexer = DataIndexer.of(resultTable.getRowSet());
+
         // Add new DataIndex entries to the DataIndexer with the remapped column sources.
         for (final DataIndex dataIndex : dataIndexes) {
-            if (Collections.disjoint(dataIndex.keyColumnMap().keySet(), oldToNewMap.keySet())) {
-                // The index contains no remapped original sources, no work needed.
-                continue;
-            }
+            // Create a new data index for each unique mapping.
+            oldToNewMaps.forEach(map -> {
+                if (Collections.disjoint(dataIndex.keyColumnMap().keySet(), map.keySet())) {
+                    // The index contains no remapped original sources, no work needed.
+                    return;
+                }
 
-            // Create a new DataIndex using the new column sources as keys.
-            final DataIndex remappedIndex = dataIndex.transform(
-                    DataIndexTransformer.builder()
-                            .putAllKeyColumnRemap(oldToNewMap)
-                            .build());
+                // Create a new DataIndex using the new column sources as keys.
+                final DataIndex remappedIndex = dataIndex.transform(
+                        DataIndexTransformer.builder()
+                                .putAllKeyColumnRemap(map)
+                                .build());
 
-            // Add the new index to the DataIndexer.
-            dataIndexer.addDataIndex(remappedIndex);
+                // Add the new index to the DataIndexer.
+                resultIndexer.addDataIndex(remappedIndex);
+            });
         }
     }
 

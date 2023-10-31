@@ -440,7 +440,7 @@ public class ParquetTools {
                             Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>) null);
                 }
             } else {
-                // Create grouping info for each table and write the table and grouping files to shadow path
+                // Create index info for each table and write the table and index files to shadow path
                 indexInfoLists = new ArrayList<>(sources.length);
 
                 // Shared parquet column names across all tables

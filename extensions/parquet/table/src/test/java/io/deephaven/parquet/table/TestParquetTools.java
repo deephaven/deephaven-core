@@ -11,7 +11,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.InMemoryTable;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -175,8 +174,8 @@ public class TestParquetTools {
         ParquetTools.writeTable(test, path);
         test2 = ParquetTools.readTable(new File(path));
 
-        final DataIndexer indexer = new DataIndexer(test2.getRowSet());
-        assertTrue(indexer.hasDataIndex((QueryTable) test2, "aString"));
+        final DataIndexer indexer = DataIndexer.of(test2.getRowSet());
+        assertTrue(indexer.hasDataIndex(test2, "aString"));
         test2.close();
     }
 

@@ -63,7 +63,7 @@ public class MatchFilter extends WhereFilterImpl {
     public MatchFilter(
             @NotNull final String columnName,
             @NotNull final Object... values) {
-        this(CaseSensitivity.IgnoreCase, MatchType.Regular, columnName, values, null);
+        this(CaseSensitivity.IgnoreCase, MatchType.Regular, columnName, null, values);
     }
 
     public MatchFilter(

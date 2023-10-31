@@ -107,8 +107,7 @@ public class TestPartitioningColumns {
         }
 
         @Override
-        public void refresh() {
-        }
+        public void refresh() {}
 
         @Override
         public @NotNull List<SortColumn> getSortedColumns() {

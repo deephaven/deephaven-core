@@ -125,7 +125,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
 
             final Table xs2 = x.select("Foo=Sym", "Sentinel=Sentinel*2", "Foo2=Foo", "Foo3=Sym");
 
-            final DataIndexer xs2Indexer = DataIndexer.of(xs.getRowSet());
+            final DataIndexer xs2Indexer = DataIndexer.of(xs2.getRowSet());
             assertTrue(xs2Indexer.hasDataIndex(xs2.getColumnSource("Foo")));
             assertFalse(xs2Indexer.hasDataIndex(xs2.getColumnSource("Sentinel")));
             assertTrue(xs2Indexer.hasDataIndex(xs2.getColumnSource("Foo2")));

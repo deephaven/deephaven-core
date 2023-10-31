@@ -20,9 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.SoftReference;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 public class DerivedDataIndex extends AbstractDataIndex {
@@ -53,22 +51,51 @@ public class DerivedDataIndex extends AbstractDataIndex {
         this.parentIndex = parentIndex;
         this.transformer = transformer;
 
-        // Handle the column source remapping if needed.
-        if (!transformer.keyColumnRemap().isEmpty()) {
-            // Build a new map of column sources to index table key column names using either the original column
-            // sources or the remapped column sources.
-            columnNameMap = new LinkedHashMap<>();
-
-            for (Map.Entry<ColumnSource<?>, String> entry : parentIndex.keyColumnMap().entrySet()) {
-                final ColumnSource<?> originalColumnSource = entry.getKey();
-                // Use the remapped column source (or the original source if not remapped) as the key.
-                columnNameMap.put(
-                        transformer.keyColumnRemap().getOrDefault(originalColumnSource, originalColumnSource),
-                        entry.getValue());
-            }
-        } else {
+        if (transformer.keyColumnRemap().isEmpty()) {
             columnNameMap = null;
+            return;
         }
+
+        // Build a new map of column sources to index table key column names using either the original column
+        // sources or the remapped column sources.
+        columnNameMap = new LinkedHashMap<>();
+
+        for (Map.Entry<ColumnSource<?>, String> entry : parentIndex.keyColumnMap().entrySet()) {
+            final ColumnSource<?> originalColumnSource = entry.getKey();
+            // Use the remapped column source (or the original source if not remapped) as the key.
+            columnNameMap.put(
+                    transformer.keyColumnRemap().getOrDefault(originalColumnSource, originalColumnSource),
+                    entry.getValue());
+        }
+
+        // // Build a new map of column sources to index table key column names using either the original column
+        // // sources or the remapped column sources.
+        //
+        // final Map<ColumnSource<?>, String> tmpColumnNameMap = new LinkedHashMap<>();
+        // final Set<ColumnSource<?>> remappedSources = new HashSet<>();
+        //
+        // // The transformer contains new to old mappings, add these to the column map first.
+        // transformer.keyColumnRemap().forEach((newCol, oldCol) -> {
+        // final String columnName = parentIndex.keyColumnMap().get(oldCol);
+        // // If the column is part of the original index, add it to the new map.
+        // if (columnName != null) {
+        // tmpColumnNameMap.put(newCol, columnName);
+        // remappedSources.add(oldCol);
+        // }
+        // });
+        //
+        // if (!tmpColumnNameMap.isEmpty()) {
+        // // Add the remainder of the original column sources to the map.
+        // parentIndex.keyColumnMap().forEach((oldCol, colName) -> {
+        // if (!remappedSources.contains(oldCol)) {
+        // tmpColumnNameMap.put(oldCol, colName);
+        // }
+        // });
+        // columnNameMap = tmpColumnNameMap;
+        // } else {
+        // // None of the indexed columns were remapped so there is no need to build a new map.
+        // columnNameMap = null;
+        // }
     }
 
     @Override
@@ -375,9 +402,10 @@ public class DerivedDataIndex extends AbstractDataIndex {
             ChunkUtils.copyData(cloneSourceArr, indexTable.getRowSet(),
                     cloneDestinationArr, outputRowSet,
                     false);
+            return new QueryTable(outputRowSet.toTracking(), columnSourceMap);
         }
-
-        return new QueryTable(outputRowSet.toTracking(), columnSourceMap);
+        // All the sources were already immutable, we can just return the input table.
+        return indexTable;
     }
 
     // endregion DataIndex materialization operations

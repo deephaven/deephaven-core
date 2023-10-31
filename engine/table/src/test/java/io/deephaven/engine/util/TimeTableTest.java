@@ -258,7 +258,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
 
         Assert.assertEquals(indexTable.size(), 10);
         try (final CloseableIterator<Instant> keyIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0]);
-                final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0])) {
+                final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(dataIndex.rowSetColumnName())) {
             while (keyIt.hasNext()) {
                 final Instant key = keyIt.next();
                 final RowSet rs = rsIt.next();

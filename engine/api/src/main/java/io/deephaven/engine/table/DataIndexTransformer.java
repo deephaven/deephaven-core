@@ -41,11 +41,14 @@ public interface DataIndexTransformer {
         Builder invertRowSet(RowSet rowSet);
 
         /** Sort the index table by the first key within each row set. */
+        @SuppressWarnings("unused")
         Builder sortByFirstRowKey(boolean sort);
 
-        /** Remap the original key columns to new key columns. */
+        /** Remap the new key columns to the old columns. */
+        @SuppressWarnings("unused")
         Builder putKeyColumnRemap(ColumnSource<?> key, ColumnSource<?> value);
 
+        @SuppressWarnings("unused")
         Builder putKeyColumnRemap(Map.Entry<? extends ColumnSource<?>, ? extends ColumnSource<?>> entry);
 
         Builder putAllKeyColumnRemap(Map<? extends ColumnSource<?>, ? extends ColumnSource<?>> entries);

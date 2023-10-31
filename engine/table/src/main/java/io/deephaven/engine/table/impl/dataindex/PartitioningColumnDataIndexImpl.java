@@ -2,15 +2,15 @@ package io.deephaven.engine.table.impl.dataindex;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.ColumnSourceManager;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
@@ -38,28 +38,21 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
 
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
     private final Table indexTable;
+    private final WritableColumnSource<Object> indexKeySource;
     private final ObjectArraySource<RowSet> indexRowSetSource;
 
-    /** Provides fast lookup from keys to positions in the table **/
+    /** Provides fast lookup from keys to positions in the index table **/
     private final TObjectIntHashMap<Object> cachedPositionMap;
 
     public PartitioningColumnDataIndexImpl(@NotNull final Table sourceTable,
             @NotNull final String keyColumnName) {
+        Assert.eqTrue(sourceTable.hasColumns(keyColumnName), keyColumnName + " was not found in the source table");
+
         keySource = (RegionedColumnSource<?>) sourceTable.getColumnSource(keyColumnName);
         Assert.eqTrue(keySource instanceof RegionedColumnSource,
                 "keySources.get(0) instanceof RegionedColumnSource");
 
-        String matchedColumnName = null;
-        // Find the column name in the source table and add to the map.
-        for (final Map.Entry<String, ? extends ColumnSource<?>> entry : sourceTable.getColumnSourceMap().entrySet()) {
-            if (keySource == entry.getValue()) {
-                matchedColumnName = entry.getKey();
-                break;
-            }
-        }
-        Assert.eqTrue(matchedColumnName != null, "key column source was not found in the source table");
-
-        this.keyColumnName = matchedColumnName;
+        this.keyColumnName = keyColumnName;
 
         // Store the column source manager for later use.
         columnSourceManager = keySource.getColumnSourceManager();
@@ -68,78 +61,133 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
 
         // Build the index table and the position lookup map.
         final Table locationTable = columnSourceManager.locationTable();
-        WritableColumnSource<Object> indexKeySource =
+        indexKeySource =
                 (WritableColumnSource<Object>) ArrayBackedColumnSource.getMemoryColumnSource(10,
                         keySource.getType(), null);
         indexRowSetSource =
                 (ObjectArraySource<RowSet>) ArrayBackedColumnSource.getMemoryColumnSource(10, RowSet.class, null);
 
-        // Iterate through the location table.
         cachedPositionMap = new TObjectIntHashMap<>(locationTable.intSize(), 0.5F, -1);
 
-        try (final CloseableIterator<TableLocation> locationIt =
-                locationTable.columnIterator(columnSourceManager.locationColumnName());
-                final CloseableIterator<Long> offsetIt =
-                        locationTable.columnIterator(columnSourceManager.offsetColumnName());
-                final CloseableIterator<RowSet> rowSetIt =
-                        locationTable.columnIterator(columnSourceManager.rowSetColumnName())) {
-            MutableInt position = new MutableInt(0);
+        indexTable = new QueryTable(RowSetFactory.empty().toTracking(), Map.of(
+                this.keyColumnName, indexKeySource,
+                INDEX_COL_NAME, indexRowSetSource));
 
-            while (locationIt.hasNext()) {
-                final TableLocation location = locationIt.next();
-                final long offset = offsetIt.next();
-                final RowSet shiftedRowSet = rowSetIt.next().shift(offset);
-
-                final Object key = location.getKey().getPartitionValue(this.keyColumnName);
-                final Class<?> clazz = key.getClass();
-
-                final int pos = cachedPositionMap.get(key);
-                if (pos == -1) {
-                    // Key not found, add it.
-                    final int index = position.getAndIncrement();
-
-                    indexKeySource.ensureCapacity(index + 1);
-                    if (clazz == Byte.class) {
-                        indexKeySource.set(index, (byte) key);
-                    } else if (clazz == Character.class) {
-                        indexKeySource.set(index, (char) key);
-                    } else if (clazz == Float.class) {
-                        indexKeySource.set(index, (float) key);
-                    } else if (clazz == Double.class) {
-                        indexKeySource.set(index, (double) key);
-                    } else if (clazz == Short.class) {
-                        indexKeySource.set(index, (short) key);
-                    } else if (clazz == Integer.class) {
-                        indexKeySource.set(index, (int) key);
-                    } else if (clazz == Long.class) {
-                        indexKeySource.set(index, (long) key);
-                    } else {
-                        indexKeySource.set(index, key);
-                    }
-
-                    indexRowSetSource.ensureCapacity(index + 1);
-                    indexRowSetSource.set(index, shiftedRowSet);
-
-                    cachedPositionMap.put(key, index);
-                } else {
-                    // Key found, update it.
-                    final RowSet existingRowSet = indexRowSetSource.get(pos);
-                    indexRowSetSource.set(pos, existingRowSet.union(shiftedRowSet));
-                }
-
-                position.increment();
-            }
-            indexTable = new QueryTable(RowSetFactory.flat(position.getValue()).toTracking(), Map.of(
-                    this.keyColumnName, indexKeySource,
-                    INDEX_COL_NAME, indexRowSetSource));
-        }
         if (sourceTable.isRefreshing()) {
             indexTable.setRefreshing(true);
             indexKeySource.startTrackingPrevValues();
             indexRowSetSource.startTrackingPrevValues();
+
+            final TableUpdateListener validatorTableListener =
+                    new InstrumentedTableUpdateListenerAdapter(locationTable, false) {
+                        @Override
+                        public void onUpdate(TableUpdate upstream) {
+                            processUpdate(upstream, false);
+                        }
+                    };
+            locationTable.addUpdateListener(validatorTableListener);
         }
+
+        // Create a dummy update for the initial state.
+        TableUpdate initialUpdate = new TableUpdateImpl(
+                locationTable.getRowSet().copy(),
+                RowSetFactory.empty(),
+                RowSetFactory.empty(),
+                RowSetShiftData.EMPTY,
+                ModifiedColumnSet.EMPTY);
+        processUpdate(initialUpdate, true);
     }
 
+    private synchronized void processUpdate(final TableUpdate update, final boolean initializing) {
+        if (update.removed().isNonempty()) {
+            throw new UnsupportedOperationException("Removed rows are not currently supported.");
+        }
+
+        // Get the location table from the RegionedColumnSourceManager.
+        final Table locationTable = columnSourceManager.locationTable();
+
+        // Add all the existing locations to the map.
+        final ColumnSource<TableLocation> locationColumnSource =
+                locationTable.getColumnSource(columnSourceManager.locationColumnName());
+        final ColumnSource<Long> offsetColumnSource =
+                locationTable.getColumnSource(columnSourceManager.offsetColumnName());
+        final ColumnSource<RowSet> rowSetColumnSource =
+                locationTable.getColumnSource(columnSourceManager.rowSetColumnName());
+
+        if (update.added().isNonempty()) {
+            final MutableInt position = new MutableInt(indexTable.intSize());
+
+            final long newSize = position.getValue() + update.added().size();
+            indexKeySource.ensureCapacity(newSize);
+            indexRowSetSource.ensureCapacity(newSize);
+
+
+            update.added().forAllRowKeys((long key) -> {
+                final TableLocation location = locationColumnSource.get(key);
+                final long offset = offsetColumnSource.getLong(key);
+                final RowSet shiftedRowSet = rowSetColumnSource.get(key).shift(offset);
+
+                final Object locationKey = location.getKey().getPartitionValue(this.keyColumnName);
+
+                final int pos = cachedPositionMap.get(locationKey);
+                if (pos == -1) {
+                    // Key not found, add it.
+                    addEntry(position.getAndIncrement(), locationKey, shiftedRowSet);
+                } else {
+                    // Key found, update it.
+                    final RowSet existingRowSet = indexRowSetSource.get(pos);
+                    updateEntry(pos, existingRowSet.union(shiftedRowSet));
+                }
+            });
+        }
+
+        update.modified().forAllRowKeys((long key) -> {
+            final TableLocation location = locationColumnSource.get(key);
+            final long offset = offsetColumnSource.getLong(key);
+            final RowSet shiftedRowSet = rowSetColumnSource.get(key).shift(offset);
+
+            final Object locationKey = location.getKey().getPartitionValue(this.keyColumnName);
+
+            final int pos = cachedPositionMap.get(locationKey);
+            if (pos == -1) {
+                // Key not found. This is a problem.
+                throw new IllegalStateException("Modified partition key does not exist.");
+            } else {
+                // Key found, union these rows to the existing set.
+                final RowSet existingRowSet = indexRowSetSource.get(pos);
+                updateEntry(pos, existingRowSet.union(shiftedRowSet));
+            }
+        });
+    }
+
+    private synchronized void addEntry(final int index, final Object key, final RowSet rowSet) {
+        final Class<?> clazz = key.getClass();
+
+        if (clazz == Byte.class) {
+            indexKeySource.set(index, (byte) key);
+        } else if (clazz == Character.class) {
+            indexKeySource.set(index, (char) key);
+        } else if (clazz == Float.class) {
+            indexKeySource.set(index, (float) key);
+        } else if (clazz == Double.class) {
+            indexKeySource.set(index, (double) key);
+        } else if (clazz == Short.class) {
+            indexKeySource.set(index, (short) key);
+        } else if (clazz == Integer.class) {
+            indexKeySource.set(index, (int) key);
+        } else if (clazz == Long.class) {
+            indexKeySource.set(index, (long) key);
+        } else {
+            indexKeySource.set(index, key);
+        }
+        indexRowSetSource.set(index, rowSet);
+
+        cachedPositionMap.put(key, index);
+    }
+
+    private synchronized void updateEntry(final int index, final RowSet rowSet) {
+        indexRowSetSource.set(index, rowSet);
+    }
 
     @Override
     public String[] keyColumnNames() {

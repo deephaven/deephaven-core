@@ -3,14 +3,12 @@ package io.deephaven.engine.table.impl.dataindex;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.ColumnSourceManager;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
@@ -36,7 +34,7 @@ import java.util.stream.Collectors;
  */
 @InternalUseOnly
 public class StorageBackedDataIndexImpl extends AbstractDataIndex {
-    private static final String OFFSET_KEY_COL_NAME = "__OffsetKey";
+    private static final String OFFSET_KEY_COL_NAME = "dh_offset_key";
 
     @NotNull
     private final WeakHashMap<ColumnSource<?>, String> keyColumnMap;
@@ -87,8 +85,37 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
 
         // Store the column source manager for later use.
         columnSourceManager = ((RegionedColumnSource) keySources.get(0)).getColumnSourceManager();
+        final Table locationTable = columnSourceManager.locationTable();
 
-        // Get the location table from the Regioned Column Source Manager.
+        if (sourceTable.isRefreshing()) {
+            final TableUpdateListener validatorTableListener =
+                    new InstrumentedTableUpdateListenerAdapter(locationTable, false) {
+                        @Override
+                        public void onUpdate(TableUpdate upstream) {
+                            processUpdate(upstream, false);
+                        }
+                    };
+            locationTable.addUpdateListener(validatorTableListener);
+        }
+
+        // Create a dummy update for the initial state.
+        TableUpdate initialUpdate = new TableUpdateImpl(
+                locationTable.getRowSet().copy(),
+                RowSetFactory.empty(),
+                RowSetFactory.empty(),
+                RowSetShiftData.EMPTY,
+                ModifiedColumnSet.EMPTY);
+        processUpdate(initialUpdate, true);
+
+        // We will defer the actual index creation until it is needed.
+    }
+
+    private synchronized void processUpdate(final TableUpdate update, final boolean initializing) {
+        if (update.removed().isNonempty()) {
+            throw new UnsupportedOperationException("Removed rows are not currently supported.");
+        }
+
+        // Get the location table from the RegionedColumnSourceManager.
         final Table locationTable = columnSourceManager.locationTable();
 
         // Add all the existing locations to the map.
@@ -97,50 +124,27 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
         final ColumnSource<Long> offsetColumnSource =
                 locationTable.getColumnSource(columnSourceManager.offsetColumnName());
 
-        locationTable.getRowSet().forAllRowKeys((long key) -> {
+        // Invalidate the index table and cached lookup objects.
+        indexTable = null;
+        cachedPositionMap = null;
+        cachedPositionLookup = null;
+        cachedRowSetLookup = null;
+
+        update.added().forAllRowKeys((long key) -> {
+            // Add new locations to the map for addition to the data index (when resolved).
             final TableLocation location = locationColumnSource.get(key);
             final long firstKey = offsetColumnSource.getLong(key);
 
-            final LocationState locationState = new LocationState(location, firstKey, keyColumnNames);
+            final LocationState locationState =
+                    new LocationState(location, firstKey, keyColumnNames);
             locations.put(location, locationState);
         });
 
-        if (sourceTable.isRefreshing()) {
-            final TableUpdateListener validatorTableListener =
-                    new InstrumentedTableUpdateListenerAdapter(locationTable, false) {
-                        @Override
-                        public void onUpdate(TableUpdate upstream) {
-                            synchronized (StorageBackedDataIndexImpl.this) {
-                                // Invalidate the index table and cached lookup objects.
-                                indexTable = null;
-                                cachedPositionMap = null;
-                                cachedPositionLookup = null;
-                                cachedRowSetLookup = null;
-
-                                upstream.added().forAllRowKeys((long key) -> {
-                                    // Add new locations to the map for addition to the data index (when resolved).
-                                    final TableLocation location = locationColumnSource.get(key);
-                                    final long firstKey = offsetColumnSource.getLong(key);
-
-                                    final LocationState locationState =
-                                            new LocationState(location, firstKey, keyColumnNames);
-                                    locations.put(location, locationState);
-                                });
-
-                                upstream.modified().forAllRowKeys((long key) -> {
-                                    // Invalidate the cached index table for the modified location.
-                                    final TableLocation location = locationColumnSource.get(key);
-
-                                    final LocationState locationState = locations.get(location);
-                                    locationState.cachedIndexTable = null;
-                                });
-                            }
-                        }
-                    };
-            locationTable.addUpdateListener(validatorTableListener);
-        }
-
-        // We will defer the actual index creation until it is needed.
+        update.modified().forAllRowKeys((long key) -> {
+            // Invalidate the cached index table for the modified location.
+            final TableLocation location = locationColumnSource.get(key);
+            locations.get(location).cachedIndexTable = null;
+        });
     }
 
     private final LinkedHashMap<TableLocation, LocationState> locations = new LinkedHashMap<>();
@@ -176,8 +180,7 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
                         for (final LocationState ls : locations.values()) {
                             final Table locationIndex = ls.getCachedIndexTable();
                             // If any location is missing a data index, we must bail out because we can't guarantee a
-                            // consistent
-                            // index.
+                            // consistent index.
                             if (locationIndex == null) {
                                 return null;
                             }
@@ -302,20 +305,29 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
                 }
             }
 
-            Table indexTable = location.getDataIndex(keyColumns);
-            if (indexTable != null) {
-                Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>(indexTable.getColumnSourceMap());
+            synchronized (this) {
+                if (cachedIndexTable != null) {
+                    final Table result = cachedIndexTable.get();
+                    if (result != null) {
+                        return result;
+                    }
+                }
 
-                // Record the first key as a column of this table using a SingleValueColumnSource.
-                SingleValueColumnSource<?> offsetKeySource =
-                        SingleValueColumnSource.getSingleValueColumnSource(long.class);
-                offsetKeySource.set(offsetKey);
-                columnSourceMap.put(OFFSET_KEY_COL_NAME, offsetKeySource);
+                Table indexTable = location.getDataIndex(keyColumns);
+                if (indexTable != null) {
+                    Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>(indexTable.getColumnSourceMap());
 
-                indexTable = new QueryTable(indexTable.getRowSet(), columnSourceMap);
-                cachedIndexTable = new SoftReference<>(indexTable);
+                    // Record the first key as a column of this table using a SingleValueColumnSource.
+                    SingleValueColumnSource<?> offsetKeySource =
+                            SingleValueColumnSource.getSingleValueColumnSource(long.class);
+                    offsetKeySource.set(offsetKey);
+                    columnSourceMap.put(OFFSET_KEY_COL_NAME, offsetKeySource);
+
+                    indexTable = new QueryTable(indexTable.getRowSet(), columnSourceMap);
+                    cachedIndexTable = new SoftReference<>(indexTable);
+                }
+                return indexTable;
             }
-            return indexTable;
         }
     }
     // endregion

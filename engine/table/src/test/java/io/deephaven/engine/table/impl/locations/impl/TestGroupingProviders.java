@@ -33,8 +33,8 @@ import java.util.stream.IntStream;
 import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
 
 /**
- * Unit tests for {@link io.deephaven.engine.table.impl.dataindex.DiskBackedDeferredGroupingProvider} and
- * {@link io.deephaven.engine.table.impl.dataindex.PartitionColumnGroupingProvider}.
+ * Unit tests for {@link io.deephaven.engine.table.impl.dataindex.PartitioningColumnDataIndexImpl} and
+ * {@link io.deephaven.engine.table.impl.dataindex.StorageBackedDataIndexImpl}.
  */
 public class TestGroupingProviders {
 
@@ -85,7 +85,7 @@ public class TestGroupingProviders {
                 .transform(null, rp -> rp.groupBy("Sym").ungroup(), false)
                 .constituents();
 
-        if (!missingGroups) {
+        if (missingGroups) {
             // Create a pair of partitions without the grouping column
             partitions[2] = partitions[2].dropColumns("Sym");
             partitions[3] = partitions[3].dropColumns("Sym");
@@ -96,17 +96,10 @@ public class TestGroupingProviders {
                 ColumnDefinition.ofChar("Sym").withGrouping(),
                 ColumnDefinition.ofLong("Other"));
 
-        final TableDefinition partitionedMissingDataDefinition;
-        if (missingGroups) {
-            partitionedMissingDataDefinition = TableDefinition.of(
-                    ColumnDefinition.ofString("Part").withPartitioning(),
-                    ColumnDefinition.ofChar("Sym"),
-                    ColumnDefinition.ofLong("Other"));
-        } else {
-            partitionedMissingDataDefinition = TableDefinition.of(
-                    ColumnDefinition.ofString("Part").withPartitioning(),
-                    ColumnDefinition.ofLong("Other"));
-        }
+        final TableDefinition partitionedMissingDataDefinition = TableDefinition.of(
+                ColumnDefinition.ofString("Part").withPartitioning(),
+                ColumnDefinition.ofChar("Sym"),
+                ColumnDefinition.ofLong("Other"));
 
         final String tableName = "TestTable";
 
@@ -127,13 +120,13 @@ public class TestGroupingProviders {
                 new File(dataDirectory,
                         "IP" + File.separator + "0002" + File.separator + tableName + File.separator
                                 + PARQUET_FILE_NAME),
-                partitionedMissingDataDefinition);
+                missingGroups ? partitionedMissingDataDefinition : partitionedDataDefinition);
         ParquetTools.writeTable(
                 partitions[3],
                 new File(dataDirectory,
                         "IP" + File.separator + "0003" + File.separator + tableName + File.separator
                                 + PARQUET_FILE_NAME),
-                partitionedMissingDataDefinition);
+                missingGroups ? partitionedMissingDataDefinition : partitionedDataDefinition);
         ParquetTools.writeTables(
                 Arrays.copyOfRange(partitions, 4, partitions.length),
                 partitionedDataDefinition,
@@ -150,7 +143,7 @@ public class TestGroupingProviders {
                                 + PARQUET_FILE_NAME),
                 partitionedDataDefinition);
 
-        if (!missingGroups) {
+        if (missingGroups) {
             // Put Sym back on for the partitions that dropped it.
             partitions[2] = partitions[2].updateView("Sym = NULL_CHAR");
             partitions[3] = partitions[3].updateView("Sym = NULL_CHAR");
@@ -165,6 +158,7 @@ public class TestGroupingProviders {
 
         TstUtils.assertTableEquals(expected, actual);
 
+        // Without
         TestCase.assertEquals(!missingGroups,
                 DataIndexer.of(actual.getRowSet()).hasDataIndex(actual.getColumnSource("Sym")));
 

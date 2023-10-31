@@ -51,12 +51,12 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         }
     }
 
-    public DataIndexer(@NotNull final TrackingRowSet rowSet) {
+    private DataIndexer(@NotNull final TrackingRowSet rowSet) {
         this.rowSet = rowSet;
         this.dataIndexes = new WeakHashMap<>();
     }
 
-    public boolean hasDataIndex(final QueryTable table, final String... keyColumnNames) {
+    public boolean hasDataIndex(final Table table, final String... keyColumnNames) {
         final DataIndex index = getDataIndex(table, keyColumnNames);
         return index != null;
     }
@@ -74,7 +74,14 @@ public class DataIndexer implements TrackingRowSet.Indexer {
             return false;
         }
 
-        return findIndex(dataIndexes, keyColumns) != null;
+        final DataIndex dataIndex = findIndex(dataIndexes, keyColumns);
+        // It's possible that a potentially indexed column might be corrupt or incomplete when we try to use it.
+        // Test it now to make sure that we don't falsely claim to have a functional index.
+        if (dataIndex != null && dataIndex.table() != null) {
+            return true;
+        }
+        // TODO: should we remove the index if it's corrupt? Could it repair itself, probably not.
+        return false;
     }
 
     public boolean canMakeDataIndex(final Table table, final String... keyColumnNames) {

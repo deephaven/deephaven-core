@@ -70,7 +70,6 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         columnSourceManager = mock(ColumnSourceManager.class);
         checking(new Expectations() {
             {
-                will(returnValue(null));
                 allowing(columnSourceManager).allLocations();
                 will(returnValue(Collections.EMPTY_SET));
             }
@@ -175,7 +174,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
-                oneOf(columnSourceManager).refresh();
+                oneOf(columnSourceManager).refresh(true);
                 if (throwException) {
                     will(throwException(exception));
                 } else {
@@ -235,7 +234,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
-                oneOf(columnSourceManager).refresh();
+                oneOf(columnSourceManager).refresh(true);
                 will(returnValue(RowSetFactory.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices1)));
@@ -268,7 +267,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
-                oneOf(columnSourceManager).refresh();
+                oneOf(columnSourceManager).refresh(true);
                 will(returnValue(RowSetFactory.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices2)));
@@ -310,7 +309,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
-                oneOf(columnSourceManager).refresh();
+                oneOf(columnSourceManager).refresh(true);
                 will(returnValue(RowSetFactory.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices3)));
