@@ -41,8 +41,7 @@ public class ReplicateColumnStats {
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = ReplicationUtils.removeImport(lines,
                 "import gnu.trove.set.TObjectSet;",
-                "import gnu.trove.set.hash.TObjectHashSet;"
-        );
+                "import gnu.trove.set.hash.TObjectHashSet;");
         lines = globalReplacements(lines,
                 "QueryConstants.NULL_OBJECT", "null",
                 "\\? extends Attributes.Values", "?, ? extends Attributes.Values",

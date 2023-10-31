@@ -20,7 +20,8 @@ public class DateTimeChunkedStats implements ChunkedStatsKernel {
         long min = QueryConstants.NULL_LONG;
         long max = QueryConstants.NULL_LONG;
 
-        try (LongColumnIterator iterator = new ChunkedLongColumnIterator(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {
+        try (LongColumnIterator iterator =
+                new ChunkedLongColumnIterator(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {
             while (iterator.hasNext()) {
                 long val = iterator.nextLong();
 

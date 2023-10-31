@@ -46,7 +46,8 @@ public class CharacterChunkedStats implements ChunkedStatsKernel {
         boolean useSet = false;
         final TCharSet uniqueValues = new TCharHashSet();
 
-        try (CharacterColumnIterator iterator = new ChunkedCharacterColumnIterator(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {
+        try (CharacterColumnIterator iterator =
+                new ChunkedCharacterColumnIterator(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {
             while (iterator.hasNext()) {
                 char val = iterator.next();
                 if (val == QueryConstants.NULL_CHAR) {
@@ -79,8 +80,7 @@ public class CharacterChunkedStats implements ChunkedStatsKernel {
             return TableTools.newTable(
                     TableTools.longCol("COUNT", count),
                     TableTools.longCol("SIZE", rowSet.size()),
-                    TableTools.intCol("UNIQUE_VALUES", uniqueValues.size())
-            );
+                    TableTools.intCol("UNIQUE_VALUES", uniqueValues.size()));
         } else {
             List<Map.Entry<String, Long>> sorted = new ArrayList<>(countValues.size());
 

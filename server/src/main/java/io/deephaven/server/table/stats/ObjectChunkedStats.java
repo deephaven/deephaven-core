@@ -49,7 +49,8 @@ public class ObjectChunkedStats implements ChunkedStatsKernel {
         boolean useSet = false;
         final Set<Object> uniqueValues = new HashSet<>();
 
-        try (ObjectColumnIterator<Object> iterator = new ChunkedObjectColumnIterator<>(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {
+        try (ObjectColumnIterator<Object> iterator =
+                new ChunkedObjectColumnIterator<>(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {
             while (iterator.hasNext()) {
                 Object val = iterator.next();
                 if (val == null) {
@@ -82,8 +83,7 @@ public class ObjectChunkedStats implements ChunkedStatsKernel {
             return TableTools.newTable(
                     TableTools.longCol("COUNT", count),
                     TableTools.longCol("SIZE", rowSet.size()),
-                    TableTools.intCol("UNIQUE_VALUES", uniqueValues.size())
-            );
+                    TableTools.intCol("UNIQUE_VALUES", uniqueValues.size()));
         } else {
             List<Map.Entry<String, Long>> sorted = new ArrayList<>(countValues.size());
 
