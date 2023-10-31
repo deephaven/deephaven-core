@@ -32,12 +32,12 @@ abstract class TableServicesDelegateBase extends TableHandleManagerDelegate impl
     // ---------------------------------------------------
 
     @Override
-    public TableHandleAsync executeAsync(TableSpec tableSpec) {
-        return delegate().executeAsync(tableSpec);
+    public TableHandleFuture executeAsync(TableSpec table) {
+        return delegate().executeAsync(table);
     }
 
     @Override
-    public List<? extends TableHandleAsync> executeAsync(List<TableSpec> tableSpecs) {
-        return delegate().executeAsync(tableSpecs);
+    public List<? extends TableHandleFuture> executeAsync(Iterable<? extends TableSpec> tables) {
+        return delegate().executeAsync(tables);
     }
 }

@@ -528,13 +528,13 @@ public final class SessionImpl extends SessionBase {
         // ---------------------------------------------------
 
         @Override
-        public TableHandleAsync executeAsync(TableSpec tableSpec) {
-            return TableServiceAsyncImpl.executeAsync(exportStates, tableSpec);
+        public TableHandleFuture executeAsync(TableSpec table) {
+            return TableServiceAsyncImpl.executeAsync(exportStates, table);
         }
 
         @Override
-        public List<? extends TableHandleAsync> executeAsync(List<TableSpec> tableSpecs) {
-            return TableServiceAsyncImpl.executeAsync(exportStates, tableSpecs);
+        public List<? extends TableHandleFuture> executeAsync(Iterable<? extends TableSpec> tables) {
+            return TableServiceAsyncImpl.executeAsync(exportStates, tables);
         }
 
         // ---------------------------------------------------

@@ -6,7 +6,7 @@ package io.deephaven.client.impl;
 import io.deephaven.client.impl.ExportRequest.Listener;
 import io.deephaven.client.impl.TableHandle.ResponseAdapter;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
-import io.deephaven.client.impl.TableServiceAsync.TableHandleAsync;
+import io.deephaven.client.impl.TableServiceAsync.TableHandleFuture;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.qst.table.TableSpec;
 
@@ -20,7 +20,7 @@ import java.util.concurrent.TimeoutException;
 
 final class TableServiceAsyncImpl {
 
-    static TableHandleAsync executeAsync(ExportService exportService, TableSpec tableSpec) {
+    static TableHandleFuture executeAsync(ExportService exportService, TableSpec tableSpec) {
         final TableHandleAsyncImpl impl = new TableHandleAsyncImpl(tableSpec);
         final ExportRequest request = ExportRequest.of(tableSpec, impl);
         try (final ExportServiceRequest esr = exportService.exportRequest(ExportsRequest.of(request))) {
@@ -34,15 +34,16 @@ final class TableServiceAsyncImpl {
         return impl;
     }
 
-    static List<? extends TableHandleAsync> executeAsync(ExportService exportService, List<TableSpec> tableSpecs) {
-        final int size = tableSpecs.size();
-        final List<TableHandleAsyncImpl> impls = new ArrayList<>(size);
+    static List<? extends TableHandleFuture> executeAsync(ExportService exportService,
+            Iterable<? extends TableSpec> tableSpecs) {
+        final List<TableHandleAsyncImpl> impls = new ArrayList<>();
         final ExportsRequest.Builder builder = ExportsRequest.builder();
         for (TableSpec tableSpec : tableSpecs) {
             final TableHandleAsyncImpl impl = new TableHandleAsyncImpl(tableSpec);
             builder.addRequests(ExportRequest.of(tableSpec, impl));
             impls.add(impl);
         }
+        final int size = impls.size();
         try (final ExportServiceRequest esr = exportService.exportRequest(builder.build())) {
             final List<Export> exports = esr.exports();
             if (exports.size() != size) {
@@ -56,7 +57,7 @@ final class TableServiceAsyncImpl {
         return impls;
     }
 
-    private static class TableHandleAsyncImpl implements TableHandleAsync, Listener {
+    private static class TableHandleAsyncImpl implements TableHandleFuture, Listener {
         private final TableSpec tableSpec;
         private final CompletableFuture<TableHandle> future;
         private TableHandle handle;
@@ -94,6 +95,9 @@ final class TableServiceAsyncImpl {
             //
             // We _could_ work around the cancel propagation issue by doing an isolated FetchTableRequest for each
             // export the user requests, but regardless that doesn't solve the former issue.
+            //
+            // TODO: We need to make sure Batch exports get a chance to establish all dependencies wrt liveness before
+            // race w/ release.
             //
             // this.future.whenComplete((tableHandle, throwable) -> {
             // if (isCancelled()) {

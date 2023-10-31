@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-class TableServiceImpl {
+final class TableServiceImpl {
     /**
      * Create a table handle, exporting {@code table}. The table handle will be {@link TableHandle#isSuccessful()
      * successful} on return. The given {@code lifecycle} will be called on initialization and on release. Derived table

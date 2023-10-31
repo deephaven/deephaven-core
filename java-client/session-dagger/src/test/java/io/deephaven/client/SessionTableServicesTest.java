@@ -7,14 +7,16 @@ import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.client.impl.TableHandleManager;
 import io.deephaven.client.impl.TableServiceAsync;
+import io.deephaven.client.impl.TableServiceAsync.TableHandleFuture;
 import io.deephaven.client.impl.TableServices;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.TableSpec;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -119,8 +121,8 @@ public class SessionTableServicesTest extends DeephavenSessionTestBase {
             throws InterruptedException, ExecutionException, TimeoutException {
         final TableSpec q = tableSpec();
         try (
-                final TableHandle h1 = a1.executeAsync(q).get(5, TimeUnit.SECONDS);
-                final TableHandle h2 = a2.executeAsync(q).get(5, TimeUnit.SECONDS)) {
+                final TableHandle h1 = TableHandleFuture.get(a1.executeAsync(q), Duration.ofSeconds(5));
+                final TableHandle h2 = TableHandleFuture.get(a2.executeAsync(q), Duration.ofSeconds(5))) {
             assertThat(h1.exportId().toString().equals(h2.exportId().toString())).isEqualTo(expectEquals);
             try (
                     final TableHandle h3 = h1.updateView("K=ii");
