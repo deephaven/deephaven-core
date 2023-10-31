@@ -49,7 +49,9 @@ public class ReplicateColumnStats {
                 "ObjectChunk<[?] ", "ObjectChunk<?, ? ",
                 " TObjectLongHashMap", " TObjectLongHashMap<Object>",
                 " TObjectSet", " Set<Object>",
-                " TObjectHashSet", " HashSet<>");
+                " TObjectHashSet", " HashSet<>",
+                "new ChunkedObjectColumnIterator", "new ChunkedObjectColumnIterator<>",
+                "\\(ObjectColumnIterator", "(ObjectColumnIterator<Object>");
         FileUtils.writeLines(objectFile, lines);
     }
 }

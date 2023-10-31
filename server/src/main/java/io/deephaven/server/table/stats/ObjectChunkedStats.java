@@ -49,7 +49,7 @@ public class ObjectChunkedStats implements ChunkedStatsKernel {
         boolean useSet = false;
         final Set<Object> uniqueValues = new HashSet<>();
 
-        try (ObjectColumnIterator iterator = new ChunkedObjectColumnIterator(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {
+        try (ObjectColumnIterator<Object> iterator = new ChunkedObjectColumnIterator<>(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {
             while (iterator.hasNext()) {
                 Object val = iterator.next();
                 if (val == null) {
