@@ -1691,7 +1691,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
             final long localWatchdogMillis = watchDogMillis;
             final LongConsumer localWatchdogTimeoutProcedure = watchDogTimeoutProcedure;
-            if ((watchDogMillis > 0) && (watchDogTimeoutProcedure != null)) {
+            if ((localWatchdogMillis > 0) && (localWatchdogTimeoutProcedure != null)) {
                 watchdogFuture = watchdogScheduler.schedule(
                         () -> localWatchdogTimeoutProcedure.accept(localWatchdogMillis),
                         localWatchdogMillis, MILLISECONDS);
