@@ -75,22 +75,48 @@ set(ALL_FILES
     third_party/roaring/include/roaring/roaring.c
     )
 
-add_library(dhcore ${ALL_FILES})
+add_library(dhcore_objlib OBJECT ${ALL_FILES})
 # In order to make a shared library suitable for Cython.
-set_property(TARGET dhcore PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET dhcore_objlib PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-# This is so deephaven::dhcore works both when using the installed CMake config
-# and when using this project as a CMake subdirectory of your own project.
-add_library(deephaven::dhcore ALIAS dhcore)
-target_compile_options(dhcore PRIVATE -Wall -Werror -Wno-deprecated-declarations)
+target_compile_options(dhcore_objlib PRIVATE -Wall -Werror -Wno-deprecated-declarations)
 
+target_include_directories(dhcore_objlib PRIVATE include/private)
+target_include_directories(dhcore_objlib PRIVATE third_party/flatbuffers/include)
+target_include_directories(dhcore_objlib PRIVATE third_party/roaring/include)
+target_include_directories(dhcore_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
+
+# The flatbuf include directory is in its own part of the tree.
+target_include_directories(dhcore_objlib PRIVATE "./flatbuf")
+
+target_link_libraries(dhcore_objlib PUBLIC immer)
+
+#
+# shared and static libraries built from the same object files
+# https://stackoverflow.com/questions/2152077/is-it-possible-to-get-cmake-to-build-both-a-static-and-shared-library-at-the-sam
+# (see second answer, "Since CMake version 2.8.8, you can ...")
+# https://stackoverflow.com/questions/38832528/transitive-target-include-directories-on-object-libraries
+#
+
+get_property(object_link_libs TARGET dhcore_objlib PROPERTY LINK_LIBRARIES)
+
+add_library(dhcore SHARED $<TARGET_OBJECTS:dhcore_objlib>)
+# TODO: How to avoid repetition here for target_include_directories?
 target_include_directories(dhcore PRIVATE include/private)
 target_include_directories(dhcore PRIVATE third_party/flatbuffers/include)
 target_include_directories(dhcore PRIVATE third_party/roaring/include)
 target_include_directories(dhcore PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
+target_link_libraries(dhcore PUBLIC ${object_link_libs})
 
-# Protos and flatbuf are doing their own thing.
-target_include_directories(dhcore PRIVATE "./proto")
-target_include_directories(dhcore PRIVATE "./flatbuf")
+add_library(dhcore_static STATIC $<TARGET_OBJECTS:dhcore_objlib>)
+# TODO: How to avoid repetition here for target_include_directories?
+target_include_directories(dhcore_static PRIVATE include/private)
+target_include_directories(dhcore_static PRIVATE third_party/flatbuffers/include)
+target_include_directories(dhcore_static PRIVATE third_party/roaring/include)
+target_include_directories(dhcore_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
+target_link_libraries(dhcore_static PUBLIC ${object_link_libs})
 
-target_link_libraries(dhcore PUBLIC immer)
+# This is so deephaven::dhcore works both when using the installed CMake config
+# and when using this project as a CMake subdirectory of your own project.
+add_library(deephaven::dhcore ALIAS dhcore)
+add_library(deephaven::dhcore_static ALIAS dhcore_static)
