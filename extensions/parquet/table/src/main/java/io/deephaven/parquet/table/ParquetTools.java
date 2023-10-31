@@ -239,12 +239,12 @@ public class ParquetTools {
     /**
      * Generates the index file path relative to the table destination file path.
      *
-     * @param tableDest Destination path for the main table containing these grouping columns
-     * @param columnName Name of the grouping column
+     * @param tableDest Destination path for the main table containing these indexing columns
+     * @param columnName Name of the indexing column
      *
-     * @return The relative grouping file path. For example, for table {@code "A"} with destination {@code "A.parquet"}
-     *         and grouping column {@code "g"}, the method will return
-     *         {@code ".dh_metadata/indexes/g/index_g_A.parquet"}
+     * @return The relative index file path. For example, for table with destination {@code "table.parquet"} and
+     *         indexing column {@code "IndexingColName"}, the method will return
+     *         {@code ".dh_metadata/indexes/IndexingColName/index_IndexingColName_table.parquet"}
      */
     public static String getRelativeIndexFilePath(@NotNull final File tableDest, @NotNull final String columnName) {
         return String.format(".dh_metadata/indexes/%s/index_%s_%s", columnName, columnName, tableDest.getName());
@@ -257,8 +257,9 @@ public class ParquetTools {
      * @param tableDest Destination path for the main table containing these grouping columns
      * @param columnName Name of the grouping column
      *
-     * @return The relative grouping file path. For example, for table {@code "A"} with destination {@code "A.parquet"}
-     *         and grouping column {@code "g"}, the method will return {@code "A_g_grouping.parquet"}
+     * @return The relative grouping file path. For example, for table with destination {@code "table.parquet"} and
+     *         grouping column {@code "GroupingColName"}, the method will return
+     *         {@code "table_GroupingColName_grouping.parquet"}
      */
     public static String legacyGroupingFileName(@NotNull final File tableDest, @NotNull final String columnName) {
         final String prefix = minusParquetSuffix(tableDest.getName());
@@ -369,8 +370,7 @@ public class ParquetTools {
     }
 
     /**
-     * Helper function for building grouping column info for writing. Also, deletes any conflicting backup grouping
-     * column files.
+     * Helper function for building grouping column info for writing and deleting any backup grouping column files
      *
      * @param groupingColumnNames Names of grouping columns
      * @param parquetColumnNames Names of grouping columns for the parquet file
@@ -434,7 +434,6 @@ public class ParquetTools {
         // List of all destination files (including grouping files), to roll back in case of exceptions
         final List<File> destFiles = new ArrayList<>();
         try {
-            // Grouping info for each table
             final List<Map<String, ParquetTableWriter.GroupingColumnWritingInfo>> groupingColumnWritingInfoMaps;
             if (groupingColumns.length == 0) {
                 // Write the tables without any grouping info
@@ -446,7 +445,7 @@ public class ParquetTools {
                             Collections.emptyMap(), (Map<String, ParquetTableWriter.GroupingColumnWritingInfo>) null);
                 }
             } else {
-                // Create grouping info for each table, and write the table and index files to shadow path
+                // Create grouping info for each table and write the table and grouping files to shadow path
                 groupingColumnWritingInfoMaps = new ArrayList<>(sources.length);
 
                 // Same parquet column names across all tables
@@ -456,7 +455,6 @@ public class ParquetTools {
 
                 for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
                     final File tableDestination = destinations[tableIdx];
-                    // Prepare info structs for writing each grouping column
                     final Map<String, ParquetTableWriter.GroupingColumnWritingInfo> groupingColumnWritingInfoMap =
                             groupingColumnInfoBuilderHelper(groupingColumns, parquetColumnNames, tableDestination);
                     groupingColumnWritingInfoMaps.add(groupingColumnWritingInfoMap);

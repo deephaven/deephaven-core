@@ -617,12 +617,12 @@ public final class ParquetTableReadWriteTest {
      * structure.
      */
     private static void verifyFilesInDir(final File parentDir, final String[] expectedDataFiles,
-            @Nullable final Map<String, String[]> groupingColumnToFileMap) {
+            @Nullable final Map<String, String[]> indexingColumnToFileMap) {
         final List filesInParentDir = Arrays.asList(parentDir.list());
         for (String expectedFile : expectedDataFiles) {
             assertTrue(filesInParentDir.contains(expectedFile));
         }
-        if (groupingColumnToFileMap == null) {
+        if (indexingColumnToFileMap == null) {
             assertTrue(filesInParentDir.size() == expectedDataFiles.length);
             return;
         }
@@ -631,18 +631,18 @@ public final class ParquetTableReadWriteTest {
         assertTrue(metadataDir.exists() && metadataDir.isDirectory() && metadataDir.list().length == 1);
         final File indexesDir = new File(metadataDir, "indexes");
         assertTrue(indexesDir.exists() && indexesDir.isDirectory()
-                && indexesDir.list().length == groupingColumnToFileMap.size());
-        for (Map.Entry<String, String[]> set : groupingColumnToFileMap.entrySet()) {
-            final String groupingColName = set.getKey();
+                && indexesDir.list().length == indexingColumnToFileMap.size());
+        for (Map.Entry<String, String[]> set : indexingColumnToFileMap.entrySet()) {
+            final String indexColName = set.getKey();
             final String[] indexFilePaths = set.getValue();
-            final File groupingColDir = new File(indexesDir, groupingColName);
-            assertTrue(groupingColDir.exists() && groupingColDir.isDirectory()
-                    && groupingColDir.list().length == indexFilePaths.length);
-            final List filesInGroupingColDir = Arrays.asList(groupingColDir.list());
+            final File indexColDir = new File(indexesDir, indexColName);
+            assertTrue(indexColDir.exists() && indexColDir.isDirectory()
+                    && indexColDir.list().length == indexFilePaths.length);
+            final List filesInIndexColDir = Arrays.asList(indexColDir.list());
             for (final String indexFilePath : indexFilePaths) {
                 final File indexFile = new File(parentDir, indexFilePath);
                 assertTrue(indexFile.exists() && indexFile.isFile() && indexFile.length() > 0 &&
-                        filesInGroupingColDir.contains(indexFile.getName()));
+                        filesInIndexColDir.contains(indexFile.getName()));
             }
         }
     }

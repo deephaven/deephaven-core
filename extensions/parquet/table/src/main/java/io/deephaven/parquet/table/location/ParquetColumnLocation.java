@@ -210,7 +210,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             final ColumnChunkReader endPosReader =
                     rowGroupReader.getColumnChunk(Collections.singletonList(END_POS));
             if (groupingKeyReader == null || beginPosReader == null || endPosReader == null) {
-                log.warn().append("Grouping file ").append(indexFilePath)
+                log.warn().append("Index file ").append(indexFilePath)
                         .append(" is missing one or more expected columns for table location ")
                         .append(tl()).append(", column ").append(getName());
                 return null;
