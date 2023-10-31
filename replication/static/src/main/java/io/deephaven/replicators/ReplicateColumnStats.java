@@ -8,7 +8,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.shortToAllIntegralTypes;
 import static io.deephaven.replication.ReplicationUtils.globalReplacements;
@@ -42,6 +44,9 @@ public class ReplicateColumnStats {
         lines = ReplicationUtils.removeImport(lines,
                 "import gnu.trove.set.TObjectSet;",
                 "import gnu.trove.set.hash.TObjectHashSet;");
+        lines = ReplicationUtils.addImport(lines,
+                Set.class,
+                HashSet.class);
         lines = globalReplacements(lines,
                 "QueryConstants.NULL_OBJECT", "null",
                 "\\? extends Attributes.Values", "?, ? extends Attributes.Values",

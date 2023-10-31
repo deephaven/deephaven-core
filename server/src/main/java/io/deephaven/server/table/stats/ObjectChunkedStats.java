@@ -5,31 +5,24 @@
  */
 package io.deephaven.server.table.stats;
 
+import java.util.Set;
+import java.util.HashSet;
+
 import gnu.trove.map.hash.TObjectLongHashMap;
-import gnu.trove.map.hash.TObjectLongHashMap;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
-import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
-import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public class ObjectChunkedStats implements ChunkedStatsKernel {
     private final int maxUniqueToCollect;
@@ -97,7 +90,7 @@ public class ObjectChunkedStats implements ChunkedStatsKernel {
             String[] uniqueKeys = new String[resultCount];
             long[] uniqueCounts = new long[resultCount];
             Iterator<Map.Entry<String, Long>> iter = sorted.iterator();
-            for (int i = 0; i < resultCount && iter.hasNext(); i++) {
+            for (int i = 0; i < resultCount; i++) {
                 Map.Entry<String, Long> entry = iter.next();
                 uniqueKeys[i] = entry.getKey();
                 uniqueCounts[i] = entry.getValue();
