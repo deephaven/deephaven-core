@@ -107,7 +107,7 @@ public class ChunkedStatsKernelTest {
 
     private Table getChunkedNumericalStats(Table queryTable, String colName) {
         ColumnSource<Object> colSource = queryTable.getColumnSource(colName);
-        return ChunkedNumericalStatsKernel.makeChunkedNumericalStatsFactory(colSource.getType())
+        return ChunkedNumericalStatsKernel.makeChunkedNumericalStats(colSource.getType())
                 .processChunks(queryTable.getRowSet(), colSource, false);
     }
 

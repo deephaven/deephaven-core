@@ -79,7 +79,7 @@ public class ColumnStatisticsGrpcImpl extends GrpcTableOperation<ColumnStatistic
             }
         } else if (TypeUtils.isNumeric(type)) {
             // Numeric types have a variety of statistics recorded
-            statsFunc = ChunkedNumericalStatsKernel.makeChunkedNumericalStatsFactory(type);
+            statsFunc = ChunkedNumericalStatsKernel.makeChunkedNumericalStats(type);
             columnSource = table.getColumnSource(columnName);
         } else {
             // For remaining types the best we can do is count/track unique values in the column

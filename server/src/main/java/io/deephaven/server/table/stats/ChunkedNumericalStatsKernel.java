@@ -10,7 +10,7 @@ import java.math.BigInteger;
 
 public interface ChunkedNumericalStatsKernel extends ChunkedStatsKernel {
 
-    static ChunkedNumericalStatsKernel makeChunkedNumericalStatsFactory(final Class<?> type) {
+    static ChunkedNumericalStatsKernel makeChunkedNumericalStats(final Class<?> type) {
         if (type == Long.class || type == long.class) {
             return new LongChunkedNumericalStats();
         } else if (type == Double.class || type == double.class) {
@@ -32,8 +32,6 @@ public interface ChunkedNumericalStatsKernel extends ChunkedStatsKernel {
                     "Invalid type for ChunkedNumericalStatsKernel: " + type.getCanonicalName());
         }
     }
-
-    Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev);
 
     default double avg(long count, double sumValue) {
         if (count == 0) {
