@@ -1,0 +1,11 @@
+<!--
+  ~ Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+  -->
+
+<calendar>
+    <name>UTC</name>
+    <timeZone>UTC</timeZone>
+    <default>
+        <businessPeriod>00:00,24:00</businessPeriod>
+    </default>
+</calendar>

@@ -1,2 +1,4 @@
 /calendar/CAL1.calendar
 /calendar/CAL2.calendar
+/calendar/USBANK.calendar
+/calendar/USNYSE.calendar
