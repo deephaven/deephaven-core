@@ -17,7 +17,7 @@ public class FloatGenerator extends AbstractGenerator<Float> {
     private final double posInfFraction;
 
     public FloatGenerator() {
-        this(QueryConstants.NULL_FLOAT + 1, Float.MAX_VALUE);
+        this(Math.nextUp(-Float.MAX_VALUE), Float.MAX_VALUE);
     }
 
     public FloatGenerator(float from, float to) {
