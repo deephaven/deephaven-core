@@ -482,7 +482,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Provides the current date string according to the {@link #currentClock() current clock}. Under most
+     * Provides the current date according to the {@link #currentClock() current clock}. Under most
      * circumstances, this method will return the date according to current system time, but during replay simulations,
      * this method can return the date according to replay time.
      *
@@ -493,12 +493,12 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @NotNull
-    public static LocalDate todayDate(@NotNull final ZoneId timeZone) {
+    public static LocalDate todayLocalDate(@NotNull final ZoneId timeZone) {
         return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).getLocalDate();
     }
 
     /**
-     * Provides the current date string according to the {@link #currentClock() current clock} and the
+     * Provides the current date according to the {@link #currentClock() current clock} and the
      * {@link ZoneId#systemDefault() default time zone}. Under most circumstances, this method will return the date
      * according to current system time, but during replay simulations, this method can return the date according to
      * replay time.
@@ -510,8 +510,8 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @NotNull
-    public static LocalDate todayDate() {
-        return todayDate(DateTimeUtils.timeZone());
+    public static LocalDate todayLocalDate() {
+        return todayLocalDate(DateTimeUtils.timeZone());
     }
 
     // endregion

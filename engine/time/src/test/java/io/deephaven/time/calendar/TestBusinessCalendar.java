@@ -1381,23 +1381,23 @@ public class TestBusinessCalendar extends TestCalendar {
     }
 
     public void testFutureBusinessDate() {
-        assertEquals(bCalendar.plusBusinessDays(DateTimeUtils.todayDate(),3), bCalendar.futureBusinessDate(3));
-        assertEquals(bCalendar.plusBusinessDays(DateTimeUtils.todayDate(),-3), bCalendar.futureBusinessDate(-3));
+        assertEquals(bCalendar.plusBusinessDays(DateTimeUtils.todayLocalDate(),3), bCalendar.futureBusinessDate(3));
+        assertEquals(bCalendar.plusBusinessDays(DateTimeUtils.todayLocalDate(),-3), bCalendar.futureBusinessDate(-3));
     }
 
     public void testPastBusinessDate() {
-        assertEquals(bCalendar.minusBusinessDays(DateTimeUtils.todayDate(),3), bCalendar.pastBusinessDate(3));
-        assertEquals(bCalendar.minusBusinessDays(DateTimeUtils.todayDate(),-3), bCalendar.pastBusinessDate(-3));
+        assertEquals(bCalendar.minusBusinessDays(DateTimeUtils.todayLocalDate(),3), bCalendar.pastBusinessDate(3));
+        assertEquals(bCalendar.minusBusinessDays(DateTimeUtils.todayLocalDate(),-3), bCalendar.pastBusinessDate(-3));
     }
 
     public void testFutureNonBusinessDate() {
-        assertEquals(bCalendar.plusNonBusinessDays(DateTimeUtils.todayDate(),3), bCalendar.futureNonBusinessDate(3));
-        assertEquals(bCalendar.plusNonBusinessDays(DateTimeUtils.todayDate(),-3), bCalendar.futureNonBusinessDate(-3));
+        assertEquals(bCalendar.plusNonBusinessDays(DateTimeUtils.todayLocalDate(),3), bCalendar.futureNonBusinessDate(3));
+        assertEquals(bCalendar.plusNonBusinessDays(DateTimeUtils.todayLocalDate(),-3), bCalendar.futureNonBusinessDate(-3));
     }
 
     public void testPastNonBusinessDate() {
-        assertEquals(bCalendar.minusNonBusinessDays(DateTimeUtils.todayDate(),3), bCalendar.pastNonBusinessDate(3));
-        assertEquals(bCalendar.minusNonBusinessDays(DateTimeUtils.todayDate(),-3), bCalendar.pastNonBusinessDate(-3));
+        assertEquals(bCalendar.minusNonBusinessDays(DateTimeUtils.todayLocalDate(),3), bCalendar.pastNonBusinessDate(3));
+        assertEquals(bCalendar.minusNonBusinessDays(DateTimeUtils.todayLocalDate(),-3), bCalendar.pastNonBusinessDate(-3));
     }
 
 }

@@ -1727,8 +1727,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             TestCase.assertEquals(DateTimeUtils.today(DateTimeUtils.timeZone()), DateTimeUtils.today());
 
             TestCase.assertEquals(DateTimeUtils.toLocalDate(Instant.ofEpochSecond(0, nanos), TZ_AL),
-                    DateTimeUtils.todayDate(TZ_AL));
-            TestCase.assertEquals(DateTimeUtils.todayDate(DateTimeUtils.timeZone()), DateTimeUtils.todayDate());
+                    DateTimeUtils.todayLocalDate(TZ_AL));
+            TestCase.assertEquals(DateTimeUtils.todayLocalDate(DateTimeUtils.timeZone()), DateTimeUtils.todayLocalDate());
         } catch (Exception ex) {
             DateTimeUtils.setClock(initial);
             throw ex;

@@ -120,13 +120,13 @@ public class TestCalendar extends BaseArrayTestCase {
     }
 
     public void testFutureDate() {
-        assertEquals(calendar.plusDays(DateTimeUtils.todayDate(),3), calendar.futureDate(3));
-        assertEquals(calendar.plusDays(DateTimeUtils.todayDate(),-3), calendar.futureDate(-3));
+        assertEquals(calendar.plusDays(DateTimeUtils.todayLocalDate(),3), calendar.futureDate(3));
+        assertEquals(calendar.plusDays(DateTimeUtils.todayLocalDate(),-3), calendar.futureDate(-3));
     }
 
     public void testPastDate() {
-        assertEquals(calendar.minusDays(DateTimeUtils.todayDate(),3), calendar.pastDate(3));
-        assertEquals(calendar.minusDays(DateTimeUtils.todayDate(),-3), calendar.pastDate(-3));
+        assertEquals(calendar.minusDays(DateTimeUtils.todayLocalDate(),3), calendar.pastDate(3));
+        assertEquals(calendar.minusDays(DateTimeUtils.todayLocalDate(),-3), calendar.pastDate(-3));
     }
 
     public void testCalendarDates() {
