@@ -81,7 +81,7 @@ public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel 
 
                     chunkedSum += val;
                     chunkedAbsSum += absVal;
-                    chunkedSqrdSum += val * val;
+                    chunkedSqrdSum += (double) val * (double) val;
                 }
 
                 sum += chunkedSum;

@@ -49,20 +49,25 @@ public class CharacterChunkedStats implements ChunkedStatsKernel {
                 if (val == QueryConstants.NULL_CHAR) {
                     continue;
                 }
-
                 count++;
 
-                if (useSet) {
-                    uniqueValues.add(val);
-                } else if (uniqueCount > maxUniqueToCollect) {
-                    // we no longer need to track counts for these items; fall back to a Set to get at least a count
+                if (countValues.adjustOrPutValue(val, 1, 1) == 1 && ++uniqueCount > maxUniqueToCollect) {
+                    // we no longer want to track counts for these items; fall back to a Set to get at least a count
                     uniqueValues.addAll(countValues.keySet());
                     countValues.clear();
-                    uniqueValues.add(val);
                     useSet = true;
-                } else if (countValues.adjustOrPutValue(val, 1, 1) == 1) {
-                    uniqueCount++;
+                    break;
                 }
+            }
+            while (iterator.hasNext()) {
+                // items still remain, count non-nulls and uniques
+                char val = iterator.next();
+                if (val == QueryConstants.NULL_CHAR) {
+                    continue;
+                }
+                count++;
+
+                uniqueValues.add(val);
             }
         }
 
@@ -74,7 +79,7 @@ public class CharacterChunkedStats implements ChunkedStatsKernel {
                     TableTools.intCol("UNIQUE_VALUES", uniqueValues.size())
             );
         } else {
-            List<Map.Entry<String, Long>> sorted = new ArrayList<>();
+            List<Map.Entry<String, Long>> sorted = new ArrayList<>(countValues.size());
 
             countValues.forEachEntry((o, c) -> {
                 sorted.add(Map.entry(Objects.toString(o), c));
