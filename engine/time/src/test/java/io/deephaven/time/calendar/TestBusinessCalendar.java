@@ -1015,64 +1015,83 @@ public class TestBusinessCalendar extends TestCalendar {
         // 2023-07-14 normal day
         // 2023-07-15 normal day
 
+        final ZoneId timeZone2 = ZoneId.of("America/New_York");
         LocalDate d = LocalDate.of(2023,7,3);
         String s = d.toString();
-        ZonedDateTime z = d.atTime(1,24).atZone(timeZone);
+        ZonedDateTime z = d.atTime(6,24).atZone(timeZone2);
         Instant i = z.toInstant();
 
         assertEquals(d,bCalendar.plusBusinessDays(d, 0));
         assertEquals(d,bCalendar.plusBusinessDays(s, 0));
-        assertEquals(d,bCalendar.plusBusinessDays(z, 0));
-        assertEquals(d,bCalendar.plusBusinessDays(i, 0));
+        assertEquals(z.withZoneSameInstant(timeZone),bCalendar.plusBusinessDays(z, 0));
+        assertEquals(i,bCalendar.plusBusinessDays(i, 0));
 
-        assertEquals(LocalDate.of(2023,7,6),bCalendar.plusBusinessDays(d, 1));
-        assertEquals(LocalDate.of(2023,7,6),bCalendar.plusBusinessDays(s, 1));
-        assertEquals(LocalDate.of(2023,7,6),bCalendar.plusBusinessDays(z, 1));
-        assertEquals(LocalDate.of(2023,7,6),bCalendar.plusBusinessDays(i, 1));
+        final LocalDate d2 = LocalDate.of(2023,7,6);
+        final Instant i2 = d2.atTime(6, 24).atZone(timeZone2).toInstant();
+        final ZonedDateTime z2 = d2.atTime(6, 24).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d2,bCalendar.plusBusinessDays(d, 1));
+        assertEquals(d2,bCalendar.plusBusinessDays(s, 1));
+        assertEquals(z2,bCalendar.plusBusinessDays(z, 1));
+        assertEquals(i2,bCalendar.plusBusinessDays(i, 1));
 
-        assertEquals(LocalDate.of(2023,7,7),bCalendar.plusBusinessDays(d, 2));
-        assertEquals(LocalDate.of(2023,7,7),bCalendar.plusBusinessDays(s, 2));
-        assertEquals(LocalDate.of(2023,7,7),bCalendar.plusBusinessDays(z, 2));
-        assertEquals(LocalDate.of(2023,7,7),bCalendar.plusBusinessDays(i, 2));
+        final LocalDate d3 = LocalDate.of(2023,7,7);
+        final Instant i3 = d3.atTime(6, 24).atZone(timeZone2).toInstant();
+        final ZonedDateTime z3 = d3.atTime(6, 24).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d3,bCalendar.plusBusinessDays(d, 2));
+        assertEquals(d3,bCalendar.plusBusinessDays(s, 2));
+        assertEquals(z3,bCalendar.plusBusinessDays(z, 2));
+        assertEquals(i3,bCalendar.plusBusinessDays(i, 2));
 
-        assertEquals(LocalDate.of(2023,7,14),bCalendar.plusBusinessDays(d, 7));
-        assertEquals(LocalDate.of(2023,7,14),bCalendar.plusBusinessDays(s, 7));
-        assertEquals(LocalDate.of(2023,7,14),bCalendar.plusBusinessDays(z, 7));
-        assertEquals(LocalDate.of(2023,7,14),bCalendar.plusBusinessDays(i, 7));
+        final LocalDate d4 = LocalDate.of(2023,7,14);
+        final Instant i4 = d4.atTime(6, 24).atZone(timeZone2).toInstant();
+        final ZonedDateTime z4 = d4.atTime(6, 24).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d4,bCalendar.plusBusinessDays(d, 7));
+        assertEquals(d4,bCalendar.plusBusinessDays(s, 7));
+        assertEquals(z4,bCalendar.plusBusinessDays(z, 7));
+        assertEquals(i4,bCalendar.plusBusinessDays(i, 7));
 
         d = LocalDate.of(2023,7,14);
         s = d.toString();
-        z = d.atTime(1,24).atZone(timeZone);
+        z = d.atTime(6,25).atZone(timeZone2);
         i = z.toInstant();
 
         assertEquals(d,bCalendar.plusBusinessDays(d, 0));
         assertEquals(d,bCalendar.plusBusinessDays(s, 0));
-        assertEquals(d,bCalendar.plusBusinessDays(z, 0));
-        assertEquals(d,bCalendar.plusBusinessDays(i, 0));
+        assertEquals(z.withZoneSameInstant(timeZone),bCalendar.plusBusinessDays(z, 0));
+        assertEquals(i,bCalendar.plusBusinessDays(i, 0));
 
-        assertEquals(LocalDate.of(2023,7,11),bCalendar.plusBusinessDays(d, -1));
-        assertEquals(LocalDate.of(2023,7,11),bCalendar.plusBusinessDays(s, -1));
-        assertEquals(LocalDate.of(2023,7,11),bCalendar.plusBusinessDays(z, -1));
-        assertEquals(LocalDate.of(2023,7,11),bCalendar.plusBusinessDays(i, -1));
+        final LocalDate d5 = LocalDate.of(2023,7,11);
+        final Instant i5 = d5.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z5 = d5.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d5,bCalendar.plusBusinessDays(d, -1));
+        assertEquals(d5,bCalendar.plusBusinessDays(s, -1));
+        assertEquals(z5,bCalendar.plusBusinessDays(z, -1));
+        assertEquals(i5,bCalendar.plusBusinessDays(i, -1));
 
-        assertEquals(LocalDate.of(2023,7,10),bCalendar.plusBusinessDays(d, -2));
-        assertEquals(LocalDate.of(2023,7,10),bCalendar.plusBusinessDays(s, -2));
-        assertEquals(LocalDate.of(2023,7,10),bCalendar.plusBusinessDays(z, -2));
-        assertEquals(LocalDate.of(2023,7,10),bCalendar.plusBusinessDays(i, -2));
+        final LocalDate d6 = LocalDate.of(2023,7,10);
+        final Instant i6 = d6.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z6 = d6.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d6,bCalendar.plusBusinessDays(d, -2));
+        assertEquals(d6,bCalendar.plusBusinessDays(s, -2));
+        assertEquals(z6,bCalendar.plusBusinessDays(z, -2));
+        assertEquals(i6,bCalendar.plusBusinessDays(i, -2));
 
-        assertEquals(LocalDate.of(2023,7,3),bCalendar.plusBusinessDays(d, -7));
-        assertEquals(LocalDate.of(2023,7,3),bCalendar.plusBusinessDays(s, -7));
-        assertEquals(LocalDate.of(2023,7,3),bCalendar.plusBusinessDays(z, -7));
-        assertEquals(LocalDate.of(2023,7,3),bCalendar.plusBusinessDays(i, -7));
+        final LocalDate d7 = LocalDate.of(2023,7,3);
+        final Instant i7 = d7.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z7 = d7.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d7,bCalendar.plusBusinessDays(d, -7));
+        assertEquals(d7,bCalendar.plusBusinessDays(s, -7));
+        assertEquals(z7,bCalendar.plusBusinessDays(z, -7));
+        assertEquals(i7,bCalendar.plusBusinessDays(i, -7));
 
         d = LocalDate.of(2023,7,4);
         s = d.toString();
-        z = d.atTime(1,24).atZone(timeZone);
+        z = d.atTime(6,24).atZone(timeZone2);
         i = z.toInstant();
 
         assertNull(bCalendar.plusBusinessDays(d, 0));
         assertNull(bCalendar.plusBusinessDays(s, 0));
-        assertNull(bCalendar.plusBusinessDays(z, 0));
+        assertNull(bCalendar.plusBusinessDays(z.withZoneSameInstant(timeZone), 0));
         assertNull(bCalendar.plusBusinessDays(i, 0));
     }
 
@@ -1091,59 +1110,78 @@ public class TestBusinessCalendar extends TestCalendar {
         // 2023-07-14 normal day
         // 2023-07-15 normal day
 
+        final ZoneId timeZone2 = ZoneId.of("America/New_York");
         LocalDate d = LocalDate.of(2023,7,3);
         String s = d.toString();
-        ZonedDateTime z = d.atTime(1,24).atZone(timeZone);
+        ZonedDateTime z = d.atTime(6,25).atZone(timeZone2);
         Instant i = z.toInstant();
 
         assertEquals(d,bCalendar.minusBusinessDays(d, 0));
         assertEquals(d,bCalendar.minusBusinessDays(s, 0));
-        assertEquals(d,bCalendar.minusBusinessDays(z, 0));
-        assertEquals(d,bCalendar.minusBusinessDays(i, 0));
+        assertEquals(z.withZoneSameInstant(timeZone),bCalendar.minusBusinessDays(z, 0));
+        assertEquals(i,bCalendar.minusBusinessDays(i, 0));
 
-        assertEquals(LocalDate.of(2023,7,6),bCalendar.minusBusinessDays(d, -1));
-        assertEquals(LocalDate.of(2023,7,6),bCalendar.minusBusinessDays(s, -1));
-        assertEquals(LocalDate.of(2023,7,6),bCalendar.minusBusinessDays(z, -1));
-        assertEquals(LocalDate.of(2023,7,6),bCalendar.minusBusinessDays(i, -1));
+        final LocalDate d1 = LocalDate.of(2023,7,6);
+        final Instant i1 = d1.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z1 = d1.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d1,bCalendar.minusBusinessDays(d, -1));
+        assertEquals(d1,bCalendar.minusBusinessDays(s, -1));
+        assertEquals(z1,bCalendar.minusBusinessDays(z, -1));
+        assertEquals(i1,bCalendar.minusBusinessDays(i, -1));
 
-        assertEquals(LocalDate.of(2023,7,7),bCalendar.minusBusinessDays(d, -2));
-        assertEquals(LocalDate.of(2023,7,7),bCalendar.minusBusinessDays(s, -2));
-        assertEquals(LocalDate.of(2023,7,7),bCalendar.minusBusinessDays(z, -2));
-        assertEquals(LocalDate.of(2023,7,7),bCalendar.minusBusinessDays(i, -2));
+        final LocalDate d2 = LocalDate.of(2023,7,7);
+        final Instant i2 = d2.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z2 = d2.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d2,bCalendar.minusBusinessDays(d, -2));
+        assertEquals(d2,bCalendar.minusBusinessDays(s, -2));
+        assertEquals(z2,bCalendar.minusBusinessDays(z, -2));
+        assertEquals(i2,bCalendar.minusBusinessDays(i, -2));
 
-        assertEquals(LocalDate.of(2023,7,14),bCalendar.minusBusinessDays(d, -7));
-        assertEquals(LocalDate.of(2023,7,14),bCalendar.minusBusinessDays(s, -7));
-        assertEquals(LocalDate.of(2023,7,14),bCalendar.minusBusinessDays(z, -7));
-        assertEquals(LocalDate.of(2023,7,14),bCalendar.minusBusinessDays(i, -7));
+        final LocalDate d3 = LocalDate.of(2023,7,14);
+        final Instant i3 = d3.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z3 = d3.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d3,bCalendar.minusBusinessDays(d, -7));
+        assertEquals(d3,bCalendar.minusBusinessDays(s, -7));
+        assertEquals(z3,bCalendar.minusBusinessDays(z, -7));
+        assertEquals(i3,bCalendar.minusBusinessDays(i, -7));
 
         d = LocalDate.of(2023,7,14);
         s = d.toString();
-        z = d.atTime(1,24).atZone(timeZone);
+        z = d.atTime(6,25).atZone(timeZone2);
         i = z.toInstant();
 
         assertEquals(d,bCalendar.minusBusinessDays(d, 0));
         assertEquals(d,bCalendar.minusBusinessDays(s, 0));
-        assertEquals(d,bCalendar.minusBusinessDays(z, 0));
-        assertEquals(d,bCalendar.minusBusinessDays(i, 0));
+        assertEquals(z.withZoneSameInstant(timeZone),bCalendar.minusBusinessDays(z, 0));
+        assertEquals(i,bCalendar.minusBusinessDays(i, 0));
 
-        assertEquals(LocalDate.of(2023,7,11),bCalendar.minusBusinessDays(d, 1));
-        assertEquals(LocalDate.of(2023,7,11),bCalendar.minusBusinessDays(s, 1));
-        assertEquals(LocalDate.of(2023,7,11),bCalendar.minusBusinessDays(z, 1));
-        assertEquals(LocalDate.of(2023,7,11),bCalendar.minusBusinessDays(i, 1));
+        final LocalDate d4 = LocalDate.of(2023,7,11);
+        final Instant i4 = d4.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z4 = d4.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d4,bCalendar.minusBusinessDays(d, 1));
+        assertEquals(d4,bCalendar.minusBusinessDays(s, 1));
+        assertEquals(z4,bCalendar.minusBusinessDays(z, 1));
+        assertEquals(i4,bCalendar.minusBusinessDays(i, 1));
 
-        assertEquals(LocalDate.of(2023,7,10),bCalendar.minusBusinessDays(d, 2));
-        assertEquals(LocalDate.of(2023,7,10),bCalendar.minusBusinessDays(s, 2));
-        assertEquals(LocalDate.of(2023,7,10),bCalendar.minusBusinessDays(z, 2));
-        assertEquals(LocalDate.of(2023,7,10),bCalendar.minusBusinessDays(i, 2));
+        final LocalDate d5 = LocalDate.of(2023,7,10);
+        final Instant i5 = d5.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z5 = d5.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d5,bCalendar.minusBusinessDays(d, 2));
+        assertEquals(d5,bCalendar.minusBusinessDays(s, 2));
+        assertEquals(z5,bCalendar.minusBusinessDays(z, 2));
+        assertEquals(i5,bCalendar.minusBusinessDays(i, 2));
 
-        assertEquals(LocalDate.of(2023,7,3),bCalendar.minusBusinessDays(d, 7));
-        assertEquals(LocalDate.of(2023,7,3),bCalendar.minusBusinessDays(s, 7));
-        assertEquals(LocalDate.of(2023,7,3),bCalendar.minusBusinessDays(z, 7));
-        assertEquals(LocalDate.of(2023,7,3),bCalendar.minusBusinessDays(i, 7));
+        final LocalDate d6 = LocalDate.of(2023,7,3);
+        final Instant i6 = d6.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z6 = d6.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d6,bCalendar.minusBusinessDays(d, 7));
+        assertEquals(d6,bCalendar.minusBusinessDays(s, 7));
+        assertEquals(z6,bCalendar.minusBusinessDays(z, 7));
+        assertEquals(i6,bCalendar.minusBusinessDays(i, 7));
 
         d = LocalDate.of(2023,7,4);
         s = d.toString();
-        z = d.atTime(1,24).atZone(timeZone);
+        z = d.atTime(6,24).atZone(timeZone2);
         i = z.toInstant();
 
         assertNull(bCalendar.minusBusinessDays(d, 0));
@@ -1167,9 +1205,10 @@ public class TestBusinessCalendar extends TestCalendar {
         // 2023-07-14 normal day
         // 2023-07-15 normal day
 
+        final ZoneId timeZone2 = ZoneId.of("America/New_York");
         LocalDate d = LocalDate.of(2023,7,3);
         String s = d.toString();
-        ZonedDateTime z = d.atTime(1,24).atZone(timeZone);
+        ZonedDateTime z = d.atTime(6,25).atZone(timeZone2);
         Instant i = z.toInstant();
 
         assertNull(bCalendar.plusNonBusinessDays(d, 0));
@@ -1177,24 +1216,33 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.plusNonBusinessDays(z, 0));
         assertNull(bCalendar.plusNonBusinessDays(i, 0));
 
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.plusNonBusinessDays(d, 1));
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.plusNonBusinessDays(s, 1));
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.plusNonBusinessDays(z, 1));
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.plusNonBusinessDays(i, 1));
+        final LocalDate d1 = LocalDate.of(2023,7,4);
+        final Instant i1 = d1.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z1 = d1.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d1,bCalendar.plusNonBusinessDays(d, 1));
+        assertEquals(d1,bCalendar.plusNonBusinessDays(s, 1));
+        assertEquals(z1,bCalendar.plusNonBusinessDays(z, 1));
+        assertEquals(i1,bCalendar.plusNonBusinessDays(i, 1));
 
-        assertEquals(LocalDate.of(2023,7,5),bCalendar.plusNonBusinessDays(d, 2));
-        assertEquals(LocalDate.of(2023,7,5),bCalendar.plusNonBusinessDays(s, 2));
-        assertEquals(LocalDate.of(2023,7,5),bCalendar.plusNonBusinessDays(z, 2));
-        assertEquals(LocalDate.of(2023,7,5),bCalendar.plusNonBusinessDays(i, 2));
+        final LocalDate d2 = LocalDate.of(2023,7,5);
+        final Instant i2 = d2.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z2 = d2.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d2,bCalendar.plusNonBusinessDays(d, 2));
+        assertEquals(d2,bCalendar.plusNonBusinessDays(s, 2));
+        assertEquals(z2,bCalendar.plusNonBusinessDays(z, 2));
+        assertEquals(i2,bCalendar.plusNonBusinessDays(i, 2));
 
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.plusNonBusinessDays(d, 4));
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.plusNonBusinessDays(s, 4));
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.plusNonBusinessDays(z, 4));
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.plusNonBusinessDays(i, 4));
+        final LocalDate d3 = LocalDate.of(2023,7,13);
+        final Instant i3 = d3.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z3 = d3.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d3,bCalendar.plusNonBusinessDays(d, 4));
+        assertEquals(d3,bCalendar.plusNonBusinessDays(s, 4));
+        assertEquals(z3,bCalendar.plusNonBusinessDays(z, 4));
+        assertEquals(i3,bCalendar.plusNonBusinessDays(i, 4));
 
         d = LocalDate.of(2023,7,14);
         s = d.toString();
-        z = d.atTime(1,24).atZone(timeZone);
+        z = d.atTime(6,25).atZone(timeZone2);
         i = z.toInstant();
 
         assertNull(bCalendar.plusNonBusinessDays(d, 0));
@@ -1202,24 +1250,33 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.plusNonBusinessDays(z, 0));
         assertNull(bCalendar.plusNonBusinessDays(i, 0));
 
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.plusNonBusinessDays(d, -1));
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.plusNonBusinessDays(s, -1));
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.plusNonBusinessDays(z, -1));
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.plusNonBusinessDays(i, -1));
+        final LocalDate d4 = LocalDate.of(2023,7,13);
+        final Instant i4 = d4.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z4 = d4.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d4,bCalendar.plusNonBusinessDays(d, -1));
+        assertEquals(d4,bCalendar.plusNonBusinessDays(s, -1));
+        assertEquals(z4,bCalendar.plusNonBusinessDays(z, -1));
+        assertEquals(i4,bCalendar.plusNonBusinessDays(i, -1));
 
-        assertEquals(LocalDate.of(2023,7,12),bCalendar.plusNonBusinessDays(d, -2));
-        assertEquals(LocalDate.of(2023,7,12),bCalendar.plusNonBusinessDays(s, -2));
-        assertEquals(LocalDate.of(2023,7,12),bCalendar.plusNonBusinessDays(z, -2));
-        assertEquals(LocalDate.of(2023,7,12),bCalendar.plusNonBusinessDays(i, -2));
+        final LocalDate d5 = LocalDate.of(2023,7,12);
+        final Instant i5 = d5.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z5 = d5.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d5,bCalendar.plusNonBusinessDays(d, -2));
+        assertEquals(d5,bCalendar.plusNonBusinessDays(s, -2));
+        assertEquals(z5,bCalendar.plusNonBusinessDays(z, -2));
+        assertEquals(i5,bCalendar.plusNonBusinessDays(i, -2));
 
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.plusNonBusinessDays(d, -4));
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.plusNonBusinessDays(s, -4));
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.plusNonBusinessDays(z, -4));
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.plusNonBusinessDays(i, -4));
+        final LocalDate d6 = LocalDate.of(2023,7,4);
+        final Instant i6 = d6.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z6 = d6.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d6,bCalendar.plusNonBusinessDays(d, -4));
+        assertEquals(d6,bCalendar.plusNonBusinessDays(s, -4));
+        assertEquals(z6,bCalendar.plusNonBusinessDays(z, -4));
+        assertEquals(i6,bCalendar.plusNonBusinessDays(i, -4));
 
         d = LocalDate.of(2023,7,4);
         s = d.toString();
-        z = d.atTime(1,24).atZone(timeZone);
+        z = d.atTime(6,25).atZone(timeZone2);
         i = z.toInstant();
 
         assertNull(bCalendar.plusNonBusinessDays(d, 0));
@@ -1243,9 +1300,10 @@ public class TestBusinessCalendar extends TestCalendar {
         // 2023-07-14 normal day
         // 2023-07-15 normal day
 
+        final ZoneId timeZone2 = ZoneId.of("America/New_York");
         LocalDate d = LocalDate.of(2023,7,3);
         String s = d.toString();
-        ZonedDateTime z = d.atTime(1,24).atZone(timeZone);
+        ZonedDateTime z = d.atTime(6,25).atZone(timeZone2);
         Instant i = z.toInstant();
 
         assertNull(bCalendar.minusNonBusinessDays(d, 0));
@@ -1253,24 +1311,33 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.minusNonBusinessDays(z, 0));
         assertNull(bCalendar.minusNonBusinessDays(i, 0));
 
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.minusNonBusinessDays(d, -1));
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.minusNonBusinessDays(s, -1));
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.minusNonBusinessDays(z, -1));
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.minusNonBusinessDays(i, -1));
+        final LocalDate d1 = LocalDate.of(2023,7,4);
+        final Instant i1 = d1.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z1 = d1.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d1,bCalendar.minusNonBusinessDays(d, -1));
+        assertEquals(d1,bCalendar.minusNonBusinessDays(s, -1));
+        assertEquals(z1,bCalendar.minusNonBusinessDays(z, -1));
+        assertEquals(i1,bCalendar.minusNonBusinessDays(i, -1));
 
-        assertEquals(LocalDate.of(2023,7,5),bCalendar.minusNonBusinessDays(d, -2));
-        assertEquals(LocalDate.of(2023,7,5),bCalendar.minusNonBusinessDays(s, -2));
-        assertEquals(LocalDate.of(2023,7,5),bCalendar.minusNonBusinessDays(z, -2));
-        assertEquals(LocalDate.of(2023,7,5),bCalendar.minusNonBusinessDays(i, -2));
+        final LocalDate d2 = LocalDate.of(2023,7,5);
+        final Instant i2 = d2.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z2 = d2.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d2,bCalendar.minusNonBusinessDays(d, -2));
+        assertEquals(d2,bCalendar.minusNonBusinessDays(s, -2));
+        assertEquals(z2,bCalendar.minusNonBusinessDays(z, -2));
+        assertEquals(i2,bCalendar.minusNonBusinessDays(i, -2));
 
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.minusNonBusinessDays(d, -4));
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.minusNonBusinessDays(s, -4));
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.minusNonBusinessDays(z, -4));
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.minusNonBusinessDays(i, -4));
+        final LocalDate d3 = LocalDate.of(2023,7,13);
+        final Instant i3 = d3.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z3 = d3.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d3,bCalendar.minusNonBusinessDays(d, -4));
+        assertEquals(d3,bCalendar.minusNonBusinessDays(s, -4));
+        assertEquals(z3,bCalendar.minusNonBusinessDays(z, -4));
+        assertEquals(i3,bCalendar.minusNonBusinessDays(i, -4));
 
         d = LocalDate.of(2023,7,14);
         s = d.toString();
-        z = d.atTime(1,24).atZone(timeZone);
+        z = d.atTime(6,25).atZone(timeZone2);
         i = z.toInstant();
 
         assertNull(bCalendar.minusNonBusinessDays(d, 0));
@@ -1278,24 +1345,33 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.minusNonBusinessDays(z, 0));
         assertNull(bCalendar.minusNonBusinessDays(i, 0));
 
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.minusNonBusinessDays(d, 1));
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.minusNonBusinessDays(s, 1));
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.minusNonBusinessDays(z, 1));
-        assertEquals(LocalDate.of(2023,7,13),bCalendar.minusNonBusinessDays(i, 1));
+        final LocalDate d4 = LocalDate.of(2023,7,13);
+        final Instant i4 = d4.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z4 = d4.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d4,bCalendar.minusNonBusinessDays(d, 1));
+        assertEquals(d4,bCalendar.minusNonBusinessDays(s, 1));
+        assertEquals(z4,bCalendar.minusNonBusinessDays(z, 1));
+        assertEquals(i4,bCalendar.minusNonBusinessDays(i, 1));
 
-        assertEquals(LocalDate.of(2023,7,12),bCalendar.minusNonBusinessDays(d, 2));
-        assertEquals(LocalDate.of(2023,7,12),bCalendar.minusNonBusinessDays(s, 2));
-        assertEquals(LocalDate.of(2023,7,12),bCalendar.minusNonBusinessDays(z, 2));
-        assertEquals(LocalDate.of(2023,7,12),bCalendar.minusNonBusinessDays(i, 2));
+        final LocalDate d5 = LocalDate.of(2023,7,12);
+        final Instant i5 = d5.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z5 = d5.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d5,bCalendar.minusNonBusinessDays(d, 2));
+        assertEquals(d5,bCalendar.minusNonBusinessDays(s, 2));
+        assertEquals(z5,bCalendar.minusNonBusinessDays(z, 2));
+        assertEquals(i5,bCalendar.minusNonBusinessDays(i, 2));
 
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.minusNonBusinessDays(d, 4));
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.minusNonBusinessDays(s, 4));
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.minusNonBusinessDays(z, 4));
-        assertEquals(LocalDate.of(2023,7,4),bCalendar.minusNonBusinessDays(i, 4));
+        final LocalDate d6 = LocalDate.of(2023,7,4);
+        final Instant i6 = d6.atTime(6, 25).atZone(timeZone2).toInstant();
+        final ZonedDateTime z6 = d6.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
+        assertEquals(d6,bCalendar.minusNonBusinessDays(d, 4));
+        assertEquals(d6,bCalendar.minusNonBusinessDays(s, 4));
+        assertEquals(z6,bCalendar.minusNonBusinessDays(z, 4));
+        assertEquals(i6,bCalendar.minusNonBusinessDays(i, 4));
 
         d = LocalDate.of(2023,7,4);
         s = d.toString();
-        z = d.atTime(1,24).atZone(timeZone);
+        z = d.atTime(6,24).atZone(timeZone2);
         i = z.toInstant();
 
         assertNull(bCalendar.minusNonBusinessDays(d, 0));

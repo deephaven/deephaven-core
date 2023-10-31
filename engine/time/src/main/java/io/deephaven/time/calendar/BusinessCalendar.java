@@ -1456,8 +1456,6 @@ public class BusinessCalendar extends Calendar {
 
     // region Arithmetic
 
-    //TODO: should the add/subtract methods on Instants or ZDT return times of LocalDates?
-
     /**
      * Adds a specified number of business days to an input date.  Adding negative days is equivalent to subtracting days.
      *
@@ -1502,7 +1500,12 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Adds a specified number of business days to an input date.  Adding negative days is equivalent to subtracting days.
+     * Adds a specified number of business days to an input time.  Adding negative days is equivalent to subtracting days.
+     *
+     * Day additions are not always 24 hours.  The resultant time will have the same local time as the input time,
+     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
+     * For example, 2023-11-05 has a daylight savings time adjustment,
+     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
      *
      * @param time time
      * @param days number of days to add.
@@ -1510,13 +1513,22 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate plusBusinessDays(final Instant time, final int days) {
+    public Instant plusBusinessDays(final Instant time, final int days) {
         Require.neqNull(time, "time");
-        return plusBusinessDays(DateTimeUtils.toLocalDate(time, timeZone()), days);
+        final ZonedDateTime zdt = plusBusinessDays(DateTimeUtils.toZonedDateTime(time, timeZone()), days);
+        return zdt == null ? null : zdt.toInstant();
     }
 
     /**
-     * Adds a specified number of business days to an input date.  Adding negative days is equivalent to subtracting days.
+     * Adds a specified number of business days to an input time.  Adding negative days is equivalent to subtracting days.
+     *
+     * Day additions are not always 24 hours.  The resultant time will have the same local time as the input time,
+     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
+     * For example, 2023-11-05 has a daylight savings time adjustment,
+     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
+     *
+     * The resultant time will have the same time zone as the calendar.  This could be different than the
+     * time zone of the input {@link ZonedDateTime}.
      *
      * @param time time
      * @param days number of days to add.
@@ -1524,9 +1536,14 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate plusBusinessDays(final ZonedDateTime time, final int days) {
+    public ZonedDateTime plusBusinessDays(final ZonedDateTime time, final int days) {
         Require.neqNull(time, "time");
-        return plusBusinessDays(time.toInstant(), days);
+        final ZonedDateTime zdt = time.withZoneSameInstant(timeZone());
+        final LocalDate pbd = plusBusinessDays(zdt.toLocalDate(), days);
+        return pbd == null ? null :
+                pbd
+                .atTime(zdt.toLocalTime())
+                .atZone(timeZone());
     }
 
     /**
@@ -1557,7 +1574,12 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Subtracts a specified number of business days from an input date.  Subtracting negative days is equivalent to adding days.
+     * Subtracts a specified number of business days from an input time.  Subtracting negative days is equivalent to adding days.
+     *
+     * Day subtractions are not always 24 hours.  The resultant time will have the same local time as the input time,
+     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
+     * For example, 2023-11-05 has a daylight savings time adjustment,
+     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
      *
      * @param time time
      * @param days number of days to add.
@@ -1565,12 +1587,20 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate minusBusinessDays(final Instant time, final int days) {
+    public Instant minusBusinessDays(final Instant time, final int days) {
         return plusBusinessDays(time, -days);
     }
 
     /**
-     * Subtracts a specified number of business days from an input date.  Subtracting negative days is equivalent to adding days.
+     * Subtracts a specified number of business days from an input time.  Subtracting negative days is equivalent to adding days.
+     *
+     * Day subtraction are not always 24 hours.  The resultant time will have the same local time as the input time,
+     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
+     * For example, 2023-11-05 has a daylight savings time adjustment,
+     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
+     *
+     * The resultant time will have the same time zone as the calendar.  This could be different than the
+     * time zone of the input {@link ZonedDateTime}.
      *
      * @param time time
      * @param days number of days to add.
@@ -1578,7 +1608,7 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate minusBusinessDays(final ZonedDateTime time, final int days) {
+    public ZonedDateTime minusBusinessDays(final ZonedDateTime time, final int days) {
         return plusBusinessDays(time, -days);
     }
 
@@ -1626,7 +1656,15 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Adds a specified number of non-business days to an input date.  Adding negative days is equivalent to subtracting days.
+     * Adds a specified number of non-business days to an input time.  Adding negative days is equivalent to subtracting days.
+     *
+     * Day additions are not always 24 hours.  The resultant time will have the same local time as the input time,
+     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
+     * For example, 2023-11-05 has a daylight savings time adjustment,
+     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
+     *
+     * The resultant time will have the same time zone as the calendar.  This could be different than the
+     * time zone of the input {@link ZonedDateTime}.
      *
      * @param time time
      * @param days number of days to add.
@@ -1634,13 +1672,23 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate plusNonBusinessDays(final Instant time, final int days) {
+    public Instant plusNonBusinessDays(final Instant time, final int days) {
         Require.neqNull(time, "time");
-        return this.plusNonBusinessDays(DateTimeUtils.toLocalDate(time, timeZone()), days);
+        final ZonedDateTime zdt = plusNonBusinessDays(DateTimeUtils.toZonedDateTime(time, timeZone()), days);
+        return zdt == null ? null : zdt.toInstant();
+
     }
 
     /**
-     * Adds a specified number of non-business days to an input date.  Adding negative days is equivalent to subtracting days.
+     * Adds a specified number of non-business days to an input time.  Adding negative days is equivalent to subtracting days.
+     *
+     * Day additions are not always 24 hours.  The resultant time will have the same local time as the input time,
+     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
+     * For example, 2023-11-05 has a daylight savings time adjustment,
+     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
+     *
+     * The resultant time will have the same time zone as the calendar.  This could be different than the
+     * time zone of the input {@link ZonedDateTime}.
      *
      * @param time time
      * @param days number of days to add.
@@ -1648,9 +1696,14 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate plusNonBusinessDays(final ZonedDateTime time, final int days) {
+    public ZonedDateTime plusNonBusinessDays(final ZonedDateTime time, final int days) {
         Require.neqNull(time, "time");
-        return plusNonBusinessDays(time.toInstant(), days);
+        final ZonedDateTime zdt = time.withZoneSameInstant(timeZone());
+        final LocalDate pbd = plusNonBusinessDays(zdt.toLocalDate(), days);
+        return pbd == null ? null :
+                pbd
+                .atTime(zdt.toLocalTime())
+                .atZone(timeZone());
     }
 
     /**
@@ -1681,7 +1734,12 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Subtracts a specified number of non-business days to an input date.  Subtracting negative days is equivalent to adding days.
+     * Subtracts a specified number of non-business days to an input time.  Subtracting negative days is equivalent to adding days.
+     *
+     * Day subtractions are not always 24 hours.  The resultant time will have the same local time as the input time,
+     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
+     * For example, 2023-11-05 has a daylight savings time adjustment,
+     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
      *
      * @param time time
      * @param days number of days to add.
@@ -1689,12 +1747,20 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate minusNonBusinessDays(final Instant time, final int days) {
+    public Instant minusNonBusinessDays(final Instant time, final int days) {
         return plusNonBusinessDays(time, -days);
     }
 
     /**
-     * Subtracts a specified number of non-business days to an input date.  Subtracting negative days is equivalent to adding days.
+     * Subtracts a specified number of non-business days to an input time.  Subtracting negative days is equivalent to adding days.
+     *
+     * Day subtractions are not always 24 hours.  The resultant time will have the same local time as the input time,
+     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
+     * For example, 2023-11-05 has a daylight savings time adjustment,
+     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
+     *
+     * The resultant time will have the same time zone as the calendar.  This could be different than the
+     * time zone of the input {@link ZonedDateTime}.
      *
      * @param time time
      * @param days number of days to add.
@@ -1702,7 +1768,7 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate minusNonBusinessDays(final ZonedDateTime time, final int days) {
+    public ZonedDateTime minusNonBusinessDays(final ZonedDateTime time, final int days) {
         return plusNonBusinessDays(time, -days);
     }
 

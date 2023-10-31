@@ -88,8 +88,6 @@ public class Calendar {
 
     // region Arithmetic
 
-    //TODO: should the add/subtract methods on Instants or ZDT return times of LocalDates?
-
     /**
      * Adds a specified number of days to an input date.  Adding negative days is equivalent to subtracting days.
      *
@@ -120,27 +118,43 @@ public class Calendar {
     /**
      * Adds a specified number of days to an input time.  Adding negative days is equivalent to subtracting days.
      *
+     * Day additions are not always 24 hours.  The resultant time will have the same local time as the input time,
+     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
+     * For example, 2023-11-05 has a daylight savings time adjustment,
+     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
+     *
      * @param time time
      * @param days number of days to add
-     * @return {@code days} days after {@code time}
+     * @return {@code days} days after {@code time}.
      * @throws RequirementFailure if the input is null
      */
-    public LocalDate plusDays(final Instant time, final int days) {
+    public Instant plusDays(final Instant time, final int days) {
         Require.neqNull(time, "time");
-        return plusDays(DateTimeUtils.toLocalDate(time, timeZone), days);
+        return plusDays(DateTimeUtils.toZonedDateTime(time, timeZone), days).toInstant();
     }
 
     /**
      * Adds a specified number of days to an input time.  Adding negative days is equivalent to subtracting days.
+     *
+     * Day additions are not always 24 hours.  The resultant time will have the same local time as the input time,
+     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
+     * For example, 2023-11-05 has a daylight savings time adjustment,
+     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
+     *
+     * The resultant time will have the same time zone as the calendar.  This could be different than the
+     * time zone of the input {@link ZonedDateTime}.
      *
      * @param time time
      * @param days number of days to add
      * @return {@code days} days after {@code time}
      * @throws RequirementFailure if the input is null
      */
-    public LocalDate plusDays(final ZonedDateTime time, final int days) {
+    public ZonedDateTime plusDays(final ZonedDateTime time, final int days) {
         Require.neqNull(time, "time");
-        return plusDays(time.toInstant(), days);
+        final ZonedDateTime zdt = time.withZoneSameInstant(timeZone);
+        return plusDays(zdt.toLocalDate(), days)
+                .atTime(zdt.toLocalTime())
+                .atZone(timeZone);
     }
 
     /**
@@ -173,27 +187,40 @@ public class Calendar {
     /**
      * Subtracts a specified number of days to an input time.  Subtracting negative days is equivalent to adding days.
      *
-     * @param time time
-     * @param days number of days to subtract
-     * @return {@code days} days after {@code time}
-     * @throws RequirementFailure if the input is null
-     */
-    public LocalDate minusDays(final Instant time, final int days) {
-        Require.neqNull(time, "time");
-        return minusDays(DateTimeUtils.toLocalDate(time, timeZone), days);
-    }
-
-    /**
-     * Subtracts a specified number of days to an input time.  Subtracting negative days is equivalent to adding days.
+     * Day subtractions are not always 24 hours.  The resultant time will have the same local time as the input time,
+     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
+     * For example, 2023-11-05 has a daylight savings time adjustment,
+     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
      *
      * @param time time
      * @param days number of days to subtract
      * @return {@code days} days after {@code time}
      * @throws RequirementFailure if the input is null
      */
-    public LocalDate minusDays(final ZonedDateTime time, final int days) {
+    public Instant minusDays(final Instant time, final int days) {
         Require.neqNull(time, "time");
-        return minusDays(time.toInstant(), days);
+        return plusDays(time, -days);
+    }
+
+    /**
+     * Subtracts a specified number of days to an input time.  Subtracting negative days is equivalent to adding days.
+     *
+     * Day subtractions are not always 24 hours.  The resultant time will have the same local time as the input time,
+     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
+     * For example, 2023-11-05 has a daylight savings time adjustment,
+     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
+     *
+     * The resultant time will have the same time zone as the calendar.  This could be different than the
+     * time zone of the input {@link ZonedDateTime}.
+     *
+     * @param time time
+     * @param days number of days to subtract
+     * @return {@code days} days after {@code time}
+     * @throws RequirementFailure if the input is null
+     */
+    public ZonedDateTime minusDays(final ZonedDateTime time, final int days) {
+        Require.neqNull(time, "time");
+        return plusDays(time, -days);
     }
 
     /**
