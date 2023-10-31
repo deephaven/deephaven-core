@@ -23,13 +23,14 @@ final class TableServiceAsyncImpl {
     static TableHandleAsync executeAsync(ExportService exportService, TableSpec tableSpec) {
         final TableHandleAsyncImpl impl = new TableHandleAsyncImpl(tableSpec);
         final ExportRequest request = ExportRequest.of(tableSpec, impl);
-        final ExportServiceRequest esr = exportService.exportRequest(ExportsRequest.of(request));
-        final List<Export> exports = esr.exports();
-        if (exports.size() != 1) {
-            throw new IllegalStateException();
+        try (final ExportServiceRequest esr = exportService.exportRequest(ExportsRequest.of(request))) {
+            final List<Export> exports = esr.exports();
+            if (exports.size() != 1) {
+                throw new IllegalStateException();
+            }
+            impl.init(exports.get(0));
+            esr.send();
         }
-        impl.init(exports.get(0));
-        esr.send();
         return impl;
     }
 
@@ -42,44 +43,63 @@ final class TableServiceAsyncImpl {
             builder.addRequests(ExportRequest.of(tableSpec, impl));
             impls.add(impl);
         }
-        final ExportServiceRequest esr = exportService.exportRequest(builder.build());
-        final List<Export> exports = esr.exports();
-        if (exports.size() != size) {
-            throw new IllegalStateException();
+        try (final ExportServiceRequest esr = exportService.exportRequest(builder.build())) {
+            final List<Export> exports = esr.exports();
+            if (exports.size() != size) {
+                throw new IllegalStateException();
+            }
+            for (int i = 0; i < size; ++i) {
+                impls.get(i).init(exports.get(i));
+            }
+            esr.send();
         }
-        for (int i = 0; i < size; ++i) {
-            impls.get(i).init(exports.get(i));
-        }
-        esr.send();
         return impls;
     }
 
     private static class TableHandleAsyncImpl implements TableHandleAsync, Listener {
         private final TableSpec tableSpec;
-        private final CompletableFuture<TableHandle> userFuture;
+        private final CompletableFuture<TableHandle> future;
         private TableHandle handle;
         private Export export;
 
         TableHandleAsyncImpl(TableSpec tableSpec) {
             this.tableSpec = Objects.requireNonNull(tableSpec);
-            this.userFuture = new CompletableFuture<>();
+            this.future = new CompletableFuture<>();
         }
 
         synchronized void init(Export export) {
             this.export = Objects.requireNonNull(export);
-            this.userFuture.whenComplete((tableHandle, throwable) -> {
-                if (throwable == null) {
-                    // User now owns TableHandle, responsible for closing as appropriate
-                    return;
-                }
-                if (isCancelled()) {
-                    export.release();
-                } else {
-                    // When there is a "real" error, are we actually responsible for releasing the export?
-                    // It _probably_ doesn't exist on the server.
-                    // export.release();
-                }
-            });
+            // We would like to be able to proactively release an export when the user cancels a future. There are a
+            // couple reasons why we can't currently do this:
+            //
+            // 1. The release RPC only works with exports that have already been created. It's possible that a release
+            // RPC would race w/ the batch RPC. And even if we guarantee the release comes on the wire after the batch,
+            // it's still possible the batch impl hasn't created the exports yet. In either case, a race leads to a
+            // leaked export.
+            //
+            // 2. The release RPC is non-deterministic with how it handles releases when the export _does_ exist: if the
+            // export is still in process, it transitions the export to a CANCELLED state, and then propagates cancels
+            // to downstream dependencies; if the export is already EXPORTED (ie, finished initial computation), then
+            // the state transitions to RELEASED which does _not_ cancel downstream dependencies. This bifurcating
+            // behavior is strange - it seems like typical liveness abstractions should be used instead.
+            //
+            // [future_1, future_2] = executeAsync([table_spec_1, table_spec_2]);
+            // future_1.cancel(true);
+            //
+            // In the pseudocode above, I maintain that a) we should be able to immediately tell the server we no longer
+            // require an export for table_spec_1, and b) future_2 should still be valid, regardless of whether it
+            // depends on table_spec_1 or not.
+            //
+            // See io.deephaven.server.session.SessionState.ExportObject.cancel.
+            //
+            // We _could_ work around the cancel propagation issue by doing an isolated FetchTableRequest for each
+            // export the user requests, but regardless that doesn't solve the former issue.
+            //
+            // this.future.whenComplete((tableHandle, throwable) -> {
+            // if (isCancelled()) {
+            // export.release();
+            // }
+            // });
             maybeComplete();
         }
 
@@ -88,7 +108,11 @@ final class TableServiceAsyncImpl {
                 return;
             }
             handle.init(export);
-            userFuture.complete(handle);
+            if (!future.complete(handle)) {
+                // If we are unable to complete the future, it means the user cancelled it. It's only at this point in
+                // time we are able to let the server know that we don't need it anymore. See comments in #init.
+                handle.close();
+            }
             handle = null;
             export = null;
         }
@@ -103,7 +127,7 @@ final class TableServiceAsyncImpl {
             responseAdapter.onCompleted();
             final TableHandleException error = handle.error().orElse(null);
             if (error != null) {
-                userFuture.completeExceptionally(error);
+                future.completeExceptionally(error);
             } else {
                 // It's possible that onNext comes before #init; either in the case where it was already cached from
                 // io.deephaven.client.impl.ExportService.export, or where the RPC comes in asynchronously. In either
@@ -117,13 +141,13 @@ final class TableServiceAsyncImpl {
 
         @Override
         public void onError(Throwable t) {
-            userFuture.completeExceptionally(t);
+            future.completeExceptionally(t);
         }
 
         @Override
         public void onCompleted() {
-            if (!userFuture.isDone()) {
-                userFuture.completeExceptionally(new IllegalStateException("onCompleted without future.isDone()"));
+            if (!future.isDone()) {
+                future.completeExceptionally(new IllegalStateException("onCompleted without future.isDone()"));
             }
         }
 
@@ -131,28 +155,28 @@ final class TableServiceAsyncImpl {
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
-            return userFuture.cancel(mayInterruptIfRunning);
+            return future.cancel(mayInterruptIfRunning);
         }
 
         @Override
         public boolean isCancelled() {
-            return userFuture.isCancelled();
+            return future.isCancelled();
         }
 
         @Override
         public boolean isDone() {
-            return userFuture.isDone();
+            return future.isDone();
         }
 
         @Override
         public TableHandle get() throws InterruptedException, ExecutionException {
-            return userFuture.get();
+            return future.get();
         }
 
         @Override
         public TableHandle get(long timeout, TimeUnit unit)
                 throws InterruptedException, ExecutionException, TimeoutException {
-            return userFuture.get(timeout, unit);
+            return future.get(timeout, unit);
         }
     }
 }

@@ -30,6 +30,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 final class ExportStates implements ExportService {
 
@@ -39,6 +41,7 @@ final class ExportStates implements ExportService {
 
     private final Map<TableSpec, State> exports;
     private final ExportTicketCreator exportTicketCreator;
+    private final Lock lock;
 
     ExportStates(SessionImpl session, SessionServiceStub sessionStub, TableServiceStub tableStub,
             ExportTicketCreator exportTicketCreator) {
@@ -47,6 +50,7 @@ final class ExportStates implements ExportService {
         this.tableStub = Objects.requireNonNull(tableStub);
         this.exportTicketCreator = Objects.requireNonNull(exportTicketCreator);
         this.exports = new HashMap<>();
+        this.lock = new ReentrantLock();
     }
 
     @VisibleForTesting
@@ -56,6 +60,7 @@ final class ExportStates implements ExportService {
         this.tableStub = Objects.requireNonNull(tableStub);
         this.exportTicketCreator = Objects.requireNonNull(exportTicketCreator);
         this.exports = new HashMap<>();
+        this.lock = new ReentrantLock();
     }
 
     /**
@@ -79,7 +84,17 @@ final class ExportStates implements ExportService {
     }
 
     @Override
-    public synchronized ExportServiceRequest exportRequest(ExportsRequest requests) {
+    public ExportServiceRequest exportRequest(ExportsRequest requests) {
+        lock.lock();
+        try {
+            return exportRequestImpl(requests);
+        } catch (Throwable t) {
+            lock.unlock();
+            throw t;
+        }
+    }
+
+    private ExportServiceRequest exportRequestImpl(ExportsRequest requests) {
         ensureNoUnreferenceableTables(requests);
 
         final Set<TableSpec> oldExports = new HashSet<>(exports.keySet());
@@ -126,8 +141,8 @@ final class ExportStates implements ExportService {
             send = () -> {
             };
         }
-        // todo: do we want / need to keep lock until post send?
         return new ExportServiceRequest() {
+
             @Override
             public List<Export> exports() {
                 return results;
@@ -137,12 +152,22 @@ final class ExportStates implements ExportService {
             public void send() {
                 send.run();
             }
+
+            @Override
+            public void close() {
+                lock.unlock();
+            }
         };
     }
 
-    private synchronized void release(State state) {
-        if (!exports.remove(state.table(), state)) {
-            throw new IllegalStateException("Unable to remove state");
+    private void release(State state) {
+        lock.lock();
+        try {
+            if (!exports.remove(state.table(), state)) {
+                throw new IllegalStateException("Unable to remove state");
+            }
+        } finally {
+            lock.unlock();
         }
     }
 

@@ -52,13 +52,15 @@ class TableServiceImpl {
 
     static TableHandle ofUnchecked(ExportService exportService, TableSpec table, Lifecycle lifecycle) {
         final TableHandle handle = new TableHandle(table, lifecycle);
-        final ExportServiceRequest request = exportService.exportRequest(ExportsRequest.of(handle.exportRequest()));
-        List<Export> exports = request.exports();
-        if (exports.size() != 1) {
-            throw new IllegalStateException();
+        try (final ExportServiceRequest request =
+                exportService.exportRequest(ExportsRequest.of(handle.exportRequest()))) {
+            List<Export> exports = request.exports();
+            if (exports.size() != 1) {
+                throw new IllegalStateException();
+            }
+            handle.init(exports.get(0));
+            request.send();
         }
-        handle.init(exports.get(0));
-        request.send();
         handle.awaitUnchecked();
         handle.throwOnErrorUnchecked();
         return handle;
@@ -73,16 +75,17 @@ class TableServiceImpl {
             handles.add(handle);
             exportBuilder.addRequests(handle.exportRequest());
         }
-        final ExportServiceRequest request = exportService.exportRequest(exportBuilder.build());
-        final List<Export> exports = request.exports();
-        if (exports.size() != handles.size()) {
-            throw new IllegalStateException();
+        try (final ExportServiceRequest request = exportService.exportRequest(exportBuilder.build())) {
+            final List<Export> exports = request.exports();
+            if (exports.size() != handles.size()) {
+                throw new IllegalStateException();
+            }
+            final int L = exports.size();
+            for (int i = 0; i < L; ++i) {
+                handles.get(i).init(exports.get(i));
+            }
+            request.send();
         }
-        final int L = exports.size();
-        for (int i = 0; i < L; ++i) {
-            handles.get(i).init(exports.get(i));
-        }
-        request.send();
         return handles;
     }
 
