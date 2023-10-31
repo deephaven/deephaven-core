@@ -128,6 +128,18 @@ public class BusinessCalendar extends Calendar {
 
     // region Constructors
 
+    /**
+     * Creates a new business calendar.
+     *
+     * @param name                     calendar name.
+     * @param description              calendar description.
+     * @param timeZone                 calendar time zone.
+     * @param firstValidDate           first valid date for the business calendar.
+     * @param lastValidDate            last valid date for the business calendar.
+     * @param standardBusinessSchedule business schedule for a standard business day
+     * @param weekendDays              weekend days
+     * @param holidays                 holidays
+     */
     public BusinessCalendar(final String name, final String description, final ZoneId timeZone, final LocalDate firstValidDate, final LocalDate lastValidDate, final BusinessSchedule<LocalTime> standardBusinessSchedule, final Set<DayOfWeek> weekendDays, final Map<LocalDate, BusinessSchedule<Instant>> holidays) {
         super(name, description, timeZone);
         this.firstValidDate = firstValidDate;
@@ -165,6 +177,15 @@ public class BusinessCalendar extends Calendar {
     // endregion
 
     // region Business Schedule
+
+    /**
+     * Returns the days that make up a weekend.
+     *
+     * @return days that make up a weekend.
+     */
+    public Set<DayOfWeek> weekendDays() {
+        return this.weekendDays;
+    }
 
     /**
      * Business schedule for a standard business day.

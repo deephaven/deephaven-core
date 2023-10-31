@@ -20,6 +20,10 @@ import java.util.Objects;
 /**
  * Schedule for a single business day.
  *
+ * A business day / schedule may contain multiple business periods.  For example, some financial exchanges
+ * have a morning and an afternoon trading session.  This would be represented by a business schedule with two
+ * business periods.
+ *
  * @param <T> time type
  */
 public class BusinessSchedule<T extends Comparable<T> & Temporal> {

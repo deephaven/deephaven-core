@@ -49,6 +49,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(holidays, bCalendar.holidays());
         assertEquals(firstValidDate, bCalendar.firstValidDate());
         assertEquals(lastValidDate, bCalendar.lastValidDate());
+        assertEquals(weekendDays, bCalendar.weekendDays());
     }
 
     public void testBusinessSchedule() {
