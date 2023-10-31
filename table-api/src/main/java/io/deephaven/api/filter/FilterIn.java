@@ -61,6 +61,20 @@ public abstract class FilterIn extends FilterBase {
         return Filter.or(values().stream().map(this::expEq).collect(Collectors.toList()));
     }
 
+    /**
+     * Creates the logical equivalent of {@code this} as a single {@link FilterComparison#eq(Expression, Expression)}
+     * between {@link #expression()} and the only value from {@link #values()}.
+     *
+     * @return the equals-filter
+     * @throws IllegalArgumentException if {@code values().size() != 1}
+     */
+    public final FilterComparison asEquals() {
+        if (values().size() != 1) {
+            throw new IllegalArgumentException("Must only call this when values().size() == 1");
+        }
+        return expEq(values().get(0));
+    }
+
     @Check
     final void checkNotEmpty() {
         if (values().isEmpty()) {
