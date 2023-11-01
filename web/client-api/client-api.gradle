@@ -40,6 +40,7 @@ def gwtOutput = tasks.register('gwtOutput', Sync) {
 
 def dtsOutput = layout.buildDirectory.dir('ts-types');
 def tsDefs = tasks.register('typescriptDefinitions', Javadoc) {
+    dependsOn 'compileJava'
     source = sourceSets.main.allJava
     options.classpath = sourceSets.main.compileClasspath.files.asType(List)
     destinationDir = dtsOutput.get().asFile
