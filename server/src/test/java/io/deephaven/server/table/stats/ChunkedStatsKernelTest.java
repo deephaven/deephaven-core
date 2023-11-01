@@ -70,8 +70,8 @@ public class ChunkedStatsKernelTest {
                         new ByteGenerator(QueryConstants.MIN_BYTE, QueryConstants.MAX_BYTE, 0.01),
                         new IntGenerator(QueryConstants.MIN_INT / 2, QueryConstants.MAX_INT / 2, 0.01),
                         new LongGenerator(QueryConstants.MIN_LONG / 2, QueryConstants.MAX_LONG / 2, 0.01),
-                        new FloatGenerator(QueryConstants.NULL_FLOAT + 1, Float.MAX_VALUE, 0.01),
-                        new DoubleGenerator(QueryConstants.NULL_DOUBLE + 1, Double.MAX_VALUE, 0.01),
+                        new FloatGenerator(QueryConstants.MIN_FINITE_FLOAT, Float.MAX_VALUE, 0.01),
+                        new DoubleGenerator(QueryConstants.MIN_FINITE_DOUBLE, Double.MAX_VALUE, 0.01),
                         new BigIntegerGenerator(0.01),
                         new BigDecimalGenerator(0.01)));
 
