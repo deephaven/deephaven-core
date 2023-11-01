@@ -114,7 +114,7 @@ final class TableServiceAsyncImpl {
                 return;
             }
             handle.init(export);
-            handle.mitigateDhc4754(Duration.ofSeconds(1));
+            handle.mitigateDhc4754(Duration.ofMillis(100));
             if (!future.complete(handle)) {
                 // If we are unable to complete the future, it means the user cancelled it. It's only at this point in
                 // time we are able to let the server know that we don't need it anymore. See comments in #init.

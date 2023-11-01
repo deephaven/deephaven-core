@@ -47,7 +47,7 @@ final class TableServiceImpl {
         for (TableHandle handle : handles) {
             handle.await();
             handle.throwOnError();
-            handle.mitigateDhc4754(Duration.ofSeconds(1));
+            handle.mitigateDhc4754(Duration.ofMillis(100));
         }
         return handles;
     }
@@ -65,7 +65,7 @@ final class TableServiceImpl {
         }
         handle.awaitUnchecked();
         handle.throwOnErrorUnchecked();
-        handle.mitigateDhc4754(Duration.ofSeconds(1));
+        handle.mitigateDhc4754(Duration.ofMillis(100));
         return handle;
     }
 
