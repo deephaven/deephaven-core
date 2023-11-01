@@ -120,7 +120,7 @@ public class ChunkedStatsKernelTest {
         final double actualDouble = actual.doubleValue();
 
         final double epsilon = (Math.abs(expectedDouble - actualDouble)) / Math.min(expectedDouble, actualDouble);
-        assertEquals(actualDouble, expectedDouble, .000001);
-        return epsilon < .000001;
+        double expectedTolerance = 1.0E-14;
+        return epsilon < expectedTolerance;
     }
 }

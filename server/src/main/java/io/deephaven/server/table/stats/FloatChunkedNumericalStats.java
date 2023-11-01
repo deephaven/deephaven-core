@@ -98,6 +98,6 @@ public class FloatChunkedNumericalStats implements ChunkedNumericalStatsKernel {
                 TableTools.floatCol("MAX_ABS", absMax),
                 TableTools.doubleCol("AVG", avg),
                 TableTools.doubleCol("AVG_ABS", avg(count, absSum)),
-                TableTools.doubleCol("STD_DEV", stdDev(count, avg, sumOfSquares)));
+                TableTools.doubleCol("STD_DEV", stdDev(count, sum, sumOfSquares)));
     }
 }

@@ -21,7 +21,7 @@ public interface ChunkedNumericalStatsKernel extends ChunkedStatsKernel {
             return new LongChunkedNumericalStats();
         } else if (type == Float.class || type == float.class) {
             return new FloatChunkedNumericalStats();
-        } else  if (type == Double.class || type == double.class) {
+        } else if (type == Double.class || type == double.class) {
             return new DoubleChunkedNumericalStats();
         } else if (type == BigInteger.class) {
             return new BigIntegerChunkedNumericalStats();
@@ -40,10 +40,10 @@ public interface ChunkedNumericalStatsKernel extends ChunkedStatsKernel {
         return sumValue / count;
     }
 
-    default double stdDev(long count, double avg, double sumOfSquares) {
+    default double stdDev(long count, double sum, double sumOfSquares) {
         if (count <= 1) {
             return QueryConstants.NULL_DOUBLE;
         }
-        return Math.sqrt((sumOfSquares - count * avg * avg) / (count - 1));
+        return Math.sqrt((sumOfSquares - sum * sum / count) / (count - 1));
     }
 }

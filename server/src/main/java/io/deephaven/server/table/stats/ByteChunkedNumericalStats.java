@@ -155,6 +155,7 @@ public class ByteChunkedNumericalStats implements ChunkedNumericalStatsKernel {
                 TableTools.byteCol("MAX_ABS", absMax),
                 TableTools.doubleCol("AVG", avg),
                 TableTools.doubleCol("AVG_ABS", avg(count, absSum)),
-                TableTools.doubleCol("STD_DEV", stdDev(count, avg, useFloatingSumOfSquares ? floatingSumOfSquares : sumOfSquares)));
+                TableTools.doubleCol("STD_DEV", stdDev(count, useFloatingSum ? floatingSum : sum,
+                        useFloatingSumOfSquares ? floatingSumOfSquares : sumOfSquares)));
     }
 }
