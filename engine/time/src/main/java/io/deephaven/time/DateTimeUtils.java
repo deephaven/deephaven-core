@@ -1037,6 +1037,19 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns number of days from the Epoch for a {@link LocalDate} value as an int.
+     *
+     * @param date date to compute the Epoch offset for
+     * @return days since Epoch, or a {@link QueryConstants#NULL_INT NULL_INT} value if the instant is {@code null}
+     */
+    public static int epochDays(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+        return Math.toIntExact(date.toEpochDay());
+    }
+
+    /**
      * Converts nanoseconds from the Epoch to an {@link Instant}.
      *
      * @param nanos nanoseconds since Epoch

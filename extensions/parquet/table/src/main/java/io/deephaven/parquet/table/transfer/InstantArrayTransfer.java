@@ -31,7 +31,7 @@ final class InstantArrayTransfer extends PrimitiveArrayAndVectorTransfer<Instant
 
     @Override
     void copyToBuffer(final @NotNull EncodedData<Instant[]> data) {
-        for (Instant t : data.encodedValues) {
+        for (final Instant t : data.encodedValues) {
             buffer.put(DateTimeUtils.epochNanos(t));
         }
     }

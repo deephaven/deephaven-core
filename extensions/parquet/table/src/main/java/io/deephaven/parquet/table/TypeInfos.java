@@ -24,6 +24,7 @@ import java.io.Externalizable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -46,7 +47,8 @@ public class TypeInfos {
             ByteType.INSTANCE,
             StringType.INSTANCE,
             InstantType.INSTANCE,
-            BigIntegerType.INSTANCE
+            BigIntegerType.INSTANCE,
+            LocalDateType.INSTANCE
     };
 
     private static final Map<Class<?>, TypeInfo> BY_CLASS;
@@ -377,6 +379,26 @@ public class TypeInfos {
             }
             return type(PrimitiveTypeName.INT64, required, repeating)
                     .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
+        }
+    }
+
+    private enum LocalDateType implements TypeInfo {
+        INSTANCE;
+
+        private static final Set<Class<?>> clazzes = Collections.singleton(LocalDate.class);
+
+        @Override
+        public Set<Class<?>> getTypes() {
+            return clazzes;
+        }
+
+        @Override
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
+            if (!isValidFor(dataType)) {
+                throw new IllegalArgumentException("Invalid data type " + dataType);
+            }
+            return type(PrimitiveTypeName.INT32, required, repeating)
+                    .as(LogicalTypeAnnotation.dateType());
         }
     }
 

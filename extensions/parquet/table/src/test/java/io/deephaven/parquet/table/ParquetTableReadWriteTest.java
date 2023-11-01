@@ -8,6 +8,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.primitive.function.ByteConsumer;
 import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.primitive.function.FloatConsumer;
@@ -60,6 +61,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -2650,4 +2652,36 @@ public final class ParquetTableReadWriteTest {
         }
     }
     // endregion Column Statistics Assertions
+
+    @Test
+    public void generateDateTimeCol() {
+        final int NUM_ROWS = 5;
+
+        final int ARRAY_SIZE = 3;
+        final LocalDate[] dateArr = new LocalDate[ARRAY_SIZE];
+        // final LocalTime[] timeArr = new LocalTime[ARRAY_SIZE];
+        for (int ii = 0; ii < ARRAY_SIZE; ++ii) {
+            dateArr[ii] = LocalDate.now();
+            // timeArr[ii] = LocalTime.now();
+        }
+        QueryScope.addParam("dateArr", dateArr);
+        // QueryScope.addParam("timeArr", timeArr);
+        final Table table = TableTools.emptyTable(NUM_ROWS).view(
+                "Date = java.time.LocalDate.now()",
+                // "nullDate = (java.time.LocalDate)null"
+                "DateArray = dateArr");
+        final File dest = new File("/Users/shivammalhotra/Documents/dates.parquet"); // TOD change it back to local dir
+        ParquetTools.writeTable(table, dest, ParquetTools.UNCOMPRESSED);
+        final Table fromDisk = ParquetTools.readTable(dest);
+        TstUtils.assertTableEquals(table, fromDisk);
+
+        final Table vectorTable = TableTools.emptyTable(ARRAY_SIZE).view(
+                "Date = java.time.LocalDate.now()").groupBy();
+        final File vectorDest = new File("/Users/shivammalhotra/Documents/vectorDates.parquet"); // TOD change it back
+                                                                                                 // to local dir
+        ParquetTools.writeTable(vectorTable, vectorDest, ParquetTools.UNCOMPRESSED);
+
+        final Table fromDiskVector = ParquetTools.readTable(vectorDest);
+        TstUtils.assertTableEquals(vectorTable, fromDiskVector);
+    }
 }

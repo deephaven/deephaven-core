@@ -337,7 +337,7 @@ public class ParquetSchemaReader {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
-                return Optional.of(int.class);
+                return Optional.of(java.time.LocalDate.class);
             }
 
             @Override
