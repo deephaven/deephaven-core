@@ -5,7 +5,7 @@ package io.deephaven.plot.util;
 
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.FigureImpl;
-import io.deephaven.libs.GroovyStaticImportGenerator.JavaFunction;
+import io.deephaven.gen.JavaFunction;
 import java.lang.reflect.WildcardType;
 
 import java.io.IOException;

@@ -7,8 +7,7 @@ import io.deephaven.plot.*;
 import io.deephaven.plot.datasets.DataSeries;
 import io.deephaven.plot.datasets.multiseries.MultiSeries;
 import io.deephaven.plot.errors.PlotExceptionCause;
-import io.deephaven.libs.GroovyStaticImportGenerator;
-import io.deephaven.libs.GroovyStaticImportGenerator.JavaFunction;
+import io.deephaven.gen.JavaFunction;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -23,6 +22,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.deephaven.gen.GenUtils.typesToImport;
 import static io.deephaven.plot.util.PlotGeneratorUtils.indent;
 
 /**
@@ -155,41 +155,6 @@ public class GenerateFigureImmutable {
         }
 
         return imports;
-    }
-
-    private static Set<String> typesToImport(Type t) {
-        Set<String> result = new LinkedHashSet<>();
-
-        if (t instanceof Class) {
-            final Class<?> c = (Class) t;
-            final boolean isArray = c.isArray();
-            final boolean isPrimitive = c.isPrimitive();
-
-            if (isPrimitive) {
-                return result;
-            } else if (isArray) {
-                return typesToImport(c.getComponentType());
-            } else {
-                result.add(t.getTypeName());
-            }
-        } else if (t instanceof ParameterizedType) {
-            final ParameterizedType pt = (ParameterizedType) t;
-            result.add(pt.getRawType().getTypeName());
-
-            for (Type a : pt.getActualTypeArguments()) {
-                result.addAll(typesToImport(a));
-            }
-        } else if (t instanceof TypeVariable) {
-            // type variables are generic so they don't need importing
-            return result;
-        } else if (t instanceof GenericArrayType) {
-            GenericArrayType at = (GenericArrayType) t;
-            return typesToImport(at.getGenericComponentType());
-        } else {
-            throw new UnsupportedOperationException("Unsupported Type type: " + t.getClass());
-        }
-
-        return result;
     }
 
     private String generateImplements() {
@@ -882,11 +847,11 @@ public class GenerateFigureImmutable {
         return s;
     }
 
-    private Map<String, TreeSet<GroovyStaticImportGenerator.JavaFunction>> commonSignatureGroups(
+    private Map<String, TreeSet<JavaFunction>> commonSignatureGroups(
             final String[] interfaces) throws ClassNotFoundException {
-        final Map<String, TreeSet<GroovyStaticImportGenerator.JavaFunction>> methods = new TreeMap<>();
+        final Map<String, TreeSet<JavaFunction>> methods = new TreeMap<>();
 
-        final Set<GroovyStaticImportGenerator.JavaFunction> functionSet = new HashSet<>();
+        final Set<JavaFunction> functionSet = new HashSet<>();
         for (String iface : interfaces) {
             final Class<?> c = Class.forName(iface, false, Thread.currentThread().getContextClassLoader());
             log.info("Processing class: " + c);
@@ -898,11 +863,11 @@ public class GenerateFigureImmutable {
                 boolean isObject = m.getDeclaringClass().equals(Object.class);
 
                 if (!isStatic && isPublic && !isObject) {
-                    final GroovyStaticImportGenerator.JavaFunction f = new GroovyStaticImportGenerator.JavaFunction(m);
+                    final JavaFunction f = new JavaFunction(m);
                     if (functionSet.add(f)) { // avoids repeating methods that have the same parameter types but
                                               // different parameter names
                         final String key = createFunctionSignature(f);
-                        final TreeSet<GroovyStaticImportGenerator.JavaFunction> mm =
+                        final TreeSet<JavaFunction> mm =
                                 methods.computeIfAbsent(key, k -> new TreeSet<>());
                         mm.add(f);
                     }

@@ -3,7 +3,7 @@
  */
 package io.deephaven.libs;
 
-import io.deephaven.util.type.TypeUtils;
+import io.deephaven.gen.JavaFunction;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -17,160 +17,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static io.deephaven.gen.GenUtils.typesToImport;
+
 
 /**
  * Groovy has a bug where performing a static import on multiple libraries containing functions with the same name
  * causes some of the functions to not be present in the namespace. This class combines static imports from multiple
  * sources into a single class that can be imported.
  */
+@SuppressWarnings("StringConcatenationInLoop")
 public class GroovyStaticImportGenerator {
-    private static Logger log = Logger.getLogger(GroovyStaticImportGenerator.class.toString());
-
-    public static class JavaFunction implements Comparable<JavaFunction> {
-        private final String className;
-        private final String classNameShort;
-        private final String methodName;
-        private final TypeVariable<Method>[] typeParameters;
-        private final Type returnType;
-        private final Type[] parameterTypes;
-        private final String[] parameterNames;
-        private final boolean isVarArgs;
-
-        public JavaFunction(final String className, final String classNameShort, final String methodName,
-                final TypeVariable<Method>[] typeParameters, final Type returnType, final Type[] parameterTypes,
-                final String[] parameterNames, final boolean isVarArgs) {
-            this.className = className;
-            this.classNameShort = classNameShort;
-            this.methodName = methodName;
-            this.typeParameters = typeParameters;
-            this.returnType = returnType;
-            this.parameterTypes = parameterTypes;
-            this.parameterNames = parameterNames;
-            this.isVarArgs = isVarArgs;
-        }
-
-        public JavaFunction(final Method m) {
-            this(
-                    m.getDeclaringClass().getCanonicalName(),
-                    m.getDeclaringClass().getSimpleName(),
-                    m.getName(),
-                    m.getTypeParameters(),
-                    m.getGenericReturnType(),
-                    m.getGenericParameterTypes(),
-                    Arrays.stream(m.getParameters()).map(Parameter::getName).toArray(String[]::new),
-                    m.isVarArgs());
-
-            for (Parameter parameter : m.getParameters()) {
-                if (!parameter.isNamePresent()) {
-                    throw new IllegalArgumentException(
-                            "Parameter names are not present in the code!  Was the code compiled with \"-parameters\": "
-                                    + toString());
-                }
-            }
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            JavaFunction that = (JavaFunction) o;
-
-            if (methodName != null ? !methodName.equals(that.methodName) : that.methodName != null)
-                return false;
-            // Probably incorrect - comparing Object[] arrays with Arrays.equals
-            return Arrays.equals(parameterTypes, that.parameterTypes);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = methodName != null ? methodName.hashCode() : 0;
-            result = 31 * result + Arrays.hashCode(parameterTypes);
-            return result;
-        }
-
-        @Override
-        public String toString() {
-            return "JavaFunction{" +
-                    "className='" + className + '\'' +
-                    ", methodName='" + methodName + '\'' +
-                    ", typeParameters=" + Arrays.toString(typeParameters) +
-                    ", returnType=" + returnType +
-                    ", parameterTypes=" + Arrays.toString(parameterTypes) +
-                    ", parameterNames=" + Arrays.toString(parameterNames) +
-                    '}';
-        }
-
-        @Override
-        public int compareTo(@NotNull JavaFunction o) {
-            int cm = methodName.compareTo(o.methodName);
-            if (cm != 0) {
-                return cm;
-            }
-            if (parameterTypes.length != o.parameterTypes.length) {
-                return parameterTypes.length - o.parameterTypes.length;
-            }
-
-            for (int i = 0; i < parameterTypes.length; i++) {
-                Type t1 = parameterTypes[i];
-                Type t2 = o.parameterTypes[i];
-                int ct = t1.toString().compareTo(t2.toString());
-                if (ct != 0) {
-                    return ct;
-                }
-            }
-
-            return 0;
-        }
-
-        public String getClassName() {
-            return className;
-        }
-
-        public String getClassNameShort() {
-            return classNameShort;
-        }
-
-        public String getMethodName() {
-            return methodName;
-        }
-
-        public TypeVariable<Method>[] getTypeParameters() {
-            return typeParameters;
-        }
-
-        public Type getReturnType() {
-            return returnType;
-        }
-
-        public Class getReturnClass() {
-            if (returnType == null) {
-                return null;
-            }
-
-            try {
-                return TypeUtils.getErasedType(returnType);
-            } catch (UnsupportedOperationException e) {
-                log.warning("Unable to determine Class from returnType=" + returnType.getTypeName());
-                return null;
-            }
-        }
-
-        public Type[] getParameterTypes() {
-            return parameterTypes;
-        }
-
-        public String[] getParameterNames() {
-            return parameterNames;
-        }
-
-        public boolean isVarArgs() {
-            return isVarArgs;
-        }
-    }
+    private static final Logger log = Logger.getLogger(GroovyStaticImportGenerator.class.toString());
 
 
     private final Map<JavaFunction, JavaFunction> staticFunctions = new TreeMap<>();
@@ -217,51 +74,16 @@ public class GroovyStaticImportGenerator {
         Set<String> imports = new TreeSet<>();
 
         for (JavaFunction f : staticFunctions.keySet()) {
-            imports.add(f.className);
+            imports.add(f.getClassName());
 
-            imports.addAll(typesToImport(f.returnType));
+            imports.addAll(typesToImport(f.getReturnType()));
 
-            for (Type t : f.parameterTypes) {
+            for (Type t : f.getParameterTypes()) {
                 imports.addAll(typesToImport(t));
             }
         }
 
         return imports;
-    }
-
-    private static Set<String> typesToImport(Type t) {
-        Set<String> result = new LinkedHashSet<>();
-
-        if (t instanceof Class) {
-            final Class<?> c = (Class) t;
-            final boolean isArray = c.isArray();
-            final boolean isPrimitive = c.isPrimitive();
-
-            if (isPrimitive) {
-                return result;
-            } else if (isArray) {
-                return typesToImport(c.getComponentType());
-            } else {
-                result.add(t.getTypeName());
-            }
-        } else if (t instanceof ParameterizedType) {
-            final ParameterizedType pt = (ParameterizedType) t;
-            result.add(pt.getRawType().getTypeName());
-
-            for (Type a : pt.getActualTypeArguments()) {
-                result.addAll(typesToImport(a));
-            }
-        } else if (t instanceof TypeVariable) {
-            // type variables are generic so they don't need importing
-            return result;
-        } else if (t instanceof GenericArrayType) {
-            GenericArrayType at = (GenericArrayType) t;
-            return typesToImport(at.getGenericComponentType());
-        } else {
-            throw new UnsupportedOperationException("Unsupported Type type: " + t.getClass());
-        }
-
-        return result;
     }
 
     private String generateCode() {
@@ -302,24 +124,24 @@ public class GroovyStaticImportGenerator {
                 continue;
             }
 
-            String returnType = f.returnType.getTypeName();
+            String returnType = f.getReturnType().getTypeName();
             String s =
                     "    /** @see " + f.getClassName() + "#" + f.getMethodName() + "(" +
-                            Arrays.stream(f.parameterTypes).map(t -> getParamTypeString(t))
+                            Arrays.stream(f.getParameterTypes()).map(this::getParamTypeString)
                                     .collect(Collectors.joining(","))
                             +
                             ") */\n" +
                             "    public static ";
 
-            if (f.typeParameters.length > 0) {
+            if (f.getTypeParameters().length > 0) {
                 s += "<";
 
-                for (int i = 0; i < f.typeParameters.length; i++) {
+                for (int i = 0; i < f.getTypeParameters().length; i++) {
                     if (i != 0) {
                         s += ",";
                     }
 
-                    TypeVariable<Method> t = f.typeParameters[i];
+                    TypeVariable<Method> t = f.getTypeParameters()[i];
                     log.info("BOUNDS: " + Arrays.toString(t.getBounds()));
                     s += t;
 
@@ -340,23 +162,23 @@ public class GroovyStaticImportGenerator {
                 s += ">";
             }
 
-            s += " " + returnType + " " + f.methodName + "(";
+            s += " " + returnType + " " + f.getMethodName() + "(";
             String callArgs = "";
 
-            for (int i = 0; i < f.parameterTypes.length; i++) {
+            for (int i = 0; i < f.getParameterTypes().length; i++) {
                 if (i != 0) {
                     s += ",";
                     callArgs += ",";
                 }
 
-                Type t = f.parameterTypes[i];
+                Type t = f.getParameterTypes()[i];
 
-                s += " " + t.getTypeName() + " " + f.parameterNames[i];
-                callArgs += " " + f.parameterNames[i];
+                s += " " + t.getTypeName() + " " + f.getParameterNames()[i];
+                callArgs += " " + f.getParameterNames()[i];
             }
 
             s += " ) {";
-            s += "return " + f.classNameShort + "." + f.methodName + "(" + callArgs + " );";
+            s += "return " + f.getClassNameShort() + "." + f.getMethodName() + "(" + callArgs + " );";
             s += "}";
 
             code += s;
@@ -415,11 +237,10 @@ public class GroovyStaticImportGenerator {
                 "io.deephaven.function.Sort",
         };
 
-        @SuppressWarnings("unchecked")
         GroovyStaticImportGenerator gen = new GroovyStaticImportGenerator(imports,
                 // skipping common erasure "sum"
-                Collections.singletonList((f) -> f.methodName.equals("sum") && f.parameterTypes.length == 1
-                        && f.parameterTypes[0].getTypeName()
+                Collections.singletonList((f) -> f.getMethodName().equals("sum") && f.getParameterTypes().length == 1
+                        && f.getParameterTypes()[0].getTypeName()
                                 .contains("ObjectVector<")));
 
         final String code = gen.generateCode();

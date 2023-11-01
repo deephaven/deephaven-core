@@ -4,7 +4,7 @@
 package io.deephaven.plot.util;
 
 import io.deephaven.base.Pair;
-import io.deephaven.libs.GroovyStaticImportGenerator.JavaFunction;
+import io.deephaven.gen.JavaFunction;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
