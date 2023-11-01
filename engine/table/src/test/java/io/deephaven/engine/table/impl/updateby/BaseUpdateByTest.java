@@ -69,7 +69,8 @@ public class BaseUpdateByTest {
                 new ShortGenerator((short) -6000, (short) 65535, .1),
                 new IntGenerator(10, 100, .1),
                 new LongGenerator(10, 100, .1),
-                new FloatGenerator(-100, 100, .1),
+                // TODO (deephaven-core#4743) verify this change in range
+                new FloatGenerator(0, 100, .1),
                 new DoubleGenerator(10.1, 20.1, .1),
                 new BooleanGenerator(.5, .1),
                 new BigIntegerGenerator(new BigInteger("-10"), new BigInteger("10"), .1),

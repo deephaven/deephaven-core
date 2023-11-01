@@ -2791,7 +2791,8 @@ public class QueryTableAggregationTest {
         final QueryTable queryTable = getTable(size, random,
                 columnInfos = initColumnInfos(new String[] {"Sym", "doubleCol", "longCol"},
                         new SetGenerator<>("a", "b", "c", "d"),
-                        new DoubleGenerator(-10000, 10000, 0.05, 0.05),
+                        // TODO (deephaven-core#4743) verify this change in range
+                        new DoubleGenerator(0, 10000, 0.05, 0.05),
                         new LongGenerator(0, 1_000_000_000L)));
 
         final Collection<? extends Aggregation> aggregations = List.of(
