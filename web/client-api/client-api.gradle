@@ -14,9 +14,9 @@ dependencies {
     implementation project(':web-shared-beans')
     implementation project(':web-client-backplane')
 
-    implementation 'com.vertispan.tsdefs:jsinterop-ts-defs-annotations:1.0.0-RC2'
-    annotationProcessor 'com.vertispan.tsdefs:jsinterop-ts-defs-processor:1.0.0-RC2'
-    typescriptDoclet 'com.vertispan.tsdefs:jsinterop-ts-defs-doclet:1.0.0-RC2'
+    implementation 'com.vertispan.tsdefs:jsinterop-ts-defs-annotations:1.0.0-RC3'
+    annotationProcessor 'com.vertispan.tsdefs:jsinterop-ts-defs-processor:1.0.0-RC3'
+    typescriptDoclet 'com.vertispan.tsdefs:jsinterop-ts-defs-doclet:1.0.0-RC3'
 
     implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
 
@@ -50,10 +50,9 @@ def tsDefs = tasks.register('typescriptDefinitions', Javadoc) {
 
 // Temporary wiring to build locally and get this working
 repositories {
-//    maven {
-//        url 'https://oss.sonatype.org/content/repositories/snapshots/'
-//    }
-    mavenLocal()
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/comvertispan-1073'
+    }
 }
 
 artifacts {
