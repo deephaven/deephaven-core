@@ -5,7 +5,6 @@ package io.deephaven.libs;
 
 import io.deephaven.gen.GenUtils;
 import io.deephaven.gen.JavaFunction;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -29,6 +28,7 @@ import static io.deephaven.gen.GenUtils.typesToImport;
 @SuppressWarnings("StringConcatenationInLoop")
 public class GroovyStaticImportGenerator {
     private static final Logger log = Logger.getLogger(GroovyStaticImportGenerator.class.toString());
+    private static final String GRADLE_TASK = ":Generators:groovyStaticImportGenerator";
 
 
     private final Map<JavaFunction, JavaFunction> staticFunctions = new TreeMap<>();
@@ -89,15 +89,7 @@ public class GroovyStaticImportGenerator {
 
     private String generateCode() {
 
-        String code = "/**\n" +
-                " * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending\n" +
-                " */\n" +
-                "/****************************************************************************************************************************\n"
-                +
-                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GroovyStaticImportGenerator or \"./gradlew :Generators:groovyStaticImportGenerator\" to regenerate\n"
-                +
-                " ****************************************************************************************************************************/\n\n";
-
+        String code = GenUtils.javaHeader(this.getClass(), GRADLE_TASK);
         code += "package io.deephaven.libs;\n\n";
 
         Set<String> imports = generateImports();
@@ -125,64 +117,15 @@ public class GroovyStaticImportGenerator {
                 continue;
             }
 
-            String returnType = f.getReturnType().getTypeName();
-            String s =
-                    "    /** @see " + f.getClassName() + "#" + f.getMethodName() + "(" +
-                            Arrays.stream(f.getParameterTypes()).map(GenUtils::getParamTypeString)
-                                    .collect(Collectors.joining(","))
-                            +
-                            ") */\n" +
-                            "    public static ";
-
-            if (f.getTypeParameters().length > 0) {
-                s += "<";
-
-                for (int i = 0; i < f.getTypeParameters().length; i++) {
-                    if (i != 0) {
-                        s += ",";
-                    }
-
-                    TypeVariable<Method> t = f.getTypeParameters()[i];
-                    log.info("BOUNDS: " + Arrays.toString(t.getBounds()));
-                    s += t;
-
-                    Type[] bounds = t.getBounds();
-
-                    if (bounds.length != 1) {
-                        throw new RuntimeException("Unsupported bounds: " + Arrays.toString(bounds));
-                    }
-
-                    Type bound = bounds[0];
-
-                    if (!bound.equals(Object.class)) {
-                        s += " extends " + bound.getTypeName();
-                    }
-
-                }
-
-                s += ">";
-            }
-
-            s += " " + returnType + " " + f.getMethodName() + "(";
-            String callArgs = "";
-
-            for (int i = 0; i < f.getParameterTypes().length; i++) {
-                if (i != 0) {
-                    s += ",";
-                    callArgs += ",";
-                }
-
-                Type t = f.getParameterTypes()[i];
-
-                s += " " + t.getTypeName() + " " + f.getParameterNames()[i];
-                callArgs += " " + f.getParameterNames()[i];
-            }
-
-            s += " ) {";
-            s += "return " + f.getClassNameShort() + "." + f.getMethodName() + "(" + callArgs + " );";
-            s += "}";
-
-            code += s;
+            final String javadoc = "    /** @see " + f.getClassName() + "#" + f.getMethodName() + "(" +
+                    Arrays.stream(f.getParameterTypes()).map(GenUtils::getParamTypeString)
+                            .collect(Collectors.joining(","))
+                    +
+                    ") */";
+            final String sigPrefix = "public static";
+            final String callArgs = GenUtils.argString(f, false);
+            final String funcBody = " {return " + f.getClassNameShort() + "." + f.getMethodName() + "(" + callArgs + " );}\n";
+            code += GenUtils.createFunction(f, sigPrefix, javadoc, funcBody);
             code += "\n";
         }
 
@@ -234,10 +177,7 @@ public class GroovyStaticImportGenerator {
 
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
-            if (!code.equals(oldCode)) {
-                throw new RuntimeException(
-                        "Change in generated code.  Run GroovyStaticImportGenerator or \"./gradlew :Generators:groovyStaticImportGenerator\" to regenerate\n");
-            }
+            GenUtils.assertGeneratedCodeSame(GroovyStaticImportGenerator.class, GRADLE_TASK, oldCode, code);
         } else {
 
             PrintWriter out = new PrintWriter(file);

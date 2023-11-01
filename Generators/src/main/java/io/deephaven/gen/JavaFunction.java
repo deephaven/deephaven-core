@@ -167,15 +167,16 @@ public class JavaFunction implements Comparable<JavaFunction> {
      * @param className class name or null if the current name should be used.
      * @param classNameShort short class name or null if the current short name should be used.
      * @param methodName method name or null if the current name should be used.
+     * @param returnType return type or null if the current return type should be used.
      * @return a new JavaFunction with the same signature, but with new class and method names.
      */
-    public JavaFunction relocate(final String className, final String classNameShort, final String methodName) {
+    public JavaFunction transform(final String className, final String classNameShort, final String methodName, Type returnType) {
         return new JavaFunction(
                 className == null ? this.className : className,
                 classNameShort == null ? this.classNameShort : classNameShort,
                 methodName == null ? this.methodName : methodName,
                 getTypeParameters(),
-                getReturnType(),
+                returnType == null ? getReturnType() : returnType,
                 getParameterTypes(),
                 getParameterNames(),
                 isVarArgs());

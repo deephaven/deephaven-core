@@ -5,6 +5,7 @@ package io.deephaven.plot.util;
 
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
+import io.deephaven.gen.GenUtils;
 import io.deephaven.gen.JavaFunction;
 import io.deephaven.plot.util.functions.ClosureFunction;
 import io.deephaven.engine.table.Table;
@@ -23,13 +24,15 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
-import static io.deephaven.plot.util.PlotGeneratorUtils.indent;
+import static io.deephaven.gen.GenUtils.indent;
+
 
 /**
  * Generates methods for the MultiSeries datasets.
  */
 public class GenerateMultiSeries {
     private static final Logger log = Logger.getLogger(GenerateMultiSeries.class.toString());
+    private static final String GRADLE_TASK = ":Generators:generateMultiSeries";
 
     public static void main(String[] args) throws ClassNotFoundException, IOException, NoSuchMethodException {
 
@@ -220,10 +223,7 @@ public class GenerateMultiSeries {
 
             if (assertNoChange) {
                 String oldCode = new String(Files.readAllBytes(Paths.get(outputFile)));
-                if (!newcode.equals(oldCode)) {
-                    throw new RuntimeException("Change in generated code for " + outputFile
-                            + ".  Run GenerateMultiSeries or \"./gradlew :Generators:generateMultiSeries\" to regenerate\n");
-                }
+                GenUtils.assertGeneratedCodeSame(GenerateMultiSeries.class, GRADLE_TASK, oldCode, newcode);
             } else {
                 PrintWriter out = new PrintWriter(outputFile);
                 out.print(newcode);

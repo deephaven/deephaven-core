@@ -4,6 +4,7 @@
 package io.deephaven.plot.util;
 
 import io.deephaven.base.Pair;
+import io.deephaven.gen.GenUtils;
 import io.deephaven.gen.JavaFunction;
 import org.jetbrains.annotations.NotNull;
 
@@ -73,10 +74,7 @@ public class GeneratePyV2FigureAPI {
 
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(figureWrapperOutput)));
-            if (!pyCode.equals(oldCode)) {
-                throw new RuntimeException(
-                        "Change in generated code.  Run GeneratePyV2FigureAPI or \"./gradlew :Generators:generatePythonFigureWrapper\" to regenerate\n");
-            }
+            GenUtils.assertGeneratedCodeSame(GeneratePyV2FigureAPI.class, ":Generators:generatePythonFigureWrapper", oldCode, pyCode);
         } else {
             try (final PrintWriter out = new PrintWriter(pythonFile)) {
                 out.print(pyCode);
