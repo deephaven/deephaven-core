@@ -33,7 +33,11 @@ Docker.registerDockerTask(project, 'typedoc') {
                       npm pack; \\
                       mkdir /out; \\
                       mv deephaven-jsapi-types*.tgz /out/; \\
-                      node_modules/.bin/typedoc dist/index.d.ts --out /out/documentation --skipErrorChecking
+                      node_modules/.bin/typedoc dist/index.d.ts
+                           --out /out/documentation
+                           --skipErrorChecking
+                           --hideGenerator
+                           --disableSources
                       ''')
     }
     parentContainers = [ Docker.registryTask(project, 'node') ] // deephaven/node
