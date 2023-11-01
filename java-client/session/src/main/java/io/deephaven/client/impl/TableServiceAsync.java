@@ -68,16 +68,32 @@ public interface TableServiceAsync {
          *        in-progress tasks are allowed to complete
          */
         static void cancelOrClose(TableHandleFuture future, boolean mayInterruptIfRunning) {
-            if (!future.cancel(mayInterruptIfRunning)) {
-                final TableHandle handle;
-                try {
-                    handle = future.get(0, TimeUnit.SECONDS);
-                } catch (ExecutionException e) {
-                    return;
-                } catch (InterruptedException | TimeoutException e) {
-                    throw new IllegalStateException(e);
+            if (future.cancel(mayInterruptIfRunning)) {
+                // Cancel was successful
+                return;
+            }
+            // Cancel was not successful, the future is already done
+            boolean interrupted = false;
+            try {
+                while (true) {
+                    try (final TableHandle ignored = future.get(0, TimeUnit.SECONDS)) {
+                        // On completed normally, close the handle
+                        return;
+                    } catch (ExecutionException e) {
+                        // On completed exceptionally (or already cancelled), nothing to do
+                        return;
+                    } catch (InterruptedException e) {
+                        // On interrupted, ensure interrupt status propagates
+                        interrupted = true;
+                    } catch (TimeoutException e) {
+                        // On timeout, not expected
+                        throw new IllegalStateException(e);
+                    }
                 }
-                handle.close();
+            } finally {
+                if (interrupted) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
 

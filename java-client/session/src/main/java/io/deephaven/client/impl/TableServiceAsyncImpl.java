@@ -10,11 +10,13 @@ import io.deephaven.client.impl.TableServiceAsync.TableHandleFuture;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.qst.table.TableSpec;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -112,6 +114,7 @@ final class TableServiceAsyncImpl {
                 return;
             }
             handle.init(export);
+            handle.mitigateDhc4754(Duration.ofSeconds(1));
             if (!future.complete(handle)) {
                 // If we are unable to complete the future, it means the user cancelled it. It's only at this point in
                 // time we are able to let the server know that we don't need it anymore. See comments in #init.

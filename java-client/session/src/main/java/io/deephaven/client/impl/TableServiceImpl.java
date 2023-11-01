@@ -6,6 +6,7 @@ package io.deephaven.client.impl;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.qst.table.TableSpec;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,6 +47,7 @@ final class TableServiceImpl {
         for (TableHandle handle : handles) {
             handle.await();
             handle.throwOnError();
+            handle.mitigateDhc4754(Duration.ofSeconds(1));
         }
         return handles;
     }
@@ -63,6 +65,7 @@ final class TableServiceImpl {
         }
         handle.awaitUnchecked();
         handle.throwOnErrorUnchecked();
+        handle.mitigateDhc4754(Duration.ofSeconds(1));
         return handle;
     }
 

@@ -212,6 +212,21 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
         }
     }
 
+    /**
+     * Mitigation to workaround "Batch ETCR and Release race".
+     *
+     * @see <a href="https://github.com/deephaven/deephaven-core/issues/4754">deephaven-core#4754</a>
+     */
+    void mitigateDhc4754(Duration timeout) {
+        // This extra reference ensures that the export stays alive for at least timeout, hopefully giving the server
+        // enough time to properly transition the export into the EXPORTED state.
+        // noinspection resource
+        final TableHandle newRef = newRef();
+        ((SessionImpl) export.session())
+                .executor()
+                .schedule(() -> newRef.close(), timeout.toNanos(), TimeUnit.NANOSECONDS);
+    }
+
     ResponseAdapter responseAdapter() {
         return new ResponseAdapter();
     }

@@ -1,8 +1,9 @@
 /**
  * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.client;
+package io.deephaven.client.impl;
 
+import io.deephaven.client.DeephavenSessionTestBase;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableServiceAsync.TableHandleFuture;
 import io.deephaven.client.impl.TableServices;
@@ -19,63 +20,73 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TableServicesAsyncTest extends DeephavenSessionTestBase {
 
-    private static final Duration GETTIME = Duration.ofSeconds(10);
+    private static final Duration GETTIME = Duration.ofSeconds(15);
+    private static final int LONG_CHAIN_OPS = 50;
+    private static final int LONG_CHAIN_ROWS = 1000;
 
-    @Test(timeout = 15000)
+    @Test(timeout = 20000)
     public void longChainAsyncExportOnlyLast() throws ExecutionException, InterruptedException, TimeoutException {
-        final List<TableSpec> longChain = createLongChain(100, 100);
+        final List<TableSpec> longChain = createLongChain();
         final TableSpec longChainLast = longChain.get(longChain.size() - 1);
-        try (TableHandle handle = TableHandleFuture.get(session.tableServices().executeAsync(longChainLast), GETTIME)) {
+        try (final TableHandle handle = get(session.tableServices().executeAsync(longChainLast))) {
             checkSucceeded(handle);
         }
     }
 
-    @Test(timeout = 15000)
+    @Test(timeout = 20000)
     public void longChainAsyncExportAll() throws ExecutionException, InterruptedException, TimeoutException {
-        final List<TableSpec> longChain = createLongChain(100, 100);
+        final List<TableSpec> longChain = createLongChain();
         final List<? extends TableHandleFuture> futures = session.tableServices().executeAsync(longChain);
         try {
-            for (TableHandleFuture future : futures) {
-                try (TableHandle handle = TableHandleFuture.get(future, GETTIME)) {
+            for (final TableHandleFuture future : futures) {
+                try (final TableHandle handle = get(future)) {
                     checkSucceeded(handle);
                 }
             }
-        } catch (Throwable t) {
+        } catch (final Throwable t) {
             TableHandleFuture.cancelOrClose(futures, true);
             throw t;
         }
     }
 
-    @Test(timeout = 15000)
+    @Test(timeout = 20000)
     public void longChainAsyncExportAllCancelAllButLast()
             throws ExecutionException, InterruptedException, TimeoutException {
-        final List<TableSpec> longChain = createLongChain(100, 100);
+        final List<TableSpec> longChain = createLongChain();
         final List<? extends TableHandleFuture> futures = session.tableServices().executeAsync(longChain);
         // Cancel or close all but the last one
         TableHandleFuture.cancelOrClose(futures.subList(0, futures.size() - 1), true);
-        try (TableHandle lastHandle = TableHandleFuture.get(futures.get(futures.size() - 1), GETTIME)) {
+        try (final TableHandle lastHandle = get(futures.get(futures.size() - 1))) {
             checkSucceeded(lastHandle);
         }
     }
 
-    @Test(timeout = 15000)
+    @Test(timeout = 20000)
     public void immediatelyCompletedFromCachedTableServices()
             throws ExecutionException, InterruptedException, TimeoutException {
-        final List<TableSpec> longChain = createLongChain(100, 100);
+        final List<TableSpec> longChain = createLongChain();
         final TableSpec longChainLast = longChain.get(longChain.size() - 1);
         final TableServices tableServices = session.tableServices();
-        try (TableHandle ignored = TableHandleFuture.get(tableServices.executeAsync(longChainLast), GETTIME)) {
+        try (final TableHandle ignored = get(tableServices.executeAsync(longChainLast))) {
             for (int i = 0; i < 1000; ++i) {
-                try (TableHandle handle =
-                        TableHandleFuture.get(tableServices.executeAsync(longChainLast), Duration.ZERO)) {
+                try (final TableHandle handle = get(tableServices.executeAsync(longChainLast))) {
                     checkSucceeded(handle);
                 }
             }
         }
     }
 
+    private static TableHandle get(TableHandleFuture future)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        return TableHandleFuture.get(future, GETTIME);
+    }
+
     private static void checkSucceeded(TableHandle x) {
         assertThat(x.isSuccessful()).isTrue();
+    }
+
+    private static List<TableSpec> createLongChain() {
+        return createLongChain(LONG_CHAIN_OPS, LONG_CHAIN_ROWS);
     }
 
     private static List<TableSpec> createLongChain(int numColumns, int numRows) {

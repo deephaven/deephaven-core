@@ -333,7 +333,7 @@ public final class SessionImpl extends SessionBase {
         return observer;
     }
 
-    public ScheduledExecutorService executor() {
+    ScheduledExecutorService executor() {
         return config.executor();
     }
 
