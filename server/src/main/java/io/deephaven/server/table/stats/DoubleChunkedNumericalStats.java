@@ -20,7 +20,7 @@ public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel 
 
     private double sum = .0;
     private double absSum = .0;
-    private double sqrdSum = .0;
+    private double sumOfSquares = .0;
 
     private double min = QueryConstants.NULL_DOUBLE;
     private double max = QueryConstants.NULL_DOUBLE;
@@ -44,7 +44,7 @@ public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel 
                  */
                 double chunkedSum = .0;
                 double chunkedAbsSum = .0;
-                double chunkedSqrdSum = .0;
+                double chunkedSumOfSquares = .0;
 
                 final int chunkSize = chunk.size();
                 for (int ii = 0; ii < chunkSize; ii++) {
@@ -81,12 +81,12 @@ public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel 
 
                     chunkedSum += val;
                     chunkedAbsSum += absVal;
-                    chunkedSqrdSum += (double) val * (double) val;
+                    chunkedSumOfSquares += (double) val * (double) val;
                 }
 
                 sum += chunkedSum;
                 absSum += chunkedAbsSum;
-                sqrdSum += chunkedSqrdSum;
+                sumOfSquares += chunkedSumOfSquares;
             }
         }
 
@@ -96,13 +96,13 @@ public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel 
                 TableTools.longCol("SIZE", rowSet.size()),
                 TableTools.doubleCol("SUM", sum),
                 TableTools.doubleCol("SUM_ABS", absSum),
-                TableTools.doubleCol("SUM_SQRD", sqrdSum),
+                TableTools.doubleCol("SUM_SQRD", sumOfSquares),
                 TableTools.doubleCol("MIN", min),
                 TableTools.doubleCol("MAX", max),
                 TableTools.doubleCol("MIN_ABS", absMin),
                 TableTools.doubleCol("MAX_ABS", absMax),
                 TableTools.doubleCol("AVG", avg),
                 TableTools.doubleCol("AVG_ABS", avg(count, absSum)),
-                TableTools.doubleCol("STD_DEV", stdDev(count, avg, sqrdSum)));
+                TableTools.doubleCol("STD_DEV", stdDev(count, avg, sumOfSquares)));
     }
 }

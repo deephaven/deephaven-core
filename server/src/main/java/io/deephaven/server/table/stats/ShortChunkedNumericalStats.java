@@ -21,9 +21,9 @@ public class ShortChunkedNumericalStats implements ChunkedNumericalStatsKernel {
     private boolean useFloatingAbsSum = false;
     private double floatingAbsSum = .0;
 
-    private long sqrdSum = 0;
-    private boolean useFloatingSqrdSum = false;
-    private double floatingSqrdSum = .0;
+    private long sumOfSquares = 0;
+    private boolean useFloatingSumOfSquares = false;
+    private double floatingSumOfSquares = .0;
 
     private short min = QueryConstants.NULL_SHORT;
     private short max = QueryConstants.NULL_SHORT;
@@ -48,7 +48,7 @@ public class ShortChunkedNumericalStats implements ChunkedNumericalStatsKernel {
                  */
                 double chunkedOverflowSum = .0;
                 double chunkedOverflowAbsSum = .0;
-                double chunkedOverflowSqrdSum = .0;
+                double chunkedOverflowSumOfSquares = .0;
 
                 final int chunkSize = chunk.size();
                 for (int ii = 0; ii < chunkSize; ii++) {
@@ -107,17 +107,17 @@ public class ShortChunkedNumericalStats implements ChunkedNumericalStatsKernel {
                         chunkedOverflowAbsSum += absVal;
                     }
 
-                    if (!useFloatingSqrdSum) {
+                    if (!useFloatingSumOfSquares) {
                         try {
-                            sqrdSum = Math.addExact(sqrdSum, Math.multiplyExact(val, val));
+                            sumOfSquares = Math.addExact(sumOfSquares, Math.multiplyExact(val, val));
                         } catch (final ArithmeticException ae) {
-                            useFloatingSqrdSum = true;
-                            floatingSqrdSum = sqrdSum;
-                            chunkedOverflowSqrdSum = Math.pow(val, 2);
+                            useFloatingSumOfSquares = true;
+                            floatingSumOfSquares = sumOfSquares;
+                            chunkedOverflowSumOfSquares = Math.pow(val, 2);
                         }
 
                     } else {
-                        chunkedOverflowSqrdSum += Math.pow(val, 2);
+                        chunkedOverflowSumOfSquares += Math.pow(val, 2);
                     }
                 }
 
@@ -129,8 +129,8 @@ public class ShortChunkedNumericalStats implements ChunkedNumericalStatsKernel {
                     floatingAbsSum += chunkedOverflowAbsSum;
                 }
 
-                if (useFloatingSqrdSum) {
-                    floatingSqrdSum += chunkedOverflowSqrdSum;
+                if (useFloatingSumOfSquares) {
+                    floatingSumOfSquares += chunkedOverflowSumOfSquares;
                 }
             }
         }
@@ -142,14 +142,14 @@ public class ShortChunkedNumericalStats implements ChunkedNumericalStatsKernel {
                 useFloatingSum ? TableTools.doubleCol("SUM", floatingSum) : TableTools.longCol("SUM", sum),
                 useFloatingAbsSum ? TableTools.doubleCol("SUM_ABS", floatingAbsSum)
                         : TableTools.longCol("SUM_ABS", absSum),
-                useFloatingSqrdSum ? TableTools.doubleCol("SQRD_SUM", floatingSqrdSum)
-                        : TableTools.longCol("SUM_SQRD", sqrdSum),
+                useFloatingSumOfSquares ? TableTools.doubleCol("SQRD_SUM", floatingSumOfSquares)
+                        : TableTools.longCol("SUM_SQRD", sumOfSquares),
                 TableTools.shortCol("MIN", min),
                 TableTools.shortCol("MAX", max),
                 TableTools.shortCol("MIN_ABS", absMin),
                 TableTools.shortCol("MAX_ABS", absMax),
                 TableTools.doubleCol("AVG", avg),
                 TableTools.doubleCol("AVG_ABS", avg(count, absSum)),
-                TableTools.doubleCol("STD_DEV", stdDev(count, avg, useFloatingSqrdSum ? floatingSqrdSum : sqrdSum)));
+                TableTools.doubleCol("STD_DEV", stdDev(count, avg, useFloatingSumOfSquares ? floatingSumOfSquares : sumOfSquares)));
     }
 }
