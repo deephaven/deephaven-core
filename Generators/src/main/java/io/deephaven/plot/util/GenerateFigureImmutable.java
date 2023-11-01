@@ -91,15 +91,7 @@ public class GenerateFigureImmutable {
 
 
     private JavaFunction signature(final JavaFunction f) {
-        return new JavaFunction(
-                outputClass,
-                outputClassNameShort,
-                functionNamer.apply(f),
-                f.getTypeParameters(),
-                f.getReturnType(),
-                f.getParameterTypes(),
-                f.getParameterNames(),
-                f.isVarArgs());
+        return f.relocate(outputClass, outputClassNameShort, functionNamer.apply(f));
     }
 
     private void addPublicNonStatic(Method m) {
@@ -716,7 +708,7 @@ public class GenerateFigureImmutable {
 
     private String createFunction(final JavaFunction f) {
         final String returnType = f.getReturnType().getTypeName().replace("$", ".");
-        final Class returnClass = f.getReturnClass();
+        final Class<?> returnClass = f.getReturnClass();
         final JavaFunction signature = signature(f);
 
         String s = createFunctionSignature(f);

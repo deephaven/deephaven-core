@@ -6,7 +6,6 @@ package io.deephaven.plot.util;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.FigureImpl;
 import io.deephaven.gen.JavaFunction;
-import java.lang.reflect.WildcardType;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -19,12 +18,14 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static io.deephaven.gen.GenUtils.typesToImport;
 import static io.deephaven.plot.util.PlotGeneratorUtils.indent;
 
 /**
  * Create static functions that resolve against the last created instance of a plotting figure class. This is to make a
  * cleaner plotting interface
  */
+@SuppressWarnings("StringConcatenationInLoop")
 public class GeneratePlottingConvenience {
     // See also GroovyStaticImportGenerator
 
@@ -102,15 +103,7 @@ public class GeneratePlottingConvenience {
         log.info("Processing public method: " + m);
 
         final JavaFunction f = new JavaFunction(m);
-        final JavaFunction signature = new JavaFunction(
-                OUTPUT_CLASS,
-                OUTPUT_CLASS_NAME_SHORT,
-                functionNamer.apply(f),
-                f.getTypeParameters(),
-                f.getReturnType(),
-                f.getParameterTypes(),
-                f.getParameterNames(),
-                f.isVarArgs());
+        final JavaFunction signature = f.relocate(OUTPUT_CLASS, OUTPUT_CLASS_NAME_SHORT, functionNamer.apply(f));
 
         boolean skip = skip(f, ignoreSkips);
 
@@ -148,44 +141,6 @@ public class GeneratePlottingConvenience {
         }
 
         return imports;
-    }
-
-    private static Set<String> typesToImport(Type t) {
-        Set<String> result = new LinkedHashSet<>();
-
-        if (t instanceof Class) {
-            final Class<?> c = (Class) t;
-            final boolean isArray = c.isArray();
-            final boolean isPrimitive = c.isPrimitive();
-
-            if (isPrimitive) {
-                return result;
-            } else if (isArray) {
-                return typesToImport(c.getComponentType());
-            } else {
-                result.add(t.getTypeName());
-            }
-        } else if (t instanceof ParameterizedType) {
-            final ParameterizedType pt = (ParameterizedType) t;
-            result.add(pt.getRawType().getTypeName());
-
-            for (Type a : pt.getActualTypeArguments()) {
-                result.addAll(typesToImport(a));
-            }
-        } else if (t instanceof TypeVariable) {
-            // type variables are generic so they don't need importing
-            return result;
-        } else if (t instanceof WildcardType) {
-            // type variables are generic so they don't need importing
-            return result;
-        } else if (t instanceof GenericArrayType) {
-            GenericArrayType at = (GenericArrayType) t;
-            return typesToImport(at.getGenericComponentType());
-        } else {
-            throw new UnsupportedOperationException("Unsupported Type type: " + t.getClass());
-        }
-
-        return result;
     }
 
     private String generateCode() {

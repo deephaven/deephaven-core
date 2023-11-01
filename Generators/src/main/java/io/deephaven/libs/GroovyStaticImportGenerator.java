@@ -3,6 +3,7 @@
  */
 package io.deephaven.libs;
 
+import io.deephaven.gen.GenUtils;
 import io.deephaven.gen.JavaFunction;
 import org.jetbrains.annotations.NotNull;
 
@@ -127,7 +128,7 @@ public class GroovyStaticImportGenerator {
             String returnType = f.getReturnType().getTypeName();
             String s =
                     "    /** @see " + f.getClassName() + "#" + f.getMethodName() + "(" +
-                            Arrays.stream(f.getParameterTypes()).map(this::getParamTypeString)
+                            Arrays.stream(f.getParameterTypes()).map(GenUtils::getParamTypeString)
                                     .collect(Collectors.joining(","))
                             +
                             ") */\n" +
@@ -188,24 +189,6 @@ public class GroovyStaticImportGenerator {
         code += "}\n\n";
 
         return code;
-    }
-
-    /**
-     * Helper to transform method parameter types to a form that can be used in a javadoc link, including removing
-     * generics and finding the upper bound of typevars.
-     */
-    @NotNull
-    private String getParamTypeString(Type t) {
-        if (t instanceof ParameterizedType) {
-            return ((ParameterizedType) t).getRawType().getTypeName();
-        } else if (t instanceof TypeVariable) {
-            return getParamTypeString(((TypeVariable<?>) t).getBounds()[0]);
-        } else if (t instanceof WildcardType) {
-            return getParamTypeString(((WildcardType) t).getUpperBounds()[0]);
-        } else if (t instanceof GenericArrayType) {
-            return getParamTypeString(((GenericArrayType) t).getGenericComponentType()) + "[]";
-        }
-        return t.getTypeName();
     }
 
     public static void main(String[] args) throws ClassNotFoundException, IOException {

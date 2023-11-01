@@ -1,9 +1,8 @@
 package io.deephaven.gen;
 
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
+import org.jetbrains.annotations.NotNull;
+
+import java.lang.reflect.*;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -36,6 +35,9 @@ public class GenUtils {
         } else if (t instanceof TypeVariable) {
             // type variables are generic so they don't need importing
             return result;
+        } else if (t instanceof WildcardType) {
+            // type variables are generic so they don't need importing
+            return result;
         } else if (t instanceof GenericArrayType) {
             GenericArrayType at = (GenericArrayType) t;
             return typesToImport(at.getGenericComponentType());
@@ -45,4 +47,24 @@ public class GenUtils {
 
         return result;
     }
+
+    /**
+     * Helper to transform method parameter types to a form that can be used in a javadoc link, including removing
+     * generics and finding the upper bound of typevars.
+     */
+    @NotNull
+    public static String getParamTypeString(Type t) {
+        if (t instanceof ParameterizedType) {
+            return ((ParameterizedType) t).getRawType().getTypeName();
+        } else if (t instanceof TypeVariable) {
+            return getParamTypeString(((TypeVariable<?>) t).getBounds()[0]);
+        } else if (t instanceof WildcardType) {
+            return getParamTypeString(((WildcardType) t).getUpperBounds()[0]);
+        } else if (t instanceof GenericArrayType) {
+            return getParamTypeString(((GenericArrayType) t).getGenericComponentType()) + "[]";
+        }
+        return t.getTypeName();
+    }
+
+
 }

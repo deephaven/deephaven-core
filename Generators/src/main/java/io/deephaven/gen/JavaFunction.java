@@ -160,4 +160,24 @@ public class JavaFunction implements Comparable<JavaFunction> {
     public boolean isVarArgs() {
         return isVarArgs;
     }
+
+    /**
+     * Creates a new JavaFunction with the same signature, but with new class and method names.
+     *
+     * @param className class name or null if the current name should be used.
+     * @param classNameShort short class name or null if the current short name should be used.
+     * @param methodName method name or null if the current name should be used.
+     * @return a new JavaFunction with the same signature, but with new class and method names.
+     */
+    public JavaFunction relocate(final String className, final String classNameShort, final String methodName) {
+        return new JavaFunction(
+                className == null ? this.className : className,
+                classNameShort == null ? this.classNameShort : classNameShort,
+                methodName == null ? this.methodName : methodName,
+                getTypeParameters(),
+                getReturnType(),
+                getParameterTypes(),
+                getParameterNames(),
+                isVarArgs());
+    }
 }
