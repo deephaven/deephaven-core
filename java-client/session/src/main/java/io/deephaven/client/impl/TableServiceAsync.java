@@ -61,7 +61,8 @@ public interface TableServiceAsync {
 
         /**
          * Cancels {@code future} or closes the {@link TableHandle} if {@code future} completed normally. If
-         * {@code future} has completed exceptionally, the {@link ExecutionException} will be disregarded.
+         * {@code future} has completed exceptionally, the {@link ExecutionException} will be disregarded. If {@code
+         * future} has been cancelled, the {@link CancellationException} will be disregarded.
          *
          * @param future the future
          * @param mayInterruptIfRunning {@code true} if the thread executing this task should be interrupted; otherwise,
@@ -79,8 +80,8 @@ public interface TableServiceAsync {
                     try (final TableHandle ignored = future.get(0, TimeUnit.SECONDS)) {
                         // On completed normally, close the handle
                         return;
-                    } catch (ExecutionException e) {
-                        // On completed exceptionally (or already cancelled), nothing to do
+                    } catch (ExecutionException | CancellationException e) {
+                        // On completed exceptionally or cancelled, nothing to do
                         return;
                     } catch (InterruptedException e) {
                         // On interrupted, ensure interrupt status propagates
@@ -99,7 +100,8 @@ public interface TableServiceAsync {
 
         /**
          * Cancels all of the {@code futures} first and then closes any {@link TableHandle} from {@code futures} that
-         * completed normally. Any {@link ExecutionException ExecptionExceptions} will be disregarded.
+         * completed normally. Any {@link ExecutionException ExecptionExceptions} will be disregarded. If {@code future}
+         * has been cancelled, the {@link CancellationException} will be disregarded.
          *
          * @param futures the futures
          * @param mayInterruptIfRunning {@code true} if the thread executing the task should be interrupted; otherwise,
