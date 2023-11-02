@@ -30,8 +30,10 @@ public class TestParquetGrouping extends RefreshingTableTestCase {
                 data[i] = i / 4;
             }
 
-            final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("v").withGrouping());
+            final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("v"));
             final Table table = TableTools.newTable(tableDefinition, TableTools.col("v", data));
+            DataIndexer.of(table.getRowSet()).createDataIndex(table, "v");
+
             final ParquetInstructions instructions = ParquetInstructions.builder()
                     .addColumnNameMapping("V", "v")
                     .build();

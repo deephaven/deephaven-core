@@ -88,7 +88,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         componentFactory = mock(RegionedTableComponentFactory.class);
 
         partitioningColumnDefinition = ColumnDefinition.ofString("RCS_0").withPartitioning();
-        groupingColumnDefinition = ColumnDefinition.ofString("RCS_1").withGrouping();
+        groupingColumnDefinition = ColumnDefinition.ofString("RCS_1");
         normalColumnDefinition = ColumnDefinition.ofString("RCS_2");
 
         columnDefinitions = List.of(partitioningColumnDefinition, groupingColumnDefinition, normalColumnDefinition);

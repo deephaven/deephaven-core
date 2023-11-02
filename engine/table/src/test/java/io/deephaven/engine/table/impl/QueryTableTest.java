@@ -50,7 +50,6 @@ import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 
@@ -3048,7 +3047,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("Sentinel"),
-                ColumnDefinition.ofString("Symbol").withGrouping(),
+                ColumnDefinition.ofString("Symbol"),
                 ColumnDefinition.ofTime("Timestamp"),
                 ColumnDefinition.ofBoolean("Truthiness"));
 
@@ -3065,6 +3064,10 @@ public class QueryTableTest extends QueryTableTestBase {
                 .updateView("Sentinel=i", "Symbol=syms[i % syms.length]",
                         "Timestamp=baseTime+dateOffset[i]*3600L*1000000000L", "Truthiness=booleans[i]")
                 .groupBy("Symbol").ungroup();
+
+        // Create the index for "Symbol" column.
+        DataIndexer.of(source.getRowSet()).createDataIndex(source, "Symbol");
+
         testDirectory.mkdirs();
         final File dest = new File(testDirectory, "Table.parquet");
         try {

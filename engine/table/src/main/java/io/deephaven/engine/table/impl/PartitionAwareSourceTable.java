@@ -114,9 +114,9 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             ArrayList<WhereFilter> groupFilters = new ArrayList<>();
             ArrayList<WhereFilter> otherFilters = new ArrayList<>();
 
-            List<ColumnDefinition<?>> groupingColumns = table.getDefinition().getGroupingColumns();
-            Set<String> groupingColumnNames =
-                    groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
+            table.locationProvider.ensureInitialized();
+            final TableLocationKey key = table.locationProvider.getTableLocationKeys().iterator().next();
+            final TableLocation firstLocation = key == null ? null : table.locationProvider.getTableLocation(key);
 
             for (WhereFilter filter : whereFilters) {
                 // note: our filters are already initialized
@@ -126,8 +126,9 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 } else if (((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(columns,
                         filter.getColumnArrays())) {
                     partitionFilters.add(filter);
-                } else if (filter.isSimpleFilter() && (columns.size() == 1)
-                        && (groupingColumnNames.contains(columns.get(0)))) {
+                } else if (filter.isSimpleFilter()
+                        && firstLocation != null
+                        && firstLocation.hasDataIndex(columns.toArray(String[]::new))) {
                     groupFilters.add(filter);
                 } else {
                     otherFilters.add(filter);
@@ -276,9 +277,9 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         ArrayList<WhereFilter> groupFilters = new ArrayList<>();
         ArrayList<WhereFilter> otherFilters = new ArrayList<>();
 
-        List<ColumnDefinition<?>> groupingColumns = definition.getGroupingColumns();
-        Set<String> groupingColumnNames =
-                groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
+        this.locationProvider.ensureInitialized();
+        final TableLocationKey key = locationProvider.getTableLocationKeys().iterator().next();
+        final TableLocation firstLocation = key == null ? null : locationProvider.getTableLocation(key);
 
         for (WhereFilter whereFilter : whereFilters) {
             whereFilter.init(definition);
@@ -287,8 +288,9 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 otherFilters.add(whereFilter);
             } else if (isValidAgainstColumnPartitionTable(columns, whereFilter.getColumnArrays())) {
                 partitionFilters.add(whereFilter);
-            } else if (whereFilter.isSimpleFilter() && (columns.size() == 1)
-                    && (groupingColumnNames.contains(columns.get(0)))) {
+            } else if (whereFilter.isSimpleFilter()
+                    && firstLocation != null
+                    && firstLocation.hasDataIndex(columns.toArray(String[]::new))) {
                 groupFilters.add(whereFilter);
             } else {
                 otherFilters.add(whereFilter);

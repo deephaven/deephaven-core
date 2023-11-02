@@ -5,32 +5,30 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.string.cache.CharSequenceUtils;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.vector.*;
-import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
+import io.deephaven.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 public abstract class AbstractColumnSource<T> implements
         ColumnSource<T>,
@@ -47,7 +45,6 @@ public abstract class AbstractColumnSource<T> implements
 
     protected final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
 
-    protected volatile Map<T, RowSet> groupToRange;
     protected volatile List<ColumnSource<?>> rowSetIndexerKey;
 
     protected AbstractColumnSource(@NotNull final Class<T> type) {
@@ -120,61 +117,14 @@ public abstract class AbstractColumnSource<T> implements
     }
 
     @Override
-    public Map<T, RowSet> getGroupToRange() {
-        return groupToRange;
-    }
-
-    @Override
-    public Map<T, RowSet> getGroupToRange(RowSet rowSet) {
-        return groupToRange;
-    }
-
-    public final void setGroupToRange(@Nullable Map<T, RowSet> groupToRange) {
-        this.groupToRange = groupToRange;
-    }
-
-    @Override
     public WritableRowSet match(
             final boolean invertMatch,
             final boolean usePrev,
             final boolean caseInsensitive,
             @NotNull final RowSet mapper,
             final Object... keys) {
-        final Map<T, RowSet> groupToRange = (isImmutable() || !usePrev) ? getGroupToRange(mapper) : null;
-        if (groupToRange != null) {
-            RowSetBuilderRandom allInMatchingGroups = RowSetFactory.builderRandom();
-
-            if (caseInsensitive && (type == String.class)) {
-                KeyedObjectHashSet keySet = new KeyedObjectHashSet<>(new CIStringKey());
-                Collections.addAll(keySet, keys);
-
-                for (Map.Entry<T, RowSet> ent : groupToRange.entrySet()) {
-                    if (keySet.containsKey(ent.getKey())) {
-                        allInMatchingGroups.addRowSet(ent.getValue());
-                    }
-                }
-            } else {
-                for (Object key : keys) {
-                    RowSet range = groupToRange.get(key);
-                    if (range != null) {
-                        allInMatchingGroups.addRowSet(range);
-                    }
-                }
-            }
-
-            final WritableRowSet matchingValues;
-            try (final RowSet matchingGroups = allInMatchingGroups.build()) {
-                if (invertMatch) {
-                    matchingValues = mapper.minus(matchingGroups);
-                } else {
-                    matchingValues = mapper.intersect(matchingGroups);
-                }
-            }
-            return matchingValues;
-        } else {
-            return ChunkFilter.applyChunkFilter(mapper, this, usePrev,
-                    ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
-        }
+        return ChunkFilter.applyChunkFilter(mapper, this, usePrev,
+                ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
     }
 
     private static final class CIStringKey implements KeyedObjectKey<String, String> {
@@ -192,44 +142,6 @@ public abstract class AbstractColumnSource<T> implements
         public boolean equalKey(String s, String s2) {
             return (s == null) ? s2 == null : s.equalsIgnoreCase(s2);
         }
-    }
-
-    @Override
-    public Map<T, RowSet> getValuesMapping(RowSet subRange) {
-        Map<T, RowSet> result = new LinkedHashMap<>();
-        final Map<T, RowSet> groupToRange = getGroupToRange();
-
-        // if we have a grouping we can use it to avoid iterating the entire subRange. The issue is that our grouping
-        // could be bigger than the RowSet we care about, by a very large margin. In this case we could be spinning
-        // on RowSet intersect operations that are actually useless. This check says that if our subRange is smaller
-        // than the number of keys in our grouping, we should just fetch the keys instead and generate the grouping
-        // from scratch.
-        boolean useGroupToRange = (groupToRange != null) && (groupToRange.size() < subRange.size());
-        if (useGroupToRange) {
-            for (Map.Entry<T, RowSet> typeEntry : groupToRange.entrySet()) {
-                RowSet mapping = subRange.intersect(typeEntry.getValue());
-                if (mapping.size() > 0) {
-                    result.put(typeEntry.getKey(), mapping);
-                }
-            }
-        } else {
-            Map<T, RowSetBuilderSequential> valueToIndexSet = new LinkedHashMap<>();
-
-            for (RowSet.Iterator it = subRange.iterator(); it.hasNext();) {
-                long key = it.nextLong();
-                T value = get(key);
-                RowSetBuilderSequential indexes = valueToIndexSet.get(value);
-                if (indexes == null) {
-                    indexes = RowSetFactory.builderSequential();
-                }
-                indexes.appendKey(key);
-                valueToIndexSet.put(value, indexes);
-            }
-            for (Map.Entry<T, RowSetBuilderSequential> entry : valueToIndexSet.entrySet()) {
-                result.put(entry.getKey(), entry.getValue().build());
-            }
-        }
-        return result;
     }
 
     @Override

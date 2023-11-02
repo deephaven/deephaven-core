@@ -4,16 +4,15 @@
 package io.deephaven.engine.table;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
-import java.util.Map;
 
 /**
  * A "source" for column data - allows cell values to be looked up by (long) keys.
@@ -43,8 +42,6 @@ public interface ColumnSource<T>
     WritableRowSet match(
             boolean invertMatch, boolean usePrev, boolean caseInsensitive, @NotNull RowSet mapper, Object... keys);
 
-    Map<T, RowSet> getValuesMapping(RowSet subRange);
-
     /**
      * ColumnSource implementations that track previous values have the option to not actually start tracking previous
      * values until this method is called. This is an option, not an obligation: some simple ColumnSource
@@ -58,21 +55,6 @@ public interface ColumnSource<T>
             throw new UnsupportedOperationException(this.getClass().getName());
         }
     }
-
-    /**
-     * Compute grouping information for all keys present in this column source.
-     *
-     * @return A map from distinct data values to a RowSet that contains those values
-     */
-    Map<T, RowSet> getGroupToRange();
-
-    /**
-     * Compute grouping information for (at least) all keys present in rowSet.
-     *
-     * @param rowSet The RowSet to consider
-     * @return A map from distinct data values to a RowSet that contains those values
-     */
-    Map<T, RowSet> getGroupToRange(RowSet rowSet);
 
     /**
      * Determine if this column source is immutable, meaning that the values at a given row key never change.

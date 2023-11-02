@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.select.ReinterpretedColumn;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -27,6 +28,7 @@ import org.junit.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 
 public class TimeTableTest extends RefreshingTableTestCase {
 
@@ -267,8 +269,14 @@ public class TimeTableTest extends RefreshingTableTestCase {
             }
         }
 
+        final Table riTable = timeTable.updateView(List.of(
+                new ReinterpretedColumn<>("Timestamp", Instant.class, "longTimestamp", long.class)));
+
+        // Create the index for this table and column.
+        dataIndexer.createDataIndex(riTable, "longTimestamp");
+
         final DataIndex longDataIndex =
-                dataIndexer.getDataIndex(column).transform(
+                dataIndexer.getDataIndex(riTable.getColumnSource("longTimestamp")).transform(
                         DataIndexTransformer.builder()
                                 .intersectRowSet(RowSetFactory.fromRange(100, 109))
                                 .build());
@@ -277,12 +285,12 @@ public class TimeTableTest extends RefreshingTableTestCase {
         Assert.assertEquals(longIndexTable.size(), 10);
         try (final CloseableIterator<Long> keyIt = longIndexTable.columnIterator(longDataIndex.keyColumnNames()[0]);
                 final CloseableIterator<RowSet> rsIt =
-                        longIndexTable.columnIterator(longDataIndex.keyColumnNames()[0])) {
+                        longIndexTable.columnIterator(longDataIndex.rowSetColumnName())) {
             while (keyIt.hasNext()) {
                 final Long key = keyIt.next();
                 final RowSet rs = rsIt.next();
                 Assert.assertEquals(rs.size(), 1);
-                Assert.assertEquals(dtColumn.get(rs.firstRowKey()), key);
+                Assert.assertEquals(column.get(rs.firstRowKey()), key);
             }
         }
     }

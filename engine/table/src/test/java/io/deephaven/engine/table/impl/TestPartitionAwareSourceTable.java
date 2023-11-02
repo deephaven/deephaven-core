@@ -49,8 +49,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     private static final ColumnDefinition<String> PARTITIONING_COLUMN_DEFINITION =
             ColumnDefinition.ofString("Date").withPartitioning();
     private static final ColumnDefinition<Boolean> BOOLEAN_COLUMN_DEFINITION = ColumnDefinition.ofBoolean("Active");
-    private static final ColumnDefinition<Character> CHARACTER_COLUMN_DEFINITION =
-            ColumnDefinition.ofChar("Type").withGrouping();
+    private static final ColumnDefinition<Character> CHARACTER_COLUMN_DEFINITION = ColumnDefinition.ofChar("Type");
     private static final ColumnDefinition<Integer> INTEGER_COLUMN_DEFINITION = ColumnDefinition.ofInt("Size");
     private static final ColumnDefinition<Double> DOUBLE_COLUMN_DEFINITION = ColumnDefinition.ofDouble("Price");
 

@@ -167,9 +167,11 @@ public class TestParquetTools {
 
         test = TableTools.newTable(TableDefinition.of(
                 ColumnDefinition.ofInt("anInt"),
-                ColumnDefinition.ofString("aString").withGrouping()),
+                ColumnDefinition.ofString("aString")),
                 col("anInt", 1, 2, 3),
                 col("aString", "ab", "ab", "bc"));
+        DataIndexer.of(test.getRowSet()).createDataIndex(test, "aString");
+
         path = testRoot + File.separator + "Table4.parquet";
         ParquetTools.writeTable(test, path);
         test2 = ParquetTools.readTable(new File(path));

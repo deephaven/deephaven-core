@@ -7,11 +7,11 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
@@ -503,6 +503,35 @@ public class ParquetTools {
     }
 
     /**
+     * Examine the source tables to retrieve the list of indexes as String[] arrays.
+     *
+     * @param sources the tables from which to retrieve the indexes
+     * @return an array containing the indexes as String[] arrays
+     */
+    private static String[][] indexedColumnNames(@NotNull Table @NotNull [] sources) {
+        Assert.geqZero(sources.length, "sources.length");
+
+        // Use the first table as the source of indexed columns.
+        final Table firstTable = sources[0];
+        final Map<String, ? extends ColumnSource<?>> columnSourceMap = firstTable.getColumnSourceMap();
+        final DataIndexer dataIndexer = DataIndexer.of(firstTable.getRowSet());
+        final List<DataIndex> dataIndexes = dataIndexer.dataIndexes();
+        final Set<String[]> indexesToWrite = new HashSet<>();
+
+        // Build the list of indexes to write.
+        dataIndexes.forEach(di -> {
+            final String[] indexColumns = di.keyColumnNames();
+            // Make sure all the columns actually exist in the table.
+            final boolean allInTable = Arrays.stream(indexColumns).allMatch(columnSourceMap::containsKey);
+            if (allInTable && !indexesToWrite.contains(indexColumns)) {
+                indexesToWrite.add(indexColumns);
+            }
+        });
+        String[][] indexColumnArr = indexesToWrite.toArray(String[][]::new);
+        return indexColumnArr;
+    }
+
+    /**
      * Write out tables to disk.
      *
      * @param sources source tables
@@ -512,13 +541,9 @@ public class ParquetTools {
     public static void writeTables(@NotNull final Table[] sources,
             @NotNull final TableDefinition definition,
             @NotNull final File[] destinations) {
-
-        // Make single-value arrays for the grouping columns
-        String[][] indexColumnArr = Arrays.stream(definition.getGroupingColumnNamesArray())
-                .map(columnName -> new String[] {columnName}).toArray(String[][]::new);
-
-        writeParquetTables(sources, definition, ParquetInstructions.EMPTY, destinations, indexColumnArr);
+        writeParquetTables(sources, definition, ParquetInstructions.EMPTY, destinations, indexedColumnNames(sources));
     }
+
 
     /**
      * Write out tables to disk.
@@ -532,13 +557,7 @@ public class ParquetTools {
             @NotNull final TableDefinition definition,
             @NotNull final File[] destinations,
             @NotNull final ParquetInstructions writeInstructions) {
-
-        // Make single-value arrays for the grouping columns
-        String[][] indexColumnArr = Arrays.stream(definition.getGroupingColumnNamesArray())
-                .map(columnName -> new String[] {columnName}).toArray(String[][]::new);
-
-        writeParquetTables(sources, definition, writeInstructions, destinations,
-                indexColumnArr);
+        writeParquetTables(sources, definition, writeInstructions, destinations, indexedColumnNames(sources));
     }
 
     /**
@@ -799,9 +818,6 @@ public class ParquetTools {
                 } else {
                     colDef = ColumnDefinition.fromGenericType(parquetColDef.name, baseType, null);
                 }
-            }
-            if (parquetColDef.isGrouping) {
-                colDef = colDef.withGrouping();
             }
             colsOut.add(colDef);
         };

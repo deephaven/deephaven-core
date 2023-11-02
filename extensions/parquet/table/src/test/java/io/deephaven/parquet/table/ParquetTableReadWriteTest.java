@@ -15,6 +15,7 @@ import io.deephaven.engine.primitive.function.ShortConsumer;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -285,31 +286,43 @@ public class ParquetTableReadWriteTest {
     public void groupingByLongKey() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("someInt"),
-                ColumnDefinition.ofLong("someLong").withGrouping());
+                ColumnDefinition.ofLong("someLong"));
+
         final Table testTable =
                 ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someLong  = ii % 3")
                         .groupBy("someLong").ungroup("someInt")).withDefinitionUnsafe(definition);
+
+        DataIndexer.of(testTable.getRowSet()).createDataIndex(testTable, "someLong");
+
         final File dest = new File(rootFile, "ParquetTest_groupByLong_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(fromDisk, testTable);
-        TestCase.assertNotNull(fromDisk.getColumnSource("someLong").getGroupToRange());
+
+        TestCase.assertTrue(
+                "Should have index for column 'someLong'",
+                DataIndexer.of(fromDisk.getRowSet()).hasDataIndex(fromDisk.getColumnSource("someLong")));
     }
 
     @Test
     public void groupingByStringKey() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("someInt"),
-                ColumnDefinition.ofString("someString").withGrouping());
+                ColumnDefinition.ofString("someString"));
         final Table testTable =
                 ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`")
                         .where("i % 2 == 0").groupBy("someString").ungroup("someInt"))
                         .withDefinitionUnsafe(definition);
+
+        DataIndexer.of(testTable.getRowSet()).createDataIndex(testTable, "someString");
+
         final File dest = new File(rootFile, "ParquetTest_groupByString_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(fromDisk, testTable);
-        TestCase.assertNotNull(fromDisk.getColumnSource("someString").getGroupToRange());
+        TestCase.assertTrue(
+                "Should have index for column 'someString'",
+                DataIndexer.of(fromDisk.getRowSet()).hasDataIndex(fromDisk.getColumnSource("someString")));
     }
 
     @Test
@@ -317,15 +330,21 @@ public class ParquetTableReadWriteTest {
         ExecutionContext.getContext().getQueryLibrary().importClass(BigInteger.class);
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("someInt"),
-                ColumnDefinition.fromGenericType("someBigInt", BigInteger.class).withGrouping());
+                ColumnDefinition.fromGenericType("someBigInt", BigInteger.class));
         final Table testTable = ((QueryTable) TableTools.emptyTable(10)
                 .select("someInt = i", "someBigInt  =  BigInteger.valueOf(i % 3)").where("i % 2 == 0")
                 .groupBy("someBigInt").ungroup("someInt")).withDefinitionUnsafe(definition);
+
+        DataIndexer.of(testTable.getRowSet()).createDataIndex(testTable, "someBigInt");
+
+
         final File dest = new File(rootFile, "ParquetTest_groupByBigInt_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(fromDisk, testTable);
-        TestCase.assertNotNull(fromDisk.getColumnSource("someBigInt").getGroupToRange());
+        TestCase.assertTrue(
+                "Should have index for column 'someBigInt'",
+                DataIndexer.of(fromDisk.getRowSet()).hasDataIndex(fromDisk.getColumnSource("someBigInt")));
     }
 
     private void compressionCodecTestHelper(final ParquetInstructions codec) {
@@ -744,8 +763,10 @@ public class ParquetTableReadWriteTest {
         for (int i = 0; i < data.length; i++) {
             data[i] = i / 4;
         }
-        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv").withGrouping());
+        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv"));
         final Table tableToSave = TableTools.newTable(tableDefinition, TableTools.col("vvv", data));
+
+        DataIndexer.of(tableToSave.getRowSet()).createDataIndex(tableToSave, "vvv");
 
         // For a completed write, there should be two parquet files in the directory, the table data and the grouping
         // data
@@ -765,7 +786,7 @@ public class ParquetTableReadWriteTest {
         assertTrue(metadataString.contains(vvvGroupingFilename));
 
         // Write another table but this write should fail
-        final TableDefinition badTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("www").withGrouping());
+        final TableDefinition badTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("www"));
         final Table badTable = TableTools.newTable(badTableDefinition, TableTools.col("www", data))
                 .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
@@ -798,10 +819,12 @@ public class ParquetTableReadWriteTest {
         for (int i = 0; i < data.length; i++) {
             data[i] = i / 4;
         }
-        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv").withGrouping());
+        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv"));
         final Table firstTable = TableTools.newTable(tableDefinition, TableTools.col("vvv", data));
         final String firstFilename = "firstTable.parquet";
         final File firstDestFile = new File(parentDir, firstFilename);
+
+        DataIndexer.of(firstTable.getRowSet()).createDataIndex(firstTable, "vvv");
 
         final Table secondTable = TableTools.newTable(tableDefinition, TableTools.col("vvv", data));
         final String secondFilename = "secondTable.parquet";
@@ -848,8 +871,10 @@ public class ParquetTableReadWriteTest {
         for (int i = 0; i < data.length; i++) {
             data[i] = i / 4;
         }
-        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv").withGrouping());
+        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv"));
         final Table tableToSave = TableTools.newTable(tableDefinition, TableTools.col("vvv", data));
+
+        DataIndexer.of(tableToSave.getRowSet()).createDataIndex(tableToSave, "vvv");
 
         final String destFilename = "groupingColumnsWriteTests.parquet";
         final File destFile = new File(parentDir, destFilename);
@@ -857,8 +882,11 @@ public class ParquetTableReadWriteTest {
         String vvvGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("vvv");
 
         // Write a new table successfully at the same position with different grouping columns
-        final TableDefinition anotherTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("xxx").withGrouping());
+        final TableDefinition anotherTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("xxx"));
         Table anotherTableToSave = TableTools.newTable(anotherTableDefinition, TableTools.col("xxx", data));
+
+        DataIndexer.of(anotherTableToSave.getRowSet()).createDataIndex(anotherTableToSave, "xxx");
+
         writer.writeTable(anotherTableToSave, destFile);
         List filesInDir = Arrays.asList(parentDir.list());
         final String xxxGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("xxx");

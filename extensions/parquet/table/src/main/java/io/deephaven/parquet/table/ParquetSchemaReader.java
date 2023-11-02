@@ -54,8 +54,6 @@ public class ParquetSchemaReader {
         public boolean noLogicalType;
         /** Your guess is good here */
         public boolean isArray;
-        /** Your guess is good here. */
-        public boolean isGrouping;
         /**
          * When codec metadata is present (which will be returned as modified read instructions below for actual codec
          * name and args), we expect codec type and component type to be present. When they are present, codecType and
@@ -74,7 +72,7 @@ public class ParquetSchemaReader {
             name = null;
             baseType = null;
             dhSpecialType = null;
-            noLogicalType = isArray = isGrouping = false;
+            noLogicalType = isArray = false;
             codecType = codecComponentType = null;
         }
     }
@@ -136,8 +134,6 @@ public class ParquetSchemaReader {
         final MutableObject<String> errorString = new MutableObject<>();
         final MutableObject<ColumnDescriptor> currentColumn = new MutableObject<>();
         final Optional<TableInfo> tableInfo = parseMetadata(keyValueMetadata);
-        final Set<String> groupingColumnNames =
-                tableInfo.map(TableInfo::groupingColumnNames).orElse(Collections.emptySet());
         final Map<String, ColumnTypeInfo> nonDefaultTypeColumns =
                 tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
         final LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> visitor =
@@ -195,7 +191,6 @@ public class ParquetSchemaReader {
 
             colDef.name = colName;
             colDef.dhSpecialType = columnTypeInfo.flatMap(ColumnTypeInfo::specialType).orElse(null);
-            colDef.isGrouping = groupingColumnNames.contains(colName);
             final Optional<CodecInfo> codecInfo = columnTypeInfo.flatMap(ColumnTypeInfo::codec);
             String codecName = codecInfo.map(CodecInfo::codecName).orElse(null);
             String codecArgs = codecInfo.flatMap(CodecInfo::codecArg).orElse(null);

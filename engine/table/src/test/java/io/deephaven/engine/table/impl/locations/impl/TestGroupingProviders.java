@@ -82,7 +82,12 @@ public class TestGroupingProviders {
         final Table raw = TableTools.emptyTable(26 * 10 * 1000).update("Part=String.format(`%04d`, (long)(ii/1000))",
                 "Sym=(char)('A' + ii % 26)", "Other=ii");
         final Table[] partitions = raw.partitionBy("Part")
-                .transform(null, rp -> rp.groupBy("Sym").ungroup(), false)
+                .transform(null, rp -> {
+                    final Table t = rp.groupBy("Sym").ungroup();
+                    // Create a local index for each partition
+                    DataIndexer.of(t.getRowSet()).createDataIndex(t, "Sym");
+                    return t;
+                }, false)
                 .constituents();
 
         if (missingGroups) {
@@ -93,7 +98,7 @@ public class TestGroupingProviders {
 
         final TableDefinition partitionedDataDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("Part").withPartitioning(),
-                ColumnDefinition.ofChar("Sym").withGrouping(),
+                ColumnDefinition.ofChar("Sym"),
                 ColumnDefinition.ofLong("Other"));
 
         final TableDefinition partitionedMissingDataDefinition = TableDefinition.of(

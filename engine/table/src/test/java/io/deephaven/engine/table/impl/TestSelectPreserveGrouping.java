@@ -100,11 +100,11 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             columns.put("Sym", TstUtils.getTestColumnSource(rowSet, symHolder));
             columns.put("Sentinel", TstUtils.getTestColumnSource(rowSet, sentinelHolder));
             final TableDefinition definition = TableDefinition.of(
-                    ColumnDefinition.ofString("Sym").withGrouping(),
+                    ColumnDefinition.ofString("Sym"),
                     ColumnDefinition.ofInt("Sentinel"));
             final Table x = new QueryTable(definition, rowSet, columns);
 
-            assertTrue(x.getDefinition().getColumn("Sym").isGrouping());
+            DataIndexer.of(x.getRowSet()).createDataIndex(x, "Sym");
 
             System.out.println(x.getDefinition());
             ParquetTools.writeTable(x, dest);
