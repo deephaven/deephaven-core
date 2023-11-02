@@ -37,7 +37,8 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
-    private static final Consumer<ColumnSource<?>> NOOP = ignore -> {};
+    private static final Consumer<ColumnSource<?>> NOOP = ignore -> {
+    };
 
     public enum Mode {
         VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING, SELECT_REDIRECTED_STATIC
