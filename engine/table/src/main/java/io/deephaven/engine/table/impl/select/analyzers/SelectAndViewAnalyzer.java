@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.RowSet;
@@ -34,9 +33,12 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
+    private static final Consumer<ColumnSource<?>> NOOP = ignore -> {};
+
     public enum Mode {
         VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING, SELECT_REDIRECTED_STATIC
     }
@@ -100,8 +102,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         FormulaColumn shiftColumn = null;
         boolean shiftColumnHasPositiveOffset = false;
 
-        final HashSet<String> resultColumns = flattenedResult ? new HashSet<>() : null;
-        final HashMap<String, ColumnSource<?>> resultAlias = flattenedResult ? new HashMap<>() : null;
+        final HashSet<String> resultColumns = new HashSet<>();
+        final HashMap<String, ColumnSource<?>> resultAlias = new HashMap<>();
         for (final SelectColumn sc : selectColumns) {
             if (remainingCols != null) {
                 remainingCols.add(sc);
@@ -125,11 +127,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 sc.initInputs(rowSet, analyzer.getAllColumnSources());
             }
 
-            if (flattenedResult) {
-                resultColumns.add(sc.getName());
-                // this shadows any known alias
-                resultAlias.remove(sc.getName());
-            }
+            resultColumns.add(sc.getName());
+            // this shadows any known alias
+            resultAlias.remove(sc.getName());
 
             final Stream<String> allDependencies =
                     Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
@@ -171,11 +171,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 realColumn = null;
             }
 
-            if (shouldPreserve(sc)) {
-                // this must be a source column to be preserved
-                Assert.neqNull(realColumn, "realColumn");
-
-                boolean sourceIsNew = resultColumns != null && resultColumns.contains(realColumn.getSourceName());
+            if (realColumn != null && shouldPreserve(sc)) {
+                boolean sourceIsNew = resultColumns.contains(realColumn.getSourceName());
                 if (!sourceIsNew && numberOfInternallyFlattenedColumns > 0) {
                     // we must preserve this column, but have already created an analyzer for the internally flattened
                     // column, therefore must start over without permitting internal flattening
@@ -187,14 +184,14 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                         sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder, flatResult && flattenedResult);
 
                 if (!sourceIsNew) {
-                    // we can not flatten future columns because we are preserving this column
+                    // we can not flatten future columns because we are preserving a column that may not be flat
                     flattenedResult = false;
                 }
                 continue;
             }
 
-            if (flattenedResult && realColumn != null) {
-                // this could be a duplicate of a previously flattened column
+            // look for an existing alias that can be preserved instead
+            if (realColumn != null) {
                 final ColumnSource<?> alias = resultAlias.get(realColumn.getSourceName());
                 if (alias != null) {
                     analyzer = analyzer.createLayerForPreserve(
@@ -203,16 +200,22 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 }
             }
 
+            // if this is a source column, then results are eligible for aliasing
+            final Consumer<ColumnSource<?>> maybeCreateAlias = realColumn == null ? NOOP
+                    : cs -> resultAlias.put(realColumn.getSourceName(), cs);
+
             final long targetDestinationCapacity =
                     rowSet.isEmpty() ? 0 : (flattenedResult ? rowSet.size() : rowSet.lastRowKey() + 1);
             switch (mode) {
                 case VIEW_LAZY: {
                     final ColumnSource<?> viewCs = sc.getLazyView();
+                    maybeCreateAlias.accept(viewCs);
                     analyzer = analyzer.createLayerForView(sc.getName(), sc, viewCs, distinctDeps, mcsBuilder);
                     break;
                 }
                 case VIEW_EAGER: {
                     final ColumnSource<?> viewCs = sc.getDataView();
+                    maybeCreateAlias.accept(viewCs);
                     analyzer = analyzer.createLayerForView(sc.getName(), sc, viewCs, distinctDeps, mcsBuilder);
                     break;
                 }
@@ -222,12 +225,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     final WritableColumnSource<?> scs =
                             flatResult || flattenedResult ? sc.newFlatDestInstance(targetDestinationCapacity)
                                     : sc.newDestInstance(targetDestinationCapacity);
-
-                    if (flattenedResult && realColumn != null && !resultColumns.contains(realColumn.getSourceName())) {
-                        // this source column a candidate for preservation if referenced again
-                        resultAlias.put(realColumn.getSourceName(), scs);
-                    }
-
+                    maybeCreateAlias.accept(scs);
                     analyzer = analyzer.createLayerForSelect(updateGraph, rowSet, sc.getName(), sc, scs, null,
                             distinctDeps, mcsBuilder, false, flattenedResult, flatResult && flattenedResult);
                     if (flattenedResult) {
@@ -239,6 +237,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     final WritableColumnSource<?> underlyingSource = sc.newDestInstance(rowSet.size());
                     final WritableColumnSource<?> scs = WritableRedirectedColumnSource.maybeRedirect(
                             rowRedirection, underlyingSource, rowSet.size());
+                    maybeCreateAlias.accept(scs);
                     analyzer = analyzer.createLayerForSelect(updateGraph, rowSet, sc.getName(), sc, scs,
                             underlyingSource, distinctDeps, mcsBuilder, true, false, false);
                     break;
@@ -255,6 +254,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                         scs = WritableRedirectedColumnSource.maybeRedirect(
                                 rowRedirection, underlyingSource, rowSet.intSize());
                     }
+                    maybeCreateAlias.accept(scs);
                     analyzer = analyzer.createLayerForSelect(updateGraph, rowSet, sc.getName(), sc, scs,
                             underlyingSource, distinctDeps, mcsBuilder, rowRedirection != null, false, false);
                     break;
@@ -309,10 +309,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     }
 
     private static boolean shouldPreserve(final SelectColumn sc) {
-        if (!(sc instanceof SourceColumn)
-                && (!(sc instanceof SwitchColumn) || !(((SwitchColumn) sc).getRealColumn() instanceof SourceColumn))) {
-            return false;
-        }
+        // we already know sc is a SourceColumn or switches to a SourceColumn
         final ColumnSource<?> sccs = sc.getDataView();
         return sccs instanceof InMemoryColumnSource && ((InMemoryColumnSource) sccs).isInMemory()
                 && !Vector.class.isAssignableFrom(sc.getReturnedType());

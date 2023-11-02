@@ -41,6 +41,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -1133,8 +1134,8 @@ public class QueryTableSelectUpdateTest {
             Assert.assertEquals(rowKey * 2, baz.getLong(rowKey));
         });
 
-        Assert.assertEquals(foo, bar);
-        Assert.assertEquals(foo, baz);
+        Assert.assertSame(foo, bar);
+        Assert.assertSame(foo, baz);
     }
 
     @Test
@@ -1155,9 +1156,9 @@ public class QueryTableSelectUpdateTest {
         });
 
         // These columns were preserved and no flattening occurred.
-        Assert.assertEquals(orig, foo);
-        Assert.assertEquals(orig, bar);
-        Assert.assertEquals(orig, baz);
+        Assert.assertSame(orig, foo);
+        Assert.assertSame(orig, bar);
+        Assert.assertSame(orig, baz);
     }
 
     @Test
@@ -1181,8 +1182,8 @@ public class QueryTableSelectUpdateTest {
             }
         });
 
-        Assert.assertNotEquals(orig, foo); // this column was flattened
-        Assert.assertNotEquals(newI, baz); // vector columns cannot be preserved; so this should be a copy
+        Assert.assertNotSame(orig, foo); // this column was flattened
+        Assert.assertNotSame(newI, baz); // vector columns cannot be preserved; so this should be a copy
     }
 
     @Test
@@ -1208,8 +1209,32 @@ public class QueryTableSelectUpdateTest {
         });
 
         // Note that Foo is still being "selected" and therefore "brought into memory"
-        Assert.assertNotEquals(foo, source.getColumnSource("J"));
-        Assert.assertEquals(bar, source.getColumnSource("I"));
-        Assert.assertEquals(baz, foo);
+        Assert.assertNotSame(foo, source.getColumnSource("J"));
+        Assert.assertSame(bar, source.getColumnSource("I"));
+        Assert.assertSame(baz, foo);
+    }
+
+    @Test
+    public void testAliasColumnSelectRefreshing() {
+        final long size = 100;
+        final AtomicInteger numCalls = new AtomicInteger();
+        QueryScope.addParam("counter", numCalls);
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(size).toTracking());
+        final Table result = source.update("id = counter.getAndIncrement()")
+                .select("id_a = id", "id_b = id");
+
+        final ColumnSource<?> id_a = result.getColumnSource("id_a");
+        final ColumnSource<?> id_b = result.getColumnSource("id_b");
+        Assert.assertSame(id_a, id_b);
+        Assert.assertEquals(numCalls.intValue(), size);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final WritableRowSet added = RowSetFactory.fromRange(size, size * 2 - 1);
+            addToTable(source, added);
+            source.notifyListeners(added, i(), i());
+        });
+
+        Assert.assertEquals(numCalls.intValue(), 2 * size);
     }
 }
