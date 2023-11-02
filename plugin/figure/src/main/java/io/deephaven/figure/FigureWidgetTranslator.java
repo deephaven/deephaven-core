@@ -32,6 +32,7 @@ import io.deephaven.plot.datasets.interval.IntervalXYDataSeriesArray;
 import io.deephaven.plot.datasets.multiseries.AbstractMultiSeries;
 import io.deephaven.plot.datasets.multiseries.AbstractPartitionedTableHandleMultiSeries;
 import io.deephaven.plot.datasets.multiseries.MultiCatSeries;
+import io.deephaven.plot.datasets.multiseries.MultiOHLCSeries;
 import io.deephaven.plot.datasets.multiseries.MultiXYErrorBarSeries;
 import io.deephaven.plot.datasets.multiseries.MultiXYSeries;
 import io.deephaven.plot.datasets.ohlc.OHLCDataSeriesArray;
@@ -542,6 +543,56 @@ public class FigureWidgetTranslator {
                                                 plotHandle, multiXYErrorBarSeries.getYHigh(), SourceType.Y_HIGH,
                                                 yAxis));
                                     }
+
+                                    clientSeries.setLineColor(stringMapWithDefault(mergeColors(
+                                            multiXYErrorBarSeries.lineColorSeriesNameTointMap(),
+                                            multiXYErrorBarSeries.lineColorSeriesNameToStringMap(),
+                                            multiXYErrorBarSeries.lineColorSeriesNameToPaintMap())));
+                                    clientSeries.setPointColor(stringMapWithDefault(mergeColors(
+                                            multiXYErrorBarSeries.pointColorSeriesNameTointMap(),
+                                            multiXYErrorBarSeries.pointColorSeriesNameToStringMap(),
+                                            multiXYErrorBarSeries.pointColorSeriesNameToPaintMap())));
+                                    clientSeries.setLinesVisible(
+                                            boolMapWithDefault(
+                                                    multiXYErrorBarSeries.linesVisibleSeriesNameToBooleanMap()));
+                                    clientSeries.setPointsVisible(
+                                            boolMapWithDefault(
+                                                    multiXYErrorBarSeries.pointsVisibleSeriesNameToBooleanMap()));
+                                    clientSeries.setGradientVisible(
+                                            boolMapWithDefault(
+                                                    multiXYErrorBarSeries.gradientVisibleSeriesNameTobooleanMap()));
+                                    clientSeries.setPointLabelFormat(stringMapWithDefault(
+                                            multiXYErrorBarSeries.pointLabelFormatSeriesNameToStringMap()));
+                                    clientSeries.setXToolTipPattern(
+                                            stringMapWithDefault(
+                                                    multiXYErrorBarSeries.xToolTipPatternSeriesNameToStringMap()));
+                                    clientSeries.setYToolTipPattern(
+                                            stringMapWithDefault(
+                                                    multiXYErrorBarSeries.yToolTipPatternSeriesNameToStringMap()));
+                                    clientSeries.setPointLabel(stringMapWithDefault(
+                                            multiXYErrorBarSeries.pointColorSeriesNameToStringMap(),
+                                            Objects::toString));
+                                    clientSeries.setPointSize(doubleMapWithDefault(
+                                            multiXYErrorBarSeries.pointSizeSeriesNameToNumberMap(),
+                                            number -> number == null ? null : number.doubleValue()));
+
+                                    clientSeries.setPointShape(stringMapWithDefault(mergeShapes(
+                                            multiXYErrorBarSeries.pointShapeSeriesNameToStringMap(),
+                                            multiXYErrorBarSeries.pointShapeSeriesNameToShapeMap())));
+                                } else if (partitionedTableMultiSeries instanceof MultiOHLCSeries) {
+                                    MultiOHLCSeries multiXYErrorBarSeries =
+                                            (MultiOHLCSeries) partitionedTableMultiSeries;
+
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandle, multiXYErrorBarSeries.getTimeCol(), SourceType.TIME, xAxis));
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandle, multiXYErrorBarSeries.getOpenCol(), SourceType.OPEN, yAxis));
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandle, multiXYErrorBarSeries.getCloseCol(), SourceType.CLOSE, yAxis));
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandle, multiXYErrorBarSeries.getHighCol(), SourceType.HIGH, yAxis));
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandle, multiXYErrorBarSeries.getLowCol(), SourceType.LOW, yAxis));
 
                                     clientSeries.setLineColor(stringMapWithDefault(mergeColors(
                                             multiXYErrorBarSeries.lineColorSeriesNameTointMap(),

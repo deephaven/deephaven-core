@@ -115,20 +115,12 @@ public class MultiXYErrorBarSeries extends AbstractPartitionedTableHandleMultiSe
         return drawYError;
     }
 
-    public String getX() {
-        return x;
-    }
-
     public String getXLow() {
         return xLow;
     }
 
     public String getXHigh() {
         return xHigh;
-    }
-
-    public String getY() {
-        return y;
     }
 
     public String getYLow() {
