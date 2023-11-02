@@ -34,18 +34,18 @@ import java.util.function.Predicate;
 import static elemental2.dom.DomGlobal.console;
 
 public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
-    @JsMethod(namespace = JsPackage.GLOBAL, name = "import")
+    @JsMethod(namespace = "<window>", name = "import")
     private static native Promise<JsPropertyMap<Object>> importScript(String moduleName);
 
     private static Promise<Void> importDhInternal() {
-        return importScript("dhinternal.js")
+        return importScript( localServer + "/jsapi/dh-internal.js")
                 .then(module -> {
                     Js.asPropertyMap(DomGlobal.window).set("dhinternal", module.get("dhinternal"));
                     return Promise.resolve((Void) null);
                 });
     }
 
-    public static final String localServer = System.getProperty("dhTestServer", "http://localhost:10000");
+    public static final String localServer = System.getProperty("dh.server", "http://localhost:10000");
 
     public static class TableSourceBuilder {
         public TableSourceBuilder script(String tableName, String python, String groovy) {

@@ -1,3 +1,4 @@
 <module>
     <inherits name="io.deephaven.web.DeephavenApi" />
+    <define-configuration-property name="dh.server" is-multi-valued="false"/>
 </module>
