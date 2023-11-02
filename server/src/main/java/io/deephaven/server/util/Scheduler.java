@@ -67,6 +67,14 @@ public interface Scheduler extends Clock {
             this.clock = Objects.requireNonNull(clock);
         }
 
+        ExecutorService serialDelegate() {
+            return serialDelegate;
+        }
+
+        ScheduledExecutorService concurrentDelegate() {
+            return concurrentDelegate;
+        }
+
         @Override
         public long currentTimeMillis() {
             return clock.currentTimeMillis();
