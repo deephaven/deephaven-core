@@ -280,6 +280,50 @@ public class TableService {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ComputeColumnStatisticsType {
+        @JsOverlay
+        static TableService.ComputeColumnStatisticsType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CreateInputTableType {
         @JsOverlay
         static TableService.CreateInputTableType create() {
@@ -1737,6 +1781,7 @@ public class TableService {
     public static TableService.AsOfJoinTablesType AsOfJoinTables;
     public static TableService.BatchType Batch;
     public static TableService.ComboAggregateType ComboAggregate;
+    public static TableService.ComputeColumnStatisticsType ComputeColumnStatistics;
     public static TableService.CreateInputTableType CreateInputTable;
     public static TableService.CrossJoinTablesType CrossJoinTables;
     public static TableService.DropColumnsType DropColumns;
