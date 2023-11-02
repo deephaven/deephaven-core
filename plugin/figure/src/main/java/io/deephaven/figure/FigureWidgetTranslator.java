@@ -580,55 +580,55 @@ public class FigureWidgetTranslator {
                                             multiXYErrorBarSeries.pointShapeSeriesNameToStringMap(),
                                             multiXYErrorBarSeries.pointShapeSeriesNameToShapeMap())));
                                 } else if (partitionedTableMultiSeries instanceof MultiOHLCSeries) {
-                                    MultiOHLCSeries multiXYErrorBarSeries =
+                                    MultiOHLCSeries multiOHLCSeries =
                                             (MultiOHLCSeries) partitionedTableMultiSeries;
 
                                     clientAxes.add(makePartitionedTableSourceDescriptor(
-                                            plotHandle, multiXYErrorBarSeries.getTimeCol(), SourceType.TIME, xAxis));
+                                            plotHandle, multiOHLCSeries.getTimeCol(), SourceType.TIME, xAxis));
                                     clientAxes.add(makePartitionedTableSourceDescriptor(
-                                            plotHandle, multiXYErrorBarSeries.getOpenCol(), SourceType.OPEN, yAxis));
+                                            plotHandle, multiOHLCSeries.getOpenCol(), SourceType.OPEN, yAxis));
                                     clientAxes.add(makePartitionedTableSourceDescriptor(
-                                            plotHandle, multiXYErrorBarSeries.getCloseCol(), SourceType.CLOSE, yAxis));
+                                            plotHandle, multiOHLCSeries.getCloseCol(), SourceType.CLOSE, yAxis));
                                     clientAxes.add(makePartitionedTableSourceDescriptor(
-                                            plotHandle, multiXYErrorBarSeries.getHighCol(), SourceType.HIGH, yAxis));
+                                            plotHandle, multiOHLCSeries.getHighCol(), SourceType.HIGH, yAxis));
                                     clientAxes.add(makePartitionedTableSourceDescriptor(
-                                            plotHandle, multiXYErrorBarSeries.getLowCol(), SourceType.LOW, yAxis));
+                                            plotHandle, multiOHLCSeries.getLowCol(), SourceType.LOW, yAxis));
 
                                     clientSeries.setLineColor(stringMapWithDefault(mergeColors(
-                                            multiXYErrorBarSeries.lineColorSeriesNameTointMap(),
-                                            multiXYErrorBarSeries.lineColorSeriesNameToStringMap(),
-                                            multiXYErrorBarSeries.lineColorSeriesNameToPaintMap())));
+                                            multiOHLCSeries.lineColorSeriesNameTointMap(),
+                                            multiOHLCSeries.lineColorSeriesNameToStringMap(),
+                                            multiOHLCSeries.lineColorSeriesNameToPaintMap())));
                                     clientSeries.setPointColor(stringMapWithDefault(mergeColors(
-                                            multiXYErrorBarSeries.pointColorSeriesNameTointMap(),
-                                            multiXYErrorBarSeries.pointColorSeriesNameToStringMap(),
-                                            multiXYErrorBarSeries.pointColorSeriesNameToPaintMap())));
+                                            multiOHLCSeries.pointColorSeriesNameTointMap(),
+                                            multiOHLCSeries.pointColorSeriesNameToStringMap(),
+                                            multiOHLCSeries.pointColorSeriesNameToPaintMap())));
                                     clientSeries.setLinesVisible(
                                             boolMapWithDefault(
-                                                    multiXYErrorBarSeries.linesVisibleSeriesNameToBooleanMap()));
+                                                    multiOHLCSeries.linesVisibleSeriesNameToBooleanMap()));
                                     clientSeries.setPointsVisible(
                                             boolMapWithDefault(
-                                                    multiXYErrorBarSeries.pointsVisibleSeriesNameToBooleanMap()));
+                                                    multiOHLCSeries.pointsVisibleSeriesNameToBooleanMap()));
                                     clientSeries.setGradientVisible(
                                             boolMapWithDefault(
-                                                    multiXYErrorBarSeries.gradientVisibleSeriesNameTobooleanMap()));
+                                                    multiOHLCSeries.gradientVisibleSeriesNameTobooleanMap()));
                                     clientSeries.setPointLabelFormat(stringMapWithDefault(
-                                            multiXYErrorBarSeries.pointLabelFormatSeriesNameToStringMap()));
+                                            multiOHLCSeries.pointLabelFormatSeriesNameToStringMap()));
                                     clientSeries.setXToolTipPattern(
                                             stringMapWithDefault(
-                                                    multiXYErrorBarSeries.xToolTipPatternSeriesNameToStringMap()));
+                                                    multiOHLCSeries.xToolTipPatternSeriesNameToStringMap()));
                                     clientSeries.setYToolTipPattern(
                                             stringMapWithDefault(
-                                                    multiXYErrorBarSeries.yToolTipPatternSeriesNameToStringMap()));
+                                                    multiOHLCSeries.yToolTipPatternSeriesNameToStringMap()));
                                     clientSeries.setPointLabel(stringMapWithDefault(
-                                            multiXYErrorBarSeries.pointColorSeriesNameToStringMap(),
+                                            multiOHLCSeries.pointColorSeriesNameToStringMap(),
                                             Objects::toString));
                                     clientSeries.setPointSize(doubleMapWithDefault(
-                                            multiXYErrorBarSeries.pointSizeSeriesNameToNumberMap(),
+                                            multiOHLCSeries.pointSizeSeriesNameToNumberMap(),
                                             number -> number == null ? null : number.doubleValue()));
 
                                     clientSeries.setPointShape(stringMapWithDefault(mergeShapes(
-                                            multiXYErrorBarSeries.pointShapeSeriesNameToStringMap(),
-                                            multiXYErrorBarSeries.pointShapeSeriesNameToShapeMap())));
+                                            multiOHLCSeries.pointShapeSeriesNameToStringMap(),
+                                            multiOHLCSeries.pointShapeSeriesNameToShapeMap())));
                                 } else {
                                     errorList.add(
                                             "OpenAPI presently does not support series of type "
