@@ -8,6 +8,7 @@ package io.deephaven.server.table.stats;
 import java.util.Set;
 import java.util.HashSet;
 
+import gnu.trove.map.TObjectLongMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -16,9 +17,9 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.util.QueryConstants;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,7 @@ public class ObjectChunkedStats implements ChunkedStatsKernel {
         long count = 0;
         int uniqueCount = 0;
 
-        final TObjectLongHashMap<Object> countValues = new TObjectLongHashMap<Object>();
+        final TObjectLongMap<Object> countValues = new TObjectLongHashMap<>();
         boolean useSet = false;
         final Set<Object> uniqueValues = new HashSet<>();
 
@@ -77,30 +78,29 @@ public class ObjectChunkedStats implements ChunkedStatsKernel {
                     TableTools.longCol("COUNT", count),
                     TableTools.longCol("SIZE", rowSet.size()),
                     TableTools.intCol("UNIQUE_VALUES", uniqueValues.size()));
-        } else {
-            List<Map.Entry<String, Long>> sorted = new ArrayList<>(countValues.size());
-
-            countValues.forEachEntry((o, c) -> {
-                sorted.add(Map.entry(Objects.toString(o), c));
-                return true;
-            });
-            sorted.sort(Map.Entry.comparingByValue());
-
-            int resultCount = Math.min(maxUniqueToDisplay, sorted.size());
-            String[] uniqueKeys = new String[resultCount];
-            long[] uniqueCounts = new long[resultCount];
-            Iterator<Map.Entry<String, Long>> iter = sorted.iterator();
-            for (int i = 0; i < resultCount; i++) {
-                Map.Entry<String, Long> entry = iter.next();
-                uniqueKeys[i] = entry.getKey();
-                uniqueCounts[i] = entry.getValue();
-            }
-            return TableTools.newTable(
-                    TableTools.longCol("COUNT", count),
-                    TableTools.longCol("SIZE", rowSet.size()),
-                    TableTools.intCol("UNIQUE_VALUES", countValues.size()),
-                    new ColumnHolder<>("UNIQUE_KEYS", String[].class, String.class, false, uniqueKeys),
-                    new ColumnHolder<>("UNIQUE_COUNTS", long[].class, long.class, false, uniqueCounts));
         }
+        List<Map.Entry<String, Long>> sorted = new ArrayList<>(countValues.size());
+
+        countValues.forEachEntry((o, c) -> {
+            sorted.add(Map.entry(Objects.toString(o), c));
+            return true;
+        });
+        sorted.sort(Map.Entry.<String, Long>comparingByValue().reversed());
+
+        int resultCount = Math.min(maxUniqueToDisplay, sorted.size());
+        String[] uniqueKeys = new String[resultCount];
+        long[] uniqueCounts = new long[resultCount];
+        Iterator<Map.Entry<String, Long>> iter = sorted.iterator();
+        for (int i = 0; i < resultCount; i++) {
+            Map.Entry<String, Long> entry = iter.next();
+            uniqueKeys[i] = entry.getKey();
+            uniqueCounts[i] = entry.getValue();
+        }
+        return TableTools.newTable(
+                TableTools.longCol("COUNT", count),
+                TableTools.longCol("SIZE", rowSet.size()),
+                TableTools.intCol("UNIQUE_VALUES", countValues.size()),
+                new ColumnHolder<>("UNIQUE_KEYS", String[].class, String.class, false, uniqueKeys),
+                new ColumnHolder<>("UNIQUE_COUNTS", long[].class, long.class, false, uniqueCounts));
     }
 }

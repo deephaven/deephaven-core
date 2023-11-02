@@ -43,7 +43,8 @@ public class ReplicateColumnStats {
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = ReplicationUtils.removeImport(lines,
                 "import gnu.trove.set.TObjectSet;",
-                "import gnu.trove.set.hash.TObjectHashSet;");
+                "import gnu.trove.set.hash.TObjectHashSet;",
+                "import io.deephaven.util.QueryConstants;");
         lines = ReplicationUtils.addImport(lines,
                 Set.class,
                 HashSet.class);
@@ -51,11 +52,13 @@ public class ReplicateColumnStats {
                 "QueryConstants.NULL_OBJECT", "null",
                 "\\? extends Attributes.Values", "?, ? extends Attributes.Values",
                 "ObjectChunk<[?] ", "ObjectChunk<?, ? ",
-                " TObjectLongHashMap", " TObjectLongHashMap<Object>",
+                " TObjectLongMap", " TObjectLongMap<Object>",
+                " TObjectLongHashMap", " TObjectLongHashMap<>",
                 " TObjectSet", " Set<Object>",
                 " TObjectHashSet", " HashSet<>",
                 "new ChunkedObjectColumnIterator", "new ChunkedObjectColumnIterator<>",
-                "\\(ObjectColumnIterator", "(ObjectColumnIterator<Object>");
+                "\\(ObjectColumnIterator", "(ObjectColumnIterator<Object>",
+                "nextObject\\(\\)", "next()");
         FileUtils.writeLines(objectFile, lines);
     }
 }

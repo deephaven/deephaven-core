@@ -1,5 +1,6 @@
 package io.deephaven.server.table.stats;
 
+import gnu.trove.map.TCharLongMap;
 import gnu.trove.map.hash.TCharLongHashMap;
 import gnu.trove.set.TCharSet;
 import gnu.trove.set.hash.TCharHashSet;
@@ -13,6 +14,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,14 +34,14 @@ public class CharacterChunkedStats implements ChunkedStatsKernel {
         long count = 0;
         int uniqueCount = 0;
 
-        final TCharLongHashMap countValues = new TCharLongHashMap();
+        final TCharLongMap countValues = new TCharLongHashMap();
         boolean useSet = false;
         final TCharSet uniqueValues = new TCharHashSet();
 
         try (CharacterColumnIterator iterator =
                 new ChunkedCharacterColumnIterator(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {
             while (iterator.hasNext()) {
-                char val = iterator.next();
+                char val = iterator.nextChar();
                 if (val == QueryConstants.NULL_CHAR) {
                     continue;
                 }
@@ -55,7 +57,7 @@ public class CharacterChunkedStats implements ChunkedStatsKernel {
             }
             while (iterator.hasNext()) {
                 // items still remain, count non-nulls and uniques
-                char val = iterator.next();
+                char val = iterator.nextChar();
                 if (val == QueryConstants.NULL_CHAR) {
                     continue;
                 }
@@ -71,30 +73,29 @@ public class CharacterChunkedStats implements ChunkedStatsKernel {
                     TableTools.longCol("COUNT", count),
                     TableTools.longCol("SIZE", rowSet.size()),
                     TableTools.intCol("UNIQUE_VALUES", uniqueValues.size()));
-        } else {
-            List<Map.Entry<String, Long>> sorted = new ArrayList<>(countValues.size());
-
-            countValues.forEachEntry((o, c) -> {
-                sorted.add(Map.entry(Objects.toString(o), c));
-                return true;
-            });
-            sorted.sort(Map.Entry.comparingByValue());
-
-            int resultCount = Math.min(maxUniqueToDisplay, sorted.size());
-            String[] uniqueKeys = new String[resultCount];
-            long[] uniqueCounts = new long[resultCount];
-            Iterator<Map.Entry<String, Long>> iter = sorted.iterator();
-            for (int i = 0; i < resultCount; i++) {
-                Map.Entry<String, Long> entry = iter.next();
-                uniqueKeys[i] = entry.getKey();
-                uniqueCounts[i] = entry.getValue();
-            }
-            return TableTools.newTable(
-                    TableTools.longCol("COUNT", count),
-                    TableTools.longCol("SIZE", rowSet.size()),
-                    TableTools.intCol("UNIQUE_VALUES", countValues.size()),
-                    new ColumnHolder<>("UNIQUE_KEYS", String[].class, String.class, false, uniqueKeys),
-                    new ColumnHolder<>("UNIQUE_COUNTS", long[].class, long.class, false, uniqueCounts));
         }
+        List<Map.Entry<String, Long>> sorted = new ArrayList<>(countValues.size());
+
+        countValues.forEachEntry((o, c) -> {
+            sorted.add(Map.entry(Objects.toString(o), c));
+            return true;
+        });
+        sorted.sort(Map.Entry.<String, Long>comparingByValue().reversed());
+
+        int resultCount = Math.min(maxUniqueToDisplay, sorted.size());
+        String[] uniqueKeys = new String[resultCount];
+        long[] uniqueCounts = new long[resultCount];
+        Iterator<Map.Entry<String, Long>> iter = sorted.iterator();
+        for (int i = 0; i < resultCount; i++) {
+            Map.Entry<String, Long> entry = iter.next();
+            uniqueKeys[i] = entry.getKey();
+            uniqueCounts[i] = entry.getValue();
+        }
+        return TableTools.newTable(
+                TableTools.longCol("COUNT", count),
+                TableTools.longCol("SIZE", rowSet.size()),
+                TableTools.intCol("UNIQUE_VALUES", countValues.size()),
+                new ColumnHolder<>("UNIQUE_KEYS", String[].class, String.class, false, uniqueKeys),
+                new ColumnHolder<>("UNIQUE_COUNTS", long[].class, long.class, false, uniqueCounts));
     }
 }
