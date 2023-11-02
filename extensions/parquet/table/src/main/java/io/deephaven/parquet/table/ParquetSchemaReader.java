@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -337,7 +338,7 @@ public class ParquetSchemaReader {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
-                return Optional.of(java.time.LocalDate.class);
+                return Optional.of(LocalDate.class);
             }
 
             @Override

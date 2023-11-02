@@ -12,10 +12,14 @@ import java.nio.IntBuffer;
 import java.time.LocalDate;
 
 final class DateArrayTransfer extends PrimitiveArrayAndVectorTransfer<LocalDate[], LocalDate[], IntBuffer> {
+    private static int getMaxValuesPerPage(@NotNull final RowSequence tableRowSet, final int targetPageSize) {
+        return Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize / Integer.BYTES));
+    }
+
     DateArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
-                IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
+        super(columnSource, tableRowSet, getMaxValuesPerPage(tableRowSet, targetPageSize), targetPageSize,
+                IntBuffer.allocate(getMaxValuesPerPage(tableRowSet, targetPageSize)), Integer.BYTES);
     }
 
     @Override
@@ -29,9 +33,10 @@ final class DateArrayTransfer extends PrimitiveArrayAndVectorTransfer<LocalDate[
     }
 
     @Override
-    void copyToBuffer(final @NotNull EncodedData<LocalDate[]> data) {
+    void copyToBuffer(@NotNull final EncodedData<LocalDate[]> data) {
         for (final LocalDate t : data.encodedValues) {
-            buffer.put(DateTimeUtils.epochDays(t));
+            // Store the number of days from the Unix epoch, 1 January 1970
+            buffer.put(DateTimeUtils.epochDaysAsInt(t));
         }
     }
 }

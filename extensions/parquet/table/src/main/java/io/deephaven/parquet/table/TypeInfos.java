@@ -359,9 +359,6 @@ public class TypeInfos {
         }
     }
 
-    /**
-     * TODO: newer versions of parquet seem to support NANOS, but this version seems to only support MICROS
-     */
     private enum InstantType implements TypeInfo {
         INSTANCE;
 

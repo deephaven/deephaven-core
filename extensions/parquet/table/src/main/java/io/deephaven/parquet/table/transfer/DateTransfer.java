@@ -22,7 +22,7 @@ final class DateTransfer extends IntCastablePrimitiveTransfer<WritableObjectChun
         final int chunkSize = chunk.size();
         for (int chunkIdx = 0; chunkIdx < chunkSize; ++chunkIdx) {
             // Store the number of days from the Unix epoch, 1 January 1970
-            buffer.put(DateTimeUtils.epochDays(chunk.get(chunkIdx)));
+            buffer.put(DateTimeUtils.epochDaysAsInt(chunk.get(chunkIdx)));
         }
     }
 }

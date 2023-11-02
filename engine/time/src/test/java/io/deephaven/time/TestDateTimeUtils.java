@@ -1419,6 +1419,19 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochSeconds((ZonedDateTime) null));
     }
 
+    public void testEpochDays() {
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochDays((LocalDate) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.epochDaysAsInt((LocalDate) null));
+
+        final LocalDate OneYearFromEpoch = LocalDate.of(1971, 1, 1);
+        TestCase.assertEquals(365, DateTimeUtils.epochDays(OneYearFromEpoch));
+        TestCase.assertEquals(365, DateTimeUtils.epochDaysAsInt(OneYearFromEpoch));
+
+        final LocalDate today = LocalDate.now();
+        TestCase.assertEquals(today.toEpochDay(), DateTimeUtils.epochDays(today));
+        TestCase.assertEquals((int) today.toEpochDay(), DateTimeUtils.epochDaysAsInt(today));
+    }
+
     public void testEpochNanosTo() {
         final long nanos = 123456789123456789L;
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
@@ -1512,6 +1525,20 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 DateTimeUtils.epochAutoToZonedDateTime(seconds, TZ_JP));
         TestCase.assertNull(DateTimeUtils.epochAutoToZonedDateTime(NULL_LONG, TZ_JP));
         TestCase.assertNull(DateTimeUtils.epochAutoToZonedDateTime(nanos, null));
+    }
+
+    public void testEpochDaysTo() {
+        TestCase.assertNull(DateTimeUtils.epochDaysAsIntToLocalDate(NULL_INT));
+        TestCase.assertNull(DateTimeUtils.epochDaysToLocalDate(NULL_LONG));
+
+        final long numDaysInYear = 365;
+        final LocalDate OneYearFromEpoch = LocalDate.of(1971, 1, 1);
+        TestCase.assertEquals(OneYearFromEpoch, DateTimeUtils.epochDaysToLocalDate(numDaysInYear));
+        TestCase.assertEquals(OneYearFromEpoch, DateTimeUtils.epochDaysAsIntToLocalDate((int) numDaysInYear));
+
+        final LocalDate today = LocalDate.now();
+        TestCase.assertEquals(today, DateTimeUtils.epochDaysToLocalDate(today.toEpochDay()));
+        TestCase.assertEquals(today, DateTimeUtils.epochDaysAsIntToLocalDate((int) today.toEpochDay()));
     }
 
     public void testToExcelTime() {

@@ -5,6 +5,7 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
@@ -51,9 +52,8 @@ public class ToDatePageFromInt<ATTR extends Any> implements ToPage<ATTR, LocalDa
         final LocalDate[] to = new LocalDate[from.length];
 
         for (int i = 0; i < from.length; ++i) {
-            to[i] = LocalDate.ofEpochDay(from[i]);
+            to[i] = DateTimeUtils.epochDaysAsIntToLocalDate(from[i]);
         }
-
         return to;
     }
 }

@@ -8,7 +8,6 @@ import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.primitive.function.ByteConsumer;
 import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.primitive.function.FloatConsumer;
@@ -61,7 +60,6 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -125,7 +123,8 @@ public final class ParquetTableReadWriteTest {
                         "someCharColumn = (char)i",
                         "someTime = DateTimeUtils.now() + i",
                         "someKey = `` + (int)(i /100)",
-                        "biColumn = java.math.BigInteger.valueOf(ii)",
+                        "someBiColumn = java.math.BigInteger.valueOf(ii)",
+                        "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
                         "nullKey = i < -1?`123`:null",
                         "nullIntColumn = (int)null",
                         "nullLongColumn = (long)null",
@@ -137,7 +136,8 @@ public final class ParquetTableReadWriteTest {
                         "nullCharColumn = (char)null",
                         "nullTime = (Instant)null",
                         "nullBiColumn = (java.math.BigInteger)null",
-                        "nullString = (String)null"));
+                        "nullString = (String)null",
+                        "nullDateColumn = (java.time.LocalDate)null"));
         if (includeBigDecimal) {
             columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
         }
@@ -502,6 +502,7 @@ public final class ParquetTableReadWriteTest {
                         "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
                         "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
                         "someBiColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
+                        "someDateColumn = new java.time.LocalDate[] {i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)}",
                         "nullStringArrayColumn = new String[] {(String)null}",
                         "nullIntArrayColumn = new int[] {(int)null}",
                         "nullLongArrayColumn = new long[] {(long)null}",
@@ -512,7 +513,8 @@ public final class ParquetTableReadWriteTest {
                         "nullByteArrayColumn = new byte[] {(byte)null}",
                         "nullCharArrayColumn = new char[] {(char)null}",
                         "nullTimeArrayColumn = new Instant[] {(Instant)null}",
-                        "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"));
+                        "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}",
+                        "nullDateColumn = new java.time.LocalDate[] {(java.time.LocalDate)null}"));
 
         Table arrayTable = TableTools.emptyTable(10000).select(Selectable.from(columns));
         final File dest = new File(rootFile + File.separator + "testArrayColumns.parquet");
@@ -2652,36 +2654,4 @@ public final class ParquetTableReadWriteTest {
         }
     }
     // endregion Column Statistics Assertions
-
-    @Test
-    public void generateDateTimeCol() {
-        final int NUM_ROWS = 5;
-
-        final int ARRAY_SIZE = 3;
-        final LocalDate[] dateArr = new LocalDate[ARRAY_SIZE];
-        // final LocalTime[] timeArr = new LocalTime[ARRAY_SIZE];
-        for (int ii = 0; ii < ARRAY_SIZE; ++ii) {
-            dateArr[ii] = LocalDate.now();
-            // timeArr[ii] = LocalTime.now();
-        }
-        QueryScope.addParam("dateArr", dateArr);
-        // QueryScope.addParam("timeArr", timeArr);
-        final Table table = TableTools.emptyTable(NUM_ROWS).view(
-                "Date = java.time.LocalDate.now()",
-                // "nullDate = (java.time.LocalDate)null"
-                "DateArray = dateArr");
-        final File dest = new File("/Users/shivammalhotra/Documents/dates.parquet"); // TOD change it back to local dir
-        ParquetTools.writeTable(table, dest, ParquetTools.UNCOMPRESSED);
-        final Table fromDisk = ParquetTools.readTable(dest);
-        TstUtils.assertTableEquals(table, fromDisk);
-
-        final Table vectorTable = TableTools.emptyTable(ARRAY_SIZE).view(
-                "Date = java.time.LocalDate.now()").groupBy();
-        final File vectorDest = new File("/Users/shivammalhotra/Documents/vectorDates.parquet"); // TOD change it back
-                                                                                                 // to local dir
-        ParquetTools.writeTable(vectorTable, vectorDest, ParquetTools.UNCOMPRESSED);
-
-        final Table fromDiskVector = ParquetTools.readTable(vectorDest);
-        TstUtils.assertTableEquals(vectorTable, fromDiskVector);
-    }
 }
