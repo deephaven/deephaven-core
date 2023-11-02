@@ -166,6 +166,8 @@ public class JsFigure extends HasLifecycle {
 
     private JsChart[] charts;
 
+    private String[] errors;
+
     private JsTable[] tables;
     private Map<Integer, JsTable> plotHandlesToTables;
 
@@ -200,6 +202,8 @@ public class JsFigure extends HasLifecycle {
             charts = descriptor.getChartsList().asList().stream()
                     .map(chartDescriptor -> new JsChart(chartDescriptor, this)).toArray(JsChart[]::new);
             JsObject.freeze(charts);
+
+            errors = JsObject.freeze(descriptor.getErrorsList().asList().toArray(new String[0]));
 
             return this.tableFetch.fetch(this, response);
         }).then(tableFetchData -> {
@@ -324,8 +328,9 @@ public class JsFigure extends HasLifecycle {
         return charts;
     }
 
+    @JsProperty
     public String[] getErrors() {
-        return Js.uncheckedCast(descriptor.getErrorsList().slice());
+        return errors;
     }
 
     /**

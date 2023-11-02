@@ -518,6 +518,10 @@ public class FigureWidgetTranslator {
                                     clientSeries.setPointShape(stringMapWithDefault(mergeShapes(
                                             multiCatSeries.pointShapeSeriesNameToStringMap(),
                                             multiCatSeries.pointShapeSeriesNameToShapeMap())));
+                                } else {
+                                    errorList.add(
+                                            "OpenAPI presently does not support series of type "
+                                                    + partitionedTableMultiSeries.getClass());
                                 }
                             } else {
                                 errorList.add(
@@ -530,7 +534,6 @@ public class FigureWidgetTranslator {
                         } else {
                             errorList.add(
                                     "OpenAPI presently does not support series of type " + seriesInternal.getClass());
-                            // TODO handle multi-series, possibly transformed case?
                         }
                     });
         });
