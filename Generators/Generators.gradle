@@ -56,7 +56,25 @@ task groovyStaticImportGeneratorAssert(type: JavaExec, dependsOn: 'classes') {
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
     onlyIf { System.getenv('NO_ASSERT') != 'true' }
+}
 
+task generateStaticCalendarMethods(type: JavaExec, dependsOn: 'classes') {
+    description 'Run StaticCalendarMethodsGenerator'
+
+    main = 'io.deephaven.libs.StaticCalendarMethodsGenerator'
+    args devRoot, 'false'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+}
+
+task generateStaticCalendarMethodsAssert(type: JavaExec, dependsOn: 'classes') {
+    description 'Run StaticCalendarMethodsGenerator to assert that the generated code has not changed'
+
+    main = 'io.deephaven.libs.StaticCalendarMethodsGenerator'
+    args devRoot, 'true'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    onlyIf { System.getenv('NO_ASSERT') != 'true' }
 }
 
 task generateAxesPlotMethods(type: JavaExec, dependsOn: 'classes') {
@@ -190,6 +208,7 @@ tasks.register 'generateAllPythonAssert', {
 
 tasks.register 'generateAll', {
     Task t -> t.dependsOn  ':Generators:groovyStaticImportGenerator',
+                           ':Generators:generateStaticCalendarMethods',
                            ':Generators:generateAxesPlotMethods',
                            ':Generators:generateMultiSeries',
                            ':Generators:generateFigureImmutable',
@@ -201,6 +220,7 @@ tasks.register 'generateAll', {
 }
 
 project.tasks.getByName('quick').dependsOn groovyStaticImportGeneratorAssert,
+        generateStaticCalendarMethodsAssert,
         generateAxesPlotMethodsAssert,
         generateMultiSeriesAssert,
         generateFigureImmutableAssert,
