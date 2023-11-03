@@ -1,0 +1,43 @@
+---
+url: https://rdeephaven.io
+template:
+  bootstrap: 5
+  bootswatch: cosmo
+  
+articles:
+  - title: Overview
+    navbar: ~
+    contents:
+    - Overview
+
+  - title: Aggregations
+    navbar: ~
+    contents:
+    - Aggregations
+  
+reference:
+  - title: Core API
+    contents:
+    - Client
+    - TableHandle
+    - AggOp
+    - UpdateBy
+
+  - title: AggBy Operations
+    contents:
+    - starts_with("agg_")
+  
+  - title: UpdateBy Operations
+    contents:
+    - starts_with("uby_")
+
+  - title: Utility Functions
+    contents:
+    - merge_tables
+    - op_control
+  
+  - title: Other Data Types
+    contents:
+    - UpdateByOp
+    - OperationControl
+

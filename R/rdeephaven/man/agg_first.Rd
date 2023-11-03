@@ -11,7 +11,7 @@ Default is to aggregate all non-grouping columns, which is only valid in the \co
 \code{AggOp} to be used in a call to \code{agg_by()} or \code{agg_all_by()}.
 }
 \description{
-Creates a First aggregation that computes the first value of each column in \code{cols} for each aggregation group.
+Creates a First \href{vignette("Aggregations")}{aggregation} that computes the first value of each column in \code{cols} for each aggregation group.
 }
 \details{
 The aggregation groups that this function acts on are defined with the \code{by} parameter of the \code{agg_by()} or
@@ -20,7 +20,7 @@ columns. For example, if \code{by = c("A", "B")}, then the aggregation groups ar
 values in the \code{A} and \code{B} columns.
 
 This function, like other Deephaven \code{agg} functions, is a generator function. That is, its output is another
-function called an \code{\link{AggOp}} intended to be used in a call to \code{agg_by()} or \code{agg_all_by()}. This detail is
+function called an \href{?AggOp}{\code{AggOp}} intended to be used in a call to \code{agg_by()} or \code{agg_all_by()}. This detail is
 typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 as the output of an \code{agg} function can otherwise seem unexpected.
 }

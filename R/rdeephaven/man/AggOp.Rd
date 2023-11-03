@@ -5,7 +5,7 @@
 \alias{AggOp}
 \title{Deephaven AggOps}
 \description{
-An \code{AggOp} is the return type of one of Deephaven's \code{\link[=AggBy]{agg}} functions. It is a function that performs the
+An \code{AggOp} is the return type of one of Deephaven's \href{vignette("Aggregations")}{\code{agg}} functions. It is a function that performs the
 computation specified by the \code{agg} function. These are intended to be passed directly to \code{agg_by()} or \code{agg_all_by()},
 and should never be instantiated directly be user code.
 
@@ -20,9 +20,6 @@ result2 <- th2$agg_by(aggregations, by="Group")
 }\if{html}{\out{</div>}}
 
 In this example, \code{aggregations} would be a vector of two \code{AggOp}s that can be reused in multiple calls to \code{agg_by()}.
-}
-\details{
-Name AggOp
 }
 \section{Methods}{
 \subsection{Public methods}{
