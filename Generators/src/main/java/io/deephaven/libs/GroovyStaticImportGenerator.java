@@ -3,11 +3,13 @@
  */
 package io.deephaven.libs;
 
-import io.deephaven.gen.AbstractPublicStaticGenerator;
+import io.deephaven.gen.AbstractBasicJavaGenerator;
 import io.deephaven.gen.GenUtils;
 import io.deephaven.gen.JavaFunction;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -20,10 +22,10 @@ import java.util.stream.Collectors;
  * causes some of the functions to not be present in the namespace. This class combines static imports from multiple
  * sources into a single class that can be imported.
  */
-public class GroovyStaticImportGenerator extends AbstractPublicStaticGenerator {
+public class GroovyStaticImportGenerator extends AbstractBasicJavaGenerator {
 
-    public GroovyStaticImportGenerator(String gradleTask, String packageName, String className, String[] imports, Collection<Predicate<JavaFunction>> skips) throws ClassNotFoundException {
-        super(gradleTask, packageName, className, imports, skips);
+    public GroovyStaticImportGenerator(String gradleTask, String packageName, String className, String[] imports, Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen) throws ClassNotFoundException {
+        super(gradleTask, packageName, className, imports, includeMethod, skipsGen);
     }
 
     @Override
@@ -70,6 +72,7 @@ public class GroovyStaticImportGenerator extends AbstractPublicStaticGenerator {
         };
 
         GroovyStaticImportGenerator gen = new GroovyStaticImportGenerator(gradleTask, packageName, className, imports,
+                (m) -> Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers()),
                 // skipping common erasure "sum"
                 Collections.singletonList((f) -> f.getMethodName().equals("sum") && f.getParameterTypes().length == 1
                         && f.getParameterTypes()[0].getTypeName()

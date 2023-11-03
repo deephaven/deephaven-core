@@ -6,7 +6,6 @@ package io.deephaven.gen;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -18,30 +17,34 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Abstract class for generating Java code from public static methods.
+ * Abstract class for generating Java code from methods of one or more classes.
  */
-public abstract class AbstractPublicStaticGenerator {
-    private static final Logger log = Logger.getLogger(AbstractPublicStaticGenerator.class.toString());
+public abstract class AbstractBasicJavaGenerator {
+    private static final Logger log = Logger.getLogger(AbstractBasicJavaGenerator.class.toString());
 
     private final String gradleTask;
     private final String packageName;
     private final String className;
-    private final Map<JavaFunction, JavaFunction> staticFunctions = new TreeMap<>();
-    private final Collection<Predicate<JavaFunction>> skips;
+    private final Map<JavaFunction, JavaFunction> functions = new TreeMap<>();
+    private final Collection<Predicate<JavaFunction>> skipsGen;
 
     /**
      * Constructor.
      *
+     * @param gradleTask Gradle task to generate the code.
+     * @param packageName Package name for the generated class.
+     * @param className   Class name for the generated class.
      * @param imports Array of fully qualified class names to process.
-     * @param skips   Collection of predicates to determine if a function should be skipped.
+     * @param includeMethod a predicate to determine if a method should be considered for code generation.
+     * @param skipsGen   Collection of predicates to determine if a function should be skipped when generating code.
      * @throws ClassNotFoundException If a class in the imports array cannot be found.
      */
-    public AbstractPublicStaticGenerator(final String gradleTask, final String packageName, final String className, final String[] imports, Collection<Predicate<JavaFunction>> skips)
+    public AbstractBasicJavaGenerator(final String gradleTask, final String packageName, final String className, final String[] imports, Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen)
             throws ClassNotFoundException {
         this.gradleTask = gradleTask;
         this.packageName = packageName;
         this.className = className;
-        this.skips = skips;
+        this.skipsGen = skipsGen;
 
         for (String imp : imports) {
             Class<?> c = Class.forName(imp, false, Thread.currentThread().getContextClassLoader());
@@ -49,30 +52,27 @@ public abstract class AbstractPublicStaticGenerator {
 
             for (Method m : c.getMethods()) {
                 log.info("Processing method (" + c + "): " + m);
-                boolean isStatic = Modifier.isStatic(m.getModifiers());
-                boolean isPublic = Modifier.isPublic(m.getModifiers());
-
-                if (isStatic && isPublic) {
-                    addPublicStatic(m);
+                if(includeMethod.test(m)) {
+                    addMethod(m);
                 }
             }
         }
     }
 
-    private void addPublicStatic(Method m) {
+    private void addMethod(Method m) {
         log.info("Processing public static method: " + m);
 
         JavaFunction f = new JavaFunction(m);
         // System.out.println(f);
 
-        if (staticFunctions.containsKey(f)) {
-            JavaFunction fAlready = staticFunctions.get(f);
+        if (functions.containsKey(f)) {
+            JavaFunction fAlready = functions.get(f);
             final String message = "Signature Already Present:	" + fAlready + "\t" + f;
             log.severe(message);
             throw new RuntimeException(message);
         } else {
-            log.info("Added public static method: " + f);
-            staticFunctions.put(f, f);
+            log.info("Added method: " + f);
+            functions.put(f, f);
         }
     }
 
@@ -102,7 +102,7 @@ public abstract class AbstractPublicStaticGenerator {
         String code = GenUtils.javaHeader(this.getClass(), gradleTask);
         code += "package " + packageName + ";\n\n";
 
-        Set<String> imports = GenUtils.typesToImport(staticFunctions.keySet());
+        Set<String> imports = GenUtils.typesToImport(functions.keySet());
 
         for (String imp : imports) {
             code += "import " + imp + ";\n";
@@ -112,9 +112,9 @@ public abstract class AbstractPublicStaticGenerator {
         code += generateClassJavadoc();
         code += "public class " + className + " {\n";
 
-        for (JavaFunction f : staticFunctions.keySet()) {
+        for (JavaFunction f : functions.keySet()) {
             boolean skip = false;
-            for (Predicate<JavaFunction> skipCheck : skips) {
+            for (Predicate<JavaFunction> skipCheck : skipsGen) {
                 skip = skip || skipCheck.test(f);
             }
 
@@ -140,7 +140,7 @@ public abstract class AbstractPublicStaticGenerator {
      * @param args             The command line arguments.
      * @throws IOException If there is an IO error.
      */
-    public static void runCommandLine(final AbstractPublicStaticGenerator gen, final String relativeFilePath, final String[] args) throws IOException {
+    public static void runCommandLine(final AbstractBasicJavaGenerator gen, final String relativeFilePath, final String[] args) throws IOException {
 
         String devroot = null;
         boolean assertNoChange = false;
@@ -165,7 +165,7 @@ public abstract class AbstractPublicStaticGenerator {
 
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
-            GenUtils.assertGeneratedCodeSame(AbstractPublicStaticGenerator.class, gen.gradleTask, oldCode, code);
+            GenUtils.assertGeneratedCodeSame(AbstractBasicJavaGenerator.class, gen.gradleTask, oldCode, code);
         } else {
 
             PrintWriter out = new PrintWriter(file);
