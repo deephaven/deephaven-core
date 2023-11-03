@@ -39,6 +39,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.libs.GroovyStaticImports;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.calendar.StaticCalendarMethods;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -238,7 +239,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 DateTimeUtils.class.getName(),
                 QueryLanguageFunctionUtils.class.getName(),
                 Aggregation.class.getName(),
-                UpdateByOperation.class.getName());
+                UpdateByOperation.class.getName(),
+                Calendars.class.getName(),
+                StaticCalendarMethods.class.getName());
     }
 
     private String generateScriptName() {
