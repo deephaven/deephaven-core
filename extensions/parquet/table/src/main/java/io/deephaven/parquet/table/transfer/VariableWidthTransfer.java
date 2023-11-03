@@ -3,7 +3,7 @@
  */
 package io.deephaven.parquet.table.transfer;
 
-import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -44,16 +44,23 @@ abstract class VariableWidthTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TY
      * The buffer to be written out to the Parquet file. This buffer is reused across pages and is resized if needed.
      */
     BUFFER_TYPE buffer;
+
+    /**
+     * This variable is used as:
+     * <ul>
+     * <li>The target number of elements on one page. It is a soft maximum, in that we will exceed it if a particular
+     * row exceeds this target so that we can fit all the elements from a single row on the same page.
+     * <li>An upper bound on the number of rows per page.
+     * </ul>
+     */
     final int maxValuesPerPage;
 
     VariableWidthTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int maxValuesPerPage, final int targetPageSize, @NotNull final BUFFER_TYPE buffer) {
         this.columnSource = columnSource;
         this.tableRowSetIt = tableRowSet.getRowSequenceIterator();
-        this.targetPageSize = targetPageSize;
-        Assert.gtZero(maxValuesPerPage, "targetPageSize");
-        this.maxValuesPerPage = maxValuesPerPage;
-        Assert.gtZero(maxValuesPerPage, "maxValuesPerPage");
+        this.targetPageSize = Require.gtZero(targetPageSize, "targetPageSize");
+        this.maxValuesPerPage = Require.gtZero(maxValuesPerPage, "maxValuesPerPage");
         this.context = columnSource.makeGetContext(Math.toIntExact(Math.min(maxValuesPerPage, tableRowSet.size())));
         this.currentChunkIdx = 0;
         this.buffer = buffer;

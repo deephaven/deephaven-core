@@ -21,7 +21,7 @@ public abstract class ArrayAndVectorTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, B
     ArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int maxValuesPerPage, final int targetPageSize, @NotNull final BUFFER_TYPE buffer) {
         super(columnSource, tableRowSet, maxValuesPerPage, targetPageSize, buffer);
-        this.repeatCounts = IntBuffer.allocate(maxValuesPerPage);
+        this.repeatCounts = IntBuffer.allocate(Math.toIntExact(Math.min(maxValuesPerPage, tableRowSet.size())));
     }
 
     @Override
