@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -22,6 +23,9 @@ import java.util.logging.Logger;
 public abstract class AbstractPublicStaticGenerator {
     private static final Logger log = Logger.getLogger(AbstractPublicStaticGenerator.class.toString());
 
+    private final String gradleTask;
+    private final String packageName;
+    private final String className;
     private final Map<JavaFunction, JavaFunction> staticFunctions = new TreeMap<>();
     private final Collection<Predicate<JavaFunction>> skips;
 
@@ -32,8 +36,11 @@ public abstract class AbstractPublicStaticGenerator {
      * @param skips   Collection of predicates to determine if a function should be skipped.
      * @throws ClassNotFoundException If a class in the imports array cannot be found.
      */
-    public AbstractPublicStaticGenerator(final String[] imports, Collection<Predicate<JavaFunction>> skips)
+    public AbstractPublicStaticGenerator(final String gradleTask, final String packageName, final String className, final String[] imports, Collection<Predicate<JavaFunction>> skips)
             throws ClassNotFoundException {
+        this.gradleTask = gradleTask;
+        this.packageName = packageName;
+        this.className = className;
         this.skips = skips;
 
         for (String imp : imports) {
@@ -70,40 +77,70 @@ public abstract class AbstractPublicStaticGenerator {
     }
 
     /**
-     * Get the public static functions.
+     * Generate Javadoc for the output class.
      *
-     * @return The public static functions.
+     * @return The Javadoc.
      */
-    public Map<JavaFunction, JavaFunction> getStaticFunctions() {
-        return staticFunctions;
-    }
+    abstract public String generateClassJavadoc();
 
     /**
-     * Get the skip predicates.
+     * Generate the Java code for a function.
      *
-     * @return The skip predicates.
+     * @param f The function.
+     * @return The Java code.
      */
-    public Collection<Predicate<JavaFunction>> getSkips() {
-        return skips;
-    }
+    abstract public String generateFunction(JavaFunction f);
 
     /**
      * Generate the code.
      *
      * @return The generated code.
      */
-    abstract public String generateCode();
+    @SuppressWarnings("StringConcatenationInLoop")
+    public String generateCode() {
+
+        String code = GenUtils.javaHeader(this.getClass(), gradleTask);
+        code += "package " + packageName + ";\n\n";
+
+        Set<String> imports = GenUtils.typesToImport(staticFunctions.keySet());
+
+        for (String imp : imports) {
+            code += "import " + imp + ";\n";
+        }
+
+        code += "\n";
+        code += generateClassJavadoc();
+        code += "public class " + className + " {\n";
+
+        for (JavaFunction f : staticFunctions.keySet()) {
+            boolean skip = false;
+            for (Predicate<JavaFunction> skipCheck : skips) {
+                skip = skip || skipCheck.test(f);
+            }
+
+            if (skip) {
+                log.warning("*** Skipping function: " + f);
+                continue;
+            }
+
+            code += generateFunction(f);
+            code += "\n";
+        }
+
+        code += "}\n\n";
+
+        return code;
+    }
 
     /**
      * Run a generator from the command line.
      *
      * @param gen              The generator to run.
      * @param relativeFilePath The relative file path to write the generated code to.
-     * @param gradleTask       The gradle task to run the generator.
      * @param args             The command line arguments.
-     * @throws IOException            If there is an IO error.
+     * @throws IOException If there is an IO error.
      */
-    public static void runCommandLine(final AbstractPublicStaticGenerator gen, final String relativeFilePath, final String gradleTask, final String[] args) throws IOException {
+    public static void runCommandLine(final AbstractPublicStaticGenerator gen, final String relativeFilePath, final String[] args) throws IOException {
 
         String devroot = null;
         boolean assertNoChange = false;
@@ -128,7 +165,7 @@ public abstract class AbstractPublicStaticGenerator {
 
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
-            GenUtils.assertGeneratedCodeSame(AbstractPublicStaticGenerator.class, gradleTask, oldCode, code);
+            GenUtils.assertGeneratedCodeSame(AbstractPublicStaticGenerator.class, gen.gradleTask, oldCode, code);
         } else {
 
             PrintWriter out = new PrintWriter(file);
