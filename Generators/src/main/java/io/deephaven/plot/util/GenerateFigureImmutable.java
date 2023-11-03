@@ -659,7 +659,8 @@ public class GenerateFigureImmutable {
             funcBody = " {\n" + indent(2) + "final BaseFigureImpl fc = this.figure.copy();\n";
 
             if (returnClass != null && BaseFigure.class.isAssignableFrom(returnClass)) {
-                funcBody += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
+                funcBody += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs
+                        + ");\n" +
                         indent(2) + "return make(fc);\n";
             } else if (returnClass != null && Chart.class.isAssignableFrom(returnClass)) {
                 funcBody += indent(2) + "final ChartImpl chart = (ChartImpl) " + createInstanceGetter(f) + "."
@@ -672,7 +673,8 @@ public class GenerateFigureImmutable {
             } else if (returnClass != null && Axis.class.isAssignableFrom(returnClass)
                     && f.getClassName().equals("io.deephaven.plot.Axes")) {
                 funcBody += indent(2) + "final AxesImpl axes = " + createInstanceGetter(f) + ";\n";
-                funcBody += indent(2) + "final AxisImpl axis = (AxisImpl) axes." + signature.getMethodName() + "(" + callArgs
+                funcBody += indent(2) + "final AxisImpl axis = (AxisImpl) axes." + signature.getMethodName() + "("
+                        + callArgs
                         + ");\n" +
                         indent(2) + "return make(axes, axis);\n";
             } else if (returnClass != null && Axis.class.isAssignableFrom(returnClass)) {
@@ -680,25 +682,30 @@ public class GenerateFigureImmutable {
                         + signature.getMethodName() + "(" + callArgs + ");\n" +
                         indent(2) + "return make(null, axis);\n";
             } else if (returnClass != null && DataSeries.class.isAssignableFrom(returnClass)) {
-                funcBody += indent(2) + "final DataSeriesInternal series = (DataSeriesInternal) " + createInstanceGetter(f) + "."
+                funcBody += indent(2) + "final DataSeriesInternal series = (DataSeriesInternal) "
+                        + createInstanceGetter(f) + "."
                         + signature.getMethodName() + "(" + callArgs + ");\n" +
                         indent(2) + "return make(series);\n";
             } else if (returnClass != null && Series.class.isAssignableFrom(returnClass)) {
-                funcBody += indent(2) + "final SeriesInternal series = (SeriesInternal) " + createInstanceGetter(f) + "."
-                        + signature.getMethodName() + "(" + callArgs + ");\n" +
-                        indent(2) + "return make(series);\n";
+                funcBody +=
+                        indent(2) + "final SeriesInternal series = (SeriesInternal) " + createInstanceGetter(f) + "."
+                                + signature.getMethodName() + "(" + callArgs + ");\n" +
+                                indent(2) + "return make(series);\n";
             } else if (returnClass != null && MultiSeries.class.isAssignableFrom(returnClass)) {
-                funcBody += indent(2) + "final " + returnClass.getSimpleName() + " mseries = " + createInstanceGetter(f) + "."
+                funcBody += indent(2) + "final " + returnClass.getSimpleName() + " mseries = " + createInstanceGetter(f)
+                        + "."
                         + signature.getMethodName() + "(" + callArgs + ");\n" +
                         indent(2) + "return make((SeriesInternal) mseries);\n";
             } else if (void.class.equals(returnClass)) {
-                funcBody += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
+                funcBody += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs
+                        + ");\n" +
                         indent(2) + "return make(fc);\n";
             } else {
                 final String returnType = f.getReturnType().getTypeName().replace("$", ".");
                 System.out.println("WARN: UnsupportedReturnType: " + returnType + " " + f);
 
-                funcBody += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
+                funcBody += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs
+                        + ");\n" +
                         indent(2) + "return make(fc);\n";
             }
 
@@ -748,12 +755,14 @@ public class GenerateFigureImmutable {
                     funcBody += indent(2) + "} else if( series instanceof " + f.getClassNameShort() + "){\n";
                 }
 
-                funcBody += indent(3) + returnClass.getSimpleName() + " result = ((" + f.getClassNameShort() + ") series)."
-                        + f.getMethodName() + "(" + callArgs + ");\n";
+                funcBody +=
+                        indent(3) + returnClass.getSimpleName() + " result = ((" + f.getClassNameShort() + ") series)."
+                                + f.getMethodName() + "(" + callArgs + ");\n";
 
                 if (DataSeries.class.isAssignableFrom(returnClass)) {
                     funcBody += indent(3) + "return make((DataSeriesInternal)result);\n";
-                } else if (MultiSeries.class.isAssignableFrom(returnClass) || Series.class.isAssignableFrom(returnClass)) {
+                } else if (MultiSeries.class.isAssignableFrom(returnClass)
+                        || Series.class.isAssignableFrom(returnClass)) {
                     funcBody += indent(3) + "return make((SeriesInternal)result);\n";
                 } else {
                     throw new IllegalStateException("UnsupportedReturnType: " + returnType + " " + f);
@@ -763,7 +772,8 @@ public class GenerateFigureImmutable {
 
                 funcBody += indent(2) + "} ";
 
-                if (!f.getClassNameShort().equals("MultiSeries") && !f.getClassNameShort().equals("XYDataSeriesFunction")) {
+                if (!f.getClassNameShort().equals("MultiSeries")
+                        && !f.getClassNameShort().equals("XYDataSeriesFunction")) {
                     funcBody += makeMultiSeriesGetter(f);
                 }
 

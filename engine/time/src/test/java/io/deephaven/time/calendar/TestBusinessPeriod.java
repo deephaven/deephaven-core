@@ -60,12 +60,12 @@ public class TestBusinessPeriod extends BaseArrayTestCase {
     }
 
     public void testToInstant() {
-        final LocalTime start = LocalTime.of(1,2,3);
-        final LocalTime end = LocalTime.of(7,8,9);
+        final LocalTime start = LocalTime.of(1, 2, 3);
+        final LocalTime end = LocalTime.of(7, 8, 9);
 
         final BusinessPeriod<LocalTime> local = new BusinessPeriod<>(start, end);
 
-        final LocalDate date = LocalDate.of(2017,3,11);
+        final LocalDate date = LocalDate.of(2017, 3, 11);
         final ZoneId timeZone = ZoneId.of("America/Los_Angeles");
         final Instant targetStart = date.atTime(start).atZone(timeZone).toInstant();
         final Instant targetEnd = date.atTime(end).atZone(timeZone).toInstant();
@@ -76,23 +76,23 @@ public class TestBusinessPeriod extends BaseArrayTestCase {
     }
 
     public void testEqualsHash() {
-        final LocalTime start = LocalTime.of(1,2,3);
-        final LocalTime end = LocalTime.of(7,8,9);
+        final LocalTime start = LocalTime.of(1, 2, 3);
+        final LocalTime end = LocalTime.of(7, 8, 9);
         final BusinessPeriod<LocalTime> p1 = new BusinessPeriod<>(start, end);
         final BusinessPeriod<LocalTime> p2 = new BusinessPeriod<>(start, end);
-        final BusinessPeriod<LocalTime> p3 = new BusinessPeriod<>(LocalTime.of(0,1), end);
-        final BusinessPeriod<LocalTime> p4 = new BusinessPeriod<>(start, LocalTime.of(8,9));
+        final BusinessPeriod<LocalTime> p3 = new BusinessPeriod<>(LocalTime.of(0, 1), end);
+        final BusinessPeriod<LocalTime> p4 = new BusinessPeriod<>(start, LocalTime.of(8, 9));
 
         assertEquals(p1.hashCode(), Objects.hash(start, end, p1.nanos()));
-        assertEquals(p1,p1);
-        assertEquals(p1,p2);
+        assertEquals(p1, p1);
+        assertEquals(p1, p2);
         assertNotEquals(p1, p3);
         assertNotEquals(p1, p4);
     }
 
     public void testToString() {
-        final LocalTime start = LocalTime.of(1,2,3);
-        final LocalTime end = LocalTime.of(7,8,9);
+        final LocalTime start = LocalTime.of(1, 2, 3);
+        final LocalTime end = LocalTime.of(7, 8, 9);
         final BusinessPeriod<LocalTime> p1 = new BusinessPeriod<>(start, end);
         assertEquals("BusinessPeriod{start=01:02:03, end=07:08:09}", p1.toString());
     }

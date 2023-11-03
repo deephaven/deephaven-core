@@ -556,7 +556,7 @@ public class GenerateMultiSeries {
         }
 
         private String getFigureFunctionInput(final String returnClass,
-                                              final JavaFunction function, final String tableMethodName)
+                final JavaFunction function, final String tableMethodName)
                 throws ClassNotFoundException {
             final StringBuilder code = new StringBuilder();
             code.append(isSwappable ? "new SelectableDataSetSwappableTable(getSwappableTable()), "

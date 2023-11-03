@@ -43,7 +43,7 @@ public class TestBusinessSchedule extends BaseArrayTestCase {
     }
 
     public void testSinglePeriod() {
-        final BusinessSchedule<Instant> single = new BusinessSchedule<>(new BusinessPeriod[]{period1});
+        final BusinessSchedule<Instant> single = new BusinessSchedule<>(new BusinessPeriod[] {period1});
         assertEquals(new BusinessPeriod[] {period1}, single.periods());
         assertEquals(open1, single.businessStart());
         assertEquals(open1, single.businessStart());
@@ -68,7 +68,7 @@ public class TestBusinessSchedule extends BaseArrayTestCase {
     }
 
     public void testMultiPeriod() {
-        final BusinessSchedule<Instant> multi = new BusinessSchedule<>(new BusinessPeriod[]{period1, period2});
+        final BusinessSchedule<Instant> multi = new BusinessSchedule<>(new BusinessPeriod[] {period1, period2});
         assertEquals(new BusinessPeriod[] {period1, period2}, multi.periods());
         assertEquals(open1, multi.businessStart());
         assertEquals(open1, multi.businessStart());
@@ -89,14 +89,15 @@ public class TestBusinessSchedule extends BaseArrayTestCase {
                 multi.businessNanosElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
         assertEquals(DateTimeUtils.HOUR * 2,
                 multi.businessNanosElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
-        assertEquals(DateTimeUtils.HOUR*6, multi.businessNanosRemaining(DateTimeUtils.parseInstant("2017-03-11T01:00:00.000000000 NY")));
-        assertEquals(DateTimeUtils.HOUR*5+DateTimeUtils.MINUTE * 30,
+        assertEquals(DateTimeUtils.HOUR * 6,
+                multi.businessNanosRemaining(DateTimeUtils.parseInstant("2017-03-11T01:00:00.000000000 NY")));
+        assertEquals(DateTimeUtils.HOUR * 5 + DateTimeUtils.MINUTE * 30,
                 multi.businessNanosRemaining(DateTimeUtils.parseInstant("2017-03-11T10:30:00.000000000 NY")));
         assertEquals(DateTimeUtils.HOUR * 4,
                 multi.businessNanosRemaining(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
 
 
-        final BusinessSchedule<Instant> multi2 = new BusinessSchedule<>(new BusinessPeriod[]{period2, period1});
+        final BusinessSchedule<Instant> multi2 = new BusinessSchedule<>(new BusinessPeriod[] {period2, period1});
         assertEquals(new BusinessPeriod[] {period1, period2}, multi2.periods());
         assertEquals(open1, multi2.businessStart());
         assertEquals(open1, multi2.businessStart());
@@ -121,35 +122,38 @@ public class TestBusinessSchedule extends BaseArrayTestCase {
 
     public void testPeriodsOverlap() {
         try {
-            new BusinessSchedule<>(new BusinessPeriod[]{period1, period1});
+            new BusinessSchedule<>(new BusinessPeriod[] {period1, period1});
             fail("Should have thrown an exception");
-        }catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("overlap"));
         }
     }
 
     public void testToInstant() {
-        final BusinessPeriod<LocalTime> p1 = new BusinessPeriod<>(LocalTime.of(1,2), LocalTime.of(3,4));
-        final BusinessPeriod<LocalTime> p2 = new BusinessPeriod<>(LocalTime.of(5,6), LocalTime.of(7,8));
+        final BusinessPeriod<LocalTime> p1 = new BusinessPeriod<>(LocalTime.of(1, 2), LocalTime.of(3, 4));
+        final BusinessPeriod<LocalTime> p2 = new BusinessPeriod<>(LocalTime.of(5, 6), LocalTime.of(7, 8));
 
-        final BusinessSchedule<LocalTime> local = new BusinessSchedule<>(new BusinessPeriod[]{p1,p2});
-        final LocalDate date = LocalDate.of(2017,3,11);
+        final BusinessSchedule<LocalTime> local = new BusinessSchedule<>(new BusinessPeriod[] {p1, p2});
+        final LocalDate date = LocalDate.of(2017, 3, 11);
         final ZoneId timeZone = ZoneId.of("America/Los_Angeles");
 
-        final BusinessSchedule<Instant> target = new BusinessSchedule<>(new BusinessPeriod[]{BusinessPeriod.toInstant(p1, date, timeZone), BusinessPeriod.toInstant(p2,date,timeZone)});
+        final BusinessSchedule<Instant> target = new BusinessSchedule<>(new BusinessPeriod[] {
+                BusinessPeriod.toInstant(p1, date, timeZone), BusinessPeriod.toInstant(p2, date, timeZone)});
         final BusinessSchedule<Instant> actual = BusinessSchedule.toInstant(local, date, timeZone);
         assertEquals(target, actual);
     }
 
     public void testEqualsHash() {
-        final BusinessSchedule<Instant> multi = new BusinessSchedule<>(new BusinessPeriod[]{period1, period2});
+        final BusinessSchedule<Instant> multi = new BusinessSchedule<>(new BusinessPeriod[] {period1, period2});
         assertEquals(new BusinessPeriod[] {period1, period2}, multi.periods());
 
-        int hashTarget = 31 * Objects.hash(multi.businessStart(), multi.businessEnd(), multi.businessNanos()) + Arrays.hashCode(multi.periods());
+        int hashTarget = 31 * Objects.hash(multi.businessStart(), multi.businessEnd(), multi.businessNanos())
+                + Arrays.hashCode(multi.periods());
         assertEquals(hashTarget, multi.hashCode());
 
-        final BusinessSchedule<Instant> multi2 = new BusinessSchedule<>(new BusinessPeriod[]{period1, period2});
-        final BusinessSchedule<Instant> multi3 = new BusinessSchedule<>(new BusinessPeriod[]{period1, new BusinessPeriod<>(open2, DateTimeUtils.parseInstant("2017-03-11T17:01:00.000000000 NY"))});
+        final BusinessSchedule<Instant> multi2 = new BusinessSchedule<>(new BusinessPeriod[] {period1, period2});
+        final BusinessSchedule<Instant> multi3 = new BusinessSchedule<>(new BusinessPeriod[] {period1,
+                new BusinessPeriod<>(open2, DateTimeUtils.parseInstant("2017-03-11T17:01:00.000000000 NY"))});
         assertEquals(multi, multi);
         assertEquals(multi, multi2);
         assertNotEquals(multi, multi3);
@@ -157,7 +161,9 @@ public class TestBusinessSchedule extends BaseArrayTestCase {
     }
 
     public void testToString() {
-        final BusinessSchedule<Instant> multi = new BusinessSchedule<>(new BusinessPeriod[]{period1, period2});
-        assertEquals("BusinessSchedule{openPeriods=[BusinessPeriod{start=2017-03-11T15:00:00Z, end=2017-03-11T16:00:00Z}, BusinessPeriod{start=2017-03-11T17:00:00Z, end=2017-03-11T22:00:00Z}]}", multi.toString());
+        final BusinessSchedule<Instant> multi = new BusinessSchedule<>(new BusinessPeriod[] {period1, period2});
+        assertEquals(
+                "BusinessSchedule{openPeriods=[BusinessPeriod{start=2017-03-11T15:00:00Z, end=2017-03-11T16:00:00Z}, BusinessPeriod{start=2017-03-11T17:00:00Z, end=2017-03-11T22:00:00Z}]}",
+                multi.toString());
     }
 }

@@ -20,9 +20,8 @@ import java.util.Objects;
 /**
  * Schedule for a single business day.
  *
- * A business day / schedule may contain multiple business periods.  For example, some financial exchanges
- * have a morning and an afternoon trading session.  This would be represented by a business schedule with two
- * business periods.
+ * A business day / schedule may contain multiple business periods. For example, some financial exchanges have a morning
+ * and an afternoon trading session. This would be represented by a business schedule with two business periods.
  *
  * @param <T> time type
  */
@@ -43,7 +42,7 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
      *
      * @param businessPeriods array of business periods
      * @throws IllegalArgumentException if {@code businessPeriods} overlaps.
-     * @throws RequirementFailure       if {@code businessPeriods} or any constituent business periods are null.
+     * @throws RequirementFailure if {@code businessPeriods} or any constituent business periods are null.
      */
     BusinessSchedule(@NotNull final BusinessPeriod<T>[] businessPeriods) {
         Require.neqNull(businessPeriods, "businessPeriods");
@@ -79,10 +78,10 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
     }
 
     /**
-     * Creates a BusinessSchedule instance with no business periods.  THis is a holiday.
+     * Creates a BusinessSchedule instance with no business periods. THis is a holiday.
      */
     BusinessSchedule() {
-        //noinspection unchecked
+        // noinspection unchecked
         this(new BusinessPeriod[0]);
     }
 
@@ -96,7 +95,7 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
     }
 
     /**
-     * Start of the business day.  Equivalent to the start of the first business period.
+     * Start of the business day. Equivalent to the start of the first business period.
      *
      * @return start of the business day, or null for a holiday schedule
      */
@@ -105,7 +104,7 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
     }
 
     /**
-     * End of the business day.  Equivalent to the end of the last business period.
+     * End of the business day. Equivalent to the end of the last business period.
      *
      * @return end of the business day, or null for a holiday schedule
      */
@@ -155,14 +154,14 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
      */
     public long businessNanosRemaining(final T time) {
         Require.neqNull(time, "time");
-        return businessNanos-businessNanosElapsed(time);
+        return businessNanos - businessNanosElapsed(time);
     }
 
-        /**
-         * Is this day a business day?
-         *
-         * @return true if it is a business day; false otherwise.
-         */
+    /**
+     * Is this day a business day?
+     *
+     * @return true if it is a business day; false otherwise.
+     */
     public boolean isBusinessDay() {
         return businessNanos > 0;
     }
@@ -185,10 +184,13 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof BusinessSchedule)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof BusinessSchedule))
+            return false;
         BusinessSchedule<?> that = (BusinessSchedule<?>) o;
-        return businessNanos == that.businessNanos && Arrays.equals(openPeriods, that.openPeriods) && Objects.equals(businessStart, that.businessStart) && Objects.equals(businessEnd, that.businessEnd);
+        return businessNanos == that.businessNanos && Arrays.equals(openPeriods, that.openPeriods)
+                && Objects.equals(businessStart, that.businessStart) && Objects.equals(businessEnd, that.businessEnd);
     }
 
     @Override
@@ -213,8 +215,10 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
      * @param timeZone time zone for the new business schedule
      * @return new business schedule in the specified date and time zone
      */
-    public static BusinessSchedule<Instant> toInstant(final BusinessSchedule<LocalTime> s, final LocalDate date, final ZoneId timeZone){
-        //noinspection unchecked
-        return new BusinessSchedule<>(Arrays.stream(s.periods()).map(p->BusinessPeriod.toInstant(p, date, timeZone)).toArray(BusinessPeriod[]::new));
+    public static BusinessSchedule<Instant> toInstant(final BusinessSchedule<LocalTime> s, final LocalDate date,
+            final ZoneId timeZone) {
+        // noinspection unchecked
+        return new BusinessSchedule<>(Arrays.stream(s.periods()).map(p -> BusinessPeriod.toInstant(p, date, timeZone))
+                .toArray(BusinessPeriod[]::new));
     }
 }

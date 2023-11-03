@@ -9,7 +9,7 @@ import io.deephaven.configuration.Configuration;
 public class TestCalendars extends BaseArrayTestCase {
 
     public void testDefault() {
-        final BusinessCalendar calendar =Calendars.calendar();
+        final BusinessCalendar calendar = Calendars.calendar();
         assertEquals(Configuration.getInstance().getProperty("Calendar.default"), calendar.name());
 
         final String defaultCal = calendar.name();
@@ -21,20 +21,20 @@ public class TestCalendars extends BaseArrayTestCase {
     }
 
     public void testCalendarNames() {
-        assertEquals(new String[]{"CAL1", "CAL2"}, Calendars.calendarNames());
+        assertEquals(new String[] {"CAL1", "CAL2"}, Calendars.calendarNames());
     }
 
     public void testCalendar() {
-        for(final String cn : Calendars.calendarNames()) {
+        for (final String cn : Calendars.calendarNames()) {
             final BusinessCalendar calendar = Calendars.calendar(cn);
             assertEquals(cn, calendar.name());
         }
 
-        try{
+        try {
             Calendars.calendar("JUNK");
             fail("Should have thrown an exception");
-        } catch (Exception e){
-            //pass
+        } catch (Exception e) {
+            // pass
         }
     }
 }

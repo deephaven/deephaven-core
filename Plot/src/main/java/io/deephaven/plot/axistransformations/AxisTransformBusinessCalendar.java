@@ -65,14 +65,14 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
 
         if (nMin == null) {
             final Instant t = DateTimeUtils.epochNanosToInstant((long) timeNanos);
-            nMin = new Nugget(busCal.businessSchedule(busCal.minusBusinessDays(t,1)), 0);
+            nMin = new Nugget(busCal.businessSchedule(busCal.minusBusinessDays(t, 1)), 0);
             nMax = nMin;
             nuggets.add(nMin);
         }
 
         while (timeNanos < DateTimeUtils.epochNanos(nMin.businessDay.businessStart())) {
             final BusinessSchedule<Instant> d =
-                    busCal.businessSchedule(busCal.minusBusinessDays(nMin.businessDay.businessStart(),1));
+                    busCal.businessSchedule(busCal.minusBusinessDays(nMin.businessDay.businessStart(), 1));
             final Nugget n = new Nugget(d, nMin.cumulativeBusinessTimeNanosAtStartOfDay - d.businessNanos());
             nuggets.add(0, n);
 
@@ -81,8 +81,10 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
 
         // noinspection ConstantConditions nMax can't cause NPE (for now! Don't add nulls to nuggets!)
         while (timeNanos > DateTimeUtils.epochNanos(nMax.businessDay.businessEnd())) {
-            final BusinessSchedule<Instant> d = busCal.businessSchedule(busCal.plusBusinessDays(nMax.businessDay.businessEnd(),1));
-            final Nugget n = new Nugget(d, nMax.cumulativeBusinessTimeNanosAtStartOfDay + nMax.businessDay.businessNanos());
+            final BusinessSchedule<Instant> d =
+                    busCal.businessSchedule(busCal.plusBusinessDays(nMax.businessDay.businessEnd(), 1));
+            final Nugget n =
+                    new Nugget(d, nMax.cumulativeBusinessTimeNanosAtStartOfDay + nMax.businessDay.businessNanos());
             nuggets.add(n);
 
             nMax = n;
@@ -105,7 +107,7 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
 
         while (value < nMin.cumulativeBusinessTimeNanosAtStartOfDay) {
             final BusinessSchedule<Instant> d =
-                    busCal.businessSchedule(busCal.minusBusinessDays(nMin.businessDay.businessStart(),1));
+                    busCal.businessSchedule(busCal.minusBusinessDays(nMin.businessDay.businessStart(), 1));
             final Nugget n = new Nugget(d, nMin.cumulativeBusinessTimeNanosAtStartOfDay - d.businessNanos());
             nuggets.add(0, n);
 
@@ -117,8 +119,10 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
         }
 
         while (value > nMax.cumulativeBusinessTimeNanosAtStartOfDay + nMax.businessDay.businessNanos()) {
-            final BusinessSchedule<Instant> d = busCal.businessSchedule(busCal.plusBusinessDays(nMax.businessDay.businessEnd(),1));
-            final Nugget n = new Nugget(d, nMax.cumulativeBusinessTimeNanosAtStartOfDay + nMax.businessDay.businessNanos());
+            final BusinessSchedule<Instant> d =
+                    busCal.businessSchedule(busCal.plusBusinessDays(nMax.businessDay.businessEnd(), 1));
+            final Nugget n =
+                    new Nugget(d, nMax.cumulativeBusinessTimeNanosAtStartOfDay + nMax.businessDay.businessNanos());
             nuggets.add(n);
 
             nMax = n;

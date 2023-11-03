@@ -37,7 +37,7 @@ public class BusinessPeriod<T extends Comparable<T> & Temporal> {
             throw new IllegalArgumentException("Null argument: startTime=" + startTime + " endTime=" + endTime);
         }
 
-        if(startTime.compareTo(endTime) > 0) {
+        if (startTime.compareTo(endTime) > 0) {
             throw new IllegalArgumentException("Start is after end: startTime=" + startTime + " endTime=" + endTime);
         }
 
@@ -85,8 +85,10 @@ public class BusinessPeriod<T extends Comparable<T> & Temporal> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof BusinessPeriod)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof BusinessPeriod))
+            return false;
         BusinessPeriod<?> that = (BusinessPeriod<?>) o;
         return nanos == that.nanos && start.equals(that.start) && end.equals(that.end);
     }
@@ -112,8 +114,10 @@ public class BusinessPeriod<T extends Comparable<T> & Temporal> {
      * @param timeZone time zone for the new business period
      * @return new business period in the specified date and time zone
      */
-    public static BusinessPeriod<Instant> toInstant(final BusinessPeriod<LocalTime> p, final LocalDate date, final ZoneId timeZone){
-        return new BusinessPeriod<>(DateTimeUtils.toInstant(date, p.start, timeZone), DateTimeUtils.toInstant(date, p.end, timeZone));
+    public static BusinessPeriod<Instant> toInstant(final BusinessPeriod<LocalTime> p, final LocalDate date,
+            final ZoneId timeZone) {
+        return new BusinessPeriod<>(DateTimeUtils.toInstant(date, p.start, timeZone),
+                DateTimeUtils.toInstant(date, p.end, timeZone));
     }
 
 }

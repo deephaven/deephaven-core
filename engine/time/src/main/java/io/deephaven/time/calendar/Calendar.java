@@ -20,8 +20,8 @@ import java.util.List;
  * <p>
  * A calendar is associated with a specific time zone.
  * <p>
- * Date strings must be in a format that can be parsed by {@code DateTimeUtils#parseDate}.  Methods that accept
- * strings can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or {@code LocalDate}.
+ * Date strings must be in a format that can be parsed by {@code DateTimeUtils#parseDate}. Methods that accept strings
+ * can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or {@code LocalDate}.
  */
 public class Calendar {
 
@@ -34,9 +34,9 @@ public class Calendar {
     /**
      * Creates a new calendar.
      *
-     * @param name        calendar name.
+     * @param name calendar name.
      * @param description calendar description.
-     * @param timeZone    calendar time zone.
+     * @param timeZone calendar time zone.
      */
     public Calendar(final String name, final String description, final ZoneId timeZone) {
         this.name = name;
@@ -152,7 +152,7 @@ public class Calendar {
     // region Arithmetic
 
     /**
-     * Adds a specified number of days to an input date.  Adding negative days is equivalent to subtracting days.
+     * Adds a specified number of days to an input date. Adding negative days is equivalent to subtracting days.
      *
      * @param date date
      * @param days number of days to add
@@ -165,12 +165,12 @@ public class Calendar {
     }
 
     /**
-     * Adds a specified number of days to an input date.  Adding negative days is equivalent to subtracting days.
+     * Adds a specified number of days to an input date. Adding negative days is equivalent to subtracting days.
      *
      * @param date date
      * @param days number of days to add
      * @return {@code days} days after {@code date}
-     * @throws RequirementFailure                   if the input is null
+     * @throws RequirementFailure if the input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate plusDays(final String date, final int days) {
@@ -179,12 +179,12 @@ public class Calendar {
     }
 
     /**
-     * Adds a specified number of days to an input time.  Adding negative days is equivalent to subtracting days.
+     * Adds a specified number of days to an input time. Adding negative days is equivalent to subtracting days.
      *
-     * Day additions are not always 24 hours.  The resultant time will have the same local time as the input time,
-     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
-     * For example, 2023-11-05 has a daylight savings time adjustment,
-     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
+     * Day additions are not always 24 hours. The resultant time will have the same local time as the input time, as
+     * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
+     * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
+     * is a 25-hour difference.
      *
      * @param time time
      * @param days number of days to add
@@ -197,15 +197,15 @@ public class Calendar {
     }
 
     /**
-     * Adds a specified number of days to an input time.  Adding negative days is equivalent to subtracting days.
+     * Adds a specified number of days to an input time. Adding negative days is equivalent to subtracting days.
      *
-     * Day additions are not always 24 hours.  The resultant time will have the same local time as the input time,
-     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
-     * For example, 2023-11-05 has a daylight savings time adjustment,
-     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
+     * Day additions are not always 24 hours. The resultant time will have the same local time as the input time, as
+     * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
+     * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
+     * is a 25-hour difference.
      *
-     * The resultant time will have the same time zone as the calendar.  This could be different than the
-     * time zone of the input {@link ZonedDateTime}.
+     * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
+     * the input {@link ZonedDateTime}.
      *
      * @param time time
      * @param days number of days to add
@@ -221,7 +221,7 @@ public class Calendar {
     }
 
     /**
-     * Subtracts a specified number of days to an input date.  Subtracting negative days is equivalent to adding days.
+     * Subtracts a specified number of days to an input date. Subtracting negative days is equivalent to adding days.
      *
      * @param date date
      * @param days number of days to subtract
@@ -234,12 +234,12 @@ public class Calendar {
     }
 
     /**
-     * Subtracts a specified number of days to an input date.  Subtracting negative days is equivalent to adding days.
+     * Subtracts a specified number of days to an input date. Subtracting negative days is equivalent to adding days.
      *
      * @param date date
      * @param days number of days to subtract
      * @return {@code days} days after {@code date}
-     * @throws RequirementFailure                   if the input is null
+     * @throws RequirementFailure if the input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate minusDays(final String date, final int days) {
@@ -248,12 +248,12 @@ public class Calendar {
     }
 
     /**
-     * Subtracts a specified number of days to an input time.  Subtracting negative days is equivalent to adding days.
+     * Subtracts a specified number of days to an input time. Subtracting negative days is equivalent to adding days.
      *
-     * Day subtractions are not always 24 hours.  The resultant time will have the same local time as the input time,
-     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
-     * For example, 2023-11-05 has a daylight savings time adjustment,
-     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
+     * Day subtractions are not always 24 hours. The resultant time will have the same local time as the input time, as
+     * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
+     * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
+     * is a 25-hour difference.
      *
      * @param time time
      * @param days number of days to subtract
@@ -266,15 +266,15 @@ public class Calendar {
     }
 
     /**
-     * Subtracts a specified number of days to an input time.  Subtracting negative days is equivalent to adding days.
+     * Subtracts a specified number of days to an input time. Subtracting negative days is equivalent to adding days.
      *
-     * Day subtractions are not always 24 hours.  The resultant time will have the same local time as the input time,
-     * as determined by the calendar's time zone.  This accounts for Daylight Savings Time.
-     * For example, 2023-11-05 has a daylight savings time adjustment,
-     * so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which is a 25-hour difference.
+     * Day subtractions are not always 24 hours. The resultant time will have the same local time as the input time, as
+     * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
+     * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
+     * is a 25-hour difference.
      *
-     * The resultant time will have the same time zone as the calendar.  This could be different than the
-     * time zone of the input {@link ZonedDateTime}.
+     * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
+     * the input {@link ZonedDateTime}.
      *
      * @param time time
      * @param days number of days to subtract
@@ -287,7 +287,7 @@ public class Calendar {
     }
 
     /**
-     * Adds a specified number of days to the current date.  Adding negative days is equivalent to subtracting days.
+     * Adds a specified number of days to the current date. Adding negative days is equivalent to subtracting days.
      *
      * @param days number of days to add.
      * @return {@code days} days after the current date
@@ -297,7 +297,8 @@ public class Calendar {
     }
 
     /**
-     * Subtracts a specified number of days from the current date.  Subtracting negative days is equivalent to adding days.
+     * Subtracts a specified number of days from the current date. Subtracting negative days is equivalent to adding
+     * days.
      *
      * @param days number of days to subtract.
      * @return {@code days} days before the current date
@@ -313,14 +314,15 @@ public class Calendar {
     /**
      * Returns the dates in a given range.
      *
-     * @param start          start of a time range
-     * @param end            end of a time range
+     * @param start start of a time range
+     * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
      * @return dates between {@code start} and {@code end}
      * @throws RequirementFailure if any input is null
      */
-    public LocalDate[] calendarDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive) {
+    public LocalDate[] calendarDates(final LocalDate start, final LocalDate end, final boolean startInclusive,
+            final boolean endInclusive) {
         Require.neqNull(start, "start");
         Require.neqNull(end, "end");
 
@@ -340,59 +342,65 @@ public class Calendar {
     /**
      * Returns the dates in a given range.
      *
-     * @param start          start of a time range
-     * @param end            end of a time range
+     * @param start start of a time range
+     * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
      * @return dates between {@code start} and {@code end}
-     * @throws RequirementFailure                   if any input is null
+     * @throws RequirementFailure if any input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate[] calendarDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive) {
+    public LocalDate[] calendarDates(final String start, final String end, final boolean startInclusive,
+            final boolean endInclusive) {
         Require.neqNull(start, "start");
         Require.neqNull(end, "end");
-        return calendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive, endInclusive);
-    }
-
-    /**
-     * Returns the dates in a given range.
-     *
-     * @param start          start of a time range
-     * @param end            end of a time range
-     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
-     * @return dates between {@code start} and {@code end}
-     * @throws RequirementFailure                   if any input is null
-     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
-     */
-    public LocalDate[] calendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive) {
-        Require.neqNull(start, "start");
-        Require.neqNull(end, "end");
-        return calendarDates(start.withZoneSameInstant(timeZone).toLocalDate(), end.withZoneSameInstant(timeZone).toLocalDate(), startInclusive, endInclusive);
-    }
-
-    /**
-     * Returns the dates in a given range.
-     *
-     * @param start          start of a time range
-     * @param end            end of a time range
-     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
-     * @return dates between {@code start} and {@code end}
-     * @throws RequirementFailure                   if any input is null
-     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
-     */
-    public LocalDate[] calendarDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive) {
-        Require.neqNull(start, "start");
-        Require.neqNull(end, "end");
-        return calendarDates(DateTimeUtils.toLocalDate(start, timeZone), DateTimeUtils.toLocalDate(end, timeZone), startInclusive, endInclusive);
+        return calendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive,
+                endInclusive);
     }
 
     /**
      * Returns the dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public LocalDate[] calendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive,
+            final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return calendarDates(start.withZoneSameInstant(timeZone).toLocalDate(),
+                end.withZoneSameInstant(timeZone).toLocalDate(), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public LocalDate[] calendarDates(final Instant start, final Instant end, final boolean startInclusive,
+            final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return calendarDates(DateTimeUtils.toLocalDate(start, timeZone), DateTimeUtils.toLocalDate(end, timeZone),
+                startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
      * @return dates between {@code start} and {@code end}; including {@code start} and {@code end}
      * @throws RequirementFailure if any input is null
      */
@@ -404,9 +412,9 @@ public class Calendar {
      * Returns the dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure                   if any input is null
+     * @throws RequirementFailure if any input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] calendarDates(final String start, final String end) {
@@ -417,7 +425,7 @@ public class Calendar {
      * Returns the dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return dates between {@code start} and {@code end}; including {@code start} and {@code end}
      * @throws RequirementFailure if any input is null
      */
@@ -429,7 +437,7 @@ public class Calendar {
      * Returns the dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return dates between {@code start} and {@code end}; including {@code start} and {@code end}
      * @throws RequirementFailure if any input is null
      */
@@ -440,14 +448,15 @@ public class Calendar {
     /**
      * Returns the number of dates in a given range.
      *
-     * @param start          start of a time range
-     * @param end            end of a time range
+     * @param start start of a time range
+     * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
      * @return number of dates between {@code start} and {@code end}
      * @throws RequirementFailure if any input is null
      */
-    public int numberCalendarDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive) {
+    public int numberCalendarDates(final LocalDate start, final LocalDate end, final boolean startInclusive,
+            final boolean endInclusive) {
         Require.neqNull(start, "start");
         Require.neqNull(end, "end");
 
@@ -467,59 +476,65 @@ public class Calendar {
     /**
      * Returns the number of dates in a given range.
      *
-     * @param start          start of a time range
-     * @param end            end of a time range
+     * @param start start of a time range
+     * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
      * @return number of dates between {@code start} and {@code end}
-     * @throws RequirementFailure                   if any input is null
+     * @throws RequirementFailure if any input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public int numberCalendarDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive) {
+    public int numberCalendarDates(final String start, final String end, final boolean startInclusive,
+            final boolean endInclusive) {
         Require.neqNull(start, "start");
         Require.neqNull(end, "end");
-        return numberCalendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive, endInclusive);
-    }
-
-    /**
-     * Returns the number of dates in a given range.
-     *
-     * @param start          start of a time range
-     * @param end            end of a time range
-     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
-     * @return number of dates between {@code start} and {@code end}
-     * @throws RequirementFailure                   if any input is null
-     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
-     */
-    public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive) {
-        Require.neqNull(start, "start");
-        Require.neqNull(end, "end");
-        return numberCalendarDates(start.withZoneSameInstant(timeZone).toLocalDate(), end.withZoneSameInstant(timeZone).toLocalDate(), startInclusive, endInclusive);
-    }
-
-    /**
-     * Returns the number of dates in a given range.
-     *
-     * @param start          start of a time range
-     * @param end            end of a time range
-     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
-     * @return number of dates between {@code start} and {@code end}
-     * @throws RequirementFailure                   if any input is null
-     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
-     */
-    public int numberCalendarDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive) {
-        Require.neqNull(start, "start");
-        Require.neqNull(end, "end");
-        return numberCalendarDates(DateTimeUtils.toLocalDate(start, timeZone), DateTimeUtils.toLocalDate(end, timeZone), startInclusive, endInclusive);
+        return numberCalendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end),
+                startInclusive, endInclusive);
     }
 
     /**
      * Returns the number of dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive,
+            final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return numberCalendarDates(start.withZoneSameInstant(timeZone).toLocalDate(),
+                end.withZoneSameInstant(timeZone).toLocalDate(), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public int numberCalendarDates(final Instant start, final Instant end, final boolean startInclusive,
+            final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return numberCalendarDates(DateTimeUtils.toLocalDate(start, timeZone), DateTimeUtils.toLocalDate(end, timeZone),
+                startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
      * @return number of dates between {@code start} and {@code end}; including {@code start} and {@code end}
      * @throws RequirementFailure if any input is null
      */
@@ -531,9 +546,9 @@ public class Calendar {
      * Returns the number of dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return number of dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure                   if any input is null
+     * @throws RequirementFailure if any input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final String start, final String end) {
@@ -544,7 +559,7 @@ public class Calendar {
      * Returns the number of dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return number of dates between {@code start} and {@code end}; including {@code start} and {@code end}
      * @throws RequirementFailure if any input is null
      */
@@ -556,7 +571,7 @@ public class Calendar {
      * Returns the number of dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return number of dates between {@code start} and {@code end}; including {@code start} and {@code end}
      * @throws RequirementFailure if any input is null
      */

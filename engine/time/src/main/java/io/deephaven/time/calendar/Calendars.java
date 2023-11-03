@@ -69,7 +69,7 @@ public class Calendars {
                     final File calendarFile = inputStreamToFile(inputStream);
                     final BusinessCalendar businessCalendar = BusinessCalendarParser.loadBusinessCalendar(calendarFile);
                     addCalendar(businessCalendar);
-                    //noinspection ResultOfMethodCallIgnored
+                    // noinspection ResultOfMethodCallIgnored
                     calendarFile.delete();
                 } else {
                     logger.warn("Could not open " + filePath + " from classpath");
@@ -171,7 +171,7 @@ public class Calendars {
      * @param name name of the calendar
      * @return business calendar
      * @throws IllegalArgumentException no calendar matching {@code name}
-     * @throws RequirementFailure       if the input is null
+     * @throws RequirementFailure if the input is null
      */
     public synchronized static BusinessCalendar calendar(final String name) {
         Require.neqNull(name, "name");

@@ -21,21 +21,22 @@ public class TestCalendar extends BaseArrayTestCase {
         calendar = new Calendar(name, description, timeZone);
     }
 
-    public void testGetters(){
+    public void testGetters() {
         assertEquals(name, calendar.name());
         assertEquals(description, calendar.description());
         assertEquals(timeZone, calendar.timeZone());
     }
 
     public void testToString() {
-        assertEquals("Calendar{name='TEST CALENDAR', description='This is a test', timeZone=America/Los_Angeles}", calendar.toString());
+        assertEquals("Calendar{name='TEST CALENDAR', description='This is a test', timeZone=America/Los_Angeles}",
+                calendar.toString());
     }
 
     public void testDayOfWeek() {
         assertEquals(1, calendar.dayOfWeek("2020-03-02"));
         assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2)));
-        assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2).atTime(1,2,3).atZone(timeZone)));
-        assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2).atTime(1,2,3).atZone(timeZone).toInstant()));
+        assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2).atTime(1, 2, 3).atZone(timeZone)));
+        assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2).atTime(1, 2, 3).atZone(timeZone).toInstant()));
     }
 
     public void testPlusDays() {
@@ -89,26 +90,26 @@ public class TestCalendar extends BaseArrayTestCase {
         final ZonedDateTime z = d.atTime(1, 24).atZone(timeZone2);
         final Instant i = d.atTime(1, 24).atZone(timeZone2).toInstant();
 
-        assertEquals(d, calendar.minusDays(d,0));
-        assertEquals(d, calendar.minusDays(s,0));
-        assertEquals(z.withZoneSameInstant(timeZone), calendar.minusDays(z,0));
-        assertEquals(i, calendar.minusDays(i,0));
+        assertEquals(d, calendar.minusDays(d, 0));
+        assertEquals(d, calendar.minusDays(s, 0));
+        assertEquals(z.withZoneSameInstant(timeZone), calendar.minusDays(z, 0));
+        assertEquals(i, calendar.minusDays(i, 0));
 
-        final LocalDate d2 = LocalDate.of(2023,2,1);
+        final LocalDate d2 = LocalDate.of(2023, 2, 1);
         final Instant i2 = d2.atTime(1, 24).atZone(timeZone2).toInstant();
         final ZonedDateTime z2 = d2.atTime(1, 24).atZone(timeZone2).withZoneSameInstant(timeZone);
-        assertEquals(d2, calendar.minusDays(d,2));
-        assertEquals(d2, calendar.minusDays(s,2));
-        assertEquals(z2, calendar.minusDays(z,2));
-        assertEquals(i2, calendar.minusDays(i,2));
+        assertEquals(d2, calendar.minusDays(d, 2));
+        assertEquals(d2, calendar.minusDays(s, 2));
+        assertEquals(z2, calendar.minusDays(z, 2));
+        assertEquals(i2, calendar.minusDays(i, 2));
 
         final LocalDate d3 = LocalDate.of(2023, 2, 5);
         final Instant i3 = d3.atTime(1, 24).atZone(timeZone2).toInstant();
         final ZonedDateTime z3 = d3.atTime(z.toLocalTime()).atZone(timeZone2).withZoneSameInstant(timeZone);
-        assertEquals(d3, calendar.minusDays(d,-2));
-        assertEquals(d3, calendar.minusDays(s,-2));
-        assertEquals(z3, calendar.minusDays(z,-2));
-        assertEquals(i3, calendar.minusDays(i,-2));
+        assertEquals(d3, calendar.minusDays(d, -2));
+        assertEquals(d3, calendar.minusDays(s, -2));
+        assertEquals(z3, calendar.minusDays(z, -2));
+        assertEquals(i3, calendar.minusDays(i, -2));
 
         // Test Daylight Savings Time
         final ZonedDateTime zDST1 = ZonedDateTime.of(2023, 11, 4, 14, 1, 2, 3, timeZone);
@@ -127,64 +128,84 @@ public class TestCalendar extends BaseArrayTestCase {
     }
 
     public void testFutureDate() {
-        assertEquals(calendar.plusDays(DateTimeUtils.todayLocalDate(),3), calendar.futureDate(3));
-        assertEquals(calendar.plusDays(DateTimeUtils.todayLocalDate(),-3), calendar.futureDate(-3));
+        assertEquals(calendar.plusDays(DateTimeUtils.todayLocalDate(), 3), calendar.futureDate(3));
+        assertEquals(calendar.plusDays(DateTimeUtils.todayLocalDate(), -3), calendar.futureDate(-3));
     }
 
     public void testPastDate() {
-        assertEquals(calendar.minusDays(DateTimeUtils.todayLocalDate(),3), calendar.pastDate(3));
-        assertEquals(calendar.minusDays(DateTimeUtils.todayLocalDate(),-3), calendar.pastDate(-3));
+        assertEquals(calendar.minusDays(DateTimeUtils.todayLocalDate(), 3), calendar.pastDate(3));
+        assertEquals(calendar.minusDays(DateTimeUtils.todayLocalDate(), -3), calendar.pastDate(-3));
     }
 
     public void testCalendarDates() {
-        final LocalDate start = LocalDate.of(2023,2,3);
-        final LocalDate middle = LocalDate.of(2023,2,4);
-        final LocalDate end = LocalDate.of(2023,2,5);
+        final LocalDate start = LocalDate.of(2023, 2, 3);
+        final LocalDate middle = LocalDate.of(2023, 2, 4);
+        final LocalDate end = LocalDate.of(2023, 2, 5);
 
-        assertEquals(new LocalDate[]{start, middle, end},calendar.calendarDates(start, end));
-        assertEquals(new LocalDate[]{start, middle, end},calendar.calendarDates(start.toString(), end.toString()));
-        assertEquals(new LocalDate[]{start, middle, end},calendar.calendarDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone)));
-        assertEquals(new LocalDate[]{start, middle, end},calendar.calendarDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant()));
+        assertEquals(new LocalDate[] {start, middle, end}, calendar.calendarDates(start, end));
+        assertEquals(new LocalDate[] {start, middle, end}, calendar.calendarDates(start.toString(), end.toString()));
+        assertEquals(new LocalDate[] {start, middle, end},
+                calendar.calendarDates(start.atTime(1, 24).atZone(timeZone), end.atTime(1, 24).atZone(timeZone)));
+        assertEquals(new LocalDate[] {start, middle, end}, calendar.calendarDates(
+                start.atTime(1, 24).atZone(timeZone).toInstant(), end.atTime(1, 24).atZone(timeZone).toInstant()));
 
-        assertEquals(new LocalDate[]{start, middle},calendar.calendarDates(start, end, true, false));
-        assertEquals(new LocalDate[]{start, middle},calendar.calendarDates(start.toString(), end.toString(), true, false));
-        assertEquals(new LocalDate[]{start, middle},calendar.calendarDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone), true, false));
-        assertEquals(new LocalDate[]{start, middle},calendar.calendarDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant(), true, false));
+        assertEquals(new LocalDate[] {start, middle}, calendar.calendarDates(start, end, true, false));
+        assertEquals(new LocalDate[] {start, middle},
+                calendar.calendarDates(start.toString(), end.toString(), true, false));
+        assertEquals(new LocalDate[] {start, middle}, calendar.calendarDates(start.atTime(1, 24).atZone(timeZone),
+                end.atTime(1, 24).atZone(timeZone), true, false));
+        assertEquals(new LocalDate[] {start, middle},
+                calendar.calendarDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
+                        end.atTime(1, 24).atZone(timeZone).toInstant(), true, false));
 
-        assertEquals(new LocalDate[]{middle, end},calendar.calendarDates(start, end, false, true));
-        assertEquals(new LocalDate[]{middle, end},calendar.calendarDates(start.toString(), end.toString(), false, true));
-        assertEquals(new LocalDate[]{middle, end},calendar.calendarDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone), false, true));
-        assertEquals(new LocalDate[]{middle, end},calendar.calendarDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant(), false, true));
+        assertEquals(new LocalDate[] {middle, end}, calendar.calendarDates(start, end, false, true));
+        assertEquals(new LocalDate[] {middle, end},
+                calendar.calendarDates(start.toString(), end.toString(), false, true));
+        assertEquals(new LocalDate[] {middle, end}, calendar.calendarDates(start.atTime(1, 24).atZone(timeZone),
+                end.atTime(1, 24).atZone(timeZone), false, true));
+        assertEquals(new LocalDate[] {middle, end},
+                calendar.calendarDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
+                        end.atTime(1, 24).atZone(timeZone).toInstant(), false, true));
 
-        assertEquals(new LocalDate[]{middle},calendar.calendarDates(start, end, false, false));
-        assertEquals(new LocalDate[]{middle},calendar.calendarDates(start.toString(), end.toString(), false, false));
-        assertEquals(new LocalDate[]{middle},calendar.calendarDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone), false, false));
-        assertEquals(new LocalDate[]{middle},calendar.calendarDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant(), false, false));
+        assertEquals(new LocalDate[] {middle}, calendar.calendarDates(start, end, false, false));
+        assertEquals(new LocalDate[] {middle}, calendar.calendarDates(start.toString(), end.toString(), false, false));
+        assertEquals(new LocalDate[] {middle}, calendar.calendarDates(start.atTime(1, 24).atZone(timeZone),
+                end.atTime(1, 24).atZone(timeZone), false, false));
+        assertEquals(new LocalDate[] {middle}, calendar.calendarDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
+                end.atTime(1, 24).atZone(timeZone).toInstant(), false, false));
     }
 
     public void testNumberCalendarDates() {
-        final LocalDate start = LocalDate.of(2023,2,3);
-        final LocalDate middle = LocalDate.of(2023,2,4);
-        final LocalDate end = LocalDate.of(2023,2,5);
+        final LocalDate start = LocalDate.of(2023, 2, 3);
+        final LocalDate middle = LocalDate.of(2023, 2, 4);
+        final LocalDate end = LocalDate.of(2023, 2, 5);
 
-        assertEquals(3,calendar.numberCalendarDates(start, end));
-        assertEquals(3,calendar.numberCalendarDates(start.toString(), end.toString()));
-        assertEquals(3,calendar.numberCalendarDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone)));
-        assertEquals(3,calendar.numberCalendarDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant()));
+        assertEquals(3, calendar.numberCalendarDates(start, end));
+        assertEquals(3, calendar.numberCalendarDates(start.toString(), end.toString()));
+        assertEquals(3,
+                calendar.numberCalendarDates(start.atTime(1, 24).atZone(timeZone), end.atTime(1, 24).atZone(timeZone)));
+        assertEquals(3, calendar.numberCalendarDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
+                end.atTime(1, 24).atZone(timeZone).toInstant()));
 
-        assertEquals(2,calendar.numberCalendarDates(start, end, true, false));
-        assertEquals(2,calendar.numberCalendarDates(start.toString(), end.toString(), true, false));
-        assertEquals(2,calendar.numberCalendarDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone), true, false));
-        assertEquals(2,calendar.numberCalendarDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant(), true, false));
+        assertEquals(2, calendar.numberCalendarDates(start, end, true, false));
+        assertEquals(2, calendar.numberCalendarDates(start.toString(), end.toString(), true, false));
+        assertEquals(2, calendar.numberCalendarDates(start.atTime(1, 24).atZone(timeZone),
+                end.atTime(1, 24).atZone(timeZone), true, false));
+        assertEquals(2, calendar.numberCalendarDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
+                end.atTime(1, 24).atZone(timeZone).toInstant(), true, false));
 
-        assertEquals(2,calendar.numberCalendarDates(start, end, false, true));
-        assertEquals(2,calendar.numberCalendarDates(start.toString(), end.toString(), false, true));
-        assertEquals(2,calendar.numberCalendarDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone), false, true));
-        assertEquals(2,calendar.numberCalendarDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant(), false, true));
+        assertEquals(2, calendar.numberCalendarDates(start, end, false, true));
+        assertEquals(2, calendar.numberCalendarDates(start.toString(), end.toString(), false, true));
+        assertEquals(2, calendar.numberCalendarDates(start.atTime(1, 24).atZone(timeZone),
+                end.atTime(1, 24).atZone(timeZone), false, true));
+        assertEquals(2, calendar.numberCalendarDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
+                end.atTime(1, 24).atZone(timeZone).toInstant(), false, true));
 
-        assertEquals(1,calendar.numberCalendarDates(start, end, false, false));
-        assertEquals(1,calendar.numberCalendarDates(start.toString(), end.toString(), false, false));
-        assertEquals(1,calendar.numberCalendarDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone), false, false));
-        assertEquals(1,calendar.numberCalendarDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant(), false, false));
+        assertEquals(1, calendar.numberCalendarDates(start, end, false, false));
+        assertEquals(1, calendar.numberCalendarDates(start.toString(), end.toString(), false, false));
+        assertEquals(1, calendar.numberCalendarDates(start.atTime(1, 24).atZone(timeZone),
+                end.atTime(1, 24).atZone(timeZone), false, false));
+        assertEquals(1, calendar.numberCalendarDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
+                end.atTime(1, 24).atZone(timeZone).toInstant(), false, false));
     }
 }

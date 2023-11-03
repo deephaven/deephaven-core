@@ -27,25 +27,12 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * Business calendar files should be formatted as:
  *
- * <calendar>
- *     <name>USNYSE</name>
- *     <description>New York Stock Exchange Calendar</description>
- *     <timeZone>America/New_York</timeZone>
- *     <default>
- *         <businessPeriod><open>09:30</open><close>16:00</close></businessPeriod>
- *         <weekend>Saturday</weekend>
- *         <weekend>Sunday</weekend>
- *     </default>
- *     <firstValidDate>1999-01-01</firstValidDate>
- *     <lastValidDate>2003-12-31</lastValidDate>
- *     <holiday>
- *     	<date>19990101</date>
- *     </holiday>
- *     <holiday>
- *         <date>20020705</date>
- *         <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
- *     </holiday>
- * </calendar>
+ * <calendar> <name>USNYSE</name> <description>New York Stock Exchange Calendar</description>
+ * <timeZone>America/New_York</timeZone> <default>
+ * <businessPeriod><open>09:30</open><close>16:00</close></businessPeriod> <weekend>Saturday</weekend>
+ * <weekend>Sunday</weekend> </default> <firstValidDate>1999-01-01</firstValidDate>
+ * <lastValidDate>2003-12-31</lastValidDate> <holiday> <date>19990101</date> </holiday> <holiday> <date>20020705</date>
+ * <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod> </holiday> </calendar>
  */
 public class BusinessCalendarParser {
 
@@ -85,8 +72,10 @@ public class BusinessCalendarParser {
             calendarElements.calendarName = getText(getRequiredChild(root, "name"));
             calendarElements.timeZone = TimeZoneAliases.zoneId(getText(getRequiredChild(root, "timeZone")));
             calendarElements.description = getText(getRequiredChild(root, "description"));
-            calendarElements.firstValidDate = DateTimeUtils.parseLocalDate(getText(getRequiredChild(root, "firstValidDate")));
-            calendarElements.lastValidDate = DateTimeUtils.parseLocalDate(getText(getRequiredChild(root, "lastValidDate")));
+            calendarElements.firstValidDate =
+                    DateTimeUtils.parseLocalDate(getText(getRequiredChild(root, "firstValidDate")));
+            calendarElements.lastValidDate =
+                    DateTimeUtils.parseLocalDate(getText(getRequiredChild(root, "lastValidDate")));
             calendarElements.holidays = parseHolidays(root, calendarElements.timeZone);
 
             // Set the default values
@@ -95,12 +84,12 @@ public class BusinessCalendarParser {
             calendarElements.standardBusinessSchedule = parseBusinessSchedule(defaultElement);
 
             return calendarElements;
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException("Unable to load calendar file: file=" + file.getPath(), e);
         }
     }
 
-    private static Element loadXMLRootElement(File calendarFile) throws Exception{
+    private static Element loadXMLRootElement(File calendarFile) throws Exception {
         final Document doc;
 
         try {
@@ -130,23 +119,28 @@ public class BusinessCalendarParser {
 
     private static BusinessSchedule<LocalTime> parseBusinessSchedule(final Element element) throws Exception {
         final List<Element> businessPeriods = element.getChildren("businessPeriod");
-        return businessPeriods.isEmpty() ? BusinessSchedule.HOLIDAY : new BusinessSchedule<>(parseBusinessPeriods(businessPeriods));
+        return businessPeriods.isEmpty() ? BusinessSchedule.HOLIDAY
+                : new BusinessSchedule<>(parseBusinessPeriods(businessPeriods));
     }
 
-    private static BusinessPeriod<LocalTime>[] parseBusinessPeriods(final List<Element> businessPeriods) throws Exception {
-        //noinspection unchecked
+    private static BusinessPeriod<LocalTime>[] parseBusinessPeriods(final List<Element> businessPeriods)
+            throws Exception {
+        // noinspection unchecked
         final BusinessPeriod<LocalTime>[] rst = new BusinessPeriod[businessPeriods.size()];
 
-        for(int i=0; i<businessPeriods.size(); i++){
-            final LocalTime open = DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessPeriods.get(i), "open")));
-            final LocalTime close = DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessPeriods.get(i), "close")));
+        for (int i = 0; i < businessPeriods.size(); i++) {
+            final LocalTime open =
+                    DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessPeriods.get(i), "open")));
+            final LocalTime close =
+                    DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessPeriods.get(i), "close")));
             rst[i] = new BusinessPeriod<>(open, close);
         }
 
         return rst;
     }
 
-    private static Map<LocalDate, BusinessSchedule<Instant>> parseHolidays(final Element root, final ZoneId timeZone) throws Exception{
+    private static Map<LocalDate, BusinessSchedule<Instant>> parseHolidays(final Element root, final ZoneId timeZone)
+            throws Exception {
         final Map<LocalDate, BusinessSchedule<Instant>> holidays = new ConcurrentHashMap<>();
         final List<Element> holidayElements = root.getChildren("holiday");
 
@@ -154,13 +148,13 @@ public class BusinessCalendarParser {
             final Element dateElement = getRequiredChild(holidayElement, "date");
             final LocalDate date = DateTimeUtils.parseLocalDate(getText(dateElement));
             final BusinessSchedule<LocalTime> schedule = parseBusinessSchedule(holidayElement);
-            holidays.put(date, BusinessSchedule.toInstant(schedule,date, timeZone));
+            holidays.put(date, BusinessSchedule.toInstant(schedule, date, timeZone));
         }
 
         return holidays;
     }
 
-    private static Set<DayOfWeek> parseWeekendDays(@NotNull final Element defaultElement) throws Exception{
+    private static Set<DayOfWeek> parseWeekendDays(@NotNull final Element defaultElement) throws Exception {
         final Set<DayOfWeek> weekendDays = new HashSet<>();
 
         final List<Element> weekends = defaultElement.getChildren("weekend");
@@ -172,7 +166,7 @@ public class BusinessCalendarParser {
 
                 try {
                     dow = DayOfWeek.valueOf(dows);
-                } catch (IllegalArgumentException e){
+                } catch (IllegalArgumentException e) {
                     throw new Exception("Invalid day of week: day=" + dows, e);
                 }
 

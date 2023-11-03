@@ -10,8 +10,7 @@ import java.util.logging.Logger;
 
 @SuppressWarnings("StringConcatenationInLoop")
 public class GenUtils {
-    private GenUtils() {
-    }
+    private GenUtils() {}
 
     private static final Logger log = Logger.getLogger(GenUtils.class.toString());
 
@@ -44,7 +43,8 @@ public class GenUtils {
                 " */\n" +
                 "/****************************************************************************************************************************\n"
                 +
-                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask + "\" to regenerate\n"
+                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run " + generatorClass.getSimpleName()
+                + " or \"./gradlew " + gradleTask + "\" to regenerate\n"
                 +
                 " ****************************************************************************************************************************/\n\n";
 
@@ -58,10 +58,12 @@ public class GenUtils {
      * @param oldCode old code
      * @param newCode new code
      */
-    public static void assertGeneratedCodeSame(final Class<?> generatorClass, final String gradleTask, final String oldCode, final String newCode) {
+    public static void assertGeneratedCodeSame(final Class<?> generatorClass, final String gradleTask,
+            final String oldCode, final String newCode) {
         if (!newCode.equals(oldCode)) {
             throw new RuntimeException(
-                    "Change in generated code.  Run " + generatorClass + " or \"./gradlew " + gradleTask + "\" to regenerate\n");
+                    "Change in generated code.  Run " + generatorClass + " or \"./gradlew " + gradleTask
+                            + "\" to regenerate\n");
         }
     }
 
@@ -173,7 +175,7 @@ public class GenUtils {
                 typeString = typeString.substring(0, index) + "..." + typeString.substring(index + 2);
             }
 
-            if(includeTypes) {
+            if (includeTypes) {
                 callArgs += " " + typeString;
             }
 
@@ -236,7 +238,8 @@ public class GenUtils {
      * @param funcBody function body.
      * @return code for the function.
      */
-    public static String javaFunction(final JavaFunction f, final String sigPrefix, final String javadoc, final String funcBody) {
+    public static String javaFunction(final JavaFunction f, final String sigPrefix, final String javadoc,
+            final String funcBody) {
         String s = javadoc == null || javadoc.equals("") ? "" : (javadoc + "\n");
         s += javaFunctionSignature(f, sigPrefix);
         s += funcBody;

@@ -24,7 +24,9 @@ import java.util.stream.Collectors;
  */
 public class GroovyStaticImportGenerator extends AbstractBasicJavaGenerator {
 
-    public GroovyStaticImportGenerator(String gradleTask, String packageName, String className, String[] imports, Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen) throws ClassNotFoundException {
+    public GroovyStaticImportGenerator(String gradleTask, String packageName, String className, String[] imports,
+            Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen)
+            throws ClassNotFoundException {
         super(gradleTask, packageName, className, imports, includeMethod, skipsGen);
     }
 
@@ -48,7 +50,8 @@ public class GroovyStaticImportGenerator extends AbstractBasicJavaGenerator {
                 ") */";
         final String sigPrefix = "public static";
         final String callArgs = GenUtils.javaArgString(f, false);
-        final String funcBody = " {return " + f.getClassNameShort() + "." + f.getMethodName() + "(" + callArgs + " );}\n";
+        final String funcBody =
+                " {return " + f.getClassNameShort() + "." + f.getMethodName() + "(" + callArgs + " );}\n";
         return GenUtils.javaFunction(f, sigPrefix, javadoc, funcBody);
     }
 
@@ -76,7 +79,7 @@ public class GroovyStaticImportGenerator extends AbstractBasicJavaGenerator {
                 // skipping common erasure "sum"
                 Collections.singletonList((f) -> f.getMethodName().equals("sum") && f.getParameterTypes().length == 1
                         && f.getParameterTypes()[0].getTypeName()
-                        .contains("ObjectVector<")));
+                                .contains("ObjectVector<")));
 
         runCommandLine(gen, relativeFilePath, args);
     }

@@ -33,13 +33,14 @@ public abstract class AbstractBasicJavaGenerator {
      *
      * @param gradleTask Gradle task to generate the code.
      * @param packageName Package name for the generated class.
-     * @param className   Class name for the generated class.
+     * @param className Class name for the generated class.
      * @param imports Array of fully qualified class names to process.
      * @param includeMethod a predicate to determine if a method should be considered for code generation.
-     * @param skipsGen   Collection of predicates to determine if a function should be skipped when generating code.
+     * @param skipsGen Collection of predicates to determine if a function should be skipped when generating code.
      * @throws ClassNotFoundException If a class in the imports array cannot be found.
      */
-    public AbstractBasicJavaGenerator(final String gradleTask, final String packageName, final String className, final String[] imports, Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen)
+    public AbstractBasicJavaGenerator(final String gradleTask, final String packageName, final String className,
+            final String[] imports, Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen)
             throws ClassNotFoundException {
         this.gradleTask = gradleTask;
         this.packageName = packageName;
@@ -52,7 +53,7 @@ public abstract class AbstractBasicJavaGenerator {
 
             for (Method m : c.getMethods()) {
                 log.info("Processing method (" + c + "): " + m);
-                if(includeMethod.test(m)) {
+                if (includeMethod.test(m)) {
                     addMethod(m);
                 }
             }
@@ -135,12 +136,13 @@ public abstract class AbstractBasicJavaGenerator {
     /**
      * Run a generator from the command line.
      *
-     * @param gen              The generator to run.
+     * @param gen The generator to run.
      * @param relativeFilePath The relative file path to write the generated code to.
-     * @param args             The command line arguments.
+     * @param args The command line arguments.
      * @throws IOException If there is an IO error.
      */
-    public static void runCommandLine(final AbstractBasicJavaGenerator gen, final String relativeFilePath, final String[] args) throws IOException {
+    public static void runCommandLine(final AbstractBasicJavaGenerator gen, final String relativeFilePath,
+            final String[] args) throws IOException {
 
         String devroot = null;
         boolean assertNoChange = false;

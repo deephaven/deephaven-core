@@ -1104,7 +1104,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertNull(DateTimeUtils.formatDate((ZonedDateTime) null));
 
-        final LocalDate date = LocalDate.of(2021,2,3);
+        final LocalDate date = LocalDate.of(2021, 2, 3);
         TestCase.assertEquals("2021-02-03", DateTimeUtils.formatDate(date));
         TestCase.assertNull(DateTimeUtils.formatDate((LocalDate) null));
     }
@@ -1728,7 +1728,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
             TestCase.assertEquals(DateTimeUtils.toLocalDate(Instant.ofEpochSecond(0, nanos), TZ_AL),
                     DateTimeUtils.todayLocalDate(TZ_AL));
-            TestCase.assertEquals(DateTimeUtils.todayLocalDate(DateTimeUtils.timeZone()), DateTimeUtils.todayLocalDate());
+            TestCase.assertEquals(DateTimeUtils.todayLocalDate(DateTimeUtils.timeZone()),
+                    DateTimeUtils.todayLocalDate());
         } catch (Exception ex) {
             DateTimeUtils.setClock(initial);
             throw ex;
@@ -2379,7 +2380,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     public void testYear() {
-        final LocalDate dt1 = LocalDate.of(2023,1,2);
+        final LocalDate dt1 = LocalDate.of(2023, 1, 2);
         final Instant dt2 = DateTimeUtils.parseInstant("2023-01-02T11:23:45.123456789 JP");
         final ZonedDateTime dt3 = dt2.atZone(TZ_JP);
 
@@ -2395,7 +2396,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     public void testYearOfCentury() {
-        final LocalDate dt1 = LocalDate.of(2023,1,2);
+        final LocalDate dt1 = LocalDate.of(2023, 1, 2);
         final Instant dt2 = DateTimeUtils.parseInstant("2023-01-02T11:23:45.123456789 JP");
         final ZonedDateTime dt3 = dt2.atZone(TZ_JP);
 
@@ -2411,7 +2412,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     public void testMonthOfYear() {
-        final LocalDate dt1 = LocalDate.of(2023,2,3);
+        final LocalDate dt1 = LocalDate.of(2023, 2, 3);
         final Instant dt2 = DateTimeUtils.parseInstant("2023-02-03T11:23:45.123456789 JP");
         final ZonedDateTime dt3 = dt2.atZone(TZ_JP);
 
@@ -2427,7 +2428,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     public void testDayOfMonth() {
-        final LocalDate dt1 = LocalDate.of(2023,2,3);
+        final LocalDate dt1 = LocalDate.of(2023, 2, 3);
         final Instant dt2 = DateTimeUtils.parseInstant("2023-02-03T11:23:45.123456789 JP");
         final ZonedDateTime dt3 = dt2.atZone(TZ_JP);
 
@@ -2443,7 +2444,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     public void testDayOfWeek() {
-        final LocalDate dt1 = LocalDate.of(2023,2,3);
+        final LocalDate dt1 = LocalDate.of(2023, 2, 3);
         final Instant dt2 = DateTimeUtils.parseInstant("2023-02-03T11:23:45.123456789 JP");
         final ZonedDateTime dt3 = dt2.atZone(TZ_JP);
 
@@ -2459,7 +2460,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     public void testDayOfYear() {
-        final LocalDate dt1 = LocalDate.of(2023,2,3);
+        final LocalDate dt1 = LocalDate.of(2023, 2, 3);
         final Instant dt2 = DateTimeUtils.parseInstant("2023-02-03T11:23:45.123456789 JP");
         final ZonedDateTime dt3 = dt2.atZone(TZ_JP);
 
@@ -2822,7 +2823,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     public void testAtMidnight() {
-        final LocalDate dt1 = LocalDate.of(2023,2,3);
+        final LocalDate dt1 = LocalDate.of(2023, 2, 3);
 
         final Instant dt2 = DateTimeUtils.parseInstant("2023-02-03T11:23:45.123456789 JP");
         final ZonedDateTime dt3 = dt2.atZone(TZ_JP);

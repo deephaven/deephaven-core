@@ -74,7 +74,8 @@ public class GeneratePyV2FigureAPI {
 
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(figureWrapperOutput)));
-            GenUtils.assertGeneratedCodeSame(GeneratePyV2FigureAPI.class, ":Generators:generatePythonFigureWrapper", oldCode, pyCode);
+            GenUtils.assertGeneratedCodeSame(GeneratePyV2FigureAPI.class, ":Generators:generatePythonFigureWrapper",
+                    oldCode, pyCode);
         } else {
             try (final PrintWriter out = new PrintWriter(pythonFile)) {
                 out.print(pyCode);

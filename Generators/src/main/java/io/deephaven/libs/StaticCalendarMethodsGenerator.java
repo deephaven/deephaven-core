@@ -22,7 +22,9 @@ public class StaticCalendarMethodsGenerator extends AbstractBasicJavaGenerator {
 
     final Function<String, String> renamer;
 
-    public StaticCalendarMethodsGenerator(String gradleTask, String packageName, String className, String[] imports, Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen, Function<String, String> renamer) throws ClassNotFoundException {
+    public StaticCalendarMethodsGenerator(String gradleTask, String packageName, String className, String[] imports,
+            Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen,
+            Function<String, String> renamer) throws ClassNotFoundException {
         super(gradleTask, packageName, className, imports, includeMethod, skipsGen);
         this.renamer = renamer;
     }
@@ -63,7 +65,8 @@ public class StaticCalendarMethodsGenerator extends AbstractBasicJavaGenerator {
         final String packageName = "io.deephaven.time.calendar";
         final String className = "StaticCalendarMethods";
 
-        final String relativeFilePath = "/engine/time/src/main/java/io/deephaven/time/calendar/StaticCalendarMethods.java";
+        final String relativeFilePath =
+                "/engine/time/src/main/java/io/deephaven/time/calendar/StaticCalendarMethods.java";
 
         final String[] imports = {
                 "io.deephaven.time.calendar.BusinessCalendar",
@@ -76,18 +79,19 @@ public class StaticCalendarMethodsGenerator extends AbstractBasicJavaGenerator {
         excludes.add("firstValidDate");
         excludes.add("lastValidDate");
 
-        StaticCalendarMethodsGenerator gen = new StaticCalendarMethodsGenerator(gradleTask, packageName, className, imports,
-                (m) -> Modifier.isPublic(m.getModifiers()) && !m.getDeclaringClass().equals(Object.class),
-                Collections.singletonList((f) -> excludes.contains(f.getMethodName())),
-                (s) -> {
-                    if (s.equals("dayOfWeek")) {
-                        return "calendarDayOfWeek";
-                    } else if (s.equals("timeZone")) {
-                        return "calendarTimeZone";
-                    } else {
-                        return s;
-                    }
-                });
+        StaticCalendarMethodsGenerator gen =
+                new StaticCalendarMethodsGenerator(gradleTask, packageName, className, imports,
+                        (m) -> Modifier.isPublic(m.getModifiers()) && !m.getDeclaringClass().equals(Object.class),
+                        Collections.singletonList((f) -> excludes.contains(f.getMethodName())),
+                        (s) -> {
+                            if (s.equals("dayOfWeek")) {
+                                return "calendarDayOfWeek";
+                            } else if (s.equals("timeZone")) {
+                                return "calendarTimeZone";
+                            } else {
+                                return s;
+                            }
+                        });
 
         runCommandLine(gen, relativeFilePath, args);
     }

@@ -27,8 +27,8 @@ public class JavaFunction implements Comparable<JavaFunction> {
     private final boolean isVarArgs;
 
     public JavaFunction(final String className, final String classNameShort, final String methodName,
-                        final TypeVariable<Method>[] typeParameters, final Type returnType, final Type[] parameterTypes,
-                        final String[] parameterNames, final boolean isVarArgs) {
+            final TypeVariable<Method>[] typeParameters, final Type returnType, final Type[] parameterTypes,
+            final String[] parameterNames, final boolean isVarArgs) {
         this.className = className;
         this.classNameShort = classNameShort;
         this.methodName = methodName;
@@ -170,7 +170,8 @@ public class JavaFunction implements Comparable<JavaFunction> {
      * @param returnType return type or null if the current return type should be used.
      * @return a new JavaFunction with the same signature, but with new class and method names.
      */
-    public JavaFunction transform(final String className, final String classNameShort, final String methodName, Type returnType) {
+    public JavaFunction transform(final String className, final String classNameShort, final String methodName,
+            Type returnType) {
         return new JavaFunction(
                 className == null ? this.className : className,
                 classNameShort == null ? this.classNameShort : classNameShort,

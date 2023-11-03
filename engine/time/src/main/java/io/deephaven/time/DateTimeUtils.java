@@ -482,9 +482,9 @@ public class DateTimeUtils {
     }
 
     /**
-     * Provides the current date according to the {@link #currentClock() current clock}. Under most
-     * circumstances, this method will return the date according to current system time, but during replay simulations,
-     * this method can return the date according to replay time.
+     * Provides the current date according to the {@link #currentClock() current clock}. Under most circumstances, this
+     * method will return the date according to current system time, but during replay simulations, this method can
+     * return the date according to replay time.
      *
      * @param timeZone the time zone
      * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd"
@@ -1389,8 +1389,7 @@ public class DateTimeUtils {
      *
      * @param date starting date
      * @param period time period
-     * @return {@code null} if either input is {@code null}; otherwise the starting
-     *         date plus the specified time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting date plus the specified time period
      * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
      */
     @ScriptApi
@@ -1573,8 +1572,7 @@ public class DateTimeUtils {
      *
      * @param date starting date
      * @param period time period
-     * @return {@code null} if either input is {@code null}; otherwise the starting
-     *         date minus the specified time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting date minus the specified time period
      * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
      */
     @ScriptApi
@@ -2783,8 +2781,8 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a 1-based int value of the month of the year (Julian date) for a {@link LocalDate}.
-     * January is 1, February is 2, etc.
+     * Returns a 1-based int value of the month of the year (Julian date) for a {@link LocalDate}. January is 1,
+     * February is 2, etc.
      *
      * @param date date to find the month of the year of
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the month of the year
@@ -2944,7 +2942,7 @@ public class DateTimeUtils {
         return date.atStartOfDay(timeZone);
     }
 
-    //TODO: return ZDT?
+    // TODO: return ZDT?
     /**
      * Returns an {@link Instant} for the prior midnight in the specified time zone.
      *

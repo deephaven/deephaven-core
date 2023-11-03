@@ -52,17 +52,17 @@ public class TestCalendarMethodsFromTable {
 
         assertEquals(calendar.name(), getVal(emptyTable(1).update("Name = name()"), "Name"));
 
-        assertEquals(calendar.currentDate(), getVal(emptyTable(1).update("currentDay = currentDay()"), "currentDay"));
+        assertEquals(calendar.calendarDate(), getVal(emptyTable(1).update("currentDay = currentDay()"), "currentDay"));
 
-        assertEquals(calendar..pastDate(1),
+        assertEquals(calendar.pastDate(1),
                 getVal(emptyTable(1).update("previousDay = previousDay()"), "previousDay"));
         assertEquals(calendar.pastDate(4),
                 getVal(emptyTable(1).update("previousDay = previousDay(4)"), "previousDay"));
-        assertEquals(calendar.minusDays(time1,1),
+        assertEquals(calendar.minusDays(time1, 1),
                 getVal(emptyTable(1).update("previousDay = previousDay(time1)"), "previousDay"));
         assertEquals(calendar.minusDays(time1, 4),
                 getVal(emptyTable(1).update("previousDay = previousDay(time1, 4)"), "previousDay"));
-        assertEquals(calendar.minusDays(date1,1),
+        assertEquals(calendar.minusDays(date1, 1),
                 getVal(emptyTable(1).update("previousDay = previousDay(date1)"), "previousDay"));
         assertEquals(calendar.minusDays(date1, 14),
                 getVal(emptyTable(1).update("previousDay = previousDay(date1, 14)"), "previousDay"));
@@ -70,10 +70,10 @@ public class TestCalendarMethodsFromTable {
 
         assertEquals(calendar.futureDate(1), getVal(emptyTable(1).update("nextDay = nextDay(1)"), "nextDay"));
         assertEquals(calendar.futureDate(4), getVal(emptyTable(1).update("nextDay = nextDay(4)"), "nextDay"));
-        assertEquals(calendar.plusDays(time1,1), getVal(emptyTable(1).update("nextDay = nextDay(time1)"), "nextDay"));
+        assertEquals(calendar.plusDays(time1, 1), getVal(emptyTable(1).update("nextDay = nextDay(time1)"), "nextDay"));
         assertEquals(calendar.plusDays(time1, 4),
                 getVal(emptyTable(1).update("nextDay = nextDay(time1, 4)"), "nextDay"));
-        assertEquals(calendar.plusDays(date1,1), getVal(emptyTable(1).update("nextDay = nextDay(date1)"), "nextDay"));
+        assertEquals(calendar.plusDays(date1, 1), getVal(emptyTable(1).update("nextDay = nextDay(date1)"), "nextDay"));
         assertEquals(calendar.plusDays(date1, 14),
                 getVal(emptyTable(1).update("nextDay = nextDay(date1, 14)"), "nextDay"));
 
@@ -85,19 +85,20 @@ public class TestCalendarMethodsFromTable {
 
         assertEquals(calendar.numberCalendarDates(time1, time2),
                 getVal(emptyTable(1).update("numberOfDays = numberOfDays(time1, time2)"), "numberOfDays"));
-        assertEquals(calendar.numberCalendarDates(time1, time2, true),
+        assertEquals(calendar.numberCalendarDates(time1, time2, true, true),
                 getVal(emptyTable(1).update("numberOfDays = numberOfDays(time1, time2, true)"), "numberOfDays"));
         assertEquals(calendar.numberCalendarDates(date1, date2),
                 getVal(emptyTable(1).update("numberOfDays = numberOfDays(date1, date2)"), "numberOfDays"));
-        assertEquals(calendar.numberCalendarDates(date1, date2, true),
+        assertEquals(calendar.numberCalendarDates(date1, date2, true, true),
                 getVal(emptyTable(1).update("numberOfDays = numberOfDays(date1, date2, true)"), "numberOfDays"));
 
 
-        assertEquals(calendar.dayOfWeek(), getVal(emptyTable(1).update("dayOfWeek = dayOfWeek()"), "dayOfWeek"));
+        assertEquals(calendar.dayOfWeek(),
+                getVal(emptyTable(1).update("dayOfWeek = calendarDayOfWeek()"), "dayOfWeek"));
         assertEquals(calendar.dayOfWeek(time2),
-                getVal(emptyTable(1).update("dayOfWeek = dayOfWeek(time2)"), "dayOfWeek"));
+                getVal(emptyTable(1).update("dayOfWeek = calendarDayOfWeek(time2)"), "dayOfWeek"));
         assertEquals(calendar.dayOfWeek(date2),
-                getVal(emptyTable(1).update("dayOfWeek = dayOfWeek(date2)"), "dayOfWeek"));
+                getVal(emptyTable(1).update("dayOfWeek = calendarDayOfWeek(date2)"), "dayOfWeek"));
 
         assertEquals(calendar.timeZone(), getVal(emptyTable(1).update("timeZone = calendarTimeZone()"), "timeZone"));
 
@@ -139,99 +140,73 @@ public class TestCalendarMethodsFromTable {
                 getVal(emptyTable(1).update("isBusinessTime = isBusinessTime(time2)"), "isBusinessTime"));
 
 
-        assertEquals(calendar.pastBusinessDate(),
-                getVal(emptyTable(1).update("previousBusinessDay = previousBusinessDay()"), "previousBusinessDay"));
+        assertEquals(calendar.pastBusinessDate(1),
+                getVal(emptyTable(1).update("previousBusinessDay = pastBusinessDate(1)"), "previousBusinessDay"));
         assertEquals(calendar.pastBusinessDate(12),
                 getVal(emptyTable(1).update("previousBusinessDay = previousBusinessDay(12)"), "previousBusinessDay"));
-        assertEquals(calendar.pastBusinessDate(time1), getVal(
-                emptyTable(1).update("previousBusinessDay = previousBusinessDay(time1)"), "previousBusinessDay"));
-        assertEquals(calendar.pastBusinessDate(time1, 6), getVal(
-                emptyTable(1).update("previousBusinessDay = previousBusinessDay(time1, 6)"), "previousBusinessDay"));
-        assertEquals(calendar.pastBusinessDate(date1), getVal(
-                emptyTable(1).update("previousBusinessDay = previousBusinessDay(date1)"), "previousBusinessDay"));
-        assertEquals(calendar.pastBusinessDate(date1, 16), getVal(
-                emptyTable(1).update("previousBusinessDay = previousBusinessDay(date1, 16)"), "previousBusinessDay"));
+        assertEquals(calendar.plusBusinessDays(time1, 1), getVal(
+                emptyTable(1).update("previousBusinessDay = plusBusinessDays(time1, 1)"), "previousBusinessDay"));
+        assertEquals(calendar.plusBusinessDays(time1, 6), getVal(
+                emptyTable(1).update("previousBusinessDay = plusBusinessDays(time1, 6)"), "previousBusinessDay"));
+        assertEquals(calendar.plusBusinessDays(date1, 1), getVal(
+                emptyTable(1).update("previousBusinessDay = plusBusinessDays(date1, 1)"), "previousBusinessDay"));
+        assertEquals(calendar.plusBusinessDays(date1, 16), getVal(
+                emptyTable(1).update("previousBusinessDay = plusBusinessDays(date1, 16)"), "previousBusinessDay"));
 
 
-        assertEquals(calendar.previousBusinessSchedule(),
-                getVal(emptyTable(1).update("previousBusinessSchedule = previousBusinessSchedule()"),
-                        "previousBusinessSchedule"));
-        assertEquals(calendar.previousBusinessSchedule(12),
-                getVal(emptyTable(1).update("previousBusinessSchedule = previousBusinessSchedule(12)"),
-                        "previousBusinessSchedule"));
-        assertEquals(calendar.previousBusinessSchedule(time1),
-                getVal(emptyTable(1).update("previousBusinessSchedule = previousBusinessSchedule(time1)"),
-                        "previousBusinessSchedule"));
-        assertEquals(calendar.previousBusinessSchedule(time1, 6),
-                getVal(emptyTable(1).update("previousBusinessSchedule = previousBusinessSchedule(time1, 6)"),
-                        "previousBusinessSchedule"));
-        assertEquals(calendar.previousBusinessSchedule(date1),
-                getVal(emptyTable(1).update("previousBusinessSchedule = previousBusinessSchedule(date1)"),
-                        "previousBusinessSchedule"));
-        assertEquals(calendar.previousBusinessSchedule(date1, 16),
-                getVal(emptyTable(1).update("previousBusinessSchedule = previousBusinessSchedule(date1, 16)"),
-                        "previousBusinessSchedule"));
+        assertEquals(calendar.standardBusinessSchedule(),
+                getVal(emptyTable(1).update("standardBusinessSchedule = standardBusinessSchedule()"),
+                        "standardBusinessSchedule"));
+        assertEquals(calendar.businessSchedule(),
+                getVal(emptyTable(1).update("businessSchedule = businessSchedule(12)"),
+                        "businessSchedule"));
 
 
-        assertEquals(calendar.pastNonBusinessDate(), getVal(
-                emptyTable(1).update("previousNonBusinessDay = previousNonBusinessDay()"), "previousNonBusinessDay"));
+        assertEquals(calendar.pastNonBusinessDate(1), getVal(
+                emptyTable(1).update("previousNonBusinessDay = pastNonBusinessDate(1)"), "previousNonBusinessDay"));
         assertEquals(calendar.pastNonBusinessDate(12), getVal(
                 emptyTable(1).update("previousNonBusinessDay = previousNonBusinessDay(12)"), "previousNonBusinessDay"));
-        assertEquals(calendar.pastNonBusinessDate(time1),
-                getVal(emptyTable(1).update("previousNonBusinessDay = previousNonBusinessDay(time1)"),
+        assertEquals(calendar.minusNonBusinessDays(time1, 1),
+                getVal(emptyTable(1).update("previousNonBusinessDay = minusNonBusinessDays(time1, 1)"),
                         "previousNonBusinessDay"));
-        assertEquals(calendar.pastNonBusinessDate(time1, 6),
-                getVal(emptyTable(1).update("previousNonBusinessDay = previousNonBusinessDay(time1, 6)"),
+        assertEquals(calendar.minusNonBusinessDays(time1, 6),
+                getVal(emptyTable(1).update("previousNonBusinessDay = minusNonBusinessDays(time1, 6)"),
                         "previousNonBusinessDay"));
-        assertEquals(calendar.pastNonBusinessDate(date1),
-                getVal(emptyTable(1).update("previousNonBusinessDay = previousNonBusinessDay(date1)"),
+        assertEquals(calendar.minusNonBusinessDays(date1, 1),
+                getVal(emptyTable(1).update("previousNonBusinessDay = minusNonBusinessDays(date1, 1)"),
                         "previousNonBusinessDay"));
-        assertEquals(calendar.pastNonBusinessDate(date1, 16),
-                getVal(emptyTable(1).update("previousNonBusinessDay = previousNonBusinessDay(date1, 16)"),
+        assertEquals(calendar.minusNonBusinessDays(date1, 16),
+                getVal(emptyTable(1).update("previousNonBusinessDay = minusNonBusinessDays(date1, 16)"),
                         "previousNonBusinessDay"));
 
 
-        assertEquals(calendar.futureBusinessDate(),
-                getVal(emptyTable(1).update("nextBusinessDay = nextBusinessDay()"), "nextBusinessDay"));
+        assertEquals(calendar.futureBusinessDate(1),
+                getVal(emptyTable(1).update("nextBusinessDay = nextBusinessDay(1)"), "nextBusinessDay"));
         assertEquals(calendar.futureBusinessDate(12),
                 getVal(emptyTable(1).update("nextBusinessDay = nextBusinessDay(12)"), "nextBusinessDay"));
-        assertEquals(calendar.futureBusinessDate(time1),
-                getVal(emptyTable(1).update("nextBusinessDay = nextBusinessDay(time1)"), "nextBusinessDay"));
-        assertEquals(calendar.futureBusinessDate(time1, 6),
-                getVal(emptyTable(1).update("nextBusinessDay = nextBusinessDay(time1, 6)"), "nextBusinessDay"));
-        assertEquals(calendar.futureBusinessDate(date1),
-                getVal(emptyTable(1).update("nextBusinessDay = nextBusinessDay(date1)"), "nextBusinessDay"));
-        assertEquals(calendar.futureBusinessDate(date1, 16),
-                getVal(emptyTable(1).update("nextBusinessDay = nextBusinessDay(date1, 16)"), "nextBusinessDay"));
+        assertEquals(calendar.plusBusinessDays(time1, 1),
+                getVal(emptyTable(1).update("nextBusinessDay = plusBusinessDays(time1, 1)"), "nextBusinessDay"));
+        assertEquals(calendar.plusBusinessDays(time1, 6),
+                getVal(emptyTable(1).update("nextBusinessDay = plusBusinessDays(time1, 6)"), "nextBusinessDay"));
+        assertEquals(calendar.plusBusinessDays(date1, 1),
+                getVal(emptyTable(1).update("nextBusinessDay = plusBusinessDays(date1, 1)"), "nextBusinessDay"));
+        assertEquals(calendar.plusBusinessDays(date1, 16),
+                getVal(emptyTable(1).update("nextBusinessDay = plusBusinessDays(date1, 16)"), "nextBusinessDay"));
 
 
-        assertEquals(calendar.nextBusinessSchedule(),
-                getVal(emptyTable(1).update("nextBusinessSchedule = nextBusinessSchedule()"), "nextBusinessSchedule"));
-        assertEquals(calendar.nextBusinessSchedule(12), getVal(
-                emptyTable(1).update("nextBusinessSchedule = nextBusinessSchedule(12)"), "nextBusinessSchedule"));
-        assertEquals(calendar.nextBusinessSchedule(time1), getVal(
-                emptyTable(1).update("nextBusinessSchedule = nextBusinessSchedule(time1)"), "nextBusinessSchedule"));
-        assertEquals(calendar.nextBusinessSchedule(time1, 6), getVal(
-                emptyTable(1).update("nextBusinessSchedule = nextBusinessSchedule(time1, 6)"), "nextBusinessSchedule"));
-        assertEquals(calendar.nextBusinessSchedule(date1), getVal(
-                emptyTable(1).update("nextBusinessSchedule = nextBusinessSchedule(date1)"), "nextBusinessSchedule"));
-        assertEquals(calendar.nextBusinessSchedule(date1, 16),
-                getVal(emptyTable(1).update("nextBusinessSchedule = nextBusinessSchedule(date1, 16)"),
-                        "nextBusinessSchedule"));
-
-
-        assertEquals(calendar.futureNonBusinessDate(),
-                getVal(emptyTable(1).update("nextNonBusinessDay = nextNonBusinessDay()"), "nextNonBusinessDay"));
+        assertEquals(calendar.futureNonBusinessDate(1),
+                getVal(emptyTable(1).update("nextNonBusinessDay = futureNonBusinessDate(1)"), "nextNonBusinessDay"));
         assertEquals(calendar.futureNonBusinessDate(12),
-                getVal(emptyTable(1).update("nextNonBusinessDay = nextNonBusinessDay(12)"), "nextNonBusinessDay"));
-        assertEquals(calendar.futureNonBusinessDate(time1),
-                getVal(emptyTable(1).update("nextNonBusinessDay = nextNonBusinessDay(time1)"), "nextNonBusinessDay"));
-        assertEquals(calendar.futureNonBusinessDate(time1, 6), getVal(
-                emptyTable(1).update("nextNonBusinessDay = nextNonBusinessDay(time1, 6)"), "nextNonBusinessDay"));
-        assertEquals(calendar.futureNonBusinessDate(date1),
-                getVal(emptyTable(1).update("nextNonBusinessDay = nextNonBusinessDay(date1)"), "nextNonBusinessDay"));
-        assertEquals(calendar.futureNonBusinessDate(date1, 16), getVal(
-                emptyTable(1).update("nextNonBusinessDay = nextNonBusinessDay(date1, 16)"), "nextNonBusinessDay"));
+                getVal(emptyTable(1).update("nextNonBusinessDay = futureNonBusinessDate(12)"), "nextNonBusinessDay"));
+        assertEquals(calendar.plusNonBusinessDays(time1, 1),
+                getVal(emptyTable(1).update("nextNonBusinessDay = plusNonBusinessDays(time1)"), "nextNonBusinessDay"));
+        assertEquals(calendar.plusNonBusinessDays(time1, 6), getVal(
+                emptyTable(1).update("nextNonBusinessDay = plusNonBusinessDays(time1, 6)"), "nextNonBusinessDay"));
+        assertEquals(calendar.plusNonBusinessDays(date1, 1),
+                getVal(emptyTable(1).update("nextNonBusinessDay = plusNonBusinessDays(date1, 1)"),
+                        "nextNonBusinessDay"));
+        assertEquals(calendar.plusNonBusinessDays(date1, 16), getVal(
+                emptyTable(1).update("nextNonBusinessDay = plusNonBusinessDays(date1, 16)"), "nextNonBusinessDay"));
 
 
         assertEquals(calendar.businessDates(time1, time2),
@@ -262,37 +237,35 @@ public class TestCalendarMethodsFromTable {
                         "diffNonBusinessNanos"));
         assertEquals(calendar.diffBusinessDays(time1, time2),
                 getVal(emptyTable(1).update("diffBusinessDay = diffBusinessDay(time1, time2)"), "diffBusinessDay"));
-        assertEquals(calendar.diffNonBusinessDays(time1, time2), getVal(
-                emptyTable(1).update("diffNonBusinessDay = diffNonBusinessDay(time1, time2)"), "diffNonBusinessDay"));
         assertEquals(calendar.diffBusinessYears(time1, time2),
                 getVal(emptyTable(1).update("diffBusinessYear = diffBusinessYear(time1, time2)"), "diffBusinessYear"));
 
 
 
-        assertEquals(calendar.numberOfBusinessDays(time1, time2),
-                getVal(emptyTable(1).update("numberOfBusinessDays = numberOfBusinessDays(time1, time2)"),
+        assertEquals(calendar.numberBusinessDates(time1, time2),
+                getVal(emptyTable(1).update("numberOfBusinessDays = numberBusinessDates(time1, time2)"),
                         "numberOfBusinessDays"));
-        assertEquals(calendar.numberBusinessDates(time1, time2, true),
-                getVal(emptyTable(1).update("numberOfBusinessDays = numberOfBusinessDays(time1, time2, true)"),
+        assertEquals(calendar.numberBusinessDates(time1, time2, true, true),
+                getVal(emptyTable(1).update("numberOfBusinessDays = numberBusinessDates(time1, time2, true, true)"),
                         "numberOfBusinessDays"));
-        assertEquals(calendar.numberOfBusinessDays(date1, date2),
-                getVal(emptyTable(1).update("numberOfBusinessDays = numberOfBusinessDays(date1, date2)"),
+        assertEquals(calendar.numberBusinessDates(date1, date2),
+                getVal(emptyTable(1).update("numberOfBusinessDays = numberBusinessDates(date1, date2)"),
                         "numberOfBusinessDays"));
-        assertEquals(calendar.numberBusinessDates(date1, date2, true),
-                getVal(emptyTable(1).update("numberOfBusinessDays = numberOfBusinessDays(date1, date2, true)"),
+        assertEquals(calendar.numberBusinessDates(date1, date2, true, true),
+                getVal(emptyTable(1).update("numberOfBusinessDays = numberBusinessDates(date1, date2, true, true)"),
                         "numberOfBusinessDays"));
 
 
-        assertEquals(calendar.numberOfNonBusinessDays(time1, time2),
+        assertEquals(calendar.numberNonBusinessDates(time1, time2),
                 getVal(emptyTable(1).update("numberOfNonBusinessDays = numberOfNonBusinessDays(time1, time2)"),
                         "numberOfNonBusinessDays"));
-        assertEquals(calendar.numberNonBusinessDates(time1, time2, true),
+        assertEquals(calendar.numberNonBusinessDates(time1, time2, true, true),
                 getVal(emptyTable(1).update("numberOfNonBusinessDays = numberOfNonBusinessDays(time1, time2, true)"),
                         "numberOfNonBusinessDays"));
-        assertEquals(calendar.numberOfNonBusinessDays(date1, date2),
+        assertEquals(calendar.numberNonBusinessDates(date1, date2),
                 getVal(emptyTable(1).update("numberOfNonBusinessDays = numberOfNonBusinessDays(date1, date2)"),
                         "numberOfNonBusinessDays"));
-        assertEquals(calendar.numberNonBusinessDates(date1, date2, true),
+        assertEquals(calendar.numberNonBusinessDates(date1, date2, true, true),
                 getVal(emptyTable(1).update("numberOfNonBusinessDays = numberOfNonBusinessDays(date1, date2, true)"),
                         "numberOfNonBusinessDays"));
 
