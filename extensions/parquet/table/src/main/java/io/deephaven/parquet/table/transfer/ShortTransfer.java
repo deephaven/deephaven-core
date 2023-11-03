@@ -14,7 +14,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
-final class ShortTransfer extends IntCastablePrimitiveTransfer<ShortChunk<Values>> {
+final class ShortTransfer extends Int32CastablePrimitiveTransfer<ShortChunk<Values>> {
     ShortTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, final int targetPageSizeInBytes) {
         super(columnSource, tableRowSet, targetPageSizeInBytes);
     }

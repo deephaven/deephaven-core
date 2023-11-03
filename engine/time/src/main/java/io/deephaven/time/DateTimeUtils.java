@@ -877,6 +877,45 @@ public class DateTimeUtils {
     }
 
     /**
+     * Converts the number of milliseconds from midnight to a {@link LocalTime}
+     *
+     * @param millis milliseconds from midnight
+     * @return the {@link LocalTime}, or {@code null} if any input is {@link QueryConstants#NULL_INT NULL_INT}
+     */
+    public static @Nullable LocalTime toLocalTimeFromMillis(final int millis) {
+        if (millis == NULL_INT) {
+            return null;
+        }
+        return LocalTime.ofNanoOfDay(millis * MILLI);
+    }
+
+    /**
+     * Converts the number of microseconds from midnight to a {@link LocalTime}
+     *
+     * @param micros microseconds from midnight
+     * @return the {@link LocalTime}, or {@code null} if any input is {@link QueryConstants#NULL_LONG NULL_LONG}
+     */
+    public static @Nullable LocalTime toLocalTimeFromMicros(final long micros) {
+        if (micros == NULL_LONG) {
+            return null;
+        }
+        return LocalTime.ofNanoOfDay(micros * MICRO);
+    }
+
+    /**
+     * Converts the number of nanoseconds from midnight to a {@link LocalTime}
+     *
+     * @param nanos nanoseconds from midnight
+     * @return the {@link LocalTime}, or {@code null} if any input is {@link QueryConstants#NULL_LONG NULL_LONG}
+     */
+    public static @Nullable LocalTime toLocalTimeFromNanos(final long nanos) {
+        if (nanos == NULL_LONG) {
+            return null;
+        }
+        return LocalTime.ofNanoOfDay(nanos);
+    }
+
+    /**
      * Converts an {@link Instant} to a {@link Date}. {@code instant} will be truncated to millisecond resolution.
      *
      * @param instant the instant to convert
@@ -2350,7 +2389,7 @@ public class DateTimeUtils {
      *
      * @param instant time
      * @param timeZone time zone
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of nanoseconds that
+     * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
      *         have elapsed since the top of the day
      */
     @ScriptApi
@@ -2370,7 +2409,7 @@ public class DateTimeUtils {
      * upon if the daylight savings time adjustment is forwards or backwards.
      *
      * @param dateTime time
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of nanoseconds that
+     * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
      *         have elapsed since the top of the day
      */
     @ScriptApi
@@ -2380,6 +2419,23 @@ public class DateTimeUtils {
         }
 
         return epochNanos(dateTime) - epochNanos(atMidnight(dateTime));
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the day. The results will be adjusted as per
+     * the daylight savings time.
+     *
+     *
+     * @param localTime time
+     * @return {@link QueryConstants#NULL_LONG} if input is {@code null}; otherwise, number of nanoseconds that have
+     *         elapsed since the top of the day
+     */
+    public static long nanosOfDay(@Nullable final LocalTime localTime) {
+        if (localTime == null) {
+            return NULL_LONG;
+        }
+
+        return localTime.toNanoOfDay();
     }
 
     /**

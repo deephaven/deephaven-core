@@ -60,6 +60,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -85,7 +86,7 @@ import static org.junit.Assert.*;
 public final class ParquetTableReadWriteTest {
 
     private static final String ROOT_FILENAME = ParquetTableReadWriteTest.class.getName() + "_root";
-    public static final int LARGE_TABLE_SIZE = 2_000_000;
+    private static final int LARGE_TABLE_SIZE = 2_000_000;
 
     private static File rootFile;
 
@@ -125,6 +126,7 @@ public final class ParquetTableReadWriteTest {
                         "someKey = `` + (int)(i /100)",
                         "someBiColumn = java.math.BigInteger.valueOf(ii)",
                         "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
+                        "someTimeColumn = i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
                         "nullKey = i < -1?`123`:null",
                         "nullIntColumn = (int)null",
                         "nullLongColumn = (long)null",
@@ -137,7 +139,8 @@ public final class ParquetTableReadWriteTest {
                         "nullTime = (Instant)null",
                         "nullBiColumn = (java.math.BigInteger)null",
                         "nullString = (String)null",
-                        "nullDateColumn = (java.time.LocalDate)null"));
+                        "nullDateColumn = (java.time.LocalDate)null",
+                        "nullTimeColumn = (java.time.LocalTime)null"));
         if (includeBigDecimal) {
             columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
         }
@@ -503,6 +506,7 @@ public final class ParquetTableReadWriteTest {
                         "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
                         "someBiColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
                         "someDateColumn = new java.time.LocalDate[] {i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)}",
+                        "someTimeColumn = new java.time.LocalTime[] {i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)}",
                         "nullStringArrayColumn = new String[] {(String)null}",
                         "nullIntArrayColumn = new int[] {(int)null}",
                         "nullLongArrayColumn = new long[] {(long)null}",
@@ -514,7 +518,8 @@ public final class ParquetTableReadWriteTest {
                         "nullCharArrayColumn = new char[] {(char)null}",
                         "nullTimeArrayColumn = new Instant[] {(Instant)null}",
                         "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}",
-                        "nullDateColumn = new java.time.LocalDate[] {(java.time.LocalDate)null}"));
+                        "nullDateColumn = new java.time.LocalDate[] {(java.time.LocalDate)null}",
+                        "nullTimeColumn = new java.time.LocalTime[] {(java.time.LocalTime)null}"));
 
         Table arrayTable = TableTools.emptyTable(10000).select(Selectable.from(columns));
         final File dest = new File(rootFile + File.separator + "testArrayColumns.parquet");

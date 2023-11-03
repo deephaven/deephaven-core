@@ -20,15 +20,16 @@ import java.math.BigInteger;
 import java.nio.IntBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Map;
 
 /**
  * Classes that implement this interface are responsible for converting data from individual DH columns into buffers
  * to be written out to the Parquet file.
  *
- * @param <B> The type of the buffer to be written out to the Parquet file
+ * @param <BUFFER_TYPE> The type of the buffer to be written out to the Parquet file
  */
-public interface TransferObject<B> extends SafeCloseable {
+public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
     static <DATA_TYPE> TransferObject<?> create(
             @NotNull final RowSet tableRowSet,
             @NotNull final ParquetInstructions instructions,
@@ -93,6 +94,9 @@ public interface TransferObject<B> extends SafeCloseable {
         if (columnType == LocalDate.class) {
             return new DateTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
+        if (columnType == LocalTime.class) {
+            return new TimeTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+        }
 
         @Nullable final Class<?> componentType = columnSource.getComponentType();
         if (columnType.isArray()) {
@@ -133,6 +137,9 @@ public interface TransferObject<B> extends SafeCloseable {
             if (componentType == LocalDate.class) {
                 return new DateArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
+            if (componentType == LocalTime.class) {
+                return new TimeArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            }
             // TODO(deephaven-core#4612): Handle arrays of BigDecimal and if explicit codec provided
         }
         if (Vector.class.isAssignableFrom(columnType)) {
@@ -172,6 +179,9 @@ public interface TransferObject<B> extends SafeCloseable {
             }
             if (componentType == LocalDate.class) {
                 return new DateVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            }
+            if (componentType == LocalTime.class) {
+                return new TimeVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
             // TODO(deephaven-core#4612): Handle vectors of BigDecimal and if explicit codec provided
         }
@@ -220,7 +230,7 @@ public interface TransferObject<B> extends SafeCloseable {
      *
      * @return the buffer
      */
-    B getBuffer();
+    BUFFER_TYPE getBuffer();
 
     /**
      * Returns whether we encountered any null value while transferring page data to buffer. This method is only used

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -343,10 +344,7 @@ public class ParquetSchemaReader {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
-                if (timeLogicalType.getUnit() == LogicalTypeAnnotation.TimeUnit.MILLIS) {
-                    return Optional.of(int.class);
-                }
-                return Optional.of(long.class);
+                return Optional.of(LocalTime.class);
             }
 
             @Override

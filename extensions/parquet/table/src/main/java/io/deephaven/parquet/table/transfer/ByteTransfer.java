@@ -14,7 +14,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
-final class ByteTransfer extends IntCastablePrimitiveTransfer<ByteChunk<Values>> {
+final class ByteTransfer extends Int32CastablePrimitiveTransfer<ByteChunk<Values>> {
     ByteTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, final int targetPageSizeInBytes) {
         super(columnSource, tableRowSet, targetPageSizeInBytes);
     }

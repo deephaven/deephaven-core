@@ -12,26 +12,31 @@ import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.Buffer;
-import java.nio.IntBuffer;
 
 /**
- * A transfer object base class for primitive types that can be cast to int without loss of precision.
+ * This is a generic class used to transfer primitive data types from a {@link ColumnSource} to a {@link Buffer} using
+ * {@link ColumnSource#getChunk(ChunkSource.GetContext, RowSequence)} and then copying values into the buffer.
  */
-abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> implements TransferObject<IntBuffer> {
-    protected T chunk;
-    protected final IntBuffer buffer;
+// TODO Need a better name for this class
+abstract class PrimitiveTransferNonArrayBacked<CHUNK_TYPE extends ChunkBase<Values>, BUFFER_TYPE extends Buffer>
+        implements TransferObject<BUFFER_TYPE> {
+    protected CHUNK_TYPE chunk;
+    protected final BUFFER_TYPE buffer;
     private final ColumnSource<?> columnSource;
     private final RowSequence.Iterator tableRowSetIt;
     private final ChunkSource.GetContext context;
     private final int targetElementsPerPage;
 
-    IntCastablePrimitiveTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                                 final int targetPageSizeInBytes) {
+    PrimitiveTransferNonArrayBacked(
+            @NotNull final ColumnSource<?> columnSource,
+            @NotNull final RowSequence tableRowSet,
+            final BUFFER_TYPE buffer,
+            final int targetElementsPerPage) {
         this.columnSource = columnSource;
         this.tableRowSetIt = tableRowSet.getRowSequenceIterator();
-        this.targetElementsPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSizeInBytes / Integer.BYTES));
+        this.buffer = buffer;
         Assert.gtZero(targetElementsPerPage, "targetElementsPerPage");
-        this.buffer = IntBuffer.allocate(targetElementsPerPage);
+        this.targetElementsPerPage = targetElementsPerPage;
         context = columnSource.makeGetContext(targetElementsPerPage);
     }
 
@@ -44,7 +49,7 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
         // Fetch one page worth of data from the column source
         final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength((long) targetElementsPerPage);
         // noinspection unchecked
-        chunk = (T) columnSource.getChunk(context, rs);
+        chunk = (CHUNK_TYPE) columnSource.getChunk(context, rs);
         copyAllFromChunkToBuffer();
         buffer.flip();
         int ret = chunk.size();
@@ -64,7 +69,7 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
     }
 
     @Override
-    public final IntBuffer getBuffer() {
+    public final BUFFER_TYPE getBuffer() {
         return buffer;
     }
 

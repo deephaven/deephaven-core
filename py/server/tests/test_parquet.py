@@ -354,10 +354,12 @@ class ParquetTestCase(BaseTestCase):
         self.assertTrue((metadata.row_group(0).column(2).path_in_schema == 'someIntColumn') &
                         ('RLE_DICTIONARY' not in str(metadata.row_group(0).column(2).encodings)))
 
-    def test_dates(self):
-        dh_table = empty_table(20).update(formulas=[
+    def test_dates_and_time(self):
+        dh_table = empty_table(10000).update(formulas=[
             "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
             "nullDateColumn = (java.time.LocalDate)null",
+            "someTimeColumn = i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
+            "nullTimeColumn = (java.time.LocalTime)null"
         ])
 
         write(dh_table, "data_from_dh.parquet", compression_codec_name="SNAPPY")
@@ -369,8 +371,10 @@ class ParquetTestCase(BaseTestCase):
             df_from_pandas = pandas.read_parquet("data_from_dh.parquet", use_nullable_dtypes=True)
         else:
             df_from_pandas = pandas.read_parquet("data_from_dh.parquet", dtype_backend="numpy_nullable")
-        self.assertTrue(df_from_disk[["nullDateColumn"]].isnull().values.all())
-        self.assertTrue(df_from_pandas[["nullDateColumn"]].isnull().values.all())
+
+        # Test that all null columns are written as null
+        self.assertTrue(df_from_disk[["nullDateColumn", "nullTimeColumn"]].isnull().values.all())
+        self.assertTrue(df_from_pandas[["nullDateColumn", "nullTimeColumn"]].isnull().values.all())
 
         # Pandas and DH convert date to different types when converting to dataframe, so we need to convert the
         # dataframe to strings to compare the values
@@ -382,9 +386,10 @@ class ParquetTestCase(BaseTestCase):
         df_from_pandas.to_parquet('data_from_pandas.parquet', compression='SNAPPY')
         from_disk_pandas = read('data_from_pandas.parquet')
 
-        # Compare only the date column since the null column is written as different logical types by pandas and
+        # Compare only the non-null columns because null columns are written as different logical types by pandas and
         # deephaven
-        self.assert_table_equals(dh_table.select("someDateColumn"), from_disk_pandas.select("someDateColumn"))
+        self.assert_table_equals(dh_table.select(["someDateColumn", "someTimeColumn"]),
+                                 from_disk_pandas.select(["someDateColumn", "someTimeColumn"]))
 
 
 if __name__ == '__main__':
