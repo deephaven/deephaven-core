@@ -224,12 +224,12 @@ public class Calendar {
     }
 
     /**
-     * The current date.
+     * The current date for the calendar.
      *
      * @return current date
      */
-    public LocalDate currentDate() {
-        return DateTimeUtils.todayDate(timeZone());
+    public LocalDate calendarDate() {
+        return DateTimeUtils.todayLocalDate(timeZone());
     }
 
     /**
@@ -239,7 +239,7 @@ public class Calendar {
      * @return {@code days} days after the current date
      */
     public LocalDate futureDate(final int days) {
-        return plusDays(currentDate(), days);
+        return plusDays(calendarDate(), days);
     }
 
     /**
@@ -249,7 +249,7 @@ public class Calendar {
      * @return {@code days} days before the current date
      */
     public LocalDate pastDate(final int days) {
-        return minusDays(currentDate(), days);
+        return minusDays(calendarDate(), days);
     }
 
     // endregion

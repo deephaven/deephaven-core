@@ -68,6 +68,9 @@ public class StaticCalendarMethods {
     /** @see io.deephaven.time.calendar.BusinessCalendar#businessSchedule(java.time.ZonedDateTime) */
     public static  io.deephaven.time.calendar.BusinessSchedule<java.time.Instant> businessSchedule( java.time.ZonedDateTime time ) {return Calendars.calendar().businessSchedule( time );}
 
+    /** @see io.deephaven.time.calendar.Calendar#calendarDate() */
+    public static  java.time.LocalDate calendarDate( ) {return Calendars.calendar().calendarDate( );}
+
     /** @see io.deephaven.time.calendar.Calendar#calendarDates(java.lang.String,java.lang.String) */
     public static  java.time.LocalDate[] calendarDates( java.lang.String start, java.lang.String end ) {return Calendars.calendar().calendarDates( start, end );}
 
@@ -91,9 +94,6 @@ public class StaticCalendarMethods {
 
     /** @see io.deephaven.time.calendar.Calendar#calendarDates(java.time.ZonedDateTime,java.time.ZonedDateTime,boolean,boolean) */
     public static  java.time.LocalDate[] calendarDates( java.time.ZonedDateTime start, java.time.ZonedDateTime end, boolean startInclusive, boolean endInclusive ) {return Calendars.calendar().calendarDates( start, end, startInclusive, endInclusive );}
-
-    /** @see io.deephaven.time.calendar.Calendar#currentDate() */
-    public static  java.time.LocalDate currentDate( ) {return Calendars.calendar().currentDate( );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#diffBusinessDays(java.time.Instant,java.time.Instant) */
     public static  double diffBusinessDays( java.time.Instant start, java.time.Instant end ) {return Calendars.calendar().diffBusinessDays( start, end );}

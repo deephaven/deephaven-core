@@ -116,7 +116,7 @@ public class TestCalendar extends BaseArrayTestCase {
     }
 
     public void testCurrentDate() {
-        assertEquals(DateTimeUtils.todayDate(), calendar.currentDate());
+        assertEquals(DateTimeUtils.todayLocalDate(), calendar.calendarDate());
     }
 
     public void testFutureDate() {

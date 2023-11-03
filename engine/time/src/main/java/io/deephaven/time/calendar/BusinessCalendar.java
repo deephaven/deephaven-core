@@ -282,7 +282,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException                 if the date is not in the valid range
      */
     public BusinessSchedule<Instant> businessSchedule() {
-        return businessSchedule(currentDate());
+        return businessSchedule(calendarDate());
     }
 
     // endregion
@@ -356,7 +356,7 @@ public class BusinessCalendar extends Calendar {
      * @return true if the current day is a business day; false otherwise
      */
     public boolean isBusinessDay() {
-        return isBusinessDay(currentDate());
+        return isBusinessDay(calendarDate());
     }
 
     /**
@@ -425,7 +425,7 @@ public class BusinessCalendar extends Calendar {
      * @return true if the current date is the last business day of the month; false otherwise.
      */
     public boolean isLastBusinessDayOfMonth() {
-        return isLastBusinessDayOfMonth(currentDate());
+        return isLastBusinessDayOfMonth(calendarDate());
     }
 
     /**
@@ -493,7 +493,7 @@ public class BusinessCalendar extends Calendar {
      * @return true if the current date is the last business day of the week; false otherwise.
      */
     public boolean isLastBusinessDayOfWeek() {
-        return isLastBusinessDayOfWeek(currentDate());
+        return isLastBusinessDayOfWeek(calendarDate());
     }
 
     /**
@@ -562,7 +562,7 @@ public class BusinessCalendar extends Calendar {
      * @return true if the current date is the last business day of the year; false otherwise.
      */
     public boolean isLastBusinessDayOfYear() {
-        return isLastBusinessDayOfYear(currentDate());
+        return isLastBusinessDayOfYear(calendarDate());
     }
 
     // endregion
@@ -686,7 +686,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the date is not in the valid range
      */
     public double fractionStandardBusinessDay() {
-        return fractionStandardBusinessDay(currentDate());
+        return fractionStandardBusinessDay(calendarDate());
     }
 
     /**
@@ -1780,7 +1780,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate futureBusinessDate(final int days) {
-        return plusBusinessDays(currentDate(), days);
+        return plusBusinessDays(calendarDate(), days);
     }
 
     /**
@@ -1791,7 +1791,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate pastBusinessDate(final int days) {
-        return minusBusinessDays(currentDate(), days);
+        return minusBusinessDays(calendarDate(), days);
     }
 
     /**
@@ -1802,7 +1802,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate futureNonBusinessDate(final int days) {
-        return this.plusNonBusinessDays(currentDate(), days);
+        return this.plusNonBusinessDays(calendarDate(), days);
     }
 
     /**
@@ -1813,7 +1813,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate pastNonBusinessDate(final int days) {
-        return minusNonBusinessDays(currentDate(), days);
+        return minusNonBusinessDays(calendarDate(), days);
     }
 
     // endregion

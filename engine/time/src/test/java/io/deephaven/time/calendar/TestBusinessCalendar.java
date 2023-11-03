@@ -86,7 +86,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(BusinessSchedule.toInstant(schedule, date, timeZone), bCalendar.businessSchedule(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
 
         // Current date
-        assertEquals(bCalendar.businessSchedule(bCalendar.currentDate()), bCalendar.businessSchedule());
+        assertEquals(bCalendar.businessSchedule(bCalendar.calendarDate()), bCalendar.businessSchedule());
 
         // Check that all dates in the range work
         for (LocalDate d = firstValidDate; !d.isAfter(lastValidDate); d = d.plusDays(1)) {
@@ -164,7 +164,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertTrue(bCalendar.isBusinessDay(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
 
         // Current date
-        assertEquals(bCalendar.isBusinessDay(bCalendar.currentDate()), bCalendar.isBusinessDay());
+        assertEquals(bCalendar.isBusinessDay(bCalendar.calendarDate()), bCalendar.isBusinessDay());
 
         // DayOfWeek
 
@@ -249,7 +249,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertTrue(bCalendar.isLastBusinessDayOfMonth(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
 
         // Current date
-        assertEquals(bCalendar.isLastBusinessDayOfMonth(bCalendar.currentDate()), bCalendar.isLastBusinessDayOfMonth());
+        assertEquals(bCalendar.isLastBusinessDayOfMonth(bCalendar.calendarDate()), bCalendar.isLastBusinessDayOfMonth());
 
         // Check that all dates in the range work
         for (LocalDate d = firstValidDate; d.isBefore(lastValidDate); d = d.plusDays(1)) {
@@ -340,7 +340,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertFalse(bc.isLastBusinessDayOfWeek(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
 
         // Current date
-        assertEquals(bCalendar.isLastBusinessDayOfWeek(bCalendar.currentDate()), bCalendar.isLastBusinessDayOfWeek());
+        assertEquals(bCalendar.isLastBusinessDayOfWeek(bCalendar.calendarDate()), bCalendar.isLastBusinessDayOfWeek());
 
         // Check that all dates in the range work
         for (LocalDate d = firstValidDate; d.isBefore(lastValidDate); d = d.plusDays(1)) {
@@ -425,7 +425,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertFalse(bc.isLastBusinessDayOfYear(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
 
         // Current date
-        assertEquals(bCalendar.isLastBusinessDayOfYear(bCalendar.currentDate()), bCalendar.isLastBusinessDayOfYear());
+        assertEquals(bCalendar.isLastBusinessDayOfYear(bCalendar.calendarDate()), bCalendar.isLastBusinessDayOfYear());
 
         // Check that all dates in the range work
         for (LocalDate d = firstValidDate; d.isBefore(lastValidDate); d = d.plusDays(1)) {
@@ -557,7 +557,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals((double) halfDay.businessNanos() / (double) schedule.businessNanos(), bCalendar.fractionStandardBusinessDay(date.atTime(11, 23).atZone(timeZone).toInstant()));
 
         // Current date
-        assertEquals(bCalendar.fractionStandardBusinessDay(bCalendar.currentDate()), bCalendar.fractionStandardBusinessDay());
+        assertEquals(bCalendar.fractionStandardBusinessDay(bCalendar.calendarDate()), bCalendar.fractionStandardBusinessDay());
 
         // Check that all dates in the range work
         for (LocalDate d = firstValidDate; !d.isAfter(lastValidDate); d = d.plusDays(1)) {
