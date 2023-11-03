@@ -4,6 +4,7 @@
 package io.deephaven.kafka;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.api.ColumnName;
 import io.deephaven.engine.table.Table;
 import io.deephaven.kafka.KafkaTools.Produce;
 import io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec;
@@ -11,6 +12,10 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
+import javax.annotation.Nullable;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Properties;
 
 /**
@@ -34,11 +39,19 @@ public abstract class KafkaPublishOptions {
     public abstract Table table();
 
     /**
-     * The kafka topic to publish to.
+     * The default kafka topic to publish to.
      *
-     * @return the kafka topic
+     * @return the default kafka topic
      */
+    @Nullable
     public abstract String topic();
+
+    /**
+     * The default kafka partition to publish to.
+     *
+     * @return the default kafka partition
+     */
+    public abstract OptionalInt partition();
 
     /**
      * The kafka configuration properties.
@@ -93,6 +106,30 @@ public abstract class KafkaPublishOptions {
         return true;
     }
 
+    /**
+     * The topic column. When set, uses the the given {@link CharSequence}-compatible column from {@link #table()} as
+     * the first source for setting the kafka record topic.
+     *
+     * @return the topic column name
+     */
+    public abstract Optional<ColumnName> topicColumn();
+
+    /**
+     * The partition column. When set, uses the the given {@code int} column from {@link #table()} as the first source
+     * for setting the kafka record partition.
+     *
+     * @return the partition column name
+     */
+    public abstract Optional<ColumnName> partitionColumn();
+
+    /**
+     * The timestamp column. When set, uses the the given {@link Instant} column from {@link #table()} as the first
+     * source for setting the kafka record timestamp.
+     *
+     * @return the partition column name
+     */
+    public abstract Optional<ColumnName> timestampColumn();
+
     @Check
     final void checkNotBothIgnore() {
         if (Produce.isIgnore(keySpec()) && Produce.isIgnore(valueSpec())) {
@@ -114,11 +151,41 @@ public abstract class KafkaPublishOptions {
         }
     }
 
+    @Check
+    final void checkTopic() {
+        if (topic() == null && topicColumn().isEmpty()) {
+            throw new IllegalArgumentException("Must set topic or topicColumn (or both)");
+        }
+    }
+
+    @Check
+    final void checkTopicColumn() {
+        if (topicColumn().isPresent()) {
+            table().getColumnSource(topicColumn().get().name(), CharSequence.class);
+        }
+    }
+
+    @Check
+    final void checkPartitionColumn() {
+        if (partitionColumn().isPresent()) {
+            table().getColumnSource(partitionColumn().get().name(), int.class);
+        }
+    }
+
+    @Check
+    final void checkTimestampColumn() {
+        if (timestampColumn().isPresent()) {
+            table().getColumnSource(timestampColumn().get().name(), Instant.class);
+        }
+    }
+
     public interface Builder {
 
         Builder table(Table table);
 
         Builder topic(String topic);
+
+        Builder partition(int partition);
 
         Builder config(Properties config);
 
@@ -129,6 +196,12 @@ public abstract class KafkaPublishOptions {
         Builder lastBy(boolean lastBy);
 
         Builder publishInitial(boolean publishInitial);
+
+        Builder topicColumn(ColumnName columnName);
+
+        Builder partitionColumn(ColumnName columnName);
+
+        Builder timestampColumn(ColumnName columnName);
 
         KafkaPublishOptions build();
     }

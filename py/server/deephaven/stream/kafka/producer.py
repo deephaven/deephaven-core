@@ -3,7 +3,7 @@
 #
 
 """ The kafka.producer module supports publishing Deephaven tables to Kafka streams. """
-from typing import Dict, Callable, List
+from typing import Dict, Callable, List, Optional
 
 import jpy
 
@@ -17,6 +17,7 @@ _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JAvroSchema = jpy.get_type("org.apache.avro.Schema")
 _JKafkaTools_Produce = jpy.get_type("io.deephaven.kafka.KafkaTools$Produce")
 _JKafkaPublishOptions = jpy.get_type("io.deephaven.kafka.KafkaPublishOptions")
+_JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 
 
 class KeyValueSpec(JObjectWrapper):
@@ -36,11 +37,15 @@ KeyValueSpec.IGNORE = KeyValueSpec(_JKafkaTools_Produce.IGNORE)
 def produce(
     table: Table,
     kafka_config: Dict,
-    topic: str,
+    topic: Optional[str],
     key_spec: KeyValueSpec,
     value_spec: KeyValueSpec,
     last_by_key_columns: bool = False,
     publish_initial: bool = True,
+    partition: Optional[int] = None,
+    topic_column: Optional[str] = None,
+    partition_column: Optional[str] = None,
+    timestamp_column: Optional[str] = None,
 ) -> Callable[[], None]:
     """Produce to Kafka from a Deephaven table.
 
@@ -49,7 +54,7 @@ def produce(
         kafka_config (Dict): configuration for the associated kafka producer.
             This is used to call the constructor of org.apache.kafka.clients.producer.KafkaProducer;
             pass any KafkaProducer specific desired configuration here
-        topic (str): the topic name
+        topic (Optional[str]): the default topic name
         key_spec (KeyValueSpec): specifies how to map table column(s) to the Key field in produced Kafka messages.
             This should be the result of calling one of the functions simple_spec(), avro_spec() or json_spec() in this
             module, or the constant KeyValueSpec.IGNORE
@@ -61,6 +66,13 @@ def produce(
             aggregation on table grouped by the input columns of key_spec and publish to Kafka from the result.
         publish_initial (bool): whether the initial data in table should be published. When False, table.is_refreshing
             must be True. By default, is True.
+        partition (Optional[int]): the default partition, None by default.
+        topic_column (Optional[str]): the topic column, None by default. When set, uses the the given string column from
+            table as the first source for setting the kafka record topic.
+        partition_column (Optional[str]): the partition column, None by default. When set, uses the the given int column
+            from table as the first source for setting the kafka record partition.
+        timestamp_column (Optional[str]): the timestamp column, None by default. When set, uses the the given timestamp
+            column from table as the first source for setting the kafka record timestamp.
 
     Returns:
         a callback that, when invoked, stops publishing and cleans up subscriptions and resources.
@@ -77,7 +89,7 @@ def produce(
             )
         if not publish_initial and not table.is_refreshing:
             raise ValueError("publish_initial == False and table.is_refreshing == False")
-        options = (
+        options_builder = (
             _JKafkaPublishOptions.builder()
             .table(table.j_table)
             .topic(topic)
@@ -86,11 +98,18 @@ def produce(
             .valueSpec(value_spec.j_object)
             .lastBy(last_by_key_columns and key_spec is not KeyValueSpec.IGNORE)
             .publishInitial(publish_initial)
-            .build()
         )
+        if partition:
+            options_builder.partition(partition)
+        if topic_column:
+            options_builder.topicColumn(_JColumnName.of(topic_column))
+        if partition_column:
+            options_builder.partitionColumn(_JColumnName.of(partition_column))
+        if timestamp_column:
+            options_builder.timestampColumn(_JColumnName.of(timestamp_column))
 
         with auto_locking_ctx(table):
-            runnable = _JKafkaTools.produceFromTable(options)
+            runnable = _JKafkaTools.produceFromTable(options_builder.build())
 
         def cleanup():
             try:
