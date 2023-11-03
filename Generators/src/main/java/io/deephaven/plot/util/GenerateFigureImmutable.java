@@ -187,7 +187,7 @@ public class GenerateFigureImmutable {
         code += "\n";
         code += "/** An interface for constructing plots.  A Figure is immutable, and all function calls return a new immutable Figure instance.";
         code += "*/\n";
-        code += "@SuppressWarnings({\"unused\", \"RedundantCast\", \"SameParameterValue\"})\n";
+        code += "@SuppressWarnings({\"unused\", \"RedundantCast\", \"SameParameterValue\", \"rawtypes\"})\n";
         code += "public" + (isInterface ? " interface " : " class ") + outputClassNameShort + generateImplements()
                 + " {\n";
 
