@@ -71,28 +71,12 @@ public class GroovyStaticImportGenerator {
         }
     }
 
-    private Set<String> generateImports() {
-        Set<String> imports = new TreeSet<>();
-
-        for (JavaFunction f : staticFunctions.keySet()) {
-            imports.add(f.getClassName());
-
-            imports.addAll(typesToImport(f.getReturnType()));
-
-            for (Type t : f.getParameterTypes()) {
-                imports.addAll(typesToImport(t));
-            }
-        }
-
-        return imports;
-    }
-
     private String generateCode() {
 
         String code = GenUtils.javaHeader(this.getClass(), GRADLE_TASK);
         code += "package io.deephaven.libs;\n\n";
 
-        Set<String> imports = generateImports();
+        Set<String> imports = GenUtils.typesToImport(staticFunctions.keySet());
 
         for (String imp : imports) {
             code += "import " + imp + ";\n";

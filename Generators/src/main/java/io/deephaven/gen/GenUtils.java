@@ -5,10 +5,7 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.*;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 
 @SuppressWarnings("StringConcatenationInLoop")
@@ -106,6 +103,28 @@ public class GenUtils {
         }
 
         return result;
+    }
+
+    /**
+     * Generates a set of Java imports needed for the given functions.
+     *
+     * @param functions functions.
+     * @return set of imports.
+     */
+    public static Set<String> typesToImport(final Set<JavaFunction> functions) {
+        Set<String> imports = new TreeSet<>();
+
+        for (JavaFunction f : functions) {
+            imports.add(f.getClassName());
+
+            imports.addAll(typesToImport(f.getReturnType()));
+
+            for (Type t : f.getParameterTypes()) {
+                imports.addAll(typesToImport(t));
+            }
+        }
+
+        return imports;
     }
 
     /**
