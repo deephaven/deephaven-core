@@ -95,6 +95,21 @@ public class StaticCalendarMethods {
     /** @see io.deephaven.time.calendar.Calendar#calendarDates(java.time.ZonedDateTime,java.time.ZonedDateTime,boolean,boolean) */
     public static  java.time.LocalDate[] calendarDates( java.time.ZonedDateTime start, java.time.ZonedDateTime end, boolean startInclusive, boolean endInclusive ) {return Calendars.calendar().calendarDates( start, end, startInclusive, endInclusive );}
 
+    /** @see io.deephaven.time.calendar.Calendar#dayOfWeek() */
+    public static  int calendarDayOfWeek( ) {return Calendars.calendar().dayOfWeek( );}
+
+    /** @see io.deephaven.time.calendar.Calendar#dayOfWeek(java.lang.String) */
+    public static  int calendarDayOfWeek( java.lang.String date ) {return Calendars.calendar().dayOfWeek( date );}
+
+    /** @see io.deephaven.time.calendar.Calendar#dayOfWeek(java.time.Instant) */
+    public static  int calendarDayOfWeek( java.time.Instant time ) {return Calendars.calendar().dayOfWeek( time );}
+
+    /** @see io.deephaven.time.calendar.Calendar#dayOfWeek(java.time.LocalDate) */
+    public static  int calendarDayOfWeek( java.time.LocalDate date ) {return Calendars.calendar().dayOfWeek( date );}
+
+    /** @see io.deephaven.time.calendar.Calendar#dayOfWeek(java.time.ZonedDateTime) */
+    public static  int calendarDayOfWeek( java.time.ZonedDateTime time ) {return Calendars.calendar().dayOfWeek( time );}
+
     /** @see io.deephaven.time.calendar.BusinessCalendar#diffBusinessDays(java.time.Instant,java.time.Instant) */
     public static  double diffBusinessDays( java.time.Instant start, java.time.Instant end ) {return Calendars.calendar().diffBusinessDays( start, end );}
 
@@ -193,6 +208,9 @@ public class StaticCalendarMethods {
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#isLastBusinessDayOfMonth() */
     public static  boolean isLastBusinessDayOfMonth( ) {return Calendars.calendar().isLastBusinessDayOfMonth( );}
+
+    /** @see io.deephaven.time.calendar.BusinessCalendar#isLastBusinessDayOfMonth(java.lang.String) */
+    public static  boolean isLastBusinessDayOfMonth( java.lang.String date ) {return Calendars.calendar().isLastBusinessDayOfMonth( date );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#isLastBusinessDayOfMonth(java.time.Instant) */
     public static  boolean isLastBusinessDayOfMonth( java.time.Instant time ) {return Calendars.calendar().isLastBusinessDayOfMonth( time );}
@@ -406,6 +424,9 @@ public class StaticCalendarMethods {
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#standardBusinessSchedule() */
     public static  io.deephaven.time.calendar.BusinessSchedule<java.time.LocalTime> standardBusinessSchedule( ) {return Calendars.calendar().standardBusinessSchedule( );}
+
+    /** @see io.deephaven.time.calendar.Calendar#timeZone() */
+    public static  java.time.ZoneId calendarTimeZone( ) {return Calendars.calendar().timeZone( );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#weekendDays() */
     public static  java.util.Set<java.time.DayOfWeek> weekendDays( ) {return Calendars.calendar().weekendDays( );}
