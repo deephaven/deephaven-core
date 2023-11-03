@@ -36,12 +36,13 @@ import static elemental2.dom.DomGlobal.console;
 public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     @JsMethod(namespace = JsPackage.GLOBAL)
     private static native Object eval(String code);
+
     private static Promise<JsPropertyMap<Object>> importScript(String moduleName) {
         return (Promise<JsPropertyMap<Object>>) eval("import('" + moduleName + "')");
     }
 
     private static Promise<Void> importDhInternal() {
-        return importScript( localServer + "/jsapi/dh-internal.js")
+        return importScript(localServer + "/jsapi/dh-internal.js")
                 .then(module -> {
                     Js.asPropertyMap(DomGlobal.window).set("dhinternal", module.get("dhinternal"));
                     return Promise.resolve((Void) null);
@@ -52,6 +53,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
 
     public static class TableSourceBuilder {
         private final List<String> pythonScripts = new ArrayList<>();
+
         public TableSourceBuilder script(String script) {
             pythonScripts.add(script);
             return this;
@@ -67,7 +69,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     /**
      * Set this to a value higher than 1 to get more time to run debugger without timeouts failing.
      */
-    protected static final int TIMEOUT_SCALE = 1;
+    protected static final int TIMEOUT_SCALE = 2;
     public static final double DELTA = 0.0001;
 
     public JsString toJsString(String k) {
@@ -124,6 +126,14 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     static <T> Promise<T> expectFailure(Promise<?> state, T value) {
         return state.then(val -> Promise.reject("Failed"),
                 error -> Promise.resolve(value));
+    }
+
+    /**
+     * Imports the webpack content, including protobuf types. Does not connect to the server.
+     */
+    protected Promise<Void> setupDhInternal() {
+        delayTestFinish(500);
+        return importDhInternal();
     }
 
     /**

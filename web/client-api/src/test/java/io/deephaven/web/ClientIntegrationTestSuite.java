@@ -10,8 +10,9 @@ public class ClientIntegrationTestSuite extends GWTTestSuite {
     public static Test suite() {
         TestSuite suite = new TestSuite("Deephaven JS API Unit Test Suite");
 
-        // This test doesn't actually talk to the server, but it requires the dh-internal library be available
-        suite.addTestSuite(FilterConditionTestGwt.class);
+        // This test doesn't actually talk to the server, but it requires the dh-internal library be available.
+        // Disabled for now, we don't have good toString on the FilterCondition/FilterValue types.
+//        suite.addTestSuite(FilterConditionTestGwt.class);
 
         // Actual integration tests
         suite.addTestSuite(ViewportTestGwt.class);

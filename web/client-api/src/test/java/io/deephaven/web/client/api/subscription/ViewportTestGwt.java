@@ -35,9 +35,11 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
             .script("from deephaven import empty_table, time_table")
             .script("staticTable", "empty_table(100).update(\"I=i\")")
             .script("from datetime import datetime, timedelta")
-            .script("growingForward", "time_table(period=\"PT00:00:01\", start_time=datetime.now() - timedelta(minutes=1)).update([\"I=i\", \"J=i*i\", \"K=0\"])")
+            .script("growingForward",
+                    "time_table(period=\"PT00:00:01\", start_time=datetime.now() - timedelta(minutes=1)).update([\"I=i\", \"J=i*i\", \"K=0\"])")
             .script("growingBackward", "growingForward.sort_descending(\"Timestamp\")")
-            .script("blinkOne", "time_table(\"PT00:00:01\").update([\"I=i\", \"J=1\"]).last_by(by=\"J\").where(\"I%2 != 0\")");
+            .script("blinkOne",
+                    "time_table(\"PT00:00:01\").update([\"I=i\", \"J=1\"]).last_by(by=\"J\").where(\"I%2 != 0\")");
 
     public void testViewportOnStaticTable() {
         connect(tables)
