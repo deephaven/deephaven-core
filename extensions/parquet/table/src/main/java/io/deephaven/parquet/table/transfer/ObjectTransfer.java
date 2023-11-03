@@ -56,7 +56,7 @@ abstract class ObjectTransfer<COLUMN_TYPE> extends VariableWidthTransfer<COLUMN_
 
     @Override
     final boolean addNullToBuffer() {
-        if (bufferedDataCount == maxValuesPerPage) {
+        if (bufferedDataCount == targetElementsPerPage) {
             return false;
         }
         buffer[bufferedDataCount++] = null;
@@ -70,7 +70,7 @@ abstract class ObjectTransfer<COLUMN_TYPE> extends VariableWidthTransfer<COLUMN_
             Assert.statementNeverExecuted();
             return false;
         }
-        if (bufferedDataCount == maxValuesPerPage) {
+        if (bufferedDataCount == targetElementsPerPage) {
             return false;
         }
         buffer[bufferedDataCount++] = data.encodedValues;

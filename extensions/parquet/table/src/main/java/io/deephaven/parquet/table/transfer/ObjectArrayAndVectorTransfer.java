@@ -106,7 +106,7 @@ abstract class ObjectArrayAndVectorTransfer<COLUMN_TYPE, VALUE_TYPE>
             return false;
         }
         final int numEncodedValues = data.numValues;
-        if (bufferedDataCount + numEncodedValues > maxValuesPerPage) {
+        if (bufferedDataCount + numEncodedValues > targetElementsPerPage) {
             if (force) {
                 // Resize the buffer, if needed. Assuming the buffer is empty, verified earlier
                 if (buffer.length < numEncodedValues) {

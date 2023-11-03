@@ -18,15 +18,15 @@ final class BooleanTransfer extends PrimitiveTransfer<WritableByteChunk<Values>,
     static BooleanTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,
                                   int targetPageSizeInBytes) {
         final int NUM_BIT_PACKED_BOOLEANS_PER_BYTE = 8;
-        final int maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(),
+        final int targetElementsPerPage = Math.toIntExact(Math.min(tableRowSet.size(),
                 (long) targetPageSizeInBytes * NUM_BIT_PACKED_BOOLEANS_PER_BYTE));
-        final byte[] backingArray = new byte[maxValuesPerPage];
+        final byte[] backingArray = new byte[targetElementsPerPage];
         return new BooleanTransfer(
                 columnSource,
                 tableRowSet,
                 WritableByteChunk.writableChunkWrap(backingArray),
                 ByteBuffer.wrap(backingArray),
-                maxValuesPerPage);
+                targetElementsPerPage);
     }
 
     private BooleanTransfer(
@@ -34,7 +34,7 @@ final class BooleanTransfer extends PrimitiveTransfer<WritableByteChunk<Values>,
             @NotNull final RowSequence tableRowSet,
             @NotNull final WritableByteChunk<Values> chunk,
             @NotNull final ByteBuffer buffer,
-            int maxValuesPerPage) {
-        super(columnSource, tableRowSet, chunk, buffer, maxValuesPerPage);
+            int targetElementsPerPage) {
+        super(columnSource, tableRowSet, chunk, buffer, targetElementsPerPage);
     }
 }

@@ -53,15 +53,16 @@ abstract class VariableWidthTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TY
      * <li>An upper bound on the number of rows per page.
      * </ul>
      */
-    final int maxValuesPerPage;
+    final int targetElementsPerPage;
 
     VariableWidthTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-            final int maxValuesPerPage, final int targetPageSizeInBytes, @NotNull final BUFFER_TYPE buffer) {
+            final int targetElementsPerPage, final int targetPageSizeInBytes, @NotNull final BUFFER_TYPE buffer) {
         this.columnSource = columnSource;
         this.tableRowSetIt = tableRowSet.getRowSequenceIterator();
         this.targetPageSizeInBytes = Require.gtZero(targetPageSizeInBytes, "targetPageSizeInBytes");
-        this.maxValuesPerPage = Require.gtZero(maxValuesPerPage, "maxValuesPerPage");
-        this.context = columnSource.makeGetContext(Math.toIntExact(Math.min(maxValuesPerPage, tableRowSet.size())));
+        this.targetElementsPerPage = Require.gtZero(targetElementsPerPage, "targetElementsPerPage");
+        this.context =
+                columnSource.makeGetContext(Math.toIntExact(Math.min(targetElementsPerPage, tableRowSet.size())));
         this.currentChunkIdx = 0;
         this.buffer = buffer;
         this.encodedData = new EncodedData<ENCODED_COLUMN_TYPE>();
@@ -123,7 +124,7 @@ abstract class VariableWidthTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TY
         OUTER: do {
             if (chunk == null) {
                 // Fetch a chunk of data from the table
-                final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(maxValuesPerPage);
+                final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(targetElementsPerPage);
                 // noinspection unchecked
                 chunk = (ObjectChunk<COLUMN_TYPE, Values>) columnSource.getChunk(context, rs);
                 currentChunkIdx = 0;
