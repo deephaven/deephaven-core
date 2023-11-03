@@ -15,14 +15,10 @@ import java.time.LocalDate;
 
 final class DateVectorTransfer extends PrimitiveVectorTransfer<ObjectVector<LocalDate>, IntBuffer> {
 
-    private static int getMaxValuesPerPage(@NotNull final RowSequence tableRowSet, final int targetPageSize) {
-        return Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize / Integer.BYTES));
-    }
-
     DateVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int targetPageSize) {
-        super(columnSource, tableRowSet, getMaxValuesPerPage(tableRowSet, targetPageSize), targetPageSize,
-                IntBuffer.allocate(getMaxValuesPerPage(tableRowSet, targetPageSize)), Integer.BYTES);
+        super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
+                IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
     }
 
     @Override
