@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -19,8 +20,11 @@ import java.util.stream.Collectors;
  */
 public class StaticCalendarMethodsGenerator extends AbstractBasicJavaGenerator {
 
-    public StaticCalendarMethodsGenerator(String gradleTask, String packageName, String className, String[] imports, Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen) throws ClassNotFoundException {
+    final Function<String, String> renamer;
+
+    public StaticCalendarMethodsGenerator(String gradleTask, String packageName, String className, String[] imports, Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen, Function<String, String> renamer) throws ClassNotFoundException {
         super(gradleTask, packageName, className, imports, includeMethod, skipsGen);
+        this.renamer = renamer;
     }
 
     @Override
@@ -39,15 +43,19 @@ public class StaticCalendarMethodsGenerator extends AbstractBasicJavaGenerator {
 
     @Override
     public String generateFunction(JavaFunction f) {
+
+        final String rename = renamer.apply(f.getMethodName());
+        final JavaFunction f2 = f.transform(null, null, rename, null);
+
         final String javadoc = "    /** @see " + f.getClassName() + "#" + f.getMethodName() + "(" +
                 Arrays.stream(f.getParameterTypes()).map(GenUtils::javadocLinkParamTypeString)
                         .collect(Collectors.joining(","))
                 +
                 ") */";
         final String sigPrefix = "public static";
-        final String callArgs = GenUtils.javaArgString(f, false);
+        final String callArgs = GenUtils.javaArgString(f2, false);
         final String funcBody = " {return Calendars.calendar()." + f.getMethodName() + "(" + callArgs + " );}\n";
-        return GenUtils.javaFunction(f, sigPrefix, javadoc, funcBody);
+        return GenUtils.javaFunction(f2, sigPrefix, javadoc, funcBody);
     }
 
     public static void main(String[] args) throws ClassNotFoundException, IOException {
@@ -67,11 +75,19 @@ public class StaticCalendarMethodsGenerator extends AbstractBasicJavaGenerator {
         excludes.add("description");
         excludes.add("firstValidDate");
         excludes.add("lastValidDate");
-        excludes.add("timeZone");
 
         StaticCalendarMethodsGenerator gen = new StaticCalendarMethodsGenerator(gradleTask, packageName, className, imports,
                 (m) -> Modifier.isPublic(m.getModifiers()) && !m.getDeclaringClass().equals(Object.class),
-                Collections.singletonList((f) -> excludes.contains(f.getMethodName())));
+                Collections.singletonList((f) -> excludes.contains(f.getMethodName())),
+                (s) -> {
+                    if (s.equals("dayOfWeek")) {
+                        return "calendarDayOfWeek";
+                    } else if (s.equals("timeZone")) {
+                        return "calendarTimeZone";
+                    } else {
+                        return s;
+                    }
+                });
 
         runCommandLine(gen, relativeFilePath, args);
     }
