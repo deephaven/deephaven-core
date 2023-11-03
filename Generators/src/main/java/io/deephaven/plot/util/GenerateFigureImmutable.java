@@ -651,7 +651,7 @@ public class GenerateFigureImmutable {
         String funcBody;
 
         if (isInterface) {
-            sigPrefix = "@Override ";
+            sigPrefix = "@Override";
             funcBody = ";\n";
         } else {
             final String callArgs = GenUtils.argString(f, false);
