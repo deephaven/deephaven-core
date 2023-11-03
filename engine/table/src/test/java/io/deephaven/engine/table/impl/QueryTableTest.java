@@ -3310,6 +3310,10 @@ public class QueryTableTest extends QueryTableTestBase {
         final TestInstantGroupingSource cs = new TestInstantGroupingSource(colSource(0L, 1, 2, 3));
         final Map<String, ? extends ColumnSource<?>> columns = Maps.of("T", cs);
         final QueryTable t1 = new QueryTable(rowSet, columns);
+
+        // Create an index for "T"
+        DataIndexer.of(t1.getRowSet()).createDataIndex(t1, "T");
+
         final Table t2 = t1.select("T");
 
         // noinspection rawtypes

@@ -259,7 +259,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     }
 
     @Override
-    protected final void postCoalesceAction() {
+    protected final void postCoalesceAction(final Table coalesced) {
         // As part of coalescing, create the RowSet-level data indexes for partitioning and indexed columns.
         final DataIndexer dataIndexer = DataIndexer.of(rowSet);
 
@@ -268,7 +268,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
             if (columnDefinition.isPartitioning()) {
                 final DataIndex dataIndex = new PartitioningColumnDataIndexImpl(
-                        this,
+                        coalesced,
+                        columnSourceManager,
                         columnDefinition.getName());
                 dataIndexer.addDataIndex(dataIndex);
             }
@@ -282,7 +283,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
 
             for (final String[] keyArr : firstLocation.getDataIndexColumns()) {
                 final DataIndex dataIndex = new StorageBackedDataIndexImpl(
-                        this,
+                        coalesced,
+                        columnSourceManager,
                         keyArr);
                 dataIndexer.addDataIndex(dataIndex);
             }

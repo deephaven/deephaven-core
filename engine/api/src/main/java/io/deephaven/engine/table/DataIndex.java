@@ -3,6 +3,7 @@ package io.deephaven.engine.table;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -102,5 +103,14 @@ public interface DataIndex {
      * @return true when the underlying index is refreshing, false otherwise.
      */
     boolean isRefreshing();
+
+    /**
+     * Return the underlying table for this index. The resultant table should not be read directly; this method is
+     * provided for synchronization purposes when performing concurrent operations on the index.
+     *
+     * @return the underlying table supplying this index
+     */
+    @InternalUseOnly
+    Table baseTable();
 }
 

@@ -134,5 +134,10 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
     public boolean isRefreshing() {
         return indexTable.isRefreshing();
     }
+
+    @Override
+    public Table baseTable() {
+        return table();
+    }
 }
 

@@ -21,8 +21,6 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
         extends AbstractColumnSource<DATA_TYPE>
         implements RegionedPageStore<Values, ATTR, REGION_TYPE>, RegionedColumnSource<DATA_TYPE> {
 
-    ColumnSourceManager columnSourceManager = null;
-
     static final Parameters PARAMETERS;
     static {
         PARAMETERS =
@@ -87,14 +85,4 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
      */
     @NotNull
     abstract REGION_TYPE getNullRegion();
-
-    @Override
-    public ColumnSourceManager getColumnSourceManager() {
-        return columnSourceManager;
-    }
-
-    @Override
-    public void setColumnSourceManager(ColumnSourceManager columnSourceManager) {
-        this.columnSourceManager = columnSourceManager;
-    }
 }

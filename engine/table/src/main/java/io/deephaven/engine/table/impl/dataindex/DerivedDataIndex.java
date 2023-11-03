@@ -230,6 +230,11 @@ public class DerivedDataIndex extends AbstractDataIndex {
                 || transformer.sortByFirstRowKey();
     }
 
+    @Override
+    public Table baseTable() {
+        // Return the parent index's base table.
+        return parentIndex.baseTable();
+    }
 
     // region DataIndex materialization operations
     private static Function<RowSet, RowSet> getMutator(

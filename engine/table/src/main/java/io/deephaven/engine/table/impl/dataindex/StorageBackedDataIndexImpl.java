@@ -5,10 +5,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.ColumnSourceManager;
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
@@ -56,8 +53,10 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     private RowSetLookup cachedRowSetLookup;
 
     public StorageBackedDataIndexImpl(@NotNull final Table sourceTable,
+            final ColumnSourceManager columnSourceManager,
             @NotNull final String[] keyColumnNames) {
 
+        this.columnSourceManager = columnSourceManager;
         this.sourceTable = sourceTable;
         this.keyColumnNames = keyColumnNames;
 
@@ -84,7 +83,6 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
         }
 
         // Store the column source manager for later use.
-        columnSourceManager = ((RegionedColumnSource) keySources.get(0)).getColumnSourceManager();
         final Table locationTable = columnSourceManager.locationTable();
 
         if (sourceTable.isRefreshing()) {
@@ -168,7 +166,7 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     public Table table(final boolean usePrev) {
         if (usePrev && isRefreshing()) {
             throw new UnsupportedOperationException(
-                    "usePrev==true is not supported for refreshing storage-backed data index tables");
+                    "usePrev==true is not currently supported for refreshing storage-backed data index tables");
         }
 
         if (indexTable == null) {
@@ -279,6 +277,11 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     @Override
     public boolean isRefreshing() {
         return false;
+    }
+
+    @Override
+    public Table baseTable() {
+        return columnSourceManager.locationTable();
     }
 
     private static class LocationState {

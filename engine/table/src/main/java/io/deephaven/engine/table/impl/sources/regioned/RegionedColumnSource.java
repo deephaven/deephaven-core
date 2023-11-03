@@ -121,15 +121,4 @@ public interface RegionedColumnSource<DATA_TYPE>
      * @param regionIndex the region to invalidate
      */
     void invalidateRegion(int regionIndex);
-
-
-    /**
-     * Return the column source manager for this column source. Returns {@code null} if one does not exist.
-     */
-    ColumnSourceManager getColumnSourceManager();
-
-    /**
-     * Set the column source manager for this column source.
-     */
-    void setColumnSourceManager(ColumnSourceManager columnSourceManager);
 }

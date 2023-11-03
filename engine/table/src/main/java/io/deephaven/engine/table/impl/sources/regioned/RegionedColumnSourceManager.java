@@ -108,7 +108,6 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
             final RegionedColumnSource<?> columnSource = componentFactory.createRegionedColumnSource(columnDefinition,
                     codecMappings);
-            columnSource.setColumnSourceManager(this);
             columnSources.put(
                     columnDefinition.getName(),
                     columnSource);
@@ -451,9 +450,9 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             } finally {
                 rowSetAtLastUpdate.close();
                 rowSetAtLastUpdate = updateRowSet;
-                // There was a change to the row set.
-                return true;
             }
+            // There was a change to the row set.
+            return true;
         }
 
         private void invalidate() {

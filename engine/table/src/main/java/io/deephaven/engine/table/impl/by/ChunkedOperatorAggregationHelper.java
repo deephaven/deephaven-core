@@ -112,9 +112,26 @@ public class ChunkedOperatorAggregationHelper {
                 }
             }
         }
+
         final Mutable<QueryTable> resultHolder = new MutableObject<>();
-        final OperationSnapshotControl snapshotControl =
-                input.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
+        final OperationSnapshotControl snapshotControl;
+
+        final ColumnSource<?>[] keySources =
+                Arrays.stream(keyNames).map(input::getColumnSource).toArray(ColumnSource[]::new);
+
+        // If the table is refreshing and using an index, include the index baseTable in the snapshot control.
+        if (input.isRefreshing() && control.considerIndexing(input, keySources)) {
+            final DataIndexer dataIndexer = DataIndexer.of(input.getRowSet());
+            final DataIndex dataIndex = dataIndexer.getDataIndex(input, keyNames);
+            if (dataIndex != null) {
+                snapshotControl = new OperationSnapshotControlEx(input, (BaseTable) dataIndex.baseTable());
+            } else {
+                snapshotControl = input.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
+            }
+        } else {
+            snapshotControl = input.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
+        }
+
         BaseTable.initializeWithSnapshot(
                 "by(" + aggregationContextFactory + ", " + groupByColumns + ")", snapshotControl,
                 (usePrev, beforeClockValue) -> {
@@ -1839,9 +1856,12 @@ public class ChunkedOperatorAggregationHelper {
             RowSetBuilderRandom initialRowsBuilder,
             boolean usePrev) {
         final Pair<WritableColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
-        final DataIndexer indexer = DataIndexer.of(input.getRowSet());
-
-        final DataIndex dataIndex = indexer.getDataIndex(reinterpretedKeySources);
+        final DataIndexer dataIndexer = DataIndexer.of(input.getRowSet());
+        // Get a flattened immutable version of the index.
+        final DataIndex dataIndex = dataIndexer.getDataIndex(reinterpretedKeySources).transform(
+                DataIndexTransformer.builder()
+                        .immutable(true)
+                        .build());
         final Table indexTable = dataIndex.table(usePrev);
 
         final int indexEntryCount = indexTable.intSize();

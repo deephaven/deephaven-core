@@ -2,19 +2,14 @@ package io.deephaven.engine.table.impl.dataindex;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.ColumnSourceManager;
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +22,7 @@ import java.util.Map;
  */
 public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     @NotNull
-    private final RegionedColumnSource<?> keySource;
+    private final ColumnSource<?> keySource;
 
     @NotNull
     private final String keyColumnName;
@@ -37,7 +32,7 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     private final Table sourceTable;
 
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
-    private final Table indexTable;
+    private final QueryTable indexTable;
     private final WritableColumnSource<Object> indexKeySource;
     private final ObjectArraySource<RowSet> indexRowSetSource;
 
@@ -45,19 +40,15 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     private final TObjectIntHashMap<Object> cachedPositionMap;
 
     public PartitioningColumnDataIndexImpl(@NotNull final Table sourceTable,
+            final ColumnSourceManager columnSourceManager,
             @NotNull final String keyColumnName) {
         Assert.eqTrue(sourceTable.hasColumns(keyColumnName), keyColumnName + " was not found in the source table");
 
-        keySource = (RegionedColumnSource<?>) sourceTable.getColumnSource(keyColumnName);
-        Assert.eqTrue(keySource instanceof RegionedColumnSource,
-                "keySources.get(0) instanceof RegionedColumnSource");
-
-        this.keyColumnName = keyColumnName;
-
-        // Store the column source manager for later use.
-        columnSourceManager = keySource.getColumnSourceManager();
+        keySource = sourceTable.getColumnSource(keyColumnName);
 
         this.sourceTable = sourceTable;
+        this.keyColumnName = keyColumnName;
+        this.columnSourceManager = columnSourceManager;
 
         // Build the index table and the position lookup map.
         final Table locationTable = columnSourceManager.locationTable();
@@ -236,6 +227,11 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     @Override
     public boolean isRefreshing() {
         return indexTable.isRefreshing();
+    }
+
+    @Override
+    public Table baseTable() {
+        return indexTable;
     }
 }
 
