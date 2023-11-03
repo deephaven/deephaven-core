@@ -182,7 +182,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 }
 
                 analyzer = analyzer.createLayerForPreserve(
-                        sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder, flatResult && flattenedResult);
+                        sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
 
                 if (!sourceIsNew) {
                     // we can not flatten future columns because we are preserving a column that may not be flat
@@ -195,8 +195,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             if (realColumn != null) {
                 final ColumnSource<?> alias = resultAlias.get(realColumn.getSourceName());
                 if (alias != null) {
-                    analyzer = analyzer.createLayerForPreserve(
-                            sc.getName(), sc, alias, distinctDeps, mcsBuilder, flatResult);
+                    analyzer = analyzer.createLayerForPreserve(sc.getName(), sc, alias, distinctDeps, mcsBuilder);
                     continue;
                 }
             }
@@ -387,8 +386,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     }
 
     private SelectAndViewAnalyzer createLayerForPreserve(String name, SelectColumn sc, ColumnSource<?> cs,
-            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean flatResult) {
-        return new PreserveColumnLayer(this, name, sc, cs, parentColumnDependencies, mcsBuilder, flatResult);
+            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder) {
+        return new PreserveColumnLayer(this, name, sc, cs, parentColumnDependencies, mcsBuilder);
     }
 
     abstract void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy);

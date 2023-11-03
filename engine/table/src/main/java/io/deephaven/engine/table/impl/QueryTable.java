@@ -1525,9 +1525,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                             }
                         }
 
-                        final TrackingRowSet resultRowSet = analyzer.flattenedResult() && !rowSet.isFlat()
-                                ? RowSetFactory.flat(rowSet.size()).toTracking()
-                                : rowSet;
+                        final TrackingRowSet resultRowSet =
+                                analyzer.flattenedResult() ? RowSetFactory.flat(rowSet.size()).toTracking() : rowSet;
                         resultTable = new QueryTable(resultRowSet, analyzerWrapper.getPublishedColumnResources());
                         if (liveResultCapture != null) {
                             analyzer.startTrackingPrev();
