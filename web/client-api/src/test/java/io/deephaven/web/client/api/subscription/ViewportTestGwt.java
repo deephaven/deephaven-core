@@ -31,14 +31,13 @@ import static elemental2.dom.DomGlobal.console;
  */
 public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
 
-    private final TableSource tables = new TableSourceBuilder()
-            .script("staticTable", "deephaven.empty_table(100).update(\"I=i\")", "emptyTable(100).update(\"I=i\")")
-            .script("growingForward", "timeTable(\"00:00:01\").update(\"I=i\", \"J=i*i\", \"K=0\")",
-                    "timeTable(\"00:00:01\").update(\"I=i\", \"J=i*i\", \"K=0\")")
-            .script("growingBackward", "growingForward.sortDescending(\"Timestamp\")",
-                    "growingForward.sortDescending(\"Timestamp\")")
-            .script("blinkOne", "deephaven.empty_table(100).update(\"I=i\")", "emptyTable(100).update(\"I=i\")")
-            .build();
+    private final TableSourceBuilder tables = new TableSourceBuilder()
+            .script("from deephaven import empty_table, time_table")
+            .script("staticTable", "empty_table(100).update(\"I=i\")")
+            .script("from datetime import datetime, timedelta")
+            .script("growingForward", "time_table(period=\"PT00:00:01\", start_time=datetime.now() - timedelta(minutes=1)).update([\"I=i\", \"J=i*i\", \"K=0\"])")
+            .script("growingBackward", "growingForward.sort_descending(\"Timestamp\")")
+            .script("blinkOne", "time_table(\"PT00:00:01\").update([\"I=i\", \"J=1\"]).last_by(by=\"J\").where(\"I%2 != 0\")");
 
     public void testViewportOnStaticTable() {
         connect(tables)
@@ -435,7 +434,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     // wait for the next tick, where we get the "first" row added, confirm that the viewport
                     // data is sane
                     return waitForEventWhere(table, "updated", (CustomEvent<ViewportData> e) -> {
-                        ViewportData viewport = (ViewportData) e.detail;
+                        ViewportData viewport = e.detail;
                         if (viewport.getRows().length != 1) {
                             return false; // wrong data, wait for another event
                         }

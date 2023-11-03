@@ -34,8 +34,11 @@ import java.util.function.Predicate;
 import static elemental2.dom.DomGlobal.console;
 
 public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
-    @JsMethod(namespace = "<window>", name = "import")
-    private static native Promise<JsPropertyMap<Object>> importScript(String moduleName);
+    @JsMethod(namespace = JsPackage.GLOBAL)
+    private static native Object eval(String code);
+    private static Promise<JsPropertyMap<Object>> importScript(String moduleName) {
+        return (Promise<JsPropertyMap<Object>>) eval("import('" + moduleName + "')");
+    }
 
     private static Promise<Void> importDhInternal() {
         return importScript( localServer + "/jsapi/dh-internal.js")
@@ -48,29 +51,18 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     public static final String localServer = System.getProperty("dh.server", "http://localhost:10000");
 
     public static class TableSourceBuilder {
-        public TableSourceBuilder script(String tableName, String python, String groovy) {
-
-
+        private final List<String> pythonScripts = new ArrayList<>();
+        public TableSourceBuilder script(String script) {
+            pythonScripts.add(script);
             return this;
         }
 
-        public TableSource build() {
-            return new TableSourceImpl();
+        public TableSourceBuilder script(String tableName, String python) {
+            pythonScripts.add(tableName + "=" + python);
+
+            return this;
         }
     }
-    public interface TableSource {
-        Promise<JsTable> table(String name);
-    }
-    private static class TableSourceImpl implements TableSource {
-        private JsArray<String> groovyScripts;
-        private JsArray<String> pythonScripts;
-
-        @Override
-        public Promise<JsTable> table(String name) {
-            return null;
-        }
-    }
-
 
     /**
      * Set this to a value higher than 1 to get more time to run debugger without timeouts failing.
@@ -135,11 +127,9 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     /**
-     * Connects and authenticates to the specified server, and resolves once the specified query config has become
-     * available.
+     * Connects and authenticates to the configured server and runs the specified scripts.
      */
-    protected Promise<IdeSession> connect(TableSource tables) {
-        TableSourceImpl impl = (TableSourceImpl) tables;
+    protected Promise<IdeSession> connect(TableSourceBuilder tables) {
         // start by delaying test finish by .5s so we fail fast in cases where we aren't set up right
         delayTestFinish(500);
         return importDhInternal().then(module -> {
@@ -147,17 +137,16 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
             return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
                     .then(ignore -> coreClient.getAsIdeConnection())
                     .then(ide -> {
-                        delayTestFinish(500);
+                        delayTestFinish(501);
                         return ide.getConsoleTypes().then(consoleTypes -> {
+                            delayTestFinish(502);
                             CancellablePromise<IdeSession> ideSession = ide.startSession(consoleTypes.getAt(0));
                             return ideSession.then(session -> {
-                                if (consoleTypes.includes("groovy")) {
-                                    // scripts must run in order, to be sure let block on each one
-                                    return runAllScriptsInOrder(ideSession, session, impl.groovyScripts);
-                                } else if (consoleTypes.includes("python")) {
-                                    return runAllScriptsInOrder(ideSession, session, impl.pythonScripts);
+
+                                if (consoleTypes.includes("python")) {
+                                    return runAllScriptsInOrder(ideSession, session, tables.pythonScripts);
                                 }
-                                throw new IllegalStateException("Unknown script type " + consoleTypes);
+                                throw new IllegalStateException("Unsupported script type " + consoleTypes);
                             });
                         });
                     });
@@ -165,13 +154,18 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     private Promise<IdeSession> runAllScriptsInOrder(CancellablePromise<IdeSession> ideSession, IdeSession session,
-            JsArray<String> code) {
+            List<String> code) {
         Promise<IdeSession> result = ideSession;
-        for (int i = 0; i < code.length; i++) {
+        for (int i = 0; i < code.size(); i++) {
             final int index = i;
             result = result.then(ignore -> {
-                delayFinish(2000);
-                session.runCode(code.getAt(index));
+                delayTestFinish(2000 + index);
+
+                return session.runCode(code.get(index));
+            }).then(r -> {
+                if (r.getError() != null) {
+                    return Promise.reject(r.getError());
+                }
                 return ideSession;
             });
         }

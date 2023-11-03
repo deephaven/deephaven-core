@@ -1,3 +1,6 @@
 <module>
     <inherits name="io.deephaven.web.DeephavenApi" />
+
+    <!-- restore the default linker that the test tooling expects -->
+    <add-linker name="xsiframe" />
 </module>

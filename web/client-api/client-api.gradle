@@ -44,9 +44,6 @@ artifacts {
 }
 
 tasks.register('gwtUnitTest', Test) { t ->
-//    gradle.projectsEvaluated {
-//        t.classpath += project(":web-client-api").tasks.getByName('gwtCompile').src
-//    }
     t.systemProperties = [
             'gwt.args':'-runStyle HtmlUnit -ea -style PRETTY',
             'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
@@ -60,10 +57,10 @@ tasks.register('gwtUnitTest', Test) { t ->
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
     envVars.set([
-            'START_OPTS':'-Xmx512m'
+            'START_OPTS':'-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler'
     ])
-    containerName.set "dh-server-for-cpp-${randomSuffix}"
-    networkName.set "cpp-test-network-${randomSuffix}"
+    containerName.set "dh-server-for-js-${randomSuffix}"
+    networkName.set "js-test-network-${randomSuffix}"
 }
 
 tasks.register('gwtIntegrationTest', Test) { t ->
@@ -78,7 +75,6 @@ tasks.register('gwtIntegrationTest', Test) { t ->
     t.finalizedBy(deephavenDocker.endTask)
     t.systemProperties = [
             'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
-//            'dh.server':'http://localhost:' + deephavenDocker.port.get()
     ]
     t.include '**/ClientIntegrationTestSuite.class'
     t.useJUnit()
