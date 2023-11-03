@@ -201,7 +201,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
             return defaultPartition;
         }
         final int partition = partitionChunk.get(index);
-        return partition == QueryConstants.NULL_INT ? defaultPartition : partition;
+        return partition == QueryConstants.NULL_INT ? defaultPartition : (Integer) partition;
     }
 
     public static Long timestampMillis(LongChunk<?> nanosChunk, int index) {
