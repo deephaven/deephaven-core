@@ -384,7 +384,7 @@ class ParquetTestCase(BaseTestCase):
 
         # Compare only the date column since the null column is written as different logical types by pandas and
         # deephaven
-        self.assertTrue(dh_table.select("someDateColumn"), from_disk_pandas.select("someDateColumn"))
+        self.assert_table_equals(dh_table.select("someDateColumn"), from_disk_pandas.select("someDateColumn"))
 
 
 if __name__ == '__main__':
