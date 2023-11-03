@@ -27,6 +27,8 @@ import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.libs.GroovyStaticImports;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeLiteralReplacedExpression;
+import io.deephaven.time.calendar.Calendars;
+import io.deephaven.time.calendar.StaticCalendarMethods;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -56,7 +58,9 @@ public class ColumnExpressionValidator extends VoidVisitorAdapter<Object> {
                         QueryLanguageFunctionUtils.class,
                         GroovyStaticImports.class,
                         DateTimeUtils.class,
-                        ColorUtilImpl.class)
+                        ColorUtilImpl.class,
+                        Calendars.class,
+                        StaticCalendarMethods.class)
                 .map(Class::getDeclaredMethods)
                 .flatMap(Arrays::stream)
                 .filter(m -> Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers()))
