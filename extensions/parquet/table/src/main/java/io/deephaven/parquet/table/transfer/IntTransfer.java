@@ -14,8 +14,8 @@ import java.nio.IntBuffer;
 
 final class IntTransfer extends PrimitiveTransfer<WritableIntChunk<Values>, IntBuffer> {
     static IntTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,
-                              final int targetPageSize) {
-        final int maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize / Integer.BYTES));
+                              final int targetPageSizeInBytes) {
+        final int maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSizeInBytes / Integer.BYTES));
         final int[] backingArray = new int[maxValuesPerPage];
         return new IntTransfer(
                 columnSource,

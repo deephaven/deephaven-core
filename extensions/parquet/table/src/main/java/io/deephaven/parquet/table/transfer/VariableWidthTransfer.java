@@ -27,7 +27,7 @@ abstract class VariableWidthTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TY
     private final ColumnSource<?> columnSource;
     private final RowSequence.Iterator tableRowSetIt;
     private final ChunkSource.GetContext context;
-    private final int targetPageSize;
+    private final int targetPageSizeInBytes;
     private int currentChunkIdx;
     /**
      * The reusable field used to store the output from {@link #encodeDataForBuffering}.
@@ -56,10 +56,10 @@ abstract class VariableWidthTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TY
     final int maxValuesPerPage;
 
     VariableWidthTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-            final int maxValuesPerPage, final int targetPageSize, @NotNull final BUFFER_TYPE buffer) {
+            final int maxValuesPerPage, final int targetPageSizeInBytes, @NotNull final BUFFER_TYPE buffer) {
         this.columnSource = columnSource;
         this.tableRowSetIt = tableRowSet.getRowSequenceIterator();
-        this.targetPageSize = Require.gtZero(targetPageSize, "targetPageSize");
+        this.targetPageSizeInBytes = Require.gtZero(targetPageSizeInBytes, "targetPageSizeInBytes");
         this.maxValuesPerPage = Require.gtZero(maxValuesPerPage, "maxValuesPerPage");
         this.context = columnSource.makeGetContext(Math.toIntExact(Math.min(maxValuesPerPage, tableRowSet.size())));
         this.currentChunkIdx = 0;
@@ -145,7 +145,7 @@ abstract class VariableWidthTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TY
                 if (isBufferEmpty()) {
                     // Always copy the first entry
                     addEncodedDataToBuffer(encodedData, true);
-                } else if (getNumBytesBuffered() + encodedData.numBytes > targetPageSize ||
+                } else if (getNumBytesBuffered() + encodedData.numBytes > targetPageSizeInBytes ||
                         !addEncodedDataToBuffer(encodedData, false)) {
                     // Reattempt adding the encoded value to the buffer in the next iteration
                     cached = true;

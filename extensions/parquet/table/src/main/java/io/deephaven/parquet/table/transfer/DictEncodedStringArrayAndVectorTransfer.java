@@ -24,13 +24,13 @@ abstract public class DictEncodedStringArrayAndVectorTransfer<T>
     private int numDictEncodedValues;
 
     DictEncodedStringArrayAndVectorTransfer(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,
-            int targetPageSize, @NotNull StringDictionary dictionary) {
-        super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
-                IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
+            int targetPageSizeInBytes, @NotNull StringDictionary dictionary) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes / Integer.BYTES, targetPageSizeInBytes,
+                IntBuffer.allocate(targetPageSizeInBytes / Integer.BYTES), Integer.BYTES);
         this.dictionary = dictionary;
 
         this.pageHasNull = false;
-        this.dictEncodedValues = new int[targetPageSize];
+        this.dictEncodedValues = new int[targetPageSizeInBytes];
         this.numDictEncodedValues = 0;
     }
 
