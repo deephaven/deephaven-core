@@ -13,8 +13,6 @@ public class GenUtils {
     private GenUtils() {
     }
 
-    //TODO: rename functions
-
     private static final Logger log = Logger.getLogger(GenUtils.class.toString());
 
     private static final TIntObjectMap<String> cachedIndents = new TIntObjectHashMap<>();
@@ -67,11 +65,17 @@ public class GenUtils {
         }
     }
 
+    /**
+     * Generates a set of Java imports needed for the given type.
+     *
+     * @param t type.
+     * @return set of imports.
+     */
     public static Set<String> typesToImport(Type t) {
         Set<String> result = new LinkedHashSet<>();
 
         if (t instanceof Class) {
-            final Class<?> c = (Class) t;
+            final Class<?> c = (Class<?>) t;
             final boolean isArray = c.isArray();
             final boolean isPrimitive = c.isPrimitive();
 
@@ -132,27 +136,27 @@ public class GenUtils {
      * generics and finding the upper bound of typevars.
      */
     @NotNull
-    public static String getParamTypeString(Type t) {
+    public static String javadocLinkParamTypeString(Type t) {
         if (t instanceof ParameterizedType) {
             return ((ParameterizedType) t).getRawType().getTypeName();
         } else if (t instanceof TypeVariable) {
-            return getParamTypeString(((TypeVariable<?>) t).getBounds()[0]);
+            return javadocLinkParamTypeString(((TypeVariable<?>) t).getBounds()[0]);
         } else if (t instanceof WildcardType) {
-            return getParamTypeString(((WildcardType) t).getUpperBounds()[0]);
+            return javadocLinkParamTypeString(((WildcardType) t).getUpperBounds()[0]);
         } else if (t instanceof GenericArrayType) {
-            return getParamTypeString(((GenericArrayType) t).getGenericComponentType()) + "[]";
+            return javadocLinkParamTypeString(((GenericArrayType) t).getGenericComponentType()) + "[]";
         }
         return t.getTypeName();
     }
 
     /**
-     * Creates an argument string for a function.
+     * Creates an argument string for a Java function.
      *
      * @param f function.
      * @param includeTypes true to include types of the argument parameters; false to just include the parameter names.
      * @return argument string.
      */
-    public static String argString(final JavaFunction f, boolean includeTypes) {
+    public static String javaArgString(final JavaFunction f, boolean includeTypes) {
         String callArgs = "";
 
         for (int i = 0; i < f.getParameterTypes().length; i++) {
@@ -180,13 +184,13 @@ public class GenUtils {
     }
 
     /**
-     * Create code for a function signature.
+     * Create code for a Java function signature.
      *
      * @param f function signature.
      * @param sigPrefix sigPrefix to add to the function signature (e.g. "public static").
      * @return code for the function signature.
      */
-    public static String createFunctionSignature(final JavaFunction f, final String sigPrefix) {
+    public static String javaFunctionSignature(final JavaFunction f, final String sigPrefix) {
         String returnType = f.getReturnType().getTypeName().replace("$", ".");
         String s = indent(1) + (sigPrefix == null || sigPrefix.equals("") ? "" : (sigPrefix + " "));
 
@@ -219,12 +223,12 @@ public class GenUtils {
             s += ">";
         }
 
-        s += " " + returnType + " " + f.getMethodName() + "(" + argString(f, true) + " )";
+        s += " " + returnType + " " + f.getMethodName() + "(" + javaArgString(f, true) + " )";
         return s;
     }
 
     /**
-     * Create a function with the given javadoc and body.
+     * Create a Java function with the given javadoc and body.
      *
      * @param f function signature.
      * @param sigPrefix sigPrefix to add to the function signature (e.g. "public static").
@@ -232,9 +236,9 @@ public class GenUtils {
      * @param funcBody function body.
      * @return code for the function.
      */
-    public static String createFunction(final JavaFunction f, final String sigPrefix, final String javadoc, final String funcBody) {
+    public static String javaFunction(final JavaFunction f, final String sigPrefix, final String javadoc, final String funcBody) {
         String s = javadoc == null || javadoc.equals("") ? "" : (javadoc + "\n");
-        s += createFunctionSignature(f, sigPrefix);
+        s += javaFunctionSignature(f, sigPrefix);
         s += funcBody;
         return s;
     }

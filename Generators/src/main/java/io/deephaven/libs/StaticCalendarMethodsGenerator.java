@@ -39,16 +39,15 @@ public class StaticCalendarMethodsGenerator extends AbstractBasicJavaGenerator {
 
     @Override
     public String generateFunction(JavaFunction f) {
-        //TODO: javadoc
         final String javadoc = "    /** @see " + f.getClassName() + "#" + f.getMethodName() + "(" +
-                Arrays.stream(f.getParameterTypes()).map(GenUtils::getParamTypeString)
+                Arrays.stream(f.getParameterTypes()).map(GenUtils::javadocLinkParamTypeString)
                         .collect(Collectors.joining(","))
                 +
                 ") */";
         final String sigPrefix = "public static";
-        final String callArgs = GenUtils.argString(f, false);
+        final String callArgs = GenUtils.javaArgString(f, false);
         final String funcBody = " {return Calendars.calendar()." + f.getMethodName() + "(" + callArgs + " );}\n";
-        return GenUtils.createFunction(f, sigPrefix, javadoc, funcBody);
+        return GenUtils.javaFunction(f, sigPrefix, javadoc, funcBody);
     }
 
     public static void main(String[] args) throws ClassNotFoundException, IOException {

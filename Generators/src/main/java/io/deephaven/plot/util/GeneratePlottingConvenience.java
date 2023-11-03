@@ -201,13 +201,13 @@ public class GeneratePlottingConvenience {
     private static String createFunction(final JavaFunction f, final JavaFunction signature, final boolean isStatic) {
         final String javadoc = createJavadoc(f, signature);
         final String sigPrefix = "public static";
-        final String callArgs = GenUtils.argString(signature, false);
+        final String callArgs = GenUtils.javaArgString(signature, false);
         String funcBody = " {\n";
         funcBody += indent(2) + (f.getReturnType().equals(void.class) ? "" : "return ")
                 + (isStatic ? (f.getClassNameShort() + ".") : "FigureFactory.figure().") + f.getMethodName() + "("
                 + callArgs + " );\n";
         funcBody += indent(1) + "}\n";
-        return GenUtils.createFunction(signature, sigPrefix, javadoc, funcBody);
+        return GenUtils.javaFunction(signature, sigPrefix, javadoc, funcBody);
     }
 
     private static String createJavadoc(final JavaFunction f, final JavaFunction signature) {

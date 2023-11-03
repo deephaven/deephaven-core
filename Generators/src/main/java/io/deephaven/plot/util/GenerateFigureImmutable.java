@@ -639,7 +639,7 @@ public class GenerateFigureImmutable {
     }
 
     private String createFunctionSignature(final JavaFunction f) {
-        return GenUtils.createFunctionSignature(f, (isInterface ? "@Override" : "@Override public"));
+        return GenUtils.javaFunctionSignature(f, (isInterface ? "@Override" : "@Override public"));
     }
 
     private String createFunction(final JavaFunction f) {
@@ -654,7 +654,7 @@ public class GenerateFigureImmutable {
             sigPrefix = "@Override";
             funcBody = ";\n";
         } else {
-            final String callArgs = GenUtils.argString(f, false);
+            final String callArgs = GenUtils.javaArgString(f, false);
             sigPrefix = "@Override public";
             funcBody = " {\n" + indent(2) + "final BaseFigureImpl fc = this.figure.copy();\n";
 
@@ -705,7 +705,7 @@ public class GenerateFigureImmutable {
             funcBody += indent(1) + "}\n";
         }
 
-        return GenUtils.createFunction(signature, sigPrefix, javadoc, funcBody);
+        return GenUtils.javaFunction(signature, sigPrefix, javadoc, funcBody);
     }
 
     private String createSignatureGroupFunction(final TreeSet<JavaFunction> fs) {
@@ -725,9 +725,9 @@ public class GenerateFigureImmutable {
             sigPrefix = "@Override";
             funcBody = ";\n";
         } else {
-            final String callArgs = GenUtils.argString(f0, false);
+            final String callArgs = GenUtils.javaArgString(f0, false);
             sigPrefix = "@Override public";
-            final String signature = GenUtils.createFunctionSignature(s0, sigPrefix);
+            final String signature = GenUtils.javaFunctionSignature(s0, sigPrefix);
             funcBody = " {\n" +
                     indent(2) + "final BaseFigureImpl fc = this.figure.copy();\n" +
                     indent(2) + "Series series = series(fc);\n";
@@ -777,7 +777,7 @@ public class GenerateFigureImmutable {
             funcBody += indent(1) + "}\n";
         }
 
-        return GenUtils.createFunction(s0, sigPrefix, javadoc, funcBody);
+        return GenUtils.javaFunction(s0, sigPrefix, javadoc, funcBody);
     }
 
     private Map<String, TreeSet<JavaFunction>> commonSignatureGroups(
