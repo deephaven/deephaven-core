@@ -86,6 +86,69 @@ public class Calendar {
 
     // endregion
 
+    // region Now
+
+    /**
+     * The current date for the calendar.
+     *
+     * @return current date
+     */
+    public LocalDate calendarDate() {
+        return DateTimeUtils.todayLocalDate(timeZone());
+    }
+
+    /**
+     * The current day of the week for the calendar.
+     *
+     * @return current day of the week
+     */
+    public int dayOfWeek() {
+        return dayOfWeek(calendarDate());
+    }
+
+    /**
+     * The current day of the week for the calendar.
+     *
+     * @param date date
+     * @return current day of the week
+     */
+    public int dayOfWeek(final LocalDate date) {
+        return DateTimeUtils.dayOfWeek(date);
+    }
+
+    /**
+     * The current day of the week for the calendar.
+     *
+     * @param date date
+     * @return current day of the week
+     */
+    public int dayOfWeek(final String date) {
+        return DateTimeUtils.dayOfWeek(DateTimeUtils.parseLocalDate(date));
+    }
+
+    /**
+     * The current day of the week for the calendar.
+     *
+     * @param time time
+     * @return current day of the week
+     */
+    public int dayOfWeek(final Instant time) {
+        return DateTimeUtils.dayOfWeek(time, timeZone);
+    }
+
+    /**
+     * The current day of the week for the calendar.
+     *
+     * @param time time
+     * @return current day of the week
+     */
+    public int dayOfWeek(final ZonedDateTime time) {
+        return DateTimeUtils.dayOfWeek(time.toInstant(), timeZone);
+    }
+
+    // endregion
+
+
     // region Arithmetic
 
     /**
@@ -221,15 +284,6 @@ public class Calendar {
     public ZonedDateTime minusDays(final ZonedDateTime time, final int days) {
         Require.neqNull(time, "time");
         return plusDays(time, -days);
-    }
-
-    /**
-     * The current date for the calendar.
-     *
-     * @return current date
-     */
-    public LocalDate calendarDate() {
-        return DateTimeUtils.todayLocalDate(timeZone());
     }
 
     /**

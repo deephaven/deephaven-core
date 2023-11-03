@@ -414,7 +414,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException                 if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    boolean isLastBusinessDayOfMonth(final String date) {
+    public boolean isLastBusinessDayOfMonth(final String date) {
         Require.neqNull(date, "date");
         return isLastBusinessDayOfMonth(DateTimeUtils.parseLocalDate(date));
     }

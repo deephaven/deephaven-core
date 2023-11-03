@@ -31,6 +31,13 @@ public class TestCalendar extends BaseArrayTestCase {
         assertEquals("Calendar{name='TEST CALENDAR', description='This is a test', timeZone=America/Los_Angeles}", calendar.toString());
     }
 
+    public void testDayOfWeek() {
+        assertEquals(1, calendar.dayOfWeek("2020-03-02"));
+        assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2)));
+        assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2).atTime(1,2,3).atZone(timeZone)));
+        assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2).atTime(1,2,3).atZone(timeZone).toInstant()));
+    }
+
     public void testPlusDays() {
         final ZoneId timeZone2 = ZoneId.of("America/New_York");
         final LocalDate d = LocalDate.of(2023, 2, 3);
