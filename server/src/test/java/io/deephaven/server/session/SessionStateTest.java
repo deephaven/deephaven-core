@@ -78,18 +78,23 @@ public class SessionStateTest {
 
     @Test
     public void testDestroyOnExportRelease() {
+        final MutableBoolean success = new MutableBoolean();
         final CountingLivenessReferent export = new CountingLivenessReferent();
         final SessionState.ExportObject<Object> exportObj;
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            exportObj = session.newExport(nextExportId++).submit(() -> export);
+            exportObj = session.newExport(nextExportId++)
+                    .onSuccess(success::setTrue)
+                    .submit(() -> export);
         }
 
         // no ref counts yet
         Assert.eq(export.refCount, "export.refCount", 0);
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
 
         // export the object; should inc ref count
         scheduler.runUntilQueueEmpty();
         Assert.eq(export.refCount, "export.refCount", 1);
+        Assert.eqTrue(success.booleanValue(), "success.booleanValue()");
 
         // assert lookup is same object
         Assert.eq(session.getExport(nextExportId - 1), "session.getExport(nextExport - 1)", exportObj, "exportObj");
@@ -124,18 +129,23 @@ public class SessionStateTest {
 
     @Test
     public void testDestroyOnSessionRelease() {
+        final MutableBoolean success = new MutableBoolean();
         final CountingLivenessReferent export = new CountingLivenessReferent();
         final SessionState.ExportObject<Object> exportObj;
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            exportObj = session.newExport(nextExportId++).submit(() -> export);
+            exportObj = session.newExport(nextExportId++)
+                    .onSuccess(success::setTrue)
+                    .submit(() -> export);
         }
 
         // no ref counts yet
         Assert.eq(export.refCount, "export.refCount", 0);
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
 
         // export the object; should inc ref count
         scheduler.runUntilQueueEmpty();
         Assert.eq(export.refCount, "export.refCount", 1);
+        Assert.eqTrue(success.booleanValue(), "success.booleanValue()");
 
         // assert lookup is same object
         Assert.eq(session.getExport(nextExportId - 1),
@@ -172,7 +182,10 @@ public class SessionStateTest {
     @Test
     public void testWorkItemNoDependencies() {
         final Object export = new Object();
-        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++).submit(() -> export);
+        final MutableBoolean success = new MutableBoolean();
+        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
+                .onSuccess(success::setTrue)
+                .submit(() -> export);
         expectException(IllegalStateException.class, exportObj::get);
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.QUEUED);
         scheduler.runUntilQueueEmpty();
@@ -183,33 +196,41 @@ public class SessionStateTest {
     @Test
     public void testThrowInExportMain() {
         final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
                 .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
                 .submit(() -> {
                     throw new RuntimeException("submit exception");
                 });
         Assert.eqFalse(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.QUEUED);
         scheduler.runUntilQueueEmpty();
         Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.FAILED);
     }
 
     @Test
     public void testThrowInErrorHandler() {
+        final MutableBoolean success = new MutableBoolean();
         final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
                 .onErrorHandler(err -> {
                     throw new RuntimeException("error handler exception");
                 })
+                .onSuccess(success::setTrue)
                 .submit(() -> {
                     submitted.setTrue();
                     throw new RuntimeException("submit exception");
                 });
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.QUEUED);
         scheduler.runUntilQueueEmpty();
         Assert.eqTrue(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.FAILED);
     }
 
@@ -222,21 +243,29 @@ public class SessionStateTest {
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
 
         // We should be able to cancel prior to definition without error.
+        final MutableBoolean success = new MutableBoolean();
         final MutableBoolean submitted = new MutableBoolean();
-        session.newExport(nextExportId++).submit(submitted::setTrue);
+        session.newExport(nextExportId++)
+                .onSuccess(success::setTrue)
+                .submit(submitted::setTrue);
         scheduler.runUntilQueueEmpty();
 
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
     public void testCancelBeforeExport() {
         final SessionState.ExportObject<?> d1 = session.getExport(nextExportId++);
 
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
                 .require(d1)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
                 .submit(submitted::setTrue);
 
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.PENDING);
@@ -245,14 +274,20 @@ public class SessionStateTest {
         scheduler.runUntilQueueEmpty();
 
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
     }
 
     @Test
     public void testCancelDuringExport() {
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final MutableObject<LivenessArtifact> export = new MutableObject<>();
-        final SessionState.ExportObject<Object> exportObj =
-                session.newExport(nextExportId++).submit(() -> {
+        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(() -> {
                     session.getExport(nextExportId - 1).cancel();
                     export.setValue(new PublicLivenessArtifact());
                     return export;
@@ -260,6 +295,8 @@ public class SessionStateTest {
 
         scheduler.runUntilQueueEmpty();
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
 
         if (export.getValue().tryRetainReference()) {
             throw new IllegalStateException("this should be destroyed");
@@ -268,17 +305,24 @@ public class SessionStateTest {
 
     @Test
     public void testCancelPostExport() {
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final MutableObject<LivenessArtifact> export = new MutableObject<>();
         final SessionState.ExportObject<Object> exportObj;
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            exportObj = session.newExport(nextExportId++).submit(() -> {
-                export.setValue(new PublicLivenessArtifact());
-                return export.getValue();
-            });
+            exportObj = session.newExport(nextExportId++)
+                    .onErrorHandler(err -> errored.setTrue())
+                    .onSuccess(success::setTrue)
+                    .submit(() -> {
+                        export.setValue(new PublicLivenessArtifact());
+                        return export.getValue();
+                    });
         }
 
         scheduler.runUntilQueueEmpty();
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.EXPORTED);
+        Assert.eqFalse(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqTrue(success.booleanValue(), "success.booleanValue()");
 
         if (!export.getValue().tryRetainReference()) {
             throw new IllegalStateException("this should be live");
@@ -294,24 +338,34 @@ public class SessionStateTest {
 
     @Test
     public void testCancelPropagates() {
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> d1 = session.getExport(nextExportId++);
         final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
                 .require(d1)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
                 .submit(submitted::setTrue);
 
         d1.cancel();
         scheduler.runUntilQueueEmpty();
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.DEPENDENCY_CANCELLED);
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
     public void testErrorPropagatesNotYetFailed() {
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> d1 = session.getExport(nextExportId++);
         final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
                 .require(d1)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
                 .submit(submitted::setTrue);
 
         session.newExport(d1.getExportId(), "test")
@@ -322,10 +376,14 @@ public class SessionStateTest {
         scheduler.runUntilQueueEmpty();
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.DEPENDENCY_FAILED);
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
     public void testErrorPropagatesAlreadyFailed() {
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> d1 = session.newExport(nextExportId++)
                 .submit(() -> {
@@ -336,19 +394,27 @@ public class SessionStateTest {
 
         final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
                 .require(d1)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
                 .submit(submitted::setTrue);
 
         scheduler.runUntilQueueEmpty();
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.DEPENDENCY_FAILED);
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
     public void testWorkItemOutOfOrderDependency() {
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> d1 = session.getExport(nextExportId++);
         final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
                 .require(d1)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
                 .submit(submitted::setTrue);
 
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.PENDING);
@@ -358,9 +424,15 @@ public class SessionStateTest {
                 });
         scheduler.runOne(); // d1
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.QUEUED);
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqFalse(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
 
         scheduler.runOne(); // d1
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.EXPORTED);
+        Assert.eqTrue(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqFalse(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqTrue(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
@@ -399,6 +471,8 @@ public class SessionStateTest {
 
     @Test
     public void testDependencyNotReleasedEarly() {
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final CountingLivenessReferent export = new CountingLivenessReferent();
 
         final SessionState.ExportObject<CountingLivenessReferent> e1;
@@ -412,6 +486,8 @@ public class SessionStateTest {
 
         final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
                 .require(e1)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
                 .submit(() -> Assert.gt(e1.get().refCount, "e1.get().refCount", 0));
         Assert.eq(e2.getState(), "e1.getState()", ExportNotification.State.QUEUED);
 
@@ -421,6 +497,8 @@ public class SessionStateTest {
         Assert.gt(export.refCount, "e1.get().refCount", 0);
         scheduler.runOne();
         Assert.eq(export.refCount, "e1.get().refCount", 0);
+        Assert.eqFalse(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqTrue(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
@@ -439,11 +517,14 @@ public class SessionStateTest {
         Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
 
         final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final SessionState.ExportObject<?> e2 = session.newExport(nextExportId++)
                 .require(e1)
                 .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
                 .submit((Callable<Object>) Assert::statementNeverExecuted);
         Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
         Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_RELEASED);
     }
 
@@ -460,25 +541,47 @@ public class SessionStateTest {
         scheduler.runUntilQueueEmpty();
         e1.release();
         Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
-        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++).require(e1).submit(() -> {
-        });
+
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
+        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++).require(e1)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(() -> {
+                });
         Assert.eq(e2.getState(), "e1.getState()", ExportNotification.State.DEPENDENCY_RELEASED);
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
     public void testExpiredNewExport() {
-        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++).submit(Object::new);
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
+        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(Object::new);
         scheduler.runUntilQueueEmpty();
         session.onExpired();
         expectException(StatusRuntimeException.class, exportObj::get);
+        Assert.eqFalse(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqTrue(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
     public void testExpiredNewNonExport() {
-        final SessionState.ExportObject<Object> exportObj = session.nonExport().submit(Object::new);
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
+        final SessionState.ExportObject<Object> exportObj = session.nonExport()
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(Object::new);
         scheduler.runUntilQueueEmpty();
         session.onExpired();
         expectException(StatusRuntimeException.class, exportObj::get);
+        Assert.eqFalse(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqTrue(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
@@ -500,48 +603,75 @@ public class SessionStateTest {
 
     @Test
     public void testExpireBeforeNonExportSubmit() {
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportBuilder<Object> exportBuilder = session.nonExport();
         session.onExpired();
-        exportBuilder.submit(submitted::setTrue);
+        exportBuilder
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(submitted::setTrue);
         scheduler.runUntilQueueEmpty();
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
     public void testExpireBeforeExportSubmit() {
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportBuilder<Object> exportBuilder = session.newExport(nextExportId++);
         session.onExpired();
-        exportBuilder.submit(submitted::setTrue);
+        exportBuilder
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(submitted::setTrue);
         scheduler.runUntilQueueEmpty();
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
     public void testExpireDuringExport() {
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final CountingLivenessReferent export = new CountingLivenessReferent();
         session.newExport(nextExportId++)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
                 .submit(() -> {
                     session.onExpired();
                     return export;
                 });
         scheduler.runUntilQueueEmpty();
         Assert.eq(export.refCount, "export.refCount", 0);
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
     public void testDependencyFailed() {
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
+        final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> e1 = session.getExport(nextExportId++);
         final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
                 .require(e1)
-                .submit(() -> {
-                });
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(submitted::setTrue);
         session.newExport(e1.getExportId(), "test").submit(() -> {
             throw new RuntimeException();
         });
         scheduler.runUntilQueueEmpty();
         Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_FAILED);
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
@@ -553,13 +683,20 @@ public class SessionStateTest {
         Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.FAILED);
         expectException(IllegalStateException.class, e1::get);
 
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
+        final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
                 .require(e1)
-                .submit(() -> {
-                });
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(submitted::setTrue);
         scheduler.runUntilQueueEmpty();
         Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_FAILED);
         expectException(IllegalStateException.class, e2::get);
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
@@ -568,13 +705,20 @@ public class SessionStateTest {
         e1.cancel();
         scheduler.runUntilQueueEmpty();
 
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
+        final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
                 .require(e1)
-                .submit(() -> {
-                });
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(submitted::setTrue);
         scheduler.runUntilQueueEmpty();
         Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_CANCELLED); // cancels propagate
         expectException(IllegalStateException.class, e2::get);
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
@@ -583,13 +727,20 @@ public class SessionStateTest {
         });
         scheduler.runUntilQueueEmpty();
 
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
+        final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
                 .require(e1)
-                .submit(() -> {
-                });
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(submitted::setTrue);
         Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.QUEUED);
         scheduler.runUntilQueueEmpty();
         Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.EXPORTED);
+        Assert.eqTrue(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqFalse(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqTrue(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
@@ -601,9 +752,15 @@ public class SessionStateTest {
         }
         scheduler.runUntilQueueEmpty();
 
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
+        final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> e2obj = session.newExport(nextExportId++)
                 .require(e1obj)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
                 .submit(() -> {
+                    submitted.setTrue();
                     Assert.neqNull(e1obj.get(), "e1obj.get()");
                     Assert.gt(e1.refCount, "e1.refCount", 0);
                 });
@@ -614,19 +771,30 @@ public class SessionStateTest {
         scheduler.runUntilQueueEmpty();
         Assert.eq(e1.refCount, "e1.refCount", 0);
         Assert.eq(e2obj.getState(), "e2obj.getState()", ExportNotification.State.EXPORTED);
+        Assert.eqTrue(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqFalse(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqTrue(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
     public void testChildCancelledFirst() {
         final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++).submit(() -> {
         });
-        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++).require(e1).submit(() -> {
-        });
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
+        final MutableBoolean submitted = new MutableBoolean();
+        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++).require(e1)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(submitted::setTrue);
         e2.cancel();
         Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.CANCELLED);
         scheduler.runUntilQueueEmpty();
-        Assert.eq(e1.getState(), "e2.getState()", ExportNotification.State.EXPORTED);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.EXPORTED);
         Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.CANCELLED);
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
@@ -672,14 +840,21 @@ public class SessionStateTest {
 
     @Test
     public void testReleaseIsNotProactive() {
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final MutableBoolean submitted = new MutableBoolean();
-        final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++).submit(submitted::setTrue);
+        final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(submitted::setTrue);
         e1.release();
         Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.QUEUED);
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
         scheduler.runUntilQueueEmpty();
         Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
         Assert.eqTrue(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqFalse(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqTrue(success.booleanValue(), "success.booleanValue()");
     }
 
     @Test
@@ -1220,14 +1395,20 @@ public class SessionStateTest {
     public void testNonExportWithDependencyFails() {
         final SessionState.ExportObject<Object> e1 =
                 session.newExport(nextExportId++).submit(() -> session);
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final SessionState.ExportObject<Object> n1 =
                 session.nonExport()
                         .require(e1)
+                        .onErrorHandler(err -> errored.setTrue())
+                        .onSuccess(success::setTrue)
                         .submit(() -> {
                             throw new RuntimeException("this should not reach test framework");
                         });
         scheduler.runUntilQueueEmpty();
         Assert.eq(n1.getState(), "n1.getState()", FAILED, "FAILED");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
     }
 
     @Test
@@ -1258,6 +1439,7 @@ public class SessionStateTest {
                 });
 
         final MutableBoolean submitRan = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final MutableObject<Throwable> caughtErr = new MutableObject<>();
         final StreamObserver<?> observer = new StreamObserver<>() {
             @Override
@@ -1277,11 +1459,13 @@ public class SessionStateTest {
         };
         session.newExport(nextExportId++)
                 .onError(observer)
+                .onSuccess(success::setTrue)
                 .require(e1)
                 .submit(submitRan::setTrue);
 
         scheduler.runUntilQueueEmpty();
         Assert.eqFalse(submitRan.booleanValue(), "submitRan.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
         Assert.eqTrue(caughtErr.getValue() instanceof StatusRuntimeException,
                 "caughtErr.getValue() instanceof StatusRuntimeException");
 
@@ -1295,6 +1479,7 @@ public class SessionStateTest {
                 Status.DATA_LOSS.asRuntimeException());
 
         final MutableBoolean submitRan = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final MutableObject<Throwable> caughtErr = new MutableObject<>();
         final StreamObserver<?> observer = new StreamObserver<>() {
             @Override
@@ -1314,11 +1499,13 @@ public class SessionStateTest {
         };
         session.newExport(nextExportId++)
                 .onError(observer)
+                .onSuccess(success::setTrue)
                 .require(e1)
                 .submit(submitRan::setTrue);
 
         scheduler.runUntilQueueEmpty();
         Assert.eqFalse(submitRan.booleanValue(), "submitRan.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
         Assert.eqTrue(caughtErr.getValue() instanceof StatusRuntimeException,
                 "caughtErr.getValue() instanceof StatusRuntimeException");
 
@@ -1334,12 +1521,15 @@ public class SessionStateTest {
         }
         Assert.eqFalse(failedExport.tryIncrementReferenceCount(), "failedExport.tryIncrementReferenceCount()");
         final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
         final SessionState.ExportObject<?> result =
                 session.newExport(nextExportId++)
                         .onErrorHandler(err -> errored.setTrue())
+                        .onSuccess(success::setTrue)
                         .require(failedExport)
                         .submit(failedExport::get);
         Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
         Assert.eq(result.getState(), "result.getState()", DEPENDENCY_FAILED);
     }
 
