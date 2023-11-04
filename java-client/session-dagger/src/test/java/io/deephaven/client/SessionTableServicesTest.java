@@ -6,16 +6,14 @@ package io.deephaven.client;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.client.impl.TableHandleManager;
-import io.deephaven.client.impl.TableServiceAsync;
-import io.deephaven.client.impl.TableServiceAsync.TableHandleFuture;
-import io.deephaven.client.impl.TableServices;
+import io.deephaven.client.impl.TableService;
+import io.deephaven.client.impl.TableService.TableHandleFuture;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.TableSpec;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -43,13 +41,13 @@ public class SessionTableServicesTest extends DeephavenSessionTestBase {
 
     @Test
     public void distinctTableServicesIsNotStateful() throws TableHandleException, InterruptedException {
-        checkState(session.tableServices(), session.tableServices(), NOT_STATEFUL);
+        checkState(session.newStatefulTableService(), session.newStatefulTableService(), NOT_STATEFUL);
     }
 
     @Test
     public void distinctTableServiceAsyncsIsNotStateful()
             throws InterruptedException, ExecutionException, TimeoutException {
-        checkAsyncState(session.tableServices(), session.tableServices(), NOT_STATEFUL);
+        checkAsyncState(session.newStatefulTableService(), session.newStatefulTableService(), NOT_STATEFUL);
     }
 
     // this is currently broken; serial clients *can't* reliably execute the same non-trivial TableSpec DAG
@@ -68,14 +66,14 @@ public class SessionTableServicesTest extends DeephavenSessionTestBase {
 
     @Test
     public void singleTableServiceIsStateful() throws TableHandleException, InterruptedException {
-        final TableServices tableServices = session.tableServices();
-        checkState(tableServices, tableServices, STATEFUL);
+        final TableService ts = session.newStatefulTableService();
+        checkState(ts, ts, STATEFUL);
     }
 
     @Test
     public void singleTableServiceAsyncIsStateful() throws InterruptedException, ExecutionException, TimeoutException {
-        final TableServices tableServices = session.tableServices();
-        checkAsyncState(tableServices, tableServices, STATEFUL);
+        final TableService ts = session.newStatefulTableService();
+        checkAsyncState(ts, ts, STATEFUL);
     }
 
     static void checkState(TableHandleManager m1, TableHandleManager m2, boolean expectEquals)
@@ -84,7 +82,7 @@ public class SessionTableServicesTest extends DeephavenSessionTestBase {
         checkExecuteState(m1, m2, expectEquals);
     }
 
-    static void checkAsyncState(TableServiceAsync a1, TableServiceAsync a2, boolean expectEquals)
+    static void checkAsyncState(TableService a1, TableService a2, boolean expectEquals)
             throws InterruptedException, ExecutionException, TimeoutException {
         checkExecuteAsyncState(a1, a2, expectEquals);
     }
@@ -117,12 +115,35 @@ public class SessionTableServicesTest extends DeephavenSessionTestBase {
         }
     }
 
-    private static void checkExecuteAsyncState(TableServiceAsync a1, TableServiceAsync a2, boolean expectEquals)
+    private static void checkExecuteAsyncState(TableService a1, TableService a2, boolean expectEquals)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        checkExecuteAsyncStateOneAtTime(a1, a2, expectEquals);
+        checkExecuteAsyncStateAtSameTime(a1, a2, expectEquals);
+    }
+
+    private static void checkExecuteAsyncStateOneAtTime(TableService a1, TableService a2, boolean expectEquals)
             throws InterruptedException, ExecutionException, TimeoutException {
         final TableSpec q = tableSpec();
         try (
-                final TableHandle h1 = TableHandleFuture.get(a1.executeAsync(q), Duration.ofSeconds(5));
-                final TableHandle h2 = TableHandleFuture.get(a2.executeAsync(q), Duration.ofSeconds(5))) {
+                final TableHandle h1 = a1.executeAsync(q).getOrCancel(Duration.ofSeconds(5));
+                final TableHandle h2 = a2.executeAsync(q).getOrCancel(Duration.ofSeconds(5))) {
+            assertThat(h1.exportId().toString().equals(h2.exportId().toString())).isEqualTo(expectEquals);
+            try (
+                    final TableHandle h3 = h1.updateView("K=ii");
+                    final TableHandle h4 = h2.updateView("K=ii")) {
+                assertThat(h3.exportId().toString().equals(h4.exportId().toString())).isEqualTo(expectEquals);
+            }
+        }
+    }
+
+    private static void checkExecuteAsyncStateAtSameTime(TableService a1, TableService a2, boolean expectEquals)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        final TableSpec q = tableSpec();
+        final TableHandleFuture f1 = a1.executeAsync(q);
+        final TableHandleFuture f2 = a2.executeAsync(q);
+        try (
+                final TableHandle h1 = f1.getOrCancel(Duration.ofSeconds(5));
+                final TableHandle h2 = f2.getOrCancel(Duration.ofSeconds(5))) {
             assertThat(h1.exportId().toString().equals(h2.exportId().toString())).isEqualTo(expectEquals);
             try (
                     final TableHandle h3 = h1.updateView("K=ii");

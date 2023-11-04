@@ -3,6 +3,6 @@
  */
 package io.deephaven.client.impl;
 
-public abstract class SessionBase extends TableServicesDelegateBase implements Session {
+public abstract class SessionBase extends TableServiceDelegateBase implements Session {
 
 }

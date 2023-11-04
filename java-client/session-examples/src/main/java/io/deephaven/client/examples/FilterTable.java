@@ -6,7 +6,6 @@ package io.deephaven.client.examples;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.client.impl.Session;
 import io.deephaven.client.impl.TableHandle;
-import io.deephaven.client.impl.TableServiceAsync.TableHandleFuture;
 import io.deephaven.qst.table.TableSpec;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
@@ -39,7 +38,7 @@ class FilterTable extends SingleSessionExampleBase {
     protected void execute(Session session) throws Exception {
         final Filter filter = type == Type.AND ? Filter.and(Filter.from(filters)) : Filter.or(Filter.from(filters));
         final TableSpec filtered = ticket.ticketId().table().where(filter);
-        try (final TableHandle handle = TableHandleFuture.get(session.tableServices().executeAsync(filtered))) {
+        try (final TableHandle handle = session.newStatefulTableService().executeAsync(filtered).getOrCancel()) {
             session.publish("filter_table_results", handle).get();
         }
     }

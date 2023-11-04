@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -224,7 +225,7 @@ final class ExportStates implements ExportService {
         State(TableSpec table, int exportId) {
             this.table = Objects.requireNonNull(table);
             this.exportId = exportId;
-            this.children = new LinkedHashSet<>();
+            this.children = new CopyOnWriteArraySet<>();
         }
 
         Session session() {

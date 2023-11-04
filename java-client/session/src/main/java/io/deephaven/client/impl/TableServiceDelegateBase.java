@@ -7,10 +7,10 @@ import io.deephaven.qst.table.TableSpec;
 
 import java.util.List;
 
-abstract class TableServicesDelegateBase extends TableHandleManagerDelegate implements TableServices {
+abstract class TableServiceDelegateBase extends TableHandleManagerDelegate implements TableService {
 
     @Override
-    protected abstract TableServices delegate();
+    protected abstract TableService delegate();
 
     // ---------------------------------------------------
 
@@ -21,7 +21,12 @@ abstract class TableServicesDelegateBase extends TableHandleManagerDelegate impl
 
     @Override
     public TableHandleManager batch(boolean mixinStacktraces) {
-        return delegate().batch(mixinStacktraces);
+        return new TableHandleManagerDelegate() {
+            @Override
+            protected TableHandleManager delegate() {
+                return null;
+            }
+        };
     }
 
     @Override

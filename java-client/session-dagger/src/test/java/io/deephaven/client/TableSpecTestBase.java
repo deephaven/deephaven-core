@@ -2,7 +2,7 @@ package io.deephaven.client;
 
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
-import io.deephaven.client.impl.TableServiceAsync.TableHandleFuture;
+import io.deephaven.client.impl.TableService;
 import io.deephaven.qst.table.TableSpec;
 import org.junit.Test;
 
@@ -44,7 +44,7 @@ public abstract class TableSpecTestBase extends DeephavenSessionTestBase {
 
     @Test(timeout = 10000)
     public void async() throws ExecutionException, InterruptedException {
-        try (final TableHandle handle = TableHandleFuture.get(session.executeAsync(table))) {
+        try (final TableHandle handle = session.executeAsync(table).getOrCancel()) {
             assertThat(handle.isSuccessful()).isTrue();
         }
     }

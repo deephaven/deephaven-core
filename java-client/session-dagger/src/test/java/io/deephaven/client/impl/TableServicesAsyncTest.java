@@ -4,7 +4,7 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.DeephavenSessionTestBase;
-import io.deephaven.client.impl.TableServiceAsync.TableHandleFuture;
+import io.deephaven.client.impl.TableService.TableHandleFuture;
 import io.deephaven.qst.table.TableSpec;
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ public class TableServicesAsyncTest extends DeephavenSessionTestBase {
     public void longChainAsyncExportOnlyLast() throws ExecutionException, InterruptedException, TimeoutException {
         final List<TableSpec> longChain = createLongChain();
         final TableSpec longChainLast = longChain.get(longChain.size() - 1);
-        try (final TableHandle handle = get(session.tableServices().executeAsync(longChainLast))) {
+        try (final TableHandle handle = get(session.newStatefulTableService().executeAsync(longChainLast))) {
             checkSucceeded(handle);
         }
     }
@@ -34,7 +34,7 @@ public class TableServicesAsyncTest extends DeephavenSessionTestBase {
     @Test(timeout = 20000)
     public void longChainAsyncExportAll() throws ExecutionException, InterruptedException, TimeoutException {
         final List<TableSpec> longChain = createLongChain();
-        final List<? extends TableHandleFuture> futures = session.tableServices().executeAsync(longChain);
+        final List<? extends TableHandleFuture> futures = session.newStatefulTableService().executeAsync(longChain);
         try {
             for (final TableHandleFuture future : futures) {
                 try (final TableHandle handle = get(future)) {
@@ -42,7 +42,7 @@ public class TableServicesAsyncTest extends DeephavenSessionTestBase {
                 }
             }
         } catch (final Throwable t) {
-            TableHandleFuture.cancelOrClose(futures, true);
+            TableService.TableHandleFuture.cancelOrClose(futures, true);
             throw t;
         }
     }
@@ -51,9 +51,9 @@ public class TableServicesAsyncTest extends DeephavenSessionTestBase {
     public void longChainAsyncExportAllCancelAllButLast()
             throws ExecutionException, InterruptedException, TimeoutException {
         final List<TableSpec> longChain = createLongChain();
-        final List<? extends TableHandleFuture> futures = session.tableServices().executeAsync(longChain);
+        final List<? extends TableHandleFuture> futures = session.newStatefulTableService().executeAsync(longChain);
         // Cancel or close all but the last one
-        TableHandleFuture.cancelOrClose(futures.subList(0, futures.size() - 1), true);
+        TableService.TableHandleFuture.cancelOrClose(futures.subList(0, futures.size() - 1), true);
         try (final TableHandle lastHandle = get(futures.get(futures.size() - 1))) {
             checkSucceeded(lastHandle);
         }
@@ -64,10 +64,10 @@ public class TableServicesAsyncTest extends DeephavenSessionTestBase {
             throws ExecutionException, InterruptedException, TimeoutException {
         final List<TableSpec> longChain = createLongChain();
         final TableSpec longChainLast = longChain.get(longChain.size() - 1);
-        final TableServices tableServices = session.tableServices();
-        try (final TableHandle ignored = get(tableServices.executeAsync(longChainLast))) {
+        final TableService tableService = session.newStatefulTableService();
+        try (final TableHandle ignored = get(tableService.executeAsync(longChainLast))) {
             for (int i = 0; i < 1000; ++i) {
-                try (final TableHandle handle = get(tableServices.executeAsync(longChainLast))) {
+                try (final TableHandle handle = get(tableService.executeAsync(longChainLast))) {
                     checkSucceeded(handle);
                 }
             }
@@ -76,7 +76,7 @@ public class TableServicesAsyncTest extends DeephavenSessionTestBase {
 
     private static TableHandle get(TableHandleFuture future)
             throws ExecutionException, InterruptedException, TimeoutException {
-        return TableHandleFuture.get(future, GETTIME);
+        return future.getOrCancel(GETTIME);
     }
 
     private static void checkSucceeded(TableHandle x) {

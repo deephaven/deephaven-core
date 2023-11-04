@@ -33,7 +33,7 @@ class UnreferenceableTableExample extends SingleSessionExampleBase {
         final TableSpec rPlusOne = r.view("PlusOne=R + 1");
         final TableSpec rMinusOne = r.view("PlusOne=R - 1");
         final TableHandleManager manager = mode == null
-                ? session.tableServices()
+                ? session.newStatefulTableService()
                 : mode.batch
                         ? session.batch()
                         : session.serial();

@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture;
  * A session represents a client-side connection to a Deephaven server.
  */
 public interface Session
-        extends AutoCloseable, ApplicationService, ConsoleService, InputTableService, ObjectService, TableServices,
+        extends AutoCloseable, ApplicationService, ConsoleService, InputTableService, ObjectService, TableService,
         ConfigService {
 
     // ----------------------------------------------------------
@@ -74,7 +74,7 @@ public interface Session
     // ----------------------------------------------------------
 
     /**
-     * Creates a new stateful {@link TableServices} that keeps references to the exports created from said service for
+     * Creates a new stateful {@link TableService} that keeps references to the exports created from said service for
      * executing queries with maximum cacheability. This allows callers to implicitly take advantage of existing exports
      * when they are executing new queries. In the following example, the second query does not need to re-execute from
      * the beginning; it is able to build off of the export for {@code h1} and simply execute the {@code where}
@@ -86,7 +86,7 @@ public interface Session
      * TableHandle h2 = ts.execute(TableSpec.emptyTable(42).view("I=ii").where("I % 2 == 0"));
      * </pre>
      *
-     * While {@code this} {@link Session} also implements {@link TableServices}, query executions against {@code this}
+     * While {@code this} {@link Session} also implements {@link TableService}, query executions against {@code this}
      * are not cached. In the following example, the second query is re-executed from the beginning.
      *
      * <pre>
@@ -94,7 +94,7 @@ public interface Session
      * TableHandle h2 = session.execute(TableSpec.emptyTable(42).view("I=ii").where("I % 2 == 0"));
      * </pre>
      *
-     * When using a stateful {@link TableServices}, callers may encounter exceptions that refer to an "unreferenceable
+     * When using a stateful {@link TableService}, callers may encounter exceptions that refer to an "unreferenceable
      * table". This is an indication that the caller is trying to export a strict sub-DAG of the existing exports; this
      * is problematic because there isn't (currently) a way to construct a query that guarantees the returned export
      * would refer to the same physical table that the existing exports are based on. The following example demonstrates
@@ -110,12 +110,12 @@ public interface Session
      * @return a new stateful table services
      * @see <a href="https://github.com/deephaven/deephaven-core/issues/4733">deephaven-core#4733</a>
      */
-    TableServices tableServices();
+    TableService newStatefulTableService();
 
     /**
      * Creates a new stateful batch {@link TableHandleManager} that keeps references to the exports created from said
-     * service for executing queries with maximum cacheability. See documentation on {@link #tableServices()} for more
-     * context on cacheability.
+     * service for executing queries with maximum cacheability. See documentation on {@link #newStatefulTableService()}
+     * for more context on cacheability.
      *
      * @return a new stateful batch table handle manager
      */
@@ -124,8 +124,8 @@ public interface Session
 
     /**
      * Creates a new stateful batch {@link TableHandleManager} that keeps references to the exports created from said
-     * service for executing queries with maximum cacheability. See documentation on {@link #tableServices()} for more
-     * context on cacheability.
+     * service for executing queries with maximum cacheability. See documentation on {@link #newStatefulTableService()}
+     * for more context on cacheability.
      *
      * @param mixinStacktraces if stacktraces should be mixin
      * @return a new stateful batch table handle manager
@@ -135,8 +135,8 @@ public interface Session
 
     /**
      * Creates a new stateful serial {@link TableHandleManager} that keeps references to the exports created from said
-     * service for executing queries with maximum cacheability. See documentation on {@link #tableServices()} for more
-     * context on cacheability.
+     * service for executing queries with maximum cacheability. See documentation on {@link #newStatefulTableService()}
+     * for more context on cacheability.
      *
      * @return a new stateful serial table handle manager
      */

@@ -6,7 +6,7 @@ package io.deephaven.client.impl;
 import io.deephaven.client.impl.ExportRequest.Listener;
 import io.deephaven.client.impl.TableHandle.ResponseAdapter;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
-import io.deephaven.client.impl.TableServiceAsync.TableHandleFuture;
+import io.deephaven.client.impl.TableService.TableHandleFuture;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.qst.table.TableSpec;
 
@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -128,11 +127,11 @@ final class TableServiceAsyncImpl {
 
         @Override
         public void onNext(ExportedTableCreationResponse etcr) {
-            final TableHandle handle = new TableHandle(tableSpec, null);
-            final ResponseAdapter responseAdapter = handle.responseAdapter();
+            final TableHandle tableHandle = new TableHandle(tableSpec, null);
+            final ResponseAdapter responseAdapter = tableHandle.responseAdapter();
             responseAdapter.onNext(etcr);
             responseAdapter.onCompleted();
-            final TableHandleException error = handle.error().orElse(null);
+            final TableHandleException error = tableHandle.error().orElse(null);
             if (error != null) {
                 future.completeExceptionally(error);
             } else {
@@ -140,7 +139,7 @@ final class TableServiceAsyncImpl {
                 // io.deephaven.client.impl.ExportService.export, or where the RPC comes in asynchronously. In either
                 // case, we need to store handle so it can potentially be completed here, or in init.
                 synchronized (this) {
-                    this.handle = handle;
+                    handle = tableHandle;
                     maybeComplete();
                 }
             }

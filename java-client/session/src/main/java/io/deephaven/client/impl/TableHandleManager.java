@@ -30,7 +30,7 @@ public interface TableHandleManager extends TableCreator<TableHandle> {
      * @throws TableHandleException if there was an exception on the exported table creation response or an RPC
      *         exception
      * @throws InterruptedException if the thread was interrupted while waiting
-     * @see TableServiceAsync#executeAsync(TableSpec)
+     * @see TableService#executeAsync(TableSpec)
      */
     TableHandle execute(TableSpec table) throws TableHandleException, InterruptedException;
 
@@ -43,7 +43,7 @@ public interface TableHandleManager extends TableCreator<TableHandle> {
      * @throws TableHandleException if there was an exception in any of the exported table creation response or an RPC
      *         exception
      * @throws InterruptedException if the thread was interrupted while waiting
-     * @see TableServiceAsync#executeAsync(Iterable)
+     * @see TableService#executeAsync(Iterable)
      */
     List<TableHandle> execute(Iterable<TableSpec> tables) throws TableHandleException, InterruptedException;
 

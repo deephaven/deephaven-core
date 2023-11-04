@@ -129,8 +129,8 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    public TableServices tableServices() {
-        return new TableServicesImpl(
+    public TableService newStatefulTableService() {
+        return new TableServiceImpl(
                 new ExportStates(this, bearerChannel.session(), bearerChannel.table(), exportTicketCreator));
     }
 
@@ -278,10 +278,10 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    protected TableServices delegate() {
+    protected TableService delegate() {
         // Session.execute / Session.executeAsync will create one-off TableServices for exporting
         // Session.batch / Session.serial will create stateful TableHandleManagers
-        return tableServices();
+        return newStatefulTableService();
     }
 
     @Override
@@ -517,11 +517,11 @@ public final class SessionImpl extends SessionBase {
         }
     }
 
-    private class TableServicesImpl extends TableHandleManagerDelegate implements TableServices {
+    private class TableServiceImpl extends TableHandleManagerDelegate implements TableService {
 
         private final ExportStates exportStates;
 
-        TableServicesImpl(ExportStates exportStates) {
+        TableServiceImpl(ExportStates exportStates) {
             this.exportStates = Objects.requireNonNull(exportStates);
         }
 
