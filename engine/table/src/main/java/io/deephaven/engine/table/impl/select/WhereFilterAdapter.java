@@ -100,8 +100,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     public static WhereFilter of(FilterIn in, boolean inverted) {
         if (in.values().size() == 1) {
             // Simplified case, handles transpositions of LHS / RHS most optimally
-            final FilterComparison eq = FilterComparison.eq(in.expression(), in.values().get(0));
-            return of(eq, inverted);
+            return of(in.asEquals(), inverted);
         }
         if (in.expression() instanceof ColumnName) {
             // In the case where LHS is a column name, we want to be as efficient as possible and only read that column

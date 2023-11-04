@@ -37,6 +37,10 @@ public class CleanupReferenceProcessor {
      * The reference queue from the most recent initialization.
      */
     private volatile ReferenceQueue<?> referenceQueue;
+
+    /**
+     * The cleaner thread from the most recent initialization, guarded by the lock on {@code this}.
+     */
     private Thread cleanerThread;
 
     /**

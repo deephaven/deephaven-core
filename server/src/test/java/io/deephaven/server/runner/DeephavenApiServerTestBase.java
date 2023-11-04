@@ -21,8 +21,9 @@ import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
 import io.deephaven.server.plugin.js.JsPluginNoopConsumerModule;
+import io.deephaven.server.runner.scheduler.SchedulerDelegatingImplModule;
 import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
-import io.deephaven.server.util.SchedulerShutdown;
+import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -44,6 +45,7 @@ import java.util.concurrent.TimeUnit;
  * Manages a single instance of {@link DeephavenApiServer}.
  */
 public abstract class DeephavenApiServerTestBase {
+
     @Singleton
     @Component(modules = {
             DeephavenApiServerModule.class,
@@ -55,6 +57,7 @@ public abstract class DeephavenApiServerTestBase {
             ClientDefaultsModule.class,
             ObfuscatingErrorTransformerModule.class,
             JsPluginNoopConsumerModule.class,
+            SchedulerDelegatingImplModule.class
     })
     public interface TestComponent {
 
@@ -91,7 +94,7 @@ public abstract class DeephavenApiServerTestBase {
     DeephavenApiServer server;
 
     @Inject
-    SchedulerShutdown schedulerShutdown;
+    Scheduler.DelegatingImpl scheduler;
 
     @Inject
     Provider<ScriptSession> scriptSessionProvider;
@@ -152,7 +155,7 @@ public abstract class DeephavenApiServerTestBase {
         }
         executionContext.close();
 
-        schedulerShutdown.run();
+        scheduler.shutdown();
     }
 
     public DeephavenApiServer server() {

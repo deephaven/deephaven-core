@@ -20,9 +20,10 @@ public class ReplicateParquetTransferObjects {
         charToShortAndByte(PARQUET_CHAR_ARRAY_TRANSFER_PATH);
         charToShortAndByte(PARQUET_CHAR_VECTOR_TRANSFER_PATH);
 
-        intToLongAndFloatingPoints(PARQUET_INT_TRANSFER_PATH, "int targetPageSize", "int maxValuesPerPage",
+        intToLongAndFloatingPoints(PARQUET_INT_TRANSFER_PATH, "int targetPageSizeInBytes", "int targetElementsPerPage",
                 "Math.toIntExact");
-        intToLongAndFloatingPoints(PARQUET_INT_ARRAY_TRANSFER_PATH, "int targetPageSize", "int length", "int getSize");
-        intToLongAndFloatingPoints(PARQUET_INT_VECTOR_TRANSFER_PATH, "int targetPageSize", "int length");
+        intToLongAndFloatingPoints(PARQUET_INT_ARRAY_TRANSFER_PATH, "int targetPageSizeInBytes", "int length",
+                "int getSize");
+        intToLongAndFloatingPoints(PARQUET_INT_VECTOR_TRANSFER_PATH, "int targetPageSizeInBytes", "int length");
     }
 }

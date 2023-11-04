@@ -3,7 +3,7 @@
  */
 package io.deephaven.parquet.table.transfer;
 
-import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -27,7 +27,7 @@ abstract class VariableWidthTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TY
     private final ColumnSource<?> columnSource;
     private final RowSequence.Iterator tableRowSetIt;
     private final ChunkSource.GetContext context;
-    private final int targetPageSize;
+    private final int targetPageSizeInBytes;
     private int currentChunkIdx;
     /**
      * The reusable field used to store the output from {@link #encodeDataForBuffering}.
@@ -44,17 +44,25 @@ abstract class VariableWidthTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TY
      * The buffer to be written out to the Parquet file. This buffer is reused across pages and is resized if needed.
      */
     BUFFER_TYPE buffer;
-    final int maxValuesPerPage;
+
+    /**
+     * This variable is used as:
+     * <ul>
+     * <li>The target number of elements on one page. It is a soft maximum, in that we will exceed it if a particular
+     * row exceeds this target so that we can fit all the elements from a single row on the same page.
+     * <li>An upper bound on the number of rows per page.
+     * </ul>
+     */
+    final int targetElementsPerPage;
 
     VariableWidthTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-            final int maxValuesPerPage, final int targetPageSize, @NotNull final BUFFER_TYPE buffer) {
+            final int targetElementsPerPage, final int targetPageSizeInBytes, @NotNull final BUFFER_TYPE buffer) {
         this.columnSource = columnSource;
         this.tableRowSetIt = tableRowSet.getRowSequenceIterator();
-        this.targetPageSize = targetPageSize;
-        Assert.gtZero(maxValuesPerPage, "targetPageSize");
-        this.maxValuesPerPage = maxValuesPerPage;
-        Assert.gtZero(maxValuesPerPage, "maxValuesPerPage");
-        this.context = columnSource.makeGetContext(Math.toIntExact(Math.min(maxValuesPerPage, tableRowSet.size())));
+        this.targetPageSizeInBytes = Require.gtZero(targetPageSizeInBytes, "targetPageSizeInBytes");
+        this.targetElementsPerPage = Require.gtZero(targetElementsPerPage, "targetElementsPerPage");
+        this.context =
+                columnSource.makeGetContext(Math.toIntExact(Math.min(targetElementsPerPage, tableRowSet.size())));
         this.currentChunkIdx = 0;
         this.buffer = buffer;
         this.encodedData = new EncodedData<ENCODED_COLUMN_TYPE>();
@@ -116,7 +124,7 @@ abstract class VariableWidthTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TY
         OUTER: do {
             if (chunk == null) {
                 // Fetch a chunk of data from the table
-                final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(maxValuesPerPage);
+                final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(targetElementsPerPage);
                 // noinspection unchecked
                 chunk = (ObjectChunk<COLUMN_TYPE, Values>) columnSource.getChunk(context, rs);
                 currentChunkIdx = 0;
@@ -138,7 +146,7 @@ abstract class VariableWidthTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE, BUFFER_TY
                 if (isBufferEmpty()) {
                     // Always copy the first entry
                     addEncodedDataToBuffer(encodedData, true);
-                } else if (getNumBytesBuffered() + encodedData.numBytes > targetPageSize ||
+                } else if (getNumBytesBuffered() + encodedData.numBytes > targetPageSizeInBytes ||
                         !addEncodedDataToBuffer(encodedData, false)) {
                     // Reattempt adding the encoded value to the buffer in the next iteration
                     cached = true;

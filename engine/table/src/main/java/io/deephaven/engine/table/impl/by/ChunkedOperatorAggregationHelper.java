@@ -45,11 +45,9 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.LongFunction;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -90,9 +88,15 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final String[] keyNames = groupByColumns.stream().map(ColumnName::name).toArray(String[]::new);
         if (!input.hasColumns(keyNames)) {
+            final Set<String> colNames = input.getColumnSourceMap().keySet();
+            final String[] missingColumns = Arrays.stream(keyNames)
+                    .filter(Predicate.not(colNames::contains))
+                    .toArray(String[]::new);;
+
             throw new IllegalArgumentException("aggregation: not all group-by columns " + Arrays.toString(keyNames)
                     + " are present in input table with columns "
-                    + Arrays.toString(input.getDefinition().getColumnNamesArray()));
+                    + Arrays.toString(input.getDefinition().getColumnNamesArray()) + ". Missing columns: "
+                    + Arrays.toString(missingColumns));
         }
         if (initialKeys != null) {
             if (keyNames.length == 0) {
@@ -100,9 +104,15 @@ public class ChunkedOperatorAggregationHelper {
                         "aggregation: initial groups must not be specified if no group-by columns are specified");
             }
             if (!initialKeys.hasColumns(keyNames)) {
+                final Set<String> colNames = input.getColumnSourceMap().keySet();
+                final String[] missingColumns = Arrays.stream(keyNames)
+                        .filter(Predicate.not(colNames::contains))
+                        .toArray(String[]::new);;
+
                 throw new IllegalArgumentException("aggregation: not all group-by columns " + Arrays.toString(keyNames)
                         + " are present in initial groups table with columns "
-                        + Arrays.toString(initialKeys.getDefinition().getColumnNamesArray()));
+                        + Arrays.toString(initialKeys.getDefinition().getColumnNamesArray()) + ". Missing columns: "
+                        + Arrays.toString(missingColumns));
             }
             for (final String keyName : keyNames) {
                 final ColumnDefinition<?> inputDef = input.getDefinition().getColumn(keyName);
