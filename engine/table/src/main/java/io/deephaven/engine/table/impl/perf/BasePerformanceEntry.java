@@ -114,7 +114,7 @@ public class BasePerformanceEntry implements LogOutputAppendable {
                 .append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes);
     }
 
-    public void accumulate(BasePerformanceEntry entry) {
+    public synchronized void accumulate(BasePerformanceEntry entry) {
         this.intervalUsageNanos += entry.intervalUsageNanos;
         this.intervalCpuNanos = plus(this.intervalCpuNanos, entry.intervalCpuNanos);
         this.intervalUserCpuNanos = plus(this.intervalUserCpuNanos, entry.intervalUserCpuNanos);

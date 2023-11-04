@@ -40,6 +40,7 @@ public class QueryPerformanceRecorder implements Serializable {
     private static final long serialVersionUID = 2L;
     private static final String[] packageFilters;
 
+    private volatile boolean hasSubQuery;
     private QueryPerformanceNugget queryNugget;
     private final ArrayList<QueryPerformanceNugget> operationNuggets = new ArrayList<>();
 
@@ -91,20 +92,31 @@ public class QueryPerformanceRecorder implements Serializable {
         theLocal.remove();
     }
 
+    private QueryPerformanceRecorder() {
+        // private default constructor to prevent direct instantiation
+    }
+
+    /**
+     * Start a query.
+     *
+     * @param description A description for the query.
+     */
+    public void startQuery(final String description) {
+        startQuery(description, QueryConstants.NULL_INT);
+    }
+
     /**
      * Start a query.
      * 
      * @param description A description for the query.
-     *
-     * @return a unique evaluation number to identify this query execution.
+     * @param parentEvaluationNumber The evaluation number of the parent query.
      */
-    public synchronized int startQuery(final String description) {
+    public synchronized void startQuery(final String description, final int parentEvaluationNumber) {
         clear();
         final int evaluationNumber = queriesProcessed.getAndIncrement();
-        queryNugget = new QueryPerformanceNugget(evaluationNumber, description);
+        queryNugget = new QueryPerformanceNugget(evaluationNumber, parentEvaluationNumber, description);
         state = QueryState.RUNNING;
-        startCatchAll(evaluationNumber);
-        return evaluationNumber;
+        startCatchAll();
     }
 
     /**
@@ -149,9 +161,35 @@ public class QueryPerformanceRecorder implements Serializable {
         return queryNugget.done(this);
     }
 
-    private void startCatchAll(final int evaluationNumber) {
+    public synchronized void suspendQuery() {
+        if (state != QueryState.RUNNING) {
+            throw new IllegalStateException("Can't suspend a query that isn't running");
+        }
+
+        state = QueryState.SUSPENDED;
+        Assert.neqNull(catchAllNugget, "catchAllNugget");
+        stopCatchAll(false);
+        queryNugget.onBaseEntryEnd();
+    }
+
+    public synchronized void resumeQuery() {
+        if (state != QueryState.SUSPENDED) {
+            throw new IllegalStateException("Can't resume a query that isn't suspended");
+        }
+
+        queryNugget.onBaseEntryStart();
+        state = QueryState.RUNNING;
+        Assert.eqNull(catchAllNugget, "catchAllNugget");
+        startCatchAll();
+    }
+
+    private void startCatchAll() {
         catchAllNugget = new QueryPerformanceNugget(
-                evaluationNumber, 0, UNINSTRUMENTED_CODE_DESCRIPTION, false, QueryConstants.NULL_LONG);
+                queryNugget.getEvaluationNumber(),
+                queryNugget.getParentEvaluationNumber(),
+                operationNuggets.size(),
+                QueryConstants.NULL_INT, 0,
+                UNINSTRUMENTED_CODE_DESCRIPTION, false, false, QueryConstants.NULL_LONG);
     }
 
     private void stopCatchAll(final boolean abort) {
@@ -162,6 +200,8 @@ public class QueryPerformanceRecorder implements Serializable {
             shouldLog = catchAllNugget.done(this);
         }
         if (shouldLog) {
+            Assert.eq(operationNuggets.size(), "operationsNuggets.size()",
+                    catchAllNugget.getOperationNumber(), "catchAllNugget.getOperationNumber()");
             operationNuggets.add(catchAllNugget);
         }
         catchAllNugget = null;
@@ -190,9 +230,12 @@ public class QueryPerformanceRecorder implements Serializable {
         if (catchAllNugget != null) {
             stopCatchAll(false);
         }
+        final int parentOperationNumber = userNuggetStack.isEmpty() ? QueryConstants.NULL_INT
+                : userNuggetStack.getLast().getOperationNumber();
         final QueryPerformanceNugget nugget = new QueryPerformanceNugget(
-                queryNugget.getEvaluationNumber(), userNuggetStack.size(),
-                name, true, inputSize);
+                queryNugget.getEvaluationNumber(), queryNugget.getParentEvaluationNumber(),
+                operationNuggets.size(), parentOperationNumber, userNuggetStack.size(),
+                name, true, false, inputSize);
         operationNuggets.add(nugget);
         userNuggetStack.addLast(nugget);
         return nugget;
@@ -221,9 +264,9 @@ public class QueryPerformanceRecorder implements Serializable {
                             ") - did you follow the correct try/finally pattern?");
         }
 
-        if (removed.shouldLogMenAndStackParents()) {
+        if (removed.shouldLogMeAndStackParents()) {
             shouldLog = true;
-            if (userNuggetStack.size() > 0) {
+            if (!userNuggetStack.isEmpty()) {
                 userNuggetStack.getLast().setShouldLogMeAndStackParents();
             }
         }
@@ -241,7 +284,7 @@ public class QueryPerformanceRecorder implements Serializable {
         }
 
         if (userNuggetStack.isEmpty() && queryNugget != null && state == QueryState.RUNNING) {
-            startCatchAll(queryNugget.getEvaluationNumber());
+            startCatchAll();
         }
 
         return shouldLog;
@@ -269,7 +312,7 @@ public class QueryPerformanceRecorder implements Serializable {
             operationNumber = operationNuggets.size();
             if (operationNumber > 0) {
                 // ensure UPL and QOPL are consistent/joinable.
-                if (userNuggetStack.size() > 0) {
+                if (!userNuggetStack.isEmpty()) {
                     userNuggetStack.getLast().setShouldLogMeAndStackParents();
                 } else {
                     uninstrumented = true;
@@ -282,11 +325,24 @@ public class QueryPerformanceRecorder implements Serializable {
         setter.set(evaluationNumber, operationNumber, uninstrumented);
     }
 
+    public void accumulate(@NotNull final QueryPerformanceRecorder subQuery) {
+        hasSubQuery = true;
+        queryNugget.addBaseEntry(subQuery.queryNugget);
+    }
+
     private void clear() {
         queryNugget = null;
         catchAllNugget = null;
         operationNuggets.clear();
         userNuggetStack.clear();
+    }
+
+    public int getEvaluationNumber() {
+        return queryNugget.getEvaluationNumber();
+    }
+
+    public boolean hasSubQuery() {
+        return hasSubQuery;
     }
 
     public synchronized QueryPerformanceNugget getQueryLevelPerformanceData() {

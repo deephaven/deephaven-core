@@ -5,5 +5,5 @@ package io.deephaven.engine.table.impl.perf;
 
 public enum QueryState {
 
-    RUNNING, FINISHED, INTERRUPTED
+    RUNNING, FINISHED, SUSPENDED, INTERRUPTED
 }

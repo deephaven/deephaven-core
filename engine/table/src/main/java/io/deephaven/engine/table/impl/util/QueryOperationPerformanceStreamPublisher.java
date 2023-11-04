@@ -24,10 +24,13 @@ class QueryOperationPerformanceStreamPublisher implements StreamPublisher {
     private static final TableDefinition DEFINITION = TableDefinition.of(
             ColumnDefinition.ofString("ProcessUniqueId"),
             ColumnDefinition.ofInt("EvaluationNumber"),
+            ColumnDefinition.ofInt("ParentEvaluationNumber"),
             ColumnDefinition.ofInt("OperationNumber"),
+            ColumnDefinition.ofInt("ParentOperationNumber"),
             ColumnDefinition.ofInt("Depth"),
             ColumnDefinition.ofString("Description"),
             ColumnDefinition.ofString("CallerLine"),
+            ColumnDefinition.ofBoolean("IsQueryLevel"),
             ColumnDefinition.ofBoolean("IsTopLevel"),
             ColumnDefinition.ofBoolean("IsCompilation"),
             ColumnDefinition.ofTime("StartTime"),
@@ -67,34 +70,33 @@ class QueryOperationPerformanceStreamPublisher implements StreamPublisher {
 
     public synchronized void add(
             final String id,
-            final int operationNumber,
             final QueryPerformanceNugget nugget) {
 
         chunks[0].<String>asWritableObjectChunk().add(id);
         chunks[1].asWritableIntChunk().add(nugget.getEvaluationNumber());
-        chunks[2].asWritableIntChunk().add(operationNumber);
-        chunks[3].asWritableIntChunk().add(nugget.getDepth());
-        chunks[4].<String>asWritableObjectChunk().add(nugget.getName());
-        chunks[5].<String>asWritableObjectChunk().add(nugget.getCallerLine());
-        chunks[6].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.isTopLevel()));
-        chunks[7].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.getName().startsWith("Compile:")));
-        chunks[8].asWritableLongChunk().add(DateTimeUtils.millisToNanos(nugget.getStartClockTime()));
-        // this is a lie; timestamps should _NOT_ be created based on adding nano time durations to timestamps.
-        chunks[9].asWritableLongChunk().add(nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG
-                : DateTimeUtils.millisToNanos(nugget.getStartClockTime()) + nugget.getTotalTimeNanos());
-        chunks[10].asWritableLongChunk()
-                .add(nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG : nugget.getTotalTimeNanos());
-        chunks[11].asWritableLongChunk().add(nugget.getCpuNanos());
-        chunks[12].asWritableLongChunk().add(nugget.getUserCpuNanos());
-        chunks[13].asWritableLongChunk().add(nugget.getEndFreeMemory());
-        chunks[14].asWritableLongChunk().add(nugget.getEndTotalMemory());
-        chunks[15].asWritableLongChunk().add(nugget.getDiffFreeMemory());
-        chunks[16].asWritableLongChunk().add(nugget.getDiffTotalMemory());
-        chunks[17].asWritableLongChunk().add(nugget.getDiffCollectionTimeNanos());
-        chunks[18].asWritableLongChunk().add(nugget.getAllocatedBytes());
-        chunks[19].asWritableLongChunk().add(nugget.getPoolAllocatedBytes());
-        chunks[20].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.wasInterrupted()));
-        chunks[21].<String>asWritableObjectChunk().add(Objects.toString(nugget.getAuthContext()));
+        chunks[2].asWritableIntChunk().add(nugget.getParentEvaluationNumber());
+        chunks[3].asWritableIntChunk().add(nugget.getOperationNumber());
+        chunks[4].asWritableIntChunk().add(nugget.getParentOperationNumber());
+        chunks[5].asWritableIntChunk().add(nugget.getDepth());
+        chunks[6].<String>asWritableObjectChunk().add(nugget.getName());
+        chunks[7].<String>asWritableObjectChunk().add(nugget.getCallerLine());
+        chunks[8].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.isQueryLevel()));
+        chunks[9].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.isTopLevel()));
+        chunks[10].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.getName().startsWith("Compile:")));
+        chunks[11].asWritableLongChunk().add(nugget.getStartClockTime());
+        chunks[12].asWritableLongChunk().add(nugget.getEndClockTime());
+        chunks[13].asWritableLongChunk().add(nugget.getTotalTimeNanos());
+        chunks[14].asWritableLongChunk().add(nugget.getCpuNanos());
+        chunks[15].asWritableLongChunk().add(nugget.getUserCpuNanos());
+        chunks[16].asWritableLongChunk().add(nugget.getEndFreeMemory());
+        chunks[17].asWritableLongChunk().add(nugget.getEndTotalMemory());
+        chunks[18].asWritableLongChunk().add(nugget.getDiffFreeMemory());
+        chunks[19].asWritableLongChunk().add(nugget.getDiffTotalMemory());
+        chunks[20].asWritableLongChunk().add(nugget.getDiffCollectionTimeNanos());
+        chunks[21].asWritableLongChunk().add(nugget.getAllocatedBytes());
+        chunks[22].asWritableLongChunk().add(nugget.getPoolAllocatedBytes());
+        chunks[23].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.wasInterrupted()));
+        chunks[24].<String>asWritableObjectChunk().add(Objects.toString(nugget.getAuthContext()));
         if (chunks[0].size() == CHUNK_SIZE) {
             flushInternal();
         }

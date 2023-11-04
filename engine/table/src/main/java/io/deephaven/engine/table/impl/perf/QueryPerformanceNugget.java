@@ -8,11 +8,10 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.profiling.ThreadProfiler;
+import io.deephaven.util.SafeCloseable;
 
 import java.io.Serializable;
 
-import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.minus;
 import static io.deephaven.util.QueryConstants.*;
 
 /**
@@ -20,7 +19,7 @@ import static io.deephaven.util.QueryConstants.*;
  * intimate relationship with another class, {@link QueryPerformanceRecorder}. Changes to either should take this lack
  * of encapsulation into account.
  */
-public class QueryPerformanceNugget implements Serializable, AutoCloseable {
+public class QueryPerformanceNugget extends BasePerformanceEntry implements Serializable, SafeCloseable {
     private static final QueryPerformanceLogThreshold LOG_THRESHOLD = new QueryPerformanceLogThreshold("", 1_000_000);
     private static final QueryPerformanceLogThreshold UNINSTRUMENTED_LOG_THRESHOLD =
             new QueryPerformanceLogThreshold("Uninstrumented", 1_000_000_000);
@@ -34,28 +33,23 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     static final QueryPerformanceNugget DUMMY_NUGGET = new QueryPerformanceNugget();
 
     private final int evaluationNumber;
+    private final int parentEvaluationNumber;
+    private final int operationNumber;
+    private final int parentOperationNumber;
     private final int depth;
     private final String description;
     private final boolean isUser;
+    private final boolean isQueryLevel;
     private final long inputSize;
 
     private final AuthContext authContext;
     private final String callerLine;
 
     private final long startClockTime;
+    private long endClockTime;
 
-    private final long startTimeNanos;
-    private final long startCpuNanos;
-    private final long startUserCpuNanos;
-    private final long startAllocatedBytes;
-    private final long startPoolAllocatedBytes;
     private volatile QueryState state;
 
-    private Long totalTimeNanos;
-    private long diffCpuNanos;
-    private long diffUserCpuNanos;
-    private long diffAllocatedBytes;
-    private long diffPoolAllocatedBytes;
 
     private final RuntimeMemory.Sample startMemorySample;
     private final RuntimeMemory.Sample endMemorySample;
@@ -74,24 +68,41 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * @param evaluationNumber A unique identifier for the query evaluation that triggered this nugget creation
      * @param description The operation description
      */
-    QueryPerformanceNugget(final int evaluationNumber, final String description) {
-        this(evaluationNumber, NULL_INT, description, false, NULL_LONG);
+    QueryPerformanceNugget(final int evaluationNumber, final int parentEvaluationNumber, final String description) {
+        this(evaluationNumber, parentEvaluationNumber, NULL_INT, NULL_INT, NULL_INT, description, false, true,
+                NULL_LONG);
     }
 
     /**
      * Full constructor for nuggets.
      *
      * @param evaluationNumber A unique identifier for the query evaluation that triggered this nugget creation
+     * @param parentEvaluationNumber The unique identifier of the parent evaluation or {@link QueryConstants#NULL_INT}
+     *        if none
+     * @param operationNumber A unique identifier for the operation within a query evaluation
+     * @param parentOperationNumber The unique identifier of the parent operation or {@link QueryConstants#NULL_INT} if
+     *        none
      * @param depth Depth in the evaluation chain for the respective operation
      * @param description The operation description
      * @param isUser Whether this is a "user" nugget or one created by the system
      * @param inputSize The size of the input data
      */
-    QueryPerformanceNugget(final int evaluationNumber, final int depth,
-            final String description, final boolean isUser, final long inputSize) {
+    QueryPerformanceNugget(
+            final int evaluationNumber,
+            final int parentEvaluationNumber,
+            final int operationNumber,
+            final int parentOperationNumber,
+            final int depth,
+            final String description,
+            final boolean isUser,
+            final boolean isQueryLevel,
+            final long inputSize) {
         startMemorySample = new RuntimeMemory.Sample();
         endMemorySample = new RuntimeMemory.Sample();
         this.evaluationNumber = evaluationNumber;
+        this.parentEvaluationNumber = parentEvaluationNumber;
+        this.operationNumber = operationNumber;
+        this.parentOperationNumber = parentOperationNumber;
         this.depth = depth;
         if (description.length() > MAX_DESCRIPTION_LENGTH) {
             this.description = description.substring(0, MAX_DESCRIPTION_LENGTH) + " ... [truncated "
@@ -100,6 +111,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
             this.description = description;
         }
         this.isUser = isUser;
+        this.isQueryLevel = isQueryLevel;
         this.inputSize = inputSize;
 
         authContext = ExecutionContext.getContext().getAuthContext();
@@ -108,14 +120,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
         final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
         runtimeMemory.read(startMemorySample);
 
-        startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
-        startPoolAllocatedBytes = QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread();
-
         startClockTime = System.currentTimeMillis();
-        startTimeNanos = System.nanoTime();
-
-        startCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadCpuTime();
-        startUserCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadUserTime();
+        onBaseEntryStart();
 
         state = QueryState.RUNNING;
         shouldLogMeAndStackParents = false;
@@ -128,22 +134,19 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
         startMemorySample = null;
         endMemorySample = null;
         evaluationNumber = NULL_INT;
+        parentEvaluationNumber = NULL_INT;
+        operationNumber = NULL_INT;
+        parentOperationNumber = NULL_INT;
         depth = 0;
         description = null;
         isUser = false;
+        isQueryLevel = false;
         inputSize = NULL_LONG;
 
         authContext = null;
         callerLine = null;
 
-        startAllocatedBytes = NULL_LONG;
-        startPoolAllocatedBytes = NULL_LONG;
-
         startClockTime = NULL_LONG;
-        startTimeNanos = NULL_LONG;
-
-        startCpuNanos = NULL_LONG;
-        startUserCpuNanos = NULL_LONG;
 
         basePerformanceEntry = null;
 
@@ -190,8 +193,6 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * @return If the nugget passes criteria for logging.
      */
     private boolean close(final QueryState closingState, final QueryPerformanceRecorder recorderToNotify) {
-        final long currentThreadUserTime = ThreadProfiler.DEFAULT.getCurrentThreadUserTime();
-        final long currentThreadCpuTime = ThreadProfiler.DEFAULT.getCurrentThreadCpuTime();
         if (state != QueryState.RUNNING) {
             return false;
         }
@@ -201,24 +202,14 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
                 return false;
             }
 
-            diffUserCpuNanos = minus(currentThreadUserTime, startUserCpuNanos);
-            diffCpuNanos = minus(currentThreadCpuTime, startCpuNanos);
-
-            totalTimeNanos = System.nanoTime() - startTimeNanos;
+            endClockTime = System.currentTimeMillis();
+            onBaseEntryEnd();
 
             final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
             runtimeMemory.read(endMemorySample);
 
-            diffPoolAllocatedBytes =
-                    minus(QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread(), startPoolAllocatedBytes);
-            diffAllocatedBytes = minus(ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes(), startAllocatedBytes);
-
             if (basePerformanceEntry != null) {
-                diffUserCpuNanos += basePerformanceEntry.getIntervalUserCpuNanos();
-                diffCpuNanos += basePerformanceEntry.getIntervalCpuNanos();
-
-                diffAllocatedBytes += basePerformanceEntry.getIntervalAllocatedBytes();
-                diffPoolAllocatedBytes += basePerformanceEntry.getIntervalPoolAllocatedBytes();
+                accumulate(basePerformanceEntry);
             }
 
             state = closingState;
@@ -229,12 +220,25 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     @Override
     public String toString() {
         return evaluationNumber
+                + ":" + operationNumber
                 + ":" + description
                 + ":" + callerLine;
     }
 
     public int getEvaluationNumber() {
         return evaluationNumber;
+    }
+
+    public int getParentEvaluationNumber() {
+        return parentEvaluationNumber;
+    }
+
+    public int getOperationNumber() {
+        return operationNumber;
+    }
+
+    public int getParentOperationNumber() {
+        return parentOperationNumber;
     }
 
     public int getDepth() {
@@ -247,6 +251,10 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
 
     public boolean isUser() {
         return isUser;
+    }
+
+    public boolean isQueryLevel() {
+        return isQueryLevel;
     }
 
     public boolean isTopLevel() {
@@ -271,16 +279,24 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     /**
      * @return nanoseconds elapsed, once state != QueryState.RUNNING() has been called.
      */
-    public Long getTotalTimeNanos() {
-        return totalTimeNanos;
+    public long getTotalTimeNanos() {
+        return getIntervalUsageNanos();
     }
 
     /**
-     * @return wall clock time in milliseconds from the epoch
+     * @return wall clock start time in nanoseconds from the epoch
      */
     public long getStartClockTime() {
-        return startClockTime;
+        return DateTimeUtils.millisToNanos(startClockTime);
     }
+
+    /**
+     * @return wall clock end time in nanoseconds from the epoch
+     */
+    public long getEndClockTime() {
+        return DateTimeUtils.millisToNanos(endClockTime);
+    }
+
 
     /**
      * Get nanoseconds of CPU time attributed to the instrumented operation.
@@ -289,7 +305,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      *         if not enabled/supported.
      */
     public long getCpuNanos() {
-        return diffCpuNanos;
+        return getIntervalCpuNanos();
     }
 
     /**
@@ -299,7 +315,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      *         {@link QueryConstants#NULL_LONG} if not enabled/supported.
      */
     public long getUserCpuNanos() {
-        return diffUserCpuNanos;
+        return getIntervalUserCpuNanos();
     }
 
     /**
@@ -352,7 +368,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      *         {@link QueryConstants#NULL_LONG} if not enabled/supported.
      */
     public long getAllocatedBytes() {
-        return diffAllocatedBytes;
+        return getIntervalAllocatedBytes();
     }
 
     /**
@@ -362,7 +378,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      *         {@link QueryConstants#NULL_LONG} if not enabled/supported.
      */
     public long getPoolAllocatedBytes() {
-        return diffPoolAllocatedBytes;
+        return getIntervalPoolAllocatedBytes();
     }
 
     /**
@@ -383,17 +399,17 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * @return true if this nugget triggers the logging of itself and every other nugget in its stack of nesting
      *         operations.
      */
-    public boolean shouldLogMenAndStackParents() {
+    public boolean shouldLogMeAndStackParents() {
         return shouldLogMeAndStackParents;
     }
 
     /**
      * When we track data from other threads that should be attributed to this operation, we tack extra
      * BasePerformanceEntry values onto this nugget when it is closed.
-     *
+     * <p>
      * The CPU time, reads, and allocations are counted against this nugget. Wall clock time is ignored.
      */
-    public void addBaseEntry(BasePerformanceEntry baseEntry) {
+    public synchronized void addBaseEntry(BasePerformanceEntry baseEntry) {
         if (this.basePerformanceEntry == null) {
             this.basePerformanceEntry = baseEntry;
         } else {
@@ -411,11 +427,6 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      */
     boolean shouldLogNugget(final boolean isUninstrumented) {
         if (shouldLogMeAndStackParents) {
-            return true;
-        }
-        // Nuggets will have a null value for total time if they weren't closed for a RUNNING query; this is an abnormal
-        // condition and the nugget should be logged
-        if (getTotalTimeNanos() == null) {
             return true;
         }
 

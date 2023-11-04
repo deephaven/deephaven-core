@@ -915,11 +915,9 @@ public abstract class UpdateBy {
                     source.getUpdateGraph().addNotification(new TerminalNotification() {
                         @Override
                         public void run() {
-                            synchronized (accumulated) {
-                                final PerformanceEntry entry = sourceListener().getEntry();
-                                if (entry != null) {
-                                    entry.accumulate(accumulated);
-                                }
+                            final PerformanceEntry entry = sourceListener().getEntry();
+                            if (entry != null) {
+                                entry.accumulate(accumulated);
                             }
                         }
                     });

@@ -4,9 +4,12 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.clock.Clock;
+import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
@@ -16,10 +19,14 @@ import io.deephaven.process.ProcessInfo;
 import io.deephaven.process.ProcessInfoConfig;
 import io.deephaven.stats.Driver;
 import io.deephaven.stats.StatsIntradayLogger;
+import io.deephaven.util.QueryConstants;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.List;
 
 public class EngineMetrics {
+    private static final Logger log = LoggerFactory.getLogger(EngineMetrics.class);
     private static final boolean STATS_LOGGING_ENABLED = Configuration.getInstance().getBooleanWithDefault(
             "statsLoggingEnabled", true);
     private static volatile ProcessInfo PROCESS_INFO;
@@ -104,6 +111,33 @@ public class EngineMetrics {
 
     private StatsIntradayLogger getStatsLogger() {
         return statsImpl;
+    }
+
+    public void logQueryProcessingResults(@NotNull final QueryProcessingResults results) {
+        final QueryPerformanceLogLogger qplLogger = getQplLogger();
+        final QueryOperationPerformanceLogLogger qoplLogger = getQoplLogger();
+        try {
+            final QueryPerformanceNugget queryNugget = Require.neqNull(
+                    results.getRecorder().getQueryLevelPerformanceData(),
+                    "queryProcessingResults.getRecorder().getQueryLevelPerformanceData()");
+
+            synchronized (qplLogger) {
+                qplLogger.log(results.getRecorder().getEvaluationNumber(), results, queryNugget);
+            }
+            final List<QueryPerformanceNugget> nuggets =
+                    results.getRecorder().getOperationLevelPerformanceData();
+            synchronized (qoplLogger) {
+                if (results.getRecorder().hasSubQuery() || !nuggets.isEmpty()) {
+                    // if this query has sub queries or op nuggets log an entry to enable hierarchical consistency
+                    qoplLogger.log(queryNugget.getOperationNumber(), queryNugget);
+                }
+                for (QueryPerformanceNugget n : nuggets) {
+                    qoplLogger.log(n.getOperationNumber(), n);
+                }
+            }
+        } catch (final Exception e) {
+            log.error().append("Failed to log query performance data: ").append(e).endl();
+        }
     }
 
     public static boolean maybeStartStatsCollection() {

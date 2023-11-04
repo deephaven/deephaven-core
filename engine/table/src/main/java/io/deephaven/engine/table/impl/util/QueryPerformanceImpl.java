@@ -42,7 +42,7 @@ class QueryPerformanceImpl implements QueryPerformanceLogLogger {
     @Override
     public void log(Flags flags, long evaluationNumber, QueryProcessingResults queryProcessingResults,
             QueryPerformanceNugget nugget) throws IOException {
-        publisher.add(id.value(), evaluationNumber, queryProcessingResults, nugget);
+        publisher.add(id.value(), queryProcessingResults, nugget);
         qplLogger.log(flags, evaluationNumber, queryProcessingResults, nugget);
     }
 }

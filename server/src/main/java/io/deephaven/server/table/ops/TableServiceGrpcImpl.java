@@ -7,6 +7,9 @@ import com.google.rpc.Code;
 import io.deephaven.clientsupport.gotorow.SeekRow;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
+import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -64,6 +67,7 @@ import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.table.ExportedTableUpdateListener;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
@@ -313,62 +317,76 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
-    public void leftJoinTables(LeftJoinTablesRequest request,
-            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void leftJoinTables(
+            @NotNull final LeftJoinTablesRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.LEFT_JOIN, request, responseObserver);
     }
 
     @Override
-    public void asOfJoinTables(AsOfJoinTablesRequest request,
-            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void asOfJoinTables(
+            @NotNull final AsOfJoinTablesRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.AS_OF_JOIN, request, responseObserver);
     }
 
     @Override
-    public void ajTables(AjRajTablesRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void ajTables(
+            @NotNull final AjRajTablesRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.AJ, request, responseObserver);
     }
 
     @Override
-    public void rajTables(AjRajTablesRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void rajTables(
+            @NotNull final AjRajTablesRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.RAJ, request, responseObserver);
     }
 
     @Override
-    public void rangeJoinTables(RangeJoinTablesRequest request,
-            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void rangeJoinTables(
+            @NotNull final RangeJoinTablesRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.RANGE_JOIN, request, responseObserver);
     }
 
     @Override
-    public void runChartDownsample(RunChartDownsampleRequest request,
-            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void runChartDownsample(
+            @NotNull final RunChartDownsampleRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.RUN_CHART_DOWNSAMPLE, request, responseObserver);
     }
 
     @Override
-    public void fetchTable(FetchTableRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void fetchTable(
+            @NotNull final FetchTableRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.FETCH_TABLE, request, responseObserver);
     }
 
     @Override
-    public void applyPreviewColumns(ApplyPreviewColumnsRequest request,
-            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void applyPreviewColumns(
+            @NotNull final ApplyPreviewColumnsRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.APPLY_PREVIEW_COLUMNS, request, responseObserver);
     }
 
     @Override
-    public void createInputTable(CreateInputTableRequest request,
-            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void createInputTable(
+            @NotNull final CreateInputTableRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.CREATE_INPUT_TABLE, request, responseObserver);
     }
 
     @Override
-    public void updateBy(UpdateByRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void updateBy(
+            @NotNull final UpdateByRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE_BY, request, responseObserver);
     }
 
-    private Object getSeekValue(Literal literal, Class<?> dataType) {
+    private Object getSeekValue(@NotNull final Literal literal, @NotNull final Class<?> dataType) {
         if (literal.hasStringValue()) {
             if (BigDecimal.class.isAssignableFrom(dataType)) {
                 return new BigDecimal(literal.getStringValue());
@@ -474,8 +492,9 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
-    public void computeColumnStatistics(ColumnStatisticsRequest request,
-            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void computeColumnStatistics(
+            @NotNull final ColumnStatisticsRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.COLUMN_STATISTICS, request, responseObserver);
     }
 
@@ -491,9 +510,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         }
         final SessionState session = sessionService.getCurrentSession();
 
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.getInstance();
+        queryPerformanceRecorder.startQuery("TableService#batch(session=" + session.getSessionId() + ")");
+
         // step 1: initialize exports
         final List<BatchExportBuilder<?>> exportBuilders = request.getOpsList().stream()
-                .map(op -> createBatchExportBuilder(session, op))
+                .map(op -> createBatchExportBuilder(session, queryPerformanceRecorder, op))
                 .collect(Collectors.toList());
 
         // step 2: resolve dependencies
@@ -503,18 +525,25 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         // TODO: check for cycles
 
         // step 4: submit the batched operations
-        final AtomicInteger remaining = new AtomicInteger(exportBuilders.size());
+        final AtomicInteger remaining = new AtomicInteger(1 + exportBuilders.size());
         final AtomicReference<StatusRuntimeException> firstFailure = new AtomicReference<>();
 
         final Runnable onOneResolved = () -> {
-            if (remaining.decrementAndGet() == 0) {
-                final StatusRuntimeException failure = firstFailure.get();
-                if (failure != null) {
-                    safelyError(responseObserver, failure);
-                } else {
-                    safelyComplete(responseObserver);
-                }
+            if (remaining.decrementAndGet() > 0) {
+                return;
             }
+
+            queryPerformanceRecorder.resumeQuery();
+            final QueryProcessingResults results = new QueryProcessingResults(queryPerformanceRecorder);
+            final StatusRuntimeException failure = firstFailure.get();
+            if (failure != null) {
+                results.setException(failure.getMessage());
+                safelyError(responseObserver, failure);
+            } else {
+                safelyComplete(responseObserver);
+            }
+            queryPerformanceRecorder.endQuery();
+            EngineMetrics.getInstance().logQueryProcessingResults(results);
         };
 
         for (int i = 0; i < exportBuilders.size(); ++i) {
@@ -551,6 +580,11 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 onOneResolved.run();
             }).submit(exportBuilder::doExport);
         }
+
+        // now that we've submitted everything we'll suspend the query and release our refcount
+        queryPerformanceRecorder.suspendQuery();
+        QueryPerformanceRecorder.resetInstance();
+        onOneResolved.run();
     }
 
     @Override
@@ -606,8 +640,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
      */
     private <T> void oneShotOperationWrapper(
             final BatchTableRequest.Operation.OpCase op,
-            final T request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+            @NotNull final T request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
         final GrpcTableOperation<T> operation = getOp(op);
         operation.validateRequest(request);
@@ -634,7 +668,9 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 });
     }
 
-    private SessionState.ExportObject<Table> resolveOneShotReference(SessionState session, TableReference ref) {
+    private SessionState.ExportObject<Table> resolveOneShotReference(
+            @NotNull final SessionState session,
+            @NotNull final TableReference ref) {
         if (!ref.hasTicket()) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "One-shot operations must use ticket references");
@@ -642,11 +678,17 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
     }
 
-    private SessionState.ExportObject<Table> resolveBatchReference(SessionState session,
-            List<BatchExportBuilder<?>> exportBuilders, TableReference ref) {
+    private SessionState.ExportObject<Table> resolveBatchReference(
+            @NotNull final SessionState session,
+            @NotNull final List<BatchExportBuilder<?>> exportBuilders,
+            @NotNull final TableReference ref) {
         switch (ref.getRefCase()) {
             case TICKET:
-                return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
+                final String ticketName = ticketRouter.getLogNameFor(ref.getTicket(), "TableServiceGrpcImpl");
+                try (final SafeCloseable ignored =
+                        QueryPerformanceRecorder.getInstance().getNugget("resolveBatchReference:" + ticketName)) {
+                    return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
+                }
             case BATCH_OFFSET:
                 final int offset = ref.getBatchOffset();
                 if (offset < 0 || offset >= exportBuilders.size()) {
@@ -658,7 +700,10 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         }
     }
 
-    private <T> BatchExportBuilder<T> createBatchExportBuilder(SessionState session, BatchTableRequest.Operation op) {
+    private <T> BatchExportBuilder<T> createBatchExportBuilder(
+            @NotNull final SessionState session,
+            @NotNull final QueryPerformanceRecorder queryPerformanceRecorder,
+            final BatchTableRequest.Operation op) {
         final GrpcTableOperation<T> operation = getOp(op.getOpCase());
         final T request = operation.getRequestFromOperation(op);
         operation.validateRequest(request);
@@ -666,6 +711,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         final Ticket resultId = operation.getResultTicket(request);
         final ExportBuilder<Table> exportBuilder =
                 resultId.getTicket().isEmpty() ? session.nonExport() : session.newExport(resultId, "resultId");
+        exportBuilder.queryPerformanceRecorder(queryPerformanceRecorder);
         return new BatchExportBuilder<>(operation, request, exportBuilder);
     }
 
@@ -676,13 +722,18 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
         List<SessionState.ExportObject<Table>> dependencies;
 
-        BatchExportBuilder(GrpcTableOperation<T> operation, T request, ExportBuilder<Table> exportBuilder) {
+        BatchExportBuilder(
+                @NotNull final GrpcTableOperation<T> operation,
+                @NotNull final T request,
+                @NotNull final ExportBuilder<Table> exportBuilder) {
             this.operation = Objects.requireNonNull(operation);
             this.request = Objects.requireNonNull(request);
             this.exportBuilder = Objects.requireNonNull(exportBuilder);
         }
 
-        void resolveDependencies(SessionState session, List<BatchExportBuilder<?>> exportBuilders) {
+        void resolveDependencies(
+                @NotNull final SessionState session,
+                @NotNull final List<BatchExportBuilder<?>> exportBuilders) {
             dependencies = operation.getTableReferences(request).stream()
                     .map(ref -> resolveBatchReference(session, exportBuilders, ref))
                     .collect(Collectors.toList());

@@ -7,12 +7,12 @@ import io.deephaven.tablelogger.Row.Flags;
 
 import java.io.IOException;
 
+import static io.deephaven.tablelogger.TableLogger.DEFAULT_INTRADAY_LOGGER_FLAGS;
+
 /**
  * Logs data that describes the query-level performance for each worker. A given worker may be running multiple queries;
  * each will have its own set of query performance log entries.
  */
-import static io.deephaven.tablelogger.TableLogger.DEFAULT_INTRADAY_LOGGER_FLAGS;
-
 public interface QueryPerformanceLogLogger {
     default void log(final long evaluationNumber, final QueryProcessingResults queryProcessingResults,
             final QueryPerformanceNugget nugget) throws IOException {

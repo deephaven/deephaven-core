@@ -40,7 +40,7 @@ class QueryOperationPerformanceImpl implements QueryOperationPerformanceLogLogge
 
     @Override
     public void log(Flags flags, int operationNumber, QueryPerformanceNugget nugget) throws IOException {
-        publisher.add(id.value(), operationNumber, nugget);
+        publisher.add(id.value(), nugget);
         qoplLogger.log(flags, operationNumber, nugget);
     }
 }

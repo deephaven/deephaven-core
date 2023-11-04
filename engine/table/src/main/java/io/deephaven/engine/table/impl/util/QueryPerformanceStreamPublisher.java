@@ -13,7 +13,6 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
@@ -25,6 +24,7 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
     private static final TableDefinition DEFINITION = TableDefinition.of(
             ColumnDefinition.ofString("ProcessUniqueId"),
             ColumnDefinition.ofLong("EvaluationNumber"),
+            ColumnDefinition.ofLong("ParentEvaluationNumber"),
             ColumnDefinition.ofTime("StartTime"),
             ColumnDefinition.ofTime("EndTime"),
             ColumnDefinition.ofLong("DurationNanos"),
@@ -65,68 +65,69 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
 
     public synchronized void add(
             final String id,
-            final long evaluationNumber,
             final QueryProcessingResults queryProcessingResults,
             final QueryPerformanceNugget nugget) {
         // ColumnDefinition.ofString("ProcessUniqueId"),
         chunks[0].<String>asWritableObjectChunk().add(id);
 
         // ColumnDefinition.ofLong("EvaluationNumber")
-        chunks[1].asWritableLongChunk().add(evaluationNumber);
+        final int en = nugget.getEvaluationNumber();
+        chunks[1].asWritableLongChunk().add(en == QueryConstants.NULL_INT ? QueryConstants.NULL_LONG : en);
+
+        // ColumnDefinition.ofLong("ParentEvaluationNumber")
+        final int pen = nugget.getParentEvaluationNumber();
+        chunks[2].asWritableLongChunk().add(pen == QueryConstants.NULL_INT ? QueryConstants.NULL_LONG : pen);
 
         // ColumnDefinition.ofTime("StartTime");
-        chunks[2].asWritableLongChunk().add(DateTimeUtils.millisToNanos(nugget.getStartClockTime()));
+        chunks[3].asWritableLongChunk().add(nugget.getStartClockTime());
 
         // ColumnDefinition.ofTime("EndTime")
-        // this is a lie; timestamps should _NOT_ be created based on adding nano time durations to timestamps.
-        chunks[3].asWritableLongChunk().add(nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG
-                : DateTimeUtils.millisToNanos(nugget.getStartClockTime()) + nugget.getTotalTimeNanos());
+        chunks[4].asWritableLongChunk().add(nugget.getEndClockTime());
 
         // ColumnDefinition.ofLong("DurationNanos")
-        chunks[4].asWritableLongChunk()
-                .add(nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG : nugget.getTotalTimeNanos());
+        chunks[5].asWritableLongChunk().add(nugget.getTotalTimeNanos());
 
         // ColumnDefinition.ofLong("CpuNanos")
-        chunks[5].asWritableLongChunk().add(nugget.getCpuNanos());
+        chunks[6].asWritableLongChunk().add(nugget.getCpuNanos());
 
         // ColumnDefinition.ofLong("UserCpuNanos")
-        chunks[6].asWritableLongChunk().add(nugget.getUserCpuNanos());
+        chunks[7].asWritableLongChunk().add(nugget.getUserCpuNanos());
 
         // ColumnDefinition.ofLong("FreeMemory")
-        chunks[7].asWritableLongChunk().add(nugget.getEndFreeMemory());
+        chunks[8].asWritableLongChunk().add(nugget.getEndFreeMemory());
 
         // ColumnDefinition.ofLong("TotalMemory")
-        chunks[8].asWritableLongChunk().add(nugget.getEndTotalMemory());
+        chunks[9].asWritableLongChunk().add(nugget.getEndTotalMemory());
 
         // ColumnDefinition.ofLong("FreeMemoryChange")
-        chunks[9].asWritableLongChunk().add(nugget.getDiffFreeMemory());
+        chunks[10].asWritableLongChunk().add(nugget.getDiffFreeMemory());
 
         // ColumnDefinition.ofLong("TotalMemoryChange")
-        chunks[10].asWritableLongChunk().add(nugget.getDiffTotalMemory());
+        chunks[11].asWritableLongChunk().add(nugget.getDiffTotalMemory());
 
         // ColumnDefinition.ofLong("Collections")
-        chunks[11].asWritableLongChunk().add(nugget.getDiffCollections());
+        chunks[12].asWritableLongChunk().add(nugget.getDiffCollections());
 
         // ColumnDefinition.ofLong("CollectionTimeNanos")
-        chunks[12].asWritableLongChunk().add(nugget.getDiffCollectionTimeNanos());
+        chunks[13].asWritableLongChunk().add(nugget.getDiffCollectionTimeNanos());
 
         // ColumnDefinition.ofLong("AllocatedBytes")
-        chunks[13].asWritableLongChunk().add(nugget.getAllocatedBytes());
+        chunks[14].asWritableLongChunk().add(nugget.getAllocatedBytes());
 
         // ColumnDefinition.ofLong("PoolAllocatedBytes")
-        chunks[14].asWritableLongChunk().add(nugget.getPoolAllocatedBytes());
+        chunks[15].asWritableLongChunk().add(nugget.getPoolAllocatedBytes());
 
         // ColumnDefinition.ofBoolean("WasInterrupted")
-        chunks[15].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.wasInterrupted()));
+        chunks[16].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.wasInterrupted()));
 
         // ColumnDefinition.ofBoolean("IsReplayer")
-        chunks[16].asWritableByteChunk().add(BooleanUtils.booleanAsByte(queryProcessingResults.isReplayer()));
+        chunks[17].asWritableByteChunk().add(BooleanUtils.booleanAsByte(queryProcessingResults.isReplayer()));
 
         // ColumnDefinition.ofString("Exception")
-        chunks[17].<String>asWritableObjectChunk().add(queryProcessingResults.getException());
+        chunks[18].<String>asWritableObjectChunk().add(queryProcessingResults.getException());
 
         // ColumnDefinition.ofString("AuthContext")
-        chunks[18].<String>asWritableObjectChunk().add(Objects.toString(nugget.getAuthContext()));
+        chunks[19].<String>asWritableObjectChunk().add(Objects.toString(nugget.getAuthContext()));
 
         if (chunks[0].size() == CHUNK_SIZE) {
             flushInternal();
