@@ -17,9 +17,9 @@ abstract class PrimitiveVectorTransfer<COLUMN_TYPE extends Vector<?>, BUFFER_TYP
         extends PrimitiveArrayAndVectorTransfer<COLUMN_TYPE, COLUMN_TYPE, BUFFER_TYPE> {
 
     PrimitiveVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-            final int maxValuesPerPage, final int targetPageSize, @NotNull final BUFFER_TYPE buffer,
+            final int targetElementsPerPage, final int targetPageSize, @NotNull final BUFFER_TYPE buffer,
             final int numBytesPerValue) {
-        super(columnSource, tableRowSet, maxValuesPerPage, targetPageSize, buffer, numBytesPerValue);
+        super(columnSource, tableRowSet, targetElementsPerPage, targetPageSize, buffer, numBytesPerValue);
     }
 
     @Override

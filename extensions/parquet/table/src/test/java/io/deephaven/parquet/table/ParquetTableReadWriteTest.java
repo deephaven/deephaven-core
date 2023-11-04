@@ -123,7 +123,8 @@ public final class ParquetTableReadWriteTest {
                         "someCharColumn = (char)i",
                         "someTime = DateTimeUtils.now() + i",
                         "someKey = `` + (int)(i /100)",
-                        "biColumn = java.math.BigInteger.valueOf(ii)",
+                        "someBiColumn = java.math.BigInteger.valueOf(ii)",
+                        "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
                         "nullKey = i < -1?`123`:null",
                         "nullIntColumn = (int)null",
                         "nullLongColumn = (long)null",
@@ -135,7 +136,8 @@ public final class ParquetTableReadWriteTest {
                         "nullCharColumn = (char)null",
                         "nullTime = (Instant)null",
                         "nullBiColumn = (java.math.BigInteger)null",
-                        "nullString = (String)null"));
+                        "nullString = (String)null",
+                        "nullDateColumn = (java.time.LocalDate)null"));
         if (includeBigDecimal) {
             columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
         }
@@ -500,6 +502,7 @@ public final class ParquetTableReadWriteTest {
                         "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
                         "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
                         "someBiColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
+                        "someDateColumn = new java.time.LocalDate[] {i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)}",
                         "nullStringArrayColumn = new String[] {(String)null}",
                         "nullIntArrayColumn = new int[] {(int)null}",
                         "nullLongArrayColumn = new long[] {(long)null}",
@@ -510,7 +513,8 @@ public final class ParquetTableReadWriteTest {
                         "nullByteArrayColumn = new byte[] {(byte)null}",
                         "nullCharArrayColumn = new char[] {(char)null}",
                         "nullTimeArrayColumn = new Instant[] {(Instant)null}",
-                        "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"));
+                        "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}",
+                        "nullDateColumn = new java.time.LocalDate[] {(java.time.LocalDate)null}"));
 
         Table arrayTable = TableTools.emptyTable(10000).select(Selectable.from(columns));
         final File dest = new File(rootFile + File.separator + "testArrayColumns.parquet");
