@@ -825,6 +825,7 @@ public class SessionState {
                 } catch (final Exception err) {
                     log.error().append("Unexpected error while reporting success: ").append(err).endl();
                 }
+                successHandler = null;
             }
 
             if (isNowExported || isExportStateTerminal(state)) {
@@ -834,6 +835,7 @@ public class SessionState {
                 parents = Collections.emptyList();
                 exportMain = null;
                 errorHandler = null;
+                successHandler = null;
             }
 
             if ((isNowExported && isNonExport()) || isExportStateTerminal(state)) {
