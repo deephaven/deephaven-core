@@ -4,6 +4,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.Row.Flags;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
@@ -15,19 +16,35 @@ import static io.deephaven.tablelogger.TableLogger.DEFAULT_INTRADAY_LOGGER_FLAGS
  */
 public interface QueryPerformanceLogLogger {
     default void log(
-            final QueryProcessingResults queryProcessingResults,
-            final QueryPerformanceNugget nugget) throws IOException {
+            @NotNull final QueryProcessingResults queryProcessingResults,
+            @NotNull final QueryPerformanceNugget nugget) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, queryProcessingResults, nugget);
     }
 
-    void log(Row.Flags flags, QueryProcessingResults queryProcessingResults, QueryPerformanceNugget nugget)
+    default void log(
+            @NotNull final Row.Flags flags,
+            @NotNull final QueryProcessingResults queryProcessingResults,
+            @NotNull final QueryPerformanceNugget nugget) throws IOException {
+        log(flags, nugget.getEvaluationNumber(), queryProcessingResults, nugget);
+    }
+
+    // This prototype is going to be deprecated in 0.31 in favor of the one above.
+    void log(
+            Row.Flags flags,
+            final long evaluationNumber,
+            QueryProcessingResults queryProcessingResults,
+            QueryPerformanceNugget nugget)
             throws IOException;
 
     enum Noop implements QueryPerformanceLogLogger {
         INSTANCE;
 
         @Override
-        public void log(Flags flags, QueryProcessingResults queryProcessingResults, QueryPerformanceNugget nugget)
+        public void log(
+                @NotNull final Flags flags,
+                final long evaluationNumber,
+                @NotNull final QueryProcessingResults queryProcessingResults,
+                @NotNull final QueryPerformanceNugget nugget)
                 throws IOException {
 
         }

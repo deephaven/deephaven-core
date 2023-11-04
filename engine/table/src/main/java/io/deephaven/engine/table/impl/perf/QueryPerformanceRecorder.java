@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.minus;
@@ -48,7 +48,7 @@ public class QueryPerformanceRecorder implements Serializable {
     private transient QueryPerformanceNugget catchAllNugget;
     private final transient Deque<QueryPerformanceNugget> userNuggetStack = new ArrayDeque<>();
 
-    private static final AtomicInteger queriesProcessed = new AtomicInteger(0);
+    private static final AtomicLong queriesProcessed = new AtomicLong(0);
 
     private static final ThreadLocal<QueryPerformanceRecorder> theLocal =
             ThreadLocal.withInitial(QueryPerformanceRecorder::new);
@@ -100,9 +100,10 @@ public class QueryPerformanceRecorder implements Serializable {
      * Start a query.
      *
      * @param description A description for the query.
+     * @return this
      */
-    public void startQuery(final String description) {
-        startQuery(description, QueryConstants.NULL_LONG);
+    public QueryPerformanceRecorder startQuery(final String description) {
+        return startQuery(description, QueryConstants.NULL_LONG);
     }
 
     /**
@@ -110,13 +111,16 @@ public class QueryPerformanceRecorder implements Serializable {
      * 
      * @param description A description for the query.
      * @param parentEvaluationNumber The evaluation number of the parent query.
+     * @return this
      */
-    public synchronized void startQuery(final String description, final long parentEvaluationNumber) {
+    public synchronized QueryPerformanceRecorder startQuery(final String description,
+            final long parentEvaluationNumber) {
         clear();
-        final int evaluationNumber = queriesProcessed.getAndIncrement();
+        final long evaluationNumber = queriesProcessed.getAndIncrement();
         queryNugget = new QueryPerformanceNugget(evaluationNumber, parentEvaluationNumber, description);
         state = QueryState.RUNNING;
         startCatchAll();
+        return this;
     }
 
     /**
@@ -161,26 +165,55 @@ public class QueryPerformanceRecorder implements Serializable {
         return queryNugget.done(this);
     }
 
+    /**
+     * Suspends a query.
+     * <p>
+     * This resets the thread local and assumes that this performance nugget may be resumed on another thread. This
+     */
     public synchronized void suspendQuery() {
         if (state != QueryState.RUNNING) {
             throw new IllegalStateException("Can't suspend a query that isn't running");
+        }
+
+        final QueryPerformanceRecorder threadLocalInstance = getInstance();
+        if (threadLocalInstance != this) {
+            throw new IllegalStateException("Can't suspend a query that doesn't belong to this thread");
         }
 
         state = QueryState.SUSPENDED;
         Assert.neqNull(catchAllNugget, "catchAllNugget");
         stopCatchAll(false);
         queryNugget.onBaseEntryEnd();
+
+        // Very likely this QPR is being passed to another thread, be safe and reset the thread local instance.
+        resetInstance();
     }
 
-    public synchronized void resumeQuery() {
+    /**
+     * Resumes a suspend query.
+     * <p>
+     * It is an error to resume a query while another query is running on this thread.
+     * 
+     * @return this
+     */
+    public synchronized QueryPerformanceRecorder resumeQuery() {
         if (state != QueryState.SUSPENDED) {
             throw new IllegalStateException("Can't resume a query that isn't suspended");
         }
+
+        final QueryPerformanceRecorder threadLocalInstance = getInstance();
+        synchronized (threadLocalInstance) {
+            if (threadLocalInstance.state == QueryState.RUNNING) {
+                throw new IllegalStateException("Can't resume a query while another query is in operation");
+            }
+        }
+        theLocal.set(this);
 
         queryNugget.onBaseEntryStart();
         state = QueryState.RUNNING;
         Assert.eqNull(catchAllNugget, "catchAllNugget");
         startCatchAll();
+        return this;
     }
 
     private void startCatchAll() {

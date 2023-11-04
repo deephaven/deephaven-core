@@ -535,7 +535,9 @@ public class SessionState {
         private final SessionService.ErrorTransformer errorTransformer;
         private final SessionState session;
 
-        /** used to keep track of performance details if caller needs to aggregate across multiple exports */
+        /** if true the queryPerformanceRecorder belongs to a batch; otherwise if it exists it belong to the export */
+        private boolean qprIsForBatch;
+        /** used to keep track of performance details either for aggregation or for the async ticket resolution */
         private QueryPerformanceRecorder queryPerformanceRecorder;
 
         /** final result of export */
@@ -627,11 +629,14 @@ public class SessionState {
             return exportId == NON_EXPORT_ID;
         }
 
-        private synchronized void setQueryPerformanceRecorder(final QueryPerformanceRecorder queryPerformanceRecorder) {
+        private synchronized void setQueryPerformanceRecorder(
+                final QueryPerformanceRecorder queryPerformanceRecorder,
+                final boolean qprIsForBatch) {
             if (this.queryPerformanceRecorder != null) {
                 throw new IllegalStateException(
                         "performance query recorder can only be set once on an exportable object");
             }
+            this.qprIsForBatch = qprIsForBatch;
             this.queryPerformanceRecorder = queryPerformanceRecorder;
         }
 
@@ -978,19 +983,26 @@ public class SessionState {
             try (final SafeCloseable ignored1 = session.executionContext.open();
                     final SafeCloseable ignored2 = LivenessScopeStack.open()) {
                 try {
-                    queryProcessingResults = new QueryProcessingResults(QueryPerformanceRecorder.getInstance());
-                    final long parentEvaluationNumber = queryPerformanceRecorder != null
-                            ? queryPerformanceRecorder.getEvaluationNumber()
-                            : QueryConstants.NULL_LONG;
-                    QueryPerformanceRecorder.getInstance().startQuery(
-                            "ExportObject#doWork(session=" + session.sessionId + ",exportId=" + logIdentity + ")",
-                            parentEvaluationNumber);
+                    final QueryPerformanceRecorder exportRecorder;
+                    if (queryPerformanceRecorder != null && !qprIsForBatch) {
+                        exportRecorder = queryPerformanceRecorder.resumeQuery();
+                    } else if (queryPerformanceRecorder != null) {
+                        // this is a sub-query; no need to re-log the session id
+                        exportRecorder = QueryPerformanceRecorder.getInstance().startQuery(
+                                "ExportObject#doWork(exportId=" + logIdentity + ")",
+                                queryPerformanceRecorder.getEvaluationNumber());
+                    } else {
+                        exportRecorder = QueryPerformanceRecorder.getInstance().startQuery(
+                                "ExportObject#doWork(session=" + session.sessionId + ",exportId=" + logIdentity + ")");
+                    }
+                    queryProcessingResults = new QueryProcessingResults(exportRecorder);
 
                     try {
                         localResult = capturedExport.call();
                     } finally {
                         shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
                     }
+
                 } catch (final Exception err) {
                     caughtException = err;
                     synchronized (this) {
@@ -1009,12 +1021,14 @@ public class SessionState {
                     QueryPerformanceRecorder.resetInstance();
                 }
                 if ((shouldLog || caughtException != null) && queryProcessingResults != null) {
-                    if (queryPerformanceRecorder != null) {
+                    if (queryPerformanceRecorder != null && qprIsForBatch) {
                         queryPerformanceRecorder.accumulate(queryProcessingResults.getRecorder());
                     }
                     EngineMetrics.getInstance().logQueryProcessingResults(queryProcessingResults);
                 }
                 if (caughtException == null) {
+                    // must set result after ending the query and accumulating into the parent so that onSuccess
+                    // may resume and/or finalize a parent query
                     setResult(localResult);
                 }
             }
@@ -1305,11 +1319,13 @@ public class SessionState {
          * the responsibility of the caller.
          *
          * @param queryPerformanceRecorder the performance recorder to aggregate into
+         * @param qprIsForBatch true if a sub-query should be created for the export and aggregated into the qpr
          * @return this builder
          */
         public ExportBuilder<T> queryPerformanceRecorder(
-                @NotNull final QueryPerformanceRecorder queryPerformanceRecorder) {
-            export.setQueryPerformanceRecorder(queryPerformanceRecorder);
+                @NotNull final QueryPerformanceRecorder queryPerformanceRecorder,
+                final boolean qprIsForBatch) {
+            export.setQueryPerformanceRecorder(queryPerformanceRecorder, qprIsForBatch);
             return this;
         }
 
@@ -1462,6 +1478,10 @@ public class SessionState {
          */
         public ExportObject<T> submit(final Callable<T> exportMain) {
             export.setWork(exportMain, errorHandler, successHandler, requiresSerialQueue);
+            if (export.queryPerformanceRecorder != null && !export.qprIsForBatch) {
+                // transfer ownership of the qpr to the export
+                export.queryPerformanceRecorder.suspendQuery();
+            }
             return export;
         }
 

@@ -10,6 +10,7 @@ import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.process.ProcessUniqueId;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.tablelogger.Row.Flags;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -39,7 +40,10 @@ class QueryOperationPerformanceImpl implements QueryOperationPerformanceLogLogge
     }
 
     @Override
-    public void log(Flags flags, QueryPerformanceNugget nugget) throws IOException {
+    public void log(
+            @NotNull final Flags flags,
+            final int deprecatedArgument,
+            @NotNull final QueryPerformanceNugget nugget) throws IOException {
         publisher.add(id.value(), nugget);
         qoplLogger.log(flags, nugget);
     }

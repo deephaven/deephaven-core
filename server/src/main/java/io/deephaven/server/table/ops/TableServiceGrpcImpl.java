@@ -4,6 +4,7 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.clientsupport.gotorow.SeekRow;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.engine.table.Table;
@@ -510,8 +511,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         }
         final SessionState session = sessionService.getCurrentSession();
 
-        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.getInstance();
-        queryPerformanceRecorder.startQuery("TableService#batch(session=" + session.getSessionId() + ")");
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.getInstance().startQuery(
+                "TableService#batch(session=" + session.getSessionId() + ")");
 
         // step 1: initialize exports
         final List<BatchExportBuilder<?>> exportBuilders = request.getOpsList().stream()
@@ -529,9 +530,11 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         final AtomicReference<StatusRuntimeException> firstFailure = new AtomicReference<>();
 
         final Runnable onOneResolved = () -> {
-            if (remaining.decrementAndGet() > 0) {
+            int numRemaining = remaining.decrementAndGet();
+            if (numRemaining > 0) {
                 return;
             }
+            Assert.geqZero(numRemaining, "numRemaining");
 
             queryPerformanceRecorder.resumeQuery();
             final QueryProcessingResults results = new QueryProcessingResults(queryPerformanceRecorder);
@@ -644,12 +647,19 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
         final GrpcTableOperation<T> operation = getOp(op);
-        operation.validateRequest(request);
 
         final Ticket resultId = operation.getResultTicket(request);
         if (resultId.getTicket().isEmpty()) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No result ticket supplied");
         }
+
+        final String description = "TableService#" + op.name() + "(session=" + session.getSessionId() + ", resultId="
+                + ticketRouter.getLogNameFor(resultId, "TableServiceGrpcImpl") + ")";
+
+        final QueryPerformanceRecorder queryPerformanceRecorder =
+                QueryPerformanceRecorder.getInstance().startQuery(description);
+
+        operation.validateRequest(request);
 
         final List<SessionState.ExportObject<Table>> dependencies = operation.getTableReferences(request).stream()
                 .map(ref -> resolveOneShotReference(session, ref))
@@ -658,6 +668,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         session.newExport(resultId, "resultId")
                 .require(dependencies)
                 .onError(responseObserver)
+                .queryPerformanceRecorder(queryPerformanceRecorder, false)
                 .submit(() -> {
                     operation.checkPermission(request, dependencies);
                     final Table result = operation.create(request, dependencies);
@@ -675,7 +686,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "One-shot operations must use ticket references");
         }
-        return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
+
+        final String ticketName = ticketRouter.getLogNameFor(ref.getTicket(), "TableServiceGrpcImpl");
+        try (final SafeCloseable ignored =
+                QueryPerformanceRecorder.getInstance().getNugget("resolveTicket:" + ticketName)) {
+            return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
+        }
     }
 
     private SessionState.ExportObject<Table> resolveBatchReference(
@@ -686,7 +702,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             case TICKET:
                 final String ticketName = ticketRouter.getLogNameFor(ref.getTicket(), "TableServiceGrpcImpl");
                 try (final SafeCloseable ignored =
-                        QueryPerformanceRecorder.getInstance().getNugget("resolveBatchReference:" + ticketName)) {
+                        QueryPerformanceRecorder.getInstance().getNugget("resolveTicket:" + ticketName)) {
                     return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
                 }
             case BATCH_OFFSET:
@@ -711,7 +727,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         final Ticket resultId = operation.getResultTicket(request);
         final ExportBuilder<Table> exportBuilder =
                 resultId.getTicket().isEmpty() ? session.nonExport() : session.newExport(resultId, "resultId");
-        exportBuilder.queryPerformanceRecorder(queryPerformanceRecorder);
+        exportBuilder.queryPerformanceRecorder(queryPerformanceRecorder, true);
         return new BatchExportBuilder<>(operation, request, exportBuilder);
     }
 

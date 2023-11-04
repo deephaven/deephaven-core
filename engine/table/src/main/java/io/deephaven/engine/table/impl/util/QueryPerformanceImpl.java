@@ -11,6 +11,7 @@ import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.process.ProcessUniqueId;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.tablelogger.Row.Flags;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -40,8 +41,11 @@ class QueryPerformanceImpl implements QueryPerformanceLogLogger {
     }
 
     @Override
-    public void log(Flags flags, QueryProcessingResults queryProcessingResults,
-            QueryPerformanceNugget nugget) throws IOException {
+    public void log(
+            @NotNull final Flags flags,
+            final long deprecatedField,
+            @NotNull final QueryProcessingResults queryProcessingResults,
+            @NotNull final QueryPerformanceNugget nugget) throws IOException {
         publisher.add(id.value(), queryProcessingResults, nugget);
         qplLogger.log(flags, queryProcessingResults, nugget);
     }
