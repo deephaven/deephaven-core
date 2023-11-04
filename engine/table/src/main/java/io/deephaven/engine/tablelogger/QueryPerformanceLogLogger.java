@@ -14,20 +14,21 @@ import static io.deephaven.tablelogger.TableLogger.DEFAULT_INTRADAY_LOGGER_FLAGS
  * each will have its own set of query performance log entries.
  */
 public interface QueryPerformanceLogLogger {
-    default void log(final long evaluationNumber, final QueryProcessingResults queryProcessingResults,
+    default void log(
+            final QueryProcessingResults queryProcessingResults,
             final QueryPerformanceNugget nugget) throws IOException {
-        log(DEFAULT_INTRADAY_LOGGER_FLAGS, evaluationNumber, queryProcessingResults, nugget);
+        log(DEFAULT_INTRADAY_LOGGER_FLAGS, queryProcessingResults, nugget);
     }
 
-    void log(final Row.Flags flags, final long evaluationNumber, final QueryProcessingResults queryProcessingResults,
-            final QueryPerformanceNugget nugget) throws IOException;
+    void log(Row.Flags flags, QueryProcessingResults queryProcessingResults, QueryPerformanceNugget nugget)
+            throws IOException;
 
     enum Noop implements QueryPerformanceLogLogger {
         INSTANCE;
 
         @Override
-        public void log(Flags flags, long evaluationNumber, QueryProcessingResults queryProcessingResults,
-                QueryPerformanceNugget nugget) throws IOException {
+        public void log(Flags flags, QueryProcessingResults queryProcessingResults, QueryPerformanceNugget nugget)
+                throws IOException {
 
         }
     }

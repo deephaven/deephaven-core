@@ -40,9 +40,9 @@ class QueryPerformanceImpl implements QueryPerformanceLogLogger {
     }
 
     @Override
-    public void log(Flags flags, long evaluationNumber, QueryProcessingResults queryProcessingResults,
+    public void log(Flags flags, QueryProcessingResults queryProcessingResults,
             QueryPerformanceNugget nugget) throws IOException {
         publisher.add(id.value(), queryProcessingResults, nugget);
-        qplLogger.log(flags, evaluationNumber, queryProcessingResults, nugget);
+        qplLogger.log(flags, queryProcessingResults, nugget);
     }
 }

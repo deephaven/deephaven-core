@@ -32,8 +32,8 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
      */
     static final QueryPerformanceNugget DUMMY_NUGGET = new QueryPerformanceNugget();
 
-    private final int evaluationNumber;
-    private final int parentEvaluationNumber;
+    private final long evaluationNumber;
+    private final long parentEvaluationNumber;
     private final int operationNumber;
     private final int parentOperationNumber;
     private final int depth;
@@ -68,7 +68,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
      * @param evaluationNumber A unique identifier for the query evaluation that triggered this nugget creation
      * @param description The operation description
      */
-    QueryPerformanceNugget(final int evaluationNumber, final int parentEvaluationNumber, final String description) {
+    QueryPerformanceNugget(final long evaluationNumber, final long parentEvaluationNumber, final String description) {
         this(evaluationNumber, parentEvaluationNumber, NULL_INT, NULL_INT, NULL_INT, description, false, true,
                 NULL_LONG);
     }
@@ -77,7 +77,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
      * Full constructor for nuggets.
      *
      * @param evaluationNumber A unique identifier for the query evaluation that triggered this nugget creation
-     * @param parentEvaluationNumber The unique identifier of the parent evaluation or {@link QueryConstants#NULL_INT}
+     * @param parentEvaluationNumber The unique identifier of the parent evaluation or {@link QueryConstants#NULL_LONG}
      *        if none
      * @param operationNumber A unique identifier for the operation within a query evaluation
      * @param parentOperationNumber The unique identifier of the parent operation or {@link QueryConstants#NULL_INT} if
@@ -88,8 +88,8 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
      * @param inputSize The size of the input data
      */
     QueryPerformanceNugget(
-            final int evaluationNumber,
-            final int parentEvaluationNumber,
+            final long evaluationNumber,
+            final long parentEvaluationNumber,
             final int operationNumber,
             final int parentOperationNumber,
             final int depth,
@@ -133,8 +133,8 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
     private QueryPerformanceNugget() {
         startMemorySample = null;
         endMemorySample = null;
-        evaluationNumber = NULL_INT;
-        parentEvaluationNumber = NULL_INT;
+        evaluationNumber = NULL_LONG;
+        parentEvaluationNumber = NULL_LONG;
         operationNumber = NULL_INT;
         parentOperationNumber = NULL_INT;
         depth = 0;
@@ -225,11 +225,11 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
                 + ":" + callerLine;
     }
 
-    public int getEvaluationNumber() {
+    public long getEvaluationNumber() {
         return evaluationNumber;
     }
 
-    public int getParentEvaluationNumber() {
+    public long getParentEvaluationNumber() {
         return parentEvaluationNumber;
     }
 

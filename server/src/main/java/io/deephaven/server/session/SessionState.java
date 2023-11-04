@@ -983,9 +983,9 @@ public class SessionState {
                     final SafeCloseable ignored2 = LivenessScopeStack.open()) {
                 try {
                     queryProcessingResults = new QueryProcessingResults(QueryPerformanceRecorder.getInstance());
-                    final int parentEvaluationNumber = queryPerformanceRecorder != null
+                    final long parentEvaluationNumber = queryPerformanceRecorder != null
                             ? queryPerformanceRecorder.getEvaluationNumber()
-                            : QueryConstants.NULL_INT;
+                            : QueryConstants.NULL_LONG;
                     QueryPerformanceRecorder.getInstance().startQuery(
                             "ExportObject#doWork(session=" + session.sessionId + ",exportId=" + logIdentity + ")",
                             parentEvaluationNumber);

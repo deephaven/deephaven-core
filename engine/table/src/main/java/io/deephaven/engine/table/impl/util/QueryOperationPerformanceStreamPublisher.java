@@ -12,9 +12,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -23,8 +21,8 @@ class QueryOperationPerformanceStreamPublisher implements StreamPublisher {
 
     private static final TableDefinition DEFINITION = TableDefinition.of(
             ColumnDefinition.ofString("ProcessUniqueId"),
-            ColumnDefinition.ofInt("EvaluationNumber"),
-            ColumnDefinition.ofInt("ParentEvaluationNumber"),
+            ColumnDefinition.ofLong("EvaluationNumber"),
+            ColumnDefinition.ofLong("ParentEvaluationNumber"),
             ColumnDefinition.ofInt("OperationNumber"),
             ColumnDefinition.ofInt("ParentOperationNumber"),
             ColumnDefinition.ofInt("Depth"),
@@ -73,8 +71,8 @@ class QueryOperationPerformanceStreamPublisher implements StreamPublisher {
             final QueryPerformanceNugget nugget) {
 
         chunks[0].<String>asWritableObjectChunk().add(id);
-        chunks[1].asWritableIntChunk().add(nugget.getEvaluationNumber());
-        chunks[2].asWritableIntChunk().add(nugget.getParentEvaluationNumber());
+        chunks[1].asWritableLongChunk().add(nugget.getEvaluationNumber());
+        chunks[2].asWritableLongChunk().add(nugget.getParentEvaluationNumber());
         chunks[3].asWritableIntChunk().add(nugget.getOperationNumber());
         chunks[4].asWritableIntChunk().add(nugget.getParentOperationNumber());
         chunks[5].asWritableIntChunk().add(nugget.getDepth());

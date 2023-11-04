@@ -19,7 +19,6 @@ import io.deephaven.process.ProcessInfo;
 import io.deephaven.process.ProcessInfoConfig;
 import io.deephaven.stats.Driver;
 import io.deephaven.stats.StatsIntradayLogger;
-import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -122,17 +121,17 @@ public class EngineMetrics {
                     "queryProcessingResults.getRecorder().getQueryLevelPerformanceData()");
 
             synchronized (qplLogger) {
-                qplLogger.log(results.getRecorder().getEvaluationNumber(), results, queryNugget);
+                qplLogger.log(results, queryNugget);
             }
             final List<QueryPerformanceNugget> nuggets =
                     results.getRecorder().getOperationLevelPerformanceData();
             synchronized (qoplLogger) {
-                if (results.getRecorder().hasSubQuery() || !nuggets.isEmpty()) {
+                if (results.getRecorder().mustLogForHierarchicalConsistency()) {
                     // if this query has sub queries or op nuggets log an entry to enable hierarchical consistency
-                    qoplLogger.log(queryNugget.getOperationNumber(), queryNugget);
+                    qoplLogger.log(queryNugget);
                 }
-                for (QueryPerformanceNugget n : nuggets) {
-                    qoplLogger.log(n.getOperationNumber(), n);
+                for (QueryPerformanceNugget nugget : nuggets) {
+                    qoplLogger.log(nugget);
                 }
             }
         } catch (final Exception e) {

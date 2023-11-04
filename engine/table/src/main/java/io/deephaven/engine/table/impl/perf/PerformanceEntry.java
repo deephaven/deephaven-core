@@ -19,7 +19,7 @@ import io.deephaven.util.QueryConstants;
  */
 public class PerformanceEntry extends BasePerformanceEntry implements TableListener.Entry {
     private final int id;
-    private final int evaluationNumber;
+    private final long evaluationNumber;
     private final int operationNumber;
     private final String description;
     private final String callerLine;
@@ -42,7 +42,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     private final RuntimeMemory.Sample startSample;
     private final RuntimeMemory.Sample endSample;
 
-    PerformanceEntry(final int id, final int evaluationNumber, final int operationNumber,
+    PerformanceEntry(final int id, final long evaluationNumber, final int operationNumber,
             final String description, final String callerLine, final String updateGraphName) {
         this.id = id;
         this.evaluationNumber = evaluationNumber;
@@ -144,7 +144,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         return id;
     }
 
-    public int getEvaluationNumber() {
+    public long getEvaluationNumber() {
         return evaluationNumber;
     }
 

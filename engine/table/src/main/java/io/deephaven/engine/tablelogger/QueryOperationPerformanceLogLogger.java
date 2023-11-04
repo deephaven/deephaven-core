@@ -13,17 +13,17 @@ import static io.deephaven.tablelogger.TableLogger.DEFAULT_INTRADAY_LOGGER_FLAGS
  * queries.
  */
 public interface QueryOperationPerformanceLogLogger {
-    default void log(final int operationNumber, final QueryPerformanceNugget nugget) throws IOException {
-        log(DEFAULT_INTRADAY_LOGGER_FLAGS, operationNumber, nugget);
+    default void log(final QueryPerformanceNugget nugget) throws IOException {
+        log(DEFAULT_INTRADAY_LOGGER_FLAGS, nugget);
     }
 
-    void log(final Row.Flags flags, final int operationNumber, final QueryPerformanceNugget nugget) throws IOException;
+    void log(Row.Flags flags, QueryPerformanceNugget nugget) throws IOException;
 
     enum Noop implements QueryOperationPerformanceLogLogger {
         INSTANCE;
 
         @Override
-        public void log(Flags flags, int operationNumber, QueryPerformanceNugget nugget) throws IOException {
+        public void log(Flags flags, QueryPerformanceNugget nugget) throws IOException {
 
         }
     }

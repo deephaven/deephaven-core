@@ -40,7 +40,7 @@ public class QueryPerformanceRecorder implements Serializable {
     private static final long serialVersionUID = 2L;
     private static final String[] packageFilters;
 
-    private volatile boolean hasSubQuery;
+    private volatile boolean mustLogForHierarchicalConsistency;
     private QueryPerformanceNugget queryNugget;
     private final ArrayList<QueryPerformanceNugget> operationNuggets = new ArrayList<>();
 
@@ -102,7 +102,7 @@ public class QueryPerformanceRecorder implements Serializable {
      * @param description A description for the query.
      */
     public void startQuery(final String description) {
-        startQuery(description, QueryConstants.NULL_INT);
+        startQuery(description, QueryConstants.NULL_LONG);
     }
 
     /**
@@ -111,7 +111,7 @@ public class QueryPerformanceRecorder implements Serializable {
      * @param description A description for the query.
      * @param parentEvaluationNumber The evaluation number of the parent query.
      */
-    public synchronized void startQuery(final String description, final int parentEvaluationNumber) {
+    public synchronized void startQuery(final String description, final long parentEvaluationNumber) {
         clear();
         final int evaluationNumber = queriesProcessed.getAndIncrement();
         queryNugget = new QueryPerformanceNugget(evaluationNumber, parentEvaluationNumber, description);
@@ -291,7 +291,7 @@ public class QueryPerformanceRecorder implements Serializable {
     }
 
     public interface EntrySetter {
-        void set(int evaluationNumber, int operationNumber, boolean uninstrumented);
+        void set(long evaluationNumber, int operationNumber, boolean uninstrumented);
     }
 
     public synchronized QueryPerformanceNugget getOuterNugget() {
@@ -300,7 +300,7 @@ public class QueryPerformanceRecorder implements Serializable {
 
     // returns true if uninstrumented code data was captured.
     public void setQueryData(final EntrySetter setter) {
-        final int evaluationNumber;
+        final long evaluationNumber;
         final int operationNumber;
         boolean uninstrumented = false;
         synchronized (this) {
@@ -326,7 +326,9 @@ public class QueryPerformanceRecorder implements Serializable {
     }
 
     public void accumulate(@NotNull final QueryPerformanceRecorder subQuery) {
-        hasSubQuery = true;
+        if (subQuery.mustLogForHierarchicalConsistency()) {
+            mustLogForHierarchicalConsistency = true;
+        }
         queryNugget.addBaseEntry(subQuery.queryNugget);
     }
 
@@ -337,12 +339,12 @@ public class QueryPerformanceRecorder implements Serializable {
         userNuggetStack.clear();
     }
 
-    public int getEvaluationNumber() {
+    public long getEvaluationNumber() {
         return queryNugget.getEvaluationNumber();
     }
 
-    public boolean hasSubQuery() {
-        return hasSubQuery;
+    public boolean mustLogForHierarchicalConsistency() {
+        return mustLogForHierarchicalConsistency || !operationNuggets.isEmpty();
     }
 
     public synchronized QueryPerformanceNugget getQueryLevelPerformanceData() {

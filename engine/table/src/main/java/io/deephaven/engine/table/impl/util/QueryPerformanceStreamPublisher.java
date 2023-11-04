@@ -14,7 +14,6 @@ import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -71,12 +70,10 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
         chunks[0].<String>asWritableObjectChunk().add(id);
 
         // ColumnDefinition.ofLong("EvaluationNumber")
-        final int en = nugget.getEvaluationNumber();
-        chunks[1].asWritableLongChunk().add(en == QueryConstants.NULL_INT ? QueryConstants.NULL_LONG : en);
+        chunks[1].asWritableLongChunk().add(nugget.getEvaluationNumber());
 
         // ColumnDefinition.ofLong("ParentEvaluationNumber")
-        final int pen = nugget.getParentEvaluationNumber();
-        chunks[2].asWritableLongChunk().add(pen == QueryConstants.NULL_INT ? QueryConstants.NULL_LONG : pen);
+        chunks[2].asWritableLongChunk().add(nugget.getParentEvaluationNumber());
 
         // ColumnDefinition.ofTime("StartTime");
         chunks[3].asWritableLongChunk().add(nugget.getStartClockTime());

@@ -22,7 +22,7 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
     private static final TableDefinition DEFINITION = TableDefinition.of(
             ColumnDefinition.ofString("ProcessUniqueId"),
             ColumnDefinition.ofInt("EntryId"),
-            ColumnDefinition.ofInt("EvaluationNumber"),
+            ColumnDefinition.ofLong("EvaluationNumber"),
             ColumnDefinition.ofInt("OperationNumber"),
             ColumnDefinition.ofString("EntryDescription"),
             ColumnDefinition.ofString("EntryCallerLine"),
@@ -70,7 +70,7 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
     public synchronized void add(IntervalLevelDetails intervalLevelDetails, PerformanceEntry performanceEntry) {
         chunks[0].<String>asWritableObjectChunk().add(EngineMetrics.getProcessInfo().getId().value());
         chunks[1].asWritableIntChunk().add(performanceEntry.getId());
-        chunks[2].asWritableIntChunk().add(performanceEntry.getEvaluationNumber());
+        chunks[2].asWritableLongChunk().add(performanceEntry.getEvaluationNumber());
         chunks[3].asWritableIntChunk().add(performanceEntry.getOperationNumber());
         chunks[4].<String>asWritableObjectChunk().add(performanceEntry.getDescription());
         chunks[5].<String>asWritableObjectChunk().add(performanceEntry.getCallerLine());
