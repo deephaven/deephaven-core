@@ -36,7 +36,14 @@ add_executable(tests
     third_party/catch.hpp
 )
 
-target_compile_options(tests PRIVATE -Wall -Werror)
+if (LINUX)
+    target_compile_options(tests PRIVATE -Wall -Werror -Wno-deprecated-declarations)
+endif()
+
+if (WIN32)
+    target_compile_options(tests PRIVATE /W3)
+endif()
+
 target_include_directories(tests PUBLIC "..")
 
 target_link_libraries(tests deephaven::client)
