@@ -1,8 +1,8 @@
 ---
-title: "Overview"
+title: "Overview of the Deephaven Core R Client"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{overview}
+  %\VignetteIndexEntry{rdeephaven}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-The Deephaven Community R Client provides an R interface to Deephaven's powerful
+The Deephaven Core R Client provides an R interface to Deephaven's powerful
 real-time data engine, [_Deephaven Core_](https://deephaven.io/community/).
 To use this package, you must have a Deephaven server running and be able to 
 connect to it. For more information on how to set up a Deephaven server, see the 

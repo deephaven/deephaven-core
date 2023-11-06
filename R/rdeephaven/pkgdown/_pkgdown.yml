@@ -1,5 +1,6 @@
 ---
-url: https://rdeephaven.io
+url: https://deephaven.io/core/rdoc/
+
 template:
   bootstrap: 5
   bootswatch: cosmo
@@ -13,7 +14,7 @@ navbar:
       text: Articles
       menu:
       - text: Overview
-        href: articles/overview.html
+        href: articles/rdeephaven.html
       - text: Aggregations with agg_by
         href: articles/agg_by.html
       - text: Moving Operations with update_by

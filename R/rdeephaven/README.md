@@ -1,12 +1,12 @@
 
-# The Deephaven R Client
+# The Deephaven Core R Client
 
-The Deephaven R client is an R package that enables R users to interface with a Deephaven server and perform various
+The Deephaven Core R client is an R package that enables R users to interface with a Deephaven server and perform various
 server-side operations from the comfort of RStudio or any other R interface.
 
 ## What can the R client do?
 
-The Deephaven Client provides the following functionalities:
+The R Client provides the following functionalities:
 
 1. Connect to a Deephaven server
    -   with anonymous authentication (no username or password)
@@ -146,6 +146,8 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    library(rdeephaven)
    ```
    in the R session, and start using the client!
+   
+   For an introduction to the package, run `vignette("rdeephaven")`.
 
 
 **NOTE**
