@@ -595,10 +595,7 @@ public class ParquetTools {
             final Path firstEntryPath;
             // Ignore dot files while looking for the first entry
             try (final DirectoryStream<Path> sourceStream =
-                    Files.newDirectoryStream(sourcePath, (path) -> {
-                        final String filename = path.getFileName().toString();
-                        return !filename.isEmpty() && filename.charAt(0) != '.';
-                    })) {
+                    Files.newDirectoryStream(sourcePath, ParquetTools::ignoreDotFiles)) {
                 // Lexicographical comparison
                 firstEntryPath = StreamSupport.stream(sourceStream.spliterator(), false)
                         .min(Path::compareTo)
@@ -620,6 +617,11 @@ public class ParquetTools {
             throw new TableDataException("No recognized Parquet table layout found in " + source);
         }
         throw new TableDataException("Source " + source + " is neither a directory nor a regular file");
+    }
+
+    private static boolean ignoreDotFiles(Path path) {
+        final String filename = path.getFileName().toString();
+        return !filename.isEmpty() && filename.charAt(0) != '.';
     }
 
     private static BasicFileAttributes readAttributes(@NotNull final Path path) {
