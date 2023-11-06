@@ -36,8 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class BusinessCalendarParser {
 
-    @VisibleForTesting
-    static class BusinessCalendarInputs {
+    private static class BusinessCalendarInputs {
         private String calendarName;
         private String description;
         private ZoneId timeZone;
@@ -62,8 +61,7 @@ public class BusinessCalendarParser {
                 in.standardBusinessSchedule, in.weekendDays, in.holidays);
     }
 
-    @VisibleForTesting
-    static BusinessCalendarInputs parseBusinessCalendarInputs(@NotNull final File file) {
+    private static BusinessCalendarInputs parseBusinessCalendarInputs(@NotNull final File file) {
         Require.neqNull(file, "file");
         try {
             final BusinessCalendarInputs calendarElements = new BusinessCalendarInputs();

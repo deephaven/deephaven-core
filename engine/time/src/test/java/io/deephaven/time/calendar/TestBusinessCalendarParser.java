@@ -1,0 +1,40 @@
+package io.deephaven.time.calendar;
+
+import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.time.DateTimeUtils;
+
+import java.io.File;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.Objects;
+
+public class TestBusinessCalendarParser extends BaseArrayTestCase {
+
+    public void testLoad() throws URISyntaxException {
+        final String path = Paths
+                .get(Objects.requireNonNull(TestBusinessCalendarParser.class.getResource("/PARSER-TEST.calendar")).toURI())
+                .toString();
+        final File f = new File(path);
+        final BusinessCalendar cal = BusinessCalendarParser.loadBusinessCalendar(f);
+
+        assertEquals("PARSER-TEST-CAL", cal.name());
+        assertEquals("Test Calendar", cal.description());
+        assertEquals(DateTimeUtils.timeZone("Asia/Tokyo"), cal.timeZone());
+        assertEquals(LocalDate.of(2000, 1, 2), cal.firstValidDate());
+        assertEquals(LocalDate.of(2030, 11, 12), cal.lastValidDate());
+        assertEquals(2,cal.weekendDays().size());
+        assertEquals(LocalTime.of(6,14), cal.standardBusinessSchedule().businessStart());
+        assertEquals(LocalTime.of(12,34), cal.standardBusinessSchedule().businessEnd());
+        assertTrue(cal.weekendDays().contains(DayOfWeek.MONDAY));
+        assertTrue(cal.weekendDays().contains(DayOfWeek.WEDNESDAY));
+        assertEquals(2, cal.holidays().size());
+        assertTrue(cal.holidays().containsKey(LocalDate.of(2015, 1, 1)));
+        assertTrue(cal.holidays().containsKey(LocalDate.of(2015, 4, 6)));
+
+        assertEquals(DateTimeUtils.parseInstant("2015-04-06T14:15 Asia/Tokyo"), cal.businessSchedule("2015-04-06").businessStart());
+        assertEquals(DateTimeUtils.parseInstant("2015-04-06T16:46 Asia/Tokyo"), cal.businessSchedule("2015-04-06").businessEnd());
+    }
+}

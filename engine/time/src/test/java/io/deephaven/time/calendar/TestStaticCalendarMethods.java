@@ -20,7 +20,7 @@ import java.util.*;
  *
  * See also {@code StaticCalendarMethodsGenerator}.
  */
-public class StaticCalendarMethodsTest extends BaseArrayTestCase {
+public class TestStaticCalendarMethods extends BaseArrayTestCase {
 
     private final Map<Class<?>,Object[]> data = new HashMap<>();
     {

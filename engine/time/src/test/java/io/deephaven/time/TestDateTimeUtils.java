@@ -1906,6 +1906,24 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(LocalDate.of(2009, 12, 30), DateTimeUtils.plus(d, -3));
         TestCase.assertEquals(LocalDate.of(2010, 1, 5), DateTimeUtils.plus(d, Period.ofDays(3)));
         TestCase.assertEquals(LocalDate.of(2009, 12, 30), DateTimeUtils.plus(d, Period.ofDays(-3)));
+
+        TestCase.assertNull(DateTimeUtils.plus((LocalDate) null, 3));
+        TestCase.assertNull(DateTimeUtils.plus((LocalDate) null, Period.ofDays(3)));
+        TestCase.assertNull(DateTimeUtils.plus(d, (Period) null));
+
+        try {
+            DateTimeUtils.plus(d, Long.MAX_VALUE);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+
+        try {
+            DateTimeUtils.plus(LocalDate.MAX, Period.ofDays(Integer.MAX_VALUE));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
     }
 
     public void testPlus() {
@@ -2062,6 +2080,25 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(LocalDate.of(2010, 1, 5), DateTimeUtils.minus(d, -3));
         TestCase.assertEquals(LocalDate.of(2009, 12, 30), DateTimeUtils.minus(d, Period.ofDays(3)));
         TestCase.assertEquals(LocalDate.of(2010, 1, 5), DateTimeUtils.minus(d, Period.ofDays(-3)));
+
+
+        TestCase.assertNull(DateTimeUtils.minus((LocalDate) null, 3));
+        TestCase.assertNull(DateTimeUtils.minus((LocalDate) null, Period.ofDays(3)));
+        TestCase.assertNull(DateTimeUtils.minus(d, (Period) null));
+
+        try {
+            DateTimeUtils.minus(d, Long.MAX_VALUE);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+
+        try {
+            DateTimeUtils.minus(LocalDate.MIN, Period.ofDays(Integer.MAX_VALUE));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
     }
 
     public void testMinus() {
