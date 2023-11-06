@@ -10,7 +10,7 @@
 #' An `UpdateByOp` is the return type of one of Deephaven's [`uby`][UpdateBy] functions. It is a function that performs
 #' the computation specified by the `uby` function. These are intended to be passed directly to `update_by()`,
 #' and should never be instantiated directly be user code. For more information, see the vignette on
-#' `uby` functions with `vignette("Moving Operations")`. 
+#' `uby` functions with `vignette("update_by")`.
 #'
 #' If multiple tables have the same schema and the same UpdateBy operations need to be applied to each table, saving
 #' these objects directly in a variable may be useful to avoid having to re-create them each time:
@@ -62,7 +62,7 @@ UpdateByOp <- R6Class("UpdateByOp",
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the cumulative sum for all non-grouping columns.
@@ -128,7 +128,7 @@ uby_cum_sum <- function(cols = character()) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the cumulative product for all non-grouping columns.
@@ -194,7 +194,7 @@ uby_cum_prod <- function(cols = character()) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the cumulative minimum for all non-grouping columns.
@@ -260,7 +260,7 @@ uby_cum_min <- function(cols = character()) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the cumulative maximum for all non-grouping columns.
@@ -327,7 +327,7 @@ uby_cum_max <- function(cols = character()) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to perform a forward fill on all non-grouping columns.
@@ -402,7 +402,7 @@ uby_forward_fill <- function(cols = character()) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to apply the delta operation to all non-grouping columns.
@@ -483,7 +483,7 @@ uby_delta <- function(cols = character(), delta_control = "null_dominates") {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -565,7 +565,7 @@ uby_ema_tick <- function(decay_ticks, cols = character(), operation_control = op
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param decay_time ISO-8601-formatted duration string specifying the decay rate.
@@ -648,7 +648,7 @@ uby_ema_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -730,7 +730,7 @@ uby_ems_tick <- function(decay_ticks, cols = character(), operation_control = op
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param decay_time ISO-8601-formatted duration string specifying the decay rate.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -812,7 +812,7 @@ uby_ems_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -894,7 +894,7 @@ uby_emmin_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param decay_time ISO-8601-formatted duration string specifying the decay rate.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -976,7 +976,7 @@ uby_emmin_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1058,7 +1058,7 @@ uby_emmax_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param decay_time ISO-8601-formatted duration string specifying the decay rate.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1145,7 +1145,7 @@ uby_emmax_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1232,7 +1232,7 @@ uby_emstd_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param decay_time ISO-8601-formatted duration string specifying the decay rate.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1318,7 +1318,7 @@ uby_emstd_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling sum for all non-grouping columns.
@@ -1400,7 +1400,7 @@ uby_rolling_sum_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1487,7 +1487,7 @@ uby_rolling_sum_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling group for all non-grouping columns.
@@ -1565,7 +1565,7 @@ uby_rolling_group_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1648,7 +1648,7 @@ uby_rolling_group_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling average for all non-grouping columns.
@@ -1730,7 +1730,7 @@ uby_rolling_avg_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1817,7 +1817,7 @@ uby_rolling_avg_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling minimum for all non-grouping columns.
@@ -1899,7 +1899,7 @@ uby_rolling_min_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1986,7 +1986,7 @@ uby_rolling_min_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling maximum for all non-grouping columns.
@@ -2068,7 +2068,7 @@ uby_rolling_max_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -2155,7 +2155,7 @@ uby_rolling_max_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling product for all non-grouping columns.
@@ -2237,7 +2237,7 @@ uby_rolling_prod_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -2324,7 +2324,7 @@ uby_rolling_prod_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling count for all non-grouping columns.
@@ -2406,7 +2406,7 @@ uby_rolling_count_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -2493,7 +2493,7 @@ uby_rolling_count_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling standard deviation for all non-grouping columns.
@@ -2575,7 +2575,7 @@ uby_rolling_std_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -2662,7 +2662,7 @@ uby_rolling_std_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param wcol String denoting the column to use for weights. This must be a numeric column.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -2746,7 +2746,7 @@ uby_rolling_wavg_tick <- function(wcol, cols, rev_ticks, fwd_ticks = 0) {
 #' a `uby` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `uby` functions by running
-#' `vignette("Moving Operations")`.
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param wcol String denoting the column to use for weights. This must be a numeric column.

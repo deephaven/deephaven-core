@@ -2,7 +2,7 @@
 title: "Overview"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Overview}
+  %\VignetteIndexEntry{overview}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -112,7 +112,7 @@ something _must_ be done in R, like plotting or writing to a local file.
 Much of the power of Deephaven's suite of table operations is achieved through 
 the use of the `update_by()` and `agg_by()` methods. These table methods are
 important enough to warrant their own documentation pages, accessible by running
-`vignette("Moving Operations")` or `vignette("Aggregations")`. These methods
+`vignette("update_by")` or `vignette("agg_by")`. These methods
 come with their own suites of functions, prefixed with `agg_` and `uby_`
 respectively, that are listed in their documentation pages. Running
 `ls("package:rdeephaven")` will reveal that most of the functions included in

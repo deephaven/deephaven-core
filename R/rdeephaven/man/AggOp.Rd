@@ -8,7 +8,7 @@
 An \code{AggOp} is the return type of one of Deephaven's \code{agg} functions. It is a function that performs the
 computation specified by the \code{agg} function. These are intended to be passed directly to \code{agg_by()} or \code{agg_all_by()},
 and should never be instantiated directly be user code. For more information, see the
-vignette on \code{agg} functions with \code{vignette("Aggregations")}.
+vignette on \code{agg} functions with \code{vignette("agg_by")}.
 
 If multiple tables have the same schema and the same aggregations need to be applied to each table, saving these
 objects directly in a variable may be useful to avoid having to re-create them each time:

@@ -43,7 +43,7 @@ hidden from the user. However, it is important to understand this detail for deb
 a \code{uby} function can otherwise seem unexpected.
 
 For more information, see the vignette on \code{uby} functions by running
-\code{vignette("Moving Operations")}.
+\code{vignette("update_by")}.
 }
 \examples{
 \dontrun{

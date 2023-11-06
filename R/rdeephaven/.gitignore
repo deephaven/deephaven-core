@@ -7,3 +7,5 @@ lib/cpp-dependencies/env.sh
 *.so
 docs
 inst/doc
+/doc/
+/Meta/

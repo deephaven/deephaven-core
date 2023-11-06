@@ -1,8 +1,8 @@
 ---
-title: "Aggregations"
+title: "Aggregations with agg_by"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Aggregations}
+  %\VignetteIndexEntry{agg_by}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

@@ -24,7 +24,7 @@ typically hidden from the user. However, it is important to understand this deta
 as the output of an \code{agg} function can otherwise seem unexpected.
 
 For more information, see the vignette on \code{agg} functions by running
-\code{vignette("Aggregations")}.
+\code{vignette("agg_by")}.
 
 Note that this operation is not supported in \code{agg_all_by()}.
 }

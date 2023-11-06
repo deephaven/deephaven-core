@@ -13,11 +13,11 @@ navbar:
       text: Articles
       menu:
       - text: Overview
-        href: articles/Overview.html
-      - text: Aggregations
-        href: articles/Aggregations.html
-      - text: Moving Operations
-        href: "articles/Moving Operations.html"
+        href: articles/overview.html
+      - text: Aggregations with agg_by
+        href: articles/agg_by.html
+      - text: Moving Operations with update_by
+        href: articles/update_by.html
   
 reference:
   - title: Core API

@@ -5,7 +5,7 @@
 #' An `AggOp` is the return type of one of Deephaven's `agg` functions. It is a function that performs the
 #' computation specified by the `agg` function. These are intended to be passed directly to `agg_by()` or `agg_all_by()`,
 #' and should never be instantiated directly be user code. For more information, see the
-#' vignette on `agg` functions with `vignette("Aggregations")`.
+#' vignette on `agg` functions with `vignette("agg_by")`.
 #'
 #' If multiple tables have the same schema and the same aggregations need to be applied to each table, saving these
 #' objects directly in a variable may be useful to avoid having to re-create them each time:
@@ -61,7 +61,7 @@ AggOp <- R6Class("AggOp",
 #' as the output of an `agg` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `agg` functions by running
-#' `vignette("Aggregations")`.
+#' `vignette("agg_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
@@ -125,7 +125,7 @@ agg_first <- function(cols = character()) {
 #' as the output of an `agg` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `agg` functions by running
-#' `vignette("Aggregations")`.
+#' `vignette("agg_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
@@ -189,7 +189,7 @@ agg_last <- function(cols = character()) {
 #' as the output of an `agg` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `agg` functions by running
-#' `vignette("Aggregations")`.
+#' `vignette("agg_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
@@ -253,7 +253,7 @@ agg_min <- function(cols = character()) {
 #' as the output of an `agg` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `agg` functions by running
-#' `vignette("Aggregations")`.
+#' `vignette("agg_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
@@ -317,7 +317,7 @@ agg_max <- function(cols = character()) {
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
 #' For more information, see the vignette on `agg` functions by running
-#' `vignette("Aggregations")`.
+#' `vignette("agg_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
@@ -381,7 +381,7 @@ agg_sum <- function(cols = character()) {
 #' as the output of an `agg` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `agg` functions by running
-#' `vignette("Aggregations")`.
+#' `vignette("agg_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
@@ -445,7 +445,7 @@ agg_abs_sum <- function(cols = character()) {
 #' as the output of an `agg` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `agg` functions by running
-#' `vignette("Aggregations")`.
+#' `vignette("agg_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
@@ -509,7 +509,7 @@ agg_avg <- function(cols = character()) {
 #' as the output of an `agg` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `agg` functions by running
-#' `vignette("Aggregations")`.
+#' `vignette("agg_by")`.
 #'
 #' @param wcol String denoting the column to use for weights. This must be a numeric column.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
@@ -575,7 +575,7 @@ agg_w_avg <- function(wcol, cols = character()) {
 #' as the output of an `agg` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `agg` functions by running
-#' `vignette("Aggregations")`.
+#' `vignette("agg_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
@@ -639,7 +639,7 @@ agg_median <- function(cols = character()) {
 #' as the output of an `agg` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `agg` functions by running
-#' `vignette("Aggregations")`.
+#' `vignette("agg_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
@@ -703,7 +703,7 @@ agg_var <- function(cols = character()) {
 #' as the output of an `agg` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `agg` functions by running
-#' `vignette("Aggregations")`.
+#' `vignette("agg_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
@@ -767,7 +767,7 @@ agg_std <- function(cols = character()) {
 #' as the output of an `agg` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `agg` functions by running
-#' `vignette("Aggregations")`.
+#' `vignette("agg_by")`.
 #'
 #' @param percentile Numeric scalar between 0 and 1 denoting the percentile to compute.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
@@ -833,7 +833,7 @@ agg_percentile <- function(percentile, cols = character()) {
 #' as the output of an `agg` function can otherwise seem unexpected.
 #' 
 #' For more information, see the vignette on `agg` functions by running
-#' `vignette("Aggregations")`.
+#' `vignette("agg_by")`.
 #'
 #' Note that this operation is not supported in `agg_all_by()`.
 #'
