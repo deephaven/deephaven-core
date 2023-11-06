@@ -85,7 +85,7 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
     /**
      * Get an ordered list of columns this location is sorted by.
      * 
-     * @return a non-null ordered list of {@link SortColumn}s
+     * @return a non-null ordered list of {@link SortColumn SortColumns}
      */
     @NotNull
     List<SortColumn> getSortedColumns();

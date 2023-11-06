@@ -76,14 +76,6 @@ public interface ColumnSourceManager {
     String locationColumnName();
 
     /**
-     * Get the name of the column that contains the offset values from {@link #locationTable()}.
-     *
-     * @return The name of the location column
-     */
-    @SuppressWarnings("unused")
-    String offsetColumnName();
-
-    /**
      * Get the name of the column that contains the {@link RowSet} values from {@link #locationTable()}.
      *
      * @return The name of the row set column

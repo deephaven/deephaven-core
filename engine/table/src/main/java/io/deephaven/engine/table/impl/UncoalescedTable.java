@@ -65,8 +65,6 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
      */
     protected abstract Table doCoalesce();
 
-    protected void postCoalesceAction(final Table coalesced) {}
-
     public final Table coalesce() {
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             Table localCoalesced;
@@ -78,7 +76,6 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
                     return localCoalesced;
                 }
                 coalesced = doCoalesce();
-                postCoalesceAction(coalesced);
                 return coalesced;
             }
         }

@@ -9,7 +9,6 @@ import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
-import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,23 +39,23 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     private final TObjectIntHashMap<Object> cachedPositionMap;
 
     public PartitioningColumnDataIndexImpl(@NotNull final Table sourceTable,
+            final ColumnSource<?> keySource,
             final ColumnSourceManager columnSourceManager,
             @NotNull final String keyColumnName) {
         Assert.eqTrue(sourceTable.hasColumns(keyColumnName), keyColumnName + " was not found in the source table");
 
-        keySource = sourceTable.getColumnSource(keyColumnName);
-
         this.sourceTable = sourceTable;
-        this.keyColumnName = keyColumnName;
+        this.keySource = keySource;
         this.columnSourceManager = columnSourceManager;
+        this.keyColumnName = keyColumnName;
 
         // Build the index table and the position lookup map.
         final Table locationTable = columnSourceManager.locationTable();
-        indexKeySource =
-                (WritableColumnSource<Object>) ArrayBackedColumnSource.getMemoryColumnSource(10,
-                        keySource.getType(), null);
-        indexRowSetSource =
-                (ObjectArraySource<RowSet>) ArrayBackedColumnSource.getMemoryColumnSource(10, RowSet.class, null);
+        indexKeySource = (WritableColumnSource<Object>) ArrayBackedColumnSource.getMemoryColumnSource(
+                10,
+                keySource.getType(),
+                null);
+        indexRowSetSource = new ObjectArraySource<>(RowSet.class, null);
 
         cachedPositionMap = new TObjectIntHashMap<>(locationTable.intSize(), 0.5F, -1);
 
@@ -100,8 +99,6 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
         // Add all the existing locations to the map.
         final ColumnSource<TableLocation> locationColumnSource =
                 locationTable.getColumnSource(columnSourceManager.locationColumnName());
-        final ColumnSource<Long> offsetColumnSource =
-                locationTable.getColumnSource(columnSourceManager.offsetColumnName());
         final ColumnSource<RowSet> rowSetColumnSource =
                 locationTable.getColumnSource(columnSourceManager.rowSetColumnName());
 
@@ -112,11 +109,11 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
             indexKeySource.ensureCapacity(newSize);
             indexRowSetSource.ensureCapacity(newSize);
 
-
             update.added().forAllRowKeys((long key) -> {
                 final TableLocation location = locationColumnSource.get(key);
-                final long offset = offsetColumnSource.getLong(key);
-                final RowSet shiftedRowSet = rowSetColumnSource.get(key).shift(offset);
+                // Compute the offset from the key (which is the location region index).
+                final long firstKey = RegionedColumnSource.getFirstRowKey(Math.toIntExact(key));
+                final RowSet shiftedRowSet = rowSetColumnSource.get(key).shift(firstKey);
 
                 final Object locationKey = location.getKey().getPartitionValue(this.keyColumnName);
 
@@ -134,8 +131,8 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
 
         update.modified().forAllRowKeys((long key) -> {
             final TableLocation location = locationColumnSource.get(key);
-            final long offset = offsetColumnSource.getLong(key);
-            final RowSet shiftedRowSet = rowSetColumnSource.get(key).shift(offset);
+            final long firstKey = RegionedColumnSource.getFirstRowKey(Math.toIntExact(key));
+            final RowSet shiftedRowSet = rowSetColumnSource.get(key).shift(firstKey);
 
             final Object locationKey = location.getKey().getPartitionValue(this.keyColumnName);
 

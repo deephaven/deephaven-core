@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.dataindex.PartitioningColumnDataIndexImpl;
 import io.deephaven.engine.table.impl.dataindex.StorageBackedDataIndexImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.*;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
@@ -19,12 +20,16 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.ref.WeakReference;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * Basic uncoalesced table that only adds keys.
@@ -72,6 +77,12 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     private Runnable locationChangePoller;
 
     /**
+     * A reference to a delayed error notifier, if one is pending.
+     */
+    @ReferentialIntegrity
+    private Runnable delayedErrorReference;
+
+    /**
      * Construct a new disk-backed table.
      *
      * @param tableDefinition A TableDefinition
@@ -97,6 +108,9 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 definition.getColumns() // NB: this is the *re-written* definition passed to the super-class
                                         // constructor.
         );
+
+        // Add a liveness reference to the location table.
+        manage(columnSourceManager.locationTable());
 
         setRefreshing(isRefreshing);
         setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -240,9 +254,17 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
 
                 // Notify listeners to the SourceTable when we had an issue refreshing available locations.
                 notifyListenersOnError(e, null);
+
+                // Notify any listeners to the locations table that we had an error.
+                final BaseTable locationTable = (BaseTable) columnSourceManager.locationTable();
+                if (locationTable.getLastNotificationStep() == updateGraph.clock().currentStep()) {
+                    delayedErrorReference = new DelayedErrorNotifier(e, locationTable);
+                } else {
+                    locationTable.notifyListenersOnError(e, null);
+                    locationTable.forceReferenceCountToZero();
+                }
             }
         }
-
     }
 
     /**
@@ -256,39 +278,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     protected Collection<ImmutableTableLocationKey> filterLocationKeys(
             @NotNull final Collection<ImmutableTableLocationKey> foundLocationKeys) {
         return foundLocationKeys;
-    }
-
-    @Override
-    protected final void postCoalesceAction(final Table coalesced) {
-        // As part of coalescing, create the RowSet-level data indexes for partitioning and indexed columns.
-        final DataIndexer dataIndexer = DataIndexer.of(rowSet);
-
-        // Add the partitioning columns as trivial data indexes
-        final TableDefinition tableDefinition = getDefinition();
-        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
-            if (columnDefinition.isPartitioning()) {
-                final DataIndex dataIndex = new PartitioningColumnDataIndexImpl(
-                        coalesced,
-                        columnSourceManager,
-                        columnDefinition.getName());
-                dataIndexer.addDataIndex(dataIndex);
-            }
-        }
-
-        // Inspect the locations to see what other data indexes exist.
-        final Collection<TableLocation> locations = columnSourceManager.allLocations();
-        if (!locations.isEmpty()) {
-            // Use the first location as a proxy for the whole table
-            final TableLocation firstLocation = locations.iterator().next();
-
-            for (final String[] keyArr : firstLocation.getDataIndexColumns()) {
-                final DataIndex dataIndex = new StorageBackedDataIndexImpl(
-                        coalesced,
-                        columnSourceManager,
-                        keyArr);
-                dataIndexer.addDataIndex(dataIndex);
-            }
-        }
     }
 
     @Override
@@ -324,6 +313,44 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                             }
                         };
                 snapshotControl.setListenerAndResult(listener, resultTable);
+            }
+
+            // As part of coalescing, create the RowSet-level data indexes for partitioning and indexed columns.
+            final DataIndexer dataIndexer = DataIndexer.of(rowSet);
+
+            final Map<String, ? extends ColumnSource<?>> columnSourceMap = columnSourceManager.getColumnSources();
+
+            // Add the partitioning columns as trivial data indexes
+            final TableDefinition tableDefinition = getDefinition();
+            for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
+                if (columnDefinition.isPartitioning()) {
+                    final ColumnSource<?> keySource = columnSourceMap.get(columnDefinition.getName());
+                    final DataIndex dataIndex = new PartitioningColumnDataIndexImpl(
+                            resultTable,
+                            keySource,
+                            columnSourceManager,
+                            columnDefinition.getName());
+                    dataIndexer.addDataIndex(dataIndex);
+                }
+            }
+
+            // Inspect the locations to see what other data indexes exist.
+            final Collection<TableLocation> locations = columnSourceManager.allLocations();
+            if (!locations.isEmpty()) {
+                // Use the first location as a proxy for the whole table
+                final TableLocation firstLocation = locations.iterator().next();
+
+                for (final String[] keyArr : firstLocation.getDataIndexColumns()) {
+                    final ColumnSource<?>[] keySources = Arrays.stream(keyArr).map(columnSourceMap::get)
+                            .toArray(ColumnSource[]::new);
+
+                    final DataIndex dataIndex = new StorageBackedDataIndexImpl(
+                            resultTable,
+                            keySources,
+                            columnSourceManager,
+                            keyArr);
+                    dataIndexer.addDataIndex(dataIndex);
+                }
             }
 
             result.setValue(resultTable);
@@ -365,6 +392,34 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             if (locationChangePoller != null) {
                 updateSourceRegistrar.removeSource(locationChangePoller);
             }
+        }
+    }
+
+    private static final class DelayedErrorNotifier implements Runnable {
+
+        private final Throwable error;
+        private final UpdateGraph updateGraph;
+        private final WeakReference<BaseTable<?>> tableReference;
+
+        private DelayedErrorNotifier(@NotNull final Throwable error,
+                @NotNull final BaseTable<?> table) {
+            this.error = error;
+            updateGraph = table.getUpdateGraph();
+            tableReference = new WeakReference<>(table);
+            updateGraph.addSource(this);
+        }
+
+        @Override
+        public void run() {
+            updateGraph.removeSource(this);
+
+            final BaseTable<?> table = tableReference.get();
+            if (table == null) {
+                return;
+            }
+
+            table.notifyListenersOnError(error, null);
+            table.forceReferenceCountToZero();
         }
     }
 }

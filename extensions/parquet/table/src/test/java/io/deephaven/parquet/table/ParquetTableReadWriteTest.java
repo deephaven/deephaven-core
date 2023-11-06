@@ -39,6 +39,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
 import junit.framework.TestCase;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -774,7 +775,8 @@ public class ParquetTableReadWriteTest {
         final File destFile = new File(parentDir, destFilename);
         writer.writeTable(tableToSave, destFile);
         List filesInDir = Arrays.asList(parentDir.list());
-        String vvvGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("vvv");
+        String vvvGroupingFilename = ParquetTools.defaultIndexFileName(destFilename)
+                .apply(ArrayUtils.toArray("vvv"));
         assertTrue(filesInDir.size() == 2 && filesInDir.contains(destFilename)
                 && filesInDir.contains(vvvGroupingFilename));
         Table fromDisk = ParquetTools.readTable(destFile);
@@ -836,8 +838,10 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTables(tablesToSave, firstTable.getDefinition(), destFiles);
 
         List<String> filesInDir = Arrays.asList(parentDir.list());
-        String firstGroupingFilename = ParquetTools.defaultGroupingFileName(firstFilename).apply("vvv");
-        String secondGroupingFilename = ParquetTools.defaultGroupingFileName(secondFilename).apply("vvv");
+        String firstGroupingFilename = ParquetTools.defaultIndexFileName(firstFilename)
+                .apply(ArrayUtils.toArray("vvv"));
+        String secondGroupingFilename = ParquetTools.defaultIndexFileName(secondFilename)
+                .apply(ArrayUtils.toArray("vvv"));
         assertTrue(filesInDir.size() == 4 && filesInDir.contains(firstFilename)
                 && filesInDir.contains(secondFilename) && filesInDir.contains(firstGroupingFilename)
                 && filesInDir.contains(secondGroupingFilename));
@@ -879,7 +883,8 @@ public class ParquetTableReadWriteTest {
         final String destFilename = "groupingColumnsWriteTests.parquet";
         final File destFile = new File(parentDir, destFilename);
         writer.writeTable(tableToSave, destFile);
-        String vvvGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("vvv");
+        String vvvGroupingFilename = ParquetTools.defaultIndexFileName(destFilename)
+                .apply(ArrayUtils.toArray("vvv"));
 
         // Write a new table successfully at the same position with different grouping columns
         final TableDefinition anotherTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("xxx"));
@@ -889,7 +894,8 @@ public class ParquetTableReadWriteTest {
 
         writer.writeTable(anotherTableToSave, destFile);
         List filesInDir = Arrays.asList(parentDir.list());
-        final String xxxGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("xxx");
+        final String xxxGroupingFilename = ParquetTools.defaultIndexFileName(destFilename)
+                .apply(ArrayUtils.toArray("xxx"));
 
         // The directory now should contain the updated table, its grouping file for column xxx, and old grouping file
         // for column vvv

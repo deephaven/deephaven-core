@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl.dataindex;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
@@ -17,8 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.SoftReference;
 import java.util.*;
-import java.util.stream.Collectors;
-
 
 /**
  * This class provides data indexes for merged tables. It is responsible for ensuring that the provided table accounts
@@ -53,33 +50,18 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     private RowSetLookup cachedRowSetLookup;
 
     public StorageBackedDataIndexImpl(@NotNull final Table sourceTable,
+            final ColumnSource<?>[] keySources,
             final ColumnSourceManager columnSourceManager,
             @NotNull final String[] keyColumnNames) {
 
-        this.columnSourceManager = columnSourceManager;
         this.sourceTable = sourceTable;
+        this.columnSourceManager = columnSourceManager;
         this.keyColumnNames = keyColumnNames;
 
-        List<ColumnSource<?>> keySources = Arrays.stream(keyColumnNames).map(sourceTable::getColumnSource)
-                .collect(Collectors.toList());
-
         // Create an in-order reverse lookup map for the key columnn names.
-        keyColumnMap = new WeakHashMap<>(keySources.size());
-        for (int ii = 0; ii < keySources.size(); ii++) {
-            ColumnSource<?> keySource = keySources.get(ii);
-
-            Assert.eqTrue(keySource instanceof RegionedColumnSource, "keySource instanceof RegionedColumnSource");
-
-            // Find the column name in the source table and add to the map.
-            for (final Map.Entry<String, ? extends ColumnSource<?>> entry : sourceTable.getColumnSourceMap()
-                    .entrySet()) {
-                if (keySource == entry.getValue()) {
-                    final String columnName = entry.getKey();
-                    keyColumnMap.put(keySource, columnName);
-                    keyColumnNames[ii] = columnName;
-                    break;
-                }
-            }
+        keyColumnMap = new WeakHashMap<>(keySources.length);
+        for (int ii = 0; ii < keySources.length; ii++) {
+            keyColumnMap.put(keySources[ii], keyColumnNames[ii]);
         }
 
         // Store the column source manager for later use.
@@ -119,8 +101,6 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
         // Add all the existing locations to the map.
         final ColumnSource<TableLocation> locationColumnSource =
                 locationTable.getColumnSource(columnSourceManager.locationColumnName());
-        final ColumnSource<Long> offsetColumnSource =
-                locationTable.getColumnSource(columnSourceManager.offsetColumnName());
 
         // Invalidate the index table and cached lookup objects.
         indexTable = null;
@@ -131,7 +111,7 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
         update.added().forAllRowKeys((long key) -> {
             // Add new locations to the map for addition to the data index (when resolved).
             final TableLocation location = locationColumnSource.get(key);
-            final long firstKey = offsetColumnSource.getLong(key);
+            final long firstKey = RegionedColumnSource.getFirstRowKey(Math.toIntExact(key));
 
             final LocationState locationState =
                     new LocationState(location, firstKey, keyColumnNames);
