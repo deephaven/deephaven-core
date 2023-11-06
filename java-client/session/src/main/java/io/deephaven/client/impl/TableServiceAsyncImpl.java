@@ -10,7 +10,6 @@ import io.deephaven.client.impl.TableService.TableHandleFuture;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.qst.table.TableSpec;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -71,35 +70,7 @@ final class TableServiceAsyncImpl {
 
         synchronized void init(Export export) {
             this.export = Objects.requireNonNull(export);
-            // We would like to be able to proactively release an export when the user cancels a future. There are a
-            // couple reasons why we can't currently do this:
-            //
-            // 1. The release RPC only works with exports that have already been created. It's possible that a release
-            // RPC would race w/ the batch RPC. And even if we guarantee the release comes on the wire after the batch,
-            // it's still possible the batch impl hasn't created the exports yet. In either case, a race leads to a
-            // leaked export.
-            //
-            // 2. The release RPC is non-deterministic with how it handles releases when the export _does_ exist: if the
-            // export is still in process, it transitions the export to a CANCELLED state, and then propagates cancels
-            // to downstream dependencies; if the export is already EXPORTED (ie, finished initial computation), then
-            // the state transitions to RELEASED which does _not_ cancel downstream dependencies. This bifurcating
-            // behavior is strange - it seems like typical liveness abstractions should be used instead.
-            //
-            // [future_1, future_2] = executeAsync([table_spec_1, table_spec_2]);
-            // future_1.cancel(true);
-            //
-            // In the pseudocode above, I maintain that a) we should be able to immediately tell the server we no longer
-            // require an export for table_spec_1, and b) future_2 should still be valid, regardless of whether it
-            // depends on table_spec_1 or not.
-            //
-            // See io.deephaven.server.session.SessionState.ExportObject.cancel.
-            //
-            // We _could_ work around the cancel propagation issue by doing an isolated FetchTableRequest for each
-            // export the user requests, but regardless that doesn't solve the former issue.
-            //
-            // TODO: We need to make sure Batch exports get a chance to establish all dependencies wrt liveness before
-            // race w/ release.
-            //
+            // TODO(deephaven-core#4781): Immediately notify server of release when user cancels TableHandleFuture
             // this.future.whenComplete((tableHandle, throwable) -> {
             // if (isCancelled()) {
             // export.release();
@@ -113,10 +84,10 @@ final class TableServiceAsyncImpl {
                 return;
             }
             handle.init(export);
-            handle.mitigateDhc4754(Duration.ofMillis(100));
             if (!future.complete(handle)) {
                 // If we are unable to complete the future, it means the user cancelled it. It's only at this point in
-                // time we are able to let the server know that we don't need it anymore. See comments in #init.
+                // time we are able to let the server know that we don't need it anymore.
+                // TODO(deephaven-core#4781): Immediately notify server of release when user cancels TableHandleFuture
                 handle.close();
             }
             handle = null;

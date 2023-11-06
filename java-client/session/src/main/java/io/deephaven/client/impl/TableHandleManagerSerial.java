@@ -200,7 +200,7 @@ abstract class TableHandleManagerSerial extends TableHandleManagerBase {
 
             @Override
             protected TableHandle handle(TableSpec table) {
-                return TableServiceImpl.ofUnchecked(exportService, table, tracker);
+                return TableServiceImpl.executeUnchecked(exportService, table, tracker);
             }
         };
     }

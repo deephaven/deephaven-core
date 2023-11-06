@@ -26,7 +26,7 @@ public class TableServiceAsyncTest extends DeephavenSessionTestBase {
     public void longChainAsyncExportOnlyLast() throws ExecutionException, InterruptedException, TimeoutException {
         final List<TableSpec> longChain = createLongChain();
         final TableSpec longChainLast = longChain.get(longChain.size() - 1);
-        try (final TableHandle handle = get(session.newStatefulTableService().executeAsync(longChainLast))) {
+        try (final TableHandle handle = get(session.executeAsync(longChainLast))) {
             checkSucceeded(handle);
         }
     }
@@ -34,7 +34,7 @@ public class TableServiceAsyncTest extends DeephavenSessionTestBase {
     @Test(timeout = 20000)
     public void longChainAsyncExportAll() throws ExecutionException, InterruptedException, TimeoutException {
         final List<TableSpec> longChain = createLongChain();
-        final List<? extends TableHandleFuture> futures = session.newStatefulTableService().executeAsync(longChain);
+        final List<? extends TableHandleFuture> futures = session.executeAsync(longChain);
         try {
             for (final TableHandleFuture future : futures) {
                 try (final TableHandle handle = get(future)) {
@@ -51,7 +51,7 @@ public class TableServiceAsyncTest extends DeephavenSessionTestBase {
     public void longChainAsyncExportAllCancelAllButLast()
             throws ExecutionException, InterruptedException, TimeoutException {
         final List<TableSpec> longChain = createLongChain();
-        final List<? extends TableHandleFuture> futures = session.newStatefulTableService().executeAsync(longChain);
+        final List<? extends TableHandleFuture> futures = session.executeAsync(longChain);
         // Cancel or close all but the last one
         TableService.TableHandleFuture.cancelOrClose(futures.subList(0, futures.size() - 1), true);
         try (final TableHandle lastHandle = get(futures.get(futures.size() - 1))) {

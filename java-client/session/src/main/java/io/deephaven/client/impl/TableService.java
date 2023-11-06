@@ -3,6 +3,7 @@
  */
 package io.deephaven.client.impl;
 
+import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.table.TableSpec;
 
 import java.time.Duration;
@@ -23,6 +24,11 @@ public interface TableService extends TableHandleManager {
 
     /**
      * A batch table handle manager.
+     *
+     * <p>
+     * When {@code mixinStacktraces == true}, preemptive stacktraces will taken in the the {@link TableCreationLogic}
+     * methods. While relatively expensive, in exceptional circumstances this mixin allows errors to be more
+     * appropriately attributed with their source.
      *
      * @param mixinStacktraces if stacktraces should be mixin
      * @return a batch manager
@@ -57,10 +63,11 @@ public interface TableService extends TableHandleManager {
     interface TableHandleFuture extends Future<TableHandle> {
 
         /**
-         * Waits if necessary for the computation to complete, and then retrieves its result. If an
-         * {@link InterruptedException} is thrown, the future will be cancelled. If the cancellation is successful, the
-         * the exception will be re-thrown; otherwise, the normally completed value will be returned, or the
-         * {@link ExecutionException} will be thrown, with {@link Thread#interrupt()} invoked on the current thread.
+         * Waits if necessary for the computation to complete, and then retrieves its result. If the current thread is
+         * interrupted while waiting, {@link #cancel(boolean)} will be invoked.
+         *
+         * <p>
+         * After this method returns (normally or exceptionally), {@code this} future will be {@link #isDone() done}.
          *
          * @return the table handle
          * @throws InterruptedException if the current thread was interrupted while waiting
@@ -73,11 +80,11 @@ public interface TableService extends TableHandleManager {
 
         /**
          * Waits if necessary for at most the given {@code timeout} for the computation to complete, and then retrieves
-         * its result. If an {@link InterruptedException} or {@link TimeoutException} is thrown, the future will be
-         * cancelled. If the cancellation is successful, the exception will be re-thrown; otherwise, the normally
-         * completed value will be returned, or the {@link ExecutionException} will be thrown, with
-         * {@link Thread#interrupt()} invoked on the current thread if an {@link InterruptedException} has been thrown
-         * during this process.
+         * its result. If the current thread is interrupted while waiting or times out, {@link #cancel(boolean)} will be
+         * invoked.
+         *
+         * <p>
+         * After this method returns (normally or exceptionally), {@code this} future will be {@link #isDone() done}.
          *
          * @return the table handle
          * @throws InterruptedException if the current thread was interrupted while waiting
@@ -99,7 +106,7 @@ public interface TableService extends TableHandleManager {
          *        in-progress tasks are allowed to complete
          */
         static void cancelOrClose(Iterable<? extends TableHandleFuture> futures, boolean mayInterruptIfRunning) {
-            FutureHelper.cancelOrConsume(futures, (tableHandle, e) -> {
+            FutureHelper.cancelOrConsume(futures, (tableHandle, e, c) -> {
                 if (tableHandle != null) {
                     tableHandle.close();
                 }

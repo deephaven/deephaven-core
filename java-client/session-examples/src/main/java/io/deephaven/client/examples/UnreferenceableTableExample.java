@@ -6,6 +6,7 @@ package io.deephaven.client.examples;
 import io.deephaven.client.impl.Session;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
+import io.deephaven.client.impl.TableService;
 import io.deephaven.qst.table.TableSpec;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
@@ -32,11 +33,12 @@ class UnreferenceableTableExample extends SingleSessionExampleBase {
         final TableSpec r = TableSpec.empty(10).select("R=random()");
         final TableSpec rPlusOne = r.view("PlusOne=R + 1");
         final TableSpec rMinusOne = r.view("PlusOne=R - 1");
+        final TableService statefulTableService = session.newStatefulTableService();
         final TableHandleManager manager = mode == null
-                ? session.newStatefulTableService()
+                ? statefulTableService
                 : mode.batch
-                        ? session.batch()
-                        : session.serial();
+                        ? statefulTableService.batch()
+                        : statefulTableService.serial();
         // noinspection unused
         try (
                 final TableHandle hPlusOne = manager.execute(rPlusOne);

@@ -24,9 +24,9 @@ final class TableServiceImpl {
      * @throws InterruptedException if the current thread is interrupted while waiting
      * @throws TableHandleException if there is a table creation exception
      */
-    static TableHandle of(ExportService exportService, TableSpec table, Lifecycle lifecycle)
+    static TableHandle execute(ExportService exportService, TableSpec table, Lifecycle lifecycle)
             throws InterruptedException, TableHandleException {
-        return of(exportService, Collections.singletonList(table), lifecycle).get(0);
+        return execute(exportService, Collections.singletonList(table), lifecycle).get(0);
     }
 
     /**
@@ -41,18 +41,17 @@ final class TableServiceImpl {
      * @throws InterruptedException if the current thread is interrupted while waiting
      * @throws TableHandleException if there is a table creation exception
      */
-    static List<TableHandle> of(ExportService exportService, Iterable<TableSpec> tables,
-            Lifecycle lifecycle) throws InterruptedException, TableHandleException {
-        List<TableHandle> handles = impl(exportService, tables, lifecycle);
+    static List<TableHandle> execute(ExportService exportService, Iterable<TableSpec> tables, Lifecycle lifecycle)
+            throws InterruptedException, TableHandleException {
+        List<TableHandle> handles = executeImpl(exportService, tables, lifecycle);
         for (TableHandle handle : handles) {
             handle.await();
             handle.throwOnError();
-            handle.mitigateDhc4754(Duration.ofMillis(100));
         }
         return handles;
     }
 
-    static TableHandle ofUnchecked(ExportService exportService, TableSpec table, Lifecycle lifecycle) {
+    static TableHandle executeUnchecked(ExportService exportService, TableSpec table, Lifecycle lifecycle) {
         final TableHandle handle = new TableHandle(table, lifecycle);
         try (final ExportServiceRequest request =
                 exportService.exportRequest(ExportsRequest.of(handle.exportRequest()))) {
@@ -65,11 +64,10 @@ final class TableServiceImpl {
         }
         handle.awaitUnchecked();
         handle.throwOnErrorUnchecked();
-        handle.mitigateDhc4754(Duration.ofMillis(100));
         return handle;
     }
 
-    private static List<TableHandle> impl(ExportService exportService, Iterable<TableSpec> specs,
+    private static List<TableHandle> executeImpl(ExportService exportService, Iterable<TableSpec> specs,
             Lifecycle lifecycle) {
         ExportsRequest.Builder exportBuilder = ExportsRequest.builder();
         List<TableHandle> handles = new ArrayList<>();

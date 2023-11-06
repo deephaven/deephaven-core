@@ -39,18 +39,18 @@ abstract class TableHandleManagerBatch extends TableHandleManagerBase {
 
     @Override
     protected TableHandle handle(TableSpec table) {
-        return TableServiceImpl.ofUnchecked(exportService(), table, null);
+        return TableServiceImpl.executeUnchecked(exportService(), table, null);
     }
 
     @Override
     public TableHandle execute(TableSpec table) throws TableHandleException, InterruptedException {
-        return TableServiceImpl.of(exportService(), table, null);
+        return TableServiceImpl.execute(exportService(), table, null);
     }
 
     @Override
     public List<TableHandle> execute(Iterable<TableSpec> tables)
             throws TableHandleException, InterruptedException {
-        return TableServiceImpl.of(exportService(), tables, null);
+        return TableServiceImpl.execute(exportService(), tables, null);
     }
 
     @Override

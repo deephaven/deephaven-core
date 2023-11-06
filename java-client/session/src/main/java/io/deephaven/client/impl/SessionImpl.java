@@ -162,7 +162,7 @@ public final class SessionImpl extends SessionBase {
 
             @Override
             protected TableHandle handle(TableSpec table) {
-                return io.deephaven.client.impl.TableServiceImpl.ofUnchecked(exportService(), table, null);
+                return io.deephaven.client.impl.TableServiceImpl.executeUnchecked(exportService(), table, null);
             }
         };
     }
@@ -312,8 +312,9 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     protected TableService delegate() {
-        // Session.execute / Session.executeAsync will create one-off TableServices for exporting
-        // Session.batch / Session.serial will create stateful TableHandleManagers
+        // This allows Session to implement an un-cached TableService.
+        // Each respective execution (Session.execute(), Session.executeAsync(), Session.serial().execute(), etc)
+        // will create new states for that specific execution.
         return newStatefulTableService();
     }
 
@@ -602,7 +603,7 @@ public final class SessionImpl extends SessionBase {
 
                 @Override
                 protected TableHandle handle(TableSpec table) {
-                    return io.deephaven.client.impl.TableServiceImpl.ofUnchecked(exportService(), table, null);
+                    return io.deephaven.client.impl.TableServiceImpl.executeUnchecked(exportService(), table, null);
                 }
             };
         }

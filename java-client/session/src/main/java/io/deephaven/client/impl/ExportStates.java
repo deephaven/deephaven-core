@@ -23,13 +23,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -261,7 +261,7 @@ final class ExportStates implements ExportService {
         State(TableSpec table, int exportId) {
             this.table = Objects.requireNonNull(table);
             this.exportId = exportId;
-            this.children = new CopyOnWriteArraySet<>();
+            this.children = new LinkedHashSet<>();
         }
 
         Session session() {
