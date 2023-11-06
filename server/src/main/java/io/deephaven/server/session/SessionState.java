@@ -38,6 +38,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
+import io.deephaven.util.process.ProcessEnvironment;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
@@ -564,7 +565,7 @@ public class SessionState {
 
         /** used to identify and propagate error details */
         private String errorId;
-        private String dependentHandle;
+        private String failedDependencyLogIdentity;
         private Exception caughtException;
 
         /**
@@ -604,7 +605,7 @@ public class SessionState {
             this.logIdentity = Integer.toHexString(System.identityHashCode(this)) + "-sessionless";
 
             if (result == null) {
-                assignErrorId();
+                maybeAssignErrorId();
                 state = ExportNotification.State.FAILED;
             } else {
                 state = ExportNotification.State.EXPORTED;
@@ -663,11 +664,16 @@ public class SessionState {
             hasHadWorkSet = true;
             this.requiresSerialQueue = requiresSerialQueue;
 
-            if (isExportStateTerminal(this.state)) {
-                // nothing to do because dependency already failed; hooray??
+            if (isExportStateTerminal(state)) {
+                // The following scenarios cause us to get into this state:
+                // - this export object was released/cancelled
+                // - the session expiration propagated to this export object
+                // Note that already failed dependencies will be handled in the onResolveOne method below.
+
+                // since this is the first we know of the errorHandler, it could not have been invoked yet
                 if (errorHandler != null) {
-                    assignErrorId();
-                    errorHandler.onError(state, errorId, null, null);
+                    maybeAssignErrorId();
+                    errorHandler.onError(state, errorId, caughtException, failedDependencyLogIdentity);
                 }
                 return;
             }
@@ -784,6 +790,9 @@ public class SessionState {
                     || isExportStateTerminal(this.state)) {
                 throw new IllegalStateException("cannot change state if export is already in terminal state");
             }
+            if (this.state != ExportNotification.State.UNKNOWN && this.state.getNumber() >= state.getNumber()) {
+                throw new IllegalStateException("export object state changes must advance toward a terminal state");
+            }
             this.state = state;
 
             // Send an export notification before possibly notifying children of our state change.
@@ -801,9 +810,7 @@ public class SessionState {
             }
 
             if (isExportStateFailure(state) && errorHandler != null) {
-                if (errorId == null) {
-                    assignErrorId();
-                }
+                maybeAssignErrorId();
                 try {
                     final Exception toReport;
                     if (caughtException != null && errorTransformer != null) {
@@ -812,9 +819,12 @@ public class SessionState {
                         toReport = caughtException;
                     }
 
-                    errorHandler.onError(state, errorId, toReport, dependentHandle);
-                } catch (final Exception err) {
+                    errorHandler.onError(state, errorId, toReport, failedDependencyLogIdentity);
+                } catch (final Throwable err) {
+                    // this is a serious error; crash the jvm to ensure that we don't miss it
                     log.error().append("Unexpected error while reporting failure: ").append(err).endl();
+                    ProcessEnvironment.getGlobalFatalErrorReporter().reportAsync(
+                            "Unexpected error while reporting ExportObject failure", err);
                 }
             }
 
@@ -822,10 +832,12 @@ public class SessionState {
             if (isNowExported && successHandler != null) {
                 try {
                     successHandler.accept(result);
-                } catch (final Exception err) {
+                } catch (final Throwable err) {
+                    // this is a serious error; crash the jvm to ensure that we don't miss it
                     log.error().append("Unexpected error while reporting success: ").append(err).endl();
+                    ProcessEnvironment.getGlobalFatalErrorReporter().reportAsync(
+                            "Unexpected error while reporting ExportObject success", err);
                 }
-                successHandler = null;
             }
 
             if (isNowExported || isExportStateTerminal(state)) {
@@ -881,8 +893,8 @@ public class SessionState {
                                 break;
                         }
 
-                        assignErrorId();
-                        dependentHandle = parent.logIdentity;
+                        maybeAssignErrorId();
+                        failedDependencyLogIdentity = parent.logIdentity;
                         if (!(caughtException instanceof StatusRuntimeException)) {
                             log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails)
                                     .endl();
@@ -933,10 +945,11 @@ public class SessionState {
                         || session.isExpired()
                         || capturedExport == null
                         || !tryRetainReference()) {
-                    if (errorHandler != null) {
-                        // fulfill promise to client that we will notify them whether we succeed or fail
-                        assignErrorId();
-                        errorHandler.onError(ExportNotification.State.CANCELLED, errorId, null, null);
+                    if (!isExportStateTerminal(state)) {
+                        setState(ExportNotification.State.CANCELLED);
+                    } else if (errorHandler != null) {
+                        // noinspection ThrowableNotThrown
+                        Assert.statementNeverExecuted("in terminal state but error handler is not null");
                     }
                     return;
                 }
@@ -944,11 +957,13 @@ public class SessionState {
                 setState(ExportNotification.State.RUNNING);
             }
 
+            T localResult = null;
             boolean shouldLog = false;
             int evaluationNumber = -1;
             QueryProcessingResults queryProcessingResults = null;
-            try (final SafeCloseable ignored1 = session.executionContext.open()) {
-                try (final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+            try (final SafeCloseable ignored1 = session.executionContext.open();
+                    final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+                try {
                     queryProcessingResults = new QueryProcessingResults(
                             QueryPerformanceRecorder.getInstance());
 
@@ -956,7 +971,7 @@ public class SessionState {
                             .startQuery("session=" + session.sessionId + ",exportId=" + logIdentity);
 
                     try {
-                        setResult(capturedExport.call());
+                        localResult = capturedExport.call();
                     } finally {
                         shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
                     }
@@ -964,7 +979,7 @@ public class SessionState {
                     caughtException = err;
                     synchronized (this) {
                         if (!isExportStateTerminal(state)) {
-                            assignErrorId();
+                            maybeAssignErrorId();
                             if (!(caughtException instanceof StatusRuntimeException)) {
                                 log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
                             }
@@ -1005,11 +1020,16 @@ public class SessionState {
                         log.error().append("Failed to log query performance data: ").append(e).endl();
                     }
                 }
+                if (caughtException == null) {
+                    setResult(localResult);
+                }
             }
         }
 
-        private void assignErrorId() {
-            errorId = UuidCreator.toString(UuidCreator.getRandomBased());
+        private void maybeAssignErrorId() {
+            if (errorId == null) {
+                errorId = UuidCreator.toString(UuidCreator.getRandomBased());
+            }
         }
 
         /**
@@ -1098,8 +1118,8 @@ public class SessionState {
             if (errorId != null) {
                 builder.setContext(errorId);
             }
-            if (dependentHandle != null) {
-                builder.setDependentHandle(dependentHandle);
+            if (failedDependencyLogIdentity != null) {
+                builder.setDependentHandle(failedDependencyLogIdentity);
             }
 
             return builder.build();

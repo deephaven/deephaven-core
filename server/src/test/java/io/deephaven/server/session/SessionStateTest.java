@@ -6,6 +6,7 @@ package io.deephaven.server.session;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.TestExecutionContext;
+import io.deephaven.engine.testutil.testcase.FakeProcessEnvironment;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.liveness.LivenessArtifact;
@@ -17,6 +18,7 @@ import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
+import io.deephaven.util.process.ProcessEnvironment;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -52,6 +54,7 @@ public class SessionStateTest {
     private TestControlledScheduler scheduler;
     private SessionState session;
     private int nextExportId;
+    private ProcessEnvironment oldProcessEnvironment;
 
     @Before
     public void setup() {
@@ -64,10 +67,19 @@ public class SessionStateTest {
         session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
                 DateTimeUtils.epochMillis(DateTimeUtils.epochNanosToInstant(Long.MAX_VALUE)), session));
         nextExportId = 1;
+
+        oldProcessEnvironment = ProcessEnvironment.tryGet();
+        ProcessEnvironment.set(FakeProcessEnvironment.INSTANCE, true);
     }
 
     @After
     public void teardown() {
+        if (oldProcessEnvironment == null) {
+            ProcessEnvironment.clear();
+        } else {
+            ProcessEnvironment.set(oldProcessEnvironment, true);
+        }
+
         LivenessScopeStack.pop(livenessScope);
         livenessScope.release();
         livenessScope = null;
@@ -228,10 +240,41 @@ public class SessionStateTest {
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
         Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.QUEUED);
-        scheduler.runUntilQueueEmpty();
+        boolean caught = false;
+        try {
+            scheduler.runUntilQueueEmpty();
+        } catch (final FakeProcessEnvironment.FakeFatalException ignored) {
+            caught = true;
+        }
+        Assert.eqTrue(caught, "caught");
         Assert.eqTrue(submitted.booleanValue(), "submitted.booleanValue()");
         Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.FAILED);
+    }
+
+    @Test
+    public void testThrowInSuccessHandler() {
+        final MutableBoolean failed = new MutableBoolean();
+        final MutableBoolean submitted = new MutableBoolean();
+        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
+                .onErrorHandler(err -> failed.setTrue())
+                .onSuccess(ignored -> {
+                    throw new RuntimeException("on success exception");
+                }).submit(submitted::setTrue);
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqFalse(failed.booleanValue(), "success.booleanValue()");
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.QUEUED);
+        boolean caught = false;
+        try {
+            scheduler.runUntilQueueEmpty();
+        } catch (final FakeProcessEnvironment.FakeFatalException ignored) {
+            caught = true;
+        }
+        Assert.eqTrue(caught, "caught");
+        Assert.eqTrue(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eqFalse(failed.booleanValue(), "success.booleanValue()");
+        // although we will want the jvm to exit -- we expect that the export to be successful
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.EXPORTED);
     }
 
     @Test
