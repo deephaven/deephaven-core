@@ -4,16 +4,20 @@ template:
   bootstrap: 5
   bootswatch: cosmo
   
-articles:
-  - title: Overview
-    navbar: ~
-    contents:
-    - Overview
-
-  - title: Aggregations
-    navbar: ~
-    contents:
-    - Aggregations
+navbar:
+  structure:
+    left:  [reference, articles]
+    right: [search, github]
+  components:
+    articles:
+      text: Articles
+      menu:
+      - text: Overview
+        href: articles/Overview.html
+      - text: Aggregations
+        href: articles/Aggregations.html
+      - text: Moving Operations
+        href: "articles/Moving Operations.html"
   
 reference:
   - title: Core API
@@ -21,7 +25,7 @@ reference:
     - Client
     - TableHandle
     - AggOp
-    - UpdateBy
+    - UpdateByOp
 
   - title: AggBy Operations
     contents:
@@ -38,6 +42,5 @@ reference:
   
   - title: Other Data Types
     contents:
-    - UpdateByOp
     - OperationControl
 

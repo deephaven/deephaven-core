@@ -2,9 +2,10 @@
 #' @title Deephaven AggOps
 #' @md
 #' @description
-#' An `AggOp` is the return type of one of Deephaven's [`agg`](vignette("Aggregations")) functions. It is a function that performs the
+#' An `AggOp` is the return type of one of Deephaven's `agg` functions. It is a function that performs the
 #' computation specified by the `agg` function. These are intended to be passed directly to `agg_by()` or `agg_all_by()`,
-#' and should never be instantiated directly be user code.
+#' and should never be instantiated directly be user code. For more information, see the
+#' vignette on `agg` functions with `vignette("Aggregations")`.
 #'
 #' If multiple tables have the same schema and the same aggregations need to be applied to each table, saving these
 #' objects directly in a variable may be useful to avoid having to re-create them each time:
@@ -15,7 +16,7 @@
 #' result1 <- th1$agg_by(aggregations, by="Group")
 #' result2 <- th2$agg_by(aggregations, by="Group")
 #' ```
-#' In this example, `aggregations` would be a vector of two `AggOp`s that can be reused in multiple calls to `agg_by()`.
+#' In this example, `aggregations` would be a vector of two AggOps that can be reused in multiple calls to `agg_by()`.
 #'
 #' @usage NULL
 #' @format NULL
@@ -46,7 +47,7 @@ AggOp <- R6Class("AggOp",
 #' @md
 #'
 #' @description
-#' Creates a First [aggregation](vignette("Aggregations")) that computes the first value of each column in `cols` for each aggregation group.
+#' Creates a First aggregation that computes the first value of each column in `cols` for each aggregation group.
 #'
 #' @details
 #' The aggregation groups that this function acts on are defined with the `by` parameter of the `agg_by()` or
@@ -55,20 +56,23 @@ AggOp <- R6Class("AggOp",
 #' values in the `A` and `B` columns.
 #'
 #' This function, like other Deephaven `agg` functions, is a generator function. That is, its output is another
-#' function called an [`AggOp`](?AggOp) intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
+#' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `agg` functions by running
+#' `vignette("Aggregations")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
+#' @return [`AggOp`][AggOp] to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' \dontrun{
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
@@ -85,11 +89,11 @@ AggOp <- R6Class("AggOp",
 #'
 #' # get first elements of Y, Number1, and Number2 grouped by X
 #' th2 <- th$
-#'   agg_by(agg_first(c("Y", "Number1", "Number2")), by="X")
+#'   agg_by(agg_first(c("Y", "Number1", "Number2")), by = "X")
 #'
 #' # get first elements of Number1 and Number2 grouped by X and Y
 #' th3 <- th
-#'   agg_by(agg_first(c("Number1", "Number2")), by=c("X", "Y"))
+#' agg_by(agg_first(c("Number1", "Number2")), by = c("X", "Y"))
 #'
 #' client$close()
 #' }
@@ -97,7 +101,7 @@ AggOp <- R6Class("AggOp",
 #' @export
 agg_first <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_first, "agg_first", cols=cols))
+  return(AggOp$new(INTERNAL_agg_first, "agg_first", cols = cols))
 }
 
 #' @name
@@ -119,17 +123,20 @@ agg_first <- function(cols = character()) {
 #' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `agg` functions by running
+#' `vignette("Aggregations")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
+#' @return [`AggOp`][AggOp] to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' \dontrun{
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
@@ -146,11 +153,11 @@ agg_first <- function(cols = character()) {
 #'
 #' # get last elements of Y, Number1, and Number2 grouped by X
 #' th2 <- th$
-#'   agg_by(agg_last(c("Y", "Number1", "Number2")), by="X")
+#'   agg_by(agg_last(c("Y", "Number1", "Number2")), by = "X")
 #'
 #' # get last elements of Number1 and Number2 grouped by X and Y
 #' th3 <- th$
-#'   agg_by(agg_last(c("Number1", "Number2")), by=c("X", "Y"))
+#'   agg_by(agg_last(c("Number1", "Number2")), by = c("X", "Y"))
 #'
 #' client$close()
 #' }
@@ -158,7 +165,7 @@ agg_first <- function(cols = character()) {
 #' @export
 agg_last <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_last, "agg_last", cols=cols))
+  return(AggOp$new(INTERNAL_agg_last, "agg_last", cols = cols))
 }
 
 #' @name
@@ -180,17 +187,20 @@ agg_last <- function(cols = character()) {
 #' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `agg` functions by running
+#' `vignette("Aggregations")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
+#' @return [`AggOp`][AggOp] to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' \dontrun{
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
@@ -207,11 +217,11 @@ agg_last <- function(cols = character()) {
 #'
 #' # get minimum elements of Number1 and Number2 grouped by X
 #' th2 <- th$
-#'   agg_by(agg_min(c("Number1", "Number2")), by="X")
+#'   agg_by(agg_min(c("Number1", "Number2")), by = "X")
 #'
 #' # get minimum elements of Number1 and Number2 grouped by X and Y
 #' th3 <- th$
-#'   agg_by(agg_min(c("Number1", "Number2")), by=c("X", "Y"))
+#'   agg_by(agg_min(c("Number1", "Number2")), by = c("X", "Y"))
 #'
 #' client$close()
 #' }
@@ -219,7 +229,7 @@ agg_last <- function(cols = character()) {
 #' @export
 agg_min <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_min, "agg_min", cols=cols))
+  return(AggOp$new(INTERNAL_agg_min, "agg_min", cols = cols))
 }
 
 #' @name
@@ -241,17 +251,20 @@ agg_min <- function(cols = character()) {
 #' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `agg` functions by running
+#' `vignette("Aggregations")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
+#' @return [`AggOp`][AggOp] to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' \dontrun{
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
@@ -268,11 +281,11 @@ agg_min <- function(cols = character()) {
 #'
 #' # get maximum elements of Number1 and Number2 grouped by X
 #' th2 <- th$
-#'   agg_by(agg_max(c("Number1", "Number2")), by="X")
+#'   agg_by(agg_max(c("Number1", "Number2")), by = "X")
 #'
 #' # get maximum elements of Number1 and Number2 grouped by X and Y
 #' th3 <- th$
-#'   agg_by(agg_max(c("Number1", "Number2")), by=c("X", "Y"))
+#'   agg_by(agg_max(c("Number1", "Number2")), by = c("X", "Y"))
 #'
 #' client$close()
 #' }
@@ -280,7 +293,7 @@ agg_min <- function(cols = character()) {
 #' @export
 agg_max <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_max, "agg_max", cols=cols))
+  return(AggOp$new(INTERNAL_agg_max, "agg_max", cols = cols))
 }
 
 #' @name
@@ -303,16 +316,19 @@ agg_max <- function(cols = character()) {
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
 #'
+#' For more information, see the vignette on `agg` functions by running
+#' `vignette("Aggregations")`.
+#'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
+#' @return [`AggOp`][AggOp] to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' \dontrun{
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
@@ -329,11 +345,11 @@ agg_max <- function(cols = character()) {
 #'
 #' # compute sum of Number1 and Number2 grouped by X
 #' th2 <- th$
-#'   agg_by(agg_sum(c("Number1", "Number2")), by="X")
+#'   agg_by(agg_sum(c("Number1", "Number2")), by = "X")
 #'
 #' # compute sum of Number1 and Number2 grouped by X and Y
 #' th3 <- th$
-#'   agg_by(agg_sum(c("Number1", "Number2")), by=c("X", "Y"))
+#'   agg_by(agg_sum(c("Number1", "Number2")), by = c("X", "Y"))
 #'
 #' client$close()
 #' }
@@ -341,7 +357,7 @@ agg_max <- function(cols = character()) {
 #' @export
 agg_sum <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_sum, "agg_sum", cols=cols))
+  return(AggOp$new(INTERNAL_agg_sum, "agg_sum", cols = cols))
 }
 
 #' @name
@@ -363,17 +379,20 @@ agg_sum <- function(cols = character()) {
 #' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `agg` functions by running
+#' `vignette("Aggregations")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
+#' @return [`AggOp`][AggOp] to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' \dontrun{
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
@@ -390,11 +409,11 @@ agg_sum <- function(cols = character()) {
 #'
 #' # compute absolute sum of Number1 and Number2 grouped by X
 #' th2 <- th$
-#'   agg_by(agg_abs_sum(c("Number1", "Number2")), by="X")
+#'   agg_by(agg_abs_sum(c("Number1", "Number2")), by = "X")
 #'
 #' # compute absolute sum of Number1 and Number2 grouped by X and Y
 #' th3 <- th$
-#'   agg_by(agg_abs_sum(c("Number1", "Number2")), by=c("X", "Y"))
+#'   agg_by(agg_abs_sum(c("Number1", "Number2")), by = c("X", "Y"))
 #'
 #' client$close()
 #' }
@@ -402,7 +421,7 @@ agg_sum <- function(cols = character()) {
 #' @export
 agg_abs_sum <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_abs_sum, "agg_abs_sum", cols=cols))
+  return(AggOp$new(INTERNAL_agg_abs_sum, "agg_abs_sum", cols = cols))
 }
 
 #' @name
@@ -424,17 +443,20 @@ agg_abs_sum <- function(cols = character()) {
 #' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `agg` functions by running
+#' `vignette("Aggregations")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
+#' @return [`AggOp`][AggOp] to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' \dontrun{
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
@@ -451,11 +473,11 @@ agg_abs_sum <- function(cols = character()) {
 #'
 #' # compute average of Number1 and Number2 grouped by X
 #' th2 <- th$
-#'   agg_by(agg_avg(c("Number1", "Number2")), by="X")
+#'   agg_by(agg_avg(c("Number1", "Number2")), by = "X")
 #'
 #' # compute average of Number1 and Number2 grouped by X and Y
 #' th3 <- th$
-#'   agg_by(agg_avg(c("Number1", "Number2")), by=c("X", "Y"))
+#'   agg_by(agg_avg(c("Number1", "Number2")), by = c("X", "Y"))
 #'
 #' client$close()
 #' }
@@ -463,7 +485,7 @@ agg_abs_sum <- function(cols = character()) {
 #' @export
 agg_avg <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_avg, "agg_avg", cols=cols))
+  return(AggOp$new(INTERNAL_agg_avg, "agg_avg", cols = cols))
 }
 
 #' @name
@@ -485,18 +507,21 @@ agg_avg <- function(cols = character()) {
 #' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `agg` functions by running
+#' `vignette("Aggregations")`.
 #'
 #' @param wcol String denoting the column to use for weights. This must be a numeric column.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
+#' @return [`AggOp`][AggOp] to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' \dontrun{
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
@@ -509,15 +534,15 @@ agg_avg <- function(cols = character()) {
 #'
 #' # compute weighted average of Number1, weighted by Number2
 #' th1 <- th$
-#'   agg_by(agg_w_avg(wcol="Number2", cols="Number1"))
+#'   agg_by(agg_w_avg(wcol = "Number2", cols = "Number1"))
 #'
 #' # compute weighted average of Number1, weighted by Number2, grouped by X
 #' th2 <- th$
-#'   agg_by(agg_w_avg(wcol="Number2", cols="Number1", by="X"))
+#'   agg_by(agg_w_avg(wcol = "Number2", cols = "Number1", by = "X"))
 #'
 #' # compute weighted average of Number1, weighted by Number2, grouped by X and Y
 #' th3 <- th$
-#'   agg_by(agg_w_avg(wcol="Number2", cols="Number1", by=c("X", "Y")))
+#'   agg_by(agg_w_avg(wcol = "Number2", cols = "Number1", by = c("X", "Y")))
 #'
 #' client$close()
 #' }
@@ -526,7 +551,7 @@ agg_avg <- function(cols = character()) {
 agg_w_avg <- function(wcol, cols = character()) {
   verify_string("wcol", wcol, TRUE)
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_w_avg, "agg_w_avg", wcol=wcol, cols=cols))
+  return(AggOp$new(INTERNAL_agg_w_avg, "agg_w_avg", wcol = wcol, cols = cols))
 }
 
 #' @name
@@ -548,17 +573,20 @@ agg_w_avg <- function(wcol, cols = character()) {
 #' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `agg` functions by running
+#' `vignette("Aggregations")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
+#' @return [`AggOp`][AggOp] to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' \dontrun{
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
@@ -575,11 +603,11 @@ agg_w_avg <- function(wcol, cols = character()) {
 #'
 #' # compute median of Number1 and Number2 grouped by X
 #' th2 <- th$
-#'   agg_by(agg_median(c("Number1", "Number2")), by="X")
+#'   agg_by(agg_median(c("Number1", "Number2")), by = "X")
 #'
 #' # compute median of Number1 and Number2 grouped by X and Y
 #' th3 <- th$
-#'   agg_by(agg_median(c("Number1", "Number2")), by=c("X", "Y"))
+#'   agg_by(agg_median(c("Number1", "Number2")), by = c("X", "Y"))
 #'
 #' client$close()
 #' }
@@ -587,7 +615,7 @@ agg_w_avg <- function(wcol, cols = character()) {
 #' @export
 agg_median <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_median, "agg_median", cols=cols))
+  return(AggOp$new(INTERNAL_agg_median, "agg_median", cols = cols))
 }
 
 #' @name
@@ -609,17 +637,20 @@ agg_median <- function(cols = character()) {
 #' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `agg` functions by running
+#' `vignette("Aggregations")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
+#' @return [`AggOp`][AggOp] to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' \dontrun{
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
@@ -636,11 +667,11 @@ agg_median <- function(cols = character()) {
 #'
 #' # compute variance of Number1 and Number2 grouped by X
 #' th2 <- th$
-#'   agg_by(agg_var(c("Number1", "Number2")), by="X")
+#'   agg_by(agg_var(c("Number1", "Number2")), by = "X")
 #'
 #' # compute variance of Number1 and Number2 grouped by X and Y
 #' th3 <- th$
-#'   agg_by(agg_var(c("Number1", "Number2")), by=c("X", "Y"))
+#'   agg_by(agg_var(c("Number1", "Number2")), by = c("X", "Y"))
 #'
 #' client$close()
 #' }
@@ -648,7 +679,7 @@ agg_median <- function(cols = character()) {
 #' @export
 agg_var <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_var, "agg_var", cols=cols))
+  return(AggOp$new(INTERNAL_agg_var, "agg_var", cols = cols))
 }
 
 #' @name
@@ -670,17 +701,20 @@ agg_var <- function(cols = character()) {
 #' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `agg` functions by running
+#' `vignette("Aggregations")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
+#' @return [`AggOp`][AggOp] to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' \dontrun{
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
@@ -697,11 +731,11 @@ agg_var <- function(cols = character()) {
 #'
 #' # compute standard deviation of Number1 and Number2 grouped by X
 #' th2 <- th$
-#'   agg_by(agg_std(c("Number1", "Number2")), by="X")
+#'   agg_by(agg_std(c("Number1", "Number2")), by = "X")
 #'
 #' # compute standard deviation of Number1 and Number2 grouped by X and Y
 #' th3 <- th$
-#'   agg_by(agg_std(c("Number1", "Number2")), by=c("X", "Y"))
+#'   agg_by(agg_std(c("Number1", "Number2")), by = c("X", "Y"))
 #'
 #' client$close()
 #' }
@@ -709,7 +743,7 @@ agg_var <- function(cols = character()) {
 #' @export
 agg_std <- function(cols = character()) {
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_std, "agg_std", cols=cols))
+  return(AggOp$new(INTERNAL_agg_std, "agg_std", cols = cols))
 }
 
 #' @name
@@ -731,18 +765,21 @@ agg_std <- function(cols = character()) {
 #' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `agg` functions by running
+#' `vignette("Aggregations")`.
 #'
 #' @param percentile Numeric scalar between 0 and 1 denoting the percentile to compute.
 #' @param cols String or list of strings denoting the column(s) to aggregate. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to aggregate all non-grouping columns, which is only valid in the `agg_all_by()` operation.
-#' @return `AggOp` to be used in a call to `agg_by()` or `agg_all_by()`.
+#' @return [`AggOp`][AggOp] to be used in a call to `agg_by()` or `agg_all_by()`.
 #'
 #' @examples
 #' \dontrun{
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
@@ -755,15 +792,15 @@ agg_std <- function(cols = character()) {
 #'
 #' # compute 20th percentile of Number1 and Number2
 #' th1 <- th$
-#'   agg_by(agg_percentile(percentile=0.2, cols=c("Number1", "Number2")))
+#'   agg_by(agg_percentile(percentile = 0.2, cols = c("Number1", "Number2")))
 #'
 #' # compute 50th percentile of Number1 and Number2 grouped by X
 #' th2 <- th$
-#'   agg_by(agg_percentile(percentile=0.5, cols=c("Number1", "Number2")), by="X")
+#'   agg_by(agg_percentile(percentile = 0.5, cols = c("Number1", "Number2")), by = "X")
 #'
 #' # compute 75th percentile of Number1 and Number2 grouped by X and Y
 #' th3 <- th$
-#'   agg_by(agg_percentile(percentile=0.75, cols=c("Number1", "Number2")), by=c("X", "Y"))
+#'   agg_by(agg_percentile(percentile = 0.75, cols = c("Number1", "Number2")), by = c("X", "Y"))
 #'
 #' client$close()
 #' }
@@ -772,7 +809,7 @@ agg_std <- function(cols = character()) {
 agg_percentile <- function(percentile, cols = character()) {
   verify_in_unit_interval("percentile", percentile, TRUE)
   verify_string("cols", cols, FALSE)
-  return(AggOp$new(INTERNAL_agg_percentile, "agg_percentile", percentile=percentile, cols=cols))
+  return(AggOp$new(INTERNAL_agg_percentile, "agg_percentile", percentile = percentile, cols = cols))
 }
 
 #' @name
@@ -794,18 +831,21 @@ agg_percentile <- function(percentile, cols = character()) {
 #' function called an [`AggOp`][AggOp] intended to be used in a call to `agg_by()` or `agg_all_by()`. This detail is
 #' typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 #' as the output of an `agg` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `agg` functions by running
+#' `vignette("Aggregations")`.
 #'
 #' Note that this operation is not supported in `agg_all_by()`.
 #'
 #' @param col String denoting the name of the new column to hold the counts of each aggregation group.
-#' @return `AggOp` to be used in a call to `agg_by()`.
+#' @return [`AggOp`][AggOp] to be used in a call to `agg_by()`.
 #'
 #' @examples
 #' \dontrun{
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
@@ -818,11 +858,11 @@ agg_percentile <- function(percentile, cols = character()) {
 #'
 #' # count number of elements in each group when grouped by X, name resulting column "count"
 #' th1 <- th$
-#'   agg_by(agg_count("count"), by="X")
+#'   agg_by(agg_count("count"), by = "X")
 #'
 #' # count number of elements in each group when grouped by X and Y, name resulting column "CountingCol"
 #' th2 <- th$
-#'   agg_by(agg_count("CountingCol"), by=c("X", "Y"))
+#'   agg_by(agg_count("CountingCol"), by = c("X", "Y"))
 #'
 #' client$close()
 #' }
@@ -830,5 +870,5 @@ agg_percentile <- function(percentile, cols = character()) {
 #' @export
 agg_count <- function(col) {
   verify_string("col", col, TRUE)
-  return(AggOp$new(INTERNAL_agg_count, "agg_count", col=col))
+  return(AggOp$new(INTERNAL_agg_count, "agg_count", col = col))
 }
