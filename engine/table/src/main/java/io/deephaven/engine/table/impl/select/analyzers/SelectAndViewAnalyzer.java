@@ -174,20 +174,22 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
             if (realColumn != null && shouldPreserve(sc)) {
                 boolean sourceIsNew = resultColumns.contains(realColumn.getSourceName());
-                if (!sourceIsNew && numberOfInternallyFlattenedColumns > 0) {
-                    // we must preserve this column, but have already created an analyzer for the internally flattened
-                    // column, therefore must start over without permitting internal flattening
-                    return create(sourceTable, mode, columnSources, originalRowSet, parentMcs, publishTheseSources,
-                            useShiftedColumns, false, selectColumns);
+                if (!sourceIsNew) {
+                    if (numberOfInternallyFlattenedColumns > 0) {
+                        // we must preserve this column, but have already created an analyzer for the internally
+                        // flattened
+                        // column, therefore must start over without permitting internal flattening
+                        return create(sourceTable, mode, columnSources, originalRowSet, parentMcs, publishTheseSources,
+                                useShiftedColumns, false, selectColumns);
+                    } else {
+                        // we can not flatten future columns because we are preserving a column that may not be flat
+                        flattenedResult = false;
+                    }
                 }
 
                 analyzer = analyzer.createLayerForPreserve(
                         sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
 
-                if (!sourceIsNew) {
-                    // we can not flatten future columns because we are preserving a column that may not be flat
-                    flattenedResult = false;
-                }
                 continue;
             }
 
