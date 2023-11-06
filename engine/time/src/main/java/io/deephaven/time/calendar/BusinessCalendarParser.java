@@ -109,7 +109,7 @@ public class BusinessCalendarParser {
         if (element != null) {
             return element;
         } else {
-            throw new Exception("Missing the '" + child + "' tag in calendar file");
+            throw new Exception("Missing the '" + child + "' tag in calendar file: text=" + root.getText());
         }
     }
 

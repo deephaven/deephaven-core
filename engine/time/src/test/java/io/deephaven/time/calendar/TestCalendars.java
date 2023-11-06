@@ -10,11 +10,13 @@ public class TestCalendars extends BaseArrayTestCase {
 
     public void testDefault() {
         final BusinessCalendar calendar = Calendars.calendar();
+        assertEquals(Configuration.getInstance().getProperty("Calendar.default"), Calendars.calendarName());
         assertEquals(Configuration.getInstance().getProperty("Calendar.default"), calendar.name());
 
         final String defaultCal = calendar.name();
 
         Calendars.setDefaultCalendar("CAL2");
+        assertEquals("CAL2", Calendars.calendarName());
         assertEquals("CAL2", Calendars.calendar().name());
 
         Calendars.setDefaultCalendar(defaultCal);
