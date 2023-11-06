@@ -6,6 +6,10 @@ package io.deephaven.time.calendar;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
 
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
+import java.util.Objects;
+
 public class TestCalendars extends BaseArrayTestCase {
 
     public void testDefault() {
@@ -37,6 +41,21 @@ public class TestCalendars extends BaseArrayTestCase {
             fail("Should have thrown an exception");
         } catch (Exception e) {
             // pass
+        }
+    }
+
+    public void testAdd() throws URISyntaxException {
+
+        try{
+            final String path = Paths
+                    .get(Objects.requireNonNull(TestBusinessCalendarParser.class.getResource("/PARSER-TEST.calendar")).toURI())
+                    .toString();
+            Calendars.addCalendarFromFile(path);
+
+            final BusinessCalendar cal = Calendars.calendar("PARSER-TEST-CAL");
+            TestBusinessCalendarParser.assertParserTestCal(cal);
+        }finally {
+            Calendars.setDefaultCalendar(Configuration.getInstance().getProperty("Calendar.default"));
         }
     }
 }

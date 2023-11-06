@@ -13,13 +13,7 @@ import java.util.Objects;
 
 public class TestBusinessCalendarParser extends BaseArrayTestCase {
 
-    public void testLoad() throws URISyntaxException {
-        final String path = Paths
-                .get(Objects.requireNonNull(TestBusinessCalendarParser.class.getResource("/PARSER-TEST.calendar")).toURI())
-                .toString();
-        final File f = new File(path);
-        final BusinessCalendar cal = BusinessCalendarParser.loadBusinessCalendar(f);
-
+    public static void assertParserTestCal(final BusinessCalendar cal) {
         assertEquals("PARSER-TEST-CAL", cal.name());
         assertEquals("Test Calendar", cal.description());
         assertEquals(DateTimeUtils.timeZone("Asia/Tokyo"), cal.timeZone());
@@ -36,5 +30,14 @@ public class TestBusinessCalendarParser extends BaseArrayTestCase {
 
         assertEquals(DateTimeUtils.parseInstant("2015-04-06T14:15 Asia/Tokyo"), cal.businessSchedule("2015-04-06").businessStart());
         assertEquals(DateTimeUtils.parseInstant("2015-04-06T16:46 Asia/Tokyo"), cal.businessSchedule("2015-04-06").businessEnd());
+    }
+
+    public void testLoad() throws URISyntaxException {
+        final String path = Paths
+                .get(Objects.requireNonNull(TestBusinessCalendarParser.class.getResource("/PARSER-TEST.calendar")).toURI())
+                .toString();
+        final File f = new File(path);
+        final BusinessCalendar cal = BusinessCalendarParser.loadBusinessCalendar(f);
+        assertParserTestCal(cal);
     }
 }
