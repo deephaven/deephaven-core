@@ -48,6 +48,8 @@ import io.deephaven.vector.*;
 import org.apache.commons.lang3.mutable.*;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.io.api.Binary;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
+import org.apache.parquet.schema.PrimitiveType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -437,7 +439,8 @@ public final class ParquetTableReadWriteTest {
         writeReadTableTest(table, dest, ParquetInstructions.EMPTY);
     }
 
-    private static void writeReadTableTest(final Table table, final File dest, ParquetInstructions writeInstructions) {
+    private static void writeReadTableTest(final Table table, final File dest,
+            final ParquetInstructions writeInstructions) {
         ParquetTools.writeTable(table, dest, writeInstructions);
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(table, fromDisk);
@@ -1262,6 +1265,30 @@ public final class ParquetTableReadWriteTest {
         TstUtils.assertTableEquals(groupedTableToSave, groupedFromDisk);
 
         assertTableStatistics(groupedTableToSave, groupedTableDest);
+    }
+
+    @Test
+    public void readWriteDateTimeTest() {
+        final int NUM_ROWS = 1000;
+        final Table table = TableTools.emptyTable(NUM_ROWS).view(
+                "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
+                "someTimeColumn = i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)");
+        final File dest = new File(rootFile, "readWriteDateTimeTest.parquet");
+        writeReadTableTest(table, dest);
+
+        // Verify that the types are correct in the schema
+        final ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+        final ColumnChunkMetaData dateColMetadata = metadata.getBlocks().get(0).getColumns().get(0);
+        assertTrue(dateColMetadata.toString().contains("someDateColumn"));
+        assertEquals(PrimitiveType.PrimitiveTypeName.INT32, dateColMetadata.getPrimitiveType().getPrimitiveTypeName());
+        assertEquals(LogicalTypeAnnotation.dateType(), dateColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
+
+        final ColumnChunkMetaData timeColMetadata = metadata.getBlocks().get(0).getColumns().get(1);
+        assertTrue(timeColMetadata.toString().contains("someTimeColumn"));
+        assertEquals(PrimitiveType.PrimitiveTypeName.INT64, timeColMetadata.getPrimitiveType().getPrimitiveTypeName());
+        final boolean isAdjustedToUTC = true;
+        assertEquals(LogicalTypeAnnotation.timeType(isAdjustedToUTC, LogicalTypeAnnotation.TimeUnit.NANOS),
+                timeColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
     }
 
     /**
