@@ -28,28 +28,29 @@ import java.util.stream.StreamSupport;
  * Note: individual {@linkplain io.deephaven.api.TableOperations table operations} executed against a
  * {@linkplain TableHandle table handle} are still executed serially.
  */
-class TableHandleManagerBatch extends TableHandleManagerBase {
-
-    static TableHandleManagerBatch of(ExportService exportService, boolean mixinStacktraces) {
-        return new TableHandleManagerBatch(exportService, mixinStacktraces);
-    }
-
+abstract class TableHandleManagerBatch extends TableHandleManagerBase {
     private final boolean mixinStacktraces;
 
-    private TableHandleManagerBatch(ExportService exportService, boolean mixinStacktraces) {
-        super(exportService, null);
+    TableHandleManagerBatch(boolean mixinStacktraces) {
         this.mixinStacktraces = mixinStacktraces;
+    }
+
+    protected abstract ExportService exportService();
+
+    @Override
+    protected TableHandle handle(TableSpec table) {
+        return TableServiceImpl.ofUnchecked(exportService(), table, null);
     }
 
     @Override
     public TableHandle execute(TableSpec table) throws TableHandleException, InterruptedException {
-        return TableServiceImpl.of(exportService, table, lifecycle);
+        return TableServiceImpl.of(exportService(), table, null);
     }
 
     @Override
     public List<TableHandle> execute(Iterable<TableSpec> tables)
             throws TableHandleException, InterruptedException {
-        return TableServiceImpl.of(exportService, tables, lifecycle);
+        return TableServiceImpl.of(exportService(), tables, null);
     }
 
     @Override

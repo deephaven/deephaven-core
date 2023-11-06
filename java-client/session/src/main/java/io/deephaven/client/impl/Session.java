@@ -112,37 +112,6 @@ public interface Session
      */
     TableService newStatefulTableService();
 
-    /**
-     * Creates a new stateful batch {@link TableHandleManager} that keeps references to the exports created from said
-     * service for executing queries with maximum cacheability. See documentation on {@link #newStatefulTableService()}
-     * for more context on cacheability.
-     *
-     * @return a new stateful batch table handle manager
-     */
-    @Override
-    TableHandleManager batch();
-
-    /**
-     * Creates a new stateful batch {@link TableHandleManager} that keeps references to the exports created from said
-     * service for executing queries with maximum cacheability. See documentation on {@link #newStatefulTableService()}
-     * for more context on cacheability.
-     *
-     * @param mixinStacktraces if stacktraces should be mixin
-     * @return a new stateful batch table handle manager
-     */
-    @Override
-    TableHandleManager batch(boolean mixinStacktraces);
-
-    /**
-     * Creates a new stateful serial {@link TableHandleManager} that keeps references to the exports created from said
-     * service for executing queries with maximum cacheability. See documentation on {@link #newStatefulTableService()}
-     * for more context on cacheability.
-     *
-     * @return a new stateful serial table handle manager
-     */
-    @Override
-    TableHandleManager serial();
-
     // ----------------------------------------------------------
 
     /**

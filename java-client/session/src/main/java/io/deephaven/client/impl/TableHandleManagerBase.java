@@ -3,7 +3,6 @@
  */
 package io.deephaven.client.impl;
 
-import io.deephaven.client.impl.TableServiceImpl.Lifecycle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.qst.LabeledValues;
 import io.deephaven.qst.table.EmptyTable;
@@ -15,17 +14,9 @@ import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
 
-import java.util.Objects;
+abstract class TableHandleManagerBase implements TableHandleManager {
 
-public abstract class TableHandleManagerBase implements TableHandleManager {
-
-    protected final ExportService exportService;
-    protected final Lifecycle lifecycle;
-
-    protected TableHandleManagerBase(ExportService exportService, Lifecycle lifecycle) {
-        this.exportService = Objects.requireNonNull(exportService);
-        this.lifecycle = lifecycle;
-    }
+    protected abstract TableHandle handle(TableSpec table);
 
     @Override
     public final LabeledValues<TableHandle> execute(LabeledTables tables)
@@ -65,9 +56,5 @@ public abstract class TableHandleManagerBase implements TableHandleManager {
             builder.addTables(tableProxy.table());
         }
         return handle(builder.build());
-    }
-
-    private TableHandle handle(TableSpec table) {
-        return TableServiceImpl.ofUnchecked(exportService, table, lifecycle);
     }
 }

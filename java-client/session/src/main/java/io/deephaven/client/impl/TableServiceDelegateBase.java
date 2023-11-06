@@ -15,28 +15,6 @@ abstract class TableServiceDelegateBase extends TableHandleManagerDelegate imple
     // ---------------------------------------------------
 
     @Override
-    public TableHandleManager batch() {
-        return delegate().batch();
-    }
-
-    @Override
-    public TableHandleManager batch(boolean mixinStacktraces) {
-        return new TableHandleManagerDelegate() {
-            @Override
-            protected TableHandleManager delegate() {
-                return null;
-            }
-        };
-    }
-
-    @Override
-    public TableHandleManager serial() {
-        return delegate().serial();
-    }
-
-    // ---------------------------------------------------
-
-    @Override
     public TableHandleFuture executeAsync(TableSpec table) {
         return delegate().executeAsync(table);
     }

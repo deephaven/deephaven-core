@@ -128,10 +128,43 @@ public final class SessionImpl extends SessionBase {
         return bearerHandler;
     }
 
+    private ExportStates newExportStates() {
+        return new ExportStates(this, bearerChannel.session(), bearerChannel.table(), exportTicketCreator);
+    }
+
     @Override
     public TableService newStatefulTableService() {
-        return new TableServiceImpl(
-                new ExportStates(this, bearerChannel.session(), bearerChannel.table(), exportTicketCreator));
+        return new TableServiceImpl(newExportStates());
+    }
+
+    @Override
+    public TableHandleManager batch() {
+        return batch(config.mixinStacktrace());
+    }
+
+    @Override
+    public TableHandleManager batch(boolean mixinStacktraces) {
+        return new TableHandleManagerBatch(mixinStacktraces) {
+            @Override
+            protected ExportService exportService() {
+                return newExportStates();
+            }
+        };
+    }
+
+    @Override
+    public TableHandleManager serial() {
+        return new TableHandleManagerSerial() {
+            @Override
+            protected ExportService exportService() {
+                return newExportStates();
+            }
+
+            @Override
+            protected TableHandle handle(TableSpec table) {
+                return io.deephaven.client.impl.TableServiceImpl.ofUnchecked(exportService(), table, null);
+            }
+        };
     }
 
     @Override
@@ -546,17 +579,32 @@ public final class SessionImpl extends SessionBase {
 
         @Override
         public TableHandleManager batch() {
-            return TableHandleManagerBatch.of(exportStates, config.mixinStacktrace());
+            return batch(config.mixinStacktrace());
         }
 
         @Override
         public TableHandleManager batch(boolean mixinStacktrace) {
-            return TableHandleManagerBatch.of(exportStates, mixinStacktrace);
+            return new TableHandleManagerBatch(mixinStacktrace) {
+                @Override
+                protected ExportService exportService() {
+                    return exportStates;
+                }
+            };
         }
 
         @Override
         public TableHandleManager serial() {
-            return TableHandleManagerSerial.of(exportStates);
+            return new TableHandleManagerSerial() {
+                @Override
+                protected ExportService exportService() {
+                    return exportStates;
+                }
+
+                @Override
+                protected TableHandle handle(TableSpec table) {
+                    return io.deephaven.client.impl.TableServiceImpl.ofUnchecked(exportService(), table, null);
+                }
+            };
         }
     }
 }

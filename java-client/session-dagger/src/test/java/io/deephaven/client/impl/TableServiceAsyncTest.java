@@ -16,7 +16,7 @@ import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TableServicesAsyncTest extends DeephavenSessionTestBase {
+public class TableServiceAsyncTest extends DeephavenSessionTestBase {
 
     private static final Duration GETTIME = Duration.ofSeconds(15);
     private static final int CHAIN_OPS = 50;

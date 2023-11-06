@@ -59,21 +59,36 @@ public class SessionTableServicesTest extends DeephavenSessionTestBase {
     }
 
     @Test
-    public void singleBatchManagerIsStateful() throws TableHandleException, InterruptedException {
+    public void singleBatchManagerNotIsStateful() throws TableHandleException, InterruptedException {
         final TableHandleManager manager = session.batch();
-        checkState(manager, manager, STATEFUL);
+        checkState(manager, manager, NOT_STATEFUL);
     }
 
     @Test
-    public void singleTableServiceIsStateful() throws TableHandleException, InterruptedException {
+    public void newStatefulTableServiceIsStateful() throws TableHandleException, InterruptedException {
         final TableService ts = session.newStatefulTableService();
         checkState(ts, ts, STATEFUL);
     }
 
     @Test
-    public void singleTableServiceAsyncIsStateful() throws InterruptedException, ExecutionException, TimeoutException {
+    public void newStatefulTableServiceAsyncIsStateful()
+            throws InterruptedException, ExecutionException, TimeoutException {
         final TableService ts = session.newStatefulTableService();
         checkAsyncState(ts, ts, STATEFUL);
+    }
+
+    @Test
+    public void newStatefulTableServiceBatchIsStateful() throws TableHandleException, InterruptedException {
+        final TableService ts = session.newStatefulTableService();
+        checkState(ts.batch(), ts.batch(), STATEFUL);
+    }
+
+    // this is currently broken; serial clients *can't* reliably execute the same non-trivial TableSpec DAG
+    @Ignore
+    @Test
+    public void newStatefulTableServiceSerialIsStateful() throws TableHandleException, InterruptedException {
+        final TableService ts = session.newStatefulTableService();
+        checkState(ts.serial(), ts.serial(), STATEFUL);
     }
 
     static void checkState(TableHandleManager m1, TableHandleManager m2, boolean expectEquals)
