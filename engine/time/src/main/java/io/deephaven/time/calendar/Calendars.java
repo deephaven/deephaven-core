@@ -188,7 +188,8 @@ public class Calendars {
     /**
      * Returns the default business calendar.
      *
-     * @return default business calendar. The default is specified by the {@code Calendar.default} property or {@link #setDefaultCalendar(String)}.
+     * @return default business calendar. The default is specified by the {@code Calendar.default} property or
+     *         {@link #setDefaultCalendar(String)}.
      */
     public synchronized static BusinessCalendar calendar() {
         return calendar(defaultName);
@@ -197,7 +198,8 @@ public class Calendars {
     /**
      * Returns the default business calendar name.
      *
-     * @return default business calendar name. The default is specified by the {@code Calendar.default} property or {@link #setDefaultCalendar(String)}.
+     * @return default business calendar name. The default is specified by the {@code Calendar.default} property or
+     *         {@link #setDefaultCalendar(String)}.
      */
     public synchronized static String calendarName() {
         return defaultName;

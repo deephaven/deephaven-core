@@ -2942,7 +2942,6 @@ public class DateTimeUtils {
         return date.atStartOfDay(timeZone);
     }
 
-    // TODO: return ZDT?
     /**
      * Returns an {@link Instant} for the prior midnight in the specified time zone.
      *
