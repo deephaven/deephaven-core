@@ -822,7 +822,7 @@ public class SessionState {
                     errorHandler.onError(state, errorId, toReport, failedDependencyLogIdentity);
                 } catch (final Throwable err) {
                     // this is a serious error; crash the jvm to ensure that we don't miss it
-                    log.error().append("Unexpected error while reporting failure: ").append(err).endl();
+                    log.error().append("Unexpected error while reporting ExportObject failure: ").append(err).endl();
                     ProcessEnvironment.getGlobalFatalErrorReporter().reportAsync(
                             "Unexpected error while reporting ExportObject failure", err);
                 }
@@ -834,7 +834,7 @@ public class SessionState {
                     successHandler.accept(result);
                 } catch (final Throwable err) {
                     // this is a serious error; crash the jvm to ensure that we don't miss it
-                    log.error().append("Unexpected error while reporting success: ").append(err).endl();
+                    log.error().append("Unexpected error while reporting ExportObject success: ").append(err).endl();
                     ProcessEnvironment.getGlobalFatalErrorReporter().reportAsync(
                             "Unexpected error while reporting ExportObject success", err);
                 }
