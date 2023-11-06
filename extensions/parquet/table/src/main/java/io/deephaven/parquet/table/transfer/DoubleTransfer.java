@@ -17,7 +17,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.DoubleBuffer;
 
-final class DoubleTransfer extends PrimitiveTransferArrayBacked<WritableDoubleChunk<Values>, DoubleBuffer> {
+final class DoubleTransfer extends FillingPrimitiveTransfer<WritableDoubleChunk<Values>, DoubleBuffer> {
     static DoubleTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,
                               final int targetPageSizeInBytes) {
         final int targetElementsPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSizeInBytes / Double.BYTES));

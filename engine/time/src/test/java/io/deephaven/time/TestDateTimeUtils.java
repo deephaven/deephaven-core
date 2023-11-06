@@ -1353,16 +1353,16 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         final LocalTime someTimeInMillis = LocalTime.of(6, 33, 9, (int) (123 * DateTimeUtils.MILLI));
         TestCase.assertEquals(someTimeInMillis,
-                DateTimeUtils.toLocalTimeFromMillis((int) (someTimeInMillis.toNanoOfDay() / DateTimeUtils.MILLI)));
-        TestCase.assertNull(DateTimeUtils.toLocalTimeFromMillis(NULL_INT));
+                DateTimeUtils.millisOfDayToLocalTime((int) (someTimeInMillis.toNanoOfDay() / DateTimeUtils.MILLI)));
+        TestCase.assertNull(DateTimeUtils.millisOfDayToLocalTime(NULL_INT));
 
         final LocalTime someTimeInMicros = LocalTime.of(6, 33, 9, (int) (123456 * DateTimeUtils.MICRO));
         TestCase.assertEquals(someTimeInMicros,
-                DateTimeUtils.toLocalTimeFromMicros(someTimeInMicros.toNanoOfDay() / DateTimeUtils.MICRO));
-        TestCase.assertNull(DateTimeUtils.toLocalTimeFromMicros(NULL_LONG));
+                DateTimeUtils.microsOfDayToLocalTime(someTimeInMicros.toNanoOfDay() / DateTimeUtils.MICRO));
+        TestCase.assertNull(DateTimeUtils.microsOfDayToLocalTime(NULL_LONG));
 
-        TestCase.assertEquals(lt, DateTimeUtils.toLocalTimeFromNanos(lt.toNanoOfDay()));
-        TestCase.assertNull(DateTimeUtils.toLocalTimeFromNanos(NULL_LONG));
+        TestCase.assertEquals(lt, DateTimeUtils.nanosOfDayToLocalTime(lt.toNanoOfDay()));
+        TestCase.assertNull(DateTimeUtils.nanosOfDayToLocalTime(NULL_LONG));
     }
 
     public void testToZonedDateTime() {

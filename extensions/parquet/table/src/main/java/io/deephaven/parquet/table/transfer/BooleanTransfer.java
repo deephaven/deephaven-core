@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 
-final class BooleanTransfer extends PrimitiveTransferArrayBacked<WritableByteChunk<Values>, ByteBuffer> {
+final class BooleanTransfer extends FillingPrimitiveTransfer<WritableByteChunk<Values>, ByteBuffer> {
     // We encode booleans as bytes here and bit pack them with 8 booleans per byte at the time of writing.
     // Therefore, max values per page are (targetPageSizeInBytes * 8).
     static BooleanTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,

@@ -481,8 +481,7 @@ public class ReplicatePrimitiveCode {
     }
 
     public static String replaceAll(String sourceClassJavaPath, String resultClassJavaPath,
-            Map<String, Long> serialVersionUIDs, String[] exemptions,
-            String[]... pairs) throws IOException {
+            Map<String, Long> serialVersionUIDs, String[] exemptions, String[]... pairs) throws IOException {
         if (resultClassJavaPath == null || resultClassJavaPath.isEmpty()) {
             resultClassJavaPath = getResultClassPathFromSourceClassPath(sourceClassJavaPath, exemptions, pairs);
         }

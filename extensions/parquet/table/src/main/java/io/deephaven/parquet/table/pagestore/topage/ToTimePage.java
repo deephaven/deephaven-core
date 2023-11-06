@@ -22,8 +22,10 @@ public class ToTimePage<ATTR extends Any> implements ToPage<ATTR, LocalTime[]> {
     private static final ToPage NANOS_INSTANCE = new ToTimePageFromNanos();
 
     @SuppressWarnings("unchecked")
-    public static <ATTR extends Any> ToPage<ATTR, LocalTime[]> create(@NotNull final Class<?> nativeType,
-            final LogicalTypeAnnotation.TimeUnit unit, final boolean isAdjustedToUTC) {
+    public static <ATTR extends Any> ToPage<ATTR, LocalTime[]> create(
+            @NotNull final Class<?> nativeType,
+            @NotNull final LogicalTypeAnnotation.TimeUnit unit,
+            @SuppressWarnings("unused") final boolean isAdjustedToUTC) {
         // isAdjustedToUTC parameter is ignored while reading from Parquet files
         if (LocalTime.class.equals(nativeType)) {
             switch (unit) {
@@ -67,7 +69,7 @@ public class ToTimePage<ATTR extends Any> implements ToPage<ATTR, LocalTime[]> {
             final LocalTime[] to = new LocalTime[from.length];
 
             for (int i = 0; i < from.length; ++i) {
-                to[i] = DateTimeUtils.toLocalTimeFromMillis(from[i]);
+                to[i] = DateTimeUtils.millisOfDayToLocalTime(from[i]);
             }
             return to;
         }
@@ -102,14 +104,14 @@ public class ToTimePage<ATTR extends Any> implements ToPage<ATTR, LocalTime[]> {
     private static final class ToTimePageFromMicros<ATTR extends Any> extends ToTimePageFromLong<ATTR> {
         @Override
         public LocalTime[] convertResult(@NotNull final Object result) {
-            return convertResultHelper(result, DateTimeUtils::toLocalTimeFromMicros);
+            return convertResultHelper(result, DateTimeUtils::microsOfDayToLocalTime);
         }
     }
 
     private static final class ToTimePageFromNanos<ATTR extends Any> extends ToTimePageFromLong<ATTR> {
         @Override
         public LocalTime[] convertResult(@NotNull final Object result) {
-            return convertResultHelper(result, DateTimeUtils::toLocalTimeFromNanos);
+            return convertResultHelper(result, DateTimeUtils::nanosOfDayToLocalTime);
         }
     }
 }

@@ -882,7 +882,7 @@ public class DateTimeUtils {
      * @param millis milliseconds from midnight
      * @return the {@link LocalTime}, or {@code null} if any input is {@link QueryConstants#NULL_INT NULL_INT}
      */
-    public static @Nullable LocalTime toLocalTimeFromMillis(final int millis) {
+    public static @Nullable LocalTime millisOfDayToLocalTime(final int millis) {
         if (millis == NULL_INT) {
             return null;
         }
@@ -895,7 +895,7 @@ public class DateTimeUtils {
      * @param micros microseconds from midnight
      * @return the {@link LocalTime}, or {@code null} if any input is {@link QueryConstants#NULL_LONG NULL_LONG}
      */
-    public static @Nullable LocalTime toLocalTimeFromMicros(final long micros) {
+    public static @Nullable LocalTime microsOfDayToLocalTime(final long micros) {
         if (micros == NULL_LONG) {
             return null;
         }
@@ -908,7 +908,7 @@ public class DateTimeUtils {
      * @param nanos nanoseconds from midnight
      * @return the {@link LocalTime}, or {@code null} if any input is {@link QueryConstants#NULL_LONG NULL_LONG}
      */
-    public static @Nullable LocalTime toLocalTimeFromNanos(final long nanos) {
+    public static @Nullable LocalTime nanosOfDayToLocalTime(final long nanos) {
         if (nanos == NULL_LONG) {
             return null;
         }
@@ -2422,9 +2422,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of nanoseconds that have elapsed since the top of the day. The results will be adjusted as per
-     * the daylight savings time.
-     *
+     * Returns the number of nanoseconds that have elapsed since the top of the day.
      *
      * @param localTime time
      * @return {@link QueryConstants#NULL_LONG} if input is {@code null}; otherwise, number of nanoseconds that have

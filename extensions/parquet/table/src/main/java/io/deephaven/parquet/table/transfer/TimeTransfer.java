@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.LongBuffer;
 import java.time.LocalTime;
 
-final class TimeTransfer extends PrimitiveTransferNonArrayBacked<WritableObjectChunk<LocalTime, Values>, LongBuffer> {
+final class TimeTransfer extends GettingPrimitiveTransfer<WritableObjectChunk<LocalTime, Values>, LongBuffer> {
 
     TimeTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int targetPageSizeInBytes) {

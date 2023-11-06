@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
 
-final class DateTransfer extends Int32CastablePrimitiveTransfer<WritableObjectChunk<LocalDate, Values>> {
+final class DateTransfer extends IntCastablePrimitiveTransfer<WritableObjectChunk<LocalDate, Values>> {
     DateTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, final int targetSize) {
         super(columnSource, tableRowSet, targetSize);
     }

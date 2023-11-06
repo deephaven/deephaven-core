@@ -12,10 +12,10 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Transfer object for dictionary encoded string columns. This class updates the {@link StringDictionary} with all the
  * strings it encounters and generates an IntBuffer of dictionary position values. The class extends from
- * {@link Int32CastablePrimitiveTransfer} to manage the dictionary positions similar to an Int column.
+ * {@link IntCastablePrimitiveTransfer} to manage the dictionary positions similar to an Int column.
  */
 
-final class DictEncodedStringTransfer extends Int32CastablePrimitiveTransfer<ObjectChunk<String, Values>> {
+final class DictEncodedStringTransfer extends IntCastablePrimitiveTransfer<ObjectChunk<String, Values>> {
     private final StringDictionary dictionary;
     private boolean pageHasNull;
 
