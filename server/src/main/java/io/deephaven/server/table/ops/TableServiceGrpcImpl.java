@@ -544,14 +544,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         .build();
                 safelyOnNext(responseObserver, response);
                 onOneResolved.run();
-            }).submit(() -> {
-                final Table table = exportBuilder.doExport();
+            }).onSuccess(table -> {
                 final ExportedTableCreationResponse response =
                         ExportUtil.buildTableCreationResponse(resultId, table);
                 safelyOnNext(responseObserver, response);
                 onOneResolved.run();
-                return table;
-            });
+            }).submit(exportBuilder::doExport);
         }
     }
 
