@@ -19,15 +19,15 @@ import java.nio.LongBuffer;
 
 final class LongTransfer extends PrimitiveTransfer<WritableLongChunk<Values>, LongBuffer> {
     static LongTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,
-                              final int targetPageSize) {
-        final int maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize / Long.BYTES));
-        final long[] backingArray = new long[maxValuesPerPage];
+                              final int targetPageSizeInBytes) {
+        final int targetElementsPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSizeInBytes / Long.BYTES));
+        final long[] backingArray = new long[targetElementsPerPage];
         return new LongTransfer(
                 columnSource,
                 tableRowSet,
                 WritableLongChunk.writableChunkWrap(backingArray),
                 LongBuffer.wrap(backingArray),
-                maxValuesPerPage);
+                targetElementsPerPage);
     }
 
     private LongTransfer(
@@ -35,7 +35,7 @@ final class LongTransfer extends PrimitiveTransfer<WritableLongChunk<Values>, Lo
             @NotNull final RowSequence tableRowSet,
             @NotNull final WritableLongChunk<Values> chunk,
             @NotNull final LongBuffer buffer,
-            final int maxValuesPerPage) {
-        super(columnSource, tableRowSet, chunk, buffer, maxValuesPerPage);
+            final int targetElementsPerPage) {
+        super(columnSource, tableRowSet, chunk, buffer, targetElementsPerPage);
     }
 }

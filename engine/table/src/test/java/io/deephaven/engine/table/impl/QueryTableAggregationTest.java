@@ -74,7 +74,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableAggregationTest {
@@ -3833,6 +3833,22 @@ public class QueryTableAggregationTest {
         });
         TestCase.assertEquals(1, aggregated.size());
         assertTableEquals(expectedEmpty, aggregated);
+    }
+
+    @Test
+    public void testKeyColumnMissing() {
+        final Table data = testTable(col("S", "A", "B", "C", "D"), col("I", 10, 20, 30, 40));
+        try {
+            final Table agg = data.selectDistinct("NonExistentCol");
+            fail("Should have thrown an exception");
+        } catch (Exception ex) {
+            io.deephaven.base.verify.Assert.instanceOf(ex, "ex", IllegalArgumentException.class);
+            io.deephaven.base.verify.Assert.assertion(
+                    ex.getMessage().contains("Missing columns: [NonExistentCol]"),
+                    "ex.getMessage().contains(\"Missing columns: [NonExistentCol]\")",
+                    ex.getMessage(),
+                    "ex.getMessage()");
+        }
     }
 
     @Test
