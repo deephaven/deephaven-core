@@ -18,6 +18,7 @@ import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.OpCase;
+import io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
@@ -470,6 +471,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
                     safelyComplete(responseObserver, rowResponse.setResultRow(result).build());
                 });
+    }
+
+    @Override
+    public void computeColumnStatistics(ColumnStatisticsRequest request,
+            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.COLUMN_STATISTICS, request, responseObserver);
     }
 
     @Override

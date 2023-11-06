@@ -23,16 +23,16 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
     private final ColumnSource<?> columnSource;
     private final RowSequence.Iterator tableRowSetIt;
     private final ChunkSource.GetContext context;
-    private final int maxValuesPerPage;
+    private final int targetElementsPerPage;
 
     IntCastablePrimitiveTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                                 final int targetPageSize) {
+                                 final int targetPageSizeInBytes) {
         this.columnSource = columnSource;
         this.tableRowSetIt = tableRowSet.getRowSequenceIterator();
-        this.maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize / Integer.BYTES));
-        Assert.gtZero(maxValuesPerPage, "maxValuesPerPage");
-        this.buffer = IntBuffer.allocate(maxValuesPerPage);
-        context = columnSource.makeGetContext(maxValuesPerPage);
+        this.targetElementsPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSizeInBytes / Integer.BYTES));
+        Assert.gtZero(targetElementsPerPage, "targetElementsPerPage");
+        this.buffer = IntBuffer.allocate(targetElementsPerPage);
+        context = columnSource.makeGetContext(targetElementsPerPage);
     }
 
     @Override
@@ -42,7 +42,7 @@ abstract class IntCastablePrimitiveTransfer<T extends ChunkBase<Values>> impleme
         }
         buffer.clear();
         // Fetch one page worth of data from the column source
-        final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength((long) maxValuesPerPage);
+        final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength((long) targetElementsPerPage);
         // noinspection unchecked
         chunk = (T) columnSource.getChunk(context, rs);
         copyAllFromChunkToBuffer();

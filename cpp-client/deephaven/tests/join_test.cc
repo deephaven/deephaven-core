@@ -40,9 +40,6 @@ TEST_CASE("Join", "[join]") {
 TEST_CASE("Aj", "[join]") {
   auto tm = TableMakerForTests::Create();
   auto q = arrow::timestamp(arrow::TimeUnit::NANO, "UTC");
-  arrow::TimestampBuilder tb(q, arrow::default_memory_pool());
-  // tb.Append(DateTime::Parse("2021-04-05T09:10:00-0500"));
-  tb.Finish();
 
   TableHandle trades;
   {
@@ -139,9 +136,6 @@ TEST_CASE("Aj", "[join]") {
 TEST_CASE("Raj", "[join]") {
   auto tm = TableMakerForTests::Create();
   auto q = arrow::timestamp(arrow::TimeUnit::NANO, "UTC");
-  arrow::TimestampBuilder tb(q, arrow::default_memory_pool());
-  // tb.Append(DateTime::Parse("2021-04-05T09:10:00-0500"));
-  tb.Finish();
 
   TableHandle trades;
   {

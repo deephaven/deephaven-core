@@ -254,6 +254,12 @@ service TableService {
    */
   rpc MetaTable(MetaTableRequest) returns (ExportedTableCreationResponse) {}
 
+  /**
+   * Returns a new table representing statistics about a single column of the provided table. This
+   * result table will be static - use Aggregation() instead for updating results. Presently, the
+   * primary use case for this is the Deephaven Web UI.
+   */
+  rpc ComputeColumnStatistics(ColumnStatisticsRequest) returns (ExportedTableCreationResponse) {}
 }
 
 message TableReference {
@@ -1231,6 +1237,17 @@ message WhereInRequest {
   repeated string columns_to_match = 5;
 }
 
+message ColumnStatisticsRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+
+  // The name of the column in the source table to read when generating statistics.
+  string column_name = 3;
+  // For non-numeric, non-date types, specify the max number of unique values to return, sorted by popularity.
+  // Leave unset to use server default, specify zero to skip.
+  optional int32 unique_value_limit = 4;
+}
+
 message BatchTableRequest {
   repeated Operation ops = 1;
 
@@ -1278,6 +1295,7 @@ message BatchTableRequest {
       RangeJoinTablesRequest range_join = 39;
       AjRajTablesRequest aj = 40;
       AjRajTablesRequest raj = 41;
+      ColumnStatisticsRequest column_statistics = 42;
     }
   }
 }

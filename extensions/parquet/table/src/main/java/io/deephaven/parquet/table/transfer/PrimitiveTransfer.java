@@ -23,21 +23,21 @@ abstract class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buff
     private final ColumnSource<?> columnSource;
     private final RowSequence.Iterator tableRowSetIt;
     private final ChunkSource.FillContext context;
-    private final int maxValuesPerPage;
+    private final int targetElementsPerPage;
 
     <A> PrimitiveTransfer(
             @NotNull final ColumnSource<?> columnSource,
             @NotNull final RowSequence tableRowSet,
             @NotNull final C chunk,
             @NotNull final B buffer,
-            final int maxValuesPerPage) {
+            final int targetElementsPerPage) {
         this.columnSource = columnSource;
         this.tableRowSetIt = tableRowSet.getRowSequenceIterator();
         this.chunk = chunk;
         this.buffer = buffer;
-        Assert.gtZero(maxValuesPerPage, "maxValuesPerPage");
-        this.maxValuesPerPage = maxValuesPerPage;
-        this.context = columnSource.makeFillContext(maxValuesPerPage);
+        Assert.gtZero(targetElementsPerPage, "targetElementsPerPage");
+        this.targetElementsPerPage = targetElementsPerPage;
+        this.context = columnSource.makeFillContext(targetElementsPerPage);
     }
 
     @Override
@@ -46,7 +46,7 @@ abstract class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buff
             return 0;
         }
         // Fetch one page worth of data from the column source
-        final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(maxValuesPerPage);
+        final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(targetElementsPerPage);
         columnSource.fillChunk(context, chunk, rs);
         // Assuming that buffer and chunk are backed by the same array.
         buffer.position(0);

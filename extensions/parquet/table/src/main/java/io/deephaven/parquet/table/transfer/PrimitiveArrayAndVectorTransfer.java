@@ -19,9 +19,9 @@ abstract class PrimitiveArrayAndVectorTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE,
     private final int numBytesPerValue;
 
     PrimitiveArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-            final int maxValuesPerPage, final int targetPageSize,
+            final int targetElementsPerPage, final int targetPageSizeInBytes,
             @NotNull final BUFFER_TYPE buffer, final int numBytesPerValue) {
-        super(columnSource, tableRowSet, maxValuesPerPage, targetPageSize, buffer);
+        super(columnSource, tableRowSet, targetElementsPerPage, targetPageSizeInBytes, buffer);
         this.numBytesPerValue = numBytesPerValue;
     }
 
@@ -75,7 +75,7 @@ abstract class PrimitiveArrayAndVectorTransfer<COLUMN_TYPE, ENCODED_COLUMN_TYPE,
         if (!repeatCounts.hasRemaining()) {
             return false;
         }
-        if (buffer.position() + data.numValues > maxValuesPerPage) {
+        if (buffer.position() + data.numValues > targetElementsPerPage) {
             if (force) {
                 // Assuming buffer is empty here, verified earlier
                 if (buffer.limit() < data.numValues) {
