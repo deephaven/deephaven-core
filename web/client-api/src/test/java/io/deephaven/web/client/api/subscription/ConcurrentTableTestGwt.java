@@ -1,10 +1,13 @@
-package io.deephaven.web.client.api;
+package io.deephaven.web.client.api.subscription;
 
 import com.google.gwt.junit.DoNotRunWith;
 import com.google.gwt.junit.Platform;
 import elemental2.core.JsArray;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
+import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
+import io.deephaven.web.client.api.Column;
+import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import jsinterop.base.Js;
 

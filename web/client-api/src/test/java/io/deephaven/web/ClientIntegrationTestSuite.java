@@ -1,9 +1,9 @@
 package io.deephaven.web;
 
 import com.google.gwt.junit.tools.GWTTestSuite;
-import io.deephaven.web.client.api.ConcurrentTableTestGwt;
+import io.deephaven.web.client.api.NullValueTestGwt;
+import io.deephaven.web.client.api.subscription.ConcurrentTableTestGwt;
 import io.deephaven.web.client.api.TableManipulationTestGwt;
-import io.deephaven.web.client.api.filter.FilterConditionTestGwt;
 import io.deephaven.web.client.api.subscription.ViewportTestGwt;
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -20,6 +20,7 @@ public class ClientIntegrationTestSuite extends GWTTestSuite {
         suite.addTestSuite(ViewportTestGwt.class);
         suite.addTestSuite(TableManipulationTestGwt.class);
         suite.addTestSuite(ConcurrentTableTestGwt.class);
+        suite.addTestSuite(NullValueTestGwt.class);
 
         return suite;
     }
