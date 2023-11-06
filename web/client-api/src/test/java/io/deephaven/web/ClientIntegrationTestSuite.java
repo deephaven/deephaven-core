@@ -1,6 +1,8 @@
 package io.deephaven.web;
 
 import com.google.gwt.junit.tools.GWTTestSuite;
+import io.deephaven.web.client.api.ConcurrentTableTestGwt;
+import io.deephaven.web.client.api.TableManipulationTestGwt;
 import io.deephaven.web.client.api.filter.FilterConditionTestGwt;
 import io.deephaven.web.client.api.subscription.ViewportTestGwt;
 import junit.framework.Test;
@@ -12,11 +14,12 @@ public class ClientIntegrationTestSuite extends GWTTestSuite {
 
         // This test doesn't actually talk to the server, but it requires the dh-internal library be available.
         // Disabled for now, we don't have good toString on the FilterCondition/FilterValue types.
-//        suite.addTestSuite(FilterConditionTestGwt.class);
+        // suite.addTestSuite(FilterConditionTestGwt.class);
 
         // Actual integration tests
         suite.addTestSuite(ViewportTestGwt.class);
-
+        suite.addTestSuite(TableManipulationTestGwt.class);
+        suite.addTestSuite(ConcurrentTableTestGwt.class);
 
         return suite;
     }

@@ -121,8 +121,7 @@ public class FilterConditionTestGwt extends AbstractAsyncGwtTestCase {
                                             c.filter().eq(FilterValue.ofNumber(FilterValue.OfNumberUnionParam.of(3))),
                                             c.filter().eq(FilterValue.ofNumber(FilterValue.OfNumberUnionParam.of(4))))
                                     .not())
-                            .toString()
-            );
+                            .toString());
             finishTest();
             return null;
         })

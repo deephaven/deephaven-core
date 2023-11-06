@@ -169,7 +169,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         for (int i = 0; i < code.size(); i++) {
             final int index = i;
             result = result.then(ignore -> {
-                delayTestFinish(2000 + index);
+                delayTestFinish(4000 + index);
 
                 return session.runCode(code.get(index));
             }).then(r -> {
@@ -232,10 +232,12 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     protected Promise<JsTable> assertUpdateReceived(JsTable table, Consumer<ViewportData> check, int timeoutInMillis) {
-        return this.<JsTable, ViewportData>waitForEvent(table, JsTable.EVENT_UPDATED, e -> {
+        return Promise.race(this.<JsTable, ViewportData>waitForEvent(table, JsTable.EVENT_UPDATED, e -> {
             ViewportData viewportData = e.detail;
             check.accept(viewportData);
-        }, timeoutInMillis);
+        }, timeoutInMillis),
+                table.nextEvent(JsTable.EVENT_REQUEST_FAILED, (double) timeoutInMillis).then(Promise::reject))
+                .then(ignore -> Promise.resolve(table));
     }
 
     protected <T> IThenable.ThenOnFulfilledCallbackFn<T, T> delayFinish(int timeout) {
