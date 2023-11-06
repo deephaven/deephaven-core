@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -143,6 +142,8 @@ final class ExportStates implements ExportService {
             };
         }
         return new ExportServiceRequest() {
+            boolean sent;
+            boolean closed;
 
             @Override
             public List<Export> exports() {
@@ -151,24 +152,59 @@ final class ExportStates implements ExportService {
 
             @Override
             public void send() {
+                if (closed || sent) {
+                    return;
+                }
+                sent = true;
+                // After the user has called send, all handling of state needs to be handled by the respective
+                // io.deephaven.client.impl.ExportRequest.listener
                 send.run();
+
             }
 
             @Override
             public void close() {
-                lock.unlock();
+                if (closed) {
+                    return;
+                }
+                closed = true;
+                try {
+                    if (!sent) {
+                        cleanupUnsent();
+                    }
+                } finally {
+                    lock.unlock();
+                }
+            }
+
+            private void cleanupUnsent() {
+                for (Export result : results) {
+                    final State state = result.state();
+                    if (newStates.containsKey(state.exportId())) {
+                        // On brand new states that we didn't even send, we can simply remove them. We aren't
+                        // leaking anything, but we have incremented our export id creator state.
+                        removeImpl(state);
+                        continue;
+                    }
+                    result.release();
+                }
             }
         };
     }
 
-    private void release(State state) {
+
+    private void remove(State state) {
         lock.lock();
         try {
-            if (!exports.remove(state.table(), state)) {
-                throw new IllegalStateException("Unable to remove state");
-            }
+            removeImpl(state);
         } finally {
             lock.unlock();
+        }
+    }
+
+    private void removeImpl(State state) {
+        if (!exports.remove(state.table(), state)) {
+            throw new IllegalStateException("Unable to remove state");
         }
     }
 
@@ -259,7 +295,7 @@ final class ExportStates implements ExportService {
                 throw new IllegalStateException("Unable to remove child");
             }
             if (children.isEmpty()) {
-                ExportStates.this.release(this);
+                ExportStates.this.remove(this);
                 released = true;
                 sessionStub.release(
                         ReleaseRequest.newBuilder().setId(ExportTicketHelper.wrapExportIdInTicket(exportId)).build(),
