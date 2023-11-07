@@ -166,7 +166,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
 
         final SessionState session = sessionService.getCurrentSession();
 
-        final SessionState.ExportObject<HierarchicalTable> inputHierarchicalTableExport = ticketRouter.resolve(
+        final SessionState.ExportObject<HierarchicalTable<?>> inputHierarchicalTableExport = ticketRouter.resolve(
                 session, request.getInputHierarchicalTableId(), "apply.inputHierarchicalTableId");
 
         session.newExport(request.getResultHierarchicalTableId(), "apply.resultHierarchicalTableId")
