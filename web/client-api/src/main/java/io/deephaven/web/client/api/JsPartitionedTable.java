@@ -1,6 +1,7 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
+import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
@@ -90,11 +91,11 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             keyColumnTypes = new ArrayList<>();
             InitialTableDefinition tableDefinition = WebBarrageUtils.readTableDefinition(
                     WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
-            ColumnDefinition[] columnDefinitions = WebBarrageUtils.readColumnDefinitions(
-                    WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
-            columns = new Column[0];
-            keyColumns = new Column[0];
-            for (ColumnDefinition columnDefinition : columnDefinitions) {
+            ColumnDefinition[] columnDefinitions = tableDefinition.getColumns();
+            Column[] columns = new Column[0];
+            Column[] keyColumns = new Column[0];
+            for (int i = 0; i < columnDefinitions.length; i++) {
+                ColumnDefinition columnDefinition = columnDefinitions[i];
                 Column column = columnDefinition.makeJsColumn(columns.length, tableDefinition.getColumnsByName());
                 columns[columns.length] = column;
                 if (descriptor.getKeyColumnNamesList().indexOf(columnDefinition.getName()) != -1) {
@@ -102,6 +103,8 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                     keyColumns[keyColumns.length] = column;
                 }
             }
+            this.columns = JsObject.freeze(columns);
+            this.keyColumns = JsObject.freeze(keyColumns);
 
             return w.getExportedObjects()[0].fetch();
         }).then(result -> {
@@ -260,7 +263,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * An array of all the key columns used by the table
+     * An array of all the key columns that the tables are partitioned by.
      *
      * @return Array of Column
      */
@@ -270,7 +273,8 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * An array of all the columns used by the table
+     * An array of the columns in the tables that can be retrieved from this partitioned table, including both key and
+     * non-key columns.
      *
      * @return Array of Column
      */
