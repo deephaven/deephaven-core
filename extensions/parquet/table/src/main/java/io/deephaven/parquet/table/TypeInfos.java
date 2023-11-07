@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -48,7 +49,8 @@ public class TypeInfos {
             StringType.INSTANCE,
             InstantType.INSTANCE,
             BigIntegerType.INSTANCE,
-            LocalDateType.INSTANCE
+            LocalDateType.INSTANCE,
+            LocalTimeType.INSTANCE,
     };
 
     private static final Map<Class<?>, TypeInfo> BY_CLASS;
@@ -398,6 +400,28 @@ public class TypeInfos {
                     .as(LogicalTypeAnnotation.dateType());
         }
     }
+
+    private enum LocalTimeType implements TypeInfo {
+        INSTANCE;
+
+        private static final Set<Class<?>> clazzes = Collections.singleton(LocalTime.class);
+
+        @Override
+        public Set<Class<?>> getTypes() {
+            return clazzes;
+        }
+
+        @Override
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
+            if (!isValidFor(dataType)) {
+                throw new IllegalArgumentException("Invalid data type " + dataType);
+            }
+            // Always write in (isAdjustedToUTC = true, unit = NANOS) format
+            return type(PrimitiveTypeName.INT64, required, repeating)
+                    .as(LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
+        }
+    }
+
 
     /**
      * We will encode BigIntegers as Decimal types. Parquet has no special type for BigIntegers, but we can maintain

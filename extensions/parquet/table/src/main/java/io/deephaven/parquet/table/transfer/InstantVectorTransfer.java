@@ -14,7 +14,7 @@ import java.nio.LongBuffer;
 import java.time.Instant;
 
 final class InstantVectorTransfer extends PrimitiveVectorTransfer<ObjectVector<Instant>, LongBuffer> {
-    // We encode Instants as primitive longs
+    // We encode Instant as primitive longs
     InstantVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int targetPageSizeInBytes) {
         super(columnSource, tableRowSet, targetPageSizeInBytes / Long.BYTES, targetPageSizeInBytes,
