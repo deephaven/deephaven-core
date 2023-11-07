@@ -9,6 +9,7 @@ from typing import Optional, Union, List
 import jpy
 
 from deephaven import DHError
+from deephaven.dtypes import BusinessCalendar
 
 
 _JCalendars = jpy.get_type("io.deephaven.time.calendar.Calendars")
@@ -29,11 +30,11 @@ def remove_calendar(name: str) -> None:
         raise DHError(e, f"failed to remove calendar '{name}'") from e
 
 
-def add_calendar(cal: Optional[jpy.JType] = None, file: Optional[str] = None) -> None:
+def add_calendar(cal: Optional[BusinessCalendar] = None, file: Optional[str] = None) -> None:
     """ Adds a new business calendar to the set of available options.
 
     Args:
-        cal (jpy.JType): business calendar
+        cal (BusinessCalendar): business calendar
         file (str): business calendar file
 
     Raises:
@@ -105,7 +106,7 @@ def calendar_name() -> str:
         raise DHError(e, "failed to get the default calendar name.") from e
 
 
-def calendar(name: Optional[str] = None) -> jpy.JType:
+def calendar(name: Optional[str] = None) -> BusinessCalendar:
     """ Returns the calendar with the given name.
 
     The returned calendar is a 'io.deephaven.time.calendar.BusinessCalendar' Java object that can be used in Python.

@@ -8,7 +8,7 @@ from typing import List
 
 import jpy
 import numpy as np
-from deephaven.dtypes import DType
+from deephaven.dtypes import DType, BusinessCalendar
 
 from deephaven import DHError, dtypes, empty_table, new_table
 from deephaven.column import Column, InputColumn
@@ -17,7 +17,6 @@ from deephaven.jcompat import j_list_to_list
 
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
 _JDataAccessHelpers = jpy.get_type("io.deephaven.engine.table.impl.DataAccessHelpers")
-_JBusinessCalendar = jpy.get_type("io.deephaven.time.calendar.BusinessCalendar")
 _JDayOfWeek = jpy.get_type("java.time.DayOfWeek")
 _JArrayList = jpy.get_type("java.util.ArrayList")
 
@@ -164,13 +163,13 @@ def to_table(np_array: np.ndarray, cols: List[str]) -> Table:
         raise DHError(e, "failed to create a Deephaven Table from a Pandas DataFrame.") from e
 
 
-def to_busdaycalendar(cal: jpy.JType, include_partial: bool = True) -> np.busdaycalendar:
+def to_busdaycalendar(cal: BusinessCalendar, include_partial: bool = True) -> np.busdaycalendar:
     """ Creates a numpy business day calendar from a Java BusinessCalendar.
 
     Partial holidays in the business calendar are interepreted as full holidays in the numpy business day calendar.
 
     Args:
-        cal (jpy.JType): the Java BusinessCalendar
+        cal (BusinessCalendar): the Java BusinessCalendar
         include_partial (bool): whether to include partial holidays in the numpy business day calendar, default is True
 
     Returns:
@@ -182,7 +181,7 @@ def to_busdaycalendar(cal: jpy.JType, include_partial: bool = True) -> np.busday
 
     if not cal:
         raise DHError(message="cal must not be None")
-    elif not isinstance(cal, jpy.JType) or cal.jclass != _JBusinessCalendar.jclass:
+    elif not isinstance(cal, jpy.JType) or cal.jclass != BusinessCalendar.j_type:
         raise DHError(message="cal must be a Java BusinessCalendar")
 
     try:

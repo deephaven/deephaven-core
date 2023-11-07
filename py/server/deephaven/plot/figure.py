@@ -19,7 +19,7 @@ import jpy
 
 from deephaven import DHError, dtypes
 from deephaven._wrapper import JObjectWrapper
-from deephaven.dtypes import Instant, PyObject
+from deephaven.dtypes import Instant, PyObject, BusinessCalendar
 from deephaven.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
     SelectableDataSet
 from deephaven.table import Table
@@ -200,7 +200,7 @@ class Figure(JObjectWrapper):
         invert: bool = None,
         log: bool = None,
         business_time: bool = None,
-        calendar: Union[str, jpy.JType] = None,
+        calendar: Union[str, BusinessCalendar] = None,
         transform: AxisTransform = None,
     ) -> Figure:
         """Gets a specific axis from a chart's axes and updates the axis's configurations.
@@ -218,7 +218,7 @@ class Figure(JObjectWrapper):
             invert (bool): invert the axis.
             log (bool): log axis
             business_time (bool): business time axis using the default calendar
-            calendar (Union[str, jpy.JType]): business time axis using the specified calendar
+            calendar (Union[str, BusinessCalendar]): business time axis using the specified calendar
             transform (AxisTransform): axis transform.
 
         Returns:
@@ -267,7 +267,7 @@ class Figure(JObjectWrapper):
             business_time = _convert_j("business_time", business_time, [bool])
         if calendar is not None:
             non_null_args.add("calendar")
-            calendar = _convert_j("calendar", calendar, [str, jpy.JType])
+            calendar = _convert_j("calendar", calendar, [str, BusinessCalendar])
         if transform is not None:
             non_null_args.add("transform")
             transform = _convert_j("transform", transform, [AxisTransform])
@@ -2154,7 +2154,7 @@ class Figure(JObjectWrapper):
         invert: bool = None,
         log: bool = None,
         business_time: bool = None,
-        calendar: Union[str, jpy.JType] = None,
+        calendar: Union[str, BusinessCalendar] = None,
         transform: AxisTransform = None,
     ) -> Figure:
         """Gets the x-Axis from a chart's axes and updates the x-Axis's configurations.
@@ -2171,7 +2171,7 @@ class Figure(JObjectWrapper):
             invert (bool): invert the axis.
             log (bool): log axis
             business_time (bool): business time axis using the default calendar
-            calendar (Union[str, jpy.JType]): business time axis using the specified calendar
+            calendar (Union[str, BusinessCalendar]): business time axis using the specified calendar
             transform (AxisTransform): axis transform.
 
         Returns:
@@ -2217,7 +2217,7 @@ class Figure(JObjectWrapper):
             business_time = _convert_j("business_time", business_time, [bool])
         if calendar is not None:
             non_null_args.add("calendar")
-            calendar = _convert_j("calendar", calendar, [str, jpy.JType])
+            calendar = _convert_j("calendar", calendar, [str, BusinessCalendar])
         if transform is not None:
             non_null_args.add("transform")
             transform = _convert_j("transform", transform, [AxisTransform])
@@ -2474,7 +2474,7 @@ class Figure(JObjectWrapper):
         invert: bool = None,
         log: bool = None,
         business_time: bool = None,
-        calendar: Union[str, jpy.JType] = None,
+        calendar: Union[str, BusinessCalendar] = None,
         transform: AxisTransform = None,
     ) -> Figure:
         """Gets the y-Axis from a chart's axes and updates the y-Axis's configurations.
@@ -2491,7 +2491,7 @@ class Figure(JObjectWrapper):
             invert (bool): invert the axis.
             log (bool): log axis
             business_time (bool): business time axis using the default calendar
-            calendar (Union[str, jpy.JType]): business time axis using the specified calendar
+            calendar (Union[str, BusinessCalendar]): business time axis using the specified calendar
             transform (AxisTransform): axis transform.
 
         Returns:
@@ -2537,7 +2537,7 @@ class Figure(JObjectWrapper):
             business_time = _convert_j("business_time", business_time, [bool])
         if calendar is not None:
             non_null_args.add("calendar")
-            calendar = _convert_j("calendar", calendar, [str, jpy.JType])
+            calendar = _convert_j("calendar", calendar, [str, BusinessCalendar])
         if transform is not None:
             non_null_args.add("transform")
             transform = _convert_j("transform", transform, [AxisTransform])
