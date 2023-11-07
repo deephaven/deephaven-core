@@ -42,17 +42,10 @@ def dtsOutput = layout.buildDirectory.dir('ts-types');
 def tsDefs = tasks.register('typescriptDefinitions', Javadoc) {
     dependsOn 'compileJava'
     source = sourceSets.main.allJava
-    options.classpath = sourceSets.main.compileClasspath.files.asType(List)
+    options.classpath = sourceSets.main.compileClasspath.files as List
     destinationDir = dtsOutput.get().asFile
-    options.docletpath = configurations.typescriptDoclet.files.asType(List) + sourceSets.main.compileClasspath.files.asType(List)
+    options.docletpath = (configurations.typescriptDoclet.files as List) + (sourceSets.main.compileClasspath.files as List)
     options.doclet = 'com.vertispan.tsdefs.doclet.TsDoclet'
-}
-
-// Temporary wiring to build locally and get this working
-repositories {
-    maven {
-        url 'https://oss.sonatype.org/content/repositories/comvertispan-1073'
-    }
 }
 
 artifacts {
