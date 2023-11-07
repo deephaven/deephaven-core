@@ -29,6 +29,8 @@ dependencies {
     testRuntimeOnly project(':Plot')
     testRuntimeOnly project(':extensions-kafka')
     testRuntimeOnly project(':extensions-parquet-table')
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(':engine-time')
 }
 
 sourceSets {

@@ -1071,7 +1071,7 @@ public class GeneratePyV2FigureAPI {
         final String[] taAxisFormat = new String[] {"AxisFormat"};
         final String[] taAxisTransform = new String[] {"AxisTransform"};
         final String[] taFont = new String[] {"Font"};
-        final String[] taBusinessCalendar = new String[] {"str", "BusinessCalendar"};
+        final String[] taBusinessCalendar = new String[] {"str", "jpy.JType"};
         final String[] taPlotStyle = new String[] {"str", "PlotStyle"};
         final String[] taLineStyle = new String[] {"str", "LineStyle"};
         final String[] taPointColors = new String[] {"str", "int", "Color", "List[str]", "List[int]", "List[Color]",

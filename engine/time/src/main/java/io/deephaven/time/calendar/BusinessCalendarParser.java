@@ -6,7 +6,6 @@ package io.deephaven.time.calendar;
 import io.deephaven.base.verify.Require;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeZoneAliases;
-import io.deephaven.util.annotations.VisibleForTesting;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
@@ -45,6 +44,16 @@ public class BusinessCalendarParser {
         private BusinessSchedule<LocalTime> standardBusinessSchedule;
         private Set<DayOfWeek> weekendDays;
         private Map<LocalDate, BusinessSchedule<Instant>> holidays;
+    }
+
+    /**
+     * Loads a business calendar from a file.
+     *
+     * @param file file
+     * @return business calendar.
+     */
+    public static BusinessCalendar loadBusinessCalendar(@NotNull final String file) {
+        return loadBusinessCalendar(new File(file));
     }
 
     /**

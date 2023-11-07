@@ -38,15 +38,19 @@ public class TestCalendarMethodsFromTable {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
-    private final Map<Class<?>,Object[]> data = new HashMap<>();
+    private final Map<Class<?>, Object[]> data = new HashMap<>();
     {
         data.put(String.class, new String[] {"2017-08-01", "2017-08-05"});
-        data.put(LocalDate.class, new LocalDate[] {DateTimeUtils.parseLocalDate("2017-08-01"), DateTimeUtils.parseLocalDate("2017-08-05")});
-        data.put(Instant.class, new Instant[] {DateTimeUtils.parseInstant("2002-01-01T01:00:00.000000000 NY"), DateTimeUtils.parseInstant("2002-01-21T01:00:00.000000000 NY")});
-        data.put(ZonedDateTime.class, new ZonedDateTime[] {DateTimeUtils.parseZonedDateTime("2002-01-01T01:00:00.000000000 NY"), DateTimeUtils.parseZonedDateTime("2002-01-21T01:00:00.000000000 NY")});
+        data.put(LocalDate.class, new LocalDate[] {DateTimeUtils.parseLocalDate("2017-08-01"),
+                DateTimeUtils.parseLocalDate("2017-08-05")});
+        data.put(Instant.class, new Instant[] {DateTimeUtils.parseInstant("2002-01-01T01:00:00.000000000 NY"),
+                DateTimeUtils.parseInstant("2002-01-21T01:00:00.000000000 NY")});
+        data.put(ZonedDateTime.class,
+                new ZonedDateTime[] {DateTimeUtils.parseZonedDateTime("2002-01-01T01:00:00.000000000 NY"),
+                        DateTimeUtils.parseZonedDateTime("2002-01-21T01:00:00.000000000 NY")});
         data.put(boolean.class, new Boolean[] {true, true});
-        data.put(int.class, new Object[]{1, 2});
-        data.put(DayOfWeek.class, new Object[]{DayOfWeek.MONDAY, DayOfWeek.TUESDAY});
+        data.put(int.class, new Object[] {1, 2});
+        data.put(DayOfWeek.class, new Object[] {DayOfWeek.MONDAY, DayOfWeek.TUESDAY});
     }
 
     private final Map<String, Double> deltas = new HashMap<>();
@@ -57,34 +61,34 @@ public class TestCalendarMethodsFromTable {
 
     @SuppressWarnings("SameParameterValue")
     private Object getVal(final Table t, final String column) {
-        //noinspection deprecation
+        // noinspection deprecation
         return DataAccessHelpers.getColumn(t, column).get(0);
     }
 
     @SuppressWarnings("StringConcatenationInLoop")
     private void executeTest(final Method m) throws InvocationTargetException, IllegalAccessException {
         final ArrayList<Object> args = new ArrayList<>();
-        final Map<Class<?>,Integer> paramCounter = new HashMap<>();
+        final Map<Class<?>, Integer> paramCounter = new HashMap<>();
 
         String query = "X = " + m.getName() + "(";
         boolean isFirst = true;
 
-        for(Class<?> t : m.getParameterTypes()) {
+        for (Class<?> t : m.getParameterTypes()) {
             final int count = paramCounter.getOrDefault(t, 0) + 1;
             paramCounter.put(t, count);
 
             final String name = t.getSimpleName().toLowerCase() + count;
             final Object[] d = data.get(t);
 
-            if(d == null) {
+            if (d == null) {
                 throw new RuntimeException("No data for " + t);
             }
 
-            final Object val = d[count-1];
+            final Object val = d[count - 1];
             QueryScope.addParam(name, val);
             args.add(val);
 
-            if(isFirst){
+            if (isFirst) {
                 isFirst = false;
             } else {
                 query += ", ";
@@ -100,10 +104,10 @@ public class TestCalendarMethodsFromTable {
         final Object target = m.invoke(null, args.toArray());
         final Double delta = deltas.get(query);
 
-        if(delta != null){
+        if (delta != null) {
             assertEquals(query, (double) target, (double) getVal(emptyTable(1).update(query), "X"), delta);
-        } else if(target instanceof Object[]) {
-            //noinspection deprecation
+        } else if (target instanceof Object[]) {
+            // noinspection deprecation
             assertEquals(query, (Object[]) target, (Object[]) getVal(emptyTable(1).update(query), "X"));
         } else {
             assertEquals(query, target, getVal(emptyTable(1).update(query), "X"));
@@ -117,8 +121,8 @@ public class TestCalendarMethodsFromTable {
             ExecutionContext.getContext().getQueryLibrary().importStatic(StaticCalendarMethods.class);
         }
 
-        for(Method m : StaticCalendarMethods.class.getMethods()) {
-            if(m.getDeclaringClass() == Object.class ||
+        for (Method m : StaticCalendarMethods.class.getMethods()) {
+            if (m.getDeclaringClass() == Object.class ||
                     !Modifier.isStatic(m.getModifiers()) ||
                     !Modifier.isPublic(m.getModifiers())) {
                 continue;

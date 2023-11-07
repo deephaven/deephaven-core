@@ -14,7 +14,7 @@ import java.util.Objects;
 public class TestBusinessCalendarParser extends BaseArrayTestCase {
 
     public static void assertParserTestCal(final BusinessCalendar cal) {
-        assertEquals("PARSER-TEST-CAL", cal.name());
+        assertEquals("PARSER_TEST_CAL", cal.name());
         assertEquals("Test Calendar", cal.description());
         assertEquals(DateTimeUtils.timeZone("Asia/Tokyo"), cal.timeZone());
         assertEquals(LocalDate.of(2000, 1, 2), cal.firstValidDate());

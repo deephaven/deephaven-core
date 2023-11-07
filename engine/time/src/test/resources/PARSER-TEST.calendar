@@ -3,7 +3,7 @@
   -->
 
 <calendar>
-    <name>PARSER-TEST-CAL</name>
+    <name>PARSER_TEST_CAL</name>
     <description>Test Calendar</description>
     <timeZone>Asia/Tokyo</timeZone>
     <firstValidDate>2000-01-02</firstValidDate>

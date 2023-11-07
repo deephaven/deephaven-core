@@ -19,15 +19,16 @@ public class TestCalendars extends BaseArrayTestCase {
 
         final String defaultCal = calendar.name();
 
-        Calendars.setDefaultCalendar("CAL2");
+        assertNotSame("CAL2", defaultCal);
+        Calendars.setCalendar("CAL2");
         assertEquals("CAL2", Calendars.calendarName());
         assertEquals("CAL2", Calendars.calendar().name());
 
-        Calendars.setDefaultCalendar(defaultCal);
+        Calendars.setCalendar(defaultCal);
     }
 
     public void testCalendarNames() {
-        assertEquals(new String[] {"CAL1", "CAL2"}, Calendars.calendarNames());
+        assertEquals(new String[]{"CAL1", "CAL2", "USBANK", "USNYSE", "UTC"}, Calendars.calendarNames());
     }
 
     public void testCalendar() {
@@ -46,17 +47,32 @@ public class TestCalendars extends BaseArrayTestCase {
 
     public void testAdd() throws URISyntaxException {
 
-        try {
-            final String path = Paths
-                    .get(Objects.requireNonNull(TestBusinessCalendarParser.class.getResource("/PARSER-TEST.calendar"))
-                            .toURI())
-                    .toString();
-            Calendars.addCalendarFromFile(path);
+        final String path = Paths
+                .get(Objects.requireNonNull(TestBusinessCalendarParser.class.getResource("/PARSER-TEST.calendar"))
+                        .toURI())
+                .toString();
+        final String calName = "PARSER_TEST_CAL";
 
-            final BusinessCalendar cal = Calendars.calendar("PARSER-TEST-CAL");
-            TestBusinessCalendarParser.assertParserTestCal(cal);
-        } finally {
-            Calendars.setDefaultCalendar(Configuration.getInstance().getProperty("Calendar.default"));
+        try {
+            Calendars.calendar(calName);
+            fail("Should have thrown an exception");
+        } catch (Exception e) {
+            // pass
         }
+
+        Calendars.addCalendarFromFile(path);
+
+        final BusinessCalendar cal = Calendars.calendar(calName);
+        TestBusinessCalendarParser.assertParserTestCal(cal);
+
+        Calendars.removeCalendar(calName);
+
+        try {
+            Calendars.calendar(calName);
+            fail("Should have thrown an exception");
+        } catch (Exception e) {
+            // pass
+        }
+
     }
 }
