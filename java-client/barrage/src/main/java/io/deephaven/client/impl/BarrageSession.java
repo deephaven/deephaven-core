@@ -31,7 +31,7 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
     @Override
     public BarrageSubscription subscribe(final TableSpec tableSpec, final BarrageSubscriptionOptions options)
             throws TableHandle.TableHandleException, InterruptedException {
-        try (final TableHandle handle = session().execute(tableSpec)) {
+        try (final TableHandle handle = session.execute(tableSpec)) {
             return subscribe(handle, options);
         }
     }
@@ -44,7 +44,7 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
     @Override
     public BarrageSnapshot snapshot(final TableSpec tableSpec, final BarrageSnapshotOptions options)
             throws TableHandle.TableHandleException, InterruptedException {
-        try (final TableHandle handle = session().execute(tableSpec)) {
+        try (final TableHandle handle = session.execute(tableSpec)) {
             return snapshot(handle, options);
         }
     }

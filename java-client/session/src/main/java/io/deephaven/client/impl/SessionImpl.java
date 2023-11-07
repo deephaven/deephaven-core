@@ -25,6 +25,7 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
+import io.deephaven.qst.table.TableSpec;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
@@ -108,9 +109,6 @@ public final class SessionImpl extends SessionBase {
     // Needed for downstream flight workarounds
     private final BearerHandler bearerHandler;
     private final ExportTicketCreator exportTicketCreator;
-    private final ExportStates states;
-    private final TableHandleManagerSerial serialManager;
-    private final TableHandleManagerBatch batchManager;
     private final ScheduledFuture<?> pingJob;
 
     private SessionImpl(SessionImplConfig config, DeephavenChannel bearerChannel, Duration pingFrequency,
@@ -119,9 +117,6 @@ public final class SessionImpl extends SessionBase {
         this.bearerChannel = Objects.requireNonNull(bearerChannel);
         this.bearerHandler = Objects.requireNonNull(bearerHandler);
         this.exportTicketCreator = new ExportTicketCreator();
-        this.states = new ExportStates(this, bearerChannel.session(), bearerChannel.table(), exportTicketCreator);
-        this.serialManager = TableHandleManagerSerial.of(this);
-        this.batchManager = TableHandleManagerBatch.of(this, config.mixinStacktrace());
         this.pingJob = config.executor().scheduleAtFixedRate(
                 () -> bearerChannel.config().getConfigurationConstants(
                         ConfigurationConstantsRequest.getDefaultInstance(), PingObserverNoOp.INSTANCE),
@@ -133,9 +128,43 @@ public final class SessionImpl extends SessionBase {
         return bearerHandler;
     }
 
+    private ExportStates newExportStates() {
+        return new ExportStates(this, bearerChannel.session(), bearerChannel.table(), exportTicketCreator);
+    }
+
     @Override
-    public List<Export> export(ExportsRequest request) {
-        return states.export(request);
+    public TableService newStatefulTableService() {
+        return new TableServiceImpl(newExportStates());
+    }
+
+    @Override
+    public TableHandleManager batch() {
+        return batch(config.mixinStacktrace());
+    }
+
+    @Override
+    public TableHandleManager batch(boolean mixinStacktraces) {
+        return new TableHandleManagerBatch(mixinStacktraces) {
+            @Override
+            protected ExportService exportService() {
+                return newExportStates();
+            }
+        };
+    }
+
+    @Override
+    public TableHandleManager serial() {
+        return new TableHandleManagerSerial() {
+            @Override
+            protected ExportService exportService() {
+                return newExportStates();
+            }
+
+            @Override
+            protected TableHandle handle(TableSpec table) {
+                return io.deephaven.client.impl.TableServiceImpl.executeUnchecked(exportService(), table, null);
+            }
+        };
     }
 
     @Override
@@ -282,26 +311,11 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    protected TableHandleManager delegate() {
-        return config.delegateToBatch() ? batchManager : serialManager;
-    }
-
-    @Override
-    public TableHandleManager batch() {
-        return batchManager;
-    }
-
-    @Override
-    public TableHandleManager batch(boolean mixinStacktrace) {
-        if (this.config.mixinStacktrace() == mixinStacktrace) {
-            return batchManager;
-        }
-        return TableHandleManagerBatch.of(this, mixinStacktrace);
-    }
-
-    @Override
-    public TableHandleManager serial() {
-        return serialManager;
+    protected TableService delegate() {
+        // This allows Session to implement an un-cached TableService.
+        // Each respective execution (Session.execute(), Session.executeAsync(), Session.serial().execute(), etc)
+        // will create new states for that specific execution.
+        return newStatefulTableService();
     }
 
     @Override
@@ -353,16 +367,8 @@ public final class SessionImpl extends SessionBase {
         return observer;
     }
 
-    public ScheduledExecutorService executor() {
+    ScheduledExecutorService executor() {
         return config.executor();
-    }
-
-    public long batchCount() {
-        return states.batchCount();
-    }
-
-    public long releaseCount() {
-        return states.releaseCount();
     }
 
     @Override
@@ -542,6 +548,64 @@ public final class SessionImpl extends SessionBase {
         @Override
         public void onClose() {
             serverObserver.onCompleted();
+        }
+    }
+
+    private class TableServiceImpl extends TableHandleManagerDelegate implements TableService {
+
+        private final ExportStates exportStates;
+
+        TableServiceImpl(ExportStates exportStates) {
+            this.exportStates = Objects.requireNonNull(exportStates);
+        }
+
+        // ---------------------------------------------------
+
+        @Override
+        public TableHandleFuture executeAsync(TableSpec table) {
+            return TableServiceAsyncImpl.executeAsync(exportStates, table);
+        }
+
+        @Override
+        public List<? extends TableHandleFuture> executeAsync(Iterable<? extends TableSpec> tables) {
+            return TableServiceAsyncImpl.executeAsync(exportStates, tables);
+        }
+
+        // ---------------------------------------------------
+
+        @Override
+        protected TableHandleManager delegate() {
+            return config.delegateToBatch() ? batch() : serial();
+        }
+
+        @Override
+        public TableHandleManager batch() {
+            return batch(config.mixinStacktrace());
+        }
+
+        @Override
+        public TableHandleManager batch(boolean mixinStacktrace) {
+            return new TableHandleManagerBatch(mixinStacktrace) {
+                @Override
+                protected ExportService exportService() {
+                    return exportStates;
+                }
+            };
+        }
+
+        @Override
+        public TableHandleManager serial() {
+            return new TableHandleManagerSerial() {
+                @Override
+                protected ExportService exportService() {
+                    return exportStates;
+                }
+
+                @Override
+                protected TableHandle handle(TableSpec table) {
+                    return io.deephaven.client.impl.TableServiceImpl.executeUnchecked(exportService(), table, null);
+                }
+            };
         }
     }
 }
