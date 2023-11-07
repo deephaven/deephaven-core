@@ -12,6 +12,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedta
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
+import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.subscription.SubscriptionTableData;
 import io.deephaven.web.client.api.subscription.TableSubscription;
@@ -64,6 +65,10 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      */
     private final Map<List<Object>, JsLazy<Promise<ClientTableState>>> tables = new HashMap<>();
 
+    private Column[] keyColumns;
+
+    private Column[] columns;
+
 
     @JsIgnore
     public JsPartitionedTable(WorkerConnection connection, JsWidget widget) {
@@ -83,12 +88,18 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             descriptor = PartitionedTableDescriptor.deserializeBinary(w.getDataAsU8());
 
             keyColumnTypes = new ArrayList<>();
+            InitialTableDefinition tableDefinition = WebBarrageUtils.readTableDefinition(
+                    WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
             ColumnDefinition[] columnDefinitions = WebBarrageUtils.readColumnDefinitions(
                     WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
-            for (int i = 0; i < columnDefinitions.length; i++) {
-                ColumnDefinition columnDefinition = columnDefinitions[i];
+            columns = new Column[0];
+            keyColumns = new Column[0];
+            for (ColumnDefinition columnDefinition : columnDefinitions) {
+                Column column = columnDefinition.makeJsColumn(columns.length, tableDefinition.getColumnsByName());
+                columns[columns.length] = column;
                 if (descriptor.getKeyColumnNamesList().indexOf(columnDefinition.getName()) != -1) {
                     keyColumnTypes.add(columnDefinition.getType());
+                    keyColumns[keyColumns.length] = column;
                 }
             }
 
@@ -246,6 +257,26 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     @JsProperty(name = "size")
     public int size() {
         return tables.size();
+    }
+
+    /**
+     * An array of all the key columns used by the table
+     *
+     * @return Array of Column
+     */
+    @JsProperty
+    public Column[] getKeyColumns() {
+        return keyColumns;
+    }
+
+    /**
+     * An array of all the columns used by the table
+     *
+     * @return Array of Column
+     */
+    @JsProperty
+    public Column[] getColumns() {
+        return columns;
     }
 
     /**
