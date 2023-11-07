@@ -70,6 +70,8 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
 
     if obj is None:
         return None
+    elif isinstance(obj, jpy.JType):
+        return obj
 
     _assert_type(name, obj, types)
 
@@ -93,8 +95,6 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
         return dtypes.array(dtype, np_array)
     elif isinstance(obj, Callable):
         return j_function(obj, dtypes.PyObject)
-    elif isinstance(obj, jpy.JType):
-        return obj
     else:
         raise DHError(message=f"Unsupported input type: name={name} type={type(obj)}")
 
