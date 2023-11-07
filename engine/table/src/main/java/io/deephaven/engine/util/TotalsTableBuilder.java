@@ -46,11 +46,11 @@ public class TotalsTableBuilder {
         Sum,
         /** Return the sum of absolute values in each group. */
         AbsSum,
-        /** Return the variance of values in each group. */
+        /** Return the sample variance of values in each group. */
         Var,
         /** Return the average of values in each group. */
         Avg,
-        /** Return the standard deviation of each group. */
+        /** Return the sample standard deviation of each group. */
         Std,
         /** Return the first value of each group. */
         First,

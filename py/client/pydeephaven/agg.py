@@ -300,7 +300,7 @@ def sorted_last(order_by: str, cols: Union[str, List[str]] = None) -> Aggregatio
 
 
 def std(cols: Union[str, List[str]] = None) -> Aggregation:
-    """Creates a Std (standard deviation) aggregation.
+    """Creates a Std (sample standard deviation) aggregation.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
@@ -366,7 +366,7 @@ def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False,
 
 
 def var(cols: Union[str, List[str]] = None) -> Aggregation:
-    """Creates a Variance aggregation.
+    """Creates a sample Variance aggregation.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";

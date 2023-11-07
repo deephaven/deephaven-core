@@ -522,8 +522,8 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.spec.AggSpecStd standard deviation} aggregation for the supplied column name
-     * pairs.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecStd sample standard deviation} aggregation for the supplied
+     * column name pairs.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -608,7 +608,7 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.spec.AggSpecVar variance} aggregation for the supplied column name pairs.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecVar sample variance} aggregation for the supplied column name pairs.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation

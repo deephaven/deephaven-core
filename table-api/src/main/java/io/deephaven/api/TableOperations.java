@@ -1165,7 +1165,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     // -------------------------------------------------------------------------------------------
 
     /**
-     * Produces a single row table with the standard deviation of each column.
+     * Produces a single row table with the sample standard deviation of each column.
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
@@ -1173,8 +1173,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS stdBy();
 
     /**
-     * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
-     * of the fields
+     * Groups the data column according to <code>groupByColumns</code> and computes the sample standard deviation for
+     * the rest of the fields
      *
      * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
      */
@@ -1182,8 +1182,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS stdBy(String... groupByColumns);
 
     /**
-     * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
-     * of the fields
+     * Groups the data column according to <code>groupByColumns</code> and computes the sample standard deviation for
+     * the rest of the fields
      *
      * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
      */
@@ -1191,8 +1191,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS stdBy(ColumnName... groupByColumns);
 
     /**
-     * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
-     * of the fields
+     * Groups the data column according to <code>groupByColumns</code> and computes the sample standard deviation for
+     * the rest of the fields
      *
      * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
      */
@@ -1202,7 +1202,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     // -------------------------------------------------------------------------------------------
 
     /**
-     * Produces a single row table with the variance of each column.
+     * Produces a single row table with the sample variance of each column.
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
@@ -1210,8 +1210,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS varBy();
 
     /**
-     * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
-     * fields
+     * Groups the data column according to <code>groupByColumns</code> and computes the sample variance for the rest of
+     * the fields
      *
      * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
      */
@@ -1219,8 +1219,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS varBy(String... groupByColumns);
 
     /**
-     * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
-     * fields
+     * Groups the data column according to <code>groupByColumns</code> and computes the sample variance for the rest of
+     * the fields
      *
      * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
      */

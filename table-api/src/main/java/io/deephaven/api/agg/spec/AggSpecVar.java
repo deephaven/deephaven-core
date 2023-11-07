@@ -8,8 +8,9 @@ import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Immutable;
 
 /**
- * Specifies an aggregation that outputs the variance of the input column values for each group. Only works for numeric
- * input types.
+ * Specifies an aggregation that outputs the sample variance of the input column values for each group. Only works for
+ * numeric input types.
+ * Sample variance is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
  *
  * @see TableOperations#varBy
  */

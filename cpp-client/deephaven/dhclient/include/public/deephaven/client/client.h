@@ -568,8 +568,9 @@ public:
   }
 
   /**
-   * Returns an aggregator that computes the standard deviation of values, within an aggregation
-   * group, for each input column.
+   * Returns an aggregator that computes the sample standard deviation of values, within an
+   * aggregation group, for each input column. Sample standard deviation is computed using
+   * Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
    */
   [[nodiscard]]
   static Aggregate Std(std::vector<std::string> column_specs);
@@ -608,8 +609,9 @@ public:
   }
 
   /**
-   * Returns an aggregator that computes the variance of values, within an aggregation group,
-   * for each input column.
+   * Returns an aggregator that computes the sample variance of values, within an aggregation group,
+   * for each input column. Sample variance is computed using Bessel's correction:
+   * https://en.wikipedia.org/wiki/Bessel%27s_correction
    */
   [[nodiscard]]
   static Aggregate Var(std::vector<std::string> column_specs);
@@ -801,8 +803,9 @@ Aggregate AggPct(double percentile, Args &&... args) {
 }
 
 /**
- * Returns an aggregator that computes the standard deviation of values, within an aggregation
- * group, for each input column.
+ * Returns an aggregator that computes the sample standard deviation of values, within an
+ * aggregation group, for each input column. Sample standard deviation is computed using Bessel's correction:
+ * https://en.wikipedia.org/wiki/Bessel%27s_correction
  */
 template<typename ...Args>
 [[nodiscard]]
@@ -821,8 +824,9 @@ Aggregate aggSum(Args &&... args) {
 }
 
 /**
- * Returns an aggregator that computes the variance of values, within an aggregation group,
- * for each input column.
+ * Returns an aggregator that computes the sample variance of values, within an aggregation group,
+ * for each input column. Sample variance is computed using
+ * Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
  */
 template<typename ...Args>
 [[nodiscard]]

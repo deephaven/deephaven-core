@@ -72,7 +72,7 @@ public class JsColumnStatistics {
          */
         MAX_ABS("MAX (ABS)", null),
         /**
-         * The standard deviation of the values in the column.
+         * The sample standard deviation of the values in the column.
          */
         STD_DEV("STD DEV", "double"),
         /**

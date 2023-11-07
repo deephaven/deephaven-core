@@ -45,8 +45,8 @@ public class JsAggregationOperation {
              */
             ABS_SUM = "AbsSum",
             /**
-             * The variance of all values in the specified column. Can only apply to numeric types. String value is
-             * "Var".
+             * The sample variance of all values in the specified column. Can only apply to numeric types. String value
+             * is "Var".
              */
             VAR = "Var",
             /**
@@ -55,8 +55,8 @@ public class JsAggregationOperation {
              */
             AVG = "Avg",
             /**
-             * The standard deviation of all values in the specified column. Can only apply to numeric types. String
-             * value is "Std".
+             * The sample standard deviation of all values in the specified column. Can only apply to numeric types.
+             * String value is "Std".
              */
             STD = "Std",
             /**

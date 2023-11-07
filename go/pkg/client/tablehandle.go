@@ -543,7 +543,8 @@ func (th *TableHandle) AvgBy(ctx context.Context, cols ...string) (*TableHandle,
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_AVG)
 }
 
-// StdBy returns the standard deviation for each group. Null values are ignored.
+// StdBy returns the sample standard deviation for each group. Null values are ignored.
+// Sample standard deviation is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) StdBy(ctx context.Context, cols ...string) (*TableHandle, error) {
 	if !th.rLockIfValid() {
@@ -553,7 +554,8 @@ func (th *TableHandle) StdBy(ctx context.Context, cols ...string) (*TableHandle,
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_STD)
 }
 
-// VarBy returns the variance for each group. Null values are ignored.
+// VarBy returns the sample variance for each group. Null values are ignored.
+// Sample variance is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) VarBy(ctx context.Context, cols ...string) (*TableHandle, error) {
 	if !th.rLockIfValid() {
