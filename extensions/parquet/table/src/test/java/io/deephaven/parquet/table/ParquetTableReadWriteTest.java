@@ -1327,6 +1327,20 @@ public final class ParquetTableReadWriteTest {
         assertTableStatistics(dhFromDisk, dhDest);
     }
 
+    @Test
+    public void inferParquetOrderLastKey() {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "inferParquetOrder");
+        parentDir.mkdir();
+        final TableDefinition td1 = TableDefinition.of(ColumnDefinition.ofInt("Foo"));
+        final TableDefinition td2 =
+                TableDefinition.of(ColumnDefinition.ofInt("Foo"), ColumnDefinition.ofString("Bar"));
+        ParquetTools.writeTable(TableTools.newTable(td1), new File(parentDir, "01.parquet"));
+        ParquetTools.writeTable(TableTools.newTable(td2), new File(parentDir, "02.parquet"));
+        final Table table = ParquetTools.readTable(parentDir);
+        assertEquals(td2, table.getDefinition());
+    }
+
     private void assertTableStatistics(Table inputTable, File dest) {
         // Verify that the columns have the correct statistics.
         final ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
