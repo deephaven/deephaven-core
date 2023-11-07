@@ -687,10 +687,9 @@ public class ParquetTools {
     public static Table readPartitionedTableInferSchema(
             @NotNull final TableLocationKeyFinder<ParquetTableLocationKey> locationKeyFinder,
             @NotNull final ParquetInstructions readInstructions) {
-        final RecordingLocationKeyFinder<ParquetTableLocationKey> initialKeys = new RecordingLocationKeyFinder<>();
-        locationKeyFinder.findKeys(initialKeys);
-        final List<ParquetTableLocationKey> foundKeys = initialKeys.getRecordedKeys();
-        if (foundKeys.isEmpty()) {
+        final KnownLocationKeyFinder<ParquetTableLocationKey> sortedKeys =
+                KnownLocationKeyFinder.copyFrom(locationKeyFinder, Comparator.naturalOrder());
+        if (sortedKeys.getKnownKeys().isEmpty()) {
             if (readInstructions.isRefreshing()) {
                 throw new IllegalArgumentException(
                         "Unable to infer schema for a refreshing partitioned parquet table when there are no initial parquet files");
@@ -699,7 +698,7 @@ public class ParquetTools {
         }
         // TODO (https://github.com/deephaven/deephaven-core/issues/877): Support schema merge when discovering multiple
         // parquet files
-        final ParquetTableLocationKey firstKey = foundKeys.get(0);
+        final ParquetTableLocationKey firstKey = sortedKeys.getKnownKeys().get(0);
         final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = convertSchema(
                 firstKey.getFileReader().getSchema(),
                 firstKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
@@ -723,7 +722,7 @@ public class ParquetTools {
                     ColumnDefinition.ColumnType.Partitioning));
         }
         allColumns.addAll(schemaInfo.getFirst());
-        return readPartitionedTable(readInstructions.isRefreshing() ? locationKeyFinder : initialKeys,
+        return readPartitionedTable(readInstructions.isRefreshing() ? locationKeyFinder : sortedKeys,
                 schemaInfo.getSecond(), TableDefinition.of(allColumns));
     }
 
