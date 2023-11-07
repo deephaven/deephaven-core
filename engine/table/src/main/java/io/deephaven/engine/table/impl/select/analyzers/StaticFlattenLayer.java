@@ -136,4 +136,16 @@ final public class StaticFlattenLayer extends SelectAndViewAnalyzer {
     public boolean allowCrossColumnParallelization() {
         return inner.allowCrossColumnParallelization();
     }
+
+    @Override
+    public boolean flattenedResult() {
+        // this layer performs a flatten, so the result is flattened
+        return true;
+    }
+
+    @Override
+    public boolean alreadyFlattenedSources() {
+        // this layer performs a flatten, so the sources are now flattened
+        return true;
+    }
 }

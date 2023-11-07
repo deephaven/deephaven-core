@@ -17,17 +17,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.DoubleBuffer;
 
-final class DoubleTransfer extends PrimitiveTransfer<WritableDoubleChunk<Values>, DoubleBuffer> {
+final class DoubleTransfer extends FillingPrimitiveTransfer<WritableDoubleChunk<Values>, DoubleBuffer> {
     static DoubleTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,
-                              final int targetPageSize) {
-        final int maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize / Double.BYTES));
-        final double[] backingArray = new double[maxValuesPerPage];
+                              final int targetPageSizeInBytes) {
+        final int targetElementsPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSizeInBytes / Double.BYTES));
+        final double[] backingArray = new double[targetElementsPerPage];
         return new DoubleTransfer(
                 columnSource,
                 tableRowSet,
                 WritableDoubleChunk.writableChunkWrap(backingArray),
                 DoubleBuffer.wrap(backingArray),
-                maxValuesPerPage);
+                targetElementsPerPage);
     }
 
     private DoubleTransfer(
@@ -35,7 +35,7 @@ final class DoubleTransfer extends PrimitiveTransfer<WritableDoubleChunk<Values>
             @NotNull final RowSequence tableRowSet,
             @NotNull final WritableDoubleChunk<Values> chunk,
             @NotNull final DoubleBuffer buffer,
-            final int maxValuesPerPage) {
-        super(columnSource, tableRowSet, chunk, buffer, maxValuesPerPage);
+            final int targetElementsPerPage) {
+        super(columnSource, tableRowSet, chunk, buffer, targetElementsPerPage);
     }
 }

@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class DeephavenSessionTestBase extends DeephavenApiServerTestBase {
 
     private ScheduledExecutorService sessionScheduler;
-    Session session;
+    protected Session session;
 
     @Override
     @Before

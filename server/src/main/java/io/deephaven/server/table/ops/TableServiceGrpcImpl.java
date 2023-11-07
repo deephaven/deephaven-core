@@ -18,6 +18,7 @@ import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.OpCase;
+import io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
@@ -473,6 +474,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
+    public void computeColumnStatistics(ColumnStatisticsRequest request,
+            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.COLUMN_STATISTICS, request, responseObserver);
+    }
+
+    @Override
     public void batch(
             @NotNull final BatchTableRequest request,
             @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
@@ -537,14 +544,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         .build();
                 safelyOnNext(responseObserver, response);
                 onOneResolved.run();
-            }).submit(() -> {
-                final Table table = exportBuilder.doExport();
+            }).onSuccess(table -> {
                 final ExportedTableCreationResponse response =
                         ExportUtil.buildTableCreationResponse(resultId, table);
                 safelyOnNext(responseObserver, response);
                 onOneResolved.run();
-                return table;
-            });
+            }).submit(exportBuilder::doExport);
         }
     }
 

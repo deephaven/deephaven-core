@@ -6,6 +6,7 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import elemental2.core.JsArray;
 import elemental2.core.JsMap;
 import io.deephaven.web.shared.data.ColumnStatistics;
 import jsinterop.annotations.JsIgnore;
@@ -26,9 +27,58 @@ public class JsColumnStatistics {
 
     public enum StatType {
         // Note that a null format means default to columns formatting
-        COUNT("COUNT", "long"), SIZE("SIZE", "long"), UNIQUE_VALUES("UNIQUE VALUES", "long"), SUM("SUM", null), SUM_ABS(
-                "SUM (ABS)", null), AVG("AVG", "double"), AVG_ABS("AVG (ABS)", "double"), MIN("MIN",
-                        null), MIN_ABS("MIN (ABS)", null), MAX("MAX", null), MAX_ABS("MAX (ABS)", null);
+        /**
+         * The number of non-null values in the column.
+         */
+        COUNT("COUNT", "long"),
+        /**
+         * The total number of values in the column.
+         */
+        SIZE("SIZE", "long"),
+        /**
+         * The number of unique values in the column.
+         */
+        UNIQUE_VALUES("UNIQUE VALUES", "long"),
+        /**
+         * The sum of all data in the column.
+         */
+        SUM("SUM", null),
+        /**
+         * The sum of the absolute value of all data in the column.
+         */
+        SUM_ABS("SUM (ABS)", null),
+        /**
+         * The average of all data in the column.
+         */
+        AVG("AVG", "double"),
+        /**
+         * The average of the absolute value of all data in the column.
+         */
+        AVG_ABS("AVG (ABS)", "double"),
+        /**
+         * The minimum value found in the column.
+         */
+        MIN("MIN", null),
+        /**
+         * The minimum absolute value found in the column.
+         */
+        MIN_ABS("MIN (ABS)", null),
+        /**
+         * The maximum value found in the column.
+         */
+        MAX("MAX", null),
+        /**
+         * The maximum absolute value found in the column.
+         */
+        MAX_ABS("MAX (ABS)", null),
+        /**
+         * The standard deviation of the values in the column.
+         */
+        STD_DEV("STD DEV", "double"),
+        /**
+         * The sum of the square of all values in the column.
+         */
+        SUM_SQRD("SUM (SQRD)", null);
 
         private final String displayName;
         private final String formatType;
@@ -57,53 +107,43 @@ public class JsColumnStatistics {
     private final JsMap<String, Double> uniqueValues;
 
     @JsIgnore
-    public JsColumnStatistics(ColumnStatistics statistics) {
+    public JsColumnStatistics(TableData data) {
         statisticsMap = new JsMap<>();
-        statisticsMap.set(StatType.SIZE.getDisplayName(), (double) statistics.getSize());
-        if (statistics.getType() == ColumnStatistics.ColumnType.NUMERIC) {
-            // Mimics io.deephaven.console.engine.GenerateNumericalStatsFunction.statsResultToString
-            if (statistics.getCount() > 0) {
-                statisticsMap.set(StatType.SUM.getDisplayName(), statistics.getSum());
-                statisticsMap.set(StatType.SUM_ABS.getDisplayName(), statistics.getAbsSum());
+
+        TableData.Row r = data.get(0);
+        Column uniqueKeys = null;
+        Column uniqueCounts = null;
+        for (Column column : data.getColumns().asList()) {
+            if (column.getName().equals("UNIQUE_KEYS")) {
+                uniqueKeys = column;
+                continue;
+            } else if (column.getName().equals("UNIQUE_COUNTS")) {
+                uniqueCounts = column;
+                continue;
             }
-            statisticsMap.set(StatType.COUNT.getDisplayName(), (double) statistics.getCount());
-            if (statistics.getCount() > 0) {
-                statisticsMap.set(StatType.AVG.getDisplayName(), statistics.getSum() / (double) statistics.getCount());
-                statisticsMap.set(StatType.AVG_ABS.getDisplayName(),
-                        statistics.getAbsSum() / (double) statistics.getCount());
-                statisticsMap.set(StatType.MIN.getDisplayName(), statistics.getMin());
-                statisticsMap.set(StatType.MAX.getDisplayName(), statistics.getMax());
-                statisticsMap.set(StatType.MIN_ABS.getDisplayName(), statistics.getAbsMin());
-                statisticsMap.set(StatType.MAX_ABS.getDisplayName(), statistics.getAbsMax());
-            }
-        } else if (statistics.getType() == ColumnStatistics.ColumnType.DATETIME) {
-            statisticsMap.set(StatType.COUNT.getDisplayName(), (double) statistics.getCount());
-            if (statistics.getCount() > 0) {
-                statisticsMap.set(StatType.MIN.getDisplayName(), new DateWrapper(statistics.getMinDateTime()));
-                statisticsMap.set(StatType.MAX.getDisplayName(), new DateWrapper(statistics.getMaxDateTime()));
-            }
-        } else {
-            statisticsMap.set(StatType.COUNT.getDisplayName(), (double) statistics.getCount());
-            if (statistics.getType() == ColumnStatistics.ColumnType.COMPARABLE) {
-                statisticsMap.set(StatType.UNIQUE_VALUES.getDisplayName(), (double) statistics.getNumUnique());
+            try {
+                StatType type = StatType.valueOf(column.getName());
+                statisticsMap.set(type.getDisplayName(), r.get(column));
+            } catch (IllegalArgumentException e) {
+                // ignore, can't be used as a generic statistic
             }
         }
 
         uniqueValues = new JsMap<>();
-        if (statistics.getType() == ColumnStatistics.ColumnType.COMPARABLE) {
-            final String[] keys = statistics.getUniqueKeys();
-            final long[] values = statistics.getUniqueValues();
-            assert keys.length == values.length : "Table Statistics Unique Value Count does not have the same" +
-                    "number of keys and values.  Keys = " + keys.length + ", Values = " + values.length;
-            for (int i = 0; i < keys.length; i++) {
-                uniqueValues.set(keys[i], (double) values[i]);
-            }
+        if (uniqueCounts == null || uniqueKeys == null) {
+            return;
+        }
+        // TODO (deephaven-core#188) support for long[] values in flight data
+        JsArray<String> keys = (JsArray<String>) r.get(uniqueKeys);
+        JsArray<LongWrapper> counts = (JsArray<LongWrapper>) r.get(uniqueCounts);
+        for (int i = 0; i < keys.length; i++) {
+            uniqueValues.set(keys.getAt(i), counts.getAt(i).asNumber());
         }
     }
 
     /**
      * Gets the type of formatting that should be used for given statistic.
-     *
+     * <p>
      * the format type for a statistic. A null return value means that the column formatting should be used.
      *
      * @param name the display name of the statistic
@@ -116,7 +156,7 @@ public class JsColumnStatistics {
 
     /**
      * Gets a map with the display name of statistics as keys and the numeric stat as a value.
-     *
+     * <p>
      * A map of each statistic's name to its value.
      *
      * @return Map of String and Object
@@ -126,11 +166,10 @@ public class JsColumnStatistics {
         return statisticsMap;
     }
 
-
     /**
-     * Gets a map with the name of each unique value as key and the count a the value. A map of each unique value's name
-     * to the count of how many times it occurred in the column. This map will be empty for tables containing more than
-     * 19 unique values.
+     * Gets a map with the name of each unique value as key and the count as the value. A map of each unique value's
+     * name to the count of how many times it occurred in the column. This map will be empty for tables containing more
+     * than 19 unique values.
      *
      * @return Map of String double
      *

@@ -24,6 +24,8 @@ import java.io.Externalizable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -46,7 +48,9 @@ public class TypeInfos {
             ByteType.INSTANCE,
             StringType.INSTANCE,
             InstantType.INSTANCE,
-            BigIntegerType.INSTANCE
+            BigIntegerType.INSTANCE,
+            LocalDateType.INSTANCE,
+            LocalTimeType.INSTANCE,
     };
 
     private static final Map<Class<?>, TypeInfo> BY_CLASS;
@@ -357,9 +361,6 @@ public class TypeInfos {
         }
     }
 
-    /**
-     * TODO: newer versions of parquet seem to support NANOS, but this version seems to only support MICROS
-     */
     private enum InstantType implements TypeInfo {
         INSTANCE;
 
@@ -379,6 +380,48 @@ public class TypeInfos {
                     .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
         }
     }
+
+    private enum LocalDateType implements TypeInfo {
+        INSTANCE;
+
+        private static final Set<Class<?>> clazzes = Collections.singleton(LocalDate.class);
+
+        @Override
+        public Set<Class<?>> getTypes() {
+            return clazzes;
+        }
+
+        @Override
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
+            if (!isValidFor(dataType)) {
+                throw new IllegalArgumentException("Invalid data type " + dataType);
+            }
+            return type(PrimitiveTypeName.INT32, required, repeating)
+                    .as(LogicalTypeAnnotation.dateType());
+        }
+    }
+
+    private enum LocalTimeType implements TypeInfo {
+        INSTANCE;
+
+        private static final Set<Class<?>> clazzes = Collections.singleton(LocalTime.class);
+
+        @Override
+        public Set<Class<?>> getTypes() {
+            return clazzes;
+        }
+
+        @Override
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
+            if (!isValidFor(dataType)) {
+                throw new IllegalArgumentException("Invalid data type " + dataType);
+            }
+            // Always write in (isAdjustedToUTC = true, unit = NANOS) format
+            return type(PrimitiveTypeName.INT64, required, repeating)
+                    .as(LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
+        }
+    }
+
 
     /**
      * We will encode BigIntegers as Decimal types. Parquet has no special type for BigIntegers, but we can maintain

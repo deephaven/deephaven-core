@@ -1,7 +1,12 @@
 package io.deephaven.client;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterComparison;
+import io.deephaven.api.filter.FilterIn;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.client.impl.TableHandle;
+import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TimeTable;
 import org.junit.Test;
@@ -65,6 +70,54 @@ public class WhereSessionTest extends DeephavenSessionTestBase {
     @Test
     public void allowFalse() throws InterruptedException, TableHandle.TableHandleException {
         allow(TableSpec.empty(1), Filter.ofFalse());
+    }
+
+    @Test
+    public void allowInSimple() throws TableHandleException, InterruptedException {
+        final FilterIn filter = FilterIn.of(ColumnName.of("Foo"), Literal.of("Foo"));
+        allow(TableSpec.empty(1).view("Foo=`Foo`", "Bar=`Bar`").where(filter));
+    }
+
+    @Test
+    public void allowIn() throws TableHandleException, InterruptedException {
+        final FilterIn filter = FilterIn.of(ColumnName.of("Foo"), Literal.of("Foo"), Literal.of("FooBar"));
+        allow(TableSpec.empty(1).view("Foo=`Foo`", "Bar=`Bar`").where(filter));
+    }
+
+    @Test
+    public void allowNotInSimple() throws TableHandleException, InterruptedException {
+        final FilterIn filter = FilterIn.of(ColumnName.of("Foo"), Literal.of("Foo"));
+        allow(TableSpec.empty(1).view("Foo=`Foo`", "Bar=`Bar`").where(Filter.not(filter)));
+    }
+
+    @Test
+    public void allowNotIn() throws TableHandleException, InterruptedException {
+        final FilterIn filter = FilterIn.of(ColumnName.of("Foo"), Literal.of("Foo"), Literal.of("FooBar"));
+        allow(TableSpec.empty(1).view("Foo=`Foo`", "Bar=`Bar`").where(Filter.not(filter)));
+    }
+
+    @Test
+    public void allowEqComparison() throws TableHandleException, InterruptedException {
+        final FilterComparison filter = FilterComparison.eq(ColumnName.of("Foo"), Literal.of("Foo"));
+        allow(TableSpec.empty(1).view("Foo=`Foo`", "Bar=`Bar`").where(filter));
+    }
+
+    @Test
+    public void allowNeqComparison() throws TableHandleException, InterruptedException {
+        final FilterComparison filter = FilterComparison.neq(ColumnName.of("Foo"), Literal.of("Foo"));
+        allow(TableSpec.empty(1).view("Foo=`Foo`", "Bar=`Bar`").where(filter));
+    }
+
+    @Test
+    public void allowNotEqComparison() throws TableHandleException, InterruptedException {
+        final FilterComparison filter = FilterComparison.eq(ColumnName.of("Foo"), Literal.of("Foo"));
+        allow(TableSpec.empty(1).view("Foo=`Foo`", "Bar=`Bar`").where(Filter.not(filter)));
+    }
+
+    @Test
+    public void allowNotNeqComparison() throws TableHandleException, InterruptedException {
+        final FilterComparison filter = FilterComparison.neq(ColumnName.of("Foo"), Literal.of("Foo"));
+        allow(TableSpec.empty(1).view("Foo=`Foo`", "Bar=`Bar`").where(Filter.not(filter)));
     }
 
     private void allow(TableSpec parent, String... filters)

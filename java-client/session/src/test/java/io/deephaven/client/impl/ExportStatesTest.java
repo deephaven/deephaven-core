@@ -96,11 +96,17 @@ public class ExportStatesTest {
     }
 
     Export export(TableSpec table) {
-        return states.export(ExportsRequest.logging(table)).get(0);
+        try (final ExportServiceRequest request = states.exportRequest(ExportsRequest.logging(table))) {
+            request.send();
+            return request.exports().get(0);
+        }
     }
 
     List<Export> export(TableSpec... tables) {
-        return states.export(ExportsRequest.logging(tables));
+        try (final ExportServiceRequest request = states.exportRequest(ExportsRequest.logging(tables))) {
+            request.send();
+            return request.exports();
+        }
     }
 
     @Test
