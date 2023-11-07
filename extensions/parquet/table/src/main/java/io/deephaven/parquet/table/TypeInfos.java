@@ -26,6 +26,7 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -51,6 +52,7 @@ public class TypeInfos {
             BigIntegerType.INSTANCE,
             LocalDateType.INSTANCE,
             LocalTimeType.INSTANCE,
+            LocalDateTimeType.INSTANCE,
     };
 
     private static final Map<Class<?>, TypeInfo> BY_CLASS;
@@ -376,8 +378,30 @@ public class TypeInfos {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
+            // Write instants as Parquet TIMESTAMP(isAdjustedToUTC = true, unit = NANOS)
             return type(PrimitiveTypeName.INT64, required, repeating)
                     .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
+        }
+    }
+
+    private enum LocalDateTimeType implements TypeInfo {
+        INSTANCE;
+
+        private static final Set<Class<?>> clazzes = Collections.singleton(LocalDateTime.class);
+
+        @Override
+        public Set<Class<?>> getTypes() {
+            return clazzes;
+        }
+
+        @Override
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
+            if (!isValidFor(dataType)) {
+                throw new IllegalArgumentException("Invalid data type " + dataType);
+            }
+            // Write LocalDateTime as Parquet TIMESTAMP(isAdjustedToUTC = false, unit = NANOS)
+            return type(PrimitiveTypeName.INT64, required, repeating)
+                    .as(LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.NANOS));
         }
     }
 

@@ -982,6 +982,20 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns nanoseconds from the Epoch for a {@link LocalDateTime} value in UTC timezone.
+     *
+     * @param localDateTime the local date time to compute the Epoch offset for
+     * @return nanoseconds since Epoch, or a NULL_LONG value if the local date time is null
+     */
+    @ScriptApi
+    public static long epochNanosUTC(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
+            return NULL_LONG;
+        }
+        return epochNanos(localDateTime.toInstant(ZoneOffset.UTC));
+    }
+
+    /**
      * Returns microseconds from the Epoch for an {@link Instant} value.
      *
      * @param instant instant to compute the Epoch offset for
@@ -1397,6 +1411,52 @@ public class DateTimeUtils {
         }
 
         return epochMillisToZonedDateTime(excelTimeToEpochMillis(excel, timeZone), timeZone);
+    }
+
+    /**
+     * Converts nanoseconds from the Epoch to a {@link LocalDateTime} in UTC timezone.
+     *
+     * @param nanos nanoseconds since Epoch
+     * @return {@code null} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input nanoseconds from the
+     *         Epoch converted to a {@link LocalDateTime} in UTC timezone
+     */
+    public static @Nullable LocalDateTime epochNanosToLocalDateTimeUTC(final long nanos) {
+        if (nanos == QueryConstants.NULL_LONG) {
+            return null;
+        }
+        return LocalDateTime.ofEpochSecond(nanos / SECOND, (int) (nanos % SECOND), ZoneOffset.UTC);
+    }
+
+    /**
+     * Converts microseconds from the Epoch to a {@link LocalDateTime} in UTC timezone.
+     *
+     * @param micros microseconds since Epoch
+     * @return {@code null} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input microseconds from the
+     *         Epoch converted to a {@link LocalDateTime} in UTC timezone
+     */
+    public static @Nullable LocalDateTime epochMicrosToLocalDateTimeUTC(final long micros) {
+        if (micros == QueryConstants.NULL_LONG) {
+            return null;
+        }
+        final long microsPerSecond = 1_000_000;
+        return LocalDateTime.ofEpochSecond(micros / microsPerSecond, (int) ((micros % microsPerSecond) * MICRO),
+                ZoneOffset.UTC);
+    }
+
+    /**
+     * Converts milliseconds from the Epoch to a {@link LocalDateTime} in UTC timezone.
+     *
+     * @param millis milliseconds since Epoch
+     * @return {@code null} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input milliseconds from the
+     *         Epoch converted to a {@link LocalDateTime} in UTC timezone
+     */
+    public static @Nullable LocalDateTime epochMillisToLocalDateTimeUTC(final long millis) {
+        if (millis == QueryConstants.NULL_LONG) {
+            return null;
+        }
+        final long millisPerSecond = 1_000;
+        return LocalDateTime.ofEpochSecond(millis / millisPerSecond, (int) ((millis % millisPerSecond) * MILLI),
+                ZoneOffset.UTC);
     }
 
     // endregion
