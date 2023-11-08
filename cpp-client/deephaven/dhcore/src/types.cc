@@ -11,45 +11,45 @@ using deephaven::dhcore::utility::Stringf;
 
 
 namespace deephaven::dhcore {
-const char16_t DeephavenConstants::kNullChar;
+constexpr const char16_t DeephavenConstants::kNullChar;
 
-const float DeephavenConstants::kNullFloat;
-const float DeephavenConstants::kNanFloat;
-const float DeephavenConstants::kNegInfinityFloat;
-const float DeephavenConstants::kPosInfinityFloat;
-const float DeephavenConstants::kMinFloat;
-const float DeephavenConstants::kMaxFloat;
-const float DeephavenConstants::kMinFiniteFloat =
+constexpr const float DeephavenConstants::kNullFloat;
+constexpr const float DeephavenConstants::kNanFloat;
+constexpr const float DeephavenConstants::kNegInfinityFloat;
+constexpr const float DeephavenConstants::kPosInfinityFloat;
+constexpr const float DeephavenConstants::kMinFloat;
+constexpr const float DeephavenConstants::kMaxFloat;
+/* constexpr clang dislikes */ const float DeephavenConstants::kMinFiniteFloat =
   std::nextafter(-std::numeric_limits<float>::max(), 0.0F);
-const float DeephavenConstants::kMaxFiniteFloat;
-const float DeephavenConstants::kMinPosFloat;
+constexpr const float DeephavenConstants::kMaxFiniteFloat;
+constexpr const float DeephavenConstants::kMinPosFloat;
 
-const double DeephavenConstants::kNullDouble;
-const double DeephavenConstants::kNanDouble;
-const double DeephavenConstants::kNegInfinityDouble;
-const double DeephavenConstants::kPosInfinityDouble;
-const double DeephavenConstants::kMinDouble;
-const double DeephavenConstants::kMaxDouble;
-const double DeephavenConstants::kMinFiniteDouble =
+constexpr const double DeephavenConstants::kNullDouble;
+constexpr const double DeephavenConstants::kNanDouble;
+constexpr const double DeephavenConstants::kNegInfinityDouble;
+constexpr const double DeephavenConstants::kPosInfinityDouble;
+constexpr const double DeephavenConstants::kMinDouble;
+constexpr const double DeephavenConstants::kMaxDouble;
+/* constexpr clang dislikes */ const double DeephavenConstants::kMinFiniteDouble =
   std::nextafter(-std::numeric_limits<double>::max(), 0.0);
-const double DeephavenConstants::kMaxFiniteDouble;
-const double DeephavenConstants::kMinPosDouble;
+constexpr const double DeephavenConstants::kMaxFiniteDouble;
+constexpr const double DeephavenConstants::kMinPosDouble;
 
-const int8_t DeephavenConstants::kNullByte;
-const int8_t DeephavenConstants::kMinByte;
-const int8_t DeephavenConstants::kMaxByte;
+constexpr const int8_t DeephavenConstants::kNullByte;
+constexpr const int8_t DeephavenConstants::kMinByte;
+constexpr const int8_t DeephavenConstants::kMaxByte;
 
-const int16_t DeephavenConstants::kNullShort;
-const int16_t DeephavenConstants::kMinShort;
-const int16_t DeephavenConstants::kMaxShort;
+constexpr const int16_t DeephavenConstants::kNullShort;
+constexpr const int16_t DeephavenConstants::kMinShort;
+constexpr const int16_t DeephavenConstants::kMaxShort;
 
-const int32_t DeephavenConstants::kNullInt;
-const int32_t DeephavenConstants::kMinInt;
-const int32_t DeephavenConstants::kMaxInt;
+constexpr const int32_t DeephavenConstants::kNullInt;
+constexpr const int32_t DeephavenConstants::kMinInt;
+constexpr const int32_t DeephavenConstants::kMaxInt;
 
-const int64_t DeephavenConstants::kNullLong;
-const int64_t DeephavenConstants::kMinLong;
-const int64_t DeephavenConstants::kMaxLong;
+constexpr const int64_t DeephavenConstants::kNullLong;
+constexpr const int64_t DeephavenConstants::kMinLong;
+constexpr const int64_t DeephavenConstants::kMaxLong;
 
 DateTime DateTime::Parse(std::string_view iso_8601_timestamp) {
   constexpr const char *kFormatToUse = "%Y-%m-%dT%H:%M:%S%z";
@@ -93,16 +93,17 @@ DateTime::DateTime(int year, int month, int day, int hour, int minute, int secon
   nanos_ = static_cast<int64_t>(time) + nanos;
 }
 
-void DateTime::StreamIrisRepresentation(std::ostream &s) const {
-  size_t oneBillion = 1000000000;
-  time_t timeSecs = nanos_ / oneBillion;
-  auto nanos = nanos_ % oneBillion;
+std::ostream &operator<<(std::ostream &s, const DateTime &o) {
+  size_t one_billions = 1'000'000'000;
+  time_t time_secs = o.nanos_ / one_billions;
+  auto nanos = o.nanos_ % one_billions;
   struct tm tm = {};
-  gmtime_r(&timeSecs, &tm);
-  char dateBuffer[32];  // ample
-  char nanosBuffer[32];  // ample
-  strftime(dateBuffer, sizeof(dateBuffer), "%FT%T", &tm);
-  snprintf(nanosBuffer, sizeof(nanosBuffer), "%09zd", nanos);
-  s << dateBuffer << '.' << nanosBuffer << " UTC";
+  gmtime_r(&time_secs, &tm);
+  char date_buffer[32];  // ample
+  char nanos_buffer[32];  // ample
+  strftime(date_buffer, sizeof(date_buffer), "%FT%T", &tm);
+  snprintf(nanos_buffer, sizeof(nanos_buffer), "%09zd", nanos);
+  s << date_buffer << '.' << nanos_buffer << " UTC";
+  return s;
 }
 }  // namespace deephaven::client
