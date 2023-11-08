@@ -18,13 +18,13 @@ import java.util.function.Consumer;
 /**
  * The exports request structure. Is a list of {@link ExportRequest export requests}.
  *
- * @see Session#export(ExportsRequest)
+ * @see ExportService#exportRequest(ExportsRequest)
  */
 @Immutable
 @BuildableStyle
-public abstract class ExportsRequest implements Iterable<ExportRequest> {
+abstract class ExportsRequest implements Iterable<ExportRequest> {
 
-    public interface Builder {
+    interface Builder {
 
         Builder addRequests(ExportRequest element);
 

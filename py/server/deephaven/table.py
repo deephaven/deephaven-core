@@ -12,7 +12,7 @@ import inspect
 from enum import Enum
 from enum import auto
 from functools import wraps
-from typing import Any, Optional, Callable, Dict
+from typing import Any, Optional, Callable, Dict, _GenericAlias
 from typing import Sequence, List, Union, Protocol
 
 import jpy
@@ -366,6 +366,20 @@ def _j_py_script_session() -> _JPythonScriptSession:
 _SUPPORTED_NP_TYPE_CODES = ["i", "l", "h", "f", "d", "b", "?", "U", "M", "O"]
 
 
+def _parse_annotation(annotation: Any) -> Any:
+    """Parse a Python annotation, for now mostly to extract the non-None type from an Optional(Union) annotation,
+    otherwise return the original annotation. """
+    if isinstance(annotation, _GenericAlias) and annotation.__origin__ == Union and len(annotation.__args__) == 2:
+        if annotation.__args__[1] == type(None):  # noqa: E721
+            return annotation.__args__[0]
+        elif annotation.__args__[0] == type(None):  # noqa: E721
+            return annotation.__args__[1]
+        else:
+            return annotation
+    else:
+        return annotation
+
+
 def _encode_signature(fn: Callable) -> str:
     """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
     type to numpy dtype chars (i,l,h,f,d,b,?,U,M,O), and pack them into a string with parameter type chars first,
@@ -377,14 +391,23 @@ def _encode_signature(fn: Callable) -> str:
 
     np_type_codes = []
     for n, p in sig.parameters.items():
-        np_type_codes.append(_np_dtype_char(p.annotation))
+        p_annotation = _parse_annotation(p.annotation)
+        np_type_codes.append(_np_dtype_char(p_annotation))
 
-    return_type_code = _np_dtype_char(sig.return_annotation)
+    return_annotation = _parse_annotation(sig.return_annotation)
+    return_type_code = _np_dtype_char(return_annotation)
     np_type_codes = [c if c in _SUPPORTED_NP_TYPE_CODES else "O" for c in np_type_codes]
     return_type_code = return_type_code if return_type_code in _SUPPORTED_NP_TYPE_CODES else "O"
 
     np_type_codes.extend(["-", ">", return_type_code])
     return "".join(np_type_codes)
+
+
+def _udf_return_dtype(fn):
+    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
+        return dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
+    else:
+        return dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
 
 
 def _py_udf(fn: Callable):
@@ -405,12 +428,7 @@ def _py_udf(fn: Callable):
 
     if hasattr(fn, "return_type"):
         return fn
-
-    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
-        dh_dtype = dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
-    else:
-        dh_dtype = dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
-
+    ret_dtype = _udf_return_dtype(fn)
     return_array = False
 
     # If the function is a numba guvectorized function, examine the signature of the function to determine if it
@@ -421,29 +439,30 @@ def _py_udf(fn: Callable):
         if rtype:
             return_array = True
     else:
-        component_type = _component_np_dtype_char(inspect.signature(fn).return_annotation)
+        return_annotation = _parse_annotation(inspect.signature(fn).return_annotation)
+        component_type = _component_np_dtype_char(return_annotation)
         if component_type:
-            dh_dtype = dtypes.from_np_dtype(np.dtype(component_type))
-            if dh_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
+            ret_dtype = dtypes.from_np_dtype(np.dtype(component_type))
+            if ret_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
                 return_array = True
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
         ret = fn(*args, **kwargs)
         if return_array:
-            return dtypes.array(dh_dtype, ret)
-        elif dh_dtype == dtypes.PyObject:
+            return dtypes.array(ret_dtype, ret)
+        elif ret_dtype == dtypes.PyObject:
             return ret
         else:
-            return _scalar(ret)
+            return _scalar(ret, ret_dtype)
 
-    wrapper.j_name = dh_dtype.j_name
-    ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(dh_dtype) if return_array else dh_dtype
+    wrapper.j_name = ret_dtype.j_name
+    real_ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype) if return_array else ret_dtype
 
-    if hasattr(dh_dtype.j_type, 'jclass'):
-        j_class = ret_dtype.j_type.jclass
+    if hasattr(ret_dtype.j_type, 'jclass'):
+        j_class = real_ret_dtype.j_type.jclass
     else:
-        j_class = ret_dtype.qst_type.clazz()
+        j_class = real_ret_dtype.qst_type.clazz()
 
     wrapper.return_type = j_class
 
@@ -466,6 +485,7 @@ def dh_vectorize(fn):
     and (3) the input arrays.
     """
     signature = _encode_signature(fn)
+    ret_dtype = _udf_return_dtype(fn)
 
     @wraps(fn)
     def wrapper(*args):
@@ -481,10 +501,10 @@ def dh_vectorize(fn):
             vectorized_args = zip(*args[2:])
             for i in range(chunk_size):
                 scalar_args = next(vectorized_args)
-                chunk_result[i] = _scalar(fn(*scalar_args))
+                chunk_result[i] = _scalar(fn(*scalar_args), ret_dtype)
         else:
             for i in range(chunk_size):
-                chunk_result[i] = fn()
+                chunk_result[i] = _scalar(fn(), ret_dtype)
 
         return chunk_result
 
@@ -2156,19 +2176,19 @@ class Table(JObjectWrapper):
     def slice(self, start: int, stop: int) -> Table:
         """Extracts a subset of a table by row positions into a new Table.
 
-          If both the start and the stop are positive, then both are counted from the beginning of the table.
-          The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
-          The start must be less than or equal to the stop.
+        If both the start and the stop are positive, then both are counted from the beginning of the table.
+        The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
+        The start must be less than or equal to the stop.
 
-          If the start is positive and the stop is negative, then the start is counted from the beginning of the
-          table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
-          rows but the first and last. If the stop is before the start, the result is an empty table.
+        If the start is positive and the stop is negative, then the start is counted from the beginning of the
+        table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
+        rows but the first and last. If the stop is before the start, the result is an empty table.
 
-          If the start is negative, and the stop is zero, then the start is counted from the end of the table,
-          and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
+        If the start is negative, and the stop is zero, then the start is counted from the end of the table,
+        and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
 
-          If the start is negative and the stop is negative, they are both counted from the end of the
-          table. For example, slice(-2, -1) returns the second to last row of the table.
+        If the start is negative and the stop is negative, they are both counted from the end of the
+        table. For example, slice(-2, -1) returns the second to last row of the table.
 
         Args:
             start (int): the first row position to include in the result

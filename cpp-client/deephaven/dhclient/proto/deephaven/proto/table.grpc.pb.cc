@@ -69,6 +69,7 @@ static const char* TableService_method_names[] = {
   "/io.deephaven.proto.backplane.grpc.TableService/ExportedTableUpdates",
   "/io.deephaven.proto.backplane.grpc.TableService/SeekRow",
   "/io.deephaven.proto.backplane.grpc.TableService/MetaTable",
+  "/io.deephaven.proto.backplane.grpc.TableService/ComputeColumnStatistics",
 };
 
 std::unique_ptr< TableService::Stub> TableService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -121,6 +122,7 @@ TableService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& chann
   , rpcmethod_ExportedTableUpdates_(TableService_method_names[40], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
   , rpcmethod_SeekRow_(TableService_method_names[41], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_MetaTable_(TableService_method_names[42], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ComputeColumnStatistics_(TableService_method_names[43], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status TableService::Stub::GetExportedTableCreationResponse(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::Ticket& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
@@ -1098,6 +1100,29 @@ void TableService::Stub::async::MetaTable(::grpc::ClientContext* context, const 
   return result;
 }
 
+::grpc::Status TableService::Stub::ComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ComputeColumnStatistics_, context, request, response);
+}
+
+void TableService::Stub::async::ComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ComputeColumnStatistics_, context, request, response, std::move(f));
+}
+
+void TableService::Stub::async::ComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ComputeColumnStatistics_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::PrepareAsyncComputeColumnStatisticsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ComputeColumnStatistics_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::AsyncComputeColumnStatisticsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncComputeColumnStatisticsRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 TableService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       TableService_method_names[0],
@@ -1529,6 +1554,16 @@ TableService::Service::Service() {
              ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* resp) {
                return service->MetaTable(ctx, req, resp);
              }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      TableService_method_names[43],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](TableService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* req,
+             ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* resp) {
+               return service->ComputeColumnStatistics(ctx, req, resp);
+             }, this)));
 }
 
 TableService::Service::~Service() {
@@ -1829,6 +1864,13 @@ TableService::Service::~Service() {
 }
 
 ::grpc::Status TableService::Service::MetaTable(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status TableService::Service::ComputeColumnStatistics(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
   (void) context;
   (void) request;
   (void) response;

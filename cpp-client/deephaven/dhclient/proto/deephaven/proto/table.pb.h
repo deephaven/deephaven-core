@@ -163,6 +163,9 @@ extern BatchTableRequestDefaultTypeInternal _BatchTableRequest_default_instance_
 class BatchTableRequest_Operation;
 struct BatchTableRequest_OperationDefaultTypeInternal;
 extern BatchTableRequest_OperationDefaultTypeInternal _BatchTableRequest_Operation_default_instance_;
+class ColumnStatisticsRequest;
+struct ColumnStatisticsRequestDefaultTypeInternal;
+extern ColumnStatisticsRequestDefaultTypeInternal _ColumnStatisticsRequest_default_instance_;
 class ComboAggregateRequest;
 struct ComboAggregateRequestDefaultTypeInternal;
 extern ComboAggregateRequestDefaultTypeInternal _ComboAggregateRequest_default_instance_;
@@ -452,6 +455,7 @@ template<> ::io::deephaven::proto::backplane::grpc::ApplyPreviewColumnsRequest* 
 template<> ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::BatchTableRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::BatchTableRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::BatchTableRequest_Operation* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::BatchTableRequest_Operation>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::ComboAggregateRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest_Aggregate* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::ComboAggregateRequest_Aggregate>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::CompareCondition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::CompareCondition>(Arena*);
@@ -23108,6 +23112,210 @@ class WhereInRequest final :
 };
 // -------------------------------------------------------------------
 
+class ColumnStatisticsRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest) */ {
+ public:
+  inline ColumnStatisticsRequest() : ColumnStatisticsRequest(nullptr) {}
+  ~ColumnStatisticsRequest() override;
+  explicit PROTOBUF_CONSTEXPR ColumnStatisticsRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  ColumnStatisticsRequest(const ColumnStatisticsRequest& from);
+  ColumnStatisticsRequest(ColumnStatisticsRequest&& from) noexcept
+    : ColumnStatisticsRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline ColumnStatisticsRequest& operator=(const ColumnStatisticsRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ColumnStatisticsRequest& operator=(ColumnStatisticsRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const ColumnStatisticsRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const ColumnStatisticsRequest* internal_default_instance() {
+    return reinterpret_cast<const ColumnStatisticsRequest*>(
+               &_ColumnStatisticsRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    117;
+
+  friend void swap(ColumnStatisticsRequest& a, ColumnStatisticsRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ColumnStatisticsRequest* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ColumnStatisticsRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  ColumnStatisticsRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ColumnStatisticsRequest>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const ColumnStatisticsRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const ColumnStatisticsRequest& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ColumnStatisticsRequest* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest";
+  }
+  protected:
+  explicit ColumnStatisticsRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kColumnNameFieldNumber = 3,
+    kResultIdFieldNumber = 1,
+    kSourceIdFieldNumber = 2,
+    kUniqueValueLimitFieldNumber = 4,
+  };
+  // string column_name = 3;
+  void clear_column_name();
+  const std::string& column_name() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_column_name(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_column_name();
+  PROTOBUF_NODISCARD std::string* release_column_name();
+  void set_allocated_column_name(std::string* column_name);
+  private:
+  const std::string& _internal_column_name() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_column_name(const std::string& value);
+  std::string* _internal_mutable_column_name();
+  public:
+
+  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+  bool has_result_id() const;
+  private:
+  bool _internal_has_result_id() const;
+  public:
+  void clear_result_id();
+  const ::io::deephaven::proto::backplane::grpc::Ticket& result_id() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::Ticket* release_result_id();
+  ::io::deephaven::proto::backplane::grpc::Ticket* mutable_result_id();
+  void set_allocated_result_id(::io::deephaven::proto::backplane::grpc::Ticket* result_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::Ticket& _internal_result_id() const;
+  ::io::deephaven::proto::backplane::grpc::Ticket* _internal_mutable_result_id();
+  public:
+  void unsafe_arena_set_allocated_result_id(
+      ::io::deephaven::proto::backplane::grpc::Ticket* result_id);
+  ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_result_id();
+
+  // .io.deephaven.proto.backplane.grpc.TableReference source_id = 2;
+  bool has_source_id() const;
+  private:
+  bool _internal_has_source_id() const;
+  public:
+  void clear_source_id();
+  const ::io::deephaven::proto::backplane::grpc::TableReference& source_id() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::TableReference* release_source_id();
+  ::io::deephaven::proto::backplane::grpc::TableReference* mutable_source_id();
+  void set_allocated_source_id(::io::deephaven::proto::backplane::grpc::TableReference* source_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::TableReference& _internal_source_id() const;
+  ::io::deephaven::proto::backplane::grpc::TableReference* _internal_mutable_source_id();
+  public:
+  void unsafe_arena_set_allocated_source_id(
+      ::io::deephaven::proto::backplane::grpc::TableReference* source_id);
+  ::io::deephaven::proto::backplane::grpc::TableReference* unsafe_arena_release_source_id();
+
+  // optional int32 unique_value_limit = 4;
+  bool has_unique_value_limit() const;
+  private:
+  bool _internal_has_unique_value_limit() const;
+  public:
+  void clear_unique_value_limit();
+  int32_t unique_value_limit() const;
+  void set_unique_value_limit(int32_t value);
+  private:
+  int32_t _internal_unique_value_limit() const;
+  void _internal_set_unique_value_limit(int32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr column_name_;
+  ::io::deephaven::proto::backplane::grpc::Ticket* result_id_;
+  ::io::deephaven::proto::backplane::grpc::TableReference* source_id_;
+  int32_t unique_value_limit_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
 class BatchTableRequest_Operation final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation) */ {
  public:
@@ -23191,6 +23399,7 @@ class BatchTableRequest_Operation final :
     kRangeJoin = 39,
     kAj = 40,
     kRaj = 41,
+    kColumnStatistics = 42,
     OP_NOT_SET = 0,
   };
 
@@ -23199,7 +23408,7 @@ class BatchTableRequest_Operation final :
                &_BatchTableRequest_Operation_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    117;
+    118;
 
   friend void swap(BatchTableRequest_Operation& a, BatchTableRequest_Operation& b) {
     a.Swap(&b);
@@ -23309,6 +23518,7 @@ class BatchTableRequest_Operation final :
     kRangeJoinFieldNumber = 39,
     kAjFieldNumber = 40,
     kRajFieldNumber = 41,
+    kColumnStatisticsFieldNumber = 42,
   };
   // .io.deephaven.proto.backplane.grpc.EmptyTableRequest empty_table = 1;
   bool has_empty_table() const;
@@ -24012,6 +24222,24 @@ class BatchTableRequest_Operation final :
       ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* raj);
   ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* unsafe_arena_release_raj();
 
+  // .io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest column_statistics = 42;
+  bool has_column_statistics() const;
+  private:
+  bool _internal_has_column_statistics() const;
+  public:
+  void clear_column_statistics();
+  const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& column_statistics() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* release_column_statistics();
+  ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* mutable_column_statistics();
+  void set_allocated_column_statistics(::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* column_statistics);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& _internal_column_statistics() const;
+  ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* _internal_mutable_column_statistics();
+  public:
+  void unsafe_arena_set_allocated_column_statistics(
+      ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* column_statistics);
+  ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* unsafe_arena_release_column_statistics();
+
   void clear_op();
   OpCase op_case() const;
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation)
@@ -24056,6 +24284,7 @@ class BatchTableRequest_Operation final :
   void set_has_range_join();
   void set_has_aj();
   void set_has_raj();
+  void set_has_column_statistics();
 
   inline bool has_op() const;
   inline void clear_has_op();
@@ -24105,6 +24334,7 @@ class BatchTableRequest_Operation final :
     ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest* range_join_;
     ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* aj_;
     ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* raj_;
+    ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* column_statistics_;
   } op_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   uint32_t _oneof_case_[1];
@@ -24161,7 +24391,7 @@ class BatchTableRequest final :
                &_BatchTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    118;
+    119;
 
   friend void swap(BatchTableRequest& a, BatchTableRequest& b) {
     a.Swap(&b);
@@ -47015,6 +47245,263 @@ WhereInRequest::mutable_columns_to_match() {
 
 // -------------------------------------------------------------------
 
+// ColumnStatisticsRequest
+
+// .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+inline bool ColumnStatisticsRequest::_internal_has_result_id() const {
+  return this != internal_default_instance() && result_id_ != nullptr;
+}
+inline bool ColumnStatisticsRequest::has_result_id() const {
+  return _internal_has_result_id();
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& ColumnStatisticsRequest::_internal_result_id() const {
+  const ::io::deephaven::proto::backplane::grpc::Ticket* p = result_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::Ticket&>(
+      ::io::deephaven::proto::backplane::grpc::_Ticket_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& ColumnStatisticsRequest::result_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.result_id)
+  return _internal_result_id();
+}
+inline void ColumnStatisticsRequest::unsafe_arena_set_allocated_result_id(
+    ::io::deephaven::proto::backplane::grpc::Ticket* result_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id_);
+  }
+  result_id_ = result_id;
+  if (result_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.result_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* ColumnStatisticsRequest::release_result_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = result_id_;
+  result_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* ColumnStatisticsRequest::unsafe_arena_release_result_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.result_id)
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = result_id_;
+  result_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* ColumnStatisticsRequest::_internal_mutable_result_id() {
+  
+  if (result_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(GetArenaForAllocation());
+    result_id_ = p;
+  }
+  return result_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* ColumnStatisticsRequest::mutable_result_id() {
+  ::io::deephaven::proto::backplane::grpc::Ticket* _msg = _internal_mutable_result_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.result_id)
+  return _msg;
+}
+inline void ColumnStatisticsRequest::set_allocated_result_id(::io::deephaven::proto::backplane::grpc::Ticket* result_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id_);
+  }
+  if (result_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id));
+    if (message_arena != submessage_arena) {
+      result_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, result_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  result_id_ = result_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.result_id)
+}
+
+// .io.deephaven.proto.backplane.grpc.TableReference source_id = 2;
+inline bool ColumnStatisticsRequest::_internal_has_source_id() const {
+  return this != internal_default_instance() && source_id_ != nullptr;
+}
+inline bool ColumnStatisticsRequest::has_source_id() const {
+  return _internal_has_source_id();
+}
+inline void ColumnStatisticsRequest::clear_source_id() {
+  if (GetArenaForAllocation() == nullptr && source_id_ != nullptr) {
+    delete source_id_;
+  }
+  source_id_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& ColumnStatisticsRequest::_internal_source_id() const {
+  const ::io::deephaven::proto::backplane::grpc::TableReference* p = source_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::TableReference&>(
+      ::io::deephaven::proto::backplane::grpc::_TableReference_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& ColumnStatisticsRequest::source_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.source_id)
+  return _internal_source_id();
+}
+inline void ColumnStatisticsRequest::unsafe_arena_set_allocated_source_id(
+    ::io::deephaven::proto::backplane::grpc::TableReference* source_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(source_id_);
+  }
+  source_id_ = source_id;
+  if (source_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.source_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* ColumnStatisticsRequest::release_source_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = source_id_;
+  source_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* ColumnStatisticsRequest::unsafe_arena_release_source_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.source_id)
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = source_id_;
+  source_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* ColumnStatisticsRequest::_internal_mutable_source_id() {
+  
+  if (source_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::TableReference>(GetArenaForAllocation());
+    source_id_ = p;
+  }
+  return source_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* ColumnStatisticsRequest::mutable_source_id() {
+  ::io::deephaven::proto::backplane::grpc::TableReference* _msg = _internal_mutable_source_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.source_id)
+  return _msg;
+}
+inline void ColumnStatisticsRequest::set_allocated_source_id(::io::deephaven::proto::backplane::grpc::TableReference* source_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete source_id_;
+  }
+  if (source_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(source_id);
+    if (message_arena != submessage_arena) {
+      source_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, source_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  source_id_ = source_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.source_id)
+}
+
+// string column_name = 3;
+inline void ColumnStatisticsRequest::clear_column_name() {
+  column_name_.ClearToEmpty();
+}
+inline const std::string& ColumnStatisticsRequest::column_name() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.column_name)
+  return _internal_column_name();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void ColumnStatisticsRequest::set_column_name(ArgT0&& arg0, ArgT... args) {
+ 
+ column_name_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.column_name)
+}
+inline std::string* ColumnStatisticsRequest::mutable_column_name() {
+  std::string* _s = _internal_mutable_column_name();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.column_name)
+  return _s;
+}
+inline const std::string& ColumnStatisticsRequest::_internal_column_name() const {
+  return column_name_.Get();
+}
+inline void ColumnStatisticsRequest::_internal_set_column_name(const std::string& value) {
+  
+  column_name_.Set(value, GetArenaForAllocation());
+}
+inline std::string* ColumnStatisticsRequest::_internal_mutable_column_name() {
+  
+  return column_name_.Mutable(GetArenaForAllocation());
+}
+inline std::string* ColumnStatisticsRequest::release_column_name() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.column_name)
+  return column_name_.Release();
+}
+inline void ColumnStatisticsRequest::set_allocated_column_name(std::string* column_name) {
+  if (column_name != nullptr) {
+    
+  } else {
+    
+  }
+  column_name_.SetAllocated(column_name, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (column_name_.IsDefault()) {
+    column_name_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.column_name)
+}
+
+// optional int32 unique_value_limit = 4;
+inline bool ColumnStatisticsRequest::_internal_has_unique_value_limit() const {
+  bool value = (_has_bits_[0] & 0x00000001u) != 0;
+  return value;
+}
+inline bool ColumnStatisticsRequest::has_unique_value_limit() const {
+  return _internal_has_unique_value_limit();
+}
+inline void ColumnStatisticsRequest::clear_unique_value_limit() {
+  unique_value_limit_ = 0;
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline int32_t ColumnStatisticsRequest::_internal_unique_value_limit() const {
+  return unique_value_limit_;
+}
+inline int32_t ColumnStatisticsRequest::unique_value_limit() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.unique_value_limit)
+  return _internal_unique_value_limit();
+}
+inline void ColumnStatisticsRequest::_internal_set_unique_value_limit(int32_t value) {
+  _has_bits_[0] |= 0x00000001u;
+  unique_value_limit_ = value;
+}
+inline void ColumnStatisticsRequest::set_unique_value_limit(int32_t value) {
+  _internal_set_unique_value_limit(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.unique_value_limit)
+}
+
+// -------------------------------------------------------------------
+
 // BatchTableRequest_Operation
 
 // .io.deephaven.proto.backplane.grpc.EmptyTableRequest empty_table = 1;
@@ -49903,6 +50390,80 @@ inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRe
   return _msg;
 }
 
+// .io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest column_statistics = 42;
+inline bool BatchTableRequest_Operation::_internal_has_column_statistics() const {
+  return op_case() == kColumnStatistics;
+}
+inline bool BatchTableRequest_Operation::has_column_statistics() const {
+  return _internal_has_column_statistics();
+}
+inline void BatchTableRequest_Operation::set_has_column_statistics() {
+  _oneof_case_[0] = kColumnStatistics;
+}
+inline void BatchTableRequest_Operation::clear_column_statistics() {
+  if (_internal_has_column_statistics()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete op_.column_statistics_;
+    }
+    clear_has_op();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* BatchTableRequest_Operation::release_column_statistics() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.column_statistics)
+  if (_internal_has_column_statistics()) {
+    clear_has_op();
+    ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* temp = op_.column_statistics_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    op_.column_statistics_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& BatchTableRequest_Operation::_internal_column_statistics() const {
+  return _internal_has_column_statistics()
+      ? *op_.column_statistics_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest&>(::io::deephaven::proto::backplane::grpc::_ColumnStatisticsRequest_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& BatchTableRequest_Operation::column_statistics() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.column_statistics)
+  return _internal_column_statistics();
+}
+inline ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* BatchTableRequest_Operation::unsafe_arena_release_column_statistics() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.column_statistics)
+  if (_internal_has_column_statistics()) {
+    clear_has_op();
+    ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* temp = op_.column_statistics_;
+    op_.column_statistics_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void BatchTableRequest_Operation::unsafe_arena_set_allocated_column_statistics(::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* column_statistics) {
+  clear_op();
+  if (column_statistics) {
+    set_has_column_statistics();
+    op_.column_statistics_ = column_statistics;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.column_statistics)
+}
+inline ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* BatchTableRequest_Operation::_internal_mutable_column_statistics() {
+  if (!_internal_has_column_statistics()) {
+    clear_op();
+    set_has_column_statistics();
+    op_.column_statistics_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest >(GetArenaForAllocation());
+  }
+  return op_.column_statistics_;
+}
+inline ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* BatchTableRequest_Operation::mutable_column_statistics() {
+  ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* _msg = _internal_mutable_column_statistics();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.column_statistics)
+  return _msg;
+}
+
 inline bool BatchTableRequest_Operation::has_op() const {
   return op_case() != OP_NOT_SET;
 }
@@ -49959,6 +50520,8 @@ BatchTableRequest::ops() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

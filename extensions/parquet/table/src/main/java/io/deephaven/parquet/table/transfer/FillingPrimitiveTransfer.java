@@ -14,30 +14,32 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.Buffer;
 
 /**
- * PrimitiveTransfer is a generic class that can be used to transfer primitive data types directly from a ColumnSource
- * to a Buffer using {@link ColumnSource#fillChunk(ChunkSource.FillContext, WritableChunk, RowSequence)}.
+ * This is a generic class that can be used to transfer primitive data types directly from a {@link ColumnSource} to a
+ * {@link Buffer} using {@link ColumnSource#fillChunk(ChunkSource.FillContext, WritableChunk, RowSequence)}. This class
+ * can only be used if the {@link WritableChunk} and {@link Buffer} are backed by the same array.
  */
-abstract class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer> implements TransferObject<B> {
-    private final C chunk;
-    private final B buffer;
+abstract class FillingPrimitiveTransfer<CHUNK_TYPE extends WritableChunk<Values>, BUFFER_TYPE extends Buffer>
+        implements TransferObject<BUFFER_TYPE> {
+    private final CHUNK_TYPE chunk;
+    private final BUFFER_TYPE buffer;
     private final ColumnSource<?> columnSource;
     private final RowSequence.Iterator tableRowSetIt;
     private final ChunkSource.FillContext context;
-    private final int maxValuesPerPage;
+    private final int targetElementsPerPage;
 
-    <A> PrimitiveTransfer(
+    <A> FillingPrimitiveTransfer(
             @NotNull final ColumnSource<?> columnSource,
             @NotNull final RowSequence tableRowSet,
-            @NotNull final C chunk,
-            @NotNull final B buffer,
-            final int maxValuesPerPage) {
+            @NotNull final CHUNK_TYPE chunk,
+            @NotNull final BUFFER_TYPE buffer,
+            final int targetElementsPerPage) {
         this.columnSource = columnSource;
         this.tableRowSetIt = tableRowSet.getRowSequenceIterator();
         this.chunk = chunk;
         this.buffer = buffer;
-        Assert.gtZero(maxValuesPerPage, "maxValuesPerPage");
-        this.maxValuesPerPage = maxValuesPerPage;
-        this.context = columnSource.makeFillContext(maxValuesPerPage);
+        Assert.gtZero(targetElementsPerPage, "targetElementsPerPage");
+        this.targetElementsPerPage = targetElementsPerPage;
+        this.context = columnSource.makeFillContext(targetElementsPerPage);
     }
 
     @Override
@@ -46,7 +48,7 @@ abstract class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buff
             return 0;
         }
         // Fetch one page worth of data from the column source
-        final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(maxValuesPerPage);
+        final RowSequence rs = tableRowSetIt.getNextRowSequenceWithLength(targetElementsPerPage);
         columnSource.fillChunk(context, chunk, rs);
         // Assuming that buffer and chunk are backed by the same array.
         buffer.position(0);
@@ -60,7 +62,7 @@ abstract class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buff
     }
 
     @Override
-    public final B getBuffer() {
+    public final BUFFER_TYPE getBuffer() {
         return buffer;
     }
 

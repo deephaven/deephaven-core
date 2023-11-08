@@ -100,7 +100,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, List[str]]: the columns(s) for which to return the added rows
+            cols (Union[str, List[str]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -138,7 +138,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, List[str]]: the columns(s) for which to return the added rows
+            cols (Union[str, List[str]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -176,7 +176,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, List[str]]: the columns(s) for which to return the added rows
+            cols (Union[str, List[str]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -214,7 +214,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, List[str]]: the columns(s) for which to return the added rows
+            cols (Union[str, List[str]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -349,7 +349,7 @@ class TableListenerHandle(JObjectWrapper):
         * (update: TableUpdate, is_replay: bool): support replaying the initial table snapshot and normal table updates
         The 'update' parameter is an object that describes the table update;
         The 'is_replay' parameter is used only by replay listeners, it is set to 'true' when replaying the initial
-            snapshot and 'false' during normal updates.
+        snapshot and 'false' during normal updates.
 
         Args:
             t (Table): table to listen to

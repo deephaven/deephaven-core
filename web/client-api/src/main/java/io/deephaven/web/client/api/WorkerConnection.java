@@ -52,6 +52,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedta
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.UnaryResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb_service.StorageServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
@@ -179,7 +180,6 @@ public class WorkerConnection {
     private List<Callback<Void, String>> onOpen = new ArrayList<>();
 
     private State state;
-    private double killTimerCancelation;
     private SessionServiceClient sessionServiceClient;
     private TableServiceClient tableServiceClient;
     private ConsoleServiceClient consoleServiceClient;
@@ -208,6 +208,8 @@ public class WorkerConnection {
     private List<LogItem> pastLogs = new ArrayList<>();
     private JsConsumer<LogItem> recordLog = pastLogs::add;
     private ResponseStreamWrapper<LogSubscriptionData> logStream;
+
+    private UnaryResponse terminationStream;
 
     private final JsSet<JsConsumer<JsVariableChanges>> fieldUpdatesCallback = new JsSet<>();
     private Map<String, JsVariableDefinition> knownFields = new HashMap<>();
@@ -386,6 +388,9 @@ public class WorkerConnection {
     }
 
     public boolean checkStatus(ResponseStreamWrapper.Status status) {
+        if (state == State.Disconnected) {
+            return false;
+        }
         if (status.isOk()) {
             // success, ignore
             return true;
@@ -523,26 +528,31 @@ public class WorkerConnection {
     }
 
     private void subscribeToTerminationNotification() {
-        sessionServiceClient.terminationNotification(new TerminationNotificationRequest(), metadata(),
-                (fail, success) -> {
-                    if (fail != null) {
-                        // Errors are treated like connection issues, won't signal any shutdown
-                        if (checkStatus((ResponseStreamWrapper.ServiceError) fail)) {
-                            // restart the termination notification
-                            subscribeToTerminationNotification();
-                        } else {
-                            info.notifyConnectionError(Js.cast(fail));
+        terminationStream =
+                sessionServiceClient.terminationNotification(new TerminationNotificationRequest(), metadata(),
+                        (fail, success) -> {
+                            if (state == State.Disconnected) {
+                                // already disconnected, no need to respond
+                                return;
+                            }
+                            if (fail != null) {
+                                // Errors are treated like connection issues, won't signal any shutdown
+                                if (checkStatus((ResponseStreamWrapper.ServiceError) fail)) {
+                                    // restart the termination notification
+                                    subscribeToTerminationNotification();
+                                } else {
+                                    info.notifyConnectionError(Js.cast(fail));
+                                    connectionLost();
+                                }
+                                return;
+                            }
+                            assert success != null;
+
+                            // welp; the server is gone -- let everyone know
                             connectionLost();
-                        }
-                        return;
-                    }
-                    assert success != null;
 
-                    // welp; the server is gone -- let everyone know
-                    connectionLost();
-
-                    info.notifyServerShutdown(success);
-                });
+                            info.notifyServerShutdown(success);
+                        });
     }
 
     // @Override
@@ -644,9 +654,29 @@ public class WorkerConnection {
         // explicitly mark as disconnected so reconnect isn't attempted
         state = State.Disconnected;
 
+        // forcibly clean up the log stream and its listeners
+        if (logStream != null) {
+            logStream.cancel();
+            logStream = null;
+        }
+        pastLogs.clear();
+        logCallbacks.clear();
+
+        // Stop server streams, will not reconnect
+        if (terminationStream != null) {
+            terminationStream.cancel();
+            terminationStream = null;
+        }
+        if (exportNotifications != null) {
+            exportNotifications.cancel();
+            exportNotifications = null;
+        }
 
         newSessionReconnect.disconnected();
-        DomGlobal.clearTimeout(killTimerCancelation);
+        if (scheduledAuthUpdate != null) {
+            DomGlobal.clearTimeout(scheduledAuthUpdate);
+            scheduledAuthUpdate = null;
+        }
     }
 
     public void setSessionTimeoutMs(double sessionTimeoutMs) {

@@ -71,6 +71,8 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
                      cd /; \
                      rm -fr "${PREFIX}/src/py-client-ticking"
                    ''')
+
+        environmentVariable 'LD_LIBRARY_PATH', ""  // avoid conflict with libarrow.13.0.0.so
     }
     parentContainers = [ project.tasks.getByPath(':cpp-client:cppClient') ]
 }

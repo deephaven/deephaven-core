@@ -14,12 +14,12 @@ import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.RollupRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.TreeRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ColumnStatisticsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
@@ -36,13 +36,13 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Snap
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.batchtablerequest.Operation;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.ResponseStream;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
+import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.input.JsInputTable;
@@ -741,10 +741,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * Gets the currently visible viewport. If the current set of operations has not yet resulted in data, it will not
-     * resolve until that data is ready.
+     * resolve until that data is ready. If this table is closed before the promise resolves, it will be rejected - to
+     * separate the lifespan of this promise from the table itself, call
+     * {@link TableViewportSubscription#getViewportData()} on the result from {@link #setViewport(double, double)}.
      * 
      * @return Promise of {@link TableData}
-     *
      */
     @JsMethod
     public Promise<TableData> getViewportData() {
@@ -752,7 +753,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         if (subscription == null) {
             return Promise.reject("No viewport currently set");
         }
-        return subscription.getViewportData();
+        return subscription.getInternalViewportData();
     }
 
     public Promise<TableData> getInternalViewportData() {
@@ -760,7 +761,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         final ClientTableState active = state();
         active.onRunning(state -> {
             if (currentViewportData == null) {
-                // no viewport data received yet; let's setup a one-shot UPDATED event listener
+                // no viewport data received yet; let's set up a one-shot UPDATED event listener
                 addEventListenerOneShot(EVENT_UPDATED, ignored -> promise.succeed(currentViewportData));
             } else {
                 promise.succeed(currentViewportData);
@@ -1432,14 +1433,50 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @param column
      * @return Promise of dh.ColumnStatistics
      */
-    // TODO: #697: Column statistic support
-    // @JsMethod
+    @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
-        return Callbacks.<ColumnStatistics, String>promise(null, c -> {
-            // workerConnection.getServer().getColumnStatisticsForTable(state().getHandle(), column.getName(), c);
-            throw new UnsupportedOperationException("getColumnStatistics");
-        }).then(
-                tableStatics -> Promise.resolve(new JsColumnStatistics(tableStatics)));
+        List<Runnable> toRelease = new ArrayList<>();
+        return workerConnection.newState((c, state, metadata) -> {
+            ColumnStatisticsRequest req = new ColumnStatisticsRequest();
+            req.setColumnName(column.getName());
+            req.setSourceId(state().getHandle().makeTableReference());
+            req.setResultId(state.getHandle().makeTicket());
+            workerConnection.tableServiceClient().computeColumnStatistics(req, metadata, c::apply);
+        }, "get column statistics")
+                .refetch(this, workerConnection.metadata())
+                .then(state -> {
+                    // TODO (deephaven-core#188) don't drop these columns once we can decode them
+                    JsArray<String> dropCols = new JsArray<>();
+                    if (Arrays.stream(state.getColumns()).anyMatch(c -> c.getName().equals("UNIQUE_KEYS"))) {
+                        dropCols.push("UNIQUE_KEYS");
+                    }
+                    if (Arrays.stream(state.getColumns()).anyMatch(c -> c.getName().equals("UNIQUE_COUNTS"))) {
+                        dropCols.push("UNIQUE_COUNTS");
+                    }
+
+                    if (dropCols.length > 0) {
+                        toRelease.add(() -> workerConnection.releaseHandle(state.getHandle()));
+                        return workerConnection.newState((c2, state2, metadata2) -> {
+                            DropColumnsRequest drop = new DropColumnsRequest();
+                            drop.setColumnNamesList(dropCols);
+                            drop.setSourceId(state.getHandle().makeTableReference());
+                            drop.setResultId(state2.getHandle().makeTicket());
+                            workerConnection.tableServiceClient().dropColumns(drop, metadata2, c2::apply);
+                        }, "drop unreadable stats columns")
+                                .refetch(this, workerConnection.metadata())
+                                .then(state2 -> {
+                                    JsTable table = new JsTable(workerConnection, state2);
+                                    toRelease.add(table::close);
+                                    table.setViewport(0, 0);
+                                    return table.getViewportData();
+                                });
+                    }
+                    JsTable table = new JsTable(workerConnection, state);
+                    toRelease.add(table::close);
+                    table.setViewport(0, 0);
+                    return table.getViewportData();
+                })
+                .then(tableData -> Promise.resolve(new JsColumnStatistics(tableData)));
     }
 
     private Literal objectToLiteral(String valueType, Object value) {
@@ -1961,8 +1998,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                             && existingSubscription.getStatus() != TableViewportSubscription.Status.DONE) {
                         JsLog.debug("closing old viewport", state(), existingSubscription.state());
                         // with the replacement state successfully running, we can shut down the old viewport (unless
-                        // something
-                        // external retained it)
+                        // something external retained it)
                         existingSubscription.internalClose();
                     }
                 }

@@ -41,8 +41,8 @@ setup(
         [Extension("pydeephaven_ticking._core",
                    sources=["src/pydeephaven_ticking/*.pyx"],
                    extra_compile_args=["-std=c++17"],
-                   libraries=["dhcore"]
+                   libraries=["dhcore_static"]
         )]),
     python_requires='>=3.8',
-    install_requires=['pydeephaven==0.30.0']
+    install_requires=['pydeephaven==0.31.0']
 )

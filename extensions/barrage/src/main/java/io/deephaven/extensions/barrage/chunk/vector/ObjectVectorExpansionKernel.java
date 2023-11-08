@@ -4,7 +4,6 @@
 package io.deephaven.extensions.barrage.chunk.vector;
 
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -12,7 +11,8 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.chunk.sized.SizedChunk;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.vector.Vector;
@@ -35,25 +35,31 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel {
         }
 
         final ObjectChunk<ObjectVector<?>, A> typedSource = source.asObjectChunk();
-        final SizedChunk<A> resultWrapper = new SizedChunk<>(ChunkType.Object);
 
-        int lenWritten = 0;
+        long totalSize = 0;
+        for (int i = 0; i < typedSource.size(); ++i) {
+            final ObjectVector<?> row = typedSource.get(i);
+            totalSize += row == null ? 0 : row.size();
+        }
+        final WritableObjectChunk<T, A> result = WritableObjectChunk.makeWritableChunk(
+                LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
+        result.setSize(0);
+
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final ObjectVector<?> row = typedSource.get(i);
-            final int len = row == null ? 0 : row.intSize("ObjectVectorExpansionKernel");
-            perElementLengthDest.set(i, lenWritten);
-            final WritableObjectChunk<Object, A> result = resultWrapper.ensureCapacityPreserve(lenWritten + len)
-                    .asWritableObjectChunk();
-            for (int j = 0; j < len; ++j) {
-                result.set(lenWritten + j, row.get(j));
+            perElementLengthDest.set(i, result.size());
+            if (row == null) {
+                continue;
             }
-            lenWritten += len;
-            result.setSize(lenWritten);
+            try (final CloseableIterator<?> iter = row.iterator()) {
+                // noinspection unchecked
+                iter.forEachRemaining(v -> result.add((T) v));
+            }
         }
-        perElementLengthDest.set(typedSource.size(), lenWritten);
+        perElementLengthDest.set(typedSource.size(), result.size());
 
-        return resultWrapper.get();
+        return result;
     }
 
     @Override
@@ -80,16 +86,14 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel {
 
         int lenRead = 0;
         for (int i = 0; i < itemsInBatch; ++i) {
-            final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
-            if (ROW_LEN == 0) {
+            final int rowLen = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
+            if (rowLen == 0) {
                 result.set(outOffset + i, ObjectVectorDirect.ZERO_LENGTH_VECTOR);
             } else {
                 // noinspection unchecked
-                final T[] row = (T[]) Array.newInstance(componentType, ROW_LEN);
-                for (int j = 0; j < ROW_LEN; ++j) {
-                    row[j] = typedSource.get(lenRead + j);
-                }
-                lenRead += ROW_LEN;
+                final T[] row = (T[]) Array.newInstance(componentType, rowLen);
+                typedSource.copyToArray(lenRead, row, 0, rowLen);
+                lenRead += rowLen;
                 result.set(outOffset + i, new ObjectVectorDirect<>(row));
             }
         }

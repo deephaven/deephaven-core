@@ -21,7 +21,9 @@ import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
 import io.deephaven.server.plugin.js.JsPluginNoopConsumerModule;
+import io.deephaven.server.runner.scheduler.SchedulerDelegatingImplModule;
 import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
+import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -30,6 +32,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -42,6 +45,7 @@ import java.util.concurrent.TimeUnit;
  * Manages a single instance of {@link DeephavenApiServer}.
  */
 public abstract class DeephavenApiServerTestBase {
+
     @Singleton
     @Component(modules = {
             DeephavenApiServerModule.class,
@@ -53,14 +57,11 @@ public abstract class DeephavenApiServerTestBase {
             ClientDefaultsModule.class,
             ObfuscatingErrorTransformerModule.class,
             JsPluginNoopConsumerModule.class,
+            SchedulerDelegatingImplModule.class
     })
     public interface TestComponent {
 
-        DeephavenApiServer getServer();
-
-        ManagedChannelBuilder<?> channelBuilder();
-
-        Provider<ScriptSession> scriptSessionProvider();
+        void injectFields(DeephavenApiServerTestBase instance);
 
         @Component.Builder
         interface Builder {
@@ -86,10 +87,20 @@ public abstract class DeephavenApiServerTestBase {
 
     private SafeCloseable executionContext;
 
-    private TestComponent testComponent;
     private LogBuffer logBuffer;
-    private DeephavenApiServer server;
     private SafeCloseable scopeCloseable;
+
+    @Inject
+    DeephavenApiServer server;
+
+    @Inject
+    Scheduler.DelegatingImpl scheduler;
+
+    @Inject
+    Provider<ScriptSession> scriptSessionProvider;
+
+    @Inject
+    Provider<ManagedChannelBuilder<?>> managedChannelBuilderProvider;
 
     @Before
     public void setUp() throws Exception {
@@ -107,14 +118,13 @@ public abstract class DeephavenApiServerTestBase {
                 .port(-1)
                 .build();
 
-        testComponent = DaggerDeephavenApiServerTestBase_TestComponent.builder()
+        DaggerDeephavenApiServerTestBase_TestComponent.builder()
                 .withServerConfig(config)
                 .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(System.out)
                 .withErr(System.err)
-                .build();
-
-        server = testComponent.getServer();
+                .build()
+                .injectFields(this);
 
         final PeriodicUpdateGraph updateGraph = server.getUpdateGraph().cast();
         executionContext = TestExecutionContext.createForUnitTests().withUpdateGraph(updateGraph).open();
@@ -144,6 +154,8 @@ public abstract class DeephavenApiServerTestBase {
             updateGraph.resetForUnitTests(true);
         }
         executionContext.close();
+
+        scheduler.shutdown();
     }
 
     public DeephavenApiServer server() {
@@ -154,8 +166,8 @@ public abstract class DeephavenApiServerTestBase {
         return logBuffer;
     }
 
-    public TestComponent testComponent() {
-        return testComponent;
+    public ScriptSession getScriptSession() {
+        return scriptSessionProvider.get();
     }
 
     /**
@@ -170,7 +182,7 @@ public abstract class DeephavenApiServerTestBase {
     }
 
     public ManagedChannelBuilder<?> channelBuilder() {
-        return testComponent.channelBuilder();
+        return managedChannelBuilderProvider.get();
     }
 
     public void register(ManagedChannel managedChannel) {

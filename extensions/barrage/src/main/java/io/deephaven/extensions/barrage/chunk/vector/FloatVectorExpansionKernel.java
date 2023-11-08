@@ -18,7 +18,9 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.chunk.sized.SizedFloatChunk;
+import io.deephaven.engine.primitive.function.FloatConsumer;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.FloatVector;
 import io.deephaven.vector.FloatVectorDirect;
 import io.deephaven.vector.Vector;
@@ -37,24 +39,31 @@ public class FloatVectorExpansionKernel implements VectorExpansionKernel {
         }
 
         final ObjectChunk<FloatVector, A> typedSource = source.asObjectChunk();
-        final SizedFloatChunk<A> resultWrapper = new SizedFloatChunk<>();
 
-        int lenWritten = 0;
+        long totalSize = 0;
+        for (int i = 0; i < typedSource.size(); ++i) {
+            final FloatVector row = typedSource.get(i);
+            totalSize += row == null ? 0 : row.size();
+        }
+        final WritableFloatChunk<A> result = WritableFloatChunk.makeWritableChunk(
+                LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
+        result.setSize(0);
+
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final FloatVector row = typedSource.get(i);
-            final int len = row == null ? 0 : row.intSize("FloatVectorExpansionKernel");
-            perElementLengthDest.set(i, lenWritten);
-            final WritableFloatChunk<A> result = resultWrapper.ensureCapacityPreserve(lenWritten + len);
-            for (int j = 0; j < len; ++j) {
-                result.set(lenWritten + j, row.get(j));
+            perElementLengthDest.set(i, result.size());
+            if (row == null) {
+                continue;
             }
-            lenWritten += len;
-            result.setSize(lenWritten);
+            final FloatConsumer consumer = result::add;
+            try (final CloseablePrimitiveIteratorOfFloat iter = row.iterator()) {
+                iter.forEachRemaining(consumer);
+            }
         }
-        perElementLengthDest.set(typedSource.size(), lenWritten);
+        perElementLengthDest.set(typedSource.size(), result.size());
 
-        return resultWrapper.get();
+        return result;
     }
 
     @Override
@@ -81,15 +90,13 @@ public class FloatVectorExpansionKernel implements VectorExpansionKernel {
 
         int lenRead = 0;
         for (int i = 0; i < itemsInBatch; ++i) {
-            final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
-            if (ROW_LEN == 0) {
+            final int rowLen = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
+            if (rowLen == 0) {
                 result.set(outOffset + i, ZERO_LENGTH_VECTOR);
             } else {
-                final float[] row = new float[ROW_LEN];
-                for (int j = 0; j < ROW_LEN; ++j) {
-                    row[j] = typedSource.get(lenRead + j);
-                }
-                lenRead += ROW_LEN;
+                final float[] row = new float[rowLen];
+                typedSource.copyToArray(lenRead, row, 0, rowLen);
+                lenRead += rowLen;
                 result.set(outOffset + i, new FloatVectorDirect(row));
             }
         }

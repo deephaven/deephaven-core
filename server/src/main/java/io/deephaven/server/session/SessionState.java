@@ -38,6 +38,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
+import io.deephaven.util.process.ProcessEnvironment;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
@@ -56,6 +57,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
 
 import static io.deephaven.base.log.LogOutput.MILLIS_FROM_EPOCH_FORMATTER;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
@@ -543,7 +545,11 @@ public class SessionState {
         /** This is a reference of the work to-be-done. It is non-null only during the PENDING state. */
         private Callable<T> exportMain;
         /** This is a reference to the error handler to call if this item enters one of the failure states. */
+        @Nullable
         private ExportErrorHandler errorHandler;
+        /** This is a reference to the success handler to call if this item successfully exports. */
+        @Nullable
+        private Consumer<? super T> successHandler;
 
         /** used to keep track of which children need notification on export completion */
         private List<ExportObject<?>> children = Collections.emptyList();
@@ -559,7 +565,7 @@ public class SessionState {
 
         /** used to identify and propagate error details */
         private String errorId;
-        private String dependentHandle;
+        private String failedDependencyLogIdentity;
         private Exception caughtException;
 
         /**
@@ -599,7 +605,7 @@ public class SessionState {
             this.logIdentity = Integer.toHexString(System.identityHashCode(this)) + "-sessionless";
 
             if (result == null) {
-                assignErrorId();
+                maybeAssignErrorId();
                 state = ExportNotification.State.FAILED;
             } else {
                 state = ExportNotification.State.EXPORTED;
@@ -647,7 +653,10 @@ public class SessionState {
          * @param exportMain the exportMain callable to invoke when dependencies are satisfied
          * @param errorHandler the errorHandler to notify so that it may propagate errors to the requesting client
          */
-        private synchronized void setWork(final Callable<T> exportMain, final ExportErrorHandler errorHandler,
+        private synchronized void setWork(
+                @NotNull final Callable<T> exportMain,
+                @Nullable final ExportErrorHandler errorHandler,
+                @Nullable final Consumer<? super T> successHandler,
                 final boolean requiresSerialQueue) {
             if (hasHadWorkSet) {
                 throw new IllegalStateException("export object can only be defined once");
@@ -655,13 +664,23 @@ public class SessionState {
             hasHadWorkSet = true;
             this.requiresSerialQueue = requiresSerialQueue;
 
-            if (isExportStateTerminal(this.state)) {
-                // nothing to do because dependency already failed; hooray??
+            if (isExportStateTerminal(state)) {
+                // The following scenarios cause us to get into this state:
+                // - this export object was released/cancelled
+                // - the session expiration propagated to this export object
+                // Note that already failed dependencies will be handled in the onResolveOne method below.
+
+                // since this is the first we know of the errorHandler, it could not have been invoked yet
+                if (errorHandler != null) {
+                    maybeAssignErrorId();
+                    errorHandler.onError(state, errorId, caughtException, failedDependencyLogIdentity);
+                }
                 return;
             }
 
             this.exportMain = exportMain;
             this.errorHandler = errorHandler;
+            this.successHandler = successHandler;
 
             setState(ExportNotification.State.PENDING);
             if (dependentCount <= 0) {
@@ -680,13 +699,13 @@ public class SessionState {
 
         /**
          * WARNING! This method call is only safe to use in the following patterns:
-         * <p/>
+         * <p>
          * 1) If an export (or non-export) {@link ExportBuilder#require}'d this export then the method is valid from
          * within the Callable/Runnable passed to {@link ExportBuilder#submit}.
-         * <p/>
+         * <p>
          * 2) By first obtaining a reference to the {@link ExportObject}, and then observing its state as
          * {@link ExportNotification.State#EXPORTED}. The caller must abide by the Liveness API and dropReference.
-         * <p/>
+         * <p>
          * Example:
          *
          * <pre>
@@ -771,6 +790,9 @@ public class SessionState {
                     || isExportStateTerminal(this.state)) {
                 throw new IllegalStateException("cannot change state if export is already in terminal state");
             }
+            if (this.state != ExportNotification.State.UNKNOWN && this.state.getNumber() >= state.getNumber()) {
+                throw new IllegalStateException("export object state changes must advance toward a terminal state");
+            }
             this.state = state;
 
             // Send an export notification before possibly notifying children of our state change.
@@ -788,9 +810,7 @@ public class SessionState {
             }
 
             if (isExportStateFailure(state) && errorHandler != null) {
-                if (errorId == null) {
-                    assignErrorId();
-                }
+                maybeAssignErrorId();
                 try {
                     final Exception toReport;
                     if (caughtException != null && errorTransformer != null) {
@@ -799,22 +819,38 @@ public class SessionState {
                         toReport = caughtException;
                     }
 
-                    errorHandler.onError(state, errorId, toReport, dependentHandle);
-                } catch (final Exception err) {
-                    log.error().append("Unexpected error while reporting state failure: ").append(err).endl();
+                    errorHandler.onError(state, errorId, toReport, failedDependencyLogIdentity);
+                } catch (final Throwable err) {
+                    // this is a serious error; crash the jvm to ensure that we don't miss it
+                    log.error().append("Unexpected error while reporting ExportObject failure: ").append(err).endl();
+                    ProcessEnvironment.getGlobalFatalErrorReporter().reportAsync(
+                            "Unexpected error while reporting ExportObject failure", err);
                 }
             }
 
-            if (state == ExportNotification.State.EXPORTED || isExportStateTerminal(state)) {
+            final boolean isNowExported = state == ExportNotification.State.EXPORTED;
+            if (isNowExported && successHandler != null) {
+                try {
+                    successHandler.accept(result);
+                } catch (final Throwable err) {
+                    // this is a serious error; crash the jvm to ensure that we don't miss it
+                    log.error().append("Unexpected error while reporting ExportObject success: ").append(err).endl();
+                    ProcessEnvironment.getGlobalFatalErrorReporter().reportAsync(
+                            "Unexpected error while reporting ExportObject success", err);
+                }
+            }
+
+            if (isNowExported || isExportStateTerminal(state)) {
                 children.forEach(child -> child.onResolveOne(this));
                 children = Collections.emptyList();
                 parents.stream().filter(Objects::nonNull).forEach(this::tryUnmanage);
                 parents = Collections.emptyList();
                 exportMain = null;
                 errorHandler = null;
+                successHandler = null;
             }
 
-            if ((state == ExportNotification.State.EXPORTED && isNonExport()) || isExportStateTerminal(state)) {
+            if ((isNowExported && isNonExport()) || isExportStateTerminal(state)) {
                 dropReference();
             }
         }
@@ -857,8 +893,8 @@ public class SessionState {
                                 break;
                         }
 
-                        assignErrorId();
-                        dependentHandle = parent.logIdentity;
+                        maybeAssignErrorId();
+                        failedDependencyLogIdentity = parent.logIdentity;
                         if (!(caughtException instanceof StatusRuntimeException)) {
                             log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails)
                                     .endl();
@@ -904,16 +940,30 @@ public class SessionState {
             final Callable<T> capturedExport;
             synchronized (this) {
                 capturedExport = exportMain;
-                if (state != ExportNotification.State.QUEUED || session.isExpired() || capturedExport == null) {
-                    return; // had a cancel race with client
+                // check for some sort of cancel race with client
+                if (state != ExportNotification.State.QUEUED
+                        || session.isExpired()
+                        || capturedExport == null
+                        || !tryRetainReference()) {
+                    if (!isExportStateTerminal(state)) {
+                        setState(ExportNotification.State.CANCELLED);
+                    } else if (errorHandler != null) {
+                        // noinspection ThrowableNotThrown
+                        Assert.statementNeverExecuted("in terminal state but error handler is not null");
+                    }
+                    return;
                 }
+                dropReference();
                 setState(ExportNotification.State.RUNNING);
             }
+
+            T localResult = null;
             boolean shouldLog = false;
             int evaluationNumber = -1;
             QueryProcessingResults queryProcessingResults = null;
-            try (final SafeCloseable ignored1 = session.executionContext.open()) {
-                try (final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+            try (final SafeCloseable ignored1 = session.executionContext.open();
+                    final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+                try {
                     queryProcessingResults = new QueryProcessingResults(
                             QueryPerformanceRecorder.getInstance());
 
@@ -921,7 +971,7 @@ public class SessionState {
                             .startQuery("session=" + session.sessionId + ",exportId=" + logIdentity);
 
                     try {
-                        setResult(capturedExport.call());
+                        localResult = capturedExport.call();
                     } finally {
                         shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
                     }
@@ -929,7 +979,7 @@ public class SessionState {
                     caughtException = err;
                     synchronized (this) {
                         if (!isExportStateTerminal(state)) {
-                            assignErrorId();
+                            maybeAssignErrorId();
                             if (!(caughtException instanceof StatusRuntimeException)) {
                                 log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
                             }
@@ -970,11 +1020,16 @@ public class SessionState {
                         log.error().append("Failed to log query performance data: ").append(e).endl();
                     }
                 }
+                if (caughtException == null) {
+                    setResult(localResult);
+                }
             }
         }
 
-        private void assignErrorId() {
-            errorId = UuidCreator.toString(UuidCreator.getRandomBased());
+        private void maybeAssignErrorId() {
+            if (errorId == null) {
+                errorId = UuidCreator.toString(UuidCreator.getRandomBased());
+            }
         }
 
         /**
@@ -1063,8 +1118,8 @@ public class SessionState {
             if (errorId != null) {
                 builder.setContext(errorId);
             }
-            if (dependentHandle != null) {
-                builder.setDependentHandle(dependentHandle);
+            if (failedDependencyLogIdentity != null) {
+                builder.setDependentHandle(failedDependencyLogIdentity);
             }
 
             return builder.build();
@@ -1238,6 +1293,7 @@ public class SessionState {
 
         private boolean requiresSerialQueue;
         private ExportErrorHandler errorHandler;
+        private Consumer<? super T> successHandler;
 
         ExportBuilder(final int exportId) {
             this.exportId = exportId;
@@ -1287,9 +1343,8 @@ public class SessionState {
 
         /**
          * Invoke this method to set the error handler to be notified if this export fails. Only one error handler may
-         * be set.
+         * be set. Exactly one of the onError and onSuccess handlers will be invoked.
          * <p>
-         * </p>
          * Not synchronized, it is expected that the provided callback handles thread safety itself.
          *
          * @param errorHandler the error handler to be notified
@@ -1298,6 +1353,8 @@ public class SessionState {
         public ExportBuilder<T> onError(final ExportErrorHandler errorHandler) {
             if (this.errorHandler != null) {
                 throw new IllegalStateException("error handler already set");
+            } else if (export.hasHadWorkSet) {
+                throw new IllegalStateException("error handler must be set before work is submitted");
             }
             this.errorHandler = errorHandler;
             return this;
@@ -1305,9 +1362,8 @@ public class SessionState {
 
         /**
          * Invoke this method to set the error handler to be notified if this export fails. Only one error handler may
-         * be set.
+         * be set. Exactly one of the onError and onSuccess handlers will be invoked.
          * <p>
-         * </p>
          * Not synchronized, it is expected that the provided callback handles thread safety itself.
          *
          * @param errorHandler the error handler to be notified
@@ -1339,9 +1395,9 @@ public class SessionState {
 
         /**
          * Invoke this method to set the error handler to be notified if this export fails. Only one error handler may
-         * be set. This is a convenience method for use with {@link StreamObserver}.
+         * be set. This is a convenience method for use with {@link StreamObserver}. Exactly one of the onError and
+         * onSuccess handlers will be invoked.
          * <p>
-         * </p>
          * Invoking onError will be synchronized on the StreamObserver instance, so callers can rely on that mechanism
          * to deal with more than one thread trying to write to the stream.
          *
@@ -1355,10 +1411,41 @@ public class SessionState {
         }
 
         /**
+         * Invoke this method to set the onSuccess handler to be notified if this export succeeds. Only one success
+         * handler may be set. Exactly one of the onError and onSuccess handlers will be invoked.
+         * <p>
+         * Not synchronized, it is expected that the provided callback handles thread safety itself.
+         *
+         * @param successHandler the onSuccess handler to be notified
+         * @return this builder
+         */
+        public ExportBuilder<T> onSuccess(final Consumer<? super T> successHandler) {
+            if (this.successHandler != null) {
+                throw new IllegalStateException("success handler already set");
+            } else if (export.hasHadWorkSet) {
+                throw new IllegalStateException("success handler must be set before work is submitted");
+            }
+            this.successHandler = successHandler;
+            return this;
+        }
+
+        /**
+         * Invoke this method to set the onSuccess handler to be notified if this export succeeds. Only one success
+         * handler may be set. Exactly one of the onError and onSuccess handlers will be invoked.
+         * <p>
+         * Not synchronized, it is expected that the provided callback handles thread safety itself.
+         *
+         * @param successHandler the onSuccess handler to be notified
+         * @return this builder
+         */
+        public ExportBuilder<T> onSuccess(final Runnable successHandler) {
+            return onSuccess(ignored -> successHandler.run());
+        }
+
+        /**
          * This method is the final method for submitting an export to the session. The provided callable is enqueued on
          * the scheduler when all dependencies have been satisfied. Only the dependencies supplied to the builder are
          * guaranteed to be resolved when the exportMain is executing.
-         *
          * <p>
          * Warning! It is the SessionState owner's responsibility to wait to release any dependency until after this
          * exportMain callable/runnable has complete.
@@ -1367,7 +1454,7 @@ public class SessionState {
          * @return the submitted export object
          */
         public ExportObject<T> submit(final Callable<T> exportMain) {
-            export.setWork(exportMain, errorHandler, requiresSerialQueue);
+            export.setWork(exportMain, errorHandler, successHandler, requiresSerialQueue);
             return export;
         }
 
@@ -1375,7 +1462,6 @@ public class SessionState {
          * This method is the final method for submitting an export to the session. The provided runnable is enqueued on
          * the scheduler when all dependencies have been satisfied. Only the dependencies supplied to the builder are
          * guaranteed to be resolved when the exportMain is executing.
-         *
          * <p>
          * Warning! It is the SessionState owner's responsibility to wait to release any dependency until after this
          * exportMain callable/runnable has complete.
