@@ -1271,7 +1271,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                             final QueryPerformanceNugget outerNugget =
                                                     QueryPerformanceRecorder.getInstance().getOuterNugget();
                                             if (outerNugget != null) {
-                                                outerNugget.addBaseEntry(basePerformanceEntry);
+                                                outerNugget.accumulate(basePerformanceEntry);
                                             }
                                         }
                                     }
@@ -1519,7 +1519,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     final QueryPerformanceNugget outerNugget =
                                             QueryPerformanceRecorder.getInstance().getOuterNugget();
                                     if (outerNugget != null) {
-                                        outerNugget.addBaseEntry(baseEntry);
+                                        outerNugget.accumulate(baseEntry);
                                     }
                                 }
                             }

@@ -21,9 +21,9 @@ import java.util.Objects;
 class QueryPerformanceStreamPublisher implements StreamPublisher {
 
     private static final TableDefinition DEFINITION = TableDefinition.of(
-            ColumnDefinition.ofString("ProcessUniqueId"),
             ColumnDefinition.ofLong("EvaluationNumber"),
             ColumnDefinition.ofLong("ParentEvaluationNumber"),
+            ColumnDefinition.ofString("Description"),
             ColumnDefinition.ofTime("StartTime"),
             ColumnDefinition.ofTime("EndTime"),
             ColumnDefinition.ofLong("DurationNanos"),
@@ -38,7 +38,6 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
             ColumnDefinition.ofLong("AllocatedBytes"),
             ColumnDefinition.ofLong("PoolAllocatedBytes"),
             ColumnDefinition.ofBoolean("WasInterrupted"),
-            ColumnDefinition.ofBoolean("IsReplayer"),
             ColumnDefinition.ofString("Exception"),
             ColumnDefinition.ofString("AuthContext"));
     private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
@@ -63,23 +62,23 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
     }
 
     public synchronized void add(
-            final String id,
             final QueryProcessingResults queryProcessingResults,
             final QueryPerformanceNugget nugget) {
-        // ColumnDefinition.ofString("ProcessUniqueId"),
-        chunks[0].<String>asWritableObjectChunk().add(id);
 
         // ColumnDefinition.ofLong("EvaluationNumber")
-        chunks[1].asWritableLongChunk().add(nugget.getEvaluationNumber());
+        chunks[0].asWritableLongChunk().add(nugget.getEvaluationNumber());
 
         // ColumnDefinition.ofLong("ParentEvaluationNumber")
-        chunks[2].asWritableLongChunk().add(nugget.getParentEvaluationNumber());
+        chunks[1].asWritableLongChunk().add(nugget.getParentEvaluationNumber());
+
+        // ColumnDefinition.ofString("Description")
+        chunks[2].<String>asWritableObjectChunk().add(nugget.getName());
 
         // ColumnDefinition.ofTime("StartTime");
-        chunks[3].asWritableLongChunk().add(nugget.getStartClockTime());
+        chunks[3].asWritableLongChunk().add(nugget.getStartClockEpochNanos());
 
         // ColumnDefinition.ofTime("EndTime")
-        chunks[4].asWritableLongChunk().add(nugget.getEndClockTime());
+        chunks[4].asWritableLongChunk().add(nugget.getEndClockEpochNanos());
 
         // ColumnDefinition.ofLong("DurationNanos")
         chunks[5].asWritableLongChunk().add(nugget.getTotalTimeNanos());
@@ -117,14 +116,11 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
         // ColumnDefinition.ofBoolean("WasInterrupted")
         chunks[16].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.wasInterrupted()));
 
-        // ColumnDefinition.ofBoolean("IsReplayer")
-        chunks[17].asWritableByteChunk().add(BooleanUtils.booleanAsByte(queryProcessingResults.isReplayer()));
-
         // ColumnDefinition.ofString("Exception")
-        chunks[18].<String>asWritableObjectChunk().add(queryProcessingResults.getException());
+        chunks[17].<String>asWritableObjectChunk().add(queryProcessingResults.getException());
 
         // ColumnDefinition.ofString("AuthContext")
-        chunks[19].<String>asWritableObjectChunk().add(Objects.toString(nugget.getAuthContext()));
+        chunks[18].<String>asWritableObjectChunk().add(Objects.toString(nugget.getAuthContext()));
 
         if (chunks[0].size() == CHUNK_SIZE) {
             flushInternal();

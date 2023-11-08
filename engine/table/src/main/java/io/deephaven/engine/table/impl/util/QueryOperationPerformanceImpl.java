@@ -42,7 +42,6 @@ class QueryOperationPerformanceImpl implements QueryOperationPerformanceLogLogge
     @Override
     public void log(
             @NotNull final Flags flags,
-            final int deprecatedArgument,
             @NotNull final QueryPerformanceNugget nugget) throws IOException {
         publisher.add(id.value(), nugget);
         qoplLogger.log(flags, nugget);

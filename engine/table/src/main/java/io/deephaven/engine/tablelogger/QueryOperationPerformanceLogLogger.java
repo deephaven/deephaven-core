@@ -18,14 +18,7 @@ public interface QueryOperationPerformanceLogLogger {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, nugget);
     }
 
-    default void log(
-            @NotNull final Row.Flags flags,
-            @NotNull final QueryPerformanceNugget nugget) throws IOException {
-        log(flags, nugget.getOperationNumber(), nugget);
-    }
-
-    // This prototype is going to be deprecated in 0.31 in favor of the one above.
-    void log(Row.Flags flags, int operationNumber, QueryPerformanceNugget nugget) throws IOException;
+    void log(@NotNull Row.Flags flags, @NotNull QueryPerformanceNugget nugget) throws IOException;
 
     enum Noop implements QueryOperationPerformanceLogLogger {
         INSTANCE;
@@ -33,9 +26,6 @@ public interface QueryOperationPerformanceLogLogger {
         @Override
         public void log(
                 @NotNull final Flags flags,
-                final int operationNumber,
-                @NotNull final QueryPerformanceNugget nugget) throws IOException {
-
-        }
+                @NotNull final QueryPerformanceNugget nugget) throws IOException {}
     }
 }

@@ -989,8 +989,8 @@ public class SessionState {
                     } else if (queryPerformanceRecorder != null) {
                         // this is a sub-query; no need to re-log the session id
                         exportRecorder = QueryPerformanceRecorder.getInstance().startQuery(
-                                "ExportObject#doWork(exportId=" + logIdentity + ")",
-                                queryPerformanceRecorder.getEvaluationNumber());
+                                queryPerformanceRecorder,
+                                "ExportObject#doWork(exportId=" + logIdentity + ")");
                     } else {
                         exportRecorder = QueryPerformanceRecorder.getInstance().startQuery(
                                 "ExportObject#doWork(session=" + session.sessionId + ",exportId=" + logIdentity + ")");

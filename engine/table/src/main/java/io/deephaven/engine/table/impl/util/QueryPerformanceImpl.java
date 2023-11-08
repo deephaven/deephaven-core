@@ -8,7 +8,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
-import io.deephaven.process.ProcessUniqueId;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.tablelogger.Row.Flags;
 import org.jetbrains.annotations.NotNull;
@@ -17,15 +16,13 @@ import java.io.IOException;
 import java.util.Objects;
 
 class QueryPerformanceImpl implements QueryPerformanceLogLogger {
-    private final ProcessUniqueId id;
     private final QueryPerformanceLogLogger qplLogger;
     private final QueryPerformanceStreamPublisher publisher;
     @SuppressWarnings("FieldCanBeLocal")
     private final StreamToBlinkTableAdapter adapter;
     private final Table blink;
 
-    public QueryPerformanceImpl(ProcessUniqueId id, QueryPerformanceLogLogger qplLogger) {
-        this.id = Objects.requireNonNull(id);
+    public QueryPerformanceImpl(QueryPerformanceLogLogger qplLogger) {
         this.qplLogger = Objects.requireNonNull(qplLogger);
         this.publisher = new QueryPerformanceStreamPublisher();
         this.adapter = new StreamToBlinkTableAdapter(
@@ -43,10 +40,9 @@ class QueryPerformanceImpl implements QueryPerformanceLogLogger {
     @Override
     public void log(
             @NotNull final Flags flags,
-            final long deprecatedField,
             @NotNull final QueryProcessingResults queryProcessingResults,
             @NotNull final QueryPerformanceNugget nugget) throws IOException {
-        publisher.add(id.value(), queryProcessingResults, nugget);
+        publisher.add(queryProcessingResults, nugget);
         qplLogger.log(flags, queryProcessingResults, nugget);
     }
 }

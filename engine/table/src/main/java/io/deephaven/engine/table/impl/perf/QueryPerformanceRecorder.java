@@ -37,16 +37,15 @@ public class QueryPerformanceRecorder implements Serializable {
 
     public static final String UNINSTRUMENTED_CODE_DESCRIPTION = "Uninstrumented code";
 
-    private static final long serialVersionUID = 2L;
     private static final String[] packageFilters;
 
-    private volatile boolean mustLogForHierarchicalConsistency;
     private QueryPerformanceNugget queryNugget;
     private final ArrayList<QueryPerformanceNugget> operationNuggets = new ArrayList<>();
 
-    private QueryState state;
-    private transient QueryPerformanceNugget catchAllNugget;
-    private final transient Deque<QueryPerformanceNugget> userNuggetStack = new ArrayDeque<>();
+    private volatile QueryState state;
+    private QueryPerformanceNugget catchAllNugget;
+    private final Deque<QueryPerformanceNugget> userNuggetStack = new ArrayDeque<>();
+    private final QueryPerformanceNugget.Factory nuggetFactory = QueryPerformanceNugget.DEFAULT_FACTORY;
 
     private static final AtomicLong queriesProcessed = new AtomicLong(0);
 
@@ -102,22 +101,33 @@ public class QueryPerformanceRecorder implements Serializable {
      * @param description A description for the query.
      * @return this
      */
-    public QueryPerformanceRecorder startQuery(final String description) {
-        return startQuery(description, QueryConstants.NULL_LONG);
+    public QueryPerformanceRecorder startQuery(@NotNull final String description) {
+        return startQuery(nuggetFactory.createForQuery(queriesProcessed.getAndIncrement(), description));
+    }
+
+    /**
+     * Start a sub-query.
+     *
+     * @param parent The parent query.
+     * @param description A description for the query.
+     * @return this
+     */
+    public QueryPerformanceRecorder startQuery(
+            @NotNull final QueryPerformanceRecorder parent,
+            @NotNull final String description) {
+        return startQuery(nuggetFactory.createForSubQuery(
+                parent.queryNugget, queriesProcessed.getAndIncrement(), description));
     }
 
     /**
      * Start a query.
-     * 
-     * @param description A description for the query.
-     * @param parentEvaluationNumber The evaluation number of the parent query.
+     *
+     * @param nugget The newly constructed query level nugget.
      * @return this
      */
-    public synchronized QueryPerformanceRecorder startQuery(final String description,
-            final long parentEvaluationNumber) {
+    private synchronized QueryPerformanceRecorder startQuery(final QueryPerformanceNugget nugget) {
         clear();
-        final long evaluationNumber = queriesProcessed.getAndIncrement();
-        queryNugget = new QueryPerformanceNugget(evaluationNumber, parentEvaluationNumber, description);
+        queryNugget = nugget;
         state = QueryState.RUNNING;
         startCatchAll();
         return this;
@@ -143,7 +153,7 @@ public class QueryPerformanceRecorder implements Serializable {
 
     /**
      * Return the query's current state
-     * 
+     *
      * @return the query's state or null if it isn't initialized yet
      */
     public synchronized QueryState getState() {
@@ -168,7 +178,7 @@ public class QueryPerformanceRecorder implements Serializable {
     /**
      * Suspends a query.
      * <p>
-     * This resets the thread local and assumes that this performance nugget may be resumed on another thread. This
+     * This resets the thread local and assumes that this performance nugget may be resumed on another thread.
      */
     public synchronized void suspendQuery() {
         if (state != QueryState.RUNNING) {
@@ -193,7 +203,7 @@ public class QueryPerformanceRecorder implements Serializable {
      * Resumes a suspend query.
      * <p>
      * It is an error to resume a query while another query is running on this thread.
-     * 
+     *
      * @return this
      */
     public synchronized QueryPerformanceRecorder resumeQuery() {
@@ -202,10 +212,8 @@ public class QueryPerformanceRecorder implements Serializable {
         }
 
         final QueryPerformanceRecorder threadLocalInstance = getInstance();
-        synchronized (threadLocalInstance) {
-            if (threadLocalInstance.state == QueryState.RUNNING) {
-                throw new IllegalStateException("Can't resume a query while another query is in operation");
-            }
+        if (threadLocalInstance.state == QueryState.RUNNING) {
+            throw new IllegalStateException("Can't resume a query while another query is in operation");
         }
         theLocal.set(this);
 
@@ -217,12 +225,7 @@ public class QueryPerformanceRecorder implements Serializable {
     }
 
     private void startCatchAll() {
-        catchAllNugget = new QueryPerformanceNugget(
-                queryNugget.getEvaluationNumber(),
-                queryNugget.getParentEvaluationNumber(),
-                operationNuggets.size(),
-                QueryConstants.NULL_INT, 0,
-                UNINSTRUMENTED_CODE_DESCRIPTION, false, false, QueryConstants.NULL_LONG);
+        catchAllNugget = nuggetFactory.createForCatchAll(queryNugget, operationNuggets.size());
     }
 
     private void stopCatchAll(final boolean abort) {
@@ -263,12 +266,9 @@ public class QueryPerformanceRecorder implements Serializable {
         if (catchAllNugget != null) {
             stopCatchAll(false);
         }
-        final int parentOperationNumber = userNuggetStack.isEmpty() ? QueryConstants.NULL_INT
-                : userNuggetStack.getLast().getOperationNumber();
-        final QueryPerformanceNugget nugget = new QueryPerformanceNugget(
-                queryNugget.getEvaluationNumber(), queryNugget.getParentEvaluationNumber(),
-                operationNuggets.size(), parentOperationNumber, userNuggetStack.size(),
-                name, true, false, inputSize);
+        final QueryPerformanceNugget parent = userNuggetStack.isEmpty() ? queryNugget : userNuggetStack.getLast();
+        final QueryPerformanceNugget nugget = nuggetFactory.createForOperation(
+                parent, operationNuggets.size(), name, inputSize);
         operationNuggets.add(nugget);
         userNuggetStack.addLast(nugget);
         return nugget;
@@ -278,7 +278,7 @@ public class QueryPerformanceRecorder implements Serializable {
      * <b>Note:</b> Do not call this directly - it's for nugget use only. Call nugget.done(), instead. TODO: Reverse the
      * disclaimer above - I think it's much better for the recorder to support done/abort(nugget), rather than
      * continuing to have the nugget support done/abort(recorder).
-     * 
+     *
      * @param nugget the nugget to be released
      * @return If the nugget passes criteria for logging.
      */
@@ -359,10 +359,7 @@ public class QueryPerformanceRecorder implements Serializable {
     }
 
     public void accumulate(@NotNull final QueryPerformanceRecorder subQuery) {
-        if (subQuery.mustLogForHierarchicalConsistency()) {
-            mustLogForHierarchicalConsistency = true;
-        }
-        queryNugget.addBaseEntry(subQuery.queryNugget);
+        queryNugget.accumulate(subQuery.queryNugget);
     }
 
     private void clear() {
@@ -370,14 +367,6 @@ public class QueryPerformanceRecorder implements Serializable {
         catchAllNugget = null;
         operationNuggets.clear();
         userNuggetStack.clear();
-    }
-
-    public long getEvaluationNumber() {
-        return queryNugget.getEvaluationNumber();
-    }
-
-    public boolean mustLogForHierarchicalConsistency() {
-        return mustLogForHierarchicalConsistency || !operationNuggets.isEmpty();
     }
 
     public synchronized QueryPerformanceNugget getQueryLevelPerformanceData() {
@@ -503,7 +492,7 @@ public class QueryPerformanceRecorder implements Serializable {
 
     /**
      * Surround the given code with a Performance Nugget
-     * 
+     *
      * @param name the nugget name
      * @param r the stuff to run
      */
@@ -580,7 +569,7 @@ public class QueryPerformanceRecorder implements Serializable {
 
     /**
      * Surround the given code with a Performance Nugget
-     * 
+     *
      * @param name the nugget name
      * @param r the stuff to run
      */

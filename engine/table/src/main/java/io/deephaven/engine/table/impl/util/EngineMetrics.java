@@ -74,7 +74,7 @@ public class EngineMetrics {
         } catch (IOException e) {
             log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
         }
-        qpImpl = new QueryPerformanceImpl(pInfo.getId(), tableLoggerFactory.queryPerformanceLogLogger());
+        qpImpl = new QueryPerformanceImpl(tableLoggerFactory.queryPerformanceLogLogger());
         qoplImpl = new QueryOperationPerformanceImpl(pInfo.getId(),
                 tableLoggerFactory.queryOperationPerformanceLogLogger());
         if (STATS_LOGGING_ENABLED) {
@@ -126,10 +126,6 @@ public class EngineMetrics {
             final List<QueryPerformanceNugget> nuggets =
                     results.getRecorder().getOperationLevelPerformanceData();
             synchronized (qoplLogger) {
-                if (results.getRecorder().mustLogForHierarchicalConsistency()) {
-                    // if this query has sub queries or op nuggets log an entry to enable hierarchical consistency
-                    qoplLogger.log(queryNugget);
-                }
                 for (QueryPerformanceNugget nugget : nuggets) {
                     qoplLogger.log(nugget);
                 }

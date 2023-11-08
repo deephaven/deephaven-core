@@ -4,13 +4,14 @@
 package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.auth.AuthContext;
+import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-
-import java.io.Serializable;
+import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -19,18 +20,102 @@ import static io.deephaven.util.QueryConstants.*;
  * intimate relationship with another class, {@link QueryPerformanceRecorder}. Changes to either should take this lack
  * of encapsulation into account.
  */
-public class QueryPerformanceNugget extends BasePerformanceEntry implements Serializable, SafeCloseable {
+public class QueryPerformanceNugget extends BasePerformanceEntry implements SafeCloseable {
     private static final QueryPerformanceLogThreshold LOG_THRESHOLD = new QueryPerformanceLogThreshold("", 1_000_000);
     private static final QueryPerformanceLogThreshold UNINSTRUMENTED_LOG_THRESHOLD =
             new QueryPerformanceLogThreshold("Uninstrumented", 1_000_000_000);
     private static final int MAX_DESCRIPTION_LENGTH = 16 << 10;
 
-    private static final long serialVersionUID = 2L;
-
     /**
      * A re-usable "dummy" nugget which will never collect any information or be recorded.
      */
     static final QueryPerformanceNugget DUMMY_NUGGET = new QueryPerformanceNugget();
+
+    public interface Factory {
+        /**
+         * Factory method for query-level nuggets.
+         *
+         * @param evaluationNumber A unique identifier for the query evaluation that triggered this nugget creation
+         * @param description The operation description
+         * @return A new nugget
+         */
+        default QueryPerformanceNugget createForQuery(final long evaluationNumber, @NotNull final String description) {
+            return new QueryPerformanceNugget(evaluationNumber, NULL_LONG, NULL_INT, NULL_INT, NULL_INT,
+                    description, false, NULL_LONG);
+        }
+
+        /**
+         * Factory method for sub-query-level nuggets.
+         *
+         * @param parentQuery The parent query nugget
+         * @param evaluationNumber A unique identifier for the sub-query evaluation that triggered this nugget creation
+         * @param description The operation description
+         * @return A new nugget
+         */
+        default QueryPerformanceNugget createForSubQuery(
+                @NotNull final QueryPerformanceNugget parentQuery,
+                final long evaluationNumber,
+                @NotNull final String description) {
+            Assert.eqTrue(parentQuery.isQueryLevel(), "parentQuery.isQueryLevel()");
+            return new QueryPerformanceNugget(evaluationNumber, parentQuery.getEvaluationNumber(),
+                    NULL_INT, NULL_INT, NULL_INT, description, false, NULL_LONG);
+        }
+
+        /**
+         * Factory method for operation-level nuggets.
+         *
+         * @param parentQueryOrOperation The parent query / operation nugget
+         * @param operationNumber A query-unique identifier for the operation
+         * @param description The operation description
+         * @return A new nugget
+         */
+        default QueryPerformanceNugget createForOperation(
+                @NotNull final QueryPerformanceNugget parentQueryOrOperation,
+                final int operationNumber,
+                final String description,
+                final long inputSize) {
+            int depth = parentQueryOrOperation.getDepth();
+            if (depth == NULL_INT) {
+                depth = 0;
+            } else {
+                ++depth;
+            }
+
+            return new QueryPerformanceNugget(
+                    parentQueryOrOperation.getEvaluationNumber(),
+                    parentQueryOrOperation.getParentEvaluationNumber(),
+                    operationNumber,
+                    parentQueryOrOperation.getOperationNumber(),
+                    depth,
+                    description,
+                    true, // operations are always user
+                    inputSize);
+        }
+
+        /**
+         * Factory method for catch-all nuggets.
+         *
+         * @param parentQuery The parent query nugget
+         * @param operationNumber A query-unique identifier for the operation
+         * @return A new nugget
+         */
+        default QueryPerformanceNugget createForCatchAll(
+                @NotNull final QueryPerformanceNugget parentQuery,
+                final int operationNumber) {
+            Assert.eqTrue(parentQuery.isQueryLevel(), "parentQuery.isQueryLevel()");
+            return new QueryPerformanceNugget(
+                    parentQuery.getEvaluationNumber(),
+                    parentQuery.getParentEvaluationNumber(),
+                    operationNumber,
+                    NULL_INT, // catch all has no parent operation
+                    0, // catch all is a root operation
+                    QueryPerformanceRecorder.UNINSTRUMENTED_CODE_DESCRIPTION,
+                    false, // catch all is not user
+                    NULL_LONG); // catch all has no input size
+        }
+    }
+
+    public static final Factory DEFAULT_FACTORY = new Factory() {};
 
     private final long evaluationNumber;
     private final long parentEvaluationNumber;
@@ -39,14 +124,13 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
     private final int depth;
     private final String description;
     private final boolean isUser;
-    private final boolean isQueryLevel;
     private final long inputSize;
 
     private final AuthContext authContext;
     private final String callerLine;
 
-    private final long startClockTime;
-    private long endClockTime;
+    private final long startClockEpochNanos;
+    private long endClockEpochNanos = NULL_LONG;
 
     private volatile QueryState state;
 
@@ -55,23 +139,6 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
     private final RuntimeMemory.Sample endMemorySample;
 
     private boolean shouldLogMeAndStackParents;
-
-    /**
-     * For threaded operations we want to accumulate the CPU time, allocations, and read operations to the enclosing
-     * nugget of the main operation. For the initialization we ignore the wall clock time taken in the thread pool.
-     */
-    private BasePerformanceEntry basePerformanceEntry;
-
-    /**
-     * Constructor for query-level nuggets.
-     *
-     * @param evaluationNumber A unique identifier for the query evaluation that triggered this nugget creation
-     * @param description The operation description
-     */
-    QueryPerformanceNugget(final long evaluationNumber, final long parentEvaluationNumber, final String description) {
-        this(evaluationNumber, parentEvaluationNumber, NULL_INT, NULL_INT, NULL_INT, description, false, true,
-                NULL_LONG);
-    }
 
     /**
      * Full constructor for nuggets.
@@ -87,7 +154,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
      * @param isUser Whether this is a "user" nugget or one created by the system
      * @param inputSize The size of the input data
      */
-    QueryPerformanceNugget(
+    protected QueryPerformanceNugget(
             final long evaluationNumber,
             final long parentEvaluationNumber,
             final int operationNumber,
@@ -95,7 +162,6 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
             final int depth,
             final String description,
             final boolean isUser,
-            final boolean isQueryLevel,
             final long inputSize) {
         startMemorySample = new RuntimeMemory.Sample();
         endMemorySample = new RuntimeMemory.Sample();
@@ -111,7 +177,6 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
             this.description = description;
         }
         this.isUser = isUser;
-        this.isQueryLevel = isQueryLevel;
         this.inputSize = inputSize;
 
         authContext = ExecutionContext.getContext().getAuthContext();
@@ -120,7 +185,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
         final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
         runtimeMemory.read(startMemorySample);
 
-        startClockTime = System.currentTimeMillis();
+        startClockEpochNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis());
         onBaseEntryStart();
 
         state = QueryState.RUNNING;
@@ -140,15 +205,12 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
         depth = 0;
         description = null;
         isUser = false;
-        isQueryLevel = false;
         inputSize = NULL_LONG;
 
         authContext = null;
         callerLine = null;
 
-        startClockTime = NULL_LONG;
-
-        basePerformanceEntry = null;
+        startClockEpochNanos = NULL_LONG;
 
         state = null; // This turns close into a no-op.
         shouldLogMeAndStackParents = false;
@@ -202,15 +264,11 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
                 return false;
             }
 
-            endClockTime = System.currentTimeMillis();
             onBaseEntryEnd();
+            endClockEpochNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis());
 
             final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
             runtimeMemory.read(endMemorySample);
-
-            if (basePerformanceEntry != null) {
-                accumulate(basePerformanceEntry);
-            }
 
             state = closingState;
             return recorderToNotify.releaseNugget(this);
@@ -220,9 +278,15 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
     @Override
     public String toString() {
         return evaluationNumber
-                + ":" + operationNumber
+                + ":" + (isQueryLevel() ? "query_level" : operationNumber)
                 + ":" + description
                 + ":" + callerLine;
+    }
+
+    @Override
+    public LogOutput append(@NotNull final LogOutput logOutput) {
+        // override BasePerformanceEntry's impl and match toString()
+        return logOutput.append(toString());
     }
 
     public long getEvaluationNumber() {
@@ -253,8 +317,12 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
         return isUser;
     }
 
+    public boolean isBatchLevel() {
+        return isQueryLevel() && parentEvaluationNumber == NULL_LONG;
+    }
+
     public boolean isQueryLevel() {
-        return isQueryLevel;
+        return operationNumber == NULL_INT;
     }
 
     public boolean isTopLevel() {
@@ -277,45 +345,17 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
     }
 
     /**
-     * @return nanoseconds elapsed, once state != QueryState.RUNNING() has been called.
-     */
-    public long getTotalTimeNanos() {
-        return getIntervalUsageNanos();
-    }
-
-    /**
      * @return wall clock start time in nanoseconds from the epoch
      */
-    public long getStartClockTime() {
-        return DateTimeUtils.millisToNanos(startClockTime);
+    public long getStartClockEpochNanos() {
+        return startClockEpochNanos;
     }
 
     /**
      * @return wall clock end time in nanoseconds from the epoch
      */
-    public long getEndClockTime() {
-        return DateTimeUtils.millisToNanos(endClockTime);
-    }
-
-
-    /**
-     * Get nanoseconds of CPU time attributed to the instrumented operation.
-     *
-     * @return The nanoseconds of CPU time attributed to the instrumented operation, or {@link QueryConstants#NULL_LONG}
-     *         if not enabled/supported.
-     */
-    public long getCpuNanos() {
-        return getIntervalCpuNanos();
-    }
-
-    /**
-     * Get nanoseconds of user mode CPU time attributed to the instrumented operation.
-     *
-     * @return The nanoseconds of user mode CPU time attributed to the instrumented operation, or
-     *         {@link QueryConstants#NULL_LONG} if not enabled/supported.
-     */
-    public long getUserCpuNanos() {
-        return getIntervalUserCpuNanos();
+    public long getEndClockEpochNanos() {
+        return endClockEpochNanos;
     }
 
     /**
@@ -362,26 +402,6 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
     }
 
     /**
-     * Get bytes of allocated memory attributed to the instrumented operation.
-     *
-     * @return The bytes of allocated memory attributed to the instrumented operation, or
-     *         {@link QueryConstants#NULL_LONG} if not enabled/supported.
-     */
-    public long getAllocatedBytes() {
-        return getIntervalAllocatedBytes();
-    }
-
-    /**
-     * Get bytes of allocated pooled/reusable memory attributed to the instrumented operation.
-     *
-     * @return The bytes of allocated pooled/reusable memory attributed to the instrumented operation, or
-     *         {@link QueryConstants#NULL_LONG} if not enabled/supported.
-     */
-    public long getPoolAllocatedBytes() {
-        return getIntervalPoolAllocatedBytes();
-    }
-
-    /**
      * @return true if this nugget was interrupted by an abort() call.
      */
     public boolean wasInterrupted() {
@@ -404,20 +424,6 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
     }
 
     /**
-     * When we track data from other threads that should be attributed to this operation, we tack extra
-     * BasePerformanceEntry values onto this nugget when it is closed.
-     * <p>
-     * The CPU time, reads, and allocations are counted against this nugget. Wall clock time is ignored.
-     */
-    public synchronized void addBaseEntry(BasePerformanceEntry baseEntry) {
-        if (this.basePerformanceEntry == null) {
-            this.basePerformanceEntry = baseEntry;
-        } else {
-            this.basePerformanceEntry.accumulate(baseEntry);
-        }
-    }
-
-    /**
      * Suppress de minimus performance nuggets using the properties defined above.
      *
      * @param isUninstrumented this nugget for uninstrumented code? If so the thresholds for inclusion in the logs are
@@ -427,6 +433,12 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Seri
      */
     boolean shouldLogNugget(final boolean isUninstrumented) {
         if (shouldLogMeAndStackParents) {
+            return true;
+        }
+
+        // Nuggets will have a null value for end time if they weren't closed for a RUNNING query; this is an abnormal
+        // condition and the nugget should be logged
+        if (endClockEpochNanos == NULL_LONG) {
             return true;
         }
 

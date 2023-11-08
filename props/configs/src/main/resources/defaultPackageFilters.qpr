@@ -3,8 +3,8 @@ sun.
 groovy.lang.
 org.codehaus.groovy.
 io.deephaven.
-io.deephaven.engine.
 io.grpc.
 com.google.common.
 org.eclipse.
 jdk.internal.
+org.jpy.

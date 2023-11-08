@@ -909,7 +909,7 @@ public abstract class UpdateBy {
                 if (initialStep) {
                     final QueryPerformanceNugget outerNugget = QueryPerformanceRecorder.getInstance().getOuterNugget();
                     if (outerNugget != null) {
-                        outerNugget.addBaseEntry(accumulated);
+                        outerNugget.accumulate(accumulated);
                     }
                 } else {
                     source.getUpdateGraph().addNotification(new TerminalNotification() {
