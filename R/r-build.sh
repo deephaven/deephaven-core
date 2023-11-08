@@ -18,18 +18,12 @@ fi
 trap 'rm -f src/*.o src/*.so' 1 2 15
 rm -f src/*.o src/*.so
 
-MAKE="make -j${NCPUS}" R --no-save --no-restore <<EOF
-status = tryCatch(
-  {
-     install.packages(".", repos=NULL, type="source")
-     0
-  },
-  error=function(e) 1,
-  warning=function(w) 2
-)
-print(paste0('status=', status))
-quit(save='no', status=status)
+MAKE="make -j${NCPUS}" bash <<EOF
+cd ..
+R CMD build rdeephaven && R CMD INSTALL --no-multiarch --with-keep.source rdeephaven_*.tar.gz
+rm rdeephaven_*.tar.gz
 EOF
+
 
 rm -f src/*.o src/*.so
 
