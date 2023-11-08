@@ -13,7 +13,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderImpl;
 import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -30,7 +32,6 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.auth.AuthContext;
@@ -538,7 +539,7 @@ public class SessionState {
         /** if true the queryPerformanceRecorder belongs to a batch; otherwise if it exists it belong to the export */
         private boolean qprIsForBatch;
         /** used to keep track of performance details either for aggregation or for the async ticket resolution */
-        private QueryPerformanceRecorder queryPerformanceRecorder;
+        private QueryPerformanceRecorderImpl queryPerformanceRecorder;
 
         /** final result of export */
         private volatile T result;
@@ -630,7 +631,7 @@ public class SessionState {
         }
 
         private synchronized void setQueryPerformanceRecorder(
-                final QueryPerformanceRecorder queryPerformanceRecorder,
+                final QueryPerformanceRecorderImpl queryPerformanceRecorder,
                 final boolean qprIsForBatch) {
             if (this.queryPerformanceRecorder != null) {
                 throw new IllegalStateException(
@@ -979,28 +980,30 @@ public class SessionState {
 
             T localResult = null;
             boolean shouldLog = false;
+            QueryPerformanceRecorderImpl exportRecorder = null;
             QueryProcessingResults queryProcessingResults = null;
             try (final SafeCloseable ignored1 = session.executionContext.open();
                     final SafeCloseable ignored2 = LivenessScopeStack.open()) {
                 try {
-                    final QueryPerformanceRecorder exportRecorder;
                     if (queryPerformanceRecorder != null && !qprIsForBatch) {
                         exportRecorder = queryPerformanceRecorder.resumeQuery();
                     } else if (queryPerformanceRecorder != null) {
                         // this is a sub-query; no need to re-log the session id
-                        exportRecorder = QueryPerformanceRecorder.getInstance().startQuery(
+                        exportRecorder = new QueryPerformanceRecorderImpl(
+                                "ExportObject#doWork(exportId=" + logIdentity + ")",
                                 queryPerformanceRecorder,
-                                "ExportObject#doWork(exportId=" + logIdentity + ")");
+                                QueryPerformanceNugget.DEFAULT_FACTORY);
                     } else {
-                        exportRecorder = QueryPerformanceRecorder.getInstance().startQuery(
-                                "ExportObject#doWork(session=" + session.sessionId + ",exportId=" + logIdentity + ")");
+                        exportRecorder = new QueryPerformanceRecorderImpl(
+                                "ExportObject#doWork(session=" + session.sessionId + ",exportId=" + logIdentity + ")",
+                                QueryPerformanceNugget.DEFAULT_FACTORY);
                     }
                     queryProcessingResults = new QueryProcessingResults(exportRecorder);
 
                     try {
                         localResult = capturedExport.call();
                     } finally {
-                        shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
+                        shouldLog = exportRecorder.endQuery();
                     }
 
                 } catch (final Exception err) {
@@ -1022,7 +1025,8 @@ public class SessionState {
                 }
                 if ((shouldLog || caughtException != null) && queryProcessingResults != null) {
                     if (queryPerformanceRecorder != null && qprIsForBatch) {
-                        queryPerformanceRecorder.accumulate(queryProcessingResults.getRecorder());
+                        Assert.neqNull(exportRecorder, "exportRecorder");
+                        queryPerformanceRecorder.accumulate(exportRecorder);
                     }
                     EngineMetrics.getInstance().logQueryProcessingResults(queryProcessingResults);
                 }
@@ -1315,15 +1319,18 @@ public class SessionState {
         }
 
         /**
-         * Set the performance recorder to aggregate performance data across exports. If set, instrumentation logging is
-         * the responsibility of the caller.
+         * Set the performance recorder to aggregate performance data across exports.
+         * <p>
+         * When {@code qprIsForBatch}: - is {@code false}: The provided queryPerformanceRecorder is suspended and
+         * assumed by the export object - is {@code true}: Instrumentation logging is the responsibility of the caller
+         * and should not be performed until all sub-queries have completed.
          *
          * @param queryPerformanceRecorder the performance recorder to aggregate into
          * @param qprIsForBatch true if a sub-query should be created for the export and aggregated into the qpr
          * @return this builder
          */
         public ExportBuilder<T> queryPerformanceRecorder(
-                @NotNull final QueryPerformanceRecorder queryPerformanceRecorder,
+                @NotNull final QueryPerformanceRecorderImpl queryPerformanceRecorder,
                 final boolean qprIsForBatch) {
             export.setQueryPerformanceRecorder(queryPerformanceRecorder, qprIsForBatch);
             return this;

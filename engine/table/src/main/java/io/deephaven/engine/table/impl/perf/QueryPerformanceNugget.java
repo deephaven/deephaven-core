@@ -29,7 +29,12 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
     /**
      * A re-usable "dummy" nugget which will never collect any information or be recorded.
      */
-    static final QueryPerformanceNugget DUMMY_NUGGET = new QueryPerformanceNugget();
+    static final QueryPerformanceNugget DUMMY_NUGGET = new QueryPerformanceNugget() {
+        @Override
+        public void accumulate(@NotNull BasePerformanceEntry entry) {
+            // non-synchronized no-op override
+        }
+    };
 
     public interface Factory {
         /**

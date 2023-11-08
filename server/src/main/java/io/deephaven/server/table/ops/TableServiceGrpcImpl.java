@@ -8,7 +8,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.clientsupport.gotorow.SeekRow;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderImpl;
 import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.extensions.barrage.util.ExportUtil;
@@ -511,8 +513,9 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         }
         final SessionState session = sessionService.getCurrentSession();
 
-        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.getInstance().startQuery(
-                "TableService#batch(session=" + session.getSessionId() + ")");
+        final QueryPerformanceRecorderImpl queryPerformanceRecorder = new QueryPerformanceRecorderImpl(
+                "TableService#batch(session=" + session.getSessionId() + ")",
+                QueryPerformanceNugget.DEFAULT_FACTORY);
 
         // step 1: initialize exports
         final List<BatchExportBuilder<?>> exportBuilders = request.getOpsList().stream()
@@ -536,17 +539,21 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             }
             Assert.geqZero(numRemaining, "numRemaining");
 
-            queryPerformanceRecorder.resumeQuery();
-            final QueryProcessingResults results = new QueryProcessingResults(queryPerformanceRecorder);
-            final StatusRuntimeException failure = firstFailure.get();
-            if (failure != null) {
-                results.setException(failure.getMessage());
-                safelyError(responseObserver, failure);
-            } else {
-                safelyComplete(responseObserver);
+            try {
+                queryPerformanceRecorder.resumeQuery();
+                final QueryProcessingResults results = new QueryProcessingResults(queryPerformanceRecorder);
+                final StatusRuntimeException failure = firstFailure.get();
+                if (failure != null) {
+                    results.setException(failure.getMessage());
+                    safelyError(responseObserver, failure);
+                } else {
+                    safelyComplete(responseObserver);
+                }
+                queryPerformanceRecorder.endQuery();
+                EngineMetrics.getInstance().logQueryProcessingResults(results);
+            } finally {
+                QueryPerformanceRecorder.resetInstance();
             }
-            queryPerformanceRecorder.endQuery();
-            EngineMetrics.getInstance().logQueryProcessingResults(results);
         };
 
         for (int i = 0; i < exportBuilders.size(); ++i) {
@@ -656,8 +663,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         final String description = "TableService#" + op.name() + "(session=" + session.getSessionId() + ", resultId="
                 + ticketRouter.getLogNameFor(resultId, "TableServiceGrpcImpl") + ")";
 
-        final QueryPerformanceRecorder queryPerformanceRecorder =
-                QueryPerformanceRecorder.getInstance().startQuery(description);
+        final QueryPerformanceRecorderImpl queryPerformanceRecorder = new QueryPerformanceRecorderImpl(
+                description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
         operation.validateRequest(request);
 
@@ -718,7 +725,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     private <T> BatchExportBuilder<T> createBatchExportBuilder(
             @NotNull final SessionState session,
-            @NotNull final QueryPerformanceRecorder queryPerformanceRecorder,
+            @NotNull final QueryPerformanceRecorderImpl queryPerformanceRecorder,
             final BatchTableRequest.Operation op) {
         final GrpcTableOperation<T> operation = getOp(op.getOpCase());
         final T request = operation.getRequestFromOperation(op);

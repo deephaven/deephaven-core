@@ -7,9 +7,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.chunk.util.pools.ChunkPoolInstrumentation;
-import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.function.ThrowingRunnable;
@@ -17,6 +14,7 @@ import io.deephaven.util.function.ThrowingSupplier;
 import io.deephaven.util.profiling.ThreadProfiler;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.net.URL;
@@ -29,28 +27,20 @@ import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.plu
 
 /**
  * Query performance instrumentation tools. Manages a hierarchy of {@link QueryPerformanceNugget} instances.
- * <p>
- * Thread-safety note: This used to be thread-safe only by virtue of using a thread-local instance. Now it's
- * aggressively synchronized so we can abort it from outside the "owner" thread.
  */
-public class QueryPerformanceRecorder implements Serializable {
+public abstract class QueryPerformanceRecorder {
 
     public static final String UNINSTRUMENTED_CODE_DESCRIPTION = "Uninstrumented code";
 
     private static final String[] packageFilters;
 
-    private QueryPerformanceNugget queryNugget;
-    private final ArrayList<QueryPerformanceNugget> operationNuggets = new ArrayList<>();
+    protected static final AtomicLong queriesProcessed = new AtomicLong(0);
 
-    private volatile QueryState state;
-    private QueryPerformanceNugget catchAllNugget;
-    private final Deque<QueryPerformanceNugget> userNuggetStack = new ArrayDeque<>();
-    private final QueryPerformanceNugget.Factory nuggetFactory = QueryPerformanceNugget.DEFAULT_FACTORY;
+    static final QueryPerformanceRecorder DUMMY_RECORDER = new DummyQueryPerformanceRecorder();
 
-    private static final AtomicLong queriesProcessed = new AtomicLong(0);
-
-    private static final ThreadLocal<QueryPerformanceRecorder> theLocal =
-            ThreadLocal.withInitial(QueryPerformanceRecorder::new);
+    /** thread local is package private to enable query resumption */
+    static final ThreadLocal<QueryPerformanceRecorder> theLocal =
+            ThreadLocal.withInitial(() -> DUMMY_RECORDER);
     private static final ThreadLocal<MutableLong> poolAllocatedBytes = ThreadLocal.withInitial(
             () -> new MutableLong(ThreadProfiler.DEFAULT.memoryProfilingAvailable() ? 0L
                     : io.deephaven.util.QueryConstants.NULL_LONG));
@@ -91,315 +81,54 @@ public class QueryPerformanceRecorder implements Serializable {
         theLocal.remove();
     }
 
-    private QueryPerformanceRecorder() {
-        // private default constructor to prevent direct instantiation
-    }
-
-    /**
-     * Start a query.
-     *
-     * @param description A description for the query.
-     * @return this
-     */
-    public QueryPerformanceRecorder startQuery(@NotNull final String description) {
-        return startQuery(nuggetFactory.createForQuery(queriesProcessed.getAndIncrement(), description));
-    }
-
-    /**
-     * Start a sub-query.
-     *
-     * @param parent The parent query.
-     * @param description A description for the query.
-     * @return this
-     */
-    public QueryPerformanceRecorder startQuery(
-            @NotNull final QueryPerformanceRecorder parent,
-            @NotNull final String description) {
-        return startQuery(nuggetFactory.createForSubQuery(
-                parent.queryNugget, queriesProcessed.getAndIncrement(), description));
-    }
-
-    /**
-     * Start a query.
-     *
-     * @param nugget The newly constructed query level nugget.
-     * @return this
-     */
-    private synchronized QueryPerformanceRecorder startQuery(final QueryPerformanceNugget nugget) {
-        clear();
-        queryNugget = nugget;
-        state = QueryState.RUNNING;
-        startCatchAll();
-        return this;
-    }
-
-    /**
-     * Abort a query.
-     */
-    public synchronized void abortQuery() {
-        if (state != QueryState.RUNNING) {
-            return;
-        }
-        state = QueryState.INTERRUPTED;
-        if (catchAllNugget != null) {
-            stopCatchAll(true);
-        } else {
-            while (!userNuggetStack.isEmpty()) {
-                userNuggetStack.peekLast().abort(this);
-            }
-        }
-        queryNugget.abort(this);
-    }
-
-    /**
-     * Return the query's current state
-     *
-     * @return the query's state or null if it isn't initialized yet
-     */
-    public synchronized QueryState getState() {
-        return state;
-    }
-
-    /**
-     * End a query.
-     */
-    public synchronized boolean endQuery() {
-        if (state != QueryState.RUNNING) {
-            return false;
-        }
-
-        state = QueryState.FINISHED;
-        Assert.neqNull(catchAllNugget, "catchAllNugget");
-        Assert.neqNull(queryNugget, "queryNugget");
-        stopCatchAll(false);
-        return queryNugget.done(this);
-    }
-
-    /**
-     * Suspends a query.
-     * <p>
-     * This resets the thread local and assumes that this performance nugget may be resumed on another thread.
-     */
-    public synchronized void suspendQuery() {
-        if (state != QueryState.RUNNING) {
-            throw new IllegalStateException("Can't suspend a query that isn't running");
-        }
-
-        final QueryPerformanceRecorder threadLocalInstance = getInstance();
-        if (threadLocalInstance != this) {
-            throw new IllegalStateException("Can't suspend a query that doesn't belong to this thread");
-        }
-
-        state = QueryState.SUSPENDED;
-        Assert.neqNull(catchAllNugget, "catchAllNugget");
-        stopCatchAll(false);
-        queryNugget.onBaseEntryEnd();
-
-        // Very likely this QPR is being passed to another thread, be safe and reset the thread local instance.
-        resetInstance();
-    }
-
-    /**
-     * Resumes a suspend query.
-     * <p>
-     * It is an error to resume a query while another query is running on this thread.
-     *
-     * @return this
-     */
-    public synchronized QueryPerformanceRecorder resumeQuery() {
-        if (state != QueryState.SUSPENDED) {
-            throw new IllegalStateException("Can't resume a query that isn't suspended");
-        }
-
-        final QueryPerformanceRecorder threadLocalInstance = getInstance();
-        if (threadLocalInstance.state == QueryState.RUNNING) {
-            throw new IllegalStateException("Can't resume a query while another query is in operation");
-        }
-        theLocal.set(this);
-
-        queryNugget.onBaseEntryStart();
-        state = QueryState.RUNNING;
-        Assert.eqNull(catchAllNugget, "catchAllNugget");
-        startCatchAll();
-        return this;
-    }
-
-    private void startCatchAll() {
-        catchAllNugget = nuggetFactory.createForCatchAll(queryNugget, operationNuggets.size());
-    }
-
-    private void stopCatchAll(final boolean abort) {
-        final boolean shouldLog;
-        if (abort) {
-            shouldLog = catchAllNugget.abort(this);
-        } else {
-            shouldLog = catchAllNugget.done(this);
-        }
-        if (shouldLog) {
-            Assert.eq(operationNuggets.size(), "operationsNuggets.size()",
-                    catchAllNugget.getOperationNumber(), "catchAllNugget.getOperationNumber()");
-            operationNuggets.add(catchAllNugget);
-        }
-        catchAllNugget = null;
-    }
-
     /**
      * @param name the nugget name
      * @return A new QueryPerformanceNugget to encapsulate user query operations. done() must be called on the nugget.
      */
-    public QueryPerformanceNugget getNugget(String name) {
-        return getNugget(name, QueryConstants.NULL_LONG);
-    }
+    public abstract QueryPerformanceNugget getNugget(@NotNull String name);
 
     /**
      * @param name the nugget name
      * @param inputSize the nugget's input size
      * @return A new QueryPerformanceNugget to encapsulate user query operations. done() must be called on the nugget.
      */
-    public synchronized QueryPerformanceNugget getNugget(final String name, final long inputSize) {
-        if (state != QueryState.RUNNING) {
-            return QueryPerformanceNugget.DUMMY_NUGGET;
-        }
-        if (Thread.interrupted()) {
-            throw new CancellationException("interrupted in QueryPerformanceNugget");
-        }
-        if (catchAllNugget != null) {
-            stopCatchAll(false);
-        }
-        final QueryPerformanceNugget parent = userNuggetStack.isEmpty() ? queryNugget : userNuggetStack.getLast();
-        final QueryPerformanceNugget nugget = nuggetFactory.createForOperation(
-                parent, operationNuggets.size(), name, inputSize);
-        operationNuggets.add(nugget);
-        userNuggetStack.addLast(nugget);
-        return nugget;
-    }
+    public abstract QueryPerformanceNugget getNugget(@NotNull String name, long inputSize);
 
     /**
-     * <b>Note:</b> Do not call this directly - it's for nugget use only. Call nugget.done(), instead. TODO: Reverse the
-     * disclaimer above - I think it's much better for the recorder to support done/abort(nugget), rather than
-     * continuing to have the nugget support done/abort(recorder).
+     * @return The nugget currently in effect or else a dummy nugget if no nugget is in effect.
+     */
+    public abstract QueryPerformanceNugget getOuterNugget();
+
+    /**
+     * <b>Note:</b> Do not call this directly - it's for nugget use only. Call {@link QueryPerformanceNugget#done()} or
+     * {@link QueryPerformanceNugget#close()} instead.
      *
+     * @implNote This method is package private to limit visibility.
      * @param nugget the nugget to be released
      * @return If the nugget passes criteria for logging.
      */
-    synchronized boolean releaseNugget(QueryPerformanceNugget nugget) {
-        boolean shouldLog = nugget.shouldLogNugget(nugget == catchAllNugget);
-        if (!nugget.isUser()) {
-            return shouldLog;
-        }
+    abstract boolean releaseNugget(QueryPerformanceNugget nugget);
 
-        final QueryPerformanceNugget removed = userNuggetStack.removeLast();
-        if (nugget != removed) {
-            throw new IllegalStateException(
-                    "Released query performance nugget " + nugget + " (" + System.identityHashCode(nugget) +
-                            ") didn't match the top of the user nugget stack " + removed + " ("
-                            + System.identityHashCode(removed) +
-                            ") - did you follow the correct try/finally pattern?");
-        }
+    /**
+     * @return the query level performance data
+     */
+    public abstract QueryPerformanceNugget getQueryLevelPerformanceData();
 
-        if (removed.shouldLogMeAndStackParents()) {
-            shouldLog = true;
-            if (!userNuggetStack.isEmpty()) {
-                userNuggetStack.getLast().setShouldLogMeAndStackParents();
-            }
-        }
-        if (!shouldLog) {
-            // If we have filtered this nugget, by our filter design we will also have filtered any nuggets it encloses.
-            // This means it *must* be the last entry in operationNuggets, so we can safely remove it in O(1).
-            final QueryPerformanceNugget lastNugget = operationNuggets.remove(operationNuggets.size() - 1);
-            if (nugget != lastNugget) {
-                throw new IllegalStateException(
-                        "Filtered query performance nugget " + nugget + " (" + System.identityHashCode(nugget) +
-                                ") didn't match the last operation nugget " + lastNugget + " ("
-                                + System.identityHashCode(lastNugget) +
-                                ")");
-            }
-        }
-
-        if (userNuggetStack.isEmpty() && queryNugget != null && state == QueryState.RUNNING) {
-            startCatchAll();
-        }
-
-        return shouldLog;
-    }
+    /**
+     * @return A list of loggable operation performance data.
+     */
+    public abstract List<QueryPerformanceNugget> getOperationLevelPerformanceData();
 
     public interface EntrySetter {
         void set(long evaluationNumber, int operationNumber, boolean uninstrumented);
     }
 
-    public synchronized QueryPerformanceNugget getOuterNugget() {
-        return userNuggetStack.peekLast();
-    }
-
-    // returns true if uninstrumented code data was captured.
-    public void setQueryData(final EntrySetter setter) {
-        final long evaluationNumber;
-        final int operationNumber;
-        boolean uninstrumented = false;
-        synchronized (this) {
-            if (state != QueryState.RUNNING) {
-                setter.set(QueryConstants.NULL_INT, QueryConstants.NULL_INT, false);
-                return;
-            }
-            evaluationNumber = queryNugget.getEvaluationNumber();
-            operationNumber = operationNuggets.size();
-            if (operationNumber > 0) {
-                // ensure UPL and QOPL are consistent/joinable.
-                if (!userNuggetStack.isEmpty()) {
-                    userNuggetStack.getLast().setShouldLogMeAndStackParents();
-                } else {
-                    uninstrumented = true;
-                    if (catchAllNugget != null) {
-                        catchAllNugget.setShouldLogMeAndStackParents();
-                    }
-                }
-            }
-        }
-        setter.set(evaluationNumber, operationNumber, uninstrumented);
-    }
-
-    public void accumulate(@NotNull final QueryPerformanceRecorder subQuery) {
-        queryNugget.accumulate(subQuery.queryNugget);
-    }
-
-    private void clear() {
-        queryNugget = null;
-        catchAllNugget = null;
-        operationNuggets.clear();
-        userNuggetStack.clear();
-    }
-
-    public synchronized QueryPerformanceNugget getQueryLevelPerformanceData() {
-        return queryNugget;
-    }
-
-    public synchronized List<QueryPerformanceNugget> getOperationLevelPerformanceData() {
-        return operationNuggets;
-    }
-
-    @SuppressWarnings("unused")
-    public synchronized Table getTimingResultsAsTable() {
-        final int count = operationNuggets.size();
-        final String[] names = new String[count];
-        final Long[] timeNanos = new Long[count];
-        final String[] callerLine = new String[count];
-        final Boolean[] isTopLevel = new Boolean[count];
-        final Boolean[] isCompileTime = new Boolean[count];
-
-        for (int i = 0; i < operationNuggets.size(); i++) {
-            timeNanos[i] = operationNuggets.get(i).getTotalTimeNanos();
-            names[i] = operationNuggets.get(i).getName();
-            callerLine[i] = operationNuggets.get(i).getCallerLine();
-            isTopLevel[i] = operationNuggets.get(i).isTopLevel();
-            isCompileTime[i] = operationNuggets.get(i).getName().startsWith("Compile:");
-        }
-        return TableTools.newTable(
-                TableTools.col("names", names),
-                TableTools.col("line", callerLine),
-                TableTools.col("timeNanos", timeNanos),
-                TableTools.col("isTopLevel", isTopLevel),
-                TableTools.col("isCompileTime", isCompileTime));
-    }
+    /**
+     * TODO NATE NOCOMMIT WRITE JAVADOC
+     * 
+     * @param setter
+     */
+    public abstract void setQueryData(final EntrySetter setter);
 
     /**
      * Install {@link QueryPerformanceRecorder#recordPoolAllocation(java.util.function.Supplier)} as the allocation
@@ -417,7 +146,7 @@ public class QueryPerformanceRecorder implements Serializable {
 
             @Override
             public void recordAction(@NotNull String description, @NotNull Runnable action) {
-                QueryPerformanceRecorder.withNugget(description, action::run);
+                QueryPerformanceRecorder.withNugget(description, action);
             }
 
             @Override
@@ -474,20 +203,6 @@ public class QueryPerformanceRecorder implements Serializable {
         }
 
         return callerLineCandidate == null ? "Internal" : callerLineCandidate;
-    }
-
-    /*------------------------------------------------------------------------------------------------------------------
-     * TODO: the following execute-around methods might be better in a separate class or interface
-      */
-
-    private static void finishAndClear(QueryPerformanceNugget nugget, boolean needClear) {
-        if (nugget != null) {
-            nugget.done();
-        }
-
-        if (needClear) {
-            clearCallsite();
-        }
     }
 
     /**
@@ -713,5 +428,64 @@ public class QueryPerformanceRecorder implements Serializable {
      */
     public static void clearCallsite() {
         cachedCallsite.remove();
+    }
+
+    /**
+     * Finish the nugget and clear the callsite if needed.
+     *
+     * @param nugget an optional nugget
+     * @param needClear true if the callsite needs to be cleared
+     */
+    private static void finishAndClear(@Nullable final QueryPerformanceNugget nugget, final boolean needClear) {
+        if (nugget != null) {
+            nugget.done();
+        }
+
+        if (needClear) {
+            clearCallsite();
+        }
+    }
+
+    /**
+     * Dummy recorder for use when no recorder is installed.
+     */
+    private static class DummyQueryPerformanceRecorder extends QueryPerformanceRecorder {
+
+        @Override
+        public QueryPerformanceNugget getNugget(@NotNull final String name) {
+            return QueryPerformanceNugget.DUMMY_NUGGET;
+        }
+
+        @Override
+        public QueryPerformanceNugget getNugget(@NotNull final String name, long inputSize) {
+            return QueryPerformanceNugget.DUMMY_NUGGET;
+        }
+
+        @Override
+        public QueryPerformanceNugget getOuterNugget() {
+            return QueryPerformanceNugget.DUMMY_NUGGET;
+        }
+
+        @Override
+        boolean releaseNugget(@NotNull final QueryPerformanceNugget nugget) {
+            Assert.eqTrue(nugget == QueryPerformanceNugget.DUMMY_NUGGET,
+                    "nugget == QueryPerformanceNugget.DUMMY_NUGGET");
+            return false;
+        }
+
+        @Override
+        public QueryPerformanceNugget getQueryLevelPerformanceData() {
+            return QueryPerformanceNugget.DUMMY_NUGGET;
+        }
+
+        @Override
+        public List<QueryPerformanceNugget> getOperationLevelPerformanceData() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public void setQueryData(EntrySetter setter) {
+            setter.set(QueryConstants.NULL_LONG, QueryConstants.NULL_INT, false);
+        }
     }
 }
