@@ -18,13 +18,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * A request to export a {@link #table() table}.
  *
- * @see Session#export(ExportsRequest)
+ * @see ExportsRequest
  */
 @Immutable
 @SimpleStyle
-public abstract class ExportRequest {
+abstract class ExportRequest {
 
-    public interface Listener {
+    interface Listener {
         /**
          * Creates a stateful listener that warns on each creation responses that is not successful, and logs once on
          * error.
