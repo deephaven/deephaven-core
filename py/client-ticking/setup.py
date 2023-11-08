@@ -44,5 +44,5 @@ setup(
                    libraries=["dhcore_static"]
         )]),
     python_requires='>=3.8',
-    install_requires=['pydeephaven==0.30.0']
+    install_requires=['pydeephaven==0.31.0']
 )
