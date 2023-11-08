@@ -92,6 +92,12 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
             if (forceNanResult || nonNullCount <= 1) {
                 resultColumn.set(destination, Double.NaN);
             } else {
+                // If the sum has reach +/-Infinity, we are stuck with NaN forever.
+                if (Double.isInfinite(newSum) || Double.isInfinite(newSum2)) {
+                    resultColumn.set(destination, Double.NaN);
+                    return true;
+                }
+
                 // Perform the calculation in a way that minimizes the impact of FP error.
                 final double eps = Math.ulp(newSum2);
                 final double vs2bar = newSum * (newSum / nonNullCount);
@@ -157,6 +163,13 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
             resultColumn.set(destination, Double.NaN);
             return true;
         }
+
+        // If the sum has reach +/-Infinity, we are stuck with NaN forever.
+        if (Double.isInfinite(newSum) || Double.isInfinite(newSum2)) {
+            resultColumn.set(destination, Double.NaN);
+            return true;
+        }
+
         // Perform the calculation in a way that minimizes the impact of FP error.
         final double eps = Math.ulp(newSum2);
         final double vs2bar = newSum * (newSum / totalNormalCount);
