@@ -92,8 +92,20 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
             if (forceNanResult || nonNullCount <= 1) {
                 resultColumn.set(destination, Double.NaN);
             } else {
-                final double variance = (newSum2 - newSum * newSum / nonNullCount) / (nonNullCount - 1);
-                resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
+                // Perform the calculation in a way that minimizes the impact of FP error.
+                final double eps = Math.ulp(newSum2);
+                final double vs2bar = newSum * (newSum / nonNullCount);
+                final double delta = newSum2 - vs2bar;
+                final double rel_eps = delta / eps;
+
+                // Return zero when the variance is leq the FP error.
+                final double variance = Math.abs(rel_eps) > 1.0 ? delta / (nonNullCount - 1) : 0.0;
+                if (variance < 0.0) {
+                    // Negative variance can only be due to FP error.
+                    resultColumn.set(destination, 0.0);
+                } else {
+                    resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
+                }
             }
             return true;
         } else if (forceNanResult || (nonNullCounter.getCountUnsafe(destination) <= 1)) {
@@ -145,8 +157,20 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
             resultColumn.set(destination, Double.NaN);
             return true;
         }
-        final double variance = (newSum2 - newSum * newSum / totalNormalCount) / (totalNormalCount - 1);
-        resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
+        // Perform the calculation in a way that minimizes the impact of FP error.
+        final double eps = Math.ulp(newSum2);
+        final double vs2bar = newSum * (newSum / totalNormalCount);
+        final double delta = newSum2 - vs2bar;
+        final double rel_eps = delta / eps;
+
+        // Return zero when the variance is leq the FP error.
+        final double variance = Math.abs(rel_eps) > 1.0 ? delta / (totalNormalCount - 1) : 0.0;
+        if (variance < 0.0) {
+            // Negative variance can only be due to FP error.
+            resultColumn.set(destination, 0.0);
+        } else {
+            resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
+        }
         return true;
     }
 

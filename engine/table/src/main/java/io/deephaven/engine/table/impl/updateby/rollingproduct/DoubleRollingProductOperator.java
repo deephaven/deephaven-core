@@ -1,6 +1,6 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingProductOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatRollingProductOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.table.impl.updateby.rollingproduct;
@@ -30,6 +30,7 @@ public class DoubleRollingProductOperator extends BaseDoubleUpdateByOperator {
         protected AggregatingDoubleRingBuffer buffer;
 
         private int zeroCount;
+        private int nanCount;
 
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
@@ -48,6 +49,7 @@ public class DoubleRollingProductOperator extends BaseDoubleUpdateByOperator {
                     },
                     true);
             zeroCount = 0;
+            nanCount = 0;
         }
 
         @Override
@@ -76,6 +78,8 @@ public class DoubleRollingProductOperator extends BaseDoubleUpdateByOperator {
                     buffer.addUnsafe(val);
                     if (val == 0) {
                         zeroCount++;
+                    } else if (Double.isNaN(val)) {
+                        nanCount++;
                     }
                 }
             }
@@ -90,6 +94,8 @@ public class DoubleRollingProductOperator extends BaseDoubleUpdateByOperator {
 
                 if (val == NULL_DOUBLE) {
                     nullCount--;
+                } else if (Double.isNaN(val)) {
+                    --nanCount;
                 } else if (val == 0) {
                     --zeroCount;
                 }
@@ -101,7 +107,11 @@ public class DoubleRollingProductOperator extends BaseDoubleUpdateByOperator {
             if (buffer.size() == nullCount) {
                 outputValues.set(outIdx, NULL_DOUBLE);
             } else {
-                outputValues.set(outIdx, zeroCount > 0 ? 0.0 : buffer.evaluate());
+                if (nanCount > 0) {
+                    outputValues.set(outIdx, Double.NaN);
+                } else {
+                    outputValues.set(outIdx, zeroCount > 0 ? 0.0 : buffer.evaluate());
+                }
             }
         }
 
@@ -109,6 +119,7 @@ public class DoubleRollingProductOperator extends BaseDoubleUpdateByOperator {
         public void reset() {
             super.reset();
             zeroCount = 0;
+            nanCount = 0;
             buffer.clear();
         }
     }
