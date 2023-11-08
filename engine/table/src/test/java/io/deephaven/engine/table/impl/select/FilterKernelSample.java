@@ -66,6 +66,7 @@ import static io.deephaven.function.Sort.*;
 import static io.deephaven.gui.color.Color.*;
 
 import static io.deephaven.time.DateTimeUtils.*;
+import static io.deephaven.time.calendar.Calendars.*;
 import static io.deephaven.time.calendar.StaticCalendarMethods.*;
 import static io.deephaven.util.QueryConstants.*;
 
