@@ -398,11 +398,12 @@ final class ExportStates implements ExportService {
                         "Not expecting export creation responses for empty tickets");
             }
             final int exportId = ExportTicketHelper.ticketToExportId(value.getResultId().getTicket(), "export");
-            final State state = newStates.remove(exportId);
+            final State state = newStates.get(exportId);
             if (state == null) {
                 throw new IllegalStateException("Unable to find state for creation response");
             }
             state.onCreationResponse(value);
+            newStates.remove(exportId, state);
         }
 
         @Override
