@@ -378,6 +378,8 @@ final class ExportStates implements ExportService {
     private static final class BatchHandler
             implements StreamObserver<ExportedTableCreationResponse> {
 
+        private static final Logger log = LoggerFactory.getLogger(BatchHandler.class);
+
         private final Map<Integer, State> newStates;
 
         private BatchHandler(Map<Integer, State> newStates) {
@@ -398,11 +400,16 @@ final class ExportStates implements ExportService {
                         "Not expecting export creation responses for empty tickets");
             }
             final int exportId = ExportTicketHelper.ticketToExportId(value.getResultId().getTicket(), "export");
-            final State state = newStates.remove(exportId);
+            final State state = newStates.get(exportId);
             if (state == null) {
                 throw new IllegalStateException("Unable to find state for creation response");
             }
-            state.onCreationResponse(value);
+            try {
+                state.onCreationResponse(value);
+            } catch (RuntimeException e) {
+                log.error("state.onCreationResponse had unexpected exception", e);
+                state.onCreationError(e);
+            }
         }
 
         @Override
