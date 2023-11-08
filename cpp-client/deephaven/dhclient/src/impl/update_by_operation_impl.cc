@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/impl/update_by_operation_impl.h"
