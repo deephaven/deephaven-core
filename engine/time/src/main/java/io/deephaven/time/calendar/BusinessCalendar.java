@@ -1680,7 +1680,7 @@ public class BusinessCalendar extends Calendar {
         Require.neqNull(date, "date");
 
         if (days == 0) {
-            return isBusinessDay() ? null : date;
+            return isBusinessDay(date) ? null : date;
         }
 
         final int step = days > 0 ? 1 : -1;

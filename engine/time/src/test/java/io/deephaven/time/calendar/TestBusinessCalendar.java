@@ -1305,7 +1305,7 @@ public class TestBusinessCalendar extends TestCalendar {
         // 2023-07-15 normal day
 
         final ZoneId timeZone2 = ZoneId.of("America/New_York");
-        LocalDate d = LocalDate.of(2023, 7, 3);
+        LocalDate d = LocalDate.of(2023, 7, 2);
         String s = d.toString();
         ZonedDateTime z = d.atTime(6, 25).atZone(timeZone2);
         Instant i = z.toInstant();
@@ -1373,7 +1373,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(z6, bCalendar.plusNonBusinessDays(z, -4));
         assertEquals(i6, bCalendar.plusNonBusinessDays(i, -4));
 
-        d = LocalDate.of(2023, 7, 4);
+        d = LocalDate.of(2023, 7, 2);
         s = d.toString();
         z = d.atTime(6, 25).atZone(timeZone2);
         i = z.toInstant();
@@ -1400,7 +1400,7 @@ public class TestBusinessCalendar extends TestCalendar {
         // 2023-07-15 normal day
 
         final ZoneId timeZone2 = ZoneId.of("America/New_York");
-        LocalDate d = LocalDate.of(2023, 7, 3);
+        LocalDate d = LocalDate.of(2023, 7, 2);
         String s = d.toString();
         ZonedDateTime z = d.atTime(6, 25).atZone(timeZone2);
         Instant i = z.toInstant();
@@ -1468,7 +1468,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(z6, bCalendar.minusNonBusinessDays(z, 4));
         assertEquals(i6, bCalendar.minusNonBusinessDays(i, 4));
 
-        d = LocalDate.of(2023, 7, 4);
+        d = LocalDate.of(2023, 7, 2);
         s = d.toString();
         z = d.atTime(6, 24).atZone(timeZone2);
         i = z.toInstant();
