@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
 
-final class IntTransfer extends PrimitiveTransfer<WritableIntChunk<Values>, IntBuffer> {
+final class IntTransfer extends FillingPrimitiveTransfer<WritableIntChunk<Values>, IntBuffer> {
     static IntTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,
                               final int targetPageSizeInBytes) {
         final int targetElementsPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSizeInBytes / Integer.BYTES));

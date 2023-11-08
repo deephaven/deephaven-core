@@ -15,26 +15,26 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.IntBuffer;
-import java.time.LocalDate;
+import java.nio.LongBuffer;
+import java.time.LocalTime;
 
-final class DateVectorTransfer extends PrimitiveVectorTransfer<ObjectVector<LocalDate>, IntBuffer> {
-    // We encode LocalDate as primitive ints
-    DateVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
+final class TimeVectorTransfer extends PrimitiveVectorTransfer<ObjectVector<LocalTime>, LongBuffer> {
+    // We encode LocalTime as primitive longs
+    TimeVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int targetPageSizeInBytes) {
-        super(columnSource, tableRowSet, targetPageSizeInBytes / Integer.BYTES, targetPageSizeInBytes,
-                IntBuffer.allocate(targetPageSizeInBytes / Integer.BYTES), Integer.BYTES);
+        super(columnSource, tableRowSet, targetPageSizeInBytes / Long.BYTES, targetPageSizeInBytes,
+                LongBuffer.allocate(targetPageSizeInBytes / Long.BYTES), Long.BYTES);
     }
 
     @Override
     void resizeBuffer(final int length) {
-        buffer = IntBuffer.allocate(length);
+        buffer = LongBuffer.allocate(length);
     }
 
     @Override
-    void copyToBuffer(@NotNull final EncodedData<ObjectVector<LocalDate>> data) {
-        try (final CloseableIterator<LocalDate> dataIterator = data.encodedValues.iterator()) {
-            dataIterator.forEachRemaining((LocalDate t) -> buffer.put(DateTimeUtils.epochDaysAsInt(t)));
+    void copyToBuffer(@NotNull final EncodedData<ObjectVector<LocalTime>> data) {
+        try (final CloseableIterator<LocalTime> dataIterator = data.encodedValues.iterator()) {
+            dataIterator.forEachRemaining((LocalTime t) -> buffer.put(DateTimeUtils.nanosOfDay(t)));
         }
     }
 }

@@ -48,6 +48,8 @@ import io.deephaven.vector.*;
 import org.apache.commons.lang3.mutable.*;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.io.api.Binary;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
+import org.apache.parquet.schema.PrimitiveType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -60,6 +62,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -85,7 +88,7 @@ import static org.junit.Assert.*;
 public final class ParquetTableReadWriteTest {
 
     private static final String ROOT_FILENAME = ParquetTableReadWriteTest.class.getName() + "_root";
-    public static final int LARGE_TABLE_SIZE = 2_000_000;
+    private static final int LARGE_TABLE_SIZE = 2_000_000;
 
     private static File rootFile;
 
@@ -125,6 +128,7 @@ public final class ParquetTableReadWriteTest {
                         "someKey = `` + (int)(i /100)",
                         "someBiColumn = java.math.BigInteger.valueOf(ii)",
                         "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
+                        "someTimeColumn = i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
                         "nullKey = i < -1?`123`:null",
                         "nullIntColumn = (int)null",
                         "nullLongColumn = (long)null",
@@ -137,7 +141,8 @@ public final class ParquetTableReadWriteTest {
                         "nullTime = (Instant)null",
                         "nullBiColumn = (java.math.BigInteger)null",
                         "nullString = (String)null",
-                        "nullDateColumn = (java.time.LocalDate)null"));
+                        "nullDateColumn = (java.time.LocalDate)null",
+                        "nullTimeColumn = (java.time.LocalTime)null"));
         if (includeBigDecimal) {
             columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
         }
@@ -434,7 +439,8 @@ public final class ParquetTableReadWriteTest {
         writeReadTableTest(table, dest, ParquetInstructions.EMPTY);
     }
 
-    private static void writeReadTableTest(final Table table, final File dest, ParquetInstructions writeInstructions) {
+    private static void writeReadTableTest(final Table table, final File dest,
+            final ParquetInstructions writeInstructions) {
         ParquetTools.writeTable(table, dest, writeInstructions);
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(table, fromDisk);
@@ -503,6 +509,7 @@ public final class ParquetTableReadWriteTest {
                         "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
                         "someBiColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
                         "someDateColumn = new java.time.LocalDate[] {i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)}",
+                        "someTimeColumn = new java.time.LocalTime[] {i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)}",
                         "nullStringArrayColumn = new String[] {(String)null}",
                         "nullIntArrayColumn = new int[] {(int)null}",
                         "nullLongArrayColumn = new long[] {(long)null}",
@@ -514,7 +521,8 @@ public final class ParquetTableReadWriteTest {
                         "nullCharArrayColumn = new char[] {(char)null}",
                         "nullTimeArrayColumn = new Instant[] {(Instant)null}",
                         "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}",
-                        "nullDateColumn = new java.time.LocalDate[] {(java.time.LocalDate)null}"));
+                        "nullDateColumn = new java.time.LocalDate[] {(java.time.LocalDate)null}",
+                        "nullTimeColumn = new java.time.LocalTime[] {(java.time.LocalTime)null}"));
 
         Table arrayTable = TableTools.emptyTable(10000).select(Selectable.from(columns));
         final File dest = new File(rootFile + File.separator + "testArrayColumns.parquet");
@@ -1259,6 +1267,30 @@ public final class ParquetTableReadWriteTest {
         assertTableStatistics(groupedTableToSave, groupedTableDest);
     }
 
+    @Test
+    public void readWriteDateTimeTest() {
+        final int NUM_ROWS = 1000;
+        final Table table = TableTools.emptyTable(NUM_ROWS).view(
+                "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
+                "someTimeColumn = i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)");
+        final File dest = new File(rootFile, "readWriteDateTimeTest.parquet");
+        writeReadTableTest(table, dest);
+
+        // Verify that the types are correct in the schema
+        final ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+        final ColumnChunkMetaData dateColMetadata = metadata.getBlocks().get(0).getColumns().get(0);
+        assertTrue(dateColMetadata.toString().contains("someDateColumn"));
+        assertEquals(PrimitiveType.PrimitiveTypeName.INT32, dateColMetadata.getPrimitiveType().getPrimitiveTypeName());
+        assertEquals(LogicalTypeAnnotation.dateType(), dateColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
+
+        final ColumnChunkMetaData timeColMetadata = metadata.getBlocks().get(0).getColumns().get(1);
+        assertTrue(timeColMetadata.toString().contains("someTimeColumn"));
+        assertEquals(PrimitiveType.PrimitiveTypeName.INT64, timeColMetadata.getPrimitiveType().getPrimitiveTypeName());
+        final boolean isAdjustedToUTC = true;
+        assertEquals(LogicalTypeAnnotation.timeType(isAdjustedToUTC, LogicalTypeAnnotation.TimeUnit.NANOS),
+                timeColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
+    }
+
     /**
      * Test our manual verification techniques against a file generated by pyarrow. Here is the code to produce the file
      * when/if this file needs to be re-generated or changed.
@@ -1325,6 +1357,20 @@ public final class ParquetTableReadWriteTest {
         // Run the verification code against DHC writer stats.
         assertTableStatistics(pyarrowFromDisk, dhDest);
         assertTableStatistics(dhFromDisk, dhDest);
+    }
+
+    @Test
+    public void inferParquetOrderLastKey() {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "inferParquetOrder");
+        parentDir.mkdir();
+        final TableDefinition td1 = TableDefinition.of(ColumnDefinition.ofInt("Foo"));
+        final TableDefinition td2 =
+                TableDefinition.of(ColumnDefinition.ofInt("Foo"), ColumnDefinition.ofString("Bar"));
+        ParquetTools.writeTable(TableTools.newTable(td1), new File(parentDir, "01.parquet"));
+        ParquetTools.writeTable(TableTools.newTable(td2), new File(parentDir, "02.parquet"));
+        final Table table = ParquetTools.readTable(parentDir);
+        assertEquals(td2, table.getDefinition());
     }
 
     private void assertTableStatistics(Table inputTable, File dest) {

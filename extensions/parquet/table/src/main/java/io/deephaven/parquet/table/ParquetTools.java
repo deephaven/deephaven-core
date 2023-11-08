@@ -548,8 +548,8 @@ public class ParquetTools {
     /**
      * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,
      * a metadata file, or a directory. If it's a directory, it additionally tries to guess the layout to use. Unless a
-     * metadata file is supplied or discovered in the directory, the first found parquet file will be used to infer
-     * schema.
+     * metadata file is supplied or discovered in the directory, the highest (by {@link ParquetTableLocationKey location
+     * key} order) location found will be used to infer schema.
      *
      * @param source The source file or directory
      * @param instructions Instructions for reading
@@ -677,8 +677,9 @@ public class ParquetTools {
     }
 
     /**
-     * Reads in a table from files discovered with {@code locationKeyFinder} using a definition built from the first
-     * location found, which must have non-null partition values for all partition keys.
+     * Reads in a table from files discovered with {@code locationKeyFinder} using a definition built from the highest
+     * (by {@link ParquetTableLocationKey location key} order) location found, which must have non-null partition values
+     * for all partition keys.
      *
      * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions Instructions for customizations while reading
@@ -687,10 +688,9 @@ public class ParquetTools {
     public static Table readPartitionedTableInferSchema(
             @NotNull final TableLocationKeyFinder<ParquetTableLocationKey> locationKeyFinder,
             @NotNull final ParquetInstructions readInstructions) {
-        final RecordingLocationKeyFinder<ParquetTableLocationKey> initialKeys = new RecordingLocationKeyFinder<>();
-        locationKeyFinder.findKeys(initialKeys);
-        final List<ParquetTableLocationKey> foundKeys = initialKeys.getRecordedKeys();
-        if (foundKeys.isEmpty()) {
+        final KnownLocationKeyFinder<ParquetTableLocationKey> sortedKeys =
+                KnownLocationKeyFinder.copyFrom(locationKeyFinder, Comparator.naturalOrder());
+        if (sortedKeys.getKnownKeys().isEmpty()) {
             if (readInstructions.isRefreshing()) {
                 throw new IllegalArgumentException(
                         "Unable to infer schema for a refreshing partitioned parquet table when there are no initial parquet files");
@@ -699,18 +699,18 @@ public class ParquetTools {
         }
         // TODO (https://github.com/deephaven/deephaven-core/issues/877): Support schema merge when discovering multiple
         // parquet files
-        final ParquetTableLocationKey firstKey = foundKeys.get(0);
+        final ParquetTableLocationKey lastKey = sortedKeys.getKnownKeys().get(sortedKeys.getKnownKeys().size() - 1);
         final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = convertSchema(
-                firstKey.getFileReader().getSchema(),
-                firstKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
+                lastKey.getFileReader().getSchema(),
+                lastKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                 readInstructions);
         final List<ColumnDefinition<?>> allColumns =
-                new ArrayList<>(firstKey.getPartitionKeys().size() + schemaInfo.getFirst().size());
-        for (final String partitionKey : firstKey.getPartitionKeys()) {
-            final Comparable<?> partitionValue = firstKey.getPartitionValue(partitionKey);
+                new ArrayList<>(lastKey.getPartitionKeys().size() + schemaInfo.getFirst().size());
+        for (final String partitionKey : lastKey.getPartitionKeys()) {
+            final Comparable<?> partitionValue = lastKey.getPartitionValue(partitionKey);
             if (partitionValue == null) {
-                throw new IllegalArgumentException("First location key " + firstKey
-                        + " has null partition value at partition key " + partitionKey);
+                throw new IllegalArgumentException(String.format(
+                        "Last location key %s has null partition value at partition key %s", lastKey, partitionKey));
             }
 
             // Primitives should be unboxed, except booleans
@@ -723,7 +723,7 @@ public class ParquetTools {
                     ColumnDefinition.ColumnType.Partitioning));
         }
         allColumns.addAll(schemaInfo.getFirst());
-        return readPartitionedTable(readInstructions.isRefreshing() ? locationKeyFinder : initialKeys,
+        return readPartitionedTable(readInstructions.isRefreshing() ? locationKeyFinder : sortedKeys,
                 schemaInfo.getSecond(), TableDefinition.of(allColumns));
     }
 

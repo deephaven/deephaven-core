@@ -1,2 +1,2 @@
 # protoc-gen-contextual-auth-wiring
-java -cp authorization-codegen/build/libs/deephaven-authorization-codegen-0.30.0-all.jar io.deephaven.auth.codegen.GenerateContextualAuthWiring
+java -cp authorization-codegen/build/libs/deephaven-authorization-codegen-0.31.0-all.jar io.deephaven.auth.codegen.GenerateContextualAuthWiring

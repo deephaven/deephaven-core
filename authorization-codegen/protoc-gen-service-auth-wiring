@@ -1,2 +1,2 @@
 # protoc-gen-service-auth-wiring
-java -cp authorization-codegen/build/libs/deephaven-authorization-codegen-0.30.0-all.jar io.deephaven.auth.codegen.GenerateServiceAuthWiring
+java -cp authorization-codegen/build/libs/deephaven-authorization-codegen-0.31.0-all.jar io.deephaven.auth.codegen.GenerateServiceAuthWiring
