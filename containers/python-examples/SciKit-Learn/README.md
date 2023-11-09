@@ -19,6 +19,6 @@ To launch Deephaven, execute the following in your deployment directory:
 compose_file=https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/SciKit-Learn/docker-compose.yml
 curl  -O "${compose_file}"
 
-docker-compose pull
-docker-compose up -d
+docker compose pull
+docker compose up -d
 ```
