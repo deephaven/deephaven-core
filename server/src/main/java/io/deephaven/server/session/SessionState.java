@@ -1487,11 +1487,11 @@ public class SessionState {
          * @return the submitted export object
          */
         public ExportObject<T> submit(final Callable<T> exportMain) {
-            export.setWork(exportMain, errorHandler, successHandler, requiresSerialQueue);
             if (export.queryPerformanceRecorder != null && !export.qprIsForBatch) {
-                // transfer ownership of the qpr to the export
+                // transfer ownership of the qpr to the export before it can be resumed by the scheduler
                 export.queryPerformanceRecorder.suspendQuery();
             }
+            export.setWork(exportMain, errorHandler, successHandler, requiresSerialQueue);
             return export;
         }
 
