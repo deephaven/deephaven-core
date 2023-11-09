@@ -31,6 +31,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -183,6 +184,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     @Override
+    @NotNull
     public List<String[]> getDataIndexColumns() {
         return dataIndexes.stream().map(di -> di.columns().toArray(String[]::new)).collect(Collectors.toList());
     }
@@ -193,7 +195,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
         for (final DataIndexInfo dataIndex : dataIndexes) {
             if (dataIndex.matchesColumns(columns)) {
                 // Validate the index file exists (without loading and parsing it).
-                return new File(dataIndex.indexTablePath()).exists();
+                ParquetTools.IndexFileMetaData metaData = ParquetTools.getIndexFileMetaData(
+                        getParquetFile(),
+                        tableInfo,
+                        columns);
+                return metaData != null && Files.exists(Path.of(metaData.filename));
             }
         }
         return false;

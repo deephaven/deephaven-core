@@ -260,7 +260,7 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public Table baseTable() {
+    public Table baseIndexTable() {
         return columnSourceManager.locationTable();
     }
 

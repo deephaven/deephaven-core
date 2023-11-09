@@ -74,7 +74,8 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public @Nullable Table table(final boolean usePrev) {
+    @NotNull
+    public Table table(final boolean usePrev) {
         if (usePrev && isRefreshing()) {
             final Table indexTable = table();
 
@@ -136,7 +137,7 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public Table baseTable() {
+    public Table baseIndexTable() {
         return table();
     }
 

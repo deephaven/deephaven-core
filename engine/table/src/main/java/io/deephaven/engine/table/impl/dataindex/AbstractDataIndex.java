@@ -96,5 +96,22 @@ public abstract class AbstractDataIndex implements DataIndex {
             return start;
         };
     }
+
+    /**
+     * Return the underlying table for this index. The resultant table should not be read directly; this method is
+     * provided for snapshot controls to verify whether the parent table has ticked this cycle.
+     *
+     * @return the underlying table supplying this index
+     */
+    public abstract Table baseIndexTable();
+
+    /**
+     * Whether this index is potentially usable. This will return {@code true} when there are no known issues for this
+     * data index. This performs fast checks, such as verifying all locations have index table files but does not fully
+     * guarantee that the index is complete and loadable.
+     *
+     * @return true if the index is potentially usable, false otherwise
+     */
+    public abstract boolean validate();
 }
 

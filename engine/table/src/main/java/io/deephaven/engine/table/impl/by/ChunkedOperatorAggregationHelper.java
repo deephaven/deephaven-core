@@ -19,6 +19,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sort.findruns.IntFindRunsKernel;
@@ -124,7 +125,9 @@ public class ChunkedOperatorAggregationHelper {
             final DataIndexer dataIndexer = DataIndexer.of(input.getRowSet());
             final DataIndex dataIndex = dataIndexer.getDataIndex(input, keyNames);
             if (dataIndex != null) {
-                snapshotControl = new OperationSnapshotControlEx(input, (BaseTable) dataIndex.baseTable());
+                snapshotControl =
+                        new OperationSnapshotControlEx(input,
+                                (BaseTable) ((AbstractDataIndex) dataIndex).baseIndexTable());
             } else {
                 snapshotControl = input.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
             }

@@ -9,6 +9,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
 import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndexImpl;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -57,12 +58,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     public boolean hasDataIndex(final Table table, final String... keyColumnNames) {
-        final DataIndex index = getDataIndex(table, keyColumnNames);
-        if (index == null || !index.validate()) {
-            // We do not have a usable index for these columns.
-            return false;
-        }
-        return true;
+        final Collection<ColumnSource<?>> keyColumns = Arrays.stream(keyColumnNames)
+                .map(table::getColumnSource).collect(Collectors.toList());
+        return hasDataIndex(keyColumns);
     }
 
     public boolean hasDataIndex(final ColumnSource<?>... keyColumns) {
@@ -81,11 +79,8 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         final DataIndex dataIndex = findIndex(dataIndexes, keyColumns);
         // It's possible that a potentially indexed column might be corrupt or incomplete when we try to use it.
         // Test it now to make sure that we don't falsely claim to have a functional index.
-        if (dataIndex != null && dataIndex.validate()) {
-            return true;
-        }
+        return dataIndex != null && ((AbstractDataIndex) dataIndex).validate();
         // TODO: should we remove the index if it's corrupt? Could it repair itself, probably not.
-        return false;
     }
 
     public boolean canMakeDataIndex(final Table table, final String... keyColumnNames) {

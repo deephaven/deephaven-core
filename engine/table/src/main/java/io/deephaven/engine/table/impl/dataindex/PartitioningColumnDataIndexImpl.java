@@ -227,7 +227,7 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public Table baseTable() {
+    public Table baseIndexTable() {
         return indexTable;
     }
 

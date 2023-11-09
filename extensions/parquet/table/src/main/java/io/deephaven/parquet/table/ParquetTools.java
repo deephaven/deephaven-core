@@ -895,6 +895,53 @@ public class ParquetTools {
     public static final ParquetInstructions UNCOMPRESSED =
             ParquetInstructions.builder().setCompressionCodecName("UNCOMPRESSED").build();
 
+    public static class IndexFileMetaData {
+        public String filename;
+        public GroupingColumnInfo groupingColumnInfo;
+        public DataIndexInfo dataIndexInfo;
+
+        IndexFileMetaData(String filename, GroupingColumnInfo groupingColumnInfo, DataIndexInfo dataIndexInfo) {
+            this.filename = filename;
+            this.groupingColumnInfo = groupingColumnInfo;
+            this.dataIndexInfo = dataIndexInfo;
+        }
+    }
+
+    public static IndexFileMetaData getIndexFileMetaData(
+            @NotNull final File tableFile,
+            @NotNull TableInfo info,
+            @NotNull final String... keyColumnNames) {
+        final Path parentPath = tableFile.toPath().getParent();
+
+        if (keyColumnNames.length == 1) {
+            final GroupingColumnInfo groupingColumnInfo = info.groupingColumnMap().get(keyColumnNames[0]);
+            if (groupingColumnInfo != null) {
+                return new IndexFileMetaData(
+                        parentPath.resolve(groupingColumnInfo.groupingTablePath()).toString(),
+                        groupingColumnInfo,
+                        null);
+            }
+        }
+
+        // Either there are more than 1 key columns, or there was no grouping info, so lets see if there was a
+        // DataIndex.
+        final DataIndexInfo di = info.dataIndexes().stream()
+                .filter(item -> item.matchesColumns(keyColumnNames))
+                .findFirst()
+                .orElse(null);
+
+        if (di != null) {
+            return new IndexFileMetaData(
+                    parentPath.resolve(di.indexTablePath()).toString(),
+                    null,
+                    di);
+        }
+
+        // We have no metadata and we no longer fallback to a default file.
+        return null;
+
+    }
+
     // region Indexing
     /**
      * Read a Data Index table from disk. If {@link TableInfo} are provided, it will be used to aid in locating the
@@ -918,73 +965,40 @@ public class ParquetTools {
         // 3: There are > 1 columns
         // - These are written in Deephaven format.
 
-        // final SourceTableInstructions sourceTableInstructions = SourceTableInstructions.builder()
-        // .groupingDisabled(true)
-        // .build();
-
-        final Path parentPath = tableFile.toPath().getParent();
-        if (info != null) {
-            // If we've got metadata, we can try to use that to locate an index or grouping
-            if (keyColumnNames.length == 1) {
-                final GroupingColumnInfo groupingColumnInfo = info.groupingColumnMap().get(keyColumnNames[0]);
-                final String groupingFileName;
-                if (groupingColumnInfo != null) {
-                    try {
-                        groupingFileName = parentPath.resolve(groupingColumnInfo.groupingTablePath()).toString();
-                        // final Table indexTable = ParquetTools.readTable(groupingFileName, ParquetInstructions.EMPTY,
-                        // sourceTableInstructions);
-                        final Table indexTable = ParquetTools.readTable(groupingFileName, ParquetInstructions.EMPTY);
-                        if (!indexTable.isEmpty() && indexTable.hasColumns(GROUPING_KEY, BEGIN_POS, END_POS)) {
-                            // This table will be written like the older style grouping format of Key, start, end so we
-                            // have to convert
-                            return indexTable.select(String.format("%s=%s", keyColumnNames[0], GROUPING_KEY),
-                                    String.format(
-                                            "%s=(io.deephaven.engine.rowset.RowSet)io.deephaven.engine.rowset.RowSetFactory.fromRange(%s, %s-1)",
-                                            INDEX_COL_NAME, BEGIN_POS, END_POS));
-                        }
-                        // There's a table here, but it doesn't look like a grouping table.
-                        return null;
-                    } catch (final TableDataException ignored) {
-                        // Metadata said the table should be here, but it isn't, so we won't try any harder
-                        return null;
-                    }
-                }
-            }
-
-            // Either there are more than 1 key columns, or there was no grouping info, so lets see if there was a
-            // DataIndex.
-            try {
-                final DataIndexInfo di = info.dataIndexes().stream()
-                        .filter(item -> item.matchesColumns(keyColumnNames))
-                        .findFirst()
-                        .orElse(null);
-
-                if (di != null) {
-                    // There was! Cool. Let's try to load it.
-                    return readTable(parentPath.resolve(di.indexTablePath()).toFile(), ParquetInstructions.EMPTY);
-                }
-            } catch (final TableDataException ignored) {
-                // The metadata lied to us again, don't try harder here either.
-                return null;
-            }
+        if (info == null) {
+            throw new IllegalStateException("TableInfo metadata must be provided to read a data index table");
         }
 
-        // There's no information in the metadata, or we have no metadata, so try the default file.
-        try {
-            return readTable(computeDataIndexTableName(tableFile.toString(), keyColumnNames),
-                    ParquetInstructions.EMPTY);
-        } catch (final TableDataException ignored) {
-            // Oh well, we tried as reasonably hardly.
-            return null;
-        }
-    }
+        IndexFileMetaData metaData = getIndexFileMetaData(tableFile, info, keyColumnNames);
 
-    public static String computeDataIndexTableName(@NotNull final String path, @NotNull final String... columnName) {
-        final String prefix = minusParquetSuffix(path);
-        Arrays.sort(columnName);
-        // Column names with underscores are allowed, so this is not trivially reversible. But we only transform
-        // from columns to filename so this isn't an issue.
-        return prefix + "_" + String.join("_", columnName) + "_grouping.parquet";
+        if (metaData == null) {
+            throw new IllegalStateException(
+                    String.format(
+                            "No index metadata for table %s with index key columns %s was present in TableInfo",
+                            tableFile,
+                            Arrays.toString(keyColumnNames)));
+        }
+
+        if (metaData.groupingColumnInfo != null) {
+            final Table indexTable = ParquetTools.readTable(metaData.filename, ParquetInstructions.EMPTY);
+            if (!indexTable.isEmpty() && indexTable.hasColumns(GROUPING_KEY, BEGIN_POS, END_POS)) {
+                // This table will be written like the older style grouping format of Key, start, end so we
+                // have to convert
+                return indexTable.select(String.format("%s=%s", keyColumnNames[0], GROUPING_KEY),
+                        String.format(
+                                "%s=(io.deephaven.engine.rowset.RowSet)io.deephaven.engine.rowset.RowSetFactory.fromRange(%s, %s-1)",
+                                INDEX_COL_NAME, BEGIN_POS, END_POS));
+            } else {
+                throw new IllegalStateException(
+                        String.format(
+                                "Index table %s for table %s was not in the expected format. Expected columns %s but encountered %s",
+                                metaData.filename,
+                                tableFile,
+                                Arrays.toString(new String[] {GROUPING_KEY, BEGIN_POS, END_POS}),
+                                Arrays.toString(indexTable.getDefinition().getColumnNamesArray())));
+            }
+        }
+        return readTable(metaData.filename, ParquetInstructions.EMPTY);
     }
     // endregion
 

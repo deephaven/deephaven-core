@@ -12,16 +12,19 @@ import java.util.Optional;
 @BuildableStyle
 public interface DataIndexTransformer {
 
+    /** The row set to {@link RowSet#intersect(RowSet)} the output row sets. */
     Optional<RowSet> intersectRowSet();
 
+    /** The row set to {@link RowSet#invert(RowSet)} the output row sets. */
     Optional<RowSet> invertRowSet();
 
+    /** Whether to sort the output table by the first row key in each output row set. */
     @Value.Default
     default boolean sortByFirstRowKey() {
         return false;
     }
 
-    Map<ColumnSource<?>, ColumnSource<?>> keyColumnRemap();
+    Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap();
 
     @Value.Default
     default boolean immutable() {
@@ -40,19 +43,22 @@ public interface DataIndexTransformer {
         /** Invert the output row sets with the provided {@link RowSet}. */
         Builder invertRowSet(RowSet rowSet);
 
-        /** Sort the index table by the first key within each row set. */
+        /** Whether to sort the index table by the first row key within each row set. */
         @SuppressWarnings("unused")
         Builder sortByFirstRowKey(boolean sort);
 
-        /** Remap the new key columns to the old columns. */
+        /** Map the new key columns to the old columns. */
         @SuppressWarnings("unused")
-        Builder putKeyColumnRemap(ColumnSource<?> key, ColumnSource<?> value);
+        Builder putOldToNewColumnMap(ColumnSource<?> key, ColumnSource<?> value);
 
+        /** Map the new key columns to the old columns. */
         @SuppressWarnings("unused")
-        Builder putKeyColumnRemap(Map.Entry<? extends ColumnSource<?>, ? extends ColumnSource<?>> entry);
+        Builder putOldToNewColumnMap(Map.Entry<? extends ColumnSource<?>, ? extends ColumnSource<?>> entry);
 
-        Builder putAllKeyColumnRemap(Map<? extends ColumnSource<?>, ? extends ColumnSource<?>> entries);
+        /** Map the new key columns to the old columns. */
+        Builder putAllOldToNewColumnMap(Map<? extends ColumnSource<?>, ? extends ColumnSource<?>> entries);
 
+        /** Whether to force the materialized table to be static and immutable. */
         Builder immutable(boolean immutable);
 
         DataIndexTransformer build();

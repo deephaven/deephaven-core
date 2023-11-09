@@ -51,7 +51,7 @@ public class DerivedDataIndex extends AbstractDataIndex {
         this.parentIndex = parentIndex;
         this.transformer = transformer;
 
-        if (transformer.keyColumnRemap().isEmpty()) {
+        if (transformer.oldToNewColumnMap().isEmpty()) {
             columnNameMap = null;
             return;
         }
@@ -64,7 +64,7 @@ public class DerivedDataIndex extends AbstractDataIndex {
             final ColumnSource<?> originalColumnSource = entry.getKey();
             // Use the remapped column source (or the original source if not remapped) as the key.
             columnNameMap.put(
-                    transformer.keyColumnRemap().getOrDefault(originalColumnSource, originalColumnSource),
+                    transformer.oldToNewColumnMap().getOrDefault(originalColumnSource, originalColumnSource),
                     entry.getValue());
         }
 
@@ -215,25 +215,32 @@ public class DerivedDataIndex extends AbstractDataIndex {
 
     @Override
     public boolean isRefreshing() {
-        return parentIndex.isRefreshing();
+        return !staticResult() && parentIndex.isRefreshing();
     }
 
     @Override
-    public DataIndex transform(final DataIndexTransformer transformer) {
+    public DataIndex transform(@NotNull final DataIndexTransformer transformer) {
         return DerivedDataIndex.from(this, transformer);
     }
 
-    /** Return true if the set of operations may modify the parent index table row set. **/
+    /** Return true if the set of transformations may modify the parent index table row set. **/
     private boolean mayModifyParentIndexRowSet() {
         return transformer.intersectRowSet().isPresent()
                 || transformer.invertRowSet().isPresent()
                 || transformer.sortByFirstRowKey();
     }
 
+    /** Return true if the set of transformations force the materialized index table to become static. **/
+    private boolean staticResult() {
+        return transformer.intersectRowSet().isPresent()
+                || transformer.invertRowSet().isPresent()
+                || transformer.immutable();
+    }
+
     @Override
-    public Table baseTable() {
+    public Table baseIndexTable() {
         // Return the parent index's base table.
-        return parentIndex.baseTable();
+        return ((AbstractDataIndex) parentIndex).baseIndexTable();
     }
 
     // region DataIndex materialization operations
@@ -416,6 +423,6 @@ public class DerivedDataIndex extends AbstractDataIndex {
 
     @Override
     public boolean validate() {
-        return parentIndex.validate();
+        return ((AbstractDataIndex) parentIndex).validate();
     }
 }

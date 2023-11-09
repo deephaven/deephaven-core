@@ -3,7 +3,6 @@ package io.deephaven.engine.table;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -22,8 +21,7 @@ public interface DataIndex {
      * <dt>One group-by column</dt>
      * <dd>Singular keys are (boxed, if needed) objects</dd>
      * <dt>Multiple group-by columns</dt>
-     * <dd>Compound keys are {@code Object[]} of (boxed, if needed) objects, in the order of the aggregation's group-by
-     * columns</dd>
+     * <dd>Compound keys are {@code Object[]} of (boxed, if needed) objects, in the order of the index key columns</dd>
      * </dl>
      */
     interface PositionLookup {
@@ -100,7 +98,8 @@ public interface DataIndex {
     Table table(final boolean usePrev);
 
     /**
-     * Build a {@link RowSetLookup lookup} function of index row sets for this index.
+     * Build a {@link RowSetLookup lookup} function of index row sets for this index. If {@link #isRefreshing()} is
+     * true, this lookup function is guaranteed to be accurate only for the current cycle.
      *
      * @return a function that provides map-like lookup of matching rows from an index key.
      */
@@ -108,7 +107,8 @@ public interface DataIndex {
     RowSetLookup rowSetLookup();
 
     /**
-     * Build a {@link PositionLookup lookup} of positions for this index.
+     * Build a {@link PositionLookup lookup} of positions for this index. If {@link #isRefreshing()} is true, this
+     * lookup function is guaranteed to be accurate only for the current cycle.
      *
      * @return a function that provides map-like lookup of index table positions from an index key.
      */
@@ -116,7 +116,8 @@ public interface DataIndex {
     PositionLookup positionLookup();
 
     /**
-     * Transform and return a new {@link DataIndex} with the provided transform operations applied.
+     * Transform and return a new {@link DataIndex} with the provided transform operations applied. Some transformations
+     * will force the index to become static even when the source table is refreshing. *
      *
      * @param transformer the {@link DataIndexTransformer} containing the desired transformations.
      *
@@ -125,29 +126,11 @@ public interface DataIndex {
     DataIndex transform(final @NotNull DataIndexTransformer transformer);
 
     /**
-     * Return whether the data index is refreshing (i.e. not static).
+     * Whether the materialized data index table is refreshing. Some transformations will force the index to become
+     * static even when the source table is refreshing.
      *
-     * @return true when the underlying index is refreshing, false otherwise.
+     * @return true when the materialized index table is refreshing, false otherwise.
      */
     boolean isRefreshing();
-
-    /**
-     * Return the underlying table for this index. The resultant table should not be read directly; this method is
-     * provided for synchronization purposes when performing concurrent operations on the index.
-     *
-     * @return the underlying table supplying this index
-     */
-    @InternalUseOnly
-    Table baseTable();
-
-    /**
-     * Whether this index is potentially usable. This will return {@code true} when there are no known issues for this
-     * data index. This performs fast checks, such as verifying all locations have index table files but does not fully
-     * guarantee that the index is complete and loadable.
-     *
-     * @return true if the index is potentially usable, false otherwise
-     */
-    @InternalUseOnly
-    boolean validate();
 }
 
