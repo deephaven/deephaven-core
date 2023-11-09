@@ -351,14 +351,17 @@ public class ParquetSchemaReader {
             @Override
             public Optional<Class<?>> visit(
                     final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
-                final LogicalTypeAnnotation.TimeUnit unit = timestampLogicalType.getUnit();
-                final boolean isAdjustedToUTC = timestampLogicalType.isAdjustedToUTC();
-                if (unit != LogicalTypeAnnotation.TimeUnit.MILLIS && unit != LogicalTypeAnnotation.TimeUnit.MICROS
-                        && unit != LogicalTypeAnnotation.TimeUnit.NANOS) {
-                    errorString.setValue("TimestampLogicalType, isAdjustedToUTC=" + isAdjustedToUTC + ", unit=" + unit);
-                    return Optional.empty();
+                switch (timestampLogicalType.getUnit()) {
+                    case MILLIS:
+                    case MICROS:
+                    case NANOS:
+                        // TIMESTAMP fields if adjusted to UTC are read as Instants, else as LocalDatetimes.
+                        return timestampLogicalType.isAdjustedToUTC() ? Optional.of(Instant.class)
+                                : Optional.of(LocalDateTime.class);
                 }
-                return isAdjustedToUTC ? Optional.of(Instant.class) : Optional.of(LocalDateTime.class);
+                errorString.setValue("TimestampLogicalType, isAdjustedToUTC=" + timestampLogicalType.isAdjustedToUTC()
+                        + ", unit=" + timestampLogicalType.getUnit());
+                return Optional.empty();
             }
 
             @Override
