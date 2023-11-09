@@ -517,83 +517,87 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 "TableService#batch(session=" + session.getSessionId() + ")",
                 QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        // step 1: initialize exports
-        final List<BatchExportBuilder<?>> exportBuilders = request.getOpsList().stream()
-                .map(op -> createBatchExportBuilder(session, queryPerformanceRecorder, op))
-                .collect(Collectors.toList());
+        try {
+            // step 1: initialize exports
+            final List<BatchExportBuilder<?>> exportBuilders = request.getOpsList().stream()
+                    .map(op -> createBatchExportBuilder(session, queryPerformanceRecorder, op))
+                    .collect(Collectors.toList());
 
-        // step 2: resolve dependencies
-        exportBuilders.forEach(export -> export.resolveDependencies(session, exportBuilders));
+            // step 2: resolve dependencies
+            exportBuilders.forEach(export -> export.resolveDependencies(session, exportBuilders));
 
-        // step 3: check for cyclical dependencies; this is our only opportunity to check non-export cycles
-        // TODO: check for cycles
+            // step 3: check for cyclical dependencies; this is our only opportunity to check non-export cycles
+            // TODO: check for cycles
 
-        // step 4: submit the batched operations
-        final AtomicInteger remaining = new AtomicInteger(1 + exportBuilders.size());
-        final AtomicReference<StatusRuntimeException> firstFailure = new AtomicReference<>();
+            // step 4: submit the batched operations
+            final AtomicInteger remaining = new AtomicInteger(1 + exportBuilders.size());
+            final AtomicReference<StatusRuntimeException> firstFailure = new AtomicReference<>();
 
-        final Runnable onOneResolved = () -> {
-            int numRemaining = remaining.decrementAndGet();
-            if (numRemaining > 0) {
-                return;
-            }
-            Assert.geqZero(numRemaining, "numRemaining");
+            final Runnable onOneResolved = () -> {
+                int numRemaining = remaining.decrementAndGet();
+                if (numRemaining > 0) {
+                    return;
+                }
+                Assert.geqZero(numRemaining, "numRemaining");
 
-            try {
-                queryPerformanceRecorder.resumeQuery();
-                final QueryProcessingResults results = new QueryProcessingResults(queryPerformanceRecorder);
-                final StatusRuntimeException failure = firstFailure.get();
-                if (failure != null) {
-                    results.setException(failure.getMessage());
-                    safelyError(responseObserver, failure);
+                try {
+                    queryPerformanceRecorder.resumeQuery();
+                    final QueryProcessingResults results = new QueryProcessingResults(queryPerformanceRecorder);
+                    final StatusRuntimeException failure = firstFailure.get();
+                    if (failure != null) {
+                        results.setException(failure.getMessage());
+                        safelyError(responseObserver, failure);
+                    } else {
+                        safelyComplete(responseObserver);
+                    }
+                    queryPerformanceRecorder.endQuery();
+                    EngineMetrics.getInstance().logQueryProcessingResults(results);
+                } finally {
+                    QueryPerformanceRecorder.resetInstance();
+                }
+            };
+
+            for (int i = 0; i < exportBuilders.size(); ++i) {
+                final BatchExportBuilder<?> exportBuilder = exportBuilders.get(i);
+                final int exportId = exportBuilder.exportBuilder.getExportId();
+
+                final TableReference resultId;
+                if (exportId == SessionState.NON_EXPORT_ID) {
+                    resultId = TableReference.newBuilder().setBatchOffset(i).build();
                 } else {
-                    safelyComplete(responseObserver);
+                    resultId = ExportTicketHelper.tableReference(exportId);
                 }
-                queryPerformanceRecorder.endQuery();
-                EngineMetrics.getInstance().logQueryProcessingResults(results);
-            } finally {
-                QueryPerformanceRecorder.resetInstance();
+
+                exportBuilder.exportBuilder.onError((result, errorContext, cause, dependentId) -> {
+                    String errorInfo = errorContext;
+                    if (dependentId != null) {
+                        errorInfo += " dependency: " + dependentId;
+                    }
+                    if (cause instanceof StatusRuntimeException) {
+                        errorInfo += " cause: " + cause.getMessage();
+                        firstFailure.compareAndSet(null, (StatusRuntimeException) cause);
+                    }
+                    final ExportedTableCreationResponse response = ExportedTableCreationResponse.newBuilder()
+                            .setResultId(resultId)
+                            .setSuccess(false)
+                            .setErrorInfo(errorInfo)
+                            .build();
+                    safelyOnNext(responseObserver, response);
+                    onOneResolved.run();
+                }).onSuccess(table -> {
+                    final ExportedTableCreationResponse response =
+                            ExportUtil.buildTableCreationResponse(resultId, table);
+                    safelyOnNext(responseObserver, response);
+                    onOneResolved.run();
+                }).submit(exportBuilder::doExport);
             }
-        };
 
-        for (int i = 0; i < exportBuilders.size(); ++i) {
-            final BatchExportBuilder<?> exportBuilder = exportBuilders.get(i);
-            final int exportId = exportBuilder.exportBuilder.getExportId();
-
-            final TableReference resultId;
-            if (exportId == SessionState.NON_EXPORT_ID) {
-                resultId = TableReference.newBuilder().setBatchOffset(i).build();
-            } else {
-                resultId = ExportTicketHelper.tableReference(exportId);
-            }
-
-            exportBuilder.exportBuilder.onError((result, errorContext, cause, dependentId) -> {
-                String errorInfo = errorContext;
-                if (dependentId != null) {
-                    errorInfo += " dependency: " + dependentId;
-                }
-                if (cause instanceof StatusRuntimeException) {
-                    errorInfo += " cause: " + cause.getMessage();
-                    firstFailure.compareAndSet(null, (StatusRuntimeException) cause);
-                }
-                final ExportedTableCreationResponse response = ExportedTableCreationResponse.newBuilder()
-                        .setResultId(resultId)
-                        .setSuccess(false)
-                        .setErrorInfo(errorInfo)
-                        .build();
-                safelyOnNext(responseObserver, response);
-                onOneResolved.run();
-            }).onSuccess(table -> {
-                final ExportedTableCreationResponse response =
-                        ExportUtil.buildTableCreationResponse(resultId, table);
-                safelyOnNext(responseObserver, response);
-                onOneResolved.run();
-            }).submit(exportBuilder::doExport);
+            // now that we've submitted everything we'll suspend the query and release our refcount
+            queryPerformanceRecorder.suspendQuery();
+            onOneResolved.run();
+        } finally {
+            QueryPerformanceRecorder.resetInstance();
         }
-
-        // now that we've submitted everything we'll suspend the query and release our refcount
-        queryPerformanceRecorder.suspendQuery();
-        onOneResolved.run();
     }
 
     @Override
@@ -664,25 +668,28 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
         final QueryPerformanceRecorderImpl queryPerformanceRecorder = new QueryPerformanceRecorderImpl(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
+        try {
+            operation.validateRequest(request);
 
-        operation.validateRequest(request);
+            final List<SessionState.ExportObject<Table>> dependencies = operation.getTableReferences(request).stream()
+                    .map(ref -> resolveOneShotReference(session, ref))
+                    .collect(Collectors.toList());
 
-        final List<SessionState.ExportObject<Table>> dependencies = operation.getTableReferences(request).stream()
-                .map(ref -> resolveOneShotReference(session, ref))
-                .collect(Collectors.toList());
-
-        session.newExport(resultId, "resultId")
-                .require(dependencies)
-                .onError(responseObserver)
-                .queryPerformanceRecorder(queryPerformanceRecorder, false)
-                .submit(() -> {
-                    operation.checkPermission(request, dependencies);
-                    final Table result = operation.create(request, dependencies);
-                    final ExportedTableCreationResponse response =
-                            ExportUtil.buildTableCreationResponse(resultId, result);
-                    safelyComplete(responseObserver, response);
-                    return result;
-                });
+            session.newExport(resultId, "resultId")
+                    .require(dependencies)
+                    .onError(responseObserver)
+                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .submit(() -> {
+                        operation.checkPermission(request, dependencies);
+                        final Table result = operation.create(request, dependencies);
+                        final ExportedTableCreationResponse response =
+                                ExportUtil.buildTableCreationResponse(resultId, result);
+                        safelyComplete(responseObserver, response);
+                        return result;
+                    });
+        } finally {
+            QueryPerformanceRecorder.resetInstance();
+        }
     }
 
     private SessionState.ExportObject<Table> resolveOneShotReference(
