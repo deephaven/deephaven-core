@@ -1321,9 +1321,12 @@ public class SessionState {
         /**
          * Set the performance recorder to aggregate performance data across exports.
          * <p>
-         * When {@code qprIsForBatch}: - is {@code false}: The provided queryPerformanceRecorder is suspended and
-         * assumed by the export object - is {@code true}: Instrumentation logging is the responsibility of the caller
-         * and should not be performed until all sub-queries have completed.
+         * When {@code qprIsForBatch}:
+         * <ul>
+         * <li>is {@code false}: The provided queryPerformanceRecorder is suspended and assumed by the export object
+         * <li>is {@code true}: Instrumentation logging is the responsibility of the caller and should not be performed
+         * until all sub-queries have completed.
+         * </ul>
          *
          * @param queryPerformanceRecorder the performance recorder to aggregate into
          * @param qprIsForBatch true if a sub-query should be created for the export and aggregated into the qpr

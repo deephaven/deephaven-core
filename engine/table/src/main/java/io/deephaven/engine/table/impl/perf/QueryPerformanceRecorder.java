@@ -124,9 +124,9 @@ public abstract class QueryPerformanceRecorder {
     }
 
     /**
-     * TODO NATE NOCOMMIT WRITE JAVADOC
-     * 
-     * @param setter
+     * Provide current query data via the setter.
+     *
+     * @param setter a callback to receive query data
      */
     public abstract void setQueryData(final EntrySetter setter);
 

@@ -75,8 +75,7 @@ public class EngineMetrics {
             log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
         }
         qpImpl = new QueryPerformanceImpl(tableLoggerFactory.queryPerformanceLogLogger());
-        qoplImpl = new QueryOperationPerformanceImpl(pInfo.getId(),
-                tableLoggerFactory.queryOperationPerformanceLogLogger());
+        qoplImpl = new QueryOperationPerformanceImpl(tableLoggerFactory.queryOperationPerformanceLogLogger());
         if (STATS_LOGGING_ENABLED) {
             statsImpl = new StatsImpl(pInfo.getId(), tableLoggerFactory.processMetricsLogLogger());
         } else {

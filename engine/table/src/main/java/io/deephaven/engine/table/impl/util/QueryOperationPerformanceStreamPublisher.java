@@ -65,9 +65,7 @@ class QueryOperationPerformanceStreamPublisher implements StreamPublisher {
         this.consumer = Objects.requireNonNull(consumer);
     }
 
-    public synchronized void add(
-            final String id,
-            final QueryPerformanceNugget nugget) {
+    public synchronized void add(final QueryPerformanceNugget nugget) {
 
         // ColumnDefinition.ofLong("EvaluationNumber"),
         chunks[0].asWritableLongChunk().add(nugget.getEvaluationNumber());

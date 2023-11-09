@@ -21,12 +21,12 @@ import java.util.*;
 public class QueryPerformanceRecorderImpl extends QueryPerformanceRecorder {
 
     private final QueryPerformanceNugget queryNugget;
+    private final QueryPerformanceNugget.Factory nuggetFactory;
     private final ArrayList<QueryPerformanceNugget> operationNuggets = new ArrayList<>();
+    private final Deque<QueryPerformanceNugget> userNuggetStack = new ArrayDeque<>();
 
     private QueryState state;
     private QueryPerformanceNugget catchAllNugget;
-    private final Deque<QueryPerformanceNugget> userNuggetStack = new ArrayDeque<>();
-    private final QueryPerformanceNugget.Factory nuggetFactory;
 
     /**
      * Creates a new QueryPerformanceRecorderImpl and starts the query.
@@ -197,9 +197,7 @@ public class QueryPerformanceRecorderImpl extends QueryPerformanceRecorder {
      * @return A new QueryPerformanceNugget to encapsulate user query operations. done() must be called on the nugget.
      */
     public synchronized QueryPerformanceNugget getNugget(@NotNull final String name, final long inputSize) {
-        if (state != QueryState.RUNNING) {
-            return QueryPerformanceNugget.DUMMY_NUGGET;
-        }
+        Assert.eq(state, "state", QueryState.RUNNING, "QueryState.RUNNING");
         if (Thread.interrupted()) {
             throw new CancellationException("interrupted in QueryPerformanceNugget");
         }

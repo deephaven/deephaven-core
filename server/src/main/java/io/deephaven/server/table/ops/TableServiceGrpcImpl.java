@@ -593,7 +593,6 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
         // now that we've submitted everything we'll suspend the query and release our refcount
         queryPerformanceRecorder.suspendQuery();
-        QueryPerformanceRecorder.resetInstance();
         onOneResolved.run();
     }
 
