@@ -137,10 +137,10 @@ public class UpdatePerformanceTracker {
     public UpdatePerformanceTracker(final UpdateGraph updateGraph) {
         this.updateGraph = Objects.requireNonNull(updateGraph);
         this.aggregatedSmallUpdatesEntry = new PerformanceEntry(
-                QueryConstants.NULL_LONG, QueryConstants.NULL_INT, QueryConstants.NULL_INT,
+                QueryConstants.NULL_LONG, QueryConstants.NULL_LONG, QueryConstants.NULL_INT,
                 "Aggregated Small Updates", null, updateGraph.getName());
         this.flushEntry = new PerformanceEntry(
-                QueryConstants.NULL_LONG, QueryConstants.NULL_INT, QueryConstants.NULL_INT,
+                QueryConstants.NULL_LONG, QueryConstants.NULL_LONG, QueryConstants.NULL_INT,
                 "UpdatePerformanceTracker Flush", null, updateGraph.getName());
     }
 
