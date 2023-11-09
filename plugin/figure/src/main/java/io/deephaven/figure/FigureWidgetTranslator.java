@@ -620,7 +620,7 @@ public class FigureWidgetTranslator {
                                             stringMapWithDefault(
                                                     multiOHLCSeries.yToolTipPatternSeriesNameToStringMap()));
                                     clientSeries.setPointLabel(stringMapWithDefault(
-                                            multiOHLCSeries.pointColorSeriesNameToStringMap(),
+                                            multiOHLCSeries.pointLabelSeriesNameToObjectMap(),
                                             Objects::toString));
                                     clientSeries.setPointSize(doubleMapWithDefault(
                                             multiOHLCSeries.pointSizeSeriesNameToNumberMap(),
