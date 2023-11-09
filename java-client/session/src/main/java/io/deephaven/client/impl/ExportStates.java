@@ -381,9 +381,11 @@ final class ExportStates implements ExportService {
         private static final Logger log = LoggerFactory.getLogger(BatchHandler.class);
 
         private final Map<Integer, State> newStates;
+        private final Set<State> handled;
 
         private BatchHandler(Map<Integer, State> newStates) {
             this.newStates = Objects.requireNonNull(newStates);
+            this.handled = new HashSet<>(newStates.size());
         }
 
         @Override
@@ -404,6 +406,10 @@ final class ExportStates implements ExportService {
             if (state == null) {
                 throw new IllegalStateException("Unable to find state for creation response");
             }
+            if (!handled.add(state)) {
+                throw new IllegalStateException(
+                        String.format("Server misbehaving, already received response for export id %d", exportId));
+            }
             try {
                 state.onCreationResponse(value);
             } catch (RuntimeException e) {
@@ -415,14 +421,22 @@ final class ExportStates implements ExportService {
         @Override
         public void onError(Throwable t) {
             for (State state : newStates.values()) {
-                state.onCreationError(t);
+                try {
+                    state.onCreationError(t);
+                } catch (RuntimeException e) {
+                    log.error("state.onCreationError had unexpected exception, ignoring", e);
+                }
             }
         }
 
         @Override
         public void onCompleted() {
             for (State state : newStates.values()) {
-                state.onCreationCompleted();
+                try {
+                    state.onCreationCompleted();
+                } catch (RuntimeException e) {
+                    log.error("state.onCreationCompleted had unexpected exception, ignoring", e);
+                }
             }
         }
     }
