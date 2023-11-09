@@ -130,7 +130,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         //
         // Setup for test run.
         //
-        environmentVariable 'DH_HOST', '10.10.0.17'
+        environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
