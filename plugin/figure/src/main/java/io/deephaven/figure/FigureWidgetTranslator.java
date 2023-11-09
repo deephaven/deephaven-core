@@ -570,7 +570,7 @@ public class FigureWidgetTranslator {
                                             stringMapWithDefault(
                                                     multiXYErrorBarSeries.yToolTipPatternSeriesNameToStringMap()));
                                     clientSeries.setPointLabel(stringMapWithDefault(
-                                            multiXYErrorBarSeries.pointColorSeriesNameToStringMap(),
+                                            multiXYErrorBarSeries.pointLabelSeriesNameToObjectMap(),
                                             Objects::toString));
                                     clientSeries.setPointSize(doubleMapWithDefault(
                                             multiXYErrorBarSeries.pointSizeSeriesNameToNumberMap(),
