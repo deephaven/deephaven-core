@@ -117,7 +117,7 @@ Closure<TaskProvider<Task>> gradleTestInDocker = { String taskName, SourceSet so
   def gradleWrapper = tasks.register("${taskName}GradleInit", Wrapper.class) { wrapper ->
     wrapper.scriptFile "${buildDir}/template-project/gradlew"
     wrapper.jarFile "${buildDir}/template-project/gradle/wrapper/gradle-wrapper.jar"
-    wrapper.gradleVersion '7.2'
+    wrapper.gradleVersion '8.4'
   }
   return Docker.registerDockerTask(project, taskName) {
     copyIn {
