@@ -143,7 +143,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
     private final RuntimeMemory.Sample startMemorySample;
     private final RuntimeMemory.Sample endMemorySample;
 
-    private boolean shouldLogMeAndStackParents;
+    private boolean shouldLogThisAndStackParents;
 
     /**
      * Full constructor for nuggets.
@@ -194,7 +194,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         onBaseEntryStart();
 
         state = QueryState.RUNNING;
-        shouldLogMeAndStackParents = false;
+        shouldLogThisAndStackParents = false;
     }
 
     /**
@@ -218,7 +218,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         startClockEpochNanos = NULL_LONG;
 
         state = null; // This turns close into a no-op.
-        shouldLogMeAndStackParents = false;
+        shouldLogThisAndStackParents = false;
     }
 
     public void done() {
@@ -416,16 +416,16 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
     /**
      * Ensure this nugget gets logged, alongside its stack of nesting operations.
      */
-    public void setShouldLogMeAndStackParents() {
-        shouldLogMeAndStackParents = true;
+    public void setShouldLogThisAndStackParents() {
+        shouldLogThisAndStackParents = true;
     }
 
     /**
      * @return true if this nugget triggers the logging of itself and every other nugget in its stack of nesting
      *         operations.
      */
-    public boolean shouldLogMeAndStackParents() {
-        return shouldLogMeAndStackParents;
+    public boolean shouldLogThisAndStackParents() {
+        return shouldLogThisAndStackParents;
     }
 
     /**
@@ -437,7 +437,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
      * @return if this nugget is significant enough to be logged.
      */
     boolean shouldLogNugget(final boolean isUninstrumented) {
-        if (shouldLogMeAndStackParents) {
+        if (shouldLogThisAndStackParents) {
             return true;
         }
 
@@ -448,9 +448,9 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         }
 
         if (isUninstrumented) {
-            return UNINSTRUMENTED_LOG_THRESHOLD.shouldLog(getTotalTimeNanos());
+            return UNINSTRUMENTED_LOG_THRESHOLD.shouldLog(getUsageNanos());
         } else {
-            return LOG_THRESHOLD.shouldLog(getTotalTimeNanos());
+            return LOG_THRESHOLD.shouldLog(getUsageNanos());
         }
     }
 }

@@ -85,7 +85,7 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
         // ColumnDefinition.ofLong("IntervalDurationNanos"),
         chunks[7].asWritableLongChunk().add(intervalLevelDetails.getIntervalDurationNanos());
         // ColumnDefinition.ofLong("EntryIntervalUsage"),
-        chunks[8].asWritableLongChunk().add(performanceEntry.getTotalTimeNanos());
+        chunks[8].asWritableLongChunk().add(performanceEntry.getUsageNanos());
         // ColumnDefinition.ofLong("EntryIntervalCpuNanos"),
         chunks[9].asWritableLongChunk().add(performanceEntry.getCpuNanos());
         // ColumnDefinition.ofLong("EntryIntervalUserCpuNanos"),

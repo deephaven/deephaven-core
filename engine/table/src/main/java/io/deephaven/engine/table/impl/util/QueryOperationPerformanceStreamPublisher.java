@@ -98,7 +98,7 @@ class QueryOperationPerformanceStreamPublisher implements StreamPublisher {
         chunks[9].asWritableLongChunk().add(nugget.getEndClockEpochNanos());
 
         // ColumnDefinition.ofLong("DurationNanos"),
-        chunks[10].asWritableLongChunk().add(nugget.getTotalTimeNanos());
+        chunks[10].asWritableLongChunk().add(nugget.getUsageNanos());
 
         // ColumnDefinition.ofLong("CpuNanos"),
         chunks[11].asWritableLongChunk().add(nugget.getCpuNanos());

@@ -984,46 +984,53 @@ public class SessionState {
             QueryProcessingResults queryProcessingResults = null;
             try (final SafeCloseable ignored1 = session.executionContext.open();
                     final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+
+                if (queryPerformanceRecorder != null && !qprIsForBatch) {
+                    exportRecorder = queryPerformanceRecorder.resumeQuery();
+                } else if (queryPerformanceRecorder != null) {
+                    // this is a sub-query; no need to re-log the session id
+                    exportRecorder = new QueryPerformanceRecorderImpl(
+                            "ExportObject#doWork(exportId=" + logIdentity + ")",
+                            queryPerformanceRecorder,
+                            QueryPerformanceNugget.DEFAULT_FACTORY);
+                } else {
+                    exportRecorder = new QueryPerformanceRecorderImpl(
+                            "ExportObject#doWork(session=" + session.sessionId + ",exportId=" + logIdentity + ")",
+                            QueryPerformanceNugget.DEFAULT_FACTORY);
+                }
+                queryProcessingResults = new QueryProcessingResults(exportRecorder);
+
                 try {
-                    if (queryPerformanceRecorder != null && !qprIsForBatch) {
-                        exportRecorder = queryPerformanceRecorder.resumeQuery();
-                    } else if (queryPerformanceRecorder != null) {
-                        // this is a sub-query; no need to re-log the session id
-                        exportRecorder = new QueryPerformanceRecorderImpl(
-                                "ExportObject#doWork(exportId=" + logIdentity + ")",
-                                queryPerformanceRecorder,
-                                QueryPerformanceNugget.DEFAULT_FACTORY);
-                    } else {
-                        exportRecorder = new QueryPerformanceRecorderImpl(
-                                "ExportObject#doWork(session=" + session.sessionId + ",exportId=" + logIdentity + ")",
-                                QueryPerformanceNugget.DEFAULT_FACTORY);
-                    }
-                    queryProcessingResults = new QueryProcessingResults(exportRecorder);
-
-                    try {
-                        localResult = capturedExport.call();
-                    } finally {
-                        shouldLog = exportRecorder.endQuery();
-                        QueryPerformanceRecorder.resetInstance();
-                    }
-
+                    localResult = capturedExport.call();
                 } catch (final Exception err) {
                     caughtException = err;
+                } finally {
+                    try {
+                        shouldLog = exportRecorder.endQuery();
+                    } catch (final Exception err) {
+                        // end query will throw if the export runner left the QPR in a bad state
+                        if (caughtException == null) {
+                            caughtException = err;
+                        }
+                    } finally {
+                        QueryPerformanceRecorder.resetInstance();
+                    }
+                }
+
+                if (caughtException != null) {
+                    queryProcessingResults.setException(caughtException.toString());
                     synchronized (this) {
                         if (!isExportStateTerminal(state)) {
                             maybeAssignErrorId();
                             if (!(caughtException instanceof StatusRuntimeException)) {
-                                log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
+                                log.error().append("Internal Error '").append(errorId).append("' ")
+                                        .append(caughtException).endl();
                             }
                             setState(ExportNotification.State.FAILED);
                         }
                     }
-                } finally {
-                    if (caughtException != null && queryProcessingResults != null) {
-                        queryProcessingResults.setException(caughtException.toString());
-                    }
                 }
-                if ((shouldLog || caughtException != null) && queryProcessingResults != null) {
+                if (shouldLog || caughtException != null) {
                     if (queryPerformanceRecorder != null && qprIsForBatch) {
                         Assert.neqNull(exportRecorder, "exportRecorder");
                         queryPerformanceRecorder.accumulate(exportRecorder);

@@ -219,7 +219,7 @@ public class QueryPerformanceRecorderImpl extends QueryPerformanceRecorder {
      * @param nugget the nugget to be released
      * @return If the nugget passes criteria for logging.
      */
-    synchronized boolean releaseNugget(QueryPerformanceNugget nugget) {
+    synchronized boolean releaseNugget(@NotNull final QueryPerformanceNugget nugget) {
         boolean shouldLog = nugget.shouldLogNugget(nugget == catchAllNugget);
         if (!nugget.isUser()) {
             return shouldLog;
@@ -234,13 +234,17 @@ public class QueryPerformanceRecorderImpl extends QueryPerformanceRecorder {
                             ") - did you follow the correct try/finally pattern?");
         }
 
-        if (removed.shouldLogMeAndStackParents()) {
-            shouldLog = true;
+        shouldLog |= removed.shouldLogThisAndStackParents();
+
+        if (shouldLog) {
+            // It is entirely possible, with parallelization, that this nugget should be logged while the outer nugget
+            // has a wall clock time less than the threshold for logging. If we ever want to log this nugget, we must
+            // log
+            // all of its parents as well regardless of the shouldLogNugget call result.
             if (!userNuggetStack.isEmpty()) {
-                userNuggetStack.getLast().setShouldLogMeAndStackParents();
+                userNuggetStack.getLast().setShouldLogThisAndStackParents();
             }
-        }
-        if (!shouldLog) {
+        } else {
             // If we have filtered this nugget, by our filter design we will also have filtered any nuggets it encloses.
             // This means it *must* be the last entry in operationNuggets, so we can safely remove it in O(1).
             final QueryPerformanceNugget lastNugget = operationNuggets.remove(operationNuggets.size() - 1);
@@ -278,11 +282,11 @@ public class QueryPerformanceRecorderImpl extends QueryPerformanceRecorder {
             if (operationNumber > 0) {
                 // ensure UPL and QOPL are consistent/joinable.
                 if (!userNuggetStack.isEmpty()) {
-                    userNuggetStack.getLast().setShouldLogMeAndStackParents();
+                    userNuggetStack.getLast().setShouldLogThisAndStackParents();
                 } else {
                     uninstrumented = true;
                     if (catchAllNugget != null) {
-                        catchAllNugget.setShouldLogMeAndStackParents();
+                        catchAllNugget.setShouldLogThisAndStackParents();
                     }
                 }
             }
@@ -314,7 +318,7 @@ public class QueryPerformanceRecorderImpl extends QueryPerformanceRecorder {
         final Boolean[] isCompileTime = new Boolean[count];
 
         for (int i = 0; i < operationNuggets.size(); i++) {
-            timeNanos[i] = operationNuggets.get(i).getTotalTimeNanos();
+            timeNanos[i] = operationNuggets.get(i).getUsageNanos();
             names[i] = operationNuggets.get(i).getName();
             callerLine[i] = operationNuggets.get(i).getCallerLine();
             isTopLevel[i] = operationNuggets.get(i).isTopLevel();

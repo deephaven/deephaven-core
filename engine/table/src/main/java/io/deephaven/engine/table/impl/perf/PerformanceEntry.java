@@ -123,7 +123,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
                 .append(", description='").append(description).append('\'')
                 .append(", callerLine='").append(callerLine).append('\'')
                 .append(", authContext=").append(authContext)
-                .append(", intervalUsageNanos=").append(getTotalTimeNanos())
+                .append(", intervalUsageNanos=").append(getUsageNanos())
                 .append(", intervalCpuNanos=").append(getCpuNanos())
                 .append(", intervalUserCpuNanos=").append(getUserCpuNanos())
                 .append(", intervalInvocationCount=").append(intervalInvocationCount)
@@ -218,7 +218,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
      */
     boolean shouldLogEntryInterval() {
         return intervalInvocationCount > 0 &&
-                UpdatePerformanceTracker.LOG_THRESHOLD.shouldLog(getTotalTimeNanos());
+                UpdatePerformanceTracker.LOG_THRESHOLD.shouldLog(getUsageNanos());
     }
 
     public void accumulate(PerformanceEntry entry) {
