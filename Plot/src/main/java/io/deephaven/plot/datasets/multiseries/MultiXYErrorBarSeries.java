@@ -107,6 +107,30 @@ public class MultiXYErrorBarSeries extends AbstractPartitionedTableHandleMultiSe
                 drawXError, drawYError);
     }
 
+    public boolean getDrawXError() {
+        return drawXError;
+    }
+
+    public boolean getDrawYError() {
+        return drawYError;
+    }
+
+    public String getXLow() {
+        return xLow;
+    }
+
+    public String getXHigh() {
+        return xHigh;
+    }
+
+    public String getYLow() {
+        return yLow;
+    }
+
+    public String getYHigh() {
+        return yHigh;
+    }
+
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateMultiSeries //////////////////////////////
     ////////////////////////////// AND THEN RUN GenerateFigureImmutable //////////////////////////////
