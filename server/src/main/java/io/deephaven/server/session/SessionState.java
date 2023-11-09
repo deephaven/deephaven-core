@@ -1004,6 +1004,7 @@ public class SessionState {
                         localResult = capturedExport.call();
                     } finally {
                         shouldLog = exportRecorder.endQuery();
+                        QueryPerformanceRecorder.resetInstance();
                     }
 
                 } catch (final Exception err) {
@@ -1021,7 +1022,6 @@ public class SessionState {
                     if (caughtException != null && queryProcessingResults != null) {
                         queryProcessingResults.setException(caughtException.toString());
                     }
-                    QueryPerformanceRecorder.resetInstance();
                 }
                 if ((shouldLog || caughtException != null) && queryProcessingResults != null) {
                     if (queryPerformanceRecorder != null && qprIsForBatch) {
