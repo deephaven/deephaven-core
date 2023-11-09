@@ -314,4 +314,17 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
         }
     }
     // endregion
+
+    @Override
+    public boolean validate() {
+        // Examine the locations for this index and validate that every location has a data index.
+        for (final LocationState ls : locations.values()) {
+            // The Location test is fast but incomplete.
+            if (!ls.location.hasDataIndex(keyColumnNames)) {
+                return false;
+            }
+        }
+        return true;
+
+    }
 }

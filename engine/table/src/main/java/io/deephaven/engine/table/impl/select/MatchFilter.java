@@ -57,7 +57,7 @@ public class MatchFilter extends WhereFilterImpl {
             @NotNull final MatchType matchType,
             @NotNull final String columnName,
             @NotNull final Object... values) {
-        this(CaseSensitivity.IgnoreCase, matchType, columnName, null, values);
+        this(CaseSensitivity.MatchCase, matchType, columnName, null, values);
     }
 
     public MatchFilter(
@@ -79,14 +79,6 @@ public class MatchFilter extends WhereFilterImpl {
             @NotNull final String columnName,
             @NotNull final String... strValues) {
         this(sensitivity, matchType, columnName, strValues, null);
-    }
-
-    public MatchFilter(
-            @NotNull final CaseSensitivity sensitivity,
-            @NotNull final MatchType matchType,
-            @NotNull final String columnName,
-            @NotNull final Object... values) {
-        this(sensitivity, matchType, columnName, null, values);
     }
 
     private MatchFilter(

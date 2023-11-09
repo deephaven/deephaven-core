@@ -412,6 +412,10 @@ public class DerivedDataIndex extends AbstractDataIndex {
         // All the sources were already immutable, we can just return the input table.
         return indexTable;
     }
-
     // endregion DataIndex materialization operations
+
+    @Override
+    public boolean validate() {
+        return parentIndex.validate();
+    }
 }

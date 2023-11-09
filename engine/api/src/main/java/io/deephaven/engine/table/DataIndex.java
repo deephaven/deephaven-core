@@ -14,31 +14,58 @@ import java.util.*;
  * or created using aggregations.
  */
 public interface DataIndex {
-    /** Provides a lookup function from {@code key} to the position in the index table. */
+    /**
+     * Provides a lookup function from {@code key} to the position in the index table. Keys are specified as follows:
+     * <dl>
+     * <dt>No group-by columns</dt>
+     * <dd>"Empty" keys are signified by any zero-length {@code Object[]}</dd>
+     * <dt>One group-by column</dt>
+     * <dd>Singular keys are (boxed, if needed) objects</dd>
+     * <dt>Multiple group-by columns</dt>
+     * <dd>Compound keys are {@code Object[]} of (boxed, if needed) objects, in the order of the aggregation's group-by
+     * columns</dd>
+     * </dl>
+     */
     interface PositionLookup {
         int apply(Object key);
     }
 
-    /** Provides a lookup function from {@code key} to the {@link RowSet} containing the matching table rows. */
+    /**
+     * Provides a lookup function from {@code key} to the {@link RowSet} containing the matching table rows. Keys are
+     * specified as follows:
+     * <dl>
+     * <dt>No group-by columns</dt>
+     * <dd>"Empty" keys are signified by any zero-length {@code Object[]}</dd>
+     * <dt>One group-by column</dt>
+     * <dd>Singular keys are (boxed, if needed) objects</dd>
+     * <dt>Multiple group-by columns</dt>
+     * <dd>Compound keys are {@code Object[]} of (boxed, if needed) objects, in the order of the aggregation's group-by
+     * columns</dd>
+     * </dl>
+     */
     interface RowSetLookup {
         RowSet apply(Object key);
     }
 
-    /** Get the column source names that were indexed to produce this DataIndex. */
+    /** Get the key column names for the index {@link #table() table}. */
     String[] keyColumnNames();
 
-    /** Get the column sources that were indexed to produce this DataIndex. */
+    /** Get a map from indexed column sources to key column names for the index {@link #table() table}. */
     Map<ColumnSource<?>, String> keyColumnMap();
 
     /** Get the output row set column name for this index. */
     String rowSetColumnName();
 
-    /** Return the index table key sources in order of the sources supplied. **/
+    /** Return the index table key sources in the relative order of the indexed sources supplied. **/
     @FinalDefault
     default ColumnSource<?>[] indexKeyColumns(ColumnSource<?>[] tableSources) {
         final Table indexTable = table();
         final Map<ColumnSource<?>, String> columnNameMap = this.keyColumnMap();
-        // Assert that the provided sources match the sources of the index.
+        // Verify that the provided sources match the sources of the index.
+        if (tableSources.length != columnNameMap.size()
+                || !columnNameMap.keySet().containsAll(Arrays.asList(tableSources))) {
+            throw new IllegalArgumentException("The provided columns must match the data index key column");
+        }
         Set<ColumnSource<?>> providedSources = new HashSet<>(Arrays.asList(tableSources));
         Assert.eqTrue(Objects.equals(providedSources, columnNameMap.keySet()),
                 "provided key column sources == index key column sources");
@@ -73,7 +100,7 @@ public interface DataIndex {
     Table table(final boolean usePrev);
 
     /**
-     * Build a lookup function of index row sets for this index.
+     * Build a {@link RowSetLookup lookup} function of index row sets for this index.
      *
      * @return a function that provides map-like lookup of matching rows from an index key.
      */
@@ -81,7 +108,7 @@ public interface DataIndex {
     RowSetLookup rowSetLookup();
 
     /**
-     * Build a lookup function of positions for this index.
+     * Build a {@link PositionLookup lookup} of positions for this index.
      *
      * @return a function that provides map-like lookup of index table positions from an index key.
      */
@@ -112,5 +139,15 @@ public interface DataIndex {
      */
     @InternalUseOnly
     Table baseTable();
+
+    /**
+     * Whether this index is potentially usable. This will return {@code true} when there are no known issues for this
+     * data index. This performs fast checks, such as verifying all locations have index table files but does not fully
+     * guarantee that the index is complete and loadable.
+     *
+     * @return true if the index is potentially usable, false otherwise
+     */
+    @InternalUseOnly
+    boolean validate();
 }
 

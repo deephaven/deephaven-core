@@ -45,19 +45,19 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
         this.source = source;
         this.indexColumns = indexColumns;
 
-        validateIndexs(indexColumns, source.getRowSet());
-        validatePrevIndexs(indexColumns, source.getRowSet());
+        validateIndexes(indexColumns, source.getRowSet());
+        validatePrevIndexes(indexColumns, source.getRowSet());
 
         source.addUpdateListener(this);
     }
 
-    private void validateIndexs(Collection<String[]> indexColumns, RowSet rowSet) {
+    private void validateIndexes(Collection<String[]> indexColumns, RowSet rowSet) {
         for (String[] indexToCheck : indexColumns) {
             validateIndex(indexToCheck, rowSet, source, context);
         }
     }
 
-    private void validatePrevIndexs(Collection<String[]> indexColumns, TrackingRowSet rowSet) {
+    private void validatePrevIndexes(Collection<String[]> indexColumns, TrackingRowSet rowSet) {
         for (String[] indexToCheck : indexColumns) {
             validatePrevIndex(indexToCheck, rowSet);
         }
@@ -207,11 +207,11 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
 
     @Override
     public void onUpdate(final TableUpdate upstream) {
-        validateIndexs(indexColumns, source.getRowSet());
+        validateIndexes(indexColumns, source.getRowSet());
         // NB: This would normally be inappropriate: we don't expect index support on the non-tracking row sets we
         // use for updates. Forcing support by cloning and making the result tracking.
-        validateIndexs(indexColumns, upstream.added().copy().toTracking());
-        validateIndexs(indexColumns, upstream.modified().copy().toTracking());
+        validateIndexes(indexColumns, upstream.added().copy().toTracking());
+        validateIndexes(indexColumns, upstream.modified().copy().toTracking());
         validationCount++;
         System.out.println("Validation Count for " + context + ": " + validationCount);
     }

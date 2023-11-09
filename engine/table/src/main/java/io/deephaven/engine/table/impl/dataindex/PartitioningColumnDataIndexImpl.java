@@ -230,5 +230,10 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     public Table baseTable() {
         return indexTable;
     }
+
+    @Override
+    public boolean validate() {
+        return true;
+    }
 }
 

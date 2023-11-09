@@ -31,6 +31,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -191,7 +192,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // Check if the column names match any of the data indexes
         for (final DataIndexInfo dataIndex : dataIndexes) {
             if (dataIndex.matchesColumns(columns)) {
-                return true;
+                // Validate the index file exists (without loading and parsing it).
+                return new File(dataIndex.indexTablePath()).exists();
             }
         }
         return false;

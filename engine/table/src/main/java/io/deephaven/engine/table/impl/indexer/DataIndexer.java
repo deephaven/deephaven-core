@@ -40,14 +40,14 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
         /** The index at this level. */
         @Nullable
-        private volatile DataIndex index;
+        private volatile DataIndex thisLevelIndex;
 
         /** The sub-indexes below this level. */
-        private final WeakHashMap<ColumnSource<?>, DataIndexCache> dataIndexes;
+        private final WeakHashMap<ColumnSource<?>, DataIndexCache> nextLevelCaches;
 
-        DataIndexCache(@Nullable final DataIndex index) {
-            this.index = index;
-            this.dataIndexes = new WeakHashMap<>();
+        DataIndexCache(@Nullable final DataIndex thisLevelIndex) {
+            this.thisLevelIndex = thisLevelIndex;
+            this.nextLevelCaches = new WeakHashMap<>();
         }
     }
 
@@ -58,7 +58,11 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
     public boolean hasDataIndex(final Table table, final String... keyColumnNames) {
         final DataIndex index = getDataIndex(table, keyColumnNames);
-        return index != null;
+        if (index == null || !index.validate()) {
+            // We do not have a usable index for these columns.
+            return false;
+        }
+        return true;
     }
 
     public boolean hasDataIndex(final ColumnSource<?>... keyColumns) {
@@ -77,7 +81,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         final DataIndex dataIndex = findIndex(dataIndexes, keyColumns);
         // It's possible that a potentially indexed column might be corrupt or incomplete when we try to use it.
         // Test it now to make sure that we don't falsely claim to have a functional index.
-        if (dataIndex != null && dataIndex.table() != null) {
+        if (dataIndex != null && dataIndex.validate()) {
             return true;
         }
         // TODO: should we remove the index if it's corrupt? Could it repair itself, probably not.
@@ -187,11 +191,11 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         for (final Map.Entry<ColumnSource<?>, DataIndexCache> entry : dataIndexes.entrySet()) {
             final DataIndexCache subCache = entry.getValue();
 
-            if (subCache.index != null) {
-                resultList.add(subCache.index);
+            if (subCache.thisLevelIndex != null) {
+                resultList.add(subCache.thisLevelIndex);
             }
-            if (subCache.dataIndexes != null) {
-                addIndexesToList(subCache.dataIndexes, resultList);
+            if (subCache.nextLevelCaches != null) {
+                addIndexesToList(subCache.nextLevelCaches, resultList);
             }
         }
     }
@@ -205,7 +209,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
             final ColumnSource<?> keyColumnSource = keyColumnSources.iterator().next();
             synchronized (indexMap) {
                 final DataIndexCache cache = indexMap.get(keyColumnSource);
-                return cache == null ? null : cache.index;
+                return cache == null ? null : cache.thisLevelIndex;
             }
         }
 
@@ -218,7 +222,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                         keyColumnSources.stream().filter(s -> s != keySource).collect(Collectors.toList());
 
                 // Recursively search for the remaining key sources.
-                final DataIndex index = findIndex(cache.dataIndexes, sliced);
+                final DataIndex index = findIndex(cache.nextLevelCaches, sliced);
                 if (index != null) {
                     return index;
                 }
@@ -246,11 +250,11 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                         return new DataIndexCache(isLast ? index : null);
                     });
             if (!created.booleanValue()) {
-                cache.index = index; // Optimistically overwrite, it's volatile
+                cache.thisLevelIndex = index; // Optimistically overwrite, it's volatile
             }
         }
         if (!isLast) {
-            addIndex(cache.dataIndexes, keyColumnSources, index, nextColumnSourceIndex + 1);
+            addIndex(cache.nextLevelCaches, keyColumnSources, index, nextColumnSourceIndex + 1);
         }
     }
 }

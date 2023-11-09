@@ -3317,10 +3317,13 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table t2 = t1.select("T");
 
         // noinspection rawtypes
-        final ColumnSource result = t2.getColumnSource("T").reinterpret(long.class);
+        final ColumnSource result = t2.getColumnSource("T");
+        final ColumnSource reinterpreted = result.reinterpret(long.class);
 
         assertTrue(DataIndexer.of(t1.getRowSet()).hasDataIndex(cs));
         assertTrue(DataIndexer.of(t2.getRowSet()).hasDataIndex(result));
+
+        assertFalse(DataIndexer.of(t2.getRowSet()).hasDataIndex(reinterpreted));
     }
 
     private static void validateUpdates(final Table table) {

@@ -139,5 +139,10 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
     public Table baseTable() {
         return table();
     }
+
+    @Override
+    public boolean validate() {
+        return true;
+    }
 }
 
