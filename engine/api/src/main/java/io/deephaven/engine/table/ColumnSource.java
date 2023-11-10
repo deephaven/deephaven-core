@@ -163,11 +163,7 @@ public interface ColumnSource<T>
     @FinalDefault
     default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz) {
         Require.neqNull(clazz, "clazz");
-        final Class<?> columnSourceType = getType();
-        if (!clazz.isAssignableFrom(columnSourceType)) {
-            throw new ClassCastException(String.format("Cannot convert column source for type %s to type %s",
-                    columnSourceType.getName(), clazz.getName()));
-        }
+        TypeHelper.checkCastTo("ColumnSource", getType(), clazz);
         // noinspection unchecked
         return (ColumnSource<TYPE>) this;
     }
@@ -197,19 +193,10 @@ public interface ColumnSource<T>
      */
     @FinalDefault
     default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, @Nullable Class<?> componentType) {
-        final ColumnSource<TYPE> casted = cast(clazz);
-        final Class<?> columnSourceComponentType = getComponentType();
-        if ((componentType == null && columnSourceComponentType == null) || (componentType != null
-                && columnSourceComponentType != null && componentType.isAssignableFrom(columnSourceComponentType))) {
-            return casted;
-        }
-        final Class<?> columnSourceType = getType();
-        throw new ClassCastException(String.format(
-                "Cannot convert column source componentType for type %s to %s (for %s / %s)",
-                columnSourceComponentType == null ? null : columnSourceComponentType.getName(),
-                componentType == null ? null : componentType.getName(),
-                columnSourceType.getName(),
-                clazz.getName()));
+        Require.neqNull(clazz, "clazz");
+        TypeHelper.checkCastTo("ColumnSource", getType(), getComponentType(), clazz, componentType);
+        // noinspection unchecked
+        return (ColumnSource<TYPE>) this;
     }
 
     /**

@@ -141,9 +141,9 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         final TableDefinition td = getDefinition();
         final ColumnDefinition<?> cd = td.getColumn(sourceName);
         if (cd == null) {
-            throw new NoSuchColumnException(td.getColumnNames(), Collections.singletonList(sourceName));
+            throw new NoSuchColumnException(td.getColumnNames(), Collections.singleton(sourceName));
         }
-        cd.ensureCastableTo(clazz);
+        cd.checkCastTo(clazz);
     }
 
     @Override
@@ -152,9 +152,9 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         final TableDefinition td = getDefinition();
         final ColumnDefinition<?> cd = td.getColumn(sourceName);
         if (cd == null) {
-            throw new NoSuchColumnException(td.getColumnNames(), Collections.singletonList(sourceName));
+            throw new NoSuchColumnException(td.getColumnNames(), Collections.singleton(sourceName));
         }
-        cd.ensureCastableTo(clazz, componentType);
+        cd.checkCastTo(clazz, componentType);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
