@@ -364,7 +364,7 @@ public class ParquetFileReader {
             case DATE:
                 return LogicalTypeAnnotation.dateType();
             case TIME_MILLIS:
-                // isAdjustedToUTC parameter is ignored while reading Parquet TIME type, so assume it whatever
+                // isAdjustedToUTC parameter is ignored while reading Parquet TIME type, so disregard it here
                 return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIME_MICROS:
                 return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MICROS);

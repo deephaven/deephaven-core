@@ -18,8 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.LongBuffer;
 import java.time.LocalDateTime;
 
-final class LocalDateTimeTransfer
-        extends GettingPrimitiveTransfer<ObjectChunk<LocalDateTime, Values>, LongBuffer> {
+final class LocalDateTimeTransfer extends GettingPrimitiveTransfer<ObjectChunk<LocalDateTime, Values>, LongBuffer> {
 
     LocalDateTimeTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int targetPageSizeInBytes) {

@@ -21,6 +21,7 @@ import java.time.temporal.ChronoField;
 import java.time.zone.ZoneRulesException;
 import java.util.Date;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -992,7 +993,8 @@ public class DateTimeUtils {
         if (localDateTime == null) {
             return NULL_LONG;
         }
-        return epochNanos(localDateTime.toInstant(ZoneOffset.UTC));
+        return TimeUnit.SECONDS.toNanos(localDateTime.toEpochSecond(ZoneOffset.UTC))
+                + localDateTime.toLocalTime().getNano();
     }
 
     /**
@@ -1438,9 +1440,7 @@ public class DateTimeUtils {
         if (micros == QueryConstants.NULL_LONG) {
             return null;
         }
-        final long microsPerSecond = 1_000_000;
-        return LocalDateTime.ofEpochSecond(micros / microsPerSecond, (int) ((micros % microsPerSecond) * MICRO),
-                ZoneOffset.UTC);
+        return epochNanosToLocalDateTimeUTC(micros * MICRO);
     }
 
     /**
@@ -1454,9 +1454,7 @@ public class DateTimeUtils {
         if (millis == QueryConstants.NULL_LONG) {
             return null;
         }
-        final long millisPerSecond = 1_000;
-        return LocalDateTime.ofEpochSecond(millis / millisPerSecond, (int) ((millis % millisPerSecond) * MILLI),
-                ZoneOffset.UTC);
+        return epochNanosToLocalDateTimeUTC(millis * MILLI);
     }
 
     // endregion
