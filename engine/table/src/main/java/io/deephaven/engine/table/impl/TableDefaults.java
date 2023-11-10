@@ -98,7 +98,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         if (columnNames == null) {
             throw new IllegalArgumentException("columnNames cannot be null!");
         }
-        return getDefinition().getColumnNameMap().keySet().containsAll(columnNames);
+        return getDefinition().getColumnNameSet().containsAll(columnNames);
     }
 
     @Override

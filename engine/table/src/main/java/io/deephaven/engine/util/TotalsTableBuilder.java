@@ -546,12 +546,7 @@ public class TotalsTableBuilder {
     }
 
     private static void ensureColumnsExist(Table source, Set<String> columns) {
-        if (!source.getColumnSourceMap().keySet().containsAll(columns)) {
-            final Set<String> missing = new LinkedHashSet<>(columns);
-            missing.removeAll(source.getColumnSourceMap().keySet());
-            throw new IllegalArgumentException("Missing columns for totals table " + missing + ", available columns "
-                    + source.getColumnSourceMap().keySet());
-        }
+        source.getDefinition().checkAvailableColumns(columns);
     }
 
     private static String[] makeColumnFormats(Table source, TotalsTableBuilder builder) {

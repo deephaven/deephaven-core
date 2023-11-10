@@ -50,6 +50,7 @@ import java.util.function.LongFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.EMPTY_KEY;
@@ -86,34 +87,14 @@ public class ChunkedOperatorAggregationHelper {
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
-        final String[] keyNames = groupByColumns.stream().map(ColumnName::name).toArray(String[]::new);
-        if (!input.hasColumns(keyNames)) {
-            final Set<String> colNames = input.getColumnSourceMap().keySet();
-            final String[] missingColumns = Arrays.stream(keyNames)
-                    .filter(Predicate.not(colNames::contains))
-                    .toArray(String[]::new);;
-
-            throw new IllegalArgumentException("aggregation: not all group-by columns " + Arrays.toString(keyNames)
-                    + " are present in input table with columns "
-                    + Arrays.toString(input.getDefinition().getColumnNamesArray()) + ". Missing columns: "
-                    + Arrays.toString(missingColumns));
-        }
+        final List<String> keyNames = groupByColumns.stream().map(ColumnName::name).collect(Collectors.toList());
+        input.checkAvailableColumns(keyNames);
         if (initialKeys != null) {
-            if (keyNames.length == 0) {
+            if (keyNames.isEmpty()) {
                 throw new IllegalArgumentException(
                         "aggregation: initial groups must not be specified if no group-by columns are specified");
             }
-            if (!initialKeys.hasColumns(keyNames)) {
-                final Set<String> colNames = input.getColumnSourceMap().keySet();
-                final String[] missingColumns = Arrays.stream(keyNames)
-                        .filter(Predicate.not(colNames::contains))
-                        .toArray(String[]::new);;
-
-                throw new IllegalArgumentException("aggregation: not all group-by columns " + Arrays.toString(keyNames)
-                        + " are present in initial groups table with columns "
-                        + Arrays.toString(initialKeys.getDefinition().getColumnNamesArray()) + ". Missing columns: "
-                        + Arrays.toString(missingColumns));
-            }
+            initialKeys.getDefinition().checkAvailableColumns(keyNames);
             for (final String keyName : keyNames) {
                 final ColumnDefinition<?> inputDef = input.getDefinition().getColumn(keyName);
                 final ColumnDefinition<?> initialKeysDef = initialKeys.getDefinition().getColumn(keyName);

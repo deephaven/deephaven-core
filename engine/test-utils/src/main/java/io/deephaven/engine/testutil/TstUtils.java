@@ -173,8 +173,8 @@ public class TstUtils {
             }
         }
 
-        if (!usedNames.containsAll(table.getColumnSourceMap().keySet())) {
-            final Set<String> expected = new LinkedHashSet<>(table.getColumnSourceMap().keySet());
+        if (!usedNames.containsAll(table.getDefinition().getColumnNameSet())) {
+            final Set<String> expected = new LinkedHashSet<>(table.getDefinition().getColumnNameSet());
             expected.removeAll(usedNames);
             throw new IllegalStateException("Not all columns were populated, missing " + expected);
         }

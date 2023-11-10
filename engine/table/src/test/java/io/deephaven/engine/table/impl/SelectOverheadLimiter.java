@@ -131,7 +131,7 @@ public class SelectOverheadLimiter {
             {
                 inputRecorder.getValue().setMergedListener(this);
                 inputTransformer = ((QueryTable) input).newModifiedColumnSetTransformer(result,
-                        result.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                        result.getDefinition().getColumnNameSet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
             }
 
             @Override
@@ -171,7 +171,7 @@ public class SelectOverheadLimiter {
                         new ListenerRecorder("clampSelectOverhead.flatResult()", flatResult, result);
                 flatRecorder.setMergedListener(this);
                 flatTransformer = ((QueryTable) flatResult).newModifiedColumnSetTransformer(result,
-                        result.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                        result.getDefinition().getColumnNameSet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
                 flatResult.addUpdateListener(flatRecorder);
                 synchronized (recorders) {

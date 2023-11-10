@@ -887,7 +887,7 @@ public class QueryTableAggregationTest {
                         new BigDecimalGenerator(),
                         new IntGenerator()));
 
-        final Set<String> keyColumnSet = new LinkedHashSet<>(table.getColumnSourceMap().keySet());
+        final Set<String> keyColumnSet = new LinkedHashSet<>(table.getDefinition().getColumnNames());
         keyColumnSet.remove("NonKey");
         final String[] keyColumns = keyColumnSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 

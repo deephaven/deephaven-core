@@ -1403,9 +1403,8 @@ public class ConstructSnapshot {
         }
 
         LongSizedDataStructure.intSize("construct snapshot", snapshot.rowsIncluded.size());
-
-        final Map<String, ? extends ColumnSource<?>> sourceMap = table.getColumnSourceMap();
-        final String[] columnSources = sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] columnSources =
+                table.getDefinition().getColumnNameSet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
         snapshot.dataColumns = new Object[columnSources.length];
         try (final SharedContext sharedContext =
@@ -1480,8 +1479,8 @@ public class ConstructSnapshot {
             snapshot.rowsIncluded = snapshot.rowsAdded.copy();
         }
 
-        final Map<String, ? extends ColumnSource<?>> sourceMap = table.getColumnSourceMap();
-        final String[] columnSources = sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] columnSources =
+                table.getDefinition().getColumnNameSet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
         try (final SharedContext sharedContext =
                 (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {

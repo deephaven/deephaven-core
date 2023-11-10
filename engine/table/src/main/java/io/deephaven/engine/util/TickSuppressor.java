@@ -131,7 +131,7 @@ public class TickSuppressor {
                             return;
                         }
 
-                        final int columnCount = resultTable.getColumnSourceMap().size();
+                        final int columnCount = resultTable.numColumns();
                         final int chunkSize = (int) Math.min(1 << 16, downstream.modified().size());
 
                         final ChunkSource.GetContext[] getContextArray = new ChunkSource.GetContext[columnCount];

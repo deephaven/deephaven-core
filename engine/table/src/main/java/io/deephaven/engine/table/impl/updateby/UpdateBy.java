@@ -47,6 +47,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -1198,7 +1199,10 @@ public abstract class UpdateBy {
 
         final MutableObject<String> timestampColumnName = new MutableObject<>(null);
         // create an initial set of all source columns
-        final Set<String> preservedColumnSet = new LinkedHashSet<>(source.getColumnSourceMap().keySet());
+        final LinkedHashSet<String> preservedColumnSet = source.getDefinition()
+                .getColumnStream()
+                .map(ColumnDefinition::getName)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         final Set<String> problems = new LinkedHashSet<>();
         final Map<String, ColumnSource<?>> opResultSources = new LinkedHashMap<>();
