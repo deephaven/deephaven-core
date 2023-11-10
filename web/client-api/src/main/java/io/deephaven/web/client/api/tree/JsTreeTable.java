@@ -41,6 +41,7 @@ import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.api.impl.TicketAndPromise;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.subscription.ViewportRow;
@@ -52,7 +53,6 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsOverlay;
@@ -119,33 +119,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     private static final double ACTION_EXPAND = 0b001;
     private static final double ACTION_EXPAND_WITH_DESCENDENTS = 0b011;
     private static final double ACTION_COLLAPSE = 0b100;
-
-    /**
-     * Pair of ticket and the promise that indicates it has been resolved. Tickets are usable before they are resolved,
-     * but to ensure that all operations completed successfully, the promise should be used to handle errors.
-     */
-    private class TicketAndPromise {
-        private final Ticket ticket;
-        private final Promise<?> promise;
-        private boolean released = false;
-
-        private TicketAndPromise(Ticket ticket, Promise<?> promise) {
-            this.ticket = ticket;
-            this.promise = promise;
-        }
-
-        private TicketAndPromise(Ticket ticket) {
-            this(ticket, Promise.resolve(ticket));
-        }
-
-        public void release() {
-            if (!released) {
-                // don't double-release, in cases where the same ticket is used for multiple parts of the request
-                released = true;
-                connection.releaseTicket(ticket);
-            }
-        }
-    }
 
     @TsInterface
     @TsName(namespace = "dh")
@@ -380,15 +353,15 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     // The current filter and sort state
     private List<FilterCondition> filters = new ArrayList<>();
     private List<Sort> sorts = new ArrayList<>();
-    private TicketAndPromise filteredTable;
-    private TicketAndPromise sortedTable;
+    private TicketAndPromise<?> filteredTable;
+    private TicketAndPromise<?> sortedTable;
 
     // Tracking for the current/next key table contents. Note that the key table doesn't necessarily
     // only include key columns, but all HierarchicalTable.isExpandByColumn columns.
     private Object[][] keyTableData;
     private Promise<JsTable> keyTable;
 
-    private TicketAndPromise viewTicket;
+    private TicketAndPromise<?> viewTicket;
     private Promise<BiDiStream<?, ?>> stream;
 
     // the "next" set of filters/sorts that we'll use. these either are "==" to the above fields, or are scheduled
@@ -532,15 +505,15 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 .then(cts -> Promise.resolve(new JsTable(connection, cts))));
     }
 
-    private TicketAndPromise prepareFilter() {
+    private TicketAndPromise<?> prepareFilter() {
         if (filteredTable != null) {
             return filteredTable;
         }
         if (nextFilters.isEmpty()) {
-            return new TicketAndPromise(widget.getTicket());
+            return new TicketAndPromise<>(widget.getTicket(), connection);
         }
         Ticket ticket = connection.getConfig().newTicket();
-        filteredTable = new TicketAndPromise(ticket, Callbacks.grpcUnaryPromise(c -> {
+        filteredTable = new TicketAndPromise<>(ticket, Callbacks.grpcUnaryPromise(c -> {
 
             HierarchicalTableApplyRequest applyFilter = new HierarchicalTableApplyRequest();
             applyFilter.setFiltersList(
@@ -548,11 +521,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             applyFilter.setInputHierarchicalTableId(widget.getTicket());
             applyFilter.setResultHierarchicalTableId(ticket);
             connection.hierarchicalTableServiceClient().apply(applyFilter, connection.metadata(), c::apply);
-        }));
+        }), connection);
         return filteredTable;
     }
 
-    private TicketAndPromise prepareSort(TicketAndPromise prevTicket) {
+    private TicketAndPromise<?> prepareSort(TicketAndPromise<?> prevTicket) {
         if (sortedTable != null) {
             return sortedTable;
         }
@@ -560,14 +533,14 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             return prevTicket;
         }
         Ticket ticket = connection.getConfig().newTicket();
-        sortedTable = new TicketAndPromise(ticket, Callbacks.grpcUnaryPromise(c -> {
+        sortedTable = new TicketAndPromise<>(ticket, Callbacks.grpcUnaryPromise(c -> {
             HierarchicalTableApplyRequest applyFilter = new HierarchicalTableApplyRequest();
             applyFilter.setSortsList(nextSort.stream().map(Sort::makeDescriptor).toArray(
                     io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SortDescriptor[]::new));
-            applyFilter.setInputHierarchicalTableId(prevTicket.ticket);
+            applyFilter.setInputHierarchicalTableId(prevTicket.ticket());
             applyFilter.setResultHierarchicalTableId(ticket);
             connection.hierarchicalTableServiceClient().apply(applyFilter, connection.metadata(), c::apply);
-        }));
+        }), connection);
         return sortedTable;
     }
 
@@ -587,15 +560,15 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return keyTable;
     }
 
-    private TicketAndPromise makeView(TicketAndPromise prevTicket) {
+    private TicketAndPromise<?> makeView(TicketAndPromise<?> prevTicket) {
         if (viewTicket != null) {
             return viewTicket;
         }
         Ticket ticket = connection.getConfig().newTicket();
         Promise<JsTable> keyTable = makeKeyTable();
-        viewTicket = new TicketAndPromise(ticket, Callbacks.grpcUnaryPromise(c -> {
+        viewTicket = new TicketAndPromise<>(ticket, Callbacks.grpcUnaryPromise(c -> {
             HierarchicalTableViewRequest viewRequest = new HierarchicalTableViewRequest();
-            viewRequest.setHierarchicalTableId(prevTicket.ticket);
+            viewRequest.setHierarchicalTableId(prevTicket.ticket());
             viewRequest.setResultViewId(ticket);
             keyTable.then(t -> {
                 if (keyTableData[0].length > 0) {
@@ -610,7 +583,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 c.apply(error, null);
                 return null;
             });
-        }));
+        }), connection);
         return viewTicket;
     }
 
@@ -652,9 +625,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     TicketAndPromise view = makeView(sort);
                     return Promise.all(
                             keyTable,
-                            filter.promise,
-                            sort.promise,
-                            view.promise);
+                            filter.promise(),
+                            sort.promise(),
+                            view.promise());
                 })
                 .then(results -> {
                     BitSet columnsBitset = makeColumnSubscriptionBitset();
@@ -693,7 +666,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                                     updateInterval, 0, 0);
                     double tableTicketOffset =
                             BarrageSubscriptionRequest.createTicketVector(doGetRequest,
-                                    viewTicket.ticket.getTicket_asU8());
+                                    viewTicket.ticket().getTicket_asU8());
                     BarrageSubscriptionRequest.startBarrageSubscriptionRequest(doGetRequest);
                     BarrageSubscriptionRequest.addTicket(doGetRequest, tableTicketOffset);
                     BarrageSubscriptionRequest.addColumns(doGetRequest, columnsOffset);
@@ -793,7 +766,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         this.filters = nextFilters;
 
         if (fireEvent) {
-            CustomEventInit updatedEvent = CustomEventInit.create();
+            CustomEventInit<TreeViewportData> updatedEvent = CustomEventInit.create();
             updatedEvent.setDetail(viewportData);
             fireEvent(EVENT_UPDATED, updatedEvent);
         }
@@ -1186,7 +1159,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         });
     }
 
-    @JsMethod
     public Promise<JsTotalsTableConfig> getTotalsTableConfig() {
         // we want to communicate to the JS dev that there is no default config, so we allow
         // returning null here, rather than a default config. They can then easily build a
@@ -1195,7 +1167,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return sourceTable.get().then(t -> Promise.resolve(t.getTotalsTableConfig()));
     }
 
-    @JsMethod
     public Promise<JsTotalsTable> getTotalsTable(@JsOptional Object config) {
         return sourceTable.get().then(t -> {
             // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
@@ -1207,7 +1178,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         });
     }
 
-    @JsMethod
     public Promise<JsTotalsTable> getGrandTotalsTable(@JsOptional Object config) {
         return sourceTable.get().then(t -> Promise.resolve(t.getGrandTotalsTable(config)));
     }
