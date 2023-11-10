@@ -697,7 +697,7 @@ public class QueryCompiler {
         final String classPathAsString = getClassPath() + File.pathSeparator + getJavaClassPath();
         final List<String> compilerOptions = Arrays.asList("-d", tempDirAsString, "-cp", classPathAsString);
 
-        final StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
+        final JavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
 
         boolean result = false;
         boolean exceptionThrown = false;
