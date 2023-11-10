@@ -602,8 +602,8 @@ public class Numeric {
             }
         }
 
-        // Return NaN if poisoned or too few values to compute variance.
-        if (count <= 1 || Double.isNaN(sum) || Double.isNaN(sum2) || Double.isNaN(count) || Double.isNaN(count2)) {
+        // Return NaN if overflow or too few values to compute variance.
+        if (count <= 1 || Double.isInfinite(sum) || Double.isInfinite(sum2)) {
             return Double.NaN;
         }
 
