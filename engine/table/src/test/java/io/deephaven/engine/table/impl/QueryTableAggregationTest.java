@@ -3844,8 +3844,8 @@ public class QueryTableAggregationTest {
         } catch (Exception ex) {
             io.deephaven.base.verify.Assert.instanceOf(ex, "ex", IllegalArgumentException.class);
             io.deephaven.base.verify.Assert.assertion(
-                    ex.getMessage().contains("Missing columns: [NonExistentCol]"),
-                    "ex.getMessage().contains(\"Missing columns: [NonExistentCol]\")",
+                    ex.getMessage().contains("Unknown column names [NonExistentCol]"),
+                    "ex.getMessage().contains(\"Unknown column names [NonExistentCol]\")",
                     ex.getMessage(),
                     "ex.getMessage()");
         }
