@@ -683,55 +683,23 @@ public class QueryCompiler {
         }
     }
 
-    private static volatile JavaCompiler JAVA_COMPILER = null;
-
-    private static JavaCompiler getJavaCompiler() {
-        JavaCompiler localCompiler;
-        if ((localCompiler = JAVA_COMPILER) == null) {
-            synchronized (QueryCompiler.class) {
-                if ((localCompiler = JAVA_COMPILER) == null) {
-                    JAVA_COMPILER = localCompiler = ToolProvider.getSystemJavaCompiler();
-                }
-            }
-        }
-        if (localCompiler == null) {
-            throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
-        }
-        return localCompiler;
-    }
-
-    /**
-     * While the JavaFileManager should be closed to clean up resources, using a singleton avoids repeated processing of
-     * the classpath, which is <b>very</b> expensive.
-     */
-    private static volatile JavaFileManager JAVA_FILE_MANAGER = null;
-
-    private static JavaFileManager getJavaFileManager() {
-        JavaFileManager localManager;
-        if ((localManager = JAVA_FILE_MANAGER) == null) {
-            synchronized (QueryCompiler.class) {
-                if ((localManager = JAVA_FILE_MANAGER) == null) {
-                    JAVA_FILE_MANAGER = localManager = getJavaCompiler().getStandardFileManager(null, null, null);
-                }
-            }
-        }
-        return localManager;
-    }
-
     private void maybeCreateClassHelper(String fqClassName, String finalCode, String[] splitPackageName,
             String rootPathAsString, String tempDirAsString) {
         final StringWriter compilerOutput = new StringWriter();
 
-        final JavaCompiler compiler = getJavaCompiler();
+        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) {
+            throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
+        }
 
         final String classPathAsString = getClassPath() + File.pathSeparator + getJavaClassPath();
         final List<String> compilerOptions = Arrays.asList("-d", tempDirAsString, "-cp", classPathAsString);
 
-        final JavaFileManager fileManager = getJavaFileManager();
+        final StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
 
-        final boolean result;
-        // the java file manager is not thread safe
-        synchronized (QueryCompiler.class) {
+        boolean result = false;
+        boolean exceptionThrown = false;
+        try {
             result = compiler.getTask(compilerOutput,
                     fileManager,
                     null,
@@ -739,6 +707,18 @@ public class QueryCompiler {
                     null,
                     Collections.singletonList(new JavaSourceFromString(fqClassName, finalCode)))
                     .call();
+        } catch (final Exception err) {
+            exceptionThrown = true;
+            throw err;
+        } finally {
+            try {
+                fileManager.close();
+            } catch (final IOException ioe) {
+                if (!exceptionThrown) {
+                    // noinspection ThrowFromFinallyBlock
+                    throw new UncheckedIOException("Could not close JavaFileManager", ioe);
+                }
+            }
         }
         if (!result) {
             throw new RuntimeException("Error compiling class " + fqClassName + ":\n" + compilerOutput);
@@ -771,7 +751,7 @@ public class QueryCompiler {
      * @return a Pair of success, and the compiler output
      */
     private Pair<Boolean, String> tryCompile(File basePath, Collection<File> javaFiles) throws IOException {
-        final JavaCompiler compiler = getJavaCompiler();
+        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
             throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
         }

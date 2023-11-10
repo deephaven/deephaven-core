@@ -88,7 +88,7 @@ public class TableServiceAsyncTest extends DeephavenSessionTestBase {
     private void checkSucceeded(TableHandle x, int chainLength) {
         assertThat(x.isSuccessful()).isTrue();
         try (final SafeCloseable ignored = getExecutionContext().open()) {
-            final Table result = getSession(session.getCurrentToken()).<Table>getExport(x.exportId().id()).get();
+            final Table result = serverSessionState.<Table>getExport(x.exportId().id()).get();
             ExecutionContext.getContext().getQueryScope().putParam("ChainLength", chainLength);
             final Table expected = TableTools.emptyTable(CHAIN_ROWS).update("Current = ii - 1 + ChainLength");
             TstUtils.assertTableEquals(expected, result);

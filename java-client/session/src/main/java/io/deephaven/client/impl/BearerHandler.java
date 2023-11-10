@@ -59,7 +59,7 @@ public final class BearerHandler extends CallCredentials implements ClientInterc
     }
 
     @VisibleForTesting
-    UUID getCurrentToken() {
+    public UUID getCurrentToken() {
         return UUID.fromString(bearerToken);
     }
 

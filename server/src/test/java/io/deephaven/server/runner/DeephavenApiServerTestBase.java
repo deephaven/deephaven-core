@@ -24,13 +24,11 @@ import io.deephaven.server.log.LogModule;
 import io.deephaven.server.plugin.js.JsPluginNoopConsumerModule;
 import io.deephaven.server.runner.scheduler.SchedulerDelegatingImplModule;
 import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
-import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.testing.GrpcCleanupRule;
-import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,7 +40,6 @@ import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -174,10 +171,6 @@ public abstract class DeephavenApiServerTestBase {
 
     public ScriptSession getScriptSession() {
         return scriptSessionProvider.get();
-    }
-
-    public SessionState getSession(@NotNull final UUID token) {
-        return server.sessionService().getSessionForToken(token);
     }
 
     public ExecutionContext getExecutionContext() {

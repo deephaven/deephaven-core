@@ -3,10 +3,8 @@
  */
 package io.deephaven.client.impl;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.deephaven.proto.DeephavenChannel;
 
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -23,12 +21,6 @@ public interface Session
      */
     @Override
     void close();
-
-    /**
-     * Returns the current auth token.
-     */
-    @VisibleForTesting
-    UUID getCurrentToken();
 
     /**
      * Closes the session.

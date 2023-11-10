@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -124,18 +123,13 @@ public final class SessionImpl extends SessionBase {
                 pingFrequency.toNanos(), pingFrequency.toNanos(), TimeUnit.NANOSECONDS);
     }
 
-    // exposed for Flight
-    BearerHandler _hackBearerHandler() {
+    // exposed for Flight and testing
+    public BearerHandler _hackBearerHandler() {
         return bearerHandler;
     }
 
     private ExportStates newExportStates() {
         return new ExportStates(this, bearerChannel.session(), bearerChannel.table(), exportTicketCreator);
-    }
-
-    @Override
-    public UUID getCurrentToken() {
-        return bearerHandler.getCurrentToken();
     }
 
     @Override
