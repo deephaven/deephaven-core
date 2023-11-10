@@ -1423,10 +1423,8 @@ public class DateTimeUtils {
      *         Epoch converted to a {@link LocalDateTime} in UTC timezone
      */
     public static @Nullable LocalDateTime epochNanosToLocalDateTimeUTC(final long nanos) {
-        if (nanos == QueryConstants.NULL_LONG) {
-            return null;
-        }
-        return LocalDateTime.ofEpochSecond(nanos / SECOND, (int) (nanos % SECOND), ZoneOffset.UTC);
+        return nanos == NULL_LONG ? null
+                : LocalDateTime.ofEpochSecond(nanos / 1_000_000_000L, (int) (nanos % 1_000_000_000L), ZoneOffset.UTC);
     }
 
     /**
@@ -1437,10 +1435,9 @@ public class DateTimeUtils {
      *         Epoch converted to a {@link LocalDateTime} in UTC timezone
      */
     public static @Nullable LocalDateTime epochMicrosToLocalDateTimeUTC(final long micros) {
-        if (micros == QueryConstants.NULL_LONG) {
-            return null;
-        }
-        return epochNanosToLocalDateTimeUTC(micros * MICRO);
+        return micros == NULL_LONG ? null
+                : LocalDateTime.ofEpochSecond(micros / 1_000_000L, (int) ((micros % 1_000_000L) * MICRO),
+                        ZoneOffset.UTC);
     }
 
     /**
@@ -1451,10 +1448,8 @@ public class DateTimeUtils {
      *         Epoch converted to a {@link LocalDateTime} in UTC timezone
      */
     public static @Nullable LocalDateTime epochMillisToLocalDateTimeUTC(final long millis) {
-        if (millis == QueryConstants.NULL_LONG) {
-            return null;
-        }
-        return epochNanosToLocalDateTimeUTC(millis * MILLI);
+        return millis == NULL_LONG ? null
+                : LocalDateTime.ofEpochSecond(millis / 1_000L, (int) ((millis % 1_000L) * MILLI), ZoneOffset.UTC);
     }
 
     // endregion
