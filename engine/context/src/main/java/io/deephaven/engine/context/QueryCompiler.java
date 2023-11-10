@@ -683,22 +683,19 @@ public class QueryCompiler {
         }
     }
 
-    private static JavaCompiler JAVA_COMPILER = null;
+    private static volatile JavaCompiler JAVA_COMPILER = null;
 
     private static JavaCompiler getJavaCompiler() {
-        JavaCompiler localCompiler = JAVA_COMPILER;
-        if (localCompiler != null) {
-            return localCompiler;
+        JavaCompiler localCompiler;
+        if ((localCompiler = JAVA_COMPILER) == null) {
+            synchronized (QueryCompiler.class) {
+                if ((localCompiler = JAVA_COMPILER) == null) {
+                    localCompiler = JAVA_COMPILER = ToolProvider.getSystemJavaCompiler();
+                }
+            }
         }
-        synchronized (QueryCompiler.class) {
-            localCompiler = JAVA_COMPILER;
-            if (localCompiler != null) {
-                return localCompiler;
-            }
-            localCompiler = JAVA_COMPILER = ToolProvider.getSystemJavaCompiler();
-            if (localCompiler == null) {
-                throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
-            }
+        if (localCompiler == null) {
+            throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
         }
         return localCompiler;
     }
@@ -707,21 +704,15 @@ public class QueryCompiler {
      * While the JavaFileManager should be closed to clean up resources, using a singleton avoids repeated processing of
      * the classpath, which is <b>very</b> expensive.
      */
-    private static JavaFileManager JAVA_FILE_MANAGER = null;
+    private static volatile JavaFileManager JAVA_FILE_MANAGER = null;
 
     private static JavaFileManager getJavaFileManager() {
-        JavaFileManager localManager = JAVA_FILE_MANAGER;
-        if (localManager != null) {
-            return localManager;
-        }
-        synchronized (QueryCompiler.class) {
-            localManager = JAVA_FILE_MANAGER;
-            if (localManager != null) {
-                return localManager;
-            }
-            localManager = JAVA_FILE_MANAGER = getJavaCompiler().getStandardFileManager(null, null, null);
-            if (localManager == null) {
-                throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
+        JavaFileManager localManager;
+        if ((localManager = JAVA_FILE_MANAGER) == null) {
+            synchronized (QueryCompiler.class) {
+                if ((localManager = JAVA_FILE_MANAGER) == null) {
+                    localManager = JAVA_FILE_MANAGER = getJavaCompiler().getStandardFileManager(null, null, null);
+                }
             }
         }
         return localManager;

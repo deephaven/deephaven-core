@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -130,6 +131,11 @@ public final class SessionImpl extends SessionBase {
 
     private ExportStates newExportStates() {
         return new ExportStates(this, bearerChannel.session(), bearerChannel.table(), exportTicketCreator);
+    }
+
+    @Override
+    public UUID getCurrentToken() {
+        return bearerHandler.getCurrentToken();
     }
 
     @Override

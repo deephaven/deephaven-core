@@ -6,6 +6,7 @@ package io.deephaven.server.runner;
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.client.ClientDefaultsModule;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -23,11 +24,13 @@ import io.deephaven.server.log.LogModule;
 import io.deephaven.server.plugin.js.JsPluginNoopConsumerModule;
 import io.deephaven.server.runner.scheduler.SchedulerDelegatingImplModule;
 import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
+import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.testing.GrpcCleanupRule;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,6 +42,7 @@ import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -85,7 +89,8 @@ public abstract class DeephavenApiServerTestBase {
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
-    private SafeCloseable executionContext;
+    private ExecutionContext executionContext;
+    private SafeCloseable executionContextCloseable;
 
     private LogBuffer logBuffer;
     private SafeCloseable scopeCloseable;
@@ -127,7 +132,8 @@ public abstract class DeephavenApiServerTestBase {
                 .injectFields(this);
 
         final PeriodicUpdateGraph updateGraph = server.getUpdateGraph().cast();
-        executionContext = TestExecutionContext.createForUnitTests().withUpdateGraph(updateGraph).open();
+        executionContext = TestExecutionContext.createForUnitTests().withUpdateGraph(updateGraph);
+        executionContextCloseable = executionContext.open();
         if (updateGraph.isUnitTestModeAllowed()) {
             updateGraph.enableUnitTestMode();
             updateGraph.resetForUnitTests(false);
@@ -153,7 +159,7 @@ public abstract class DeephavenApiServerTestBase {
         if (updateGraph.isUnitTestModeAllowed()) {
             updateGraph.resetForUnitTests(true);
         }
-        executionContext.close();
+        executionContextCloseable.close();
 
         scheduler.shutdown();
     }
@@ -168,6 +174,14 @@ public abstract class DeephavenApiServerTestBase {
 
     public ScriptSession getScriptSession() {
         return scriptSessionProvider.get();
+    }
+
+    public SessionState getSession(@NotNull final UUID token) {
+        return server.sessionService().getSessionForToken(token);
+    }
+
+    public ExecutionContext getExecutionContext() {
+        return executionContext;
     }
 
     /**
