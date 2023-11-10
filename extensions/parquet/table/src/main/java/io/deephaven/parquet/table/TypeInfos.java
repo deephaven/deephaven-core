@@ -152,10 +152,7 @@ public class TypeInfos {
             }
 
             @Override
-            public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
-                if (!isValidFor(dataType)) {
-                    throw new IllegalArgumentException("Invalid data type " + dataType);
-                }
+            public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class dataType) {
                 return type(PrimitiveTypeName.BINARY, required, repeating)
                         .as(LogicalTypeAnnotation.decimalType(precisionAndScale.scale, precisionAndScale.precision));
             }
@@ -195,10 +192,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(32, true));
         }
     }
@@ -215,10 +209,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.INT64, required, repeating);
         }
     }
@@ -235,10 +226,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(16, true));
         }
     }
@@ -255,10 +243,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.BOOLEAN, required, repeating);
         }
     }
@@ -275,10 +260,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.FLOAT, required, repeating);
         }
     }
@@ -295,10 +277,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.DOUBLE, required, repeating);
         }
     }
@@ -315,10 +294,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(16, false));
         }
     }
@@ -335,10 +311,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(8, true));
         }
     }
@@ -354,10 +327,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.BINARY, required, repeating)
                     .as(LogicalTypeAnnotation.stringType());
         }
@@ -374,10 +344,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             // Write instants as Parquet TIMESTAMP(isAdjustedToUTC = true, unit = NANOS)
             return type(PrimitiveTypeName.INT64, required, repeating)
                     .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
@@ -395,10 +362,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             // Write LocalDateTime as Parquet TIMESTAMP(isAdjustedToUTC = false, unit = NANOS)
             return type(PrimitiveTypeName.INT64, required, repeating)
                     .as(LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.NANOS));
@@ -416,10 +380,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.INT32, required, repeating)
                     .as(LogicalTypeAnnotation.dateType());
         }
@@ -436,10 +397,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             // Always write in (isAdjustedToUTC = true, unit = NANOS) format
             return type(PrimitiveTypeName.INT64, required, repeating)
                     .as(LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
@@ -463,7 +421,7 @@ public class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.BINARY, required, repeating)
                     .as(LogicalTypeAnnotation.decimalType(0, 1));
         }
@@ -476,6 +434,17 @@ public class TypeInfos {
         @SuppressWarnings("BooleanMethodIsAlwaysInverted")
         default boolean isValidFor(Class<?> clazz) {
             return getTypes().contains(clazz);
+        }
+
+        default PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
+            throw new UnsupportedOperationException("Implement this method if using the default getBuilder()");
+        }
+
+        default PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
+            if (!isValidFor(dataType)) {
+                throw new IllegalArgumentException("Invalid data type " + dataType);
+            }
+            return getBuilderImpl(required, repeating, dataType);
         }
 
         default Type createSchemaType(
@@ -510,8 +479,6 @@ public class TypeInfos {
                             builder.named("item")).named(parquetColumnName))
                     .as(LogicalTypeAnnotation.listType()).named(parquetColumnName);
         }
-
-        PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType);
     }
 
     private static class CodecType<T> implements TypeInfo {
