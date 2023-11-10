@@ -3,7 +3,7 @@
 #
 
 """ This module supports the conversion between Deephaven tables and pandas DataFrames. """
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Literal
 
 import jpy
 import numpy as np
@@ -112,8 +112,8 @@ _PYARROW_TO_PANDAS_TYPE_MAPPERS = {
 }
 
 
-def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None, conv_null: bool = True) -> \
-        pd.DataFrame:
+def to_pandas(table: Table, cols: List[str] = None, dtype_backend: Literal[None, "pyarrow", "numpy_nullable"] = None,
+              conv_null: bool = True) -> pd.DataFrame:
     """Produces a pandas DataFrame from a table.
 
     Note that the **entire table** is going to be cloned into memory, so the total number of entries in the table
