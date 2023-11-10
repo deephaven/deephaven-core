@@ -92,13 +92,14 @@ def produce(
         options_builder = (
             _JKafkaPublishOptions.builder()
             .table(table.j_table)
-            .topic(topic)
             .config(j_properties(kafka_config))
             .keySpec(key_spec.j_object)
             .valueSpec(value_spec.j_object)
             .lastBy(last_by_key_columns and key_spec is not KeyValueSpec.IGNORE)
             .publishInitial(publish_initial)
         )
+        if topic:
+            options_builder.topic(topic)
         if partition:
             options_builder.partition(partition)
         if topic_column:

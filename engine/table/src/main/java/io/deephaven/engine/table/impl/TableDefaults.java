@@ -135,6 +135,28 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         return rawColumnSource.cast(clazz, componentType);
     }
 
+    @Override
+    @FinalDefault
+    default void ensureColumnSource(String sourceName, Class<?> clazz) {
+        final TableDefinition td = getDefinition();
+        final ColumnDefinition<?> cd = td.getColumn(sourceName);
+        if (cd == null) {
+            throw new NoSuchColumnException(td.getColumnNames(), Collections.singletonList(sourceName));
+        }
+        cd.ensureCastableTo(clazz);
+    }
+
+    @Override
+    @FinalDefault
+    default void ensureColumnSource(String sourceName, Class<?> clazz, @Nullable Class<?> componentType) {
+        final TableDefinition td = getDefinition();
+        final ColumnDefinition<?> cd = td.getColumn(sourceName);
+        if (cd == null) {
+            throw new NoSuchColumnException(td.getColumnNames(), Collections.singletonList(sourceName));
+        }
+        cd.ensureCastableTo(clazz, componentType);
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // Filter Operations
     // -----------------------------------------------------------------------------------------------------------------

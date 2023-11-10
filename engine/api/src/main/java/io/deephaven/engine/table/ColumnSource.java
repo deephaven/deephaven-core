@@ -150,7 +150,7 @@ public interface ColumnSource<T>
      * {@code String} data:
      *
      * <pre>
-     *     ColumnSource&lt;String&gt; colSource = table.getColumnSource("MyString").getParameterized(String.class)
+     *     ColumnSource&lt;String&gt; colSource = table.getColumnSource("MyString").cast(String.class)
      * </pre>
      * <p>
      * Due to the nature of type erasure, the JVM will still insert an additional cast to {@code TYPE} when elements are
@@ -184,7 +184,7 @@ public interface ColumnSource<T>
      * {@code String} data:
      *
      * <pre>
-     *     ColumnSource&lt;String&gt; colSource = table.getColumnSource("MyString", null).getParameterized(String.class)
+     *     ColumnSource&lt;String&gt; colSource = table.getColumnSource("MyString").cast(String.class, null)
      * </pre>
      * <p>
      * Due to the nature of type erasure, the JVM will still insert an additional cast to {@code TYPE} when elements are

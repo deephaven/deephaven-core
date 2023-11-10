@@ -133,7 +133,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      */
     public PublishToKafka(
             final Properties props,
-            final Table table,
+            Table table,
             final String defaultTopic,
             final Integer defaultPartition,
             final String[] keyColumns,
@@ -146,7 +146,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
             final ColumnName partitionColumn,
             final ColumnName timestampColumn,
             final boolean publishInitial) {
-        this.table = table;
+        this.table = (table = table.coalesce());
         this.producer = new KafkaProducer<>(
                 props,
                 Objects.requireNonNull(kafkaKeySerializer),
@@ -201,7 +201,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
             return defaultPartition;
         }
         final int partition = partitionChunk.get(index);
-        return partition == QueryConstants.NULL_INT ? defaultPartition : (Integer) partition;
+        return partition == QueryConstants.NULL_INT ? defaultPartition : Integer.valueOf(partition);
     }
 
     public static Long timestampMillis(LongChunk<?> nanosChunk, int index) {

@@ -258,6 +258,10 @@ public interface Table extends
      */
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz, @Nullable Class<?> componentType);
 
+    void ensureColumnSource(String sourceName, Class<?> clazz);
+
+    void ensureColumnSource(String sourceName, Class<?> clazz, @Nullable Class<?> componentType);
+
     Map<String, ? extends ColumnSource<?>> getColumnSourceMap();
 
     Collection<? extends ColumnSource<?>> getColumnSources();

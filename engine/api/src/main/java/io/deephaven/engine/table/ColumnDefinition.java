@@ -504,6 +504,28 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         }
     }
 
+
+    public final boolean isCastableTo(Class<?> clazz) {
+        return clazz.isAssignableFrom(dataType);
+    }
+
+    public final boolean isCastableTo(Class<?> clazz, @Nullable Class<?> componentType) {
+        return isCastableTo(clazz) && isComponentTypeCastableTo(componentType);
+    }
+
+    public final void ensureCastableTo(Class<?> clazz) {
+
+    }
+
+    public final void ensureCastableTo(Class<?> clazz, @Nullable Class<?> componentType) {
+
+    }
+
+    private boolean isComponentTypeCastableTo(@Nullable Class<?> other) {
+        return (other == null && componentType == null)
+                || (other != null && componentType != null && other.isAssignableFrom(componentType));
+    }
+
     public boolean equals(final Object other) {
         if (this == other) {
             return true;
