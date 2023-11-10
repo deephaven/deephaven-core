@@ -284,6 +284,16 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     }
 
     /**
+     * A Table object containing all currently known keys used for this partitioned table.
+     *
+     * @return Table
+     */
+    @JsProperty
+    public JsTable getKeyTable() {
+        return keys;
+    }
+
+    /**
      * Indicates that this PartitionedTable will no longer be used, removing subcriptions to updated keys, etc. This
      * will not affect tables in use.
      */
