@@ -1772,7 +1772,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             return memoizeResult(MemoizedOperationKey.dropColumns(columnNames), () -> QueryPerformanceRecorder
                     .withNugget("dropColumns(" + Arrays.toString(columnNames) + ")", sizeForInstrumentation(), () -> {
                         final Mutable<Table> result = new MutableObject<>();
-                        definition.checkAvailableColumns(Arrays.asList(columnNames));
+                        definition.checkColumns(Arrays.asList(columnNames));
                         final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(columns);
                         for (String columnName : columnNames) {
                             newColumns.remove(columnName);

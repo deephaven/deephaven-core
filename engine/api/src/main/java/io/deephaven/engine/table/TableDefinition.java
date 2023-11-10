@@ -305,12 +305,25 @@ public class TableDefinition implements LogOutputAppendable {
     }
 
     /**
+     * Check this definition to ensure that {@code columnName} is present.
+     *
+     * @param columnName The column name to check
+     * @throws NoSuchColumnException If {@code columnName} is missing
+     */
+    public final void checkColumn(@NotNull String columnName) {
+        final Set<String> columnNames = getColumnNameSet();
+        if (!columnNames.contains(columnName)) {
+            throw new NoSuchColumnException(columnNames, columnName);
+        }
+    }
+
+    /**
      * Check this definition to ensure that all {@code columns} are present.
      *
      * @param columns The column names to check
-     * @throws NoSuchColumnException If any columns were missing
+     * @throws NoSuchColumnException If any {@code columns} were missing
      */
-    public final void checkAvailableColumns(@NotNull Collection<String> columns) {
+    public final void checkColumns(@NotNull Collection<String> columns) {
         final Set<String> columnNames = getColumnNameSet();
         final List<String> missingColumns = columns
                 .stream()

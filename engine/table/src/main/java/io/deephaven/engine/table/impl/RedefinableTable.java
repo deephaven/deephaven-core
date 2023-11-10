@@ -85,7 +85,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
             return this;
         }
         final Set<String> columnNamesToDrop = new HashSet<>(Arrays.asList(columnNames));
-        definition.checkAvailableColumns(columnNamesToDrop);
+        definition.checkColumns(columnNamesToDrop);
         List<ColumnDefinition<?>> resultColumns = new ArrayList<>();
         for (ColumnDefinition<?> cDef : definition.getColumns()) {
             if (!columnNamesToDrop.contains(cDef.getName())) {

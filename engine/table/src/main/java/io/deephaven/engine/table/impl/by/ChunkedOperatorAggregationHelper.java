@@ -47,7 +47,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.LongFunction;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -94,7 +93,7 @@ public class ChunkedOperatorAggregationHelper {
                 throw new IllegalArgumentException(
                         "aggregation: initial groups must not be specified if no group-by columns are specified");
             }
-            initialKeys.getDefinition().checkAvailableColumns(keyNames);
+            initialKeys.getDefinition().checkColumns(keyNames);
             for (final String keyName : keyNames) {
                 final ColumnDefinition<?> inputDef = input.getDefinition().getColumn(keyName);
                 final ColumnDefinition<?> initialKeysDef = initialKeys.getDefinition().getColumn(keyName);

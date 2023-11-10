@@ -137,7 +137,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
     @Override
     protected final void checkAvailableColumns(@NotNull final Collection<String> columns) {
-        root.getDefinition().checkAvailableColumns(columns);
+        root.getDefinition().checkColumns(columns);
     }
 
     /**
