@@ -2,14 +2,14 @@
 #     Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 """The dbc package includes the modules and functions for using external databases with Deephaven."""
-from typing import Any
+from typing import Any, Literal
 
 import deephaven.arrow as dharrow
 from deephaven import DHError
 from deephaven.table import Table
 
 
-def read_sql(conn: Any, query: str, driver: str = "connectorx") -> Table:
+def read_sql(conn: Any, query: str, driver: Literal["odbc", "adbc", "connectorx"] = "connectorx") -> Table:
     """Executes the provided SQL query via a supported driver and returns a Deephaven table.
 
     Args:

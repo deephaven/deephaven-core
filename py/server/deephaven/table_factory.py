@@ -36,7 +36,6 @@ _JSupplier = jpy.get_type('java.util.function.Supplier')
 _JFunctionGeneratedTableFactory = jpy.get_type("io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory")
 
 
-
 def empty_table(size: int) -> Table:
     """Creates a table with rows but no columns.
 
@@ -394,7 +393,6 @@ def function_generated_table(table_generator: Callable[..., Table],
         exec_ctx = execution_context.get_exec_ctx()
         if exec_ctx is None:
             raise ValueError("No execution context is available and exec_ctx was not provided! ")
-
 
     def table_generator_function():
         with exec_ctx:
