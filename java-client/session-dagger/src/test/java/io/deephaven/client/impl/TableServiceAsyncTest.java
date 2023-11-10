@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TableServiceAsyncTest extends DeephavenSessionTestBase {
 
     private static final Duration GETTIME = Duration.ofSeconds(15);
-    private static final int CHAIN_OPS = 50;
+    private static final int CHAIN_OPS = 250;
     private static final int CHAIN_ROWS = 1000;
 
     @Test(timeout = 20000)
@@ -93,8 +93,11 @@ public class TableServiceAsyncTest extends DeephavenSessionTestBase {
             if (i == 0) {
                 longChain.add(TableSpec.empty(numRows).view("I_0=ii"));
             } else {
+                // create a chain using the previous table even though we don't need the data
                 final TableSpec prev = longChain.get(i - 1);
-                longChain.add(prev.updateView("I_" + i + " = 1 + I_" + (i - 1)));
+                // to avoid timeouts due to compilation variance reuse the same expression, including the destination
+                // column which shows up in the generated formula's FormulaEvaluationException
+                longChain.add(prev.updateView("I_1 = 1 + I_0"));
             }
         }
         return longChain;

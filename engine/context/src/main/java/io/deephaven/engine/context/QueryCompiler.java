@@ -683,19 +683,60 @@ public class QueryCompiler {
         }
     }
 
+    private static JavaCompiler JAVA_COMPILER = null;
+
+    private static JavaCompiler getJavaCompiler() {
+        JavaCompiler localCompiler = JAVA_COMPILER;
+        if (localCompiler != null) {
+            return localCompiler;
+        }
+        synchronized (QueryCompiler.class) {
+            localCompiler = JAVA_COMPILER;
+            if (localCompiler != null) {
+                return localCompiler;
+            }
+            localCompiler = JAVA_COMPILER = ToolProvider.getSystemJavaCompiler();
+            if (localCompiler == null) {
+                throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
+            }
+        }
+        return localCompiler;
+    }
+
+    /**
+     * While the JavaFileManager should be closed to clean up resources, using a singleton avoids repeated processing of
+     * the classpath, which is <b>very</b> expensive.
+     */
+    private static JavaFileManager JAVA_FILE_MANAGER = null;
+
+    private static JavaFileManager getJavaFileManager() {
+        JavaFileManager localManager = JAVA_FILE_MANAGER;
+        if (localManager != null) {
+            return localManager;
+        }
+        synchronized (QueryCompiler.class) {
+            localManager = JAVA_FILE_MANAGER;
+            if (localManager != null) {
+                return localManager;
+            }
+            localManager = JAVA_FILE_MANAGER = getJavaCompiler().getStandardFileManager(null, null, null);
+            if (localManager == null) {
+                throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
+            }
+        }
+        return localManager;
+    }
+
     private void maybeCreateClassHelper(String fqClassName, String finalCode, String[] splitPackageName,
             String rootPathAsString, String tempDirAsString) {
         final StringWriter compilerOutput = new StringWriter();
 
-        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        if (compiler == null) {
-            throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
-        }
+        final JavaCompiler compiler = getJavaCompiler();
 
         final String classPathAsString = getClassPath() + File.pathSeparator + getJavaClassPath();
         final List<String> compilerOptions = Arrays.asList("-d", tempDirAsString, "-cp", classPathAsString);
 
-        final StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
+        final JavaFileManager fileManager = getJavaFileManager();
 
         final boolean result = compiler.getTask(compilerOutput,
                 fileManager,
@@ -735,7 +776,7 @@ public class QueryCompiler {
      * @return a Pair of success, and the compiler output
      */
     private Pair<Boolean, String> tryCompile(File basePath, Collection<File> javaFiles) throws IOException {
-        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        final JavaCompiler compiler = getJavaCompiler();
         if (compiler == null) {
             throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
         }
