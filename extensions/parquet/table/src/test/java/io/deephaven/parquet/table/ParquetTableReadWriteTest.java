@@ -62,7 +62,6 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -129,6 +128,7 @@ public final class ParquetTableReadWriteTest {
                         "someBiColumn = java.math.BigInteger.valueOf(ii)",
                         "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
                         "someTimeColumn = i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
+                        "someDateTimeColumn = i % 10 == 0 ? null : java.time.LocalDateTime.of(2000+i%10, i%12+1, i%30+1, (i+4)%24, (i+5)%60, (i+6)%60, i)",
                         "nullKey = i < -1?`123`:null",
                         "nullIntColumn = (int)null",
                         "nullLongColumn = (long)null",
@@ -507,9 +507,10 @@ public final class ParquetTableReadWriteTest {
                         "someByteArrayColumn = new byte[] {i % 10 == 0 ? null : (byte)i}",
                         "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
                         "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
-                        "someBiColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
-                        "someDateColumn = new java.time.LocalDate[] {i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)}",
-                        "someTimeColumn = new java.time.LocalTime[] {i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)}",
+                        "someBiArrayColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
+                        "someDateArrayColumn = new java.time.LocalDate[] {i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)}",
+                        "someTimeArrayColumn = new java.time.LocalTime[] {i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)}",
+                        "someDateTimeArrayColumn = new java.time.LocalDateTime[] {i % 10 == 0 ? null : java.time.LocalDateTime.of(2000+i%10, i%12+1, i%30+1, (i+4)%24, (i+5)%60, (i+6)%60, i)}",
                         "nullStringArrayColumn = new String[] {(String)null}",
                         "nullIntArrayColumn = new int[] {(int)null}",
                         "nullLongArrayColumn = new long[] {(long)null}",
@@ -1271,8 +1272,10 @@ public final class ParquetTableReadWriteTest {
     public void readWriteDateTimeTest() {
         final int NUM_ROWS = 1000;
         final Table table = TableTools.emptyTable(NUM_ROWS).view(
-                "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
-                "someTimeColumn = i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)");
+                "someDateColumn = java.time.LocalDate.ofEpochDay(i)",
+                "someTimeColumn = java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
+                "someLocalDateTimeColumn = java.time.LocalDateTime.of(2000+i%10, i%12+1, i%30+1, (i+4)%24, (i+5)%60, (i+6)%60, i)",
+                "someInstantColumn = DateTimeUtils.now() + i").select();
         final File dest = new File(rootFile, "readWriteDateTimeTest.parquet");
         writeReadTableTest(table, dest);
 
@@ -1286,9 +1289,22 @@ public final class ParquetTableReadWriteTest {
         final ColumnChunkMetaData timeColMetadata = metadata.getBlocks().get(0).getColumns().get(1);
         assertTrue(timeColMetadata.toString().contains("someTimeColumn"));
         assertEquals(PrimitiveType.PrimitiveTypeName.INT64, timeColMetadata.getPrimitiveType().getPrimitiveTypeName());
-        final boolean isAdjustedToUTC = true;
-        assertEquals(LogicalTypeAnnotation.timeType(isAdjustedToUTC, LogicalTypeAnnotation.TimeUnit.NANOS),
+        assertEquals(LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.NANOS),
                 timeColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
+
+        final ColumnChunkMetaData localDateTimeColMetadata = metadata.getBlocks().get(0).getColumns().get(2);
+        assertTrue(localDateTimeColMetadata.toString().contains("someLocalDateTimeColumn"));
+        assertEquals(PrimitiveType.PrimitiveTypeName.INT64,
+                localDateTimeColMetadata.getPrimitiveType().getPrimitiveTypeName());
+        assertEquals(LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.NANOS),
+                localDateTimeColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
+
+        final ColumnChunkMetaData instantColMetadata = metadata.getBlocks().get(0).getColumns().get(3);
+        assertTrue(instantColMetadata.toString().contains("someInstantColumn"));
+        assertEquals(PrimitiveType.PrimitiveTypeName.INT64,
+                instantColMetadata.getPrimitiveType().getPrimitiveTypeName());
+        assertEquals(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS),
+                instantColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
     }
 
     /**

@@ -723,13 +723,10 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         @Override
         public Optional<ToPage<ATTR, ?>> visit(
                 final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
-            // TODO(deephaven-core#976): Unable to read parquet TimestampLogicalTypeAnnotation that is not adjusted
-            // to UTC
             if (timestampLogicalType.isAdjustedToUTC()) {
-                return Optional
-                        .of(ToInstantPage.create(componentType, timestampLogicalType.getUnit()));
+                return Optional.of(ToInstantPage.create(componentType, timestampLogicalType.getUnit()));
             }
-            return Optional.empty();
+            return Optional.of(ToLocalDateTimePage.create(componentType, timestampLogicalType.getUnit()));
         }
 
         @Override
