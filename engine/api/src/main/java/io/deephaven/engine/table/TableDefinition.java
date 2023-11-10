@@ -9,6 +9,7 @@ import io.deephaven.base.cache.OpenAddressedCanonicalizationCache;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.qst.column.header.ColumnHeader;
 import org.jetbrains.annotations.NotNull;
@@ -16,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map.Entry;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -205,6 +207,13 @@ public class TableDefinition implements LogOutputAppendable {
     }
 
     /**
+     * @return An unmodifiable set of column names
+     */
+    public Set<String> getColumnNameSet() {
+        return getColumnNameMap().keySet();
+    }
+
+    /**
      * @return A list of {@link ColumnDefinition column definitions} for all
      *         {@link ColumnDefinition.ColumnType#Partitioning partitioning} columns in the same relative order as the
      *         column definitions list
@@ -293,6 +302,23 @@ public class TableDefinition implements LogOutputAppendable {
     @SuppressWarnings("unused")
     public String getColumnNamesAsString() {
         return getColumnStream().map(ColumnDefinition::getName).collect(Collectors.joining(","));
+    }
+
+    /**
+     * Check this definition to ensure that all {@code columns} are present.
+     *
+     * @param columns The column names to check
+     * @throws NoSuchColumnException If any columns were missing
+     */
+    public final void checkAvailableColumns(@NotNull Collection<String> columns) {
+        final Set<String> columnNames = getColumnNameSet();
+        final List<String> missingColumns = columns
+                .stream()
+                .filter(Predicate.not(columnNames::contains))
+                .collect(Collectors.toList());
+        if (!missingColumns.isEmpty()) {
+            throw new NoSuchColumnException(columnNames, missingColumns);
+        }
     }
 
     /**

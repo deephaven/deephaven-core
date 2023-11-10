@@ -1020,13 +1020,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     }
 
     @Override
-    public void checkAvailableColumns(@NotNull final Collection<String> columns) {
-        final Map<String, ? extends ColumnSource<?>> sourceMap = getColumnSourceMap();
-        final String[] missingColumns =
-                columns.stream().filter(col -> !sourceMap.containsKey(col)).toArray(String[]::new);
-        if (missingColumns.length > 0) {
-            throw new NoSuchColumnException(sourceMap.keySet(), Arrays.asList(missingColumns));
-        }
+    public final void checkAvailableColumns(@NotNull final Collection<String> columns) {
+        getDefinition().checkAvailableColumns(columns);
     }
 
     public void copySortableColumns(
@@ -1109,9 +1104,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
 
         // Now go through the other columns in the table and add them if they were unchanged
-        final Map<String, ? extends ColumnSource<?>> sourceMap = destination.getColumnSourceMap();
+        final Set<String> destKeys = destination.getDefinition().getColumnNameSet();
         for (String col : currentSortableSet) {
-            if (sourceMap.containsKey(col)) {
+            if (destKeys.contains(col)) {
                 newSortableSet.add(col);
             }
         }
