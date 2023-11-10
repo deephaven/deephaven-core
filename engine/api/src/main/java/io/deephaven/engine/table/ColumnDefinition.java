@@ -504,10 +504,24 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         }
     }
 
+    /**
+     * Checks if {@link #getDataType() dataType} can be cast to {@code destDataType}. If not, this throws a
+     * {@link ClassCastException}.
+     *
+     * @param destDataType the destination data type
+     */
     public final void checkCastTo(Class<?> destDataType) {
         TypeHelper.checkCastTo("[" + name + "]", dataType, destDataType);
     }
 
+    /**
+     * Checks if {@link #getDataType() dataType} can be cast to {@code destDataType} and checks that
+     * {@link #getComponentType() componentType} can be cast to {@code destComponentType} (both component types must be
+     * present and cast-able, or both must be {@code null}). If not, this throws a {@link ClassCastException}.
+     *
+     * @param destDataType the destination data type
+     * @param destComponentType the destination component type, may be {@code null}
+     */
     public final void checkCastTo(Class<?> destDataType, @Nullable Class<?> destComponentType) {
         TypeHelper.checkCastTo("[" + name + "]", dataType, componentType, destDataType, destComponentType);
     }

@@ -279,6 +279,52 @@ public class TableDefinition implements LogOutputAppendable {
     }
 
     /**
+     * Checks if {@code columnName} exists. If not, throws a NoSuchColumnException.
+     *
+     * @param columnName the column name
+     */
+    public final void checkColumn(@NotNull final String columnName) {
+        if (!getColumnNameMap().containsKey(columnName)) {
+            throw new IllegalArgumentException(); // todo
+        }
+    }
+
+    /**
+     * Checks if {@code columnName} exists and if it is castable to {@code clazz}. Otherwise, throws a
+     * NoSuchColumnException or a {@link ClassCastException}.
+     *
+     * @param columnName the column name
+     * @param clazz the data type
+     * @see ColumnDefinition#checkCastTo(Class)
+     */
+    public final void checkColumn(final String columnName, Class<?> clazz) {
+        final ColumnDefinition<?> cd = getColumn(columnName);
+        if (cd == null) {
+            // todo: need nosuchelement
+            throw new IllegalArgumentException("");
+        }
+        cd.checkCastTo(clazz);
+    }
+
+    /**
+     * Checks if {@code columnName} exists and if it is castable to {@code clazz} and {@code componentType}. Otherwise,
+     * throws a NoSuchColumnException or a {@link ClassCastException}.
+     *
+     * @param columnName the column name
+     * @param clazz the data type
+     * @param componentType the component type
+     * @see ColumnDefinition#checkCastTo(Class, Class)
+     */
+    public final void checkColumn(final String columnName, Class<?> clazz, Class<?> componentType) {
+        final ColumnDefinition<?> cd = getColumn(columnName);
+        if (cd == null) {
+            // todo: need nosuchelement
+            throw new IllegalArgumentException("");
+        }
+        cd.checkCastTo(clazz, componentType);
+    }
+
+    /**
      * @param column The {@link ColumnDefinition} to search for
      * @return The index of {@code column}, or {@code -1} if no such column exists in this table definition
      * @apiNote This is an O({@link #numColumns()}) lookup.

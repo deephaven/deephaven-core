@@ -5,7 +5,6 @@ package io.deephaven.kafka;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.ColumnName;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.kafka.KafkaTools.Produce;
 import io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec;
@@ -162,21 +161,21 @@ public abstract class KafkaPublishOptions {
     @Check
     final void checkTopicColumn() {
         if (topicColumn().isPresent()) {
-            table().ensureColumnSource(topicColumn().get().name(), CharSequence.class);
+            table().getDefinition().checkColumn(topicColumn().get().name(), CharSequence.class);
         }
     }
 
     @Check
     final void checkPartitionColumn() {
         if (partitionColumn().isPresent()) {
-            table().ensureColumnSource(partitionColumn().get().name(), int.class);
+            table().getDefinition().checkColumn(partitionColumn().get().name(), int.class);
         }
     }
 
     @Check
     final void checkTimestampColumn() {
         if (timestampColumn().isPresent()) {
-            table().ensureColumnSource(timestampColumn().get().name(), Instant.class);
+            table().getDefinition().checkColumn(timestampColumn().get().name(), Instant.class);
         }
     }
 
