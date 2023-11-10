@@ -690,7 +690,7 @@ public class QueryCompiler {
         if ((localCompiler = JAVA_COMPILER) == null) {
             synchronized (QueryCompiler.class) {
                 if ((localCompiler = JAVA_COMPILER) == null) {
-                    localCompiler = JAVA_COMPILER = ToolProvider.getSystemJavaCompiler();
+                    JAVA_COMPILER = localCompiler = ToolProvider.getSystemJavaCompiler();
                 }
             }
         }
@@ -711,7 +711,7 @@ public class QueryCompiler {
         if ((localManager = JAVA_FILE_MANAGER) == null) {
             synchronized (QueryCompiler.class) {
                 if ((localManager = JAVA_FILE_MANAGER) == null) {
-                    localManager = JAVA_FILE_MANAGER = getJavaCompiler().getStandardFileManager(null, null, null);
+                    JAVA_FILE_MANAGER = localManager = getJavaCompiler().getStandardFileManager(null, null, null);
                 }
             }
         }
@@ -729,13 +729,17 @@ public class QueryCompiler {
 
         final JavaFileManager fileManager = getJavaFileManager();
 
-        final boolean result = compiler.getTask(compilerOutput,
-                fileManager,
-                null,
-                compilerOptions,
-                null,
-                Collections.singletonList(new JavaSourceFromString(fqClassName, finalCode)))
-                .call();
+        final boolean result;
+        // the java file manager is not thread safe
+        synchronized (QueryCompiler.class) {
+            result = compiler.getTask(compilerOutput,
+                    fileManager,
+                    null,
+                    compilerOptions,
+                    null,
+                    Collections.singletonList(new JavaSourceFromString(fqClassName, finalCode)))
+                    .call();
+        }
         if (!result) {
             throw new RuntimeException("Error compiling class " + fqClassName + ":\n" + compilerOutput);
         }
