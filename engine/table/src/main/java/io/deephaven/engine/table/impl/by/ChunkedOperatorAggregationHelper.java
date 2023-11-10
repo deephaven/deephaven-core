@@ -113,7 +113,7 @@ public class ChunkedOperatorAggregationHelper {
                 "by(" + aggregationContextFactory + ", " + groupByColumns + ")", snapshotControl,
                 (usePrev, beforeClockValue) -> {
                     resultHolder.setValue(aggregation(control, snapshotControl, aggregationContextFactory,
-                            input, preserveEmpty, initialKeys, keyNames, usePrev));
+                            input, preserveEmpty, initialKeys, keyNames.toArray(String[]::new), usePrev));
                     return true;
                 });
         return resultHolder.getValue();
