@@ -365,6 +365,11 @@ public class Numeric {
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
+    <#if pt.valueType.isFloat >
+                if (isNaN(c)) {
+                    return Double.NaN;
+                }
+    </#if>
                 if (!isNull(c)) {
                     sum += c;
                     count++;
@@ -416,6 +421,11 @@ public class Numeric {
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
+    <#if pt.valueType.isFloat >
+                if (isNaN(c)) {
+                    return Double.NaN;
+                }
+    </#if>
                 if (!isNull(c)) {
                     sum += Math.abs(c);
                     count++;
@@ -464,10 +474,14 @@ public class Numeric {
         double sum = 0;
         double sum2 = 0;
         double count = 0;
-
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
+    <#if pt.valueType.isFloat >
+                if (isNaN(c)) {
+                    return Double.NaN;
+                }
+    </#if>
                 if (!isNull(c)) {
                     sum += (double)c;
                     sum2 += (double)c * (double)c;
@@ -476,8 +490,8 @@ public class Numeric {
             }
         }
 
-        // Return NaN if poisoned or too few values to compute variance.
-        if (count <= 1 || Double.isNaN(sum) || Double.isNaN(sum2)) {
+        // Return NaN if overflow or too few values to compute variance.
+        if (count <= 1 || Double.isInfinite(sum) || Double.isInfinite(sum2)) {
             return Double.NaN;
         }
 
@@ -569,7 +583,16 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
-
+    <#if pt.valueType.isFloat >
+                if (isNaN(c)) {
+                    return Double.NaN;
+                }
+    </#if>
+    <#if pt2.valueType.isFloat >
+                if (isNaN(w)) {
+                    return Double.NaN;
+                }
+    </#if>
                 if (!isNull(c) && !isNull(w)) {
                     sum += w * c;
                     sum2 += w * c * c;
@@ -1291,6 +1314,16 @@ public class Numeric {
             while (v0i.hasNext()) {
                 final ${pt.primitive} v0 = v0i.${pt.iteratorNext}();
                 final ${pt2.primitive} v1 = v1i.${pt2.iteratorNext}();
+    <#if pt.valueType.isFloat >
+                if (isNaN(v0)) {
+                    return Double.NaN;
+                }
+    </#if>
+    <#if pt2.valueType.isFloat >
+                if (isNaN(v1)) {
+                    return Double.NaN;
+                }
+    </#if>
 
                 if (!isNull(v0) && !isNull(v1)) {
                     sum0 += v0;
@@ -1379,6 +1412,16 @@ public class Numeric {
             while (v0i.hasNext()) {
                 final ${pt.primitive} v0 = v0i.${pt.iteratorNext}();
                 final ${pt2.primitive} v1 = v1i.${pt2.iteratorNext}();
+    <#if pt.valueType.isFloat >
+                if (isNaN(v0)) {
+                    return Double.NaN;
+                }
+    </#if>
+    <#if pt2.valueType.isFloat >
+                if (isNaN(v1)) {
+                    return Double.NaN;
+                }
+    </#if>
 
                 if (!isNull(v0) && !isNull(v1)) {
                     sum0 += v0;
@@ -1418,6 +1461,11 @@ public class Numeric {
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
+    <#if pt.valueType.isFloat >
+                if (isNaN(c)) {
+                    return ${pt.boxed}.NaN;
+                }
+    </#if>
                 if (!isNull(c)) {
                     sum += c;
                 }
@@ -1454,10 +1502,33 @@ public class Numeric {
 
         ${pt.primitive} prod = 1;
         int count = 0;
+    <#if pt.valueType.isFloat >
+        double zeroCount = 0;
+        double infCount = 0;
+    </#if>
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
+    <#if pt.valueType.isFloat >
+                if (isNaN(c)) {
+                    return ${pt.boxed}.NaN;
+                } else if (Double.isInfinite(c)) {
+                    if (zeroCount > 0) {
+                        return ${pt.boxed}.NaN;
+                    }
+                    infCount++;
+                } else if (c == 0) {
+                    if (infCount > 0) {
+                        return ${pt.boxed}.NaN;
+                    }
+                    zeroCount++;
+                }
+    <#else>
+                if (c == 0) {
+                    return 0;
+                }
+    </#if>
                 if (!isNull(c)) {
                     count++;
                     prod *= c;
@@ -1469,7 +1540,11 @@ public class Numeric {
             return ${pt.null};
         }
 
+    <#if pt.valueType.isFloat >
+        return zeroCount > 0 ? 0 : (${pt.primitive}) (prod);
+    <#else>
         return (${pt.primitive}) (prod);
+    </#if>
     }
 
     /**
@@ -1507,24 +1582,7 @@ public class Numeric {
             return null;
         }
 
-        if (values.length == 0) {
-            return new ${pt.primitive}[0];
-        }
-
-        ${pt.primitive}[] result = new ${pt.primitive}[values.length];
-        result[0] = values[0];
-
-        for (int i = 1; i < values.length; i++) {
-            if (isNull(result[i - 1])) {
-                result[i] = values[i];
-            } else if (isNull(values[i])) {
-                result[i] = result[i - 1];
-            } else {
-                result[i] = (${pt.primitive})Math.min(result[i - 1],  values[i]);
-            }
-        }
-
-        return result;
+        return cummin(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1588,24 +1646,7 @@ public class Numeric {
             return null;
         }
 
-        if (values.length == 0) {
-            return new ${pt.primitive}[0];
-        }
-
-        ${pt.primitive}[] result = new ${pt.primitive}[values.length];
-        result[0] = values[0];
-
-        for (int i = 1; i < values.length; i++) {
-            if (isNull(result[i - 1])) {
-                result[i] = values[i];
-            } else if (isNull(values[i])) {
-                result[i] = result[i - 1];
-            } else {
-                result[i] = (${pt.primitive})Math.max(result[i - 1], values[i]);
-            }
-        }
-
-        return result;
+        return cummax(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1669,24 +1710,7 @@ public class Numeric {
             return null;
         }
 
-        if (values.length == 0) {
-            return new ${pt.primitive}[0];
-        }
-
-        ${pt.primitive}[] result = new ${pt.primitive}[values.length];
-        result[0] = values[0];
-
-        for (int i = 1; i < values.length; i++) {
-            if (isNull(result[i - 1])) {
-                result[i] = values[i];
-            } else if (isNull(values[i])) {
-                result[i] = result[i - 1];
-            } else {
-                result[i] = (${pt.primitive}) (result[i - 1] + values[i]);
-            }
-        }
-
-        return result;
+        return cumsum(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1750,24 +1774,7 @@ public class Numeric {
             return null;
         }
 
-        if (values.length == 0) {
-            return new ${pt.primitive}[0];
-        }
-
-        ${pt.primitive}[] result = new ${pt.primitive}[values.length];
-        result[0] = values[0];
-
-        for (int i = 1; i < values.length; i++) {
-            if (isNull(result[i - 1])) {
-                result[i] = values[i];
-            } else if (isNull(values[i])) {
-                result[i] = result[i - 1];
-            } else {
-                result[i] = (${pt.primitive}) (result[i - 1] * values[i]);
-            }
-        }
-
-        return result;
+        return cumprod(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -2280,7 +2287,17 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
-    
+            <#if pt.valueType.isFloat >
+                if (isNaN(c)) {
+                    return Double.NaN;
+                }
+            </#if>
+            <#if pt2.valueType.isFloat >
+                if (isNaN(w)) {
+                    return Double.NaN;
+                }
+            </#if>
+
                 if (!isNull(c) && !isNull(w)) {
                     vsum += c * w;
                 }
@@ -2363,7 +2380,17 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
-    
+        <#if pt.valueType.isFloat >
+                if (isNaN(c)) {
+                    return Double.NaN;
+                }
+        </#if>
+        <#if pt2.valueType.isFloat >
+                if (isNaN(w)) {
+                    return Double.NaN;
+                }
+        </#if>
+
                 if (!isNull(c) && !isNull(w)) {
                     vsum += c * w;
                     wsum += w;
