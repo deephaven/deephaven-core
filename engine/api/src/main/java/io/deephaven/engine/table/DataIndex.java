@@ -104,7 +104,19 @@ public interface DataIndex {
      * @return a function that provides map-like lookup of matching rows from an index key.
      */
     @NotNull
-    RowSetLookup rowSetLookup();
+    @FinalDefault
+    default RowSetLookup rowSetLookup() {
+        return rowSetLookup(false);
+    }
+
+    /**
+     * Build a {@link RowSetLookup lookup} function of index row sets for this index. If {@link #isRefreshing()} is
+     * true, this lookup function is guaranteed to be accurate only for the current cycle.
+     *
+     * @return a function that provides map-like lookup of matching rows from an index key.
+     */
+    @NotNull
+    RowSetLookup rowSetLookup(final boolean usePrev);
 
     /**
      * Build a {@link PositionLookup lookup} of positions for this index. If {@link #isRefreshing()} is true, this
@@ -113,7 +125,19 @@ public interface DataIndex {
      * @return a function that provides map-like lookup of index table positions from an index key.
      */
     @NotNull
-    PositionLookup positionLookup();
+    @FinalDefault
+    default PositionLookup positionLookup() {
+        return positionLookup(false);
+    }
+
+    /**
+     * Build a {@link PositionLookup lookup} of positions for this index. If {@link #isRefreshing()} is true, this
+     * lookup function is guaranteed to be accurate only for the current cycle.
+     *
+     * @return a function that provides map-like lookup of index table positions from an index key.
+     */
+    @NotNull
+    PositionLookup positionLookup(final boolean usePrev);
 
     /**
      * Transform and return a new {@link DataIndex} with the provided transform operations applied. Some transformations

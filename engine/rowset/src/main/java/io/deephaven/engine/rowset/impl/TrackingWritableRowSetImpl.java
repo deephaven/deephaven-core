@@ -76,12 +76,9 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
     }
 
     @Override
-    public void preMutationHook() {
+    protected void preMutationHook() {
         checkAndGetPrev();
     }
-
-    @Override
-    protected void postMutationHook() {}
 
     @Override
     public TrackingWritableRowSet toTracking() {
@@ -157,12 +154,12 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
         public UnmodifiableRowSetImpl() {}
 
         @Override
-        public final void preMutationHook() {
+        protected final void preMutationHook() {
             throw new UnsupportedOperationException("Unmodifiable view must never be mutated");
         }
 
         @Override
-        public final void postMutationHook() {
+        protected final void postMutationHook() {
             throw new UnsupportedOperationException("Unmodifiable view must never be mutated");
         }
 

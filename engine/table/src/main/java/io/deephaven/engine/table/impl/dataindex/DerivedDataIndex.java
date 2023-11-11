@@ -41,6 +41,9 @@ public class DerivedDataIndex extends AbstractDataIndex {
     private SoftReference<PositionLookup> cachedPositionLookup = new SoftReference<>(null);
     private long cachedPositionLookupStep = -1;
 
+    private SoftReference<PositionLookup> cachedPrevPositionLookup = new SoftReference<>(null);
+    private long cachedPrevPositionLookupStep = -1;
+
     public static DerivedDataIndex from(@NotNull final DataIndex index,
             @NotNull final DataIndexTransformer transformer) {
         return new DerivedDataIndex(index, transformer);
@@ -67,35 +70,6 @@ public class DerivedDataIndex extends AbstractDataIndex {
                     transformer.oldToNewColumnMap().getOrDefault(originalColumnSource, originalColumnSource),
                     entry.getValue());
         }
-
-        // // Build a new map of column sources to index table key column names using either the original column
-        // // sources or the remapped column sources.
-        //
-        // final Map<ColumnSource<?>, String> tmpColumnNameMap = new LinkedHashMap<>();
-        // final Set<ColumnSource<?>> remappedSources = new HashSet<>();
-        //
-        // // The transformer contains new to old mappings, add these to the column map first.
-        // transformer.keyColumnRemap().forEach((newCol, oldCol) -> {
-        // final String columnName = parentIndex.keyColumnMap().get(oldCol);
-        // // If the column is part of the original index, add it to the new map.
-        // if (columnName != null) {
-        // tmpColumnNameMap.put(newCol, columnName);
-        // remappedSources.add(oldCol);
-        // }
-        // });
-        //
-        // if (!tmpColumnNameMap.isEmpty()) {
-        // // Add the remainder of the original column sources to the map.
-        // parentIndex.keyColumnMap().forEach((oldCol, colName) -> {
-        // if (!remappedSources.contains(oldCol)) {
-        // tmpColumnNameMap.put(oldCol, colName);
-        // }
-        // });
-        // columnNameMap = tmpColumnNameMap;
-        // } else {
-        // // None of the indexed columns were remapped so there is no need to build a new map.
-        // columnNameMap = null;
-        // }
     }
 
     @Override
@@ -159,10 +133,10 @@ public class DerivedDataIndex extends AbstractDataIndex {
     }
 
     @Override
-    public @NotNull RowSetLookup rowSetLookup() {
+    public @NotNull RowSetLookup rowSetLookup(final boolean usePrev) {
         // Assuming the parent lookup function is fast and efficient, we will leverage the parent's function
         // and apply the mutator to the retrieved result.
-        final RowSetLookup lookup = parentIndex.rowSetLookup();
+        final RowSetLookup lookup = parentIndex.rowSetLookup(usePrev);
         if (transformer.intersectRowSet().isEmpty() && transformer.invertRowSet().isEmpty()) {
             // No need to mutate retrieved row set.
             return lookup;
@@ -177,19 +151,43 @@ public class DerivedDataIndex extends AbstractDataIndex {
     }
 
     @Override
-    public @NotNull PositionLookup positionLookup() {
+    public @NotNull PositionLookup positionLookup(final boolean usePrev) {
         if (!mayModifyParentIndexRowSet()) {
             // We can use the parent lookup function directly because the operations being applied will not change
             // the index table row set and the key vs. position will be correct.
-            return parentIndex.positionLookup();
+            return parentIndex.positionLookup(usePrev);
         }
 
         // We need to build a lookup function from the table, either using a successive binary search function or
         // storing the keys in a hashmap.
 
         // Make sure we have a valid table on hand.
-        final Table indexTable = table();
+        final Table indexTable = table(usePrev);
 
+        if (usePrev) {
+            // Return a valid cached lookup function if possible.
+            final PositionLookup positionLookup = cachedPrevPositionLookup.get();
+            if (positionLookup != null
+                    && (!isRefreshing()
+                            || indexTable.getUpdateGraph().clock().currentStep() == cachedPrevPositionLookupStep)) {
+                return positionLookup;
+            }
+
+            // Decide whether to create a map or use a binary search strategy
+            final PositionLookup newLookup;
+            if (indexTable.size() >= BIN_SEARCH_THRESHOLD) {
+                // Use a binary search strategy rather than consume memory for the hashmap.
+                newLookup = buildPositionLookup(indexTable, keyColumnNames());
+            } else {
+                // Build a key to position hashmap from the table.
+                TObjectIntHashMap<Object> lookupMap = buildPositionMap(indexTable, keyColumnNames());
+                newLookup = lookupMap::get;
+            }
+            cachedPrevPositionLookup = new SoftReference<>(newLookup);
+            cachedPrevPositionLookupStep = indexTable.getUpdateGraph().clock().currentStep();
+
+            return newLookup;
+        }
         // Return a valid cached lookup function if possible.
         final PositionLookup positionLookup = cachedPositionLookup.get();
         if (positionLookup != null

@@ -145,6 +145,8 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     @Override
     public Table table(final boolean usePrev) {
         if (usePrev && isRefreshing()) {
+            // TODO: need a custom ColumnSource<RowSet> wrapper that returns {@link TrackingRowSet#prev()} for
+            // {@link #getPrev(long)}.
             throw new UnsupportedOperationException(
                     "usePrev==true is not currently supported for refreshing storage-backed data index tables");
         }
@@ -216,7 +218,12 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public RowSetLookup rowSetLookup() {
+    public RowSetLookup rowSetLookup(final boolean usePrev) {
+        if (usePrev && isRefreshing()) {
+            throw new UnsupportedOperationException(
+                    "usePrev==true is not currently supported for refreshing storage-backed data index tables");
+        }
+
         if (cachedRowSetLookup != null) {
             return cachedRowSetLookup;
         }
@@ -232,7 +239,12 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public @NotNull PositionLookup positionLookup() {
+    public @NotNull PositionLookup positionLookup(final boolean usePrev) {
+        if (usePrev && isRefreshing()) {
+            throw new UnsupportedOperationException(
+                    "usePrev==true is not currently supported for refreshing storage-backed data index tables");
+        }
+
         if (cachedPositionLookup != null) {
             return cachedPositionLookup;
         }
@@ -256,7 +268,7 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
 
     @Override
     public boolean isRefreshing() {
-        return false;
+        return sourceTable.isRefreshing();
     }
 
     @Override

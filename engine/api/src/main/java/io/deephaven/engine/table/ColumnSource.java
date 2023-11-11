@@ -40,7 +40,12 @@ public interface ColumnSource<T>
     }
 
     WritableRowSet match(
-            boolean invertMatch, boolean usePrev, boolean caseInsensitive, @NotNull RowSet mapper, Object... keys);
+            boolean invertMatch,
+            boolean usePrev,
+            boolean caseInsensitive,
+            @NotNull final RowSet fullSet,
+            @NotNull RowSet mapper,
+            Object... keys);
 
     /**
      * ColumnSource implementations that track previous values have the option to not actually start tracking previous

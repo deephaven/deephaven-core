@@ -317,6 +317,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 final boolean invertMatch,
                 final boolean usePrev,
                 final boolean caseInsensitive,
+                @NotNull final RowSet fullSet,
                 @NotNull final RowSet mapper,
                 final Object... keys) {
             boolean hasFalse = false;

@@ -29,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -251,6 +250,7 @@ public final class TimeTable extends QueryTable implements Runnable {
                 final boolean invertMatch,
                 final boolean usePrev,
                 final boolean caseInsensitive,
+                @NotNull final RowSet fullSet,
                 @NotNull final RowSet selection,
                 final Object... keys) {
             if (startTime == null) {
@@ -393,6 +393,7 @@ public final class TimeTable extends QueryTable implements Runnable {
                     final boolean invertMatch,
                     final boolean usePrev,
                     final boolean caseInsensitive,
+                    @NotNull final RowSet fullSet,
                     @NotNull final RowSet selection,
                     final Object... keys) {
                 if (startTime == null) {

@@ -11,11 +11,13 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
 import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndexImpl;
+import io.deephaven.engine.table.impl.util.FieldUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Collectors;
 
 /**
@@ -25,6 +27,10 @@ import java.util.stream.Collectors;
  *          closed}.
  */
 public class DataIndexer implements TrackingRowSet.Indexer {
+    private static final AtomicReferenceFieldUpdater<DataIndexer, WeakHashMap> ROOT_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(DataIndexer.class, WeakHashMap.class, "root");
+    private static final WeakHashMap EMPTY_ROOT = new WeakHashMap<>();
+
     public static DataIndexer of(TrackingRowSet rowSet) {
         return rowSet.indexer(DataIndexer::new);
     }
@@ -35,26 +41,31 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * The root of a pseudo-trie of index caches. This is a complicated structure but has the strong benefit of allowing
      * GC of data indexes belonging to GC'd column sources.
      */
-    WeakHashMap<ColumnSource<?>, DataIndexCache> dataIndexes;
+    private volatile WeakHashMap<ColumnSource<?>, DataIndexCache> root = EMPTY_ROOT;
 
     private static class DataIndexCache {
 
         /** The index at this level. */
         @Nullable
-        private volatile DataIndex thisLevelIndex;
+        private volatile DataIndex localIndex;
 
         /** The sub-indexes below this level. */
-        private final WeakHashMap<ColumnSource<?>, DataIndexCache> nextLevelCaches;
+        private final WeakHashMap<ColumnSource<?>, DataIndexCache> descendantCaches;
 
-        DataIndexCache(@Nullable final DataIndex thisLevelIndex) {
-            this.thisLevelIndex = thisLevelIndex;
-            this.nextLevelCaches = new WeakHashMap<>();
+        DataIndexCache(@Nullable final DataIndex localIndex) {
+            this.localIndex = localIndex;
+            this.descendantCaches = new WeakHashMap<>();
         }
     }
 
     private DataIndexer(@NotNull final TrackingRowSet rowSet) {
         this.rowSet = rowSet;
-        this.dataIndexes = new WeakHashMap<>();
+    }
+
+    private WeakHashMap<ColumnSource<?>, DataIndexCache> ensureRoot() {
+        // noinspection unchecked
+        return FieldUtils.ensureField(this, ROOT_UPDATER, EMPTY_ROOT,
+                WeakHashMap::new);
     }
 
     public boolean hasDataIndex(final Table table, final String... keyColumnNames) {
@@ -68,19 +79,16 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     public boolean hasDataIndex(final Collection<ColumnSource<?>> keyColumns) {
-        if (keyColumns.isEmpty()) {
-            return true;
-        }
-
-        if (dataIndexes == null) {
+        final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = root;
+        if (keyColumns.isEmpty() || localRoot == EMPTY_ROOT) {
             return false;
         }
 
-        final DataIndex dataIndex = findIndex(dataIndexes, keyColumns);
-        // It's possible that a potentially indexed column might be corrupt or incomplete when we try to use it.
-        // Test it now to make sure that we don't falsely claim to have a functional index.
-        return dataIndex != null && ((AbstractDataIndex) dataIndex).validate();
-        // TODO: should we remove the index if it's corrupt? Could it repair itself, probably not.
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (localRoot) {
+            final DataIndex dataIndex = findIndex(localRoot, keyColumns);
+            return dataIndex != null && ((AbstractDataIndex) dataIndex).validate();
+        }
     }
 
     public boolean canMakeDataIndex(final Table table, final String... keyColumnNames) {
@@ -98,7 +106,14 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @return the DataIndex, or null if one does not exist
      */
     public DataIndex getDataIndex(final ColumnSource<?>... keyColumns) {
-        return findIndex(dataIndexes, Arrays.asList(keyColumns));
+        final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = root;
+        if (localRoot == EMPTY_ROOT) {
+            return null;
+        }
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (localRoot) {
+            return findIndex(localRoot, Arrays.asList(keyColumns));
+        }
     }
 
     /**
@@ -123,7 +138,11 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                 .map(columnSourceMap::get).collect(Collectors.toList());
 
         // Return an index if one exists.
-        return findIndex(dataIndexes, keyColumns);
+        final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = root;
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (localRoot) {
+            return findIndex(ensureRoot(), keyColumns);
+        }
     }
 
     /**
@@ -152,10 +171,12 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         // Create an index, add it to the map and return it.
         QueryTable coalesced = (QueryTable) sourceTable.coalesce();
         final DataIndex index = new TableBackedDataIndexImpl(coalesced, keyColumnNames);
-        if (dataIndexes == null) {
-            dataIndexes = new WeakHashMap<>();
+
+        final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = ensureRoot();
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (localRoot) {
+            addIndex(ensureRoot(), keyColumns, index, 0);
         }
-        addIndex(dataIndexes, keyColumns, index, 0);
     }
 
     /**
@@ -167,14 +188,18 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         final ColumnSource<?>[] keyColumns = index.keyColumnMap().keySet().toArray(ColumnSource<?>[]::new);
         final List<ColumnSource<?>> keys = Arrays.asList(keyColumns);
 
-        addIndex(dataIndexes, keys, index, 0);
+        final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = ensureRoot();
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (localRoot) {
+            addIndex(ensureRoot(), keys, index, 0);
+        }
     }
 
     public List<DataIndex> dataIndexes() {
         final List<DataIndex> result = new ArrayList<>();
 
-        if (dataIndexes != null) {
-            addIndexesToList(dataIndexes, result);
+        if (root != null) {
+            addIndexesToList(root, result);
         }
 
         return result;
@@ -186,11 +211,11 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         for (final Map.Entry<ColumnSource<?>, DataIndexCache> entry : dataIndexes.entrySet()) {
             final DataIndexCache subCache = entry.getValue();
 
-            if (subCache.thisLevelIndex != null) {
-                resultList.add(subCache.thisLevelIndex);
+            if (subCache.localIndex != null) {
+                resultList.add(subCache.localIndex);
             }
-            if (subCache.nextLevelCaches != null) {
-                addIndexesToList(subCache.nextLevelCaches, resultList);
+            if (subCache.descendantCaches != null) {
+                addIndexesToList(subCache.descendantCaches, resultList);
             }
         }
     }
@@ -202,10 +227,8 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         // Looking for a single key.
         if (keyColumnSources.size() == 1) {
             final ColumnSource<?> keyColumnSource = keyColumnSources.iterator().next();
-            synchronized (indexMap) {
-                final DataIndexCache cache = indexMap.get(keyColumnSource);
-                return cache == null ? null : cache.thisLevelIndex;
-            }
+            final DataIndexCache cache = indexMap.get(keyColumnSource);
+            return cache == null ? null : cache.localIndex;
         }
 
         // Test every column source in the map for a match. This handles mis-ordered keys.
@@ -217,7 +240,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                         keyColumnSources.stream().filter(s -> s != keySource).collect(Collectors.toList());
 
                 // Recursively search for the remaining key sources.
-                final DataIndex index = findIndex(cache.nextLevelCaches, sliced);
+                final DataIndex index = findIndex(cache.descendantCaches, sliced);
                 if (index != null) {
                     return index;
                 }
@@ -235,21 +258,18 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         final ColumnSource<?> nextColumnSource = keyColumnSources.get(nextColumnSourceIndex);
         final boolean isLast = nextColumnSourceIndex == keyColumnSources.size() - 1;
         final DataIndexCache cache;
-        // noinspection SynchronizationOnLocalVariableOrMethodParameter
-        synchronized (indexMap) {
-            final MutableBoolean created = new MutableBoolean(false);
-            cache = indexMap.computeIfAbsent(
-                    nextColumnSource,
-                    ignored -> {
-                        created.setTrue();
-                        return new DataIndexCache(isLast ? index : null);
-                    });
-            if (!created.booleanValue()) {
-                cache.thisLevelIndex = index; // Optimistically overwrite, it's volatile
-            }
+        final MutableBoolean created = new MutableBoolean(false);
+        cache = indexMap.computeIfAbsent(
+                nextColumnSource,
+                ignored -> {
+                    created.setTrue();
+                    return new DataIndexCache(isLast ? index : null);
+                });
+        if (!created.booleanValue()) {
+            cache.localIndex = index;
         }
         if (!isLast) {
-            addIndex(cache.nextLevelCaches, keyColumnSources, index, nextColumnSourceIndex + 1);
+            addIndex(cache.descendantCaches, keyColumnSources, index, nextColumnSourceIndex + 1);
         }
     }
 }

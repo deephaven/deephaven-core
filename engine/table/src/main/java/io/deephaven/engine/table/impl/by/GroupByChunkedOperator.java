@@ -431,9 +431,13 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
                 @NotNull final QueryTable resultTable,
                 @NotNull final String[] resultAggregatedColumnNames) {
             updateModifiedColumnSet = new ModifiedColumnSet(resultTable.getModifiedColumnSetForUpdates());
-            allResultColumns = resultTable.newModifiedColumnSet(resultAggregatedColumnNames);
-            if (exposeRowSetsAs != null && allResultColumns != ModifiedColumnSet.EMPTY) {
-                allResultColumns.setAll(exposeRowSetsAs);
+
+            if (exposeRowSetsAs != null) {
+                // resultAggregatedColumnNames may be empty (e.g. when the row set is the only result column)
+                allResultColumns = resultTable.newModifiedColumnSet(exposeRowSetsAs);
+                allResultColumns.setAll(resultAggregatedColumnNames);
+            } else {
+                allResultColumns = resultTable.newModifiedColumnSet(resultAggregatedColumnNames);
             }
             aggregatedColumnsTransformer = inputTable.newModifiedColumnSetTransformer(
                     inputColumnNames,

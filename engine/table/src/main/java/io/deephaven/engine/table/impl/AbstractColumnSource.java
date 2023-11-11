@@ -9,15 +9,18 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
@@ -121,10 +124,57 @@ public abstract class AbstractColumnSource<T> implements
             final boolean invertMatch,
             final boolean usePrev,
             final boolean caseInsensitive,
+            @NotNull final RowSet fullSet,
             @NotNull final RowSet mapper,
             final Object... keys) {
-        return ChunkFilter.applyChunkFilter(mapper, this, usePrev,
-                ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
+
+        final DataIndexer dataIndexer = DataIndexer.of(fullSet.trackingCast());
+        if (dataIndexer.hasDataIndex(this)) {
+            final DataIndex dataIndex = dataIndexer.getDataIndex(this);
+
+            final RowSetBuilderRandom allInMatchingGroups = RowSetFactory.builderRandom();
+
+            if (caseInsensitive && (type == String.class)) {
+                // Iterate over the entries in the index table and add the case-insensitive matches
+                final Table indexTable = dataIndex.table(usePrev);
+
+                KeyedObjectHashSet keySet = new KeyedObjectHashSet<>(new CIStringKey());
+                Collections.addAll(keySet, keys);
+                try (final CloseableIterator<String> keyIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0]);
+                        final CloseableIterator<RowSet> rowSetIt =
+                                indexTable.columnIterator(dataIndex.rowSetColumnName())) {
+                    while (keyIt.hasNext()) {
+                        final String key = keyIt.next();
+                        final RowSet rowSet = rowSetIt.next();
+                        if (keySet.containsKey(key)) {
+                            allInMatchingGroups.addRowSet(rowSet);
+                        }
+                    }
+                }
+            } else {
+                // Use the lookup function
+                final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup(usePrev);
+                for (Object key : keys) {
+                    RowSet range = rowSetLookup.apply(key);
+                    if (range != null) {
+                        allInMatchingGroups.addRowSet(range);
+                    }
+                }
+            }
+
+            final WritableRowSet matchingValues;
+            try (final RowSet matchingGroups = allInMatchingGroups.build()) {
+                if (invertMatch) {
+                    matchingValues = mapper.minus(matchingGroups);
+                } else {
+                    matchingValues = mapper.intersect(matchingGroups);
+                }
+            }
+            return matchingValues;
+        } else {
+            return ChunkFilter.applyChunkFilter(mapper, this, usePrev,
+                    ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
+        }
     }
 
     private static final class CIStringKey implements KeyedObjectKey<String, String> {

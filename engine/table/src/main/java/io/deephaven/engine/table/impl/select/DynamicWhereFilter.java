@@ -216,8 +216,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                 liveValuesArray = liveValues.toArray(CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 liveValuesArrayValid = true;
             }
-            return table.getColumnSource(matchPairs[0].leftColumn()).match(!inclusion, false, false, selection,
-                    liveValuesArray);
+            return table.getColumnSource(matchPairs[0].leftColumn())
+                    .match(!inclusion, false, false, fullSet, selection, liveValuesArray);
         }
 
         // pick something sensible

@@ -13,7 +13,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -195,21 +194,32 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     @Override
     public @Nullable Table table(final boolean usePrev) {
         if (usePrev && isRefreshing()) {
-            // Return a table containing the previous values of the index table.
-            final TrackingRowSet prevRowSet = indexTable.getRowSet().copyPrev().toTracking();
-            final Map<String, ColumnSource<?>> prevColumnSourceMap = new LinkedHashMap<>();
-            indexTable.getColumnSourceMap().forEach((columnName, columnSource) -> {
-                prevColumnSourceMap.put(columnName, columnSource.getPrevSource());
-            });
-
-            final Table prevTable = new QueryTable(prevRowSet, prevColumnSourceMap);
-            return prevTable;
+            // TODO: need a custom ColumnSource<RowSet> wrapper that returns {@link TrackingRowSet#prev()} for
+            // {@link #getPrev(long)}.
+            throw new UnsupportedOperationException(
+                    "usePrev==true is not currently supported for refreshing partition data index tables");
         }
+
+        // if (usePrev && isRefreshing()) {
+        // // Return a table containing the previous values of the index table.
+        // final TrackingRowSet prevRowSet = indexTable.getRowSet().copyPrev().toTracking();
+        // final Map<String, ColumnSource<?>> prevColumnSourceMap = new LinkedHashMap<>();
+        // indexTable.getColumnSourceMap().forEach((columnName, columnSource) -> {
+        // prevColumnSourceMap.put(columnName, columnSource.getPrevSource());
+        // });
+        //
+        // final Table prevTable = new QueryTable(prevRowSet, prevColumnSourceMap);
+        // return prevTable;
+        // }
         return indexTable;
     }
 
     @Override
-    public @Nullable RowSetLookup rowSetLookup() {
+    public @Nullable RowSetLookup rowSetLookup(final boolean usePrev) {
+        if (usePrev && isRefreshing()) {
+            throw new UnsupportedOperationException(
+                    "usePrev==true is not currently supported for refreshing partition data index tables");
+        }
         return (Object o) -> {
             final int position = cachedPositionMap.get(o);
             return position == -1 ? null : indexRowSetSource.get(position);
@@ -217,7 +227,11 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public @NotNull PositionLookup positionLookup() {
+    public @NotNull PositionLookup positionLookup(final boolean usePrev) {
+        if (usePrev && isRefreshing()) {
+            throw new UnsupportedOperationException(
+                    "usePrev==true is not currently supported for refreshing partition data index tables");
+        }
         return cachedPositionMap::get;
     }
 

@@ -4,7 +4,6 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -77,16 +76,19 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
     @NotNull
     public Table table(final boolean usePrev) {
         if (usePrev && isRefreshing()) {
-            final Table indexTable = table();
-
-            // Return a table containing the previous values of the index table.
-            final TrackingRowSet prevRowSet = indexTable.getRowSet().copyPrev().toTracking();
-            final Map<String, ColumnSource<?>> prevColumnSourceMap = new LinkedHashMap<>();
-            indexTable.getColumnSourceMap().forEach((columnName, columnSource) -> {
-                prevColumnSourceMap.put(columnName, columnSource.getPrevSource());
-            });
-
-            return new QueryTable(prevRowSet, prevColumnSourceMap);
+            throw new UnsupportedOperationException(
+                    "usePrev==true is not currently supported for refreshing index tables");
+            //
+            // final Table indexTable = table();
+            //
+            // // Return a table containing the previous values of the index table.
+            // final TrackingRowSet prevRowSet = indexTable.getRowSet().copyPrev().toTracking();
+            // final Map<String, ColumnSource<?>> prevColumnSourceMap = new LinkedHashMap<>();
+            // indexTable.getColumnSourceMap().forEach((columnName, columnSource) -> {
+            // prevColumnSourceMap.put(columnName, columnSource.getPrevSource());
+            // });
+            //
+            // return new QueryTable(prevRowSet, prevColumnSourceMap);
         }
 
         if (indexTable == null) {
@@ -115,7 +117,11 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public @Nullable RowSetLookup rowSetLookup() {
+    public @Nullable RowSetLookup rowSetLookup(final boolean usePrev) {
+        if (usePrev && isRefreshing()) {
+            throw new UnsupportedOperationException(
+                    "usePrev==true is not currently supported for refreshing index tables");
+        }
         return (Object key) -> {
             // Pass the object to the aggregation lookup, then return the row set at that position.
             final int position = lookupFunction.get(key);
@@ -124,7 +130,11 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public @NotNull PositionLookup positionLookup() {
+    public @NotNull PositionLookup positionLookup(final boolean usePrev) {
+        if (usePrev && isRefreshing()) {
+            throw new UnsupportedOperationException(
+                    "usePrev==true is not currently supported for refreshing index tables");
+        }
         return (Object key) -> {
             // Pass the object to the aggregation lookup, then return the resulting position
             return lookupFunction.get(key);
