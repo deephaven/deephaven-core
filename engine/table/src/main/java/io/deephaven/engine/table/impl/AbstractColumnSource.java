@@ -128,8 +128,8 @@ public abstract class AbstractColumnSource<T> implements
             @NotNull final RowSet mapper,
             final Object... keys) {
 
-        final DataIndexer dataIndexer = DataIndexer.of(fullSet.trackingCast());
-        if (dataIndexer.hasDataIndex(this)) {
+        final DataIndexer dataIndexer = fullSet.isTracking() ? DataIndexer.of(fullSet.trackingCast()) : null;
+        if (dataIndexer != null && dataIndexer.hasDataIndex(this)) {
             final DataIndex dataIndex = dataIndexer.getDataIndex(this);
 
             final RowSetBuilderRandom allInMatchingGroups = RowSetFactory.builderRandom();
