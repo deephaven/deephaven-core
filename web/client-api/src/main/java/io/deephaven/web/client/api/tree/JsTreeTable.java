@@ -176,13 +176,19 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     ViewportData.cleanData(dataColumns[rowDepthCol.getIndex()].getData(), rowDepthCol));
 
             int constituentDepth = keyColumns.length + 2;
+
+            // Without modifying this.columns (copied and frozen), make sure our key columns are present
+            // in the list of columns that we will copy data for the viewport
+            keyColumns.forEach((col, p1, p2) -> {
+                if (this.columns.indexOf(col) == -1) {
+                    columns[columns.length] = col;
+                }
+                return null;
+            });
+
             for (int i = 0; i < columns.length; i++) {
                 Column c = columns[i];
                 int index = c.getIndex();
-                if (dataColumns[index] == null) {
-                    // no data for this column, not requested in viewport
-                    continue;
-                }
 
                 // clean the data, since it will be exposed to the client
                 data[index] = ViewportData.cleanData(dataColumns[index].getData(), c);
