@@ -60,8 +60,7 @@ public class JsAggregationOperation {
             AVG = "Avg",
             /**
              * The sample standard deviation of all values in the specified column. Can only apply to numeric types.
-             * String value is "Std".
-             * Sample standard deviation is computed using Bessel's correction
+             * String value is "Std". Sample standard deviation is computed using Bessel's correction
              * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an
              * unbiased estimator of population variance.
              */
