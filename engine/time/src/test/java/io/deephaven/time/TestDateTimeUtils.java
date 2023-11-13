@@ -1391,10 +1391,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertEquals(nanos, DateTimeUtils.epochNanos(dt3));
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochNanos((ZonedDateTime) null));
-
-        final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
-        TestCase.assertEquals(nanos, DateTimeUtils.epochNanosUTC(ldt));
-        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochNanosUTC(null));
     }
 
     public void testEpochMicros() {
@@ -1460,10 +1456,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(dt3, DateTimeUtils.epochNanosToZonedDateTime(nanos, TZ_JP));
         TestCase.assertNull(DateTimeUtils.epochNanosToZonedDateTime(NULL_LONG, TZ_JP));
         TestCase.assertNull(DateTimeUtils.epochNanosToZonedDateTime(nanos, null));
-
-        final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
-        TestCase.assertEquals(ldt, DateTimeUtils.epochNanosToLocalDateTimeUTC(nanos));
-        TestCase.assertNull(DateTimeUtils.epochNanosToLocalDateTimeUTC(NULL_LONG));
     }
 
     public void testEpochMicrosTo() {
@@ -1479,10 +1471,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(dt3, DateTimeUtils.epochMicrosToZonedDateTime(micros, TZ_JP));
         TestCase.assertNull(DateTimeUtils.epochMicrosToZonedDateTime(NULL_LONG, TZ_JP));
         TestCase.assertNull(DateTimeUtils.epochMicrosToZonedDateTime(micros, null));
-
-        final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
-        TestCase.assertEquals(ldt, DateTimeUtils.epochMicrosToLocalDateTimeUTC(micros));
-        TestCase.assertNull(DateTimeUtils.epochMicrosToLocalDateTimeUTC(NULL_LONG));
     }
 
     public void testEpochMillisTo() {
@@ -1498,10 +1486,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(dt3, DateTimeUtils.epochMillisToZonedDateTime(millis, TZ_JP));
         TestCase.assertNull(DateTimeUtils.epochMillisToZonedDateTime(NULL_LONG, TZ_JP));
         TestCase.assertNull(DateTimeUtils.epochMillisToZonedDateTime(millis, null));
-
-        final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
-        TestCase.assertEquals(ldt, DateTimeUtils.epochMillisToLocalDateTimeUTC(millis));
-        TestCase.assertNull(DateTimeUtils.epochMillisToLocalDateTimeUTC(NULL_LONG));
     }
 
     public void testEpochSecondsTo() {
