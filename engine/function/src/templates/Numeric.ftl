@@ -428,7 +428,9 @@ public class Numeric {
 
     /**
      * Returns the sample variance.  Null values are excluded.
-     * Sample variance is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
      * @return sample variance of non-null values.
@@ -439,7 +441,9 @@ public class Numeric {
 
     /**
      * Returns the sample variance.  Null values are excluded.
-     * Sample variance is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
      * @return sample variance of non-null values.
@@ -454,7 +458,9 @@ public class Numeric {
 
     /**
      * Returns the sample variance.  Null values are excluded.
-     * Sample variance is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
      * @return sample variance of non-null values.
@@ -499,7 +505,9 @@ public class Numeric {
 
     /**
      * Returns the weighted sample variance.  Null values are excluded.
-     * Weighted sample variance is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Weighted sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the weighted sample variance will be an unbiased estimator of weighted population variance.
      *
      * @param values values.
      * @param weights weights
@@ -515,7 +523,9 @@ public class Numeric {
 
     /**
      * Returns the weighted sample variance.  Null values are excluded.
-     * Weighted sample variance is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Weighted sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the weighted sample variance will be an unbiased estimator of weighted population variance.
      *
      * @param values values.
      * @param weights weights
@@ -531,7 +541,9 @@ public class Numeric {
 
     /**
      * Returns the weighted sample variance.  Null values are excluded.
-     * Weighted sample variance is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
      * @param weights weights
@@ -547,7 +559,9 @@ public class Numeric {
 
     /**
      * Returns the weighted sample variance.  Null values are excluded.
-     * Weighted sample variance is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
      * @param weights weights
@@ -605,7 +619,9 @@ public class Numeric {
 
     /**
      * Returns the sample standard deviation.  Null values are excluded.
-     * Sample standard deviation is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
      * @return sample standard deviation of non-null values.
@@ -616,7 +632,9 @@ public class Numeric {
 
     /**
      * Returns the sample standard deviation.  Null values are excluded.
-     * Sample standard deviation is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
      * @return sample standard deviation of non-null values.
@@ -631,7 +649,9 @@ public class Numeric {
 
     /**
      * Returns the sample standard deviation.  Null values are excluded.
-     * Sample standard deviation is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
      * @return sample standard deviation of non-null values.
@@ -650,7 +670,9 @@ public class Numeric {
 
     /**
      * Returns the weighted sample standard deviation.  Null values are excluded.
-     * Weighted sample standard deviation is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Weighted sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the weighted sample variance will be an unbiased estimator of weighted population variance.
      *
      * @param values values.
      * @param weights weights
@@ -666,7 +688,9 @@ public class Numeric {
 
     /**
      * Returns the weighted sample standard deviation.  Null values are excluded.
-     * Weighted sample standard deviation is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Weighted sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the weighted sample variance will be an unbiased estimator of weighted population variance.
      *
      * @param values values.
      * @param weights weights
@@ -682,7 +706,9 @@ public class Numeric {
 
     /**
      * Returns the weighted sample standard deviation.  Null values are excluded.
-     * Weighted sample standard deviation is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Weighted sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the weighted sample variance will be an unbiased estimator of weighted population variance.
      *
      * @param values values.
      * @param weights weights
@@ -698,7 +724,9 @@ public class Numeric {
 
     /**
      * Returns the weighted sample standard deviation.  Null values are excluded.
-     * Weighted sample standard deviation is computed using Bessel's correction: https://en.wikipedia.org/wiki/Bessel%27s_correction
+     *
+     * Weighted sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the weighted sample variance will be an unbiased estimator of weighted population variance.
      *
      * @param values values.
      * @param weights weights

@@ -1168,6 +1168,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Produces a single row table with the sample standard deviation of each column.
      * <p>
      * When the input table is empty, zero output rows are produced.
+     * <p>
+     * Sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      */
     @ConcurrentMethod
     TOPS stdBy();
@@ -1175,6 +1178,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sample standard deviation for
      * the rest of the fields
+     * <p>
+     * Sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
      */
@@ -1184,6 +1190,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sample standard deviation for
      * the rest of the fields
+     * <p>
+     * Sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
      */
@@ -1193,6 +1202,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sample standard deviation for
      * the rest of the fields
+     * <p>
+     * Sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
      */
@@ -1205,6 +1217,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Produces a single row table with the sample variance of each column.
      * <p>
      * When the input table is empty, zero output rows are produced.
+     * <p>
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      */
     @ConcurrentMethod
     TOPS varBy();
@@ -1212,6 +1227,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sample variance for the rest of
      * the fields
+     * <p>
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
      */
@@ -1221,6 +1239,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sample variance for the rest of
      * the fields
+     * <p>
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
      */
@@ -1230,6 +1251,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
      * fields
+     * <p>
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
      */

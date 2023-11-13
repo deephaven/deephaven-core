@@ -531,6 +531,7 @@ class Table(TableInterface, ServerObject):
     def std_by(self, by: Union[str, List[str]] = None) -> Table:
         """The std_by method creates a new table containing the sample standard deviation for each group. Columns not
         used in the grouping must be of numeric types.
+
         Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
         which ensures that the sample variance will be an unbiased estimator of population variance.
 
@@ -549,6 +550,7 @@ class Table(TableInterface, ServerObject):
     def var_by(self, by: Union[str, List[str]] = None) -> Table:
         """The var_by method creates a new table containing the sample variance for each group. Columns not used in the
         grouping must be of numeric types.
+
         Sample variance is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
         which ensures that the sample variance will be an unbiased estimator of population variance.
 

@@ -544,8 +544,10 @@ func (th *TableHandle) AvgBy(ctx context.Context, cols ...string) (*TableHandle,
 }
 
 // StdBy returns the sample standard deviation for each group. Null values are ignored.
-// Sample standard deviation is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_.
 // Columns not used in the grouping must be numeric.
+//
+// Sample standard deviation is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+// which ensures that the sample variance will be an unbiased estimator of population variance.
 func (th *TableHandle) StdBy(ctx context.Context, cols ...string) (*TableHandle, error) {
 	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
@@ -555,8 +557,10 @@ func (th *TableHandle) StdBy(ctx context.Context, cols ...string) (*TableHandle,
 }
 
 // VarBy returns the sample variance for each group. Null values are ignored.
-// Sample variance is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_.
 // Columns not used in the grouping must be numeric.
+//
+// Sample variance is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+// which ensures that the sample variance will be an unbiased estimator of population variance.
 func (th *TableHandle) VarBy(ctx context.Context, cols ...string) (*TableHandle, error) {
 	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle

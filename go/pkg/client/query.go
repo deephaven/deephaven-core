@@ -1014,15 +1014,19 @@ func (qb QueryNode) AvgBy(by ...string) QueryNode {
 }
 
 // StdBy returns the sample standard deviation for each group. Null values are ignored.
-// Sample standard deviation is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_.
 // Columns not used in the grouping must be numeric.
+//
+// Sample standard deviation is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+// which ensures that the sample variance will be an unbiased estimator of population variance.
 func (qb QueryNode) StdBy(by ...string) QueryNode {
 	return qb.addOp(dedicatedAggOp{child: qb, colNames: by, kind: tablepb2.ComboAggregateRequest_STD})
 }
 
 // VarBy returns the sample variance for each group. Null values are ignored.
-// Sample variance is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_.
 // Columns not used in the grouping must be numeric.
+//
+// Sample variance is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+// which ensures that the sample variance will be an unbiased estimator of population variance.
 func (qb QueryNode) VarBy(by ...string) QueryNode {
 	return qb.addOp(dedicatedAggOp{child: qb, colNames: by, kind: tablepb2.ComboAggregateRequest_VAR})
 }
@@ -1159,16 +1163,20 @@ func (b *AggBuilder) Percentile(percentile float64, cols ...string) *AggBuilder 
 }
 
 // Std returns an aggregator that computes the sample standard deviation of values, within an aggregation group, for each input column.
-// Sample standard deviation is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_.
 // The source columns are specified by cols.
+//
+// Sample standard deviation is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+// which ensures that the sample variance will be an unbiased estimator of population variance.
 func (b *AggBuilder) StdDev(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_STD})
 	return b
 }
 
 // Var returns an aggregator that computes the sample variance of values, within an aggregation group, for each input column.
-// Sample variance is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_.
 // The source columns are specified by cols.
+//
+// Sample variance is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+// which ensures that the sample variance will be an unbiased estimator of population variance.
 func (b *AggBuilder) Variance(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_VAR})
 	return b

@@ -1621,12 +1621,14 @@ public interface UpdateByOperation {
 
     /**
      * Create a {@link RollingStdSpec rolling sample standard deviation} for the supplied column name pairs, using ticks
-     * as the windowing unit. Sample standard deviation is computed using Bessel's correction:
-     * https://en.wikipedia.org/wiki/Bessel%27s_correction This ensures that the sample variance will be an unbiased
-     * estimator of population variance. Ticks are row counts and you may specify the previous window in number of rows
+     * as the windowing unit. Ticks are row counts and you may specify the previous window in number of rows
      * to include. The current row is considered to belong to the reverse window, so calling this with
      * {@code revTicks = 1} will simply return the current row. Specifying {@code revTicks = 10} will include the
      * previous 9 rows to this one and this row for a total of 10 rows.
+     *
+     * Sample standard deviation is computed using Bessel's correction
+     * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
+     * estimator of population variance.
      *
      * @param revTicks the look-behind window size (in rows/ticks)
      * @param pairs The input/output column name pairs
@@ -1638,9 +1640,7 @@ public interface UpdateByOperation {
 
     /**
      * Create a {@link RollingStdSpec rolling sample standard deviation} for the supplied column name pairs, using ticks
-     * as the windowing unit. Sample standard deviation is computed using Bessel's correction:
-     * https://en.wikipedia.org/wiki/Bessel%27s_correction This ensures that the sample variance will be an unbiased
-     * estimator of population variance. Ticks are row counts and you may specify the reverse and forward window in
+     * as the windowing unit. Ticks are row counts and you may specify the reverse and forward window in
      * number of rows to include. The current row is considered to belong to the reverse window but not the forward
      * window. Also, negative values are allowed and can be used to generate completely forward or completely reverse
      * windows. Here are some examples of window values:
@@ -1658,6 +1658,10 @@ public interface UpdateByOperation {
      * following the current row (inclusive)</li>
      * </ul>
      *
+     * Sample standard deviation is computed using Bessel's correction
+     * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
+     * estimator of population variance.
+     *
      * @param revTicks the look-behind window size (in rows/ticks)
      * @param fwdTicks the look-ahead window size (in rows/ticks)
      * @param pairs The input/output column name pairs
@@ -1669,9 +1673,7 @@ public interface UpdateByOperation {
 
     /**
      * Create a {@link RollingStdSpec rolling sample standard deviation} for the supplied column name pairs, using time
-     * as the windowing unit. Sample standard deviation is computed using Bessel's correction:
-     * https://en.wikipedia.org/wiki/Bessel%27s_correction This ensures that the sample variance will be an unbiased
-     * estimator of population variance. This function accepts {@link Duration duration} as the reverse window
+     * as the windowing unit. This function accepts {@link Duration duration} as the reverse window
      * parameter. A row containing a {@code null} in the timestamp column belongs to no window and will not have a value
      * computed or be considered in the windows of other rows.
      *
@@ -1680,6 +1682,10 @@ public interface UpdateByOperation {
      * <li>{@code revDuration = 0m} - contains rows that exactly match the current row timestamp</li>
      * <li>{@code revDuration = 10m} - contains rows from 10m earlier through the current row timestamp (inclusive)</li>
      * </ul>
+     *
+     * Sample standard deviation is computed using Bessel's correction
+     * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
+     * estimator of population variance.
      *
      * @param timestampCol the name of the timestamp column
      * @param revDuration the look-behind window size (in Duration)
@@ -1692,9 +1698,7 @@ public interface UpdateByOperation {
 
     /**
      * Create a {@link RollingStdSpec rolling sample standard deviation} for the supplied column name pairs, using time
-     * as the windowing unit. Sample standard deviation is computed using Bessel's correction:
-     * https://en.wikipedia.org/wiki/Bessel%27s_correction This ensures that the sample variance will be an unbiased
-     * estimator of population variance. This function accepts {@link Duration durations} as the reverse and forward
+     * as the windowing unit. This function accepts {@link Duration durations} as the reverse and forward
      * window parameters. Negative values are allowed and can be used to generate completely forward or completely
      * reverse windows. A row containing a {@code null} in the timestamp column belongs to no window and will not have a
      * value computed or be considered in the windows of other rows.
@@ -1714,6 +1718,10 @@ public interface UpdateByOperation {
      * current row timestamp (inclusive), this is a purely forwards looking window</li>
      * </ul>
      *
+     * Sample standard deviation is computed using Bessel's correction
+     * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
+     * estimator of population variance.
+     *
      * @param timestampCol the name of the timestamp column
      * @param revDuration the look-behind window size (in Duration)
      * @param fwdDuration the look-ahead window size (in Duration)
@@ -1727,11 +1735,13 @@ public interface UpdateByOperation {
 
     /**
      * Create a {@link RollingStdSpec rolling sample standard deviation} for the supplied column name pairs, using time
-     * as the windowing unit. Sample standard deviation is computed using Bessel's correction:
-     * https://en.wikipedia.org/wiki/Bessel%27s_correction This ensures that the sample variance will be an unbiased
-     * estimator of population variance. This function accepts {@code nanoseconds} as the reverse window parameters. A
+     * as the windowing unit. This function accepts {@code nanoseconds} as the reverse window parameters. A
      * row containing a {@code null} in the timestamp column belongs to no window and will not have a value computed or
      * be considered in the windows of other rows.
+     *
+     * Sample standard deviation is computed using Bessel's correction
+     * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
+     * estimator of population variance.
      *
      * @param timestampCol the name of the timestamp column
      * @param revTime the look-behind window size (in nanoseconds)
@@ -1744,12 +1754,14 @@ public interface UpdateByOperation {
 
     /**
      * Create a {@link RollingStdSpec rolling sample standard deviation} for the supplied column name pairs, using time
-     * as the windowing unit. Sample standard deviation is computed using Bessel's correction:
-     * https://en.wikipedia.org/wiki/Bessel%27s_correction This ensures that the sample variance will be an unbiased
-     * estimator of population variance. This function accepts {@code nanoseconds} as the reverse and forward window
+     * as the windowing unit. This function accepts {@code nanoseconds} as the reverse and forward window
      * parameters. Negative values are allowed and can be used to generate completely forward or completely reverse
      * windows. A row containing a {@code null} in the timestamp column belongs to no window and will not have a value
      * computed or be considered in the windows of other rows.
+     *
+     * Sample standard deviation is computed using Bessel's correction
+     * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
+     * estimator of population variance.
      *
      * @param timestampCol the name of the timestamp column
      * @param revTime the look-behind window size (in nanoseconds)

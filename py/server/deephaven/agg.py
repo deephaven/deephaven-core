@@ -274,6 +274,10 @@ def sorted_last(order_by: str, cols: Union[str, List[str]] = None) -> Aggregatio
 def std(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a Std (sample standard deviation) aggregation.
 
+    Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+    which ensures that the sample variance will be an unbiased estimator of population variance.
+
+
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
@@ -313,6 +317,10 @@ def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False, non_
 
 def var(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a sample Var aggregation.
+
+    Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+    which ensures that the sample variance will be an unbiased estimator of population variance.
+
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";

@@ -73,6 +73,10 @@ public class JsColumnStatistics {
         MAX_ABS("MAX (ABS)", null),
         /**
          * The sample standard deviation of the values in the column.
+         *
+         * Sample standard deviation is computed using Bessel's correction
+         * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an
+         * unbiased estimator of population variance.
          */
         STD_DEV("STD DEV", "double"),
         /**
