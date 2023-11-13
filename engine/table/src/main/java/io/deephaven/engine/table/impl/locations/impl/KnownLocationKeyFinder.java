@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -34,10 +35,18 @@ public final class KnownLocationKeyFinder<TLK extends ImmutableTableLocationKey>
         if (comparator != null) {
             mutableKeys.sort(comparator);
         }
-        return new KnownLocationKeyFinder<>(mutableKeys);
+        final String comparatorString = comparator == null
+                ? null
+                : Comparator.naturalOrder().equals(comparator)
+                        ? "Comparator.naturalOrder()"
+                        : comparator.toString();
+        final String toString =
+                String.format("%s[%s, %s]", KnownLocationKeyFinder.class.getSimpleName(), finder, comparatorString);
+        return new KnownLocationKeyFinder<>(mutableKeys, toString);
     }
 
     private final List<TLK> knownKeys;
+    private final String toString;
 
     @SafeVarargs
     public KnownLocationKeyFinder(@NotNull final TLK... knownKeys) {
@@ -45,7 +54,12 @@ public final class KnownLocationKeyFinder<TLK extends ImmutableTableLocationKey>
     }
 
     public KnownLocationKeyFinder(List<TLK> knownKeys) {
+        this(knownKeys, null);
+    }
+
+    public KnownLocationKeyFinder(List<TLK> knownKeys, String toString) {
         this.knownKeys = List.copyOf(knownKeys);
+        this.toString = toString;
     }
 
     /**
@@ -55,8 +69,21 @@ public final class KnownLocationKeyFinder<TLK extends ImmutableTableLocationKey>
         return knownKeys;
     }
 
+    public Optional<TLK> getFirstKey() {
+        return knownKeys.isEmpty() ? Optional.empty() : Optional.of(knownKeys.get(0));
+    }
+
+    public Optional<TLK> getLastKey() {
+        return knownKeys.isEmpty() ? Optional.empty() : Optional.of(knownKeys.get(knownKeys.size() - 1));
+    }
+
     @Override
     public void findKeys(@NotNull Consumer<TLK> locationKeyObserver) {
         knownKeys.forEach(locationKeyObserver);
+    }
+
+    @Override
+    public String toString() {
+        return toString == null ? super.toString() : toString;
     }
 }

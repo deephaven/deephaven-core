@@ -5,7 +5,8 @@
 """ This module supports reading an external Parquet files into Deephaven tables and writing Deephaven tables out as
 Parquet files. """
 from dataclasses import dataclass
-from typing import List
+from enum import Enum
+from typing import List, Optional
 
 import jpy
 
@@ -39,9 +40,11 @@ def _build_parquet_instructions(
     target_page_size: int = None,
     is_refreshing: bool = False,
     for_read: bool = True,
+    force_build: bool = False,
 ):
     if not any(
         [
+            force_build,
             col_instructions,
             compression_codec_name,
             max_dictionary_keys is not None,
@@ -76,30 +79,55 @@ def _build_parquet_instructions(
     if max_dictionary_size is not None:
         builder.setMaximumDictionarySize(max_dictionary_size)
 
-    builder.setIsLegacyParquet(is_legacy_parquet)
+    if is_legacy_parquet:
+        builder.setIsLegacyParquet(is_legacy_parquet)
 
     if target_page_size is not None:
         builder.setTargetPageSize(target_page_size)
 
-    builder.setIsRefreshing(is_refreshing)
+    if is_refreshing:
+        builder.setIsRefreshing(is_refreshing)
 
     return builder.build()
+
+class ParquetType(Enum):
+    """ The parquet file layout type. """
+
+    SINGLE = 1
+    """ A single parquet file. """
+
+    FLAT_PARTITIONED = 2
+    """ A single directory of parquet files. """
+
+    KV_PARTITIONED = 3
+    """ A key-value directory partitioning of parquet files. """
+
+    METADATA_PARTITIONED = 4
+    """ A directory containing a _metadata parquet file and an optional _common_metadata parquet file. """
 
 
 def read(
     path: str,
-    col_instructions: List[ColumnInstruction] = None,
+    col_instructions: Optional[List[ColumnInstruction]] = None,
     is_legacy_parquet: bool = False,
     is_refreshing: bool = False,
+    type: Optional[ParquetType] = None,
+    table_definition: Optional[List[Column]] = None,
 ) -> Table:
     """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
     Args:
         path (str): the file or directory to examine
-        col_instructions (List[ColumnInstruction]): instructions for customizations while reading
+        col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while reading, None by
+            default.
         is_legacy_parquet (bool): if the parquet data is legacy
         is_refreshing (bool): if the parquet data represents a refreshing source
-
+        type (Optional[ParquetType]): the parquet type, by default None. When None, the type is inferred.
+        table_definition (Optional[List[Column]]): the table definition, by default None. When None, the definition is
+            inferred from the parquet file(s). Setting a definition guarantees the returned table will have that
+            definition. This is useful for bootstrapping purposes when the initial partitioned directory is empty and
+            is_refreshing=True. It is also useful for specifying a subset of the parquet definition. When set, type must
+            also be set.
     Returns:
         a table
 
@@ -113,12 +141,36 @@ def read(
             is_legacy_parquet=is_legacy_parquet,
             is_refreshing=is_refreshing,
             for_read=True,
+            force_build=True,
         )
-
-        if read_instructions:
-            return Table(j_table=_JParquetTools.readTable(path, read_instructions))
+        if table_definition is not None:
+            if not type:
+                raise DHError("Must provide type when table_definition is set")
+            j_table_definition = _JTableDefinition.of([col.j_column_definition for col in table_definition])
+            if type == ParquetType.SINGLE:
+                j_table = _JParquetTools.readSingleTable(_JFile(path), read_instructions, j_table_definition)
+            elif type == ParquetType.FLAT_PARTITIONED:
+                j_table = _JParquetTools.readFlatPartitionedTable(_JFile(path), read_instructions, j_table_definition)
+            elif type == ParquetType.KV_PARTITIONED:
+                j_table = _JParquetTools.readKeyValuePartitionedTable(_JFile(path), read_instructions, j_table_definition)
+            elif type == ParquetType.METADATA_PARTITIONED:
+                raise DHError(f"{ParquetType.METADATA_PARTITIONED} with table_definition not currently supported")
+            else:
+                raise DHError(f"Invalid parquet type '{type}'")
         else:
-            return Table(j_table=_JParquetTools.readTable(path))
+            if not type:
+                j_table = _JParquetTools.readTable(path, read_instructions)
+            elif type == ParquetType.SINGLE:
+                j_table = _JParquetTools.readSingleTable(_JFile(path), read_instructions)
+            elif type == ParquetType.FLAT_PARTITIONED:
+                j_table = _JParquetTools.readFlatPartitionedTable(_JFile(path), read_instructions)
+            elif type == ParquetType.KV_PARTITIONED:
+                j_table = _JParquetTools.readKeyValuePartitionedTable(_JFile(path), read_instructions)
+            elif type == ParquetType.METADATA_PARTITIONED:
+                j_table = _JParquetTools.readPartitionedTableWithMetadata(_JFile(path), read_instructions)
+            else:
+                raise DHError(f"Invalid parquet type '{type}'")
+        return Table(j_table=j_table)
     except Exception as e:
         raise DHError(e, "failed to read parquet data.") from e
 
