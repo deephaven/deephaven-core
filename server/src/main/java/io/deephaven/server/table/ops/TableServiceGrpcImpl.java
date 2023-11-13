@@ -11,6 +11,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderImpl;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
 import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.extensions.barrage.util.ExportUtil;
@@ -513,11 +514,11 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         }
         final SessionState session = sessionService.getCurrentSession();
 
-        final QueryPerformanceRecorderImpl queryPerformanceRecorder = new QueryPerformanceRecorderImpl(
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 "TableService#batch(session=" + session.getSessionId() + ")",
                 QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try {
+        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
             // step 1: initialize exports
             final List<BatchExportBuilder<?>> exportBuilders = request.getOpsList().stream()
                     .map(op -> createBatchExportBuilder(session, queryPerformanceRecorder, op))
@@ -540,8 +541,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 }
                 Assert.geqZero(numRemaining, "numRemaining");
 
-                try {
-                    queryPerformanceRecorder.resumeQuery();
+                try (final SafeCloseable ignored2 = queryPerformanceRecorder.resumeQuery()) {
                     final QueryProcessingResults results = new QueryProcessingResults(queryPerformanceRecorder);
                     final StatusRuntimeException failure = firstFailure.get();
                     if (failure != null) {
@@ -553,8 +553,6 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     if (queryPerformanceRecorder.endQuery()) {
                         EngineMetrics.getInstance().logQueryProcessingResults(results);
                     }
-                } finally {
-                    QueryPerformanceRecorder.resetInstance();
                 }
             };
 
@@ -596,8 +594,6 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             // now that we've submitted everything we'll suspend the query and release our refcount
             queryPerformanceRecorder.suspendQuery();
             onOneResolved.run();
-        } finally {
-            QueryPerformanceRecorder.resetInstance();
         }
     }
 
@@ -667,9 +663,10 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         final String description = "TableService#" + op.name() + "(session=" + session.getSessionId() + ", resultId="
                 + ticketRouter.getLogNameFor(resultId, "TableServiceGrpcImpl") + ")";
 
-        final QueryPerformanceRecorderImpl queryPerformanceRecorder = new QueryPerformanceRecorderImpl(
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
-        try {
+
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             operation.validateRequest(request);
 
             final List<SessionState.ExportObject<Table>> dependencies = operation.getTableReferences(request).stream()
@@ -688,8 +685,6 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         safelyComplete(responseObserver, response);
                         return result;
                     });
-        } finally {
-            QueryPerformanceRecorder.resetInstance();
         }
     }
 
@@ -732,7 +727,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     private <T> BatchExportBuilder<T> createBatchExportBuilder(
             @NotNull final SessionState session,
-            @NotNull final QueryPerformanceRecorderImpl queryPerformanceRecorder,
+            @NotNull final QueryPerformanceRecorder queryPerformanceRecorder,
             final BatchTableRequest.Operation op) {
         final GrpcTableOperation<T> operation = getOp(op.getOpCase());
         final T request = operation.getRequestFromOperation(op);

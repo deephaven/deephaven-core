@@ -3,82 +3,30 @@
  */
 package io.deephaven.engine.table.impl.perf;
 
-import io.deephaven.base.verify.Assert;
-import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.chunk.util.pools.ChunkPoolInstrumentation;
-import io.deephaven.engine.updategraph.UpdateGraphLock;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.function.ThrowingRunnable;
 import io.deephaven.util.function.ThrowingSupplier;
-import io.deephaven.util.profiling.ThreadProfiler;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.net.URL;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
-
-import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.minus;
-import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.plus;
 
 /**
  * Query performance instrumentation tools. Manages a hierarchy of {@link QueryPerformanceNugget} instances.
  */
-public abstract class QueryPerformanceRecorder {
+public interface QueryPerformanceRecorder {
 
-    public static final String UNINSTRUMENTED_CODE_DESCRIPTION = "Uninstrumented code";
+    String UNINSTRUMENTED_CODE_DESCRIPTION = "Uninstrumented code";
 
-    private static final String[] packageFilters;
+    /////////////////////////////////////
+    // Core Engine Instrumentation API //
+    /////////////////////////////////////
 
-    protected static final AtomicLong queriesProcessed = new AtomicLong(0);
-
-    static final QueryPerformanceRecorder DUMMY_RECORDER = new DummyQueryPerformanceRecorder();
-
-    /** thread local is package private to enable query resumption */
-    static final ThreadLocal<QueryPerformanceRecorder> theLocal =
-            ThreadLocal.withInitial(() -> DUMMY_RECORDER);
-    private static final ThreadLocal<MutableLong> poolAllocatedBytes = ThreadLocal.withInitial(
-            () -> new MutableLong(ThreadProfiler.DEFAULT.memoryProfilingAvailable() ? 0L
-                    : io.deephaven.util.QueryConstants.NULL_LONG));
-    private static final ThreadLocal<String> cachedCallsite = new ThreadLocal<>();
-
-    static {
-        final Configuration config = Configuration.getInstance();
-        final Set<String> filters = new HashSet<>();
-
-        final String propVal = config.getProperty("QueryPerformanceRecorder.packageFilter.internal");
-        final URL path = QueryPerformanceRecorder.class.getResource("/" + propVal);
-        if (path == null) {
-            throw new RuntimeException("Can not locate package filter file " + propVal + " in classpath");
-        }
-
-        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(path.openStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (!line.isEmpty()) {
-                    filters.add(line);
-                }
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException("Error reading file " + propVal, e);
-        }
-
-        packageFilters = filters.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-    }
-
-    public static QueryPerformanceRecorder getInstance() {
-        return theLocal.get();
-    }
-
-    public static void resetInstance() {
-        // clear interrupted - because this is a good place to do it - no cancellation exception here though
-        // noinspection ResultOfMethodCallIgnored
-        Thread.interrupted();
-        theLocal.remove();
+    static QueryPerformanceRecorder getInstance() {
+        return QueryPerformanceRecorderState.getInstance();
     }
 
     /**
@@ -89,7 +37,10 @@ public abstract class QueryPerformanceRecorder {
      * @return A new QueryPerformanceNugget to encapsulate user query operations. {@link QueryPerformanceNugget#done()}
      *         or {@link QueryPerformanceNugget#close()} must be called on the nugget.
      */
-    public abstract QueryPerformanceNugget getNugget(@NotNull String name);
+    @FinalDefault
+    default QueryPerformanceNugget getNugget(@NotNull String name) {
+        return getNugget(name, QueryConstants.NULL_LONG);
+    }
 
     /**
      * Create a nugget at the top of the user stack. May return a {@link QueryPerformanceNugget#DUMMY_NUGGET} if no
@@ -100,36 +51,17 @@ public abstract class QueryPerformanceRecorder {
      * @return A new QueryPerformanceNugget to encapsulate user query operations. {@link QueryPerformanceNugget#done()}
      *         or {@link QueryPerformanceNugget#close()} must be called on the nugget.
      */
-    public abstract QueryPerformanceNugget getNugget(@NotNull String name, long inputSize);
+    QueryPerformanceNugget getNugget(@NotNull String name, long inputSize);
 
     /**
      * This is the nugget enclosing the current operation. It may belong to the dummy recorder, or a real one.
      *
      * @return Either a "catch-all" nugget, or the top of the user nugget stack.
      */
-    public abstract QueryPerformanceNugget getEnclosingNugget();
+    QueryPerformanceNugget getEnclosingNugget();
 
-    /**
-     * <b>Note:</b> Do not call this directly - it's for nugget use only. Call {@link QueryPerformanceNugget#done()} or
-     * {@link QueryPerformanceNugget#close()} instead.
-     *
-     * @implNote This method is package private to limit visibility.
-     * @param nugget the nugget to be released
-     * @return If the nugget passes criteria for logging.
-     */
-    abstract boolean releaseNugget(QueryPerformanceNugget nugget);
 
-    /**
-     * @return the query level performance data
-     */
-    public abstract QueryPerformanceNugget getQueryLevelPerformanceData();
-
-    /**
-     * @return A list of loggable operation performance data.
-     */
-    public abstract List<QueryPerformanceNugget> getOperationLevelPerformanceData();
-
-    public interface EntrySetter {
+    interface EntrySetter {
         void set(long evaluationNumber, int operationNumber, boolean uninstrumented);
     }
 
@@ -138,253 +70,23 @@ public abstract class QueryPerformanceRecorder {
      *
      * @param setter a callback to receive query data
      */
-    public abstract void setQueryData(final EntrySetter setter);
+    void setQueryData(final EntrySetter setter);
 
     /**
-     * Install {@link QueryPerformanceRecorder#recordPoolAllocation(java.util.function.Supplier)} as the allocation
-     * recorder for {@link io.deephaven.chunk.util.pools.ChunkPool chunk pools}.
+     * @return The current callsite. This is the last set callsite or the line number of the user's detected callsite.
      */
-    public static void installPoolAllocationRecorder() {
-        ChunkPoolInstrumentation.setAllocationRecorder(QueryPerformanceRecorder::recordPoolAllocation);
+    static String getCallerLine() {
+        return QueryPerformanceRecorderState.getCallerLine();
     }
 
     /**
-     * Install this {@link QueryPerformanceRecorder} as the lock action recorder for {@link UpdateGraphLock}.
-     */
-    public static void installUpdateGraphLockInstrumentation() {
-        UpdateGraphLock.installInstrumentation(new UpdateGraphLock.Instrumentation() {
-
-            @Override
-            public void recordAction(@NotNull String description, @NotNull Runnable action) {
-                QueryPerformanceRecorder.withNugget(description, action);
-            }
-
-            @Override
-            public void recordActionInterruptibly(@NotNull String description,
-                    @NotNull ThrowingRunnable<InterruptedException> action)
-                    throws InterruptedException {
-                QueryPerformanceRecorder.withNuggetThrowing(description, action);
-            }
-        });
-    }
-
-    /**
-     * Record a single-threaded operation's allocations as "pool" allocated memory attributable to the current thread.
-     *
-     * @param operation The operation to record allocation for
-     * @return The result of the operation.
-     */
-    public static <RESULT_TYPE> RESULT_TYPE recordPoolAllocation(@NotNull final Supplier<RESULT_TYPE> operation) {
-        final long startThreadAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
-        try {
-            return operation.get();
-        } finally {
-            final long endThreadAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
-            final MutableLong poolAllocatedBytesForCurrentThread = poolAllocatedBytes.get();
-            poolAllocatedBytesForCurrentThread.setValue(plus(poolAllocatedBytesForCurrentThread.longValue(),
-                    minus(endThreadAllocatedBytes, startThreadAllocatedBytes)));
-        }
-    }
-
-    /**
-     * Get the total bytes of pool-allocated memory attributed to this thread via
-     * {@link #recordPoolAllocation(Supplier)}.
-     *
-     * @return The total bytes of pool-allocated memory attributed to this thread.
-     */
-    public static long getPoolAllocatedBytesForCurrentThread() {
-        return poolAllocatedBytes.get().longValue();
-    }
-
-    public static String getCallerLine() {
-        String callerLineCandidate = cachedCallsite.get();
-
-        if (callerLineCandidate == null) {
-            final StackTraceElement[] stack = (new Exception()).getStackTrace();
-            for (int i = stack.length - 1; i > 0; i--) {
-                final String className = stack[i].getClassName();
-
-                if (className.startsWith("io.deephaven.engine.util.GroovyDeephavenSession")) {
-                    callerLineCandidate = "Groovy Script";
-                } else if (Arrays.stream(packageFilters).noneMatch(className::startsWith)) {
-                    callerLineCandidate = stack[i].getFileName() + ":" + stack[i].getLineNumber();
-                }
-            }
-        }
-
-        return callerLineCandidate == null ? "Internal" : callerLineCandidate;
-    }
-
-    /**
-     * Surround the given code with a Performance Nugget
-     *
-     * @param name the nugget name
-     * @param r the stuff to run
-     */
-    public static void withNugget(final String name, final Runnable r) {
-        final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-
-        try {
-            nugget = getInstance().getNugget(name);
-            r.run();
-        } finally {
-            finishAndClear(nugget, needClear);
-        }
-    }
-
-    /**
-     * Surround the given code with a Performance Nugget
-     *
-     * @param name the nugget name
-     * @param r the stuff to run
-     * @return the result of the stuff to run
-     */
-    public static <T> T withNugget(final String name, final Supplier<T> r) {
-        final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-
-        try {
-            nugget = getInstance().getNugget(name);
-            return r.get();
-        } finally {
-            finishAndClear(nugget, needClear);
-        }
-    }
-
-    /**
-     * Surround the given code with a Performance Nugget
-     *
-     * @param r the stuff to run
-     * @throws T exception of type T
-     */
-    public static <T extends Exception> void withNuggetThrowing(
-            final String name,
-            final ThrowingRunnable<T> r) throws T {
-        final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-        try {
-            nugget = getInstance().getNugget(name);
-            r.run();
-        } finally {
-            finishAndClear(nugget, needClear);
-        }
-    }
-
-    /**
-     * Surround the given code with a Performance Nugget
-     *
-     * @param name the nugget name
-     * @param r the stuff to run
-     * @return the result of the stuff to run
-     * @throws ExceptionType exception of type ExceptionType
-     */
-    public static <R, ExceptionType extends Exception> R withNuggetThrowing(
-            final String name,
-            final ThrowingSupplier<R, ExceptionType> r) throws ExceptionType {
-        final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-        try {
-            nugget = getInstance().getNugget(name);
-            return r.get();
-        } finally {
-            finishAndClear(nugget, needClear);
-        }
-    }
-
-    /**
-     * Surround the given code with a Performance Nugget
-     *
-     * @param name the nugget name
-     * @param r the stuff to run
-     */
-    public static void withNugget(final String name, final long inputSize, final Runnable r) {
-        final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-        try {
-            nugget = getInstance().getNugget(name, inputSize);
-            r.run();
-        } finally {
-            finishAndClear(nugget, needClear);
-        }
-    }
-
-    /**
-     * Surround the given code with a Performance Nugget
-     *
-     * @param name the nugget name
-     * @param r the stuff to run
-     * @return the result of the stuff to run
-     */
-    public static <T> T withNugget(final String name, final long inputSize, final Supplier<T> r) {
-        final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-        try {
-            nugget = getInstance().getNugget(name, inputSize);
-            return r.get();
-        } finally {
-            finishAndClear(nugget, needClear);
-        }
-    }
-
-    /**
-     * Surround the given code with a Performance Nugget
-     *
-     * @param r the stuff to run
-     * @throws T exception of type T
-     */
-    @SuppressWarnings("unused")
-    public static <T extends Exception> void withNuggetThrowing(
-            final String name,
-            final long inputSize,
-            final ThrowingRunnable<T> r) throws T {
-        final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-        try {
-            nugget = getInstance().getNugget(name, inputSize);
-            r.run();
-        } finally {
-            finishAndClear(nugget, needClear);
-        }
-    }
-
-    /**
-     * Surround the given code with a Performance Nugget
-     *
-     * @param name the nugget name
-     * @param r the stuff to run
-     * @return the result of the stuff to run
-     * @throws ExceptionType exception of type ExceptionType
-     */
-    @SuppressWarnings("unused")
-    public static <R, ExceptionType extends Exception> R withNuggetThrowing(
-            final String name,
-            final long inputSize,
-            final ThrowingSupplier<R, ExceptionType> r) throws ExceptionType {
-        final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-        try {
-            nugget = getInstance().getNugget(name, inputSize);
-            return r.get();
-        } finally {
-            finishAndClear(nugget, needClear);
-        }
-    }
-
-    /**
-     * <p>
      * Attempt to set the thread local callsite so that invocations of {@link #getCallerLine()} will not spend time
      * trying to recompute.
-     * </p>
-     *
      * <p>
      * This method returns a boolean if the value was successfully set. In the event this returns true, it's the
      * responsibility of the caller to invoke {@link #clearCallsite()} when the operation is complete.
-     * </p>
-     *
      * <p>
      * It is good practice to do this with try{} finally{} block
-     * </p>
      *
      * <pre>
      * final boolean shouldClear = QueryPerformanceRecorder.setCallsite("CALLSITE");
@@ -399,46 +101,283 @@ public abstract class QueryPerformanceRecorder {
      *
      * @param callsite The call site to use.
      *
-     * @return true if successfully set, false otherwise/
+     * @return true if successfully set, false otherwise
      */
-    public static boolean setCallsite(String callsite) {
-        if (cachedCallsite.get() == null) {
-            cachedCallsite.set(callsite);
-            return true;
-        }
-
-        return false;
+    static boolean setCallsite(@NotNull final String callsite) {
+        return QueryPerformanceRecorderState.setCallsite(callsite);
     }
 
     /**
-     * <p>
      * Attempt to compute and set the thread local callsite so that invocations of {@link #getCallerLine()} will not
      * spend time trying to recompute.
-     * </p>
-     *
      * <p>
      * Users should follow the best practice as described by {@link #setCallsite(String)}
-     * </p>
      *
      * @return true if the callsite was computed and set.
      */
-    public static boolean setCallsite() {
-        // This is very similar to the other getCallsite, but we don't want to invoke getCallerLine() unless we
-        // really need to.
-        if (cachedCallsite.get() == null) {
-            cachedCallsite.set(getCallerLine());
-            return true;
-        }
-
-        return false;
+    static boolean setCallsite() {
+        return QueryPerformanceRecorderState.setCallsite();
     }
 
     /**
      * Clear any previously set callsite. See {@link #setCallsite(String)}
      */
-    public static void clearCallsite() {
-        cachedCallsite.remove();
+    static void clearCallsite() {
+        QueryPerformanceRecorderState.clearCallsite();
     }
+
+    ////////////////////////////////////////////
+    // Server-Level Performance Recording API //
+    ////////////////////////////////////////////
+
+    /**
+     * Construct a QueryPerformanceRecorder for a top-level query.
+     *
+     * @param description the query description
+     * @param nuggetFactory the nugget factory
+     * @return a new QueryPerformanceRecorder
+     */
+    static QueryPerformanceRecorder newQuery(
+            @NotNull final String description,
+            @NotNull final QueryPerformanceNugget.Factory nuggetFactory) {
+        return new QueryPerformanceRecorderImpl(description, null, nuggetFactory);
+    }
+
+    /**
+     * Construct a QueryPerformanceRecorder for a sub-level query.
+     *
+     * @param description the query description
+     * @param nuggetFactory the nugget factory
+     * @return a new QueryPerformanceRecorder
+     */
+    static QueryPerformanceRecorder newSubQuery(
+            @NotNull final String description,
+            @Nullable final QueryPerformanceRecorder parent,
+            @NotNull final QueryPerformanceNugget.Factory nuggetFactory) {
+        return new QueryPerformanceRecorderImpl(description, parent, nuggetFactory);
+    }
+
+    /**
+     * Starts a query.
+     * <p>
+     * It is an error to start a query more than once or while another query is running on this thread.
+     */
+    SafeCloseable startQuery();
+
+    /**
+     * End a query.
+     * <p>
+     * It is an error to end a query not currently running on this thread.
+     *
+     * @return whether the query should be logged
+     */
+    boolean endQuery();
+
+    /**
+     * Suspends a query.
+     * <p>
+     * It is an error to suspend a query not currently running on this thread.
+     */
+    void suspendQuery();
+
+    /**
+     * Resumes a suspend query.
+     * <p>
+     * It is an error to resume a query while another query is running on this thread.
+     */
+    SafeCloseable resumeQuery();
+
+    /**
+     * Abort a query.
+     */
+    @SuppressWarnings("unused")
+    void abortQuery();
+
+    /**
+     * @return the query level performance data
+     */
+    QueryPerformanceNugget getQueryLevelPerformanceData();
+
+    /**
+     * This getter should be called by exclusive owners of the recorder, and never concurrently with mutators.
+     *
+     * @return A list of loggable operation performance data.
+     */
+    List<QueryPerformanceNugget> getOperationLevelPerformanceData();
+
+    /**
+     * Accumulate the values from another recorder into this one. The provided recorder will not be mutated.
+     *
+     * @param subQuery the recorder to accumulate into this
+     */
+    void accumulate(@NotNull QueryPerformanceRecorder subQuery);
+
+    /**
+     * @return whether a sub-query was ever accumulated into this recorder
+     */
+    @SuppressWarnings("unused")
+    boolean hasSubQueries();
+
+    ///////////////////////////////////////////////////
+    // Convenience Methods for Recording Performance //
+    ///////////////////////////////////////////////////
+
+    /**
+     * Surround the given code with a Performance Nugget
+     *
+     * @param name the nugget name
+     * @param r the stuff to run
+     */
+    static void withNugget(final String name, final Runnable r) {
+        final boolean needClear = setCallsite();
+        QueryPerformanceNugget nugget = null;
+
+        try {
+            nugget = getInstance().getNugget(name);
+            r.run();
+        } finally {
+            finishAndClear(nugget, needClear);
+        }
+    }
+
+    /**
+     * Surround the given code with a Performance Nugget
+     *
+     * @param name the nugget name
+     * @param r the stuff to run
+     * @return the result of the stuff to run
+     */
+    static <T> T withNugget(final String name, final Supplier<T> r) {
+        final boolean needClear = setCallsite();
+        QueryPerformanceNugget nugget = null;
+
+        try {
+            nugget = getInstance().getNugget(name);
+            return r.get();
+        } finally {
+            finishAndClear(nugget, needClear);
+        }
+    }
+
+    /**
+     * Surround the given code with a Performance Nugget
+     *
+     * @param r the stuff to run
+     * @throws T exception of type T
+     */
+    static <T extends Exception> void withNuggetThrowing(
+            final String name,
+            final ThrowingRunnable<T> r) throws T {
+        final boolean needClear = setCallsite();
+        QueryPerformanceNugget nugget = null;
+        try {
+            nugget = getInstance().getNugget(name);
+            r.run();
+        } finally {
+            finishAndClear(nugget, needClear);
+        }
+    }
+
+    /**
+     * Surround the given code with a Performance Nugget
+     *
+     * @param name the nugget name
+     * @param r the stuff to run
+     * @return the result of the stuff to run
+     * @throws ExceptionType exception of type ExceptionType
+     */
+    static <R, ExceptionType extends Exception> R withNuggetThrowing(
+            final String name,
+            final ThrowingSupplier<R, ExceptionType> r) throws ExceptionType {
+        final boolean needClear = setCallsite();
+        QueryPerformanceNugget nugget = null;
+        try {
+            nugget = getInstance().getNugget(name);
+            return r.get();
+        } finally {
+            finishAndClear(nugget, needClear);
+        }
+    }
+
+    /**
+     * Surround the given code with a Performance Nugget
+     *
+     * @param name the nugget name
+     * @param r the stuff to run
+     */
+    static void withNugget(final String name, final long inputSize, final Runnable r) {
+        final boolean needClear = setCallsite();
+        QueryPerformanceNugget nugget = null;
+        try {
+            nugget = getInstance().getNugget(name, inputSize);
+            r.run();
+        } finally {
+            finishAndClear(nugget, needClear);
+        }
+    }
+
+    /**
+     * Surround the given code with a Performance Nugget
+     *
+     * @param name the nugget name
+     * @param r the stuff to run
+     * @return the result of the stuff to run
+     */
+    static <T> T withNugget(final String name, final long inputSize, final Supplier<T> r) {
+        final boolean needClear = setCallsite();
+        QueryPerformanceNugget nugget = null;
+        try {
+            nugget = getInstance().getNugget(name, inputSize);
+            return r.get();
+        } finally {
+            finishAndClear(nugget, needClear);
+        }
+    }
+
+    /**
+     * Surround the given code with a Performance Nugget
+     *
+     * @param r the stuff to run
+     * @throws T exception of type T
+     */
+    @SuppressWarnings("unused")
+    static <T extends Exception> void withNuggetThrowing(
+            final String name,
+            final long inputSize,
+            final ThrowingRunnable<T> r) throws T {
+        final boolean needClear = setCallsite();
+        QueryPerformanceNugget nugget = null;
+        try {
+            nugget = getInstance().getNugget(name, inputSize);
+            r.run();
+        } finally {
+            finishAndClear(nugget, needClear);
+        }
+    }
+
+    /**
+     * Surround the given code with a Performance Nugget
+     *
+     * @param name the nugget name
+     * @param r the stuff to run
+     * @return the result of the stuff to run
+     * @throws ExceptionType exception of type ExceptionType
+     */
+    @SuppressWarnings("unused")
+    static <R, ExceptionType extends Exception> R withNuggetThrowing(
+            final String name,
+            final long inputSize,
+            final ThrowingSupplier<R, ExceptionType> r) throws ExceptionType {
+        final boolean needClear = setCallsite();
+        QueryPerformanceNugget nugget = null;
+        try {
+            nugget = getInstance().getNugget(name, inputSize);
+            return r.get();
+        } finally {
+            finishAndClear(nugget, needClear);
+        }
+    }
+
 
     /**
      * Finish the nugget and clear the callsite if needed.
@@ -453,49 +392,6 @@ public abstract class QueryPerformanceRecorder {
 
         if (needClear) {
             clearCallsite();
-        }
-    }
-
-    /**
-     * Dummy recorder for use when no recorder is installed.
-     */
-    private static class DummyQueryPerformanceRecorder extends QueryPerformanceRecorder {
-
-        @Override
-        public QueryPerformanceNugget getNugget(@NotNull final String name) {
-            return QueryPerformanceNugget.DUMMY_NUGGET;
-        }
-
-        @Override
-        public QueryPerformanceNugget getNugget(@NotNull final String name, long inputSize) {
-            return QueryPerformanceNugget.DUMMY_NUGGET;
-        }
-
-        @Override
-        public QueryPerformanceNugget getEnclosingNugget() {
-            return QueryPerformanceNugget.DUMMY_NUGGET;
-        }
-
-        @Override
-        boolean releaseNugget(@NotNull final QueryPerformanceNugget nugget) {
-            Assert.eqTrue(nugget == QueryPerformanceNugget.DUMMY_NUGGET,
-                    "nugget == QueryPerformanceNugget.DUMMY_NUGGET");
-            return false;
-        }
-
-        @Override
-        public QueryPerformanceNugget getQueryLevelPerformanceData() {
-            return QueryPerformanceNugget.DUMMY_NUGGET;
-        }
-
-        @Override
-        public List<QueryPerformanceNugget> getOperationLevelPerformanceData() {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public void setQueryData(EntrySetter setter) {
-            setter.set(QueryConstants.NULL_LONG, QueryConstants.NULL_INT, false);
         }
     }
 }

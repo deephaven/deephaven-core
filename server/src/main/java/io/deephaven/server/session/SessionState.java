@@ -539,7 +539,7 @@ public class SessionState {
         /** if true the queryPerformanceRecorder belongs to a batch; otherwise if it exists it belong to the export */
         private boolean qprIsForBatch;
         /** used to keep track of performance details either for aggregation or for the async ticket resolution */
-        private QueryPerformanceRecorderImpl queryPerformanceRecorder;
+        private QueryPerformanceRecorder queryPerformanceRecorder;
 
         /** final result of export */
         private volatile T result;
@@ -631,7 +631,7 @@ public class SessionState {
         }
 
         private synchronized void setQueryPerformanceRecorder(
-                final QueryPerformanceRecorderImpl queryPerformanceRecorder,
+                final QueryPerformanceRecorder queryPerformanceRecorder,
                 final boolean qprIsForBatch) {
             if (this.queryPerformanceRecorder != null) {
                 throw new IllegalStateException(
@@ -683,6 +683,11 @@ public class SessionState {
                 throw new IllegalStateException("export object can only be defined once");
             }
             hasHadWorkSet = true;
+
+            if (queryPerformanceRecorder != null && !qprIsForBatch) {
+                // transfer ownership of the qpr to the export before it can be resumed by the scheduler
+                queryPerformanceRecorder.suspendQuery();
+            }
             this.requiresSerialQueue = requiresSerialQueue;
 
             if (isExportStateTerminal(state)) {
@@ -980,40 +985,40 @@ public class SessionState {
 
             T localResult = null;
             boolean shouldLog = false;
-            QueryPerformanceRecorderImpl exportRecorder = null;
-            QueryProcessingResults queryProcessingResults = null;
+            final QueryPerformanceRecorder exportRecorder;
+            final QueryProcessingResults queryProcessingResults;
             try (final SafeCloseable ignored1 = session.executionContext.open();
                     final SafeCloseable ignored2 = LivenessScopeStack.open()) {
 
-                if (queryPerformanceRecorder != null && !qprIsForBatch) {
-                    exportRecorder = queryPerformanceRecorder.resumeQuery();
+                final boolean isResume = queryPerformanceRecorder != null && !qprIsForBatch;
+                if (isResume) {
+                    exportRecorder = queryPerformanceRecorder;
                 } else if (queryPerformanceRecorder != null) {
                     // this is a sub-query; no need to re-log the session id
-                    exportRecorder = new QueryPerformanceRecorderImpl(
+                    exportRecorder = QueryPerformanceRecorder.newSubQuery(
                             "ExportObject#doWork(exportId=" + logIdentity + ")",
                             queryPerformanceRecorder,
                             QueryPerformanceNugget.DEFAULT_FACTORY);
                 } else {
-                    exportRecorder = new QueryPerformanceRecorderImpl(
+                    exportRecorder = QueryPerformanceRecorder.newQuery(
                             "ExportObject#doWork(session=" + session.sessionId + ",exportId=" + logIdentity + ")",
                             QueryPerformanceNugget.DEFAULT_FACTORY);
                 }
                 queryProcessingResults = new QueryProcessingResults(exportRecorder);
 
-                try {
-                    localResult = capturedExport.call();
-                } catch (final Exception err) {
-                    caughtException = err;
-                } finally {
+                try (final SafeCloseable ignored3 = isResume
+                        ? exportRecorder.resumeQuery()
+                        : exportRecorder.startQuery()) {
                     try {
-                        shouldLog = exportRecorder.endQuery();
+                        localResult = capturedExport.call();
                     } catch (final Exception err) {
-                        // end query will throw if the export runner left the QPR in a bad state
-                        if (caughtException == null) {
-                            caughtException = err;
-                        }
-                    } finally {
-                        QueryPerformanceRecorder.resetInstance();
+                        caughtException = err;
+                    }
+                    shouldLog = exportRecorder.endQuery();
+                } catch (final Exception err) {
+                    // end query will throw if the export runner left the QPR in a bad state
+                    if (caughtException == null) {
+                        caughtException = err;
                     }
                 }
 
@@ -1340,7 +1345,7 @@ public class SessionState {
          * @return this builder
          */
         public ExportBuilder<T> queryPerformanceRecorder(
-                @NotNull final QueryPerformanceRecorderImpl queryPerformanceRecorder,
+                @NotNull final QueryPerformanceRecorder queryPerformanceRecorder,
                 final boolean qprIsForBatch) {
             export.setQueryPerformanceRecorder(queryPerformanceRecorder, qprIsForBatch);
             return this;
@@ -1494,10 +1499,6 @@ public class SessionState {
          * @return the submitted export object
          */
         public ExportObject<T> submit(final Callable<T> exportMain) {
-            if (export.queryPerformanceRecorder != null && !export.qprIsForBatch) {
-                // transfer ownership of the qpr to the export before it can be resumed by the scheduler
-                export.queryPerformanceRecorder.suspendQuery();
-            }
             export.setWork(exportMain, errorHandler, successHandler, requiresSerialQueue);
             return export;
         }

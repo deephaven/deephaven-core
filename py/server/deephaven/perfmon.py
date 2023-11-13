@@ -95,6 +95,38 @@ def query_performance_log() -> Table:
     except Exception as e:
         raise DHError(e, "failed to obtain the query performance log table.") from e
 
+def query_operation_performance_log_as_tree_table() -> TreeTable:
+    """ Returns a tree table with Deephaven performance data for individual subqueries.
+
+    Returns:
+        a TreeTable
+
+    Raises:
+        DHError
+    """
+    try:
+        return TreeTable(j_tree_table=_JPerformanceQueries.queryOperationPerformanceAsTreeTable(),
+                         id_col = 'EvaluationNumber', parent_col = 'ParentEvaluationNumber')
+    except Exception as e:
+        raise DHError(e, "failed to obtain the query operation performance log as tree table.") from e
+
+
+def query_performance_log_as_tree_table() -> TreeTable:
+    """ Returns a tree table with Deephaven query performance data. Performance data for individual sub-operations as
+    a tree table is available from calling `query_operation_performance_log_as_tree_table`.
+
+    Returns:
+        a TreeTable
+
+    Raises:
+        DHError
+    """
+    try:
+        return TreeTable(j_tree_table=_JPerformanceQueries.queryPerformanceAsTreeTable(),
+                         id_col = 'EvaluationNumber', parent_col = 'ParentEvaluationNumber')
+    except Exception as e:
+        raise DHError(e, "failed to obtain the query performance log as tree table.") from e
+
 
 def update_performance_log() -> Table:
     """ Returns a table with Deephaven update performance data.

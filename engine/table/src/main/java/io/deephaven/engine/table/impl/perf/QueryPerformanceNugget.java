@@ -13,6 +13,8 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Predicate;
+
 import static io.deephaven.util.QueryConstants.*;
 
 /**
@@ -52,11 +54,16 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
          *
          * @param evaluationNumber A unique identifier for the query evaluation that triggered this nugget creation
          * @param description The operation description
+         * @param onCloseCallback A callback that is invoked when the nugget is closed. It returns whether the nugget
+         *        should be logged.
          * @return A new nugget
          */
-        default QueryPerformanceNugget createForQuery(final long evaluationNumber, @NotNull final String description) {
+        default QueryPerformanceNugget createForQuery(
+                final long evaluationNumber,
+                @NotNull final String description,
+                @NotNull final Predicate<QueryPerformanceNugget> onCloseCallback) {
             return new QueryPerformanceNugget(evaluationNumber, NULL_LONG, NULL_INT, NULL_INT, NULL_INT,
-                    description, false, NULL_LONG);
+                    description, false, NULL_LONG, onCloseCallback);
         }
 
         /**
@@ -65,15 +72,18 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
          * @param parentQuery The parent query nugget
          * @param evaluationNumber A unique identifier for the sub-query evaluation that triggered this nugget creation
          * @param description The operation description
+         * @param onCloseCallback A callback that is invoked when the nugget is closed. It returns whether the nugget
+         *        should be logged.
          * @return A new nugget
          */
         default QueryPerformanceNugget createForSubQuery(
                 @NotNull final QueryPerformanceNugget parentQuery,
                 final long evaluationNumber,
-                @NotNull final String description) {
+                @NotNull final String description,
+                @NotNull final Predicate<QueryPerformanceNugget> onCloseCallback) {
             Assert.eqTrue(parentQuery.isQueryLevel(), "parentQuery.isQueryLevel()");
             return new QueryPerformanceNugget(evaluationNumber, parentQuery.getEvaluationNumber(),
-                    NULL_INT, NULL_INT, NULL_INT, description, false, NULL_LONG);
+                    NULL_INT, NULL_INT, NULL_INT, description, false, NULL_LONG, onCloseCallback);
         }
 
         /**
@@ -82,13 +92,16 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
          * @param parentQueryOrOperation The parent query / operation nugget
          * @param operationNumber A query-unique identifier for the operation
          * @param description The operation description
+         * @param onCloseCallback A callback that is invoked when the nugget is closed. It returns whether the nugget
+         *        should be logged.
          * @return A new nugget
          */
         default QueryPerformanceNugget createForOperation(
                 @NotNull final QueryPerformanceNugget parentQueryOrOperation,
                 final int operationNumber,
                 final String description,
-                final long inputSize) {
+                final long inputSize,
+                @NotNull final Predicate<QueryPerformanceNugget> onCloseCallback) {
             int depth = parentQueryOrOperation.getDepth();
             if (depth == NULL_INT) {
                 depth = 0;
@@ -104,7 +117,8 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
                     depth,
                     description,
                     true, // operations are always user
-                    inputSize);
+                    inputSize,
+                    onCloseCallback);
         }
 
         /**
@@ -112,11 +126,14 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
          *
          * @param parentQuery The parent query nugget
          * @param operationNumber A query-unique identifier for the operation
+         * @param onCloseCallback A callback that is invoked when the nugget is closed. It returns whether the nugget
+         *        should be logged.
          * @return A new nugget
          */
         default QueryPerformanceNugget createForCatchAll(
                 @NotNull final QueryPerformanceNugget parentQuery,
-                final int operationNumber) {
+                final int operationNumber,
+                @NotNull final Predicate<QueryPerformanceNugget> onCloseCallback) {
             Assert.eqTrue(parentQuery.isQueryLevel(), "parentQuery.isQueryLevel()");
             return new QueryPerformanceNugget(
                     parentQuery.getEvaluationNumber(),
@@ -126,7 +143,8 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
                     0, // catch all is a root operation
                     QueryPerformanceRecorder.UNINSTRUMENTED_CODE_DESCRIPTION,
                     false, // catch all is not user
-                    NULL_LONG); // catch all has no input size
+                    NULL_LONG,
+                    onCloseCallback); // catch all has no input size
         }
     }
 
@@ -140,11 +158,11 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
     private final String description;
     private final boolean isUser;
     private final long inputSize;
-
+    private final Predicate<QueryPerformanceNugget> onCloseCallback;
     private final AuthContext authContext;
     private final String callerLine;
 
-    private final long startClockEpochNanos;
+    private long startClockEpochNanos = NULL_LONG;
     private long endClockEpochNanos = NULL_LONG;
 
     private volatile QueryState state;
@@ -168,6 +186,8 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
      * @param description The operation description
      * @param isUser Whether this is a "user" nugget or one created by the system
      * @param inputSize The size of the input data
+     * @param onCloseCallback A callback that is invoked when the nugget is closed. It returns whether the nugget should
+     *        be logged.
      */
     protected QueryPerformanceNugget(
             final long evaluationNumber,
@@ -175,9 +195,10 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
             final int operationNumber,
             final int parentOperationNumber,
             final int depth,
-            final String description,
+            @NotNull final String description,
             final boolean isUser,
-            final long inputSize) {
+            final long inputSize,
+            @NotNull final Predicate<QueryPerformanceNugget> onCloseCallback) {
         startMemorySample = new RuntimeMemory.Sample();
         endMemorySample = new RuntimeMemory.Sample();
         this.evaluationNumber = evaluationNumber;
@@ -193,6 +214,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         }
         this.isUser = isUser;
         this.inputSize = inputSize;
+        this.onCloseCallback = onCloseCallback;
 
         authContext = ExecutionContext.getContext().getAuthContext();
         callerLine = QueryPerformanceRecorder.getCallerLine();
@@ -221,43 +243,44 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         description = null;
         isUser = false;
         inputSize = NULL_LONG;
+        onCloseCallback = null;
 
         authContext = null;
         callerLine = null;
-
-        startClockEpochNanos = NULL_LONG;
 
         state = null; // This turns close into a no-op.
         shouldLogThisAndStackParents = false;
     }
 
-    public void done() {
-        done(QueryPerformanceRecorder.getInstance());
+    public void markStartTime() {
+        if (startClockEpochNanos != NULL_LONG) {
+            throw new IllegalStateException("Nugget was already started");
+        }
+
+        startClockEpochNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis());
     }
 
     /**
      * Mark this nugget {@link QueryState#FINISHED} and notify the recorder.
      *
-     * @param recorder The recorder to notify
      * @return if the nugget passes logging thresholds.
      */
-    public boolean done(final QueryPerformanceRecorder recorder) {
-        return close(QueryState.FINISHED, recorder);
+    public boolean done() {
+        return close(QueryState.FINISHED);
     }
 
     /**
-     * AutoCloseable implementation - wraps the no-argument version of done() used by query code outside of the
-     * QueryPerformance(Recorder/Nugget), reporting successful completion to the thread-local QueryPerformanceRecorder
-     * instance.
+     * Mark this nugget {@link QueryState#FINISHED} and notify the recorder. Is an alias for {@link #done()}.
+     * <p>
+     * {@link SafeCloseable} implementation for try-with-resources.
      */
     @Override
     public void close() {
-        done();
+        close(QueryState.FINISHED);
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public boolean abort(final QueryPerformanceRecorder recorder) {
-        return close(QueryState.INTERRUPTED, recorder);
+    public boolean abort() {
+        return close(QueryState.INTERRUPTED);
     }
 
     /**
@@ -266,10 +289,9 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
      * @param closingState The current query state. If it is anything other than {@link QueryState#RUNNING} nothing will
      *        happen and it will return false;
      *
-     * @param recorderToNotify The {@link QueryPerformanceRecorder} to notify this nugget is closing.
      * @return If the nugget passes criteria for logging.
      */
-    private boolean close(final QueryState closingState, final QueryPerformanceRecorder recorderToNotify) {
+    private boolean close(final QueryState closingState) {
         if (state != QueryState.RUNNING) {
             return false;
         }
@@ -279,6 +301,10 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
                 return false;
             }
 
+            if (startClockEpochNanos == NULL_LONG) {
+                throw new IllegalStateException("Nugget was never started");
+            }
+
             onBaseEntryEnd();
             endClockEpochNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis());
 
@@ -286,7 +312,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
             runtimeMemory.read(endMemorySample);
 
             state = closingState;
-            return recorderToNotify.releaseNugget(this);
+            return onCloseCallback.test(this);
         }
     }
 
@@ -336,10 +362,12 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         return operationNumber == NULL_INT;
     }
 
+    @SuppressWarnings("unused")
     public boolean isTopLevelQuery() {
         return isQueryLevel() && parentEvaluationNumber == NULL_LONG;
     }
 
+    @SuppressWarnings("unused")
     public boolean isTopLevelOperation() {
         // note that query level nuggets have depth == NULL_INT
         return depth == 0;
@@ -396,7 +424,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
     }
 
     /**
-     * @return total (allocated high water mark) memory difference between time of completion and creation
+     * @return total (allocated high watermark) memory difference between time of completion and creation
      */
     public long getDiffTotalMemory() {
         return endMemorySample.totalMemory - startMemorySample.totalMemory;
