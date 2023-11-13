@@ -11,6 +11,7 @@ import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
+import java.util.function.LongFunction;
 
 public class ToTimePage<ATTR extends Any> implements ToPage<ATTR, LocalTime[]> {
 
@@ -82,20 +83,13 @@ public class ToTimePage<ATTR extends Any> implements ToPage<ATTR, LocalTime[]> {
             return QueryConstants.NULL_LONG_BOXED;
         }
 
-        /**
-         * Convert a {@code long} value in the units of this page (can be micros or nanos) to a {@link LocalTime}
-         */
-        interface ToLocalTimeFromUnits {
-            LocalTime apply(final long value);
-        }
-
         static LocalTime[] convertResultHelper(@NotNull final Object result,
-                final ToLocalTimeFromUnits toLocalTimeFromUnits) {
+                @NotNull final LongFunction<LocalTime> unitToLocalTime) {
             final long[] from = (long[]) result;
             final LocalTime[] to = new LocalTime[from.length];
 
             for (int i = 0; i < from.length; ++i) {
-                to[i] = toLocalTimeFromUnits.apply(from[i]);
+                to[i] = unitToLocalTime.apply(from[i]);
             }
             return to;
         }

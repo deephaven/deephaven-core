@@ -57,7 +57,7 @@ struct ImmerColumnSourceImpls {
       for (const T *current = data_begin; current != data_end; ++current) {
         auto value = *current;
         *dest_datap++ = value;
-        if constexpr(kTypeIsNumeric) {
+        if constexpr(deephaven::dhcore::DeephavenTraits<T>::kIsNumeric) {
           if (dest_nullp != nullptr) {
             *dest_nullp++ = value == deephaven::dhcore::DeephavenTraits<T>::kNullValue;
           }
@@ -74,16 +74,16 @@ struct ImmerColumnSourceImpls {
       }
     };
 
-    auto copyOuter = [&src_data, src_null_flags, dest_nullp, &copy_data_inner,
-        &copy_nulls_inner](uint64_t srcBegin, uint64_t srcEnd) {
-      auto src_beginp = src_data.begin() + srcBegin;
-      auto src_endp = src_data.begin() + srcEnd;
+    auto copy_outer = [&src_data, src_null_flags, dest_nullp, &copy_data_inner,
+        &copy_nulls_inner](uint64_t src_begin, uint64_t src_end) {
+      auto src_beginp = src_data.begin() + src_begin;
+      auto src_endp = src_data.begin() + src_end;
       immer::for_each_chunk(src_beginp, src_endp, copy_data_inner);
 
-      if constexpr(!kTypeIsNumeric) {
+      if constexpr(!deephaven::dhcore::DeephavenTraits<T>::kIsNumeric) {
         if (dest_nullp != nullptr) {
-          auto nulls_begin = src_null_flags->begin() + srcBegin;
-          auto nulls_end = src_null_flags->begin() + srcEnd;
+          auto nulls_begin = src_null_flags->begin() + src_begin;
+          auto nulls_end = src_null_flags->begin() + src_end;
           immer::for_each_chunk(nulls_begin, nulls_end, copy_nulls_inner);
         }
       } else {
@@ -93,7 +93,7 @@ struct ImmerColumnSourceImpls {
         (void)copy_nulls_inner;
       }
     };
-    rows.ForEachInterval(copyOuter);
+    rows.ForEachInterval(copy_outer);
   }
 
   template<typename T>

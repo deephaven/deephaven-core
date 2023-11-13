@@ -8,7 +8,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from functools import wraps
 from inspect import signature
-from typing import Callable, Union, List, Generator, Dict, Optional
+from typing import Callable, Union, List, Generator, Dict, Optional, Literal
 
 import jpy
 import numpy
@@ -237,7 +237,8 @@ class TableUpdate(JObjectWrapper):
         return list(cols) if cols else []
 
 
-def _do_locked(ug: Union[UpdateGraph, Table], f: Callable, lock_type="shared") -> None:
+def _do_locked(ug: Union[UpdateGraph, Table], f: Callable, lock_type: Literal["shared","exclusive"] = "shared") -> \
+        None:
     """Executes a function while holding the UpdateGraph (UG) lock.  Holding the UG lock
     ensures that the contents of a table will not change during a computation, but holding
     the lock also prevents table updates from happening.  The lock should be held for as little
@@ -308,7 +309,7 @@ def _wrap_listener_obj(t: Table, listener: TableListener):
 
 
 def listen(t: Table, listener: Union[Callable, TableListener], description: str = None, do_replay: bool = False,
-           replay_lock: str = "shared"):
+           replay_lock: Literal["shared", "exclusive"] = "shared"):
     """This is a convenience function that creates a TableListenerHandle object and immediately starts it to listen
     for table updates.
 
@@ -372,7 +373,7 @@ class TableListenerHandle(JObjectWrapper):
 
         self.started = False
 
-    def start(self, do_replay: bool = False, replay_lock: str = "shared") -> None:
+    def start(self, do_replay: bool = False, replay_lock: Literal["shared", "exclusive"] = "shared") -> None:
         """Start the listener by registering it with the table and listening for updates.
 
         Args:

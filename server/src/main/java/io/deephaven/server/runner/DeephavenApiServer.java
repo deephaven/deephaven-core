@@ -98,7 +98,7 @@ public class DeephavenApiServer {
     }
 
     @VisibleForTesting
-    SessionService sessionService() {
+    public SessionService sessionService() {
         return sessionService;
     }
 
