@@ -41,7 +41,7 @@ dependencies {
 def gradleWrapper = tasks.register("dockerGradleInit", Wrapper.class) { wrapper ->
   wrapper.scriptFile "${buildDir}/template-project/gradlew"
   wrapper.jarFile "${buildDir}/template-project/gradle/wrapper/gradle-wrapper.jar"
-  wrapper.gradleVersion '7.2'
+  wrapper.gradleVersion '8.4'
 }
 
 tasks.getByName('check').dependsOn Docker.registerDockerTask(project, 'test-in-docker') {

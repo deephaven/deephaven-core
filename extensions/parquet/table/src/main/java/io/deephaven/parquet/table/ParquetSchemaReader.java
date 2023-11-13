@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.function.BiFunction;
@@ -350,15 +351,13 @@ public class ParquetSchemaReader {
             @Override
             public Optional<Class<?>> visit(
                     final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
-                // TODO(deephaven-core#976): Unable to read parquet TimestampLogicalTypeAnnotation that is not adjusted
-                // to UTC
-                if (timestampLogicalType.isAdjustedToUTC()) {
-                    switch (timestampLogicalType.getUnit()) {
-                        case MILLIS:
-                        case MICROS:
-                        case NANOS:
-                            return Optional.of(Instant.class);
-                    }
+                switch (timestampLogicalType.getUnit()) {
+                    case MILLIS:
+                    case MICROS:
+                    case NANOS:
+                        // TIMESTAMP fields if adjusted to UTC are read as Instants, else as LocalDatetimes.
+                        return timestampLogicalType.isAdjustedToUTC() ? Optional.of(Instant.class)
+                                : Optional.of(LocalDateTime.class);
                 }
                 errorString.setValue("TimestampLogicalType, isAdjustedToUTC=" + timestampLogicalType.isAdjustedToUTC()
                         + ", unit=" + timestampLogicalType.getUnit());
