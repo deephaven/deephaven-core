@@ -9,7 +9,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 /**
- * Utility methods for transferring data between Deephaven and Parquet.
+ * Internal library with utility methods for converting data between Deephaven and Parquet.
  */
 public class TransferUtils {
     /**
