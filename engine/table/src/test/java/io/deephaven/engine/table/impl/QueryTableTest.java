@@ -563,14 +563,14 @@ public class QueryTableTest extends QueryTableTestBase {
             table.dropColumns(Collections.singletonList("DoesNotExist"));
             fail("Expected NoSuchColumnException");
         } catch (NoSuchColumnException e) {
-            assertEquals("Unknown column names [DoesNotExist], available column names are [String,Int,Double]",
+            assertEquals("Unknown column names [DoesNotExist], available column names are [String, Int, Double]",
                     e.getMessage());
         }
         try {
             table.dropColumns(Arrays.asList("Int", "DoesNotExist"));
             fail("Expected NoSuchColumnException");
         } catch (NoSuchColumnException e) {
-            assertEquals("Unknown column names [DoesNotExist], available column names are [String,Int,Double]",
+            assertEquals("Unknown column names [DoesNotExist], available column names are [String, Int, Double]",
                     e.getMessage());
         }
     }

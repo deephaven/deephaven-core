@@ -17,7 +17,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map.Entry;
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -311,10 +310,7 @@ public class TableDefinition implements LogOutputAppendable {
      * @throws NoSuchColumnException If {@code columnName} is missing
      */
     public final void checkHasColumn(@NotNull String columnName) {
-        final Set<String> columnNames = getColumnNameSet();
-        if (!columnNames.contains(columnName)) {
-            throw new NoSuchColumnException(columnNames, columnName);
-        }
+        NoSuchColumnException.throwIf(getColumnNameSet(), columnName);
     }
 
     /**
@@ -324,14 +320,7 @@ public class TableDefinition implements LogOutputAppendable {
      * @throws NoSuchColumnException If any {@code columns} were missing
      */
     public final void checkHasColumns(@NotNull Collection<String> columns) {
-        final Set<String> columnNames = getColumnNameSet();
-        final List<String> missingColumns = columns
-                .stream()
-                .filter(Predicate.not(columnNames::contains))
-                .collect(Collectors.toList());
-        if (!missingColumns.isEmpty()) {
-            throw new NoSuchColumnException(columnNames, missingColumns);
-        }
+        NoSuchColumnException.throwIf(getColumnNameSet(), columns);
     }
 
     /**

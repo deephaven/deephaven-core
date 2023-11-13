@@ -355,7 +355,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     public <T> ColumnSource<T> getColumnSource(String sourceName) {
         final ColumnSource<?> columnSource = columns.get(sourceName);
         if (columnSource == null) {
-            throw new NoSuchColumnException(columns.keySet(), Collections.singletonList(sourceName));
+            throw new NoSuchColumnException(columns.keySet(), sourceName);
         }
         // noinspection unchecked
         return (ColumnSource<T>) columnSource;

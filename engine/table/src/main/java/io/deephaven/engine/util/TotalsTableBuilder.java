@@ -6,6 +6,8 @@ package io.deephaven.engine.util;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.NoSuchColumnException;
+import io.deephaven.engine.table.impl.NoSuchColumnException.Type;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.type.EnumValue;
 import io.deephaven.util.type.TypeUtils;
@@ -546,7 +548,12 @@ public class TotalsTableBuilder {
     }
 
     private static void ensureColumnsExist(Table source, Set<String> columns) {
-        source.getDefinition().checkHasColumns(columns);
+        NoSuchColumnException.throwIf(
+                source.getDefinition().getColumnNameSet(),
+                columns,
+                "Missing columns for totals table [%s], available columns [%s]",
+                Type.MISSING,
+                Type.AVAILABLE);
     }
 
     private static String[] makeColumnFormats(Table source, TotalsTableBuilder builder) {
