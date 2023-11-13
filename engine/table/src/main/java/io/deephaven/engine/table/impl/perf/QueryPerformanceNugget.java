@@ -34,6 +34,16 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         public void accumulate(@NotNull BasePerformanceEntry entry) {
             // non-synchronized no-op override
         }
+
+        @Override
+        public boolean shouldLogThisAndStackParents() {
+            return false;
+        }
+
+        @Override
+        boolean shouldLogNugget(boolean isUninstrumented) {
+            return false;
+        }
     };
 
     public interface Factory {
@@ -322,15 +332,16 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         return isUser;
     }
 
-    public boolean isBatchLevel() {
-        return isQueryLevel() && parentEvaluationNumber == NULL_LONG;
-    }
-
     public boolean isQueryLevel() {
         return operationNumber == NULL_INT;
     }
 
-    public boolean isTopLevel() {
+    public boolean isTopLevelQuery() {
+        return isQueryLevel() && parentEvaluationNumber == NULL_LONG;
+    }
+
+    public boolean isTopLevelOperation() {
+        // note that query level nuggets have depth == NULL_INT
         return depth == 0;
     }
 
@@ -416,7 +427,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
     /**
      * Ensure this nugget gets logged, alongside its stack of nesting operations.
      */
-    public void setShouldLogThisAndStackParents() {
+    void setShouldLogThisAndStackParents() {
         shouldLogThisAndStackParents = true;
     }
 
@@ -424,7 +435,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
      * @return true if this nugget triggers the logging of itself and every other nugget in its stack of nesting
      *         operations.
      */
-    public boolean shouldLogThisAndStackParents() {
+    boolean shouldLogThisAndStackParents() {
         return shouldLogThisAndStackParents;
     }
 

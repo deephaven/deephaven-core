@@ -82,22 +82,32 @@ public abstract class QueryPerformanceRecorder {
     }
 
     /**
+     * Create a nugget at the top of the user stack. May return a {@link QueryPerformanceNugget#DUMMY_NUGGET} if no
+     * recorder is installed.
+     *
      * @param name the nugget name
-     * @return A new QueryPerformanceNugget to encapsulate user query operations. done() must be called on the nugget.
+     * @return A new QueryPerformanceNugget to encapsulate user query operations. {@link QueryPerformanceNugget#done()}
+     *         or {@link QueryPerformanceNugget#close()} must be called on the nugget.
      */
     public abstract QueryPerformanceNugget getNugget(@NotNull String name);
 
     /**
+     * Create a nugget at the top of the user stack. May return a {@link QueryPerformanceNugget#DUMMY_NUGGET} if no
+     * recorder is installed.
+     *
      * @param name the nugget name
      * @param inputSize the nugget's input size
-     * @return A new QueryPerformanceNugget to encapsulate user query operations. done() must be called on the nugget.
+     * @return A new QueryPerformanceNugget to encapsulate user query operations. {@link QueryPerformanceNugget#done()}
+     *         or {@link QueryPerformanceNugget#close()} must be called on the nugget.
      */
     public abstract QueryPerformanceNugget getNugget(@NotNull String name, long inputSize);
 
     /**
-     * @return The nugget currently in effect or else a dummy nugget if no nugget is in effect.
+     * This is the nugget enclosing the current operation. It may belong to the dummy recorder, or a real one.
+     *
+     * @return Either a "catch-all" nugget, or the top of the user nugget stack.
      */
-    public abstract QueryPerformanceNugget getOuterNugget();
+    public abstract QueryPerformanceNugget getEnclosingNugget();
 
     /**
      * <b>Note:</b> Do not call this directly - it's for nugget use only. Call {@link QueryPerformanceNugget#done()} or
@@ -462,7 +472,7 @@ public abstract class QueryPerformanceRecorder {
         }
 
         @Override
-        public QueryPerformanceNugget getOuterNugget() {
+        public QueryPerformanceNugget getEnclosingNugget() {
             return QueryPerformanceNugget.DUMMY_NUGGET;
         }
 

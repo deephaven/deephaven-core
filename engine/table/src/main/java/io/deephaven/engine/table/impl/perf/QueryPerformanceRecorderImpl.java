@@ -265,7 +265,7 @@ public class QueryPerformanceRecorderImpl extends QueryPerformanceRecorder {
     }
 
     @Override
-    public synchronized QueryPerformanceNugget getOuterNugget() {
+    public synchronized QueryPerformanceNugget getEnclosingNugget() {
         return userNuggetStack.peekLast();
     }
 
@@ -321,7 +321,7 @@ public class QueryPerformanceRecorderImpl extends QueryPerformanceRecorder {
             timeNanos[i] = operationNuggets.get(i).getUsageNanos();
             names[i] = operationNuggets.get(i).getName();
             callerLine[i] = operationNuggets.get(i).getCallerLine();
-            isTopLevel[i] = operationNuggets.get(i).isTopLevel();
+            isTopLevel[i] = operationNuggets.get(i).isTopLevelOperation();
             isCompileTime[i] = operationNuggets.get(i).getName().startsWith("Compile:");
         }
         return TableTools.newTable(

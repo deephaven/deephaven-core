@@ -75,7 +75,8 @@ public class BasePerformanceEntry implements LogOutputAppendable {
     }
 
     /**
-     * Get the aggregate usage in nanoseconds. Invoking this getter is valid iff the entry will no longer be mutated.
+     * Get the aggregate usage in nanoseconds. This getter should be called by exclusive owners of the entry, and never
+     * concurrently with mutators.
      *
      * @return total wall clock time in nanos
      */
@@ -84,7 +85,8 @@ public class BasePerformanceEntry implements LogOutputAppendable {
     }
 
     /**
-     * Get the aggregate cpu time in nanoseconds. Invoking this getter is valid iff the entry will no longer be mutated.
+     * Get the aggregate cpu time in nanoseconds. This getter should be called by exclusive owners of the entry, and
+     * never concurrently with mutators.
      *
      * @return total cpu time in nanos
      */
@@ -93,8 +95,8 @@ public class BasePerformanceEntry implements LogOutputAppendable {
     }
 
     /**
-     * Get the aggregate cpu user time in nanoseconds. Invoking this getter is valid iff the entry will no longer be
-     * mutated.
+     * Get the aggregate cpu user time in nanoseconds. This getter should be called by exclusive owners of the entry,
+     * and never concurrently with mutators.
      *
      * @return total cpu user time in nanos
      */
@@ -103,8 +105,8 @@ public class BasePerformanceEntry implements LogOutputAppendable {
     }
 
     /**
-     * Get the aggregate allocated memory in bytes. Invoking this getter is valid iff the entry will no longer be
-     * mutated.
+     * Get the aggregate allocated memory in bytes. This getter should be called by exclusive owners of the entry, and
+     * never concurrently with mutators.
      *
      * @return The bytes of allocated memory attributed to the instrumented operation.
      */
@@ -113,8 +115,8 @@ public class BasePerformanceEntry implements LogOutputAppendable {
     }
 
     /**
-     * Get allocated pooled/reusable memory attributed to the instrumented operation in bytes. Invoking this getter is
-     * valid iff the entry will no longer be mutated.
+     * Get allocated pooled/reusable memory attributed to the instrumented operation in bytes. This getter should be
+     * called by exclusive owners of the entry, and never concurrently with mutators.
      *
      * @return total pool allocated memory in bytes
      */

@@ -907,7 +907,8 @@ public abstract class UpdateBy {
             final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
             if (accumulated != null) {
                 if (initialStep) {
-                    final QueryPerformanceNugget outerNugget = QueryPerformanceRecorder.getInstance().getOuterNugget();
+                    final QueryPerformanceNugget outerNugget =
+                            QueryPerformanceRecorder.getInstance().getEnclosingNugget();
                     if (outerNugget != null) {
                         outerNugget.accumulate(accumulated);
                     }

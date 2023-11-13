@@ -3,11 +3,7 @@
  */
 package io.deephaven.engine.table.impl.perf;
 
-import java.io.Serializable;
-
-public class QueryProcessingResults implements Serializable {
-
-    private static final long serialVersionUID = 2L;
+public class QueryProcessingResults {
 
     private final QueryPerformanceRecorder recorder;
 

@@ -550,8 +550,9 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     } else {
                         safelyComplete(responseObserver);
                     }
-                    queryPerformanceRecorder.endQuery();
-                    EngineMetrics.getInstance().logQueryProcessingResults(results);
+                    if (queryPerformanceRecorder.endQuery()) {
+                        EngineMetrics.getInstance().logQueryProcessingResults(results);
+                    }
                 } finally {
                     QueryPerformanceRecorder.resetInstance();
                 }
