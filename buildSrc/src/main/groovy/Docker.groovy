@@ -381,6 +381,10 @@ class Docker {
                     from dockerCopyLocation
 
                     doLast {
+                        // If the actual task has already failed, we need to fail this task to signal to any downstream
+                        // tasks to not continue. Under normal circumstances, we might just not run this Sync task at
+                        // all to signal this, however in our case we want to copy out artifacts of failure for easier
+                        // debugging.
                         if (buildAndRun.get().state.failure != null) {
                             throw new GradleException('Docker task failed, see earlier task failures for details')
                         }
