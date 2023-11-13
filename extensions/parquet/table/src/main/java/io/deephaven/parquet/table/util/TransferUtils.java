@@ -5,7 +5,6 @@ import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 /**
@@ -22,7 +21,8 @@ public class TransferUtils {
         if (localDateTime == null) {
             return QueryConstants.NULL_LONG;
         }
-        return DateTimeUtils.epochNanos(localDateTime.atZone(ZoneId.of("UTC")));
+        return DateTimeUtils.secondsToNanos(localDateTime.toEpochSecond(ZoneOffset.UTC))
+                + localDateTime.toLocalTime().getNano();
     }
 
     /**
