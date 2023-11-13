@@ -390,6 +390,9 @@ def _encode_signature(fn: Callable) -> str:
     try:
         sig = inspect.signature(fn)
     except:
+        # in case inspect.signature() fails, we'll just use the default 'O' - object type.
+        # numpy ufuncs actually have signature encoded in their 'types' attribute, we want to better support
+        # them in the future (https://github.com/deephaven/deephaven-core/issues/4762)
         if type(fn) == np.ufunc:
             return "O"*fn.nin + "->" + "O"
         return "->O"
@@ -447,7 +450,11 @@ def _py_udf(fn: Callable):
         try:
             return_annotation = _parse_annotation(inspect.signature(fn).return_annotation)
         except ValueError:
-            ...
+            # the function has no return annotation, and since we can't know what the exact type is, the return type
+            # defaults to the generic object type therefore it is not an array of a specific type,
+            # but see (https://github.com/deephaven/deephaven-core/issues/4762) for future imporvement to better support
+            # numpy ufuncs.
+            pass
         else:
             component_type = _component_np_dtype_char(return_annotation)
             if component_type:
