@@ -1772,7 +1772,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             return memoizeResult(MemoizedOperationKey.dropColumns(columnNames), () -> QueryPerformanceRecorder
                     .withNugget("dropColumns(" + Arrays.toString(columnNames) + ")", sizeForInstrumentation(), () -> {
                         final Mutable<Table> result = new MutableObject<>();
-                        definition.checkColumns(Arrays.asList(columnNames));
+                        definition.checkHasColumns(Arrays.asList(columnNames));
                         final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(columns);
                         for (String columnName : columnNames) {
                             newColumns.remove(columnName);
@@ -1793,8 +1793,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             if (snapshotControl != null) {
                                 final ModifiedColumnSet.Transformer mcsTransformer =
                                         newModifiedColumnSetTransformer(resultTable,
-                                                resultTable.getDefinition().getColumnNameSet()
-                                                        .toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                                                resultTable.getDefinition().getColumnNamesArray());
                                 final ListenerImpl listener = new ListenerImpl(
                                         "dropColumns(" + Arrays.deepToString(columnNames) + ')', this, resultTable) {
                                     @Override
@@ -2393,7 +2392,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         // Use the given columns (if specified); otherwise an empty array means all of my columns
         final String[] useStampColumns = stampColumns.length == 0
-                ? definition.getColumnNameSet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)
+                ? definition.getColumnNamesArray()
                 : stampColumns;
 
         final Map<String, ColumnSource<?>> triggerColumns = new LinkedHashMap<>();

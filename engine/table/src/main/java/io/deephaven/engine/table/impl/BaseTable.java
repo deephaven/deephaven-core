@@ -1021,7 +1021,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     @Override
     public final void checkAvailableColumns(@NotNull final Collection<String> columns) {
-        getDefinition().checkColumns(columns);
+        getDefinition().checkHasColumns(columns);
     }
 
     public void copySortableColumns(

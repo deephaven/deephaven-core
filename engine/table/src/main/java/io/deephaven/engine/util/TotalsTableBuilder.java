@@ -546,7 +546,7 @@ public class TotalsTableBuilder {
     }
 
     private static void ensureColumnsExist(Table source, Set<String> columns) {
-        source.getDefinition().checkColumns(columns);
+        source.getDefinition().checkHasColumns(columns);
     }
 
     private static String[] makeColumnFormats(Table source, TotalsTableBuilder builder) {

@@ -310,7 +310,7 @@ public class TableDefinition implements LogOutputAppendable {
      * @param columnName The column name to check
      * @throws NoSuchColumnException If {@code columnName} is missing
      */
-    public final void checkColumn(@NotNull String columnName) {
+    public final void checkHasColumn(@NotNull String columnName) {
         final Set<String> columnNames = getColumnNameSet();
         if (!columnNames.contains(columnName)) {
             throw new NoSuchColumnException(columnNames, columnName);
@@ -323,7 +323,7 @@ public class TableDefinition implements LogOutputAppendable {
      * @param columns The column names to check
      * @throws NoSuchColumnException If any {@code columns} were missing
      */
-    public final void checkColumns(@NotNull Collection<String> columns) {
+    public final void checkHasColumns(@NotNull Collection<String> columns) {
         final Set<String> columnNames = getColumnNameSet();
         final List<String> missingColumns = columns
                 .stream()

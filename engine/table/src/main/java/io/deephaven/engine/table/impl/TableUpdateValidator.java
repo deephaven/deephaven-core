@@ -61,8 +61,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
         this.description = description == null ? tableToValidate.getDescription() : description;
         this.tableToValidate = tableToValidate;
         this.validationMCS = tableToValidate.newModifiedColumnSet(
-                tableToValidate.getDefinition().getColumnStream().map(ColumnDefinition::getName)
-                        .toArray(String[]::new));
+                tableToValidate.getDefinition().getColumnNamesArray());
         Assert.neq(validationMCS, "validationMCS", ModifiedColumnSet.ALL, "ModifiedColumnSet.ALL");
         Assert.neq(validationMCS, "validationMCS", ModifiedColumnSet.EMPTY, "ModifiedColumnSet.EMPTY");
 

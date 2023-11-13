@@ -195,7 +195,7 @@ public class WindowCheck {
             this.rowKeyToEntry = new TLongObjectHashMap<>();
 
             this.mcsTransformer = source.newModifiedColumnSetTransformer(result,
-                    source.getDefinition().getColumnNameSet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                    source.getDefinition().getColumnNamesArray());
             this.mcsNewColumns = result.newModifiedColumnSet(inWindowColumnName);
             this.reusableModifiedColumnSet = new ModifiedColumnSet(this.mcsNewColumns);
         }

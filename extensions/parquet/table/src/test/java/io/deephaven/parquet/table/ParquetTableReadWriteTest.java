@@ -460,7 +460,9 @@ public final class ParquetTableReadWriteTest {
         writeReadTableTest(vectorTable, dest);
 
         // Convert the table from vector to array column
-        final Table arrayTable = vectorTable.updateView(vectorTable.getDefinition().getColumnNameSet().stream()
+        final Table arrayTable = vectorTable.updateView(vectorTable.getDefinition()
+                .getColumnStream()
+                .map(ColumnDefinition::getName)
                 .map(name -> name + " = " + name + ".toArray()")
                 .toArray(String[]::new));
         writeReadTableTest(arrayTable, dest);
@@ -1377,8 +1379,7 @@ public final class ParquetTableReadWriteTest {
         // Verify that the columns have the correct statistics.
         final ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
 
-        final String[] colNames =
-                inputTable.getDefinition().getColumnNameSet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] colNames = inputTable.getDefinition().getColumnNamesArray();
         for (int colIdx = 0; colIdx < inputTable.numColumns(); ++colIdx) {
             final String colName = colNames[colIdx];
 

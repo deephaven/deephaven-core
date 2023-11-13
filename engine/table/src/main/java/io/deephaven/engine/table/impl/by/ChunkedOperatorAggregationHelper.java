@@ -93,7 +93,7 @@ public class ChunkedOperatorAggregationHelper {
                 throw new IllegalArgumentException(
                         "aggregation: initial groups must not be specified if no group-by columns are specified");
             }
-            initialKeys.getDefinition().checkColumns(keyNames);
+            initialKeys.getDefinition().checkHasColumns(keyNames);
             for (final String keyName : keyNames) {
                 final ColumnDefinition<?> inputDef = input.getDefinition().getColumn(keyName);
                 final ColumnDefinition<?> initialKeysDef = initialKeys.getDefinition().getColumn(keyName);
