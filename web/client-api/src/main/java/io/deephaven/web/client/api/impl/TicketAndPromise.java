@@ -7,8 +7,8 @@ import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.shared.fu.JsFunction;
 
 /**
- * Pair of ticket and the promise that indicates it has been resolved. Tickets are usable before they are resolved,
- * but to ensure that all operations completed successfully, the promise should be used to handle errors.
+ * Pair of ticket and the promise that indicates it has been resolved. Tickets are usable before they are resolved, but
+ * to ensure that all operations completed successfully, the promise should be used to handle errors.
  */
 public class TicketAndPromise<T> implements IThenable<T> {
     private final Ticket ticket;
@@ -40,11 +40,14 @@ public class TicketAndPromise<T> implements IThenable<T> {
     }
 
     /**
-     * Rather than waiting for the original promise to succeed, lets the caller start a new call based
-     * only on the original ticket.
-     * @param racedCall
-     * @return
-     * @param <V>
+     * Rather than waiting for the original promise to succeed, lets the caller start a new call based only on the
+     * original ticket. The intent of "race" here is unlike Promise.race(), where the first to succeed should resolve -
+     * instead, this raced call will be sent to the server even though the previous call has not successfully returned,
+     * and the server is responsible for ensuring they happen in the correct order.
+     *
+     * @param racedCall the call to perform at the same time that any pending call is happening
+     * @return a new TicketAndPromise that will resolve when all work is successful
+     * @param <V> type of the next call to perform
      */
     public <V> TicketAndPromise<V> race(JsFunction<Ticket, IThenable<V>> racedCall) {
         IThenable<V> raced = racedCall.apply(ticket);
@@ -52,7 +55,8 @@ public class TicketAndPromise<T> implements IThenable<T> {
     }
 
     @Override
-    public <V> IThenable<V> then(ThenOnFulfilledCallbackFn<? super T, ? extends V> onFulfilled, ThenOnRejectedCallbackFn<? extends V> onRejected) {
+    public <V> IThenable<V> then(ThenOnFulfilledCallbackFn<? super T, ? extends V> onFulfilled,
+            ThenOnRejectedCallbackFn<? extends V> onRejected) {
         return promise.then(onFulfilled, onRejected);
     }
 

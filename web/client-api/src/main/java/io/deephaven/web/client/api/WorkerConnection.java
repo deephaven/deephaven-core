@@ -704,7 +704,8 @@ public class WorkerConnection {
             @Override
             public void accept(JsVariableChanges changes) {
                 JsVariableDefinition foundField = changes.getCreated()
-                        .find((field, p1, p2) -> field.getTitle().equals(name) && field.getType().equalsIgnoreCase(type));
+                        .find((field, p1, p2) -> field.getTitle().equals(name)
+                                && field.getType().equalsIgnoreCase(type));
 
                 if (foundField == null) {
                     foundField = changes.getUpdated().find((field, p1, p2) -> field.getTitle().equals(name)
@@ -899,7 +900,8 @@ public class WorkerConnection {
             ExportRequest req = new ExportRequest();
             req.setSourceId(createTypedTicket(varDef).getTicket());
             req.setResultId(ticket);
-            return Callbacks.<ExportResponse, Object>grpcUnaryPromise(c -> sessionServiceClient().exportFromTicket(req, metadata(), c::apply));
+            return Callbacks.<ExportResponse, Object>grpcUnaryPromise(
+                    c -> sessionServiceClient().exportFromTicket(req, metadata(), c::apply));
         }), this);
     }
 
