@@ -20,6 +20,7 @@ import java.math.BigInteger;
 import java.nio.IntBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Map;
 
@@ -97,6 +98,9 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
         if (columnType == LocalTime.class) {
             return new TimeTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
+        if (columnType == LocalDateTime.class) {
+            return new LocalDateTimeTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+        }
 
         @Nullable final Class<?> componentType = columnSource.getComponentType();
         if (columnType.isArray()) {
@@ -140,6 +144,9 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
             if (componentType == LocalTime.class) {
                 return new TimeArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
+            if (componentType == LocalDateTime.class) {
+                return new LocalDateTimeArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            }
             // TODO(deephaven-core#4612): Handle arrays of BigDecimal and if explicit codec provided
         }
         if (Vector.class.isAssignableFrom(columnType)) {
@@ -182,6 +189,9 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
             }
             if (componentType == LocalTime.class) {
                 return new TimeVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
+            }
+            if (componentType == LocalDateTime.class) {
+                return new LocalDateTimeVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
             // TODO(deephaven-core#4612): Handle vectors of BigDecimal and if explicit codec provided
         }

@@ -32,6 +32,8 @@ import io.deephaven.plot.datasets.interval.IntervalXYDataSeriesArray;
 import io.deephaven.plot.datasets.multiseries.AbstractMultiSeries;
 import io.deephaven.plot.datasets.multiseries.AbstractPartitionedTableHandleMultiSeries;
 import io.deephaven.plot.datasets.multiseries.MultiCatSeries;
+import io.deephaven.plot.datasets.multiseries.MultiOHLCSeries;
+import io.deephaven.plot.datasets.multiseries.MultiXYErrorBarSeries;
 import io.deephaven.plot.datasets.multiseries.MultiXYSeries;
 import io.deephaven.plot.datasets.ohlc.OHLCDataSeriesArray;
 import io.deephaven.plot.datasets.xy.AbstractXYDataSeries;
@@ -518,6 +520,119 @@ public class FigureWidgetTranslator {
                                     clientSeries.setPointShape(stringMapWithDefault(mergeShapes(
                                             multiCatSeries.pointShapeSeriesNameToStringMap(),
                                             multiCatSeries.pointShapeSeriesNameToShapeMap())));
+                                } else if (partitionedTableMultiSeries instanceof MultiXYErrorBarSeries) {
+                                    MultiXYErrorBarSeries multiXYErrorBarSeries =
+                                            (MultiXYErrorBarSeries) partitionedTableMultiSeries;
+
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandle, multiXYErrorBarSeries.getX(), SourceType.X, xAxis));
+                                    if (multiXYErrorBarSeries.getDrawXError()) {
+                                        clientAxes.add(makePartitionedTableSourceDescriptor(
+                                                plotHandle, multiXYErrorBarSeries.getXLow(), SourceType.X_LOW, xAxis));
+                                        clientAxes.add(makePartitionedTableSourceDescriptor(
+                                                plotHandle, multiXYErrorBarSeries.getXHigh(), SourceType.X_HIGH,
+                                                xAxis));
+                                    }
+
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandle, multiXYErrorBarSeries.getY(), SourceType.Y, yAxis));
+                                    if (multiXYErrorBarSeries.getDrawYError()) {
+                                        clientAxes.add(makePartitionedTableSourceDescriptor(
+                                                plotHandle, multiXYErrorBarSeries.getYLow(), SourceType.Y_LOW, yAxis));
+                                        clientAxes.add(makePartitionedTableSourceDescriptor(
+                                                plotHandle, multiXYErrorBarSeries.getYHigh(), SourceType.Y_HIGH,
+                                                yAxis));
+                                    }
+
+                                    clientSeries.setLineColor(stringMapWithDefault(mergeColors(
+                                            multiXYErrorBarSeries.lineColorSeriesNameTointMap(),
+                                            multiXYErrorBarSeries.lineColorSeriesNameToStringMap(),
+                                            multiXYErrorBarSeries.lineColorSeriesNameToPaintMap())));
+                                    clientSeries.setPointColor(stringMapWithDefault(mergeColors(
+                                            multiXYErrorBarSeries.pointColorSeriesNameTointMap(),
+                                            multiXYErrorBarSeries.pointColorSeriesNameToStringMap(),
+                                            multiXYErrorBarSeries.pointColorSeriesNameToPaintMap())));
+                                    clientSeries.setLinesVisible(
+                                            boolMapWithDefault(
+                                                    multiXYErrorBarSeries.linesVisibleSeriesNameToBooleanMap()));
+                                    clientSeries.setPointsVisible(
+                                            boolMapWithDefault(
+                                                    multiXYErrorBarSeries.pointsVisibleSeriesNameToBooleanMap()));
+                                    clientSeries.setGradientVisible(
+                                            boolMapWithDefault(
+                                                    multiXYErrorBarSeries.gradientVisibleSeriesNameTobooleanMap()));
+                                    clientSeries.setPointLabelFormat(stringMapWithDefault(
+                                            multiXYErrorBarSeries.pointLabelFormatSeriesNameToStringMap()));
+                                    clientSeries.setXToolTipPattern(
+                                            stringMapWithDefault(
+                                                    multiXYErrorBarSeries.xToolTipPatternSeriesNameToStringMap()));
+                                    clientSeries.setYToolTipPattern(
+                                            stringMapWithDefault(
+                                                    multiXYErrorBarSeries.yToolTipPatternSeriesNameToStringMap()));
+                                    clientSeries.setPointLabel(stringMapWithDefault(
+                                            multiXYErrorBarSeries.pointLabelSeriesNameToObjectMap(),
+                                            Objects::toString));
+                                    clientSeries.setPointSize(doubleMapWithDefault(
+                                            multiXYErrorBarSeries.pointSizeSeriesNameToNumberMap(),
+                                            number -> number == null ? null : number.doubleValue()));
+
+                                    clientSeries.setPointShape(stringMapWithDefault(mergeShapes(
+                                            multiXYErrorBarSeries.pointShapeSeriesNameToStringMap(),
+                                            multiXYErrorBarSeries.pointShapeSeriesNameToShapeMap())));
+                                } else if (partitionedTableMultiSeries instanceof MultiOHLCSeries) {
+                                    MultiOHLCSeries multiOHLCSeries =
+                                            (MultiOHLCSeries) partitionedTableMultiSeries;
+
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandle, multiOHLCSeries.getTimeCol(), SourceType.TIME, xAxis));
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandle, multiOHLCSeries.getOpenCol(), SourceType.OPEN, yAxis));
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandle, multiOHLCSeries.getCloseCol(), SourceType.CLOSE, yAxis));
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandle, multiOHLCSeries.getHighCol(), SourceType.HIGH, yAxis));
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandle, multiOHLCSeries.getLowCol(), SourceType.LOW, yAxis));
+
+                                    clientSeries.setLineColor(stringMapWithDefault(mergeColors(
+                                            multiOHLCSeries.lineColorSeriesNameTointMap(),
+                                            multiOHLCSeries.lineColorSeriesNameToStringMap(),
+                                            multiOHLCSeries.lineColorSeriesNameToPaintMap())));
+                                    clientSeries.setPointColor(stringMapWithDefault(mergeColors(
+                                            multiOHLCSeries.pointColorSeriesNameTointMap(),
+                                            multiOHLCSeries.pointColorSeriesNameToStringMap(),
+                                            multiOHLCSeries.pointColorSeriesNameToPaintMap())));
+                                    clientSeries.setLinesVisible(
+                                            boolMapWithDefault(
+                                                    multiOHLCSeries.linesVisibleSeriesNameToBooleanMap()));
+                                    clientSeries.setPointsVisible(
+                                            boolMapWithDefault(
+                                                    multiOHLCSeries.pointsVisibleSeriesNameToBooleanMap()));
+                                    clientSeries.setGradientVisible(
+                                            boolMapWithDefault(
+                                                    multiOHLCSeries.gradientVisibleSeriesNameTobooleanMap()));
+                                    clientSeries.setPointLabelFormat(stringMapWithDefault(
+                                            multiOHLCSeries.pointLabelFormatSeriesNameToStringMap()));
+                                    clientSeries.setXToolTipPattern(
+                                            stringMapWithDefault(
+                                                    multiOHLCSeries.xToolTipPatternSeriesNameToStringMap()));
+                                    clientSeries.setYToolTipPattern(
+                                            stringMapWithDefault(
+                                                    multiOHLCSeries.yToolTipPatternSeriesNameToStringMap()));
+                                    clientSeries.setPointLabel(stringMapWithDefault(
+                                            multiOHLCSeries.pointLabelSeriesNameToObjectMap(),
+                                            Objects::toString));
+                                    clientSeries.setPointSize(doubleMapWithDefault(
+                                            multiOHLCSeries.pointSizeSeriesNameToNumberMap(),
+                                            number -> number == null ? null : number.doubleValue()));
+
+                                    clientSeries.setPointShape(stringMapWithDefault(mergeShapes(
+                                            multiOHLCSeries.pointShapeSeriesNameToStringMap(),
+                                            multiOHLCSeries.pointShapeSeriesNameToShapeMap())));
+                                } else {
+                                    errorList.add(
+                                            "OpenAPI presently does not support series of type "
+                                                    + partitionedTableMultiSeries.getClass());
                                 }
                             } else {
                                 errorList.add(
@@ -530,7 +645,6 @@ public class FigureWidgetTranslator {
                         } else {
                             errorList.add(
                                     "OpenAPI presently does not support series of type " + seriesInternal.getClass());
-                            // TODO handle multi-series, possibly transformed case?
                         }
                     });
         });

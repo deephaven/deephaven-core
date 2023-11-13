@@ -316,25 +316,6 @@ class ParquetTestCase(BaseTestCase):
         pa_table_from_disk = dharrow.to_arrow(from_disk)
         self.assertTrue(pa_table.equals(pa_table_from_disk))
 
-    def test_writing_time_via_pyarrow(self):
-        def _test_writing_time_helper(filename):
-            metadata = pyarrow.parquet.read_metadata(filename)
-            if "isAdjustedToUTC=false" in str(metadata.row_group(0).column(0)):
-                # TODO(deephaven-core#976): Unable to read non UTC adjusted timestamps
-                with self.assertRaises(DHError) as e:
-                    read(filename)
-                self.assertIn("ParquetFileReaderException", e.exception.root_cause)
-
-        df = pandas.DataFrame({
-            "f": pandas.date_range("20130101", periods=3),
-        })
-        df.to_parquet("pyarrow_26.parquet", engine='pyarrow', compression=None, version='2.6')
-        _test_writing_time_helper("pyarrow_26.parquet")
-        df.to_parquet("pyarrow_24.parquet", engine='pyarrow', compression=None, version='2.4')
-        _test_writing_time_helper("pyarrow_24.parquet")
-        df.to_parquet("pyarrow_10.parquet", engine='pyarrow', compression=None, version='1.0')
-        _test_writing_time_helper("pyarrow_10.parquet")
-
     def test_dictionary_encoding(self):
         dh_table = empty_table(10).update(formulas=[
             "shortStringColumn = `Row ` + i",
@@ -406,7 +387,7 @@ class ParquetTestCase(BaseTestCase):
             df_from_disk = to_pandas(from_disk)
             original_df = pa_table.to_pandas()
             # Compare the dataframes as strings
-            print((df_from_disk.astype(str) == original_df.astype(str)).all().values.all())
+            self.assertTrue((df_from_disk.astype(str) == original_df.astype(str)).all().values.all())
 
         # Test for nanoseconds, microseconds, and milliseconds
         schema_nsec = table.schema.set(0, pyarrow.field('someTimeColumn', pyarrow.time64('ns')))
@@ -417,6 +398,41 @@ class ParquetTestCase(BaseTestCase):
 
         schema_msec = table.schema.set(0, pyarrow.field('someTimeColumn', pyarrow.time32('ms')))
         time_test_helper(table, schema_msec, "data_from_pq_msec.parquet")
+
+    def test_non_utc_adjusted_timestamps(self):
+        """ Test that we can read and read timestamp columns with isAdjustedToUTC set as false and different units """
+        df = pandas.DataFrame({
+            "f": pandas.date_range("11:00:00", "11:00:01", freq="1ms")
+        })
+        # Sprinkle some nulls
+        df["f"][0] = df["f"][5] = None
+        table = pyarrow.Table.from_pandas(df)
+
+        def timestamp_test_helper(pa_table, new_schema, dest):
+            # Cast the table to new schema and write it using pyarrow
+            pa_table = pa_table.cast(new_schema)
+            pyarrow.parquet.write_table(pa_table, dest)
+            # Verify that isAdjustedToUTC set as false in the metadata
+            metadata = pyarrow.parquet.read_metadata(dest)
+            if "isAdjustedToUTC=false" not in str(metadata.row_group(0).column(0)):
+                self.fail("isAdjustedToUTC is not set to false")
+            # Read the parquet file back using deephaven and write it back
+            dh_table_from_disk = read(dest)
+            dh_dest = "dh_" + dest
+            write(dh_table_from_disk, dh_dest)
+            # Read the new parquet file using pyarrow and compare against original table
+            pa_table_from_disk = pyarrow.parquet.read_table(dh_dest)
+            self.assertTrue(pa_table == pa_table_from_disk.cast(new_schema))
+
+        schema_nsec = table.schema.set(0, pyarrow.field('f', pyarrow.timestamp('ns')))
+        timestamp_test_helper(table, schema_nsec, 'timestamp_test_nsec.parquet')
+
+        schema_usec = table.schema.set(0, pyarrow.field('f', pyarrow.timestamp('us')))
+        timestamp_test_helper(table, schema_usec, 'timestamp_test_usec.parquet')
+
+        schema_msec = table.schema.set(0, pyarrow.field('f', pyarrow.timestamp('ms')))
+        timestamp_test_helper(table, schema_msec, 'timestamp_test_msec.parquet')
+
 
 if __name__ == '__main__':
     unittest.main()

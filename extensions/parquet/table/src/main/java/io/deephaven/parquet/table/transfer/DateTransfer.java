@@ -3,7 +3,7 @@
  */
 package io.deephaven.parquet.table.transfer;
 
-import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
 
-final class DateTransfer extends IntCastablePrimitiveTransfer<WritableObjectChunk<LocalDate, Values>> {
+final class DateTransfer extends IntCastablePrimitiveTransfer<ObjectChunk<LocalDate, Values>> {
     DateTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, final int targetSize) {
         super(columnSource, tableRowSet, targetSize);
     }
