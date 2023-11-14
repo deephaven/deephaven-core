@@ -115,7 +115,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    ```
    Then, exit the R console with `quit()`. From the rdeephaven directory, build and install the R client:
    ```r
-   cd .. && R CMD build rdeephaven && R CMD INSTALL --no-multiarch --with-keep.source rdeephaven_*.tar.gz
+   cd .. && R CMD build rdeephaven && R CMD INSTALL --no-multiarch --with-keep.source rdeephaven_*.tar.gz && rm rdeephaven_*.tar.gz
    ```
    This is needed over the typical `install.packages()` to ensure that the vignettes get built and installed.
 
