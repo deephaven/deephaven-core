@@ -72,7 +72,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             this.setTable = setTable;
             setTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
             try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
-                    setTupleSource, setTable.getRowSet())) {
+                    setTupleSource, setTable.getRowSet(),
+                    (int) Math.min(setTable.getRowSet().size(), CHUNK_SIZE))) {
                 initialKeysIterator.forEachRemaining(this::addKey);
             }
 
@@ -95,7 +96,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                     // Remove removed keys
                     if (hasRemoves) {
                         try (final CloseableIterator<?> removedKeysIterator = ChunkedColumnIterator.make(
-                                setTupleSource.getPrevSource(), upstream.removed())) {
+                                setTupleSource.getPrevSource(), upstream.removed(),
+                                (int) Math.min(upstream.removed().size(), CHUNK_SIZE))) {
                             removedKeysIterator.forEachRemaining(DynamicWhereFilter.this::removeKey);
                         }
                     }
@@ -105,9 +107,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                     if (hasModifies) {
                         // @formatter:off
                         try (final CloseableIterator<?> preModifiedKeysIterator = ChunkedColumnIterator.make(
-                                     setTupleSource.getPrevSource(), upstream.getModifiedPreShift());
+                                     setTupleSource.getPrevSource(), upstream.getModifiedPreShift(),
+                                (int) Math.min(upstream.getModifiedPreShift().size(), CHUNK_SIZE));
                              final CloseableIterator<?> postModifiedKeysIterator = ChunkedColumnIterator.make(
-                                     setTupleSource, upstream.modified())) {
+                                     setTupleSource, upstream.modified(),
+                                     (int) Math.min(upstream.modified().size(), CHUNK_SIZE))) {
                             // @formatter:on
                             while (preModifiedKeysIterator.hasNext()) {
                                 Assert.assertion(postModifiedKeysIterator.hasNext(),
@@ -128,7 +132,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                     // Add added keys
                     if (hasAdds) {
                         try (final CloseableIterator<?> addedKeysIterator = ChunkedColumnIterator.make(
-                                setTupleSource, upstream.added())) {
+                                setTupleSource, upstream.added(),
+                                (int) Math.min(upstream.added().size(), CHUNK_SIZE))) {
                             addedKeysIterator.forEachRemaining(DynamicWhereFilter.this::addKey);
                         }
                     }
@@ -168,7 +173,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             setTupleSource = null;
             final TupleSource<?> temporaryTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
             try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
-                    temporaryTupleSource, setTable.getRowSet())) {
+                    temporaryTupleSource, setTable.getRowSet(),
+                    (int) Math.min(setTable.getRowSet().size(), CHUNK_SIZE))) {
                 initialKeysIterator.forEachRemaining(this::addKeyUnchecked);
             }
             kernelValid = liveValuesArrayValid = false;
@@ -289,7 +295,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
         final RowSetBuilderSequential indexBuilder = RowSetFactory.builderSequential();
 
-        final int maxChunkSize = (int) Math.min(CHUNK_SIZE, selection.size());
+        final int maxChunkSize = (int) Math.min(selection.size(), CHUNK_SIZE);
         // @formatter:off
         try (final ColumnSource.GetContext keyGetContext = tupleSource.makeGetContext(maxChunkSize);
              final RowSequence.Iterator selectionIterator = selection.getRowSequenceIterator();
