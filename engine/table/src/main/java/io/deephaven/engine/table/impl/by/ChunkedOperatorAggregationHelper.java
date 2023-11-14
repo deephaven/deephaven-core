@@ -111,7 +111,7 @@ public class ChunkedOperatorAggregationHelper {
                 final ColumnDefinition<?> initialKeysDef = initialKeys.getDefinition().getColumn(keyName);
                 if (!inputDef.isCompatible(initialKeysDef)) {
                     throw new IllegalArgumentException(String.format(
-                            "aggregation: column definition mismatch between input table and initial groups table for %s input has %s, initial groups has %s",
+                            "aggregation: column definition mismatch between input table and initial groups table for %s; input has %s, initial groups has %s",
                             keyName,
                             inputDef.describeForCompatibility(),
                             initialKeysDef.describeForCompatibility()));

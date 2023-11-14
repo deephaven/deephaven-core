@@ -116,12 +116,12 @@ public class QueryTableAggregationTest {
                     Arrays.stream(keySelectColumns).map(SelectColumn::getName).distinct().toArray(String[]::new);
 
             if (keyColumns.length == 0) {
-                expectedKeys = TableTools.emptyTable(adjustedInput.size() > 0 ? 1 : 0);
+                expectedKeys = TableTools.emptyTable(!adjustedInput.isEmpty() ? 1 : 0);
                 expected = adjustedInput;
             } else {
                 final Set<String> retainedColumns =
-                        new LinkedHashSet<>(adjustedInput.getDefinition().getColumnNameMap().keySet());
-                retainedColumns.removeAll(Arrays.stream(keyNames).collect(Collectors.toSet()));
+                        new LinkedHashSet<>(adjustedInput.getDefinition().getColumnNameSet());
+                Arrays.asList(keyNames).forEach(retainedColumns::remove);
                 final List<SelectColumn> allSelectColumns =
                         Stream.concat(Arrays.stream(keySelectColumns), retainedColumns.stream().map(SourceColumn::new))
                                 .collect(Collectors.toList());

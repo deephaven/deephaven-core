@@ -1787,7 +1787,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                             copyAttributes(resultTable, CopyAttributeOperation.DropColumns);
                             copySortableColumns(resultTable,
-                                    resultTable.getDefinition().getColumnNameMap()::containsKey);
+                                    resultTable.getDefinition().getColumnNameSet()::contains);
                             maybeCopyColumnDescriptions(resultTable);
 
                             if (snapshotControl != null) {

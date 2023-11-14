@@ -1058,7 +1058,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // Process the original set of sortable columns, adding them to the new set if one of the below
         // 1) The column exists in the new table and was not renamed in any way but the Identity (C1 = C1)
         // 2) The column does not exist in the new table, but was renamed to another (C2 = C1)
-        final Set<String> resultColumnNames = destination.getDefinition().getColumnNameMap().keySet();
+        final Set<String> resultColumnNames = destination.getDefinition().getColumnNameSet();
         for (final String columnName : currentSortableColumns) {
             // Only add it to the set of sortable columns if it hasn't changed in an unknown way
             final String maybeRenamedColumn = columnMapping.get(columnName);
