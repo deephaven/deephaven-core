@@ -1621,10 +1621,10 @@ public interface UpdateByOperation {
 
     /**
      * Create a {@link RollingStdSpec rolling sample standard deviation} for the supplied column name pairs, using ticks
-     * as the windowing unit. Ticks are row counts and you may specify the previous window in number of rows
-     * to include. The current row is considered to belong to the reverse window, so calling this with
-     * {@code revTicks = 1} will simply return the current row. Specifying {@code revTicks = 10} will include the
-     * previous 9 rows to this one and this row for a total of 10 rows.
+     * as the windowing unit. Ticks are row counts and you may specify the previous window in number of rows to include.
+     * The current row is considered to belong to the reverse window, so calling this with {@code revTicks = 1} will
+     * simply return the current row. Specifying {@code revTicks = 10} will include the previous 9 rows to this one and
+     * this row for a total of 10 rows.
      *
      * Sample standard deviation is computed using Bessel's correction
      * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
@@ -1640,10 +1640,10 @@ public interface UpdateByOperation {
 
     /**
      * Create a {@link RollingStdSpec rolling sample standard deviation} for the supplied column name pairs, using ticks
-     * as the windowing unit. Ticks are row counts and you may specify the reverse and forward window in
-     * number of rows to include. The current row is considered to belong to the reverse window but not the forward
-     * window. Also, negative values are allowed and can be used to generate completely forward or completely reverse
-     * windows. Here are some examples of window values:
+     * as the windowing unit. Ticks are row counts and you may specify the reverse and forward window in number of rows
+     * to include. The current row is considered to belong to the reverse window but not the forward window. Also,
+     * negative values are allowed and can be used to generate completely forward or completely reverse windows. Here
+     * are some examples of window values:
      * <ul>
      * <li>{@code revTicks = 1, fwdTicks = 0} - contains only the current row</li>
      * <li>{@code revTicks = 10, fwdTicks = 0} - contains 9 previous rows and the current row</li>
@@ -1673,9 +1673,9 @@ public interface UpdateByOperation {
 
     /**
      * Create a {@link RollingStdSpec rolling sample standard deviation} for the supplied column name pairs, using time
-     * as the windowing unit. This function accepts {@link Duration duration} as the reverse window
-     * parameter. A row containing a {@code null} in the timestamp column belongs to no window and will not have a value
-     * computed or be considered in the windows of other rows.
+     * as the windowing unit. This function accepts {@link Duration duration} as the reverse window parameter. A row
+     * containing a {@code null} in the timestamp column belongs to no window and will not have a value computed or be
+     * considered in the windows of other rows.
      *
      * Here are some examples of window values:
      * <ul>
@@ -1698,10 +1698,10 @@ public interface UpdateByOperation {
 
     /**
      * Create a {@link RollingStdSpec rolling sample standard deviation} for the supplied column name pairs, using time
-     * as the windowing unit. This function accepts {@link Duration durations} as the reverse and forward
-     * window parameters. Negative values are allowed and can be used to generate completely forward or completely
-     * reverse windows. A row containing a {@code null} in the timestamp column belongs to no window and will not have a
-     * value computed or be considered in the windows of other rows.
+     * as the windowing unit. This function accepts {@link Duration durations} as the reverse and forward window
+     * parameters. Negative values are allowed and can be used to generate completely forward or completely reverse
+     * windows. A row containing a {@code null} in the timestamp column belongs to no window and will not have a value
+     * computed or be considered in the windows of other rows.
      *
      * Here are some examples of window values:
      * <ul>
@@ -1735,9 +1735,9 @@ public interface UpdateByOperation {
 
     /**
      * Create a {@link RollingStdSpec rolling sample standard deviation} for the supplied column name pairs, using time
-     * as the windowing unit. This function accepts {@code nanoseconds} as the reverse window parameters. A
-     * row containing a {@code null} in the timestamp column belongs to no window and will not have a value computed or
-     * be considered in the windows of other rows.
+     * as the windowing unit. This function accepts {@code nanoseconds} as the reverse window parameters. A row
+     * containing a {@code null} in the timestamp column belongs to no window and will not have a value computed or be
+     * considered in the windows of other rows.
      *
      * Sample standard deviation is computed using Bessel's correction
      * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
@@ -1754,10 +1754,10 @@ public interface UpdateByOperation {
 
     /**
      * Create a {@link RollingStdSpec rolling sample standard deviation} for the supplied column name pairs, using time
-     * as the windowing unit. This function accepts {@code nanoseconds} as the reverse and forward window
-     * parameters. Negative values are allowed and can be used to generate completely forward or completely reverse
-     * windows. A row containing a {@code null} in the timestamp column belongs to no window and will not have a value
-     * computed or be considered in the windows of other rows.
+     * as the windowing unit. This function accepts {@code nanoseconds} as the reverse and forward window parameters.
+     * Negative values are allowed and can be used to generate completely forward or completely reverse windows. A row
+     * containing a {@code null} in the timestamp column belongs to no window and will not have a value computed or be
+     * considered in the windows of other rows.
      *
      * Sample standard deviation is computed using Bessel's correction
      * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
