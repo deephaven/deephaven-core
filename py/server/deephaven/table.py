@@ -387,7 +387,15 @@ def _encode_signature(fn: Callable) -> str:
 
     If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
     """
-    sig = inspect.signature(fn)
+    try:
+        sig = inspect.signature(fn)
+    except:
+        # in case inspect.signature() fails, we'll just use the default 'O' - object type.
+        # numpy ufuncs actually have signature encoded in their 'types' attribute, we want to better support
+        # them in the future (https://github.com/deephaven/deephaven-core/issues/4762)
+        if type(fn) == np.ufunc:
+            return "O"*fn.nin + "->" + "O"
+        return "->O"
 
     np_type_codes = []
     for n, p in sig.parameters.items():
@@ -429,8 +437,8 @@ def _py_udf(fn: Callable):
     if hasattr(fn, "return_type"):
         return fn
     ret_dtype = _udf_return_dtype(fn)
-    return_array = False
 
+    return_array = False
     # If the function is a numba guvectorized function, examine the signature of the function to determine if it
     # returns an array.
     if isinstance(fn, numba.np.ufunc.gufunc.GUFunc):
@@ -439,12 +447,20 @@ def _py_udf(fn: Callable):
         if rtype:
             return_array = True
     else:
-        return_annotation = _parse_annotation(inspect.signature(fn).return_annotation)
-        component_type = _component_np_dtype_char(return_annotation)
-        if component_type:
-            ret_dtype = dtypes.from_np_dtype(np.dtype(component_type))
-            if ret_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
-                return_array = True
+        try:
+            return_annotation = _parse_annotation(inspect.signature(fn).return_annotation)
+        except ValueError:
+            # the function has no return annotation, and since we can't know what the exact type is, the return type
+            # defaults to the generic object type therefore it is not an array of a specific type,
+            # but see (https://github.com/deephaven/deephaven-core/issues/4762) for future imporvement to better support
+            # numpy ufuncs.
+            pass
+        else:
+            component_type = _component_np_dtype_char(return_annotation)
+            if component_type:
+                ret_dtype = dtypes.from_np_dtype(np.dtype(component_type))
+                if ret_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
+                    return_array = True
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
