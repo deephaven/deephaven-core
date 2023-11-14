@@ -300,7 +300,34 @@ class Docker {
 
         if (cfg.copyOut && !cfg.showLogsOnSuccess) {
             // Single task with explicit inputs and outputs, to let gradle detect if it is up to date, and let docker
-            // cache what it can.
+            // cache what it can. While far more efficient for gradle to run (or rather, know when it does not need to
+            // run), it is also more bug-prone while we try to get various competing features working.
+            //
+            // To handle these use cases, we're not using dependsOn as we typically would do, but instead using
+            // finalizedBy and onlyIf. Here's a mermaid diagram:
+            //
+            // graph LR;
+            //     MakeImage -. finalizedBy .-> Run
+            //     Sync -- dependsOn --> MakeImage
+            //     Run -. finalizedBy .-> Sync
+            //
+            //
+            // Unlike "A dependsOn B", "B finalized A" will let B run if A failed, and will not run A if B must run.
+            // Combining the chain of finalizedBys between MakeImage <- Run <- Sync with the dependsOn from
+            // Sync -> MakeImage lets us handle the following cases:
+            // * Successful run, output is sync'd afterwards, final task succeeds
+            // * Failed run, output is sync'd afterwards, final task fails
+            // * Failed image creation, no run, no sync, no final task
+            // * Previously successful run with no source changes, no tasks run (all "UP-TO-DATE")
+            //
+            // Tests to run to confirm functionality:
+            // * After changes, confirm that :web:assemble runs (isn't all "UP-TO-DATE")
+            // * Then run again with no changes, confirm all are UP-TO-DATE, roughly 2s build time
+            // * Edit a test that uses deephavenDocker to fail, confirm that the test fails, that the test-reports
+            //   are copied out, and that server logs are written to console
+            // * Ensure that if the test is set to pass that the test-reports are copied out, and server logs are
+            //   not written.
+            // Note that at this time integration tests using the deephavenDocker plugin are never UP-TO-DATE.
 
             // Note that if "showLogsOnSuccess" is true, we don't run this way, since that would omit logs when cached.
             def buildAndRun = project.tasks.register("${taskName}Run", CombinedDockerRunTask) { cacheableDockerTask ->
@@ -337,35 +364,38 @@ class Docker {
                 }
             }
 
-            // Handle copying failure. This is now distinct from the "actual" Sync task that depends directly
-            // on the CombinedDockerRunTask.
-            def syncAfterFail = project.tasks.register("${taskName}SyncAfterFail", Sync) { sync ->
+            // Specify that makeImage is finalized by buildAndRun - that is, in this configuration buildAndRun
+            // must run after makeImage finishes
+            makeImage.configure {it ->
+                it.finalizedBy(buildAndRun)
+            }
+
+            // Handle copying output from the docker task to the user-controlled location
+            def syncOutput = project.tasks.register(taskName, Sync) { sync ->
                 sync.with {
+                    dependsOn(makeImage)
                     // run the provided closure first
                     cfg.copyOut.execute(sync)
 
                     // then set the from location
                     from dockerCopyLocation
 
-                    onlyIf { buildAndRun.get().state.failure != null }
+                    doLast {
+                        // If the actual task has already failed, we need to fail this task to signal to any downstream
+                        // tasks to not continue. Under normal circumstances, we might just not run this Sync task at
+                        // all to signal this, however in our case we want to copy out artifacts of failure for easier
+                        // debugging.
+                        if (buildAndRun.get().state.failure != null) {
+                            throw new GradleException('Docker task failed, see earlier task failures for details')
+                        }
+                    }
                 }
             }
             buildAndRun.configure {t ->
-                t.finalizedBy syncAfterFail
+                t.finalizedBy syncOutput
             }
 
-            // Sync outputs to the desired location
-            return project.tasks.register(taskName, Sync) { sync ->
-                sync.with {
-                    dependsOn buildAndRun
-
-                    // run the provided closure first
-                    cfg.copyOut.execute(sync)
-
-                    // then set the from location
-                    from dockerCopyLocation
-                }
-            }
+            return syncOutput
         }
         // With no outputs, we can use the standard individual containers, and gradle will have to re-run each time
         // the task is invoked, can never be marked as up to date.

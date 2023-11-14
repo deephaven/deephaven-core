@@ -1419,8 +1419,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         TypedTicket typedTicket = new TypedTicket();
         typedTicket.setType(JsVariableType.PARTITIONEDTABLE);
         typedTicket.setTicket(partitionedTableTicket);
-        Promise<JsPartitionedTable> fetchPromise =
-                new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, typedTicket)).refetch();
+        Promise<JsPartitionedTable> fetchPromise = new JsWidget(workerConnection, typedTicket).refetch().then(
+                widget -> Promise.resolve(new JsPartitionedTable(workerConnection, widget)));
 
         // Ensure that the partition failure propagates first, but the result of the fetch will be returned - both
         // are running concurrently.

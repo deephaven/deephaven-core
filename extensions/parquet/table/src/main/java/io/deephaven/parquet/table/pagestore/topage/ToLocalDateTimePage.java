@@ -5,7 +5,7 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.time.DateTimeUtils;
+import io.deephaven.parquet.table.util.TransferUtils;
 import io.deephaven.util.QueryConstants;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.jetbrains.annotations.NotNull;
@@ -79,21 +79,21 @@ public class ToLocalDateTimePage<ATTR extends Any> implements ToPage<ATTR, Local
     private static final class ToLocalDateTimePageFromMillis<ATTR extends Any> extends ToLocalDateTimePage<ATTR> {
         @Override
         public LocalDateTime[] convertResult(@NotNull final Object result) {
-            return convertResultHelper(result, DateTimeUtils::epochMillisToLocalDateTimeUTC);
+            return convertResultHelper(result, TransferUtils::epochMillisToLocalDateTimeUTC);
         }
     }
 
     private static final class ToLocalDateTimePageFromMicros<ATTR extends Any> extends ToLocalDateTimePage<ATTR> {
         @Override
         public LocalDateTime[] convertResult(@NotNull final Object result) {
-            return convertResultHelper(result, DateTimeUtils::epochMicrosToLocalDateTimeUTC);
+            return convertResultHelper(result, TransferUtils::epochMicrosToLocalDateTimeUTC);
         }
     }
 
     private static final class ToLocalDateTimePageFromNanos<ATTR extends Any> extends ToLocalDateTimePage<ATTR> {
         @Override
         public LocalDateTime[] convertResult(@NotNull final Object result) {
-            return convertResultHelper(result, DateTimeUtils::epochNanosToLocalDateTimeUTC);
+            return convertResultHelper(result, TransferUtils::epochNanosToLocalDateTimeUTC);
         }
     }
 
