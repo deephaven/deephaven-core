@@ -265,6 +265,10 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
 
     @Override
     public synchronized QueryPerformanceNugget getEnclosingNugget() {
+        if (userNuggetStack.isEmpty()) {
+            Assert.neqNull(catchAllNugget, "catchAllNugget");
+            return catchAllNugget;
+        }
         return userNuggetStack.peekLast();
     }
 
@@ -284,9 +288,8 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
                     userNuggetStack.getLast().setShouldLogThisAndStackParents();
                 } else {
                     uninstrumented = true;
-                    if (catchAllNugget != null) {
-                        catchAllNugget.setShouldLogThisAndStackParents();
-                    }
+                    Assert.neqNull(catchAllNugget, "catchAllNugget");
+                    catchAllNugget.setShouldLogThisAndStackParents();
                 }
             }
         }

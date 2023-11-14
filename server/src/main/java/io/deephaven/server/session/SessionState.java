@@ -15,7 +15,6 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderImpl;
 import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -1035,11 +1034,11 @@ public class SessionState {
                         }
                     }
                 }
+                if (queryPerformanceRecorder != null && qprIsForBatch) {
+                    Assert.neqNull(exportRecorder, "exportRecorder");
+                    queryPerformanceRecorder.accumulate(exportRecorder);
+                }
                 if (shouldLog || caughtException != null) {
-                    if (queryPerformanceRecorder != null && qprIsForBatch) {
-                        Assert.neqNull(exportRecorder, "exportRecorder");
-                        queryPerformanceRecorder.accumulate(exportRecorder);
-                    }
                     EngineMetrics.getInstance().logQueryProcessingResults(queryProcessingResults);
                 }
                 if (caughtException == null) {

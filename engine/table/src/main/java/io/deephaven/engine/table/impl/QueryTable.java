@@ -1268,11 +1268,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         final BasePerformanceEntry basePerformanceEntry =
                                                 initialFilterExecution.getBasePerformanceEntry();
                                         if (basePerformanceEntry != null) {
-                                            final QueryPerformanceNugget outerNugget =
-                                                    QueryPerformanceRecorder.getInstance().getEnclosingNugget();
-                                            if (outerNugget != null) {
-                                                outerNugget.accumulate(basePerformanceEntry);
-                                            }
+                                            QueryPerformanceRecorder.getInstance().getEnclosingNugget()
+                                                    .accumulate(basePerformanceEntry);
                                         }
                                     }
                                     currentMapping.initializePreviousValue();
@@ -1516,11 +1513,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             } finally {
                                 final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
                                 if (baseEntry != null) {
-                                    final QueryPerformanceNugget outerNugget =
-                                            QueryPerformanceRecorder.getInstance().getEnclosingNugget();
-                                    if (outerNugget != null) {
-                                        outerNugget.accumulate(baseEntry);
-                                    }
+                                    QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(baseEntry);
                                 }
                             }
                         }

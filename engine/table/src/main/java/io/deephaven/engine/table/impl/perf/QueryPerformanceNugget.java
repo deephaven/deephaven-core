@@ -251,7 +251,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
 
     public void markStartTime() {
         if (startClockEpochNanos != NULL_LONG) {
-            throw new IllegalStateException("Nugget was already started");
+            throw new IllegalStateException("Nugget start time already set");
         }
 
         startClockEpochNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis());

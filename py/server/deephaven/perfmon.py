@@ -106,7 +106,7 @@ def query_operation_performance_log_as_tree_table() -> TreeTable:
     """
     try:
         return TreeTable(j_tree_table=_JPerformanceQueries.queryOperationPerformanceAsTreeTable(),
-                         id_col = 'EvaluationNumber', parent_col = 'ParentEvaluationNumber')
+                         id_col = "EvalKey", parent_col = "ParentEvalKey")
     except Exception as e:
         raise DHError(e, "failed to obtain the query operation performance log as tree table.") from e
 
@@ -123,7 +123,7 @@ def query_performance_log_as_tree_table() -> TreeTable:
     """
     try:
         return TreeTable(j_tree_table=_JPerformanceQueries.queryPerformanceAsTreeTable(),
-                         id_col = 'EvaluationNumber', parent_col = 'ParentEvaluationNumber')
+                         id_col = "EvaluationNumber", parent_col = "ParentEvaluationNumber")
     except Exception as e:
         raise DHError(e, "failed to obtain the query performance log as tree table.") from e
 

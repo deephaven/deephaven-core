@@ -10,8 +10,6 @@ import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderImpl;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
 import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.extensions.barrage.util.ExportUtil;
