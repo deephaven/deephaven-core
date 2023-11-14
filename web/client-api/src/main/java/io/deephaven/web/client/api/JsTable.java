@@ -1436,8 +1436,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
         if (column.getDescription() != null && column.getDescription().startsWith("Preview of type")) {
-            // TODO (deephaven-core#188) Remove this workaround when we don't preview columns until just before subscription
-            return Promise.reject("Can't produce column stats for preview column");
+            // TODO (deephaven-core#188) Remove this workaround when we don't preview columns until just before
+            // subscription
+            return Promise.reject("Can't produce column statistics for preview column");
         }
         List<Runnable> toRelease = new ArrayList<>();
         return workerConnection.newState((c, state, metadata) -> {
