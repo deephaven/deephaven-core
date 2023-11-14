@@ -1189,7 +1189,7 @@ public abstract class UpdateBy {
 
         final Collection<List<ColumnUpdateOperation>> windowSpecs =
                 updateByOperatorFactory.getWindowOperatorSpecs(clauses);
-        if (windowSpecs.size() == 0) {
+        if (windowSpecs.isEmpty()) {
             throw new IllegalArgumentException("At least one operator must be specified");
         }
 
@@ -1199,7 +1199,7 @@ public abstract class UpdateBy {
 
         final MutableObject<String> timestampColumnName = new MutableObject<>(null);
         // create an initial set of all source columns
-        final LinkedHashSet<String> preservedColumnSet = new LinkedHashSet<>(source.getDefinition().getColumnNames());
+        final LinkedHashSet<String> preservedColumnSet = new LinkedHashSet<>(source.getDefinition().getColumnNameSet());
 
         final Set<String> problems = new LinkedHashSet<>();
         final Map<String, ColumnSource<?>> opResultSources = new LinkedHashMap<>();
