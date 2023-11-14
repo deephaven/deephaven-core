@@ -271,6 +271,27 @@ def fn(col) -> Optional[{np_dtype}]:
         self.assertEqual(t.columns[0].data_type, dtypes.long_array)
         self.assertEqual(t.to_string().count("null"), 5)
 
+    def test_np_ufunc(self):
+        # no vectorization and no type inference
+        npsin = np.sin
+        t = empty_table(10).update(["X1 = npsin(i)"])
+        self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
+        t2 = t.update("X2 = X1.getDoubleValue()")
+        self.assertEqual(t2.columns[1].data_type, dtypes.double)
+
+        import numba
+
+        # numba vectorize decorator doesn't support numpy ufunc
+        with self.assertRaises(TypeError):
+            nbsin = numba.vectorize([numba.float64(numba.float64)])(np.sin)
+
+        # this is the workaround that utilizes vectorization and type inference
+        @numba.vectorize([numba.float64(numba.float64)], nopython=True)
+        def nbsin(x):
+            return np.sin(x)
+        t3 = empty_table(10).update(["X3 = nbsin(i)"])
+        self.assertEqual(t3.columns[0].data_type, dtypes.double)
+
 
 if __name__ == '__main__':
     unittest.main()
