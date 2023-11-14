@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "HELLO THERE"
+
 set -euo pipefail
 
 for var in DHCPP NCPUS LD_LIBRARY_PATH; do
@@ -20,6 +22,7 @@ rm -f src/*.o src/*.so
 
 MAKE="make -j${NCPUS}"
 cd .. && \
+  rm -f rdeephaven_*.tar.gz && \
   R CMD build rdeephaven && \
   R CMD INSTALL --no-multiarch --with-keep.source rdeephaven_*.tar.gz && \
   rm -f rdeephaven_*.tar.gz && \
