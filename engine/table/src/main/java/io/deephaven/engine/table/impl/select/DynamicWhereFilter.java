@@ -111,7 +111,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                             // @formatter:on
                             while (preModifiedKeysIterator.hasNext()) {
                                 Assert.assertion(postModifiedKeysIterator.hasNext(),
-                                        "Pre and post modified row sets must be the same size");
+                                        "Pre and post modified row sets must be the same size; post is exhausted, but pre is not");
                                 final Object oldKey = preModifiedKeysIterator.next();
                                 final Object newKey = postModifiedKeysIterator.next();
                                 if (!Objects.equals(oldKey, newKey)) {
@@ -120,6 +120,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                                     addKey(newKey);
                                 }
                             }
+                            Assert.assertion(!postModifiedKeysIterator.hasNext(),
+                                    "Pre and post modified row sets must be the same size; pre is exhausted, but post is not");
                         }
                     }
 
