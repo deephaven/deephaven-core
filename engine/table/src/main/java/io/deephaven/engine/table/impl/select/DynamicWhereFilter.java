@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
@@ -166,7 +165,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             this.setTable = null;
             setTupleSource = null;
             final TupleSource<?> temporaryTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
-            setTable.getRowSet().forAllRowKeys((final long v) -> addKeyUnchecked(makeKey(temporaryTupleSource, v)));
+            try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
+                    temporaryTupleSource, setTable.getRowSet())) {
+                initialKeysIterator.forEachRemaining(this::addKeyUnchecked);
+            }
             kernelValid = liveValuesArrayValid = false;
             setInclusionKernel = null;
             setUpdateListener = null;
@@ -176,18 +178,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     @Override
     public UpdateGraph getUpdateGraph() {
         return updateGraph;
-    }
-
-    private Object makeKey(long index) {
-        return makeKey(setTupleSource, index);
-    }
-
-    private static Object makeKey(TupleSource<?> tupleSource, long index) {
-        return tupleSource.createTuple(index);
-    }
-
-    private Object makePrevKey(long index) {
-        return setTupleSource.createPreviousTuple(index);
     }
 
     private void removeKey(Object key) {
@@ -258,7 +248,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                 if (selection.size() > (selectionIndexer.getGrouping(tupleSource).size() * 2L)) {
                     return filterGrouping(trackingSelection, selectionIndexer, tupleSource);
                 } else {
-                    return filterLinear(selection, keyColumns, tupleSource);
+                    return filterLinear(selection, tupleSource);
                 }
             }
             final boolean allGrouping = Arrays.stream(keyColumns).allMatch(selectionIndexer::hasGrouping);
@@ -274,7 +264,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                 return filterGrouping(trackingSelection, selectionIndexer, tupleSource);
             }
         }
-        return filterLinear(selection, keyColumns, tupleSource);
+        return filterLinear(selection, tupleSource);
     }
 
     private WritableRowSet filterGrouping(
@@ -285,28 +275,13 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         return (inclusion ? matchingKeys.copy() : selection.minus(matchingKeys));
     }
 
-    private WritableRowSet filterGrouping(TrackingRowSet selection, RowSetIndexer selectionIndexer, Table table) {
-        final ColumnSource<?>[] keyColumns = Arrays.stream(matchPairs)
-                .map(mp -> table.getColumnSource(mp.leftColumn())).toArray(ColumnSource[]::new);
-        final TupleSource<?> tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
-        return filterGrouping(selection, selectionIndexer, tupleSource);
-    }
-
-    private WritableRowSet filterLinear(RowSet selection, ColumnSource<?>[] keyColumns, TupleSource<?> tupleSource) {
-        if (keyColumns.length == 1) {
-            return filterLinearOne(selection, keyColumns[0]);
-        } else {
-            return filterLinearTuple(selection, tupleSource);
-        }
-    }
-
-    private WritableRowSet filterLinearOne(RowSet selection, ColumnSource<?> keyColumn) {
+    private WritableRowSet filterLinear(RowSet selection, TupleSource<?> tupleSource) {
         if (selection.isEmpty()) {
             return RowSetFactory.empty();
         }
 
         if (!kernelValid) {
-            setInclusionKernel = SetInclusionKernel.makeKernel(keyColumn.getChunkType(), liveValues, inclusion);
+            setInclusionKernel = SetInclusionKernel.makeKernel(tupleSource.getChunkType(), liveValues, inclusion);
             kernelValid = true;
         }
 
@@ -314,7 +289,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
         final int maxChunkSize = (int) Math.min(CHUNK_SIZE, selection.size());
         // @formatter:off
-        try (final ColumnSource.GetContext keyGetContext = keyColumn.makeGetContext(maxChunkSize);
+        try (final ColumnSource.GetContext keyGetContext = tupleSource.makeGetContext(maxChunkSize);
              final RowSequence.Iterator selectionIterator = selection.getRowSequenceIterator();
              final WritableLongChunk<OrderedRowKeys> selectionRowKeyChunk =
                      WritableLongChunk.makeWritableChunk(maxChunkSize);
@@ -324,7 +299,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             while (selectionIterator.hasMore()) {
                 final RowSequence selectionChunk = selectionIterator.getNextRowSequenceWithLength(maxChunkSize);
 
-                final Chunk<Values> keyChunk = Chunk.downcast(keyColumn.getChunk(keyGetContext, selectionChunk));
+                final Chunk<Values> keyChunk = Chunk.downcast(tupleSource.getChunk(keyGetContext, selectionChunk));
                 final int thisChunkSize = keyChunk.size();
                 setInclusionKernel.matchValues(keyChunk, matches);
 
@@ -333,38 +308,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
                 for (int ii = 0; ii < thisChunkSize; ++ii) {
                     if (matches.get(ii)) {
-                        indexBuilder.appendKey(selectionRowKeyChunk.get(ii));
-                    }
-                }
-            }
-        }
-
-
-        return indexBuilder.build();
-    }
-
-    private WritableRowSet filterLinearTuple(RowSet selection, TupleSource<?> tupleSource) {
-        final RowSetBuilderSequential indexBuilder = RowSetFactory.builderSequential();
-
-        final int maxChunkSize = (int) Math.min(CHUNK_SIZE, selection.size());
-        // @formatter:off
-        try (final ColumnSource.GetContext keyGetContext = tupleSource.makeGetContext(maxChunkSize);
-             final RowSequence.Iterator selectionIterator = selection.getRowSequenceIterator();
-             final WritableLongChunk<OrderedRowKeys> selectionRowKeyChunk =
-                     WritableLongChunk.makeWritableChunk(maxChunkSize)) {
-            // @formatter:on
-
-            while (selectionIterator.hasMore()) {
-                final RowSequence selectionChunk = selectionIterator.getNextRowSequenceWithLength(maxChunkSize);
-
-                final ObjectChunk<?, ?> keyChunk = tupleSource.getChunk(keyGetContext, selectionChunk).asObjectChunk();
-                final int thisChunkSize = keyChunk.size();
-
-                selectionRowKeyChunk.setSize(thisChunkSize);
-                selectionChunk.fillRowKeyChunk(selectionRowKeyChunk);
-
-                for (int ii = 0; ii < thisChunkSize; ++ii) {
-                    if (liveValues.contains(keyChunk.get(ii)) == inclusion) {
                         indexBuilder.appendKey(selectionRowKeyChunk.get(ii));
                     }
                 }
