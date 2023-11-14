@@ -222,10 +222,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
         runtimeMemory.read(startMemorySample);
 
-        startClockEpochNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis());
-        onBaseEntryStart();
-
-        state = QueryState.RUNNING;
+        state = QueryState.NOT_STARTED;
         shouldLogThisAndStackParents = false;
     }
 
@@ -258,6 +255,24 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         }
 
         startClockEpochNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis());
+    }
+
+    @Override
+    public synchronized void onBaseEntryStart() {
+        super.onBaseEntryStart();
+        if (state == QueryState.RUNNING) {
+            throw new IllegalStateException("Nugget was already started");
+        }
+        state = QueryState.RUNNING;
+    }
+
+    @Override
+    public synchronized void onBaseEntryEnd() {
+        if (state != QueryState.RUNNING) {
+            throw new IllegalStateException("Nugget isn't running");
+        }
+        state = QueryState.SUSPENDED;
+        super.onBaseEntryEnd();
     }
 
     /**

@@ -159,6 +159,8 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
 
     private void startCatchAll() {
         catchAllNugget = nuggetFactory.createForCatchAll(queryNugget, operationNuggets.size(), this::releaseNugget);
+        catchAllNugget.markStartTime();
+        catchAllNugget.onBaseEntryStart();
     }
 
     private void stopCatchAll(final boolean abort) {
@@ -200,6 +202,8 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
 
         final QueryPerformanceNugget nugget = nuggetFactory.createForOperation(
                 parent, operationNuggets.size(), name, inputSize, this::releaseNugget);
+        nugget.markStartTime();
+        nugget.onBaseEntryStart();
         operationNuggets.add(nugget);
         userNuggetStack.addLast(nugget);
         return nugget;

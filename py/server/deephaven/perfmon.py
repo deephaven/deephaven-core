@@ -11,7 +11,7 @@ import jpy
 
 from deephaven import DHError
 from deephaven.jcompat import j_map_to_dict
-from deephaven.table import Table
+from deephaven.table import Table, TreeTable
 
 _JPerformanceQueries = jpy.get_type("io.deephaven.engine.table.impl.util.PerformanceQueries")
 _JMetricsManager = jpy.get_type("io.deephaven.util.metrics.MetricsManager")
