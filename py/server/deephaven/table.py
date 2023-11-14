@@ -1782,7 +1782,10 @@ class Table(JObjectWrapper):
             raise DHError(e, "table avg_by operation failed.") from e
 
     def std_by(self, by: Union[str, Sequence[str]] = None) -> Table:
-        """The std_by method creates a new table containing the standard deviation for each group.
+        """The std_by method creates a new table containing the sample standard deviation for each group.
+
+        Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+        which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
             by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
@@ -1803,7 +1806,10 @@ class Table(JObjectWrapper):
             raise DHError(e, "table std_by operation failed.") from e
 
     def var_by(self, by: Union[str, Sequence[str]] = None) -> Table:
-        """The var_by method creates a new table containing the variance for each group.
+        """The var_by method creates a new table containing the sample variance for each group.
+
+        Sample variance is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+        which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
             by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
