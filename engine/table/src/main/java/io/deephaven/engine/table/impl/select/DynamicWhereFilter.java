@@ -71,9 +71,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         if (setRefreshing) {
             this.setTable = setTable;
             setTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
-            try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
-                    setTupleSource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
-                initialKeysIterator.forEachRemaining(this::addKey);
+            if (setTable.getRowSet().isNonempty()) {
+                try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
+                        setTupleSource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
+                    initialKeysIterator.forEachRemaining(this::addKey);
+                }
             }
 
             final String[] setColumnNames =
@@ -168,10 +170,12 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         } else {
             this.setTable = null;
             setTupleSource = null;
-            final TupleSource<?> temporaryTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
-            try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
-                    temporaryTupleSource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
-                initialKeysIterator.forEachRemaining(this::addKeyUnchecked);
+            if (setTable.getRowSet().isNonempty()) {
+                final TupleSource<?> temporaryTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
+                try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
+                        temporaryTupleSource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
+                    initialKeysIterator.forEachRemaining(this::addKeyUnchecked);
+                }
             }
             kernelValid = liveValuesArrayValid = false;
             setInclusionKernel = null;
