@@ -10,7 +10,7 @@ package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.time.DateTimeUtils;
+import io.deephaven.parquet.table.util.TransferUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.LongBuffer;
@@ -38,7 +38,7 @@ final class LocalDateTimeArrayTransfer
     @Override
     void copyToBuffer(@NotNull final EncodedData<LocalDateTime[]> data) {
         for (final LocalDateTime t : data.encodedValues) {
-            buffer.put(DateTimeUtils.epochNanosUTC(t));
+            buffer.put(TransferUtils.epochNanosUTC(t));
         }
     }
 }
