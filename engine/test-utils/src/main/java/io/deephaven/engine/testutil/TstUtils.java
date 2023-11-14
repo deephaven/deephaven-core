@@ -176,8 +176,8 @@ public class TstUtils {
         }
 
         NoSuchColumnException.throwIf(
-                table.getDefinition().getColumnNameSet(),
                 usedNames,
+                table.getDefinition().getColumnNameSet(),
                 "Not all columns were populated, missing [%s], available [%s]",
                 Type.MISSING,
                 Type.AVAILABLE);
