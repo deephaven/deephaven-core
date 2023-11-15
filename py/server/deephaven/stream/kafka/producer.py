@@ -54,7 +54,7 @@ def produce(
         kafka_config (Dict): configuration for the associated kafka producer.
             This is used to call the constructor of org.apache.kafka.clients.producer.KafkaProducer;
             pass any KafkaProducer specific desired configuration here
-        topic (Optional[str]): the default topic name
+        topic (Optional[str]): the default topic name. When None, topic_column must be set. See topic_column for behavior.
         key_spec (KeyValueSpec): specifies how to map table column(s) to the Key field in produced Kafka messages.
             This should be the result of calling one of the functions simple_spec(), avro_spec() or json_spec() in this
             module, or the constant KeyValueSpec.IGNORE
@@ -66,13 +66,22 @@ def produce(
             aggregation on table grouped by the input columns of key_spec and publish to Kafka from the result.
         publish_initial (bool): whether the initial data in table should be published. When False, table.is_refreshing
             must be True. By default, is True.
-        partition (Optional[int]): the default partition, None by default.
+        partition (Optional[int]): the default partition, None by default. See partition_column for partition behavior.
         topic_column (Optional[str]): the topic column, None by default. When set, uses the the given string column from
-            table as the first source for setting the kafka record topic.
+            table as the first source for setting the kafka record topic. When None, or the column value is null, topic
+            will be used.
         partition_column (Optional[str]): the partition column, None by default. When set, uses the the given int column
-            from table as the first source for setting the kafka record partition.
+            from table as the first source for setting the kafka record partition. When None, or the column value is null,
+            partition will be used if present. If a valid partition number is specified that partition will be used when
+            sending the record. If no partition is specified but a key is present a partition will be chosen using a hash
+            of the key. If neither key nor partition is present a partition will be assigned in a round-robin fashion.
         timestamp_column (Optional[str]): the timestamp column, None by default. When set, uses the the given timestamp
-            column from table as the first source for setting the kafka record timestamp.
+            column from table as the first source for setting the kafka record timestamp. When None, or the column value
+            is null, the producer will stamp the record with its current time. The timestamp eventually used by Kafka
+            depends on the timestamp type configured for the topic. If the topic is configured to use CreateTime, the
+            timestamp in the producer record will be used by the broker. If the topic is configured to use LogAppendTime,
+            the timestamp in the producer record will be overwritten by the broker with the broker local time when it
+            appends the message to its log.
 
     Returns:
         a callback that, when invoked, stops publishing and cleans up subscriptions and resources.

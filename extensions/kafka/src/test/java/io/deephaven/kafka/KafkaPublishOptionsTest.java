@@ -35,6 +35,18 @@ public class KafkaPublishOptionsTest {
     }
 
     @Test
+    public void okPartition() {
+        KafkaPublishOptions.builder()
+                .table(TableTools.newTable(TD))
+                .topic("HotTopic")
+                .partition(123)
+                .config(new Properties())
+                .valueSpec(Produce.simpleSpec("MyValue"))
+                .build();
+    }
+
+
+    @Test
     public void checkNotBothIgnore() {
         try {
             KafkaPublishOptions.builder()
