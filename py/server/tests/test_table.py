@@ -1063,6 +1063,19 @@ class TableTestCase(BaseTestCase):
             t.agg_by(aggs=[partition(["A"])], by=["B"])
         self.assertIn("string value", str(cm.exception))
 
+    def test_agg_formula_scope(self):
+        def run_func_work():
+            def my_fn(vals):
+                import deephaven.dtypes as dht
+                return dht.array(dht.double, [i + 2 for i in vals])
+
+            t = empty_table(1000).update_view(["A=i%2", "B=A+3"])
+            t = t.agg_by([formula("(double[])my_fn(each)", formula_param='each', cols=['C=B'])], by='A') # This
+            return t
+
+        t = run_func_work()
+        self.assertIsNotNone(t)
+
 
 if __name__ == "__main__":
     unittest.main()
