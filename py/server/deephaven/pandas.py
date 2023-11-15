@@ -130,7 +130,7 @@ def to_pandas(table: Table, cols: List[str] = None,
             dtypes. Both "numpy_nullable" and "pyarrow" automatically convert Deephaven nulls to Pandas NA and enable
             Pandas extension types.  Extension types are needed to support types beyond NumPy's type system.  Extension
             types support operations such as properly mapping Java Strings to Python strings. default is "numpy_nullable".
-        conv_null (bool): when dtype_backend is not set, whether to check for Deephaven nulls in the data and
+        conv_null (bool): when dtype_backend is set to None, whether to check for Deephaven nulls in the data and
             automatically replace them with pd.NA. default is True.
 
     Returns:

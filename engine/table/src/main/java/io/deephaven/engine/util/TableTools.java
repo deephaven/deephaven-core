@@ -1151,7 +1151,7 @@ public class TableTools {
 
         final DataOutputStream osw = new DataOutputStream(new DigestOutputStream(new NullOutputStream(), md));
 
-        for (final ColumnSource<?> col : source.getColumnSourceMap().values()) {
+        for (final ColumnSource<?> col : source.getColumnSources()) {
             processColumnForFingerprint(source.getRowSet(), col, osw);
         }
 
