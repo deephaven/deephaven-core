@@ -72,9 +72,9 @@ def produce(
             will be used.
         partition_column (Optional[str]): the partition column, None by default. When set, uses the the given int column
             from table as the first source for setting the kafka record partition. When None, or the column value is null,
-            partition will be used if present. If a valid partition number is specified that partition will be used when
-            sending the record. If no partition is specified but a key is present a partition will be chosen using a hash
-            of the key. If neither key nor partition is present a partition will be assigned in a round-robin fashion.
+            partition will be used if present. If a valid partition number is specified, that partition will be used when
+            sending the record. If no partition is specified but a key is present, a partition will be chosen using a hash
+            of the key. If neither key nor partition is present, a partition will be assigned in a round-robin fashion.
         timestamp_column (Optional[str]): the timestamp column, None by default. When set, uses the the given timestamp
             column from table as the first source for setting the kafka record timestamp. When None, or the column value
             is null, the producer will stamp the record with its current time. The timestamp eventually used by Kafka
