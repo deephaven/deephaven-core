@@ -46,7 +46,13 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final PageMaterializer.Factory nullMaterializerFactory;
 
     private Path filePath;
+    /**
+     * Number of rows in the row group of this column chunk.
+     */
     private final long numRows;
+    /**
+     * Version string from deephaven specific parquet metadata, or null if it's not present.
+     */
     private final String version;
 
     ColumnChunkReaderImpl(ColumnChunk columnChunk, SeekableChannelsProvider channelsProvider, Path rootPath,

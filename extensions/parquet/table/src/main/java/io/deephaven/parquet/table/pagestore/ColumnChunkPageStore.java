@@ -19,7 +19,6 @@ import io.deephaven.parquet.base.ColumnPageReader;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
@@ -61,10 +60,11 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         }
         final String version = columnChunkReader.getVersion();
         if (version == null) {
-            // Parquet file not written by deephaven
+            // Parquet file not written by deephaven, can use offset index
             return true;
         }
-        // For vector and array column types, versions before 0.31.0 had a bug in offset index calculation
+        // For vector and array column types, versions before 0.31.0 had a bug in offset index calculation, fixed as
+        // part of deephaven-core#4844
         final Class<?> columnType = columnDefinition.getDataType();
         if (columnType.isArray() || Vector.class.isAssignableFrom(columnType)) {
             return satisfiesMinimumVersionRequirements(version);
@@ -78,10 +78,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
      * Check if the version is greater than 0.31.0
      */
     @VisibleForTesting
-    public static boolean satisfiesMinimumVersionRequirements(@Nullable final String version) {
-        if (version == null) {
-            return false;
-        }
+    public static boolean satisfiesMinimumVersionRequirements(@NotNull final String version) {
         final Matcher matcher = VERSION_PATTERN.matcher(version);
         if (!matcher.matches()) {
             throw new IllegalArgumentException("Malformed version:" + version);
@@ -144,6 +141,9 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         return 0;
     }
 
+    /**
+     * @return The number of rows in this ColumnChunk
+     */
     public long numRows() {
         return numRows;
     }

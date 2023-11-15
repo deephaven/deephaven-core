@@ -136,7 +136,7 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         if (isPageSizeFixed) {
             pageNum = (int) (row / fixedPageSize);
             if (pageNum >= numPages) {
-                // This can happen if the last page is of different size from rest of the pages, assert this condition.
+                // This can happen if the last page is of different size from rest of the pages.
                 // We have already checked that row is less than numRows.
                 Assert.assertion(row >= offsetIndex.getFirstRowIndex(numPages - 1),
                         "row >= offsetIndex.getFirstRowIndex(numPages - 1)");

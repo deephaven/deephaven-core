@@ -173,11 +173,12 @@ public class ParquetFileReader {
         return tempBuf.getInt();
     }
 
-    public RowGroupReader getRowGroup(int groupNumber) {
-        return getRowGroup(groupNumber, null);
-    }
-
-    public RowGroupReader getRowGroup(int groupNumber, final String version) {
+    /**
+     * Create a {@link RowGroupReader} object for provided row group number
+     * 
+     * @param version The "version" string from deephaven specific parquet metadata, or null if it's not present.
+     */
+    public RowGroupReader getRowGroup(final int groupNumber, final String version) {
         return new RowGroupReaderImpl(
                 fileMetaData.getRow_groups().get(groupNumber),
                 channelsProvider,

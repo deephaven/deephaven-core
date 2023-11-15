@@ -664,7 +664,6 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void testVersionChecks() {
-        assertFalse(ColumnChunkPageStore.satisfiesMinimumVersionRequirements(null));
         assertFalse(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.0.0"));
         assertFalse(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.4.0"));
         try {

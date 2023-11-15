@@ -197,12 +197,14 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                     }
                 }
             }
-            final Map<String, ColumnTypeInfo> columnTypes = ParquetSchemaReader.parseMetadata(
+            final Optional<TableInfo> tableInfo = ParquetSchemaReader.parseMetadata(
                     new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData)
-                            .getFileMetaData().getKeyValueMetaData())
-                    .map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
+                            .getFileMetaData().getKeyValueMetaData());
+            final Map<String, ColumnTypeInfo> columnTypes =
+                    tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
+            final String version = tableInfo.map(TableInfo::version).orElse(null);
 
-            final RowGroupReader rowGroupReader = parquetFileReader.getRowGroup(0);
+            final RowGroupReader rowGroupReader = parquetFileReader.getRowGroup(0, version);
             final ColumnChunkReader groupingKeyReader =
                     rowGroupReader.getColumnChunk(Collections.singletonList(GROUPING_KEY));
             final ColumnChunkReader beginPosReader =

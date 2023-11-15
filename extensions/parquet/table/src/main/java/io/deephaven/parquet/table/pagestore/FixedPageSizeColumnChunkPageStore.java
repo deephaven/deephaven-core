@@ -18,9 +18,8 @@ import java.lang.ref.WeakReference;
 import java.util.Arrays;
 
 /**
- * Unused class, use {@link OffsetIndexBasedColumnChunkPageStore} instead because the only way we could find to check if
- * the page sizes are fixed without actually reading the page headers was through offset index. Also, test this class
- * before using it since it might not work as-is.
+ * Unused class, use {@link OffsetIndexBasedColumnChunkPageStore} instead because to check if the page sizes are fixed
+ * without actually reading the page headers, we need offset index.
  */
 class FixedPageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
 

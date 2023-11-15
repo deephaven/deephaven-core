@@ -314,8 +314,7 @@ public final class ColumnWriterImpl implements ColumnWriter {
     }
 
     private void writePage(final BytesInput bytes, final int valueCount, final long rowCount,
-            final Encoding valuesEncoding)
-            throws IOException {
+            final Encoding valuesEncoding) throws IOException {
         final long initialOffset = bufferedOutput.position();
         if (firstDataPageOffset == -1) {
             firstDataPageOffset = initialOffset;
@@ -390,7 +389,8 @@ public final class ColumnWriterImpl implements ColumnWriter {
     /**
      * writes the current data to a new page in the page store
      *
-     * @param valueCount how many rows have been written so far
+     * @param valueCount how many values have been written so far
+     * @param rowCount how many rows have been written so far, can be different from valueCount for vector/arrays
      */
     private void writePage(final ByteBuffer encodedData, final long valueCount, final long rowCount) {
         try {

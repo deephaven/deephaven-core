@@ -34,15 +34,22 @@ public interface ColumnChunkReader {
      */
     int getMaxRl();
 
-    default @Nullable OffsetIndex getOffsetIndex() {
-        return null;
-    }
+    /**
+     * @return The offset index for this column chunk, or null if it not found in the metadata.
+     */
+    @Nullable
+    OffsetIndex getOffsetIndex();
 
     interface ColumnPageReaderIterator extends Iterator<ColumnPageReader>, AutoCloseable {
         @Override
         void close() throws IOException;
 
-        default ColumnPageReader getPageReader(int pageNum) {
+        /**
+         * Directly access a page reader for a given page number. This is an optional method that may not be
+         * implemented. Note that the user should either use {@link Iterator} methods or this method, but not both.
+         */
+        @Nullable
+        default ColumnPageReader getPageReader(final int pageNum) {
             return null;
         };
     }
@@ -80,6 +87,9 @@ public interface ColumnChunkReader {
 
     PrimitiveType getType();
 
+    /**
+     * @return The "version" string from deephaven specific parquet metadata, or null if it's not present.
+     */
     @Nullable
     String getVersion();
 }
