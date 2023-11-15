@@ -138,7 +138,8 @@ public class SortBenchmark {
         mcsWithSortColumn = inputTable.newModifiedColumnSet(sortCol);
         MutableInt ci = new MutableInt();
         final String[] sortColumns = new String[inputTable.numColumns() - 1];
-        inputTable.getColumnSourceMap().keySet().forEach(columnName -> {
+
+        inputTable.getDefinition().getColumnNameSet().forEach(columnName -> {
             if (!columnName.equals(sortCol)) {
                 sortColumns[ci.intValue()] = columnName;
                 ci.increment();

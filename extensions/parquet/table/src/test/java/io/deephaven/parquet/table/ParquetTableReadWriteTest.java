@@ -460,7 +460,9 @@ public final class ParquetTableReadWriteTest {
         writeReadTableTest(vectorTable, dest);
 
         // Convert the table from vector to array column
-        final Table arrayTable = vectorTable.updateView(vectorTable.getColumnSourceMap().keySet().stream()
+        final Table arrayTable = vectorTable.updateView(vectorTable.getDefinition()
+                .getColumnStream()
+                .map(ColumnDefinition::getName)
                 .map(name -> name + " = " + name + ".toArray()")
                 .toArray(String[]::new));
         writeReadTableTest(arrayTable, dest);
@@ -925,7 +927,7 @@ public final class ParquetTableReadWriteTest {
         ParquetTools.writeTable(someTable, secondDataFile);
 
         Table partitionedTable = ParquetTools.readTable(parentDir).select();
-        final Set<?> columnsSet = partitionedTable.getColumnSourceMap().keySet();
+        final Set<String> columnsSet = partitionedTable.getDefinition().getColumnNameSet();
         assertTrue(columnsSet.size() == 2 && columnsSet.contains("A") && columnsSet.contains("X"));
 
         // Add an empty dot file and dot directory (with valid parquet files) in one of the partitions
@@ -1393,8 +1395,7 @@ public final class ParquetTableReadWriteTest {
         // Verify that the columns have the correct statistics.
         final ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
 
-        final String[] colNames =
-                inputTable.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] colNames = inputTable.getDefinition().getColumnNamesArray();
         for (int colIdx = 0; colIdx < inputTable.numColumns(); ++colIdx) {
             final String colName = colNames[colIdx];
 

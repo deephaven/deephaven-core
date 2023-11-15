@@ -131,7 +131,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     }
 
     private void startTrackingPrev() {
-        getColumnSourceMap().values().forEach(ColumnSource::startTrackingPrevValues);
+        getColumnSources().forEach(ColumnSource::startTrackingPrevValues);
     }
 
     @Override

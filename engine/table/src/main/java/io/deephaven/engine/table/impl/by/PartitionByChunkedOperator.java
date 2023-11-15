@@ -41,6 +41,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -167,11 +168,10 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             shiftDataBuilders = new ObjectArraySource<>(RowSetShiftData.SmartCoalescingBuilder.class);
 
             final Set<String> keyColumnNameSet = Arrays.stream(keyColumnNames).collect(Collectors.toSet());
-            final Set<String> unadjustedParentColumnNameSet =
-                    new LinkedHashSet<>(unadjustedParentTable.getDefinition().getColumnNames());
+            final Set<String> unadjustedParentColumnNameSet = unadjustedParentTable.getDefinition().getColumnNameSet();
             final String[] retainedResultColumnNames = parentTable.getDefinition().getColumnStream()
                     .map(ColumnDefinition::getName)
-                    .filter(cn -> !keyColumnNameSet.contains(cn))
+                    .filter(Predicate.not(keyColumnNameSet::contains))
                     .filter(unadjustedParentColumnNameSet::contains)
                     .toArray(String[]::new);
             final ModifiedColumnSet[] retainedResultModifiedColumnSets = Arrays.stream(retainedResultColumnNames)
