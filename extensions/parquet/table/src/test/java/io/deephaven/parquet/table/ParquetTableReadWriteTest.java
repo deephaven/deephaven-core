@@ -6,7 +6,6 @@ package io.deephaven.parquet.table;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.function.ByteConsumer;
 import io.deephaven.engine.primitive.function.CharConsumer;
@@ -97,7 +96,7 @@ import static io.deephaven.engine.util.TableTools.shortCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.parquet.table.ParquetTools.readFlatPartitionedTable;
 import static io.deephaven.parquet.table.ParquetTools.readKeyValuePartitionedTable;
-import static io.deephaven.parquet.table.ParquetTools.readSingleTable;
+import static io.deephaven.parquet.table.ParquetTools.readSingleFileTable;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.util.QueryConstants.*;
@@ -390,7 +389,7 @@ public final class ParquetTableReadWriteTest {
             // The following file is tagged as LZ4 compressed based on its metadata, but is actually compressed with
             // LZ4_RAW. We should be able to read it anyway with no exceptions.
             String path = TestParquetTools.class.getResource("/sample_lz4_compressed.parquet").getFile();
-            readSingleTable(new File(path), EMPTY).select();
+            readSingleFileTable(new File(path), EMPTY).select();
         } catch (RuntimeException e) {
             TestCase.fail("Failed to read parquet file sample_lz4_compressed.parquet");
         }
@@ -438,7 +437,7 @@ public final class ParquetTableReadWriteTest {
         final Table table = newTable(new ColumnHolder<>("MyBigDecimal", BigDecimal.class, null, false, myBigDecimal));
         final File dest = new File(rootFile, "ParquetTest_testBigDecimalPrecisionScale.parquet");
         writeTable(table, dest);
-        final Table fromDisk = readSingleTable(dest, EMPTY);
+        final Table fromDisk = readSingleFileTable(dest, EMPTY);
         try (final CloseableIterator<BigDecimal> it = fromDisk.objectColumnIterator("MyBigDecimal")) {
             assertTrue(it.hasNext());
             final BigDecimal item = it.next();
@@ -845,7 +844,7 @@ public final class ParquetTableReadWriteTest {
         // Read the legacy file and verify that grouping column is read correctly
         final Table fromDisk;
         try {
-            fromDisk = readSingleTable(destFile, EMPTY);
+            fromDisk = readSingleFileTable(destFile, EMPTY);
         } catch (RuntimeException e) {
             if (e.getCause() instanceof InvalidParquetFileException) {
                 final String InvalidParquetFileErrorMsgString = "Invalid parquet file detected, please ensure the " +
@@ -1072,13 +1071,13 @@ public final class ParquetTableReadWriteTest {
         final String filename = "readChangedUnderlyingFileTests.parquet";
         final File destFile = new File(rootFile, filename);
         writer.writeTable(tableToSave, destFile);
-        Table fromDisk = readSingleTable(destFile, EMPTY);
+        Table fromDisk = readSingleFileTable(destFile, EMPTY);
         // At this point, fromDisk is not fully materialized in the memory and would be read from the file on demand
 
         // Change the underlying file
         final Table stringTable = TableTools.emptyTable(5).update("InputString = Long.toString(ii)");
         writer.writeTable(stringTable, destFile);
-        Table stringFromDisk = readSingleTable(destFile, EMPTY).select();
+        Table stringFromDisk = readSingleFileTable(destFile, EMPTY).select();
         assertTableEquals(stringTable, stringFromDisk);
 
         // Close all the file handles so that next time when fromDisk is accessed, we need to reopen the file handle
@@ -1105,7 +1104,7 @@ public final class ParquetTableReadWriteTest {
         final String filename = "readModifyWriteTests.parquet";
         final File destFile = new File(rootFile, filename);
         writer.writeTable(tableToSave, destFile);
-        Table fromDisk = readSingleTable(destFile, EMPTY);
+        Table fromDisk = readSingleFileTable(destFile, EMPTY);
         // At this point, fromDisk is not fully materialized in the memory and would be read from the file on demand
 
         // Create a view table on fromDisk which should fail on writing, and try to write at the same location
@@ -1349,7 +1348,7 @@ public final class ParquetTableReadWriteTest {
         final File pyarrowDest = new File(path);
         final Table pyarrowFromDisk;
         try {
-            pyarrowFromDisk = readSingleTable(pyarrowDest, EMPTY);
+            pyarrowFromDisk = readSingleFileTable(pyarrowDest, EMPTY);
         } catch (RuntimeException e) {
             if (e.getCause() instanceof InvalidParquetFileException) {
                 final String InvalidParquetFileErrorMsgString = "Invalid parquet file detected, please ensure the " +
@@ -1435,38 +1434,38 @@ public final class ParquetTableReadWriteTest {
 
         // Explicit
         {
-            assertTableEquals(foo, readSingleTable(fooSource, EMPTY, fooDefinition));
-            assertTableEquals(fooBar, readSingleTable(fooBarSource, EMPTY, fooBarDefinition));
-            assertTableEquals(bar, readSingleTable(barSource, EMPTY, barDefinition));
+            assertTableEquals(foo, readSingleFileTable(fooSource, EMPTY, fooDefinition));
+            assertTableEquals(fooBar, readSingleFileTable(fooBarSource, EMPTY, fooBarDefinition));
+            assertTableEquals(bar, readSingleFileTable(barSource, EMPTY, barDefinition));
         }
 
         // Explicit subset
         {
             // fooBar as foo
-            assertTableEquals(foo, readSingleTable(fooBarSource, EMPTY, fooDefinition));
+            assertTableEquals(foo, readSingleFileTable(fooBarSource, EMPTY, fooDefinition));
             // fooBar as bar
-            assertTableEquals(bar, readSingleTable(fooBarSource, EMPTY, barDefinition));
+            assertTableEquals(bar, readSingleFileTable(fooBarSource, EMPTY, barDefinition));
         }
 
         // Explicit superset
         {
             // foo as fooBar
-            assertTableEquals(fooBarNullBar, readSingleTable(fooSource, EMPTY, fooBarDefinition));
+            assertTableEquals(fooBarNullBar, readSingleFileTable(fooSource, EMPTY, fooBarDefinition));
             // bar as fooBar
-            assertTableEquals(fooBarNullFoo, readSingleTable(barSource, EMPTY, fooBarDefinition));
+            assertTableEquals(fooBarNullFoo, readSingleFileTable(barSource, EMPTY, fooBarDefinition));
         }
 
         // No refreshing single table support
         {
             try {
-                readSingleTable(fooSource, REFRESHING);
+                readSingleFileTable(fooSource, REFRESHING);
                 fail("Expected IllegalArgumentException");
             } catch (IllegalArgumentException e) {
                 assertEquals("Unable to have a refreshing single parquet file", e.getMessage());
             }
 
             try {
-                readSingleTable(fooSource, REFRESHING, fooDefinition);
+                readSingleFileTable(fooSource, REFRESHING, fooDefinition);
                 fail("Expected IllegalArgumentException");
             } catch (IllegalArgumentException e) {
                 assertEquals("Unable to have a refreshing single parquet file", e.getMessage());
@@ -1720,34 +1719,34 @@ public final class ParquetTableReadWriteTest {
         }
         assertTableEquals(
                 primitives.view("Bool"),
-                readSingleTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofBoolean("Bool"))));
+                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofBoolean("Bool"))));
         assertTableEquals(
                 primitives.view("Char"),
-                readSingleTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofChar("Char"))));
+                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofChar("Char"))));
         assertTableEquals(
                 primitives.view("Byte"),
-                readSingleTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofByte("Byte"))));
+                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofByte("Byte"))));
         assertTableEquals(
                 primitives.view("Short"),
-                readSingleTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofShort("Short"))));
+                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofShort("Short"))));
         assertTableEquals(
                 primitives.view("Int"),
-                readSingleTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofInt("Int"))));
+                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofInt("Int"))));
         assertTableEquals(
                 primitives.view("Long"),
-                readSingleTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofLong("Long"))));
+                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofLong("Long"))));
         assertTableEquals(
                 primitives.view("Float"),
-                readSingleTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofFloat("Float"))));
+                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofFloat("Float"))));
         assertTableEquals(
                 primitives.view("Double"),
-                readSingleTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofDouble("Double"))));
+                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofDouble("Double"))));
         assertTableEquals(
                 primitives.view("String"),
-                readSingleTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofString("String"))));
+                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofString("String"))));
         assertTableEquals(
                 primitives.view("Instant"),
-                readSingleTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofTime("Instant"))));
+                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofTime("Instant"))));
     }
 
     private void assertTableStatistics(Table inputTable, File dest) {
@@ -3082,7 +3081,7 @@ public final class ParquetTableReadWriteTest {
     }
 
     private static Table checkSingleTable(Table expected, File source, ParquetInstructions instructions) {
-        final Table singleTable = readSingleTable(source, instructions);
+        final Table singleTable = readSingleFileTable(source, instructions);
         assertTableEquals(expected, singleTable);
         // Note: we can uncomment out the below lines for extra testing of readTable inference and readSingleTable via
         // definition, but it's ultimately extra work that we've already explicitly tested.

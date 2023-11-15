@@ -14,7 +14,7 @@ from deephaven import DHError, empty_table, dtypes, new_table
 from deephaven import arrow as dharrow
 from deephaven.column import InputColumn, Column, ColumnType
 from deephaven.pandas import to_pandas, to_table
-from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction, ParquetType
+from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout
 from tests.testbase import BaseTestCase
 
 
@@ -49,7 +49,7 @@ class ParquetTestCase(BaseTestCase):
         with self.subTest(msg="write_table(Table, str)"):
             write(table, file_location)
             self.assertTrue(os.path.exists(file_location))
-            table2 = read(file_location, type=ParquetType.SINGLE)
+            table2 = read(file_location, file_layout=ParquetFileLayout.SINGLE_FILE)
             self.assert_table_equals(table, table2)
             shutil.rmtree(base_dir)
 
@@ -57,7 +57,7 @@ class ParquetTestCase(BaseTestCase):
             batch_write([table, table], [file_location, file_location2], definition)
             self.assertTrue(os.path.exists(file_location))
             self.assertTrue(os.path.exists(file_location2))
-            table2 = read(file_location, type=ParquetType.SINGLE)
+            table2 = read(file_location, file_layout=ParquetFileLayout.SINGLE_FILE)
             self.assert_table_equals(table, table2)
 
         # Delete
@@ -112,7 +112,7 @@ class ParquetTestCase(BaseTestCase):
 
         # Reading
         with self.subTest(msg="read_table(str)"):
-            table2 = read(path=file_location, col_instructions=[col_inst, col_inst1], type=ParquetType.SINGLE)
+            table2 = read(path=file_location, col_instructions=[col_inst, col_inst1], file_layout=ParquetFileLayout.SINGLE_FILE)
             self.assert_table_equals(table, table2)
 
         # Delete
@@ -139,7 +139,7 @@ class ParquetTestCase(BaseTestCase):
             shutil.rmtree(file_location)
 
         write(table, file_location)
-        table2 = read(file_location, type=ParquetType.SINGLE)
+        table2 = read(file_location, file_layout=ParquetFileLayout.SINGLE_FILE)
         self.assertEqual(table.size, table2.size)
         self.assert_table_equals(table, table2)
 
@@ -156,7 +156,7 @@ class ParquetTestCase(BaseTestCase):
         dataframe = to_pandas(dh_table)
         table = pyarrow.Table.from_pandas(dataframe)
         pyarrow.parquet.write_table(table, 'data_from_pa.parquet', use_deprecated_int96_timestamps=True)
-        from_disk_int96 = read('data_from_pa.parquet', type=ParquetType.SINGLE)
+        from_disk_int96 = read('data_from_pa.parquet', file_layout=ParquetFileLayout.SINGLE_FILE)
         self.assert_table_equals(dh_table, from_disk_int96)
 
         # Read the parquet file as a pandas dataframe, and ensure all values are written as null
@@ -166,7 +166,7 @@ class ParquetTestCase(BaseTestCase):
 
         # Write the timestamps as int64 using deephaven writing code and compare with int96 table
         write(dh_table, "data_from_dh.parquet")
-        from_disk_int64 = read('data_from_dh.parquet', type=ParquetType.SINGLE)
+        from_disk_int64 = read('data_from_dh.parquet', file_layout=ParquetFileLayout.SINGLE_FILE)
         self.assert_table_equals(from_disk_int64, from_disk_int96)
 
     def get_table_data(self):
@@ -259,7 +259,7 @@ class ParquetTestCase(BaseTestCase):
         write(dh_table, "data_from_dh.parquet", compression_codec_name=compression_codec_name)
 
         # Read the parquet file using deephaven.parquet and compare
-        result_table = read('data_from_dh.parquet', type=ParquetType.SINGLE)
+        result_table = read('data_from_dh.parquet', file_layout=ParquetFileLayout.SINGLE_FILE)
         self.assert_table_equals(dh_table, result_table)
 
         # LZO is not fully supported in pyarrow, so we can't do the rest of the tests
@@ -294,14 +294,14 @@ class ParquetTestCase(BaseTestCase):
                              compression=None if compression_codec_name == 'UNCOMPRESSED' else
                              "LZ4" if compression_codec_name == 'LZ4_RAW' or compression_codec_name == 'LZ4RAW'
                              else compression_codec_name)
-        result_table = read('data_from_pandas.parquet', type=ParquetType.SINGLE)
+        result_table = read('data_from_pandas.parquet', file_layout=ParquetFileLayout.SINGLE_FILE)
         self.assert_table_equals(dh_table, result_table)
 
         # dh->dataframe (via pyarrow)->parquet->dh
         # TODO(deephaven-core#3149) disable for now, since to_pandas results in "None" strings instead of None values
         # dataframe = to_pandas(dh_table)
         # dataframe.to_parquet('data_from_pandas.parquet', compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
-        # result_table = read('data_from_pandas.parquet', type=ParquetType.SINGLE)
+        # result_table = read('data_from_pandas.parquet', file_layout=ParquetFileLayout.SINGLE_FILE)
         # self.assert_table_equals(dh_table, result_table)
 
     def test_writing_lists_via_pyarrow(self):
@@ -310,7 +310,7 @@ class ParquetTestCase(BaseTestCase):
         pa_table = pyarrow.table({'numList': [[2, 2, 4]],
                                   'stringList': [["Flamingo", "Parrot", "Dog"]]})
         pyarrow.parquet.write_table(pa_table, 'data_from_pa.parquet')
-        from_disk = read('data_from_pa.parquet', type=ParquetType.SINGLE).select()
+        from_disk = read('data_from_pa.parquet', file_layout=ParquetFileLayout.SINGLE_FILE).select()
         pa_table_from_disk = dharrow.to_arrow(from_disk)
         self.assertTrue(pa_table.equals(pa_table_from_disk))
 
@@ -322,7 +322,7 @@ class ParquetTestCase(BaseTestCase):
         ])
         # Force "longStringColumn" to use non-dictionary encoding
         write(dh_table, "data_from_dh.parquet", max_dictionary_size=100)
-        from_disk = read('data_from_dh.parquet', type=ParquetType.SINGLE)
+        from_disk = read('data_from_dh.parquet', file_layout=ParquetFileLayout.SINGLE_FILE)
         self.assert_table_equals(dh_table, from_disk)
 
         metadata = pyarrow.parquet.read_metadata("data_from_dh.parquet")
@@ -342,7 +342,7 @@ class ParquetTestCase(BaseTestCase):
         ])
 
         write(dh_table, "data_from_dh.parquet", compression_codec_name="SNAPPY")
-        from_disk = read('data_from_dh.parquet', type=ParquetType.SINGLE)
+        from_disk = read('data_from_dh.parquet', file_layout=ParquetFileLayout.SINGLE_FILE)
         self.assert_table_equals(dh_table, from_disk)
 
         # TODO dtype_backend=None is a workaround until https://github.com/deephaven/deephaven-core/issues/4823 is fixed
@@ -364,7 +364,7 @@ class ParquetTestCase(BaseTestCase):
 
         # Rewrite the dataframe back to parquet using pyarrow and read it back using deephaven.parquet to compare
         df_from_pandas.to_parquet('data_from_pandas.parquet', compression='SNAPPY')
-        from_disk_pandas = read('data_from_pandas.parquet', type=ParquetType.SINGLE)
+        from_disk_pandas = read('data_from_pandas.parquet', file_layout=ParquetFileLayout.SINGLE_FILE)
 
         # Compare only the non-null columns because null columns are written as different logical types by pandas and
         # deephaven
@@ -382,7 +382,7 @@ class ParquetTestCase(BaseTestCase):
         def time_test_helper(pa_table, new_schema, dest):
             # Write the provided pyarrow table type-casted to the new schema
             pyarrow.parquet.write_table(pa_table.cast(new_schema), dest)
-            from_disk = read(dest, type=ParquetType.SINGLE)
+            from_disk = read(dest, file_layout=ParquetFileLayout.SINGLE_FILE)
 
             # TODO dtype_backend=None is a workaround until https://github.com/deephaven/deephaven-core/issues/4823 is fixed
             df_from_disk = to_pandas(from_disk, dtype_backend=None)
@@ -418,7 +418,7 @@ class ParquetTestCase(BaseTestCase):
             if "isAdjustedToUTC=false" not in str(metadata.row_group(0).column(0)):
                 self.fail("isAdjustedToUTC is not set to false")
             # Read the parquet file back using deephaven and write it back
-            dh_table_from_disk = read(dest, type=ParquetType.SINGLE)
+            dh_table_from_disk = read(dest, file_layout=ParquetFileLayout.SINGLE_FILE)
             dh_dest = "dh_" + dest
             write(dh_table_from_disk, dh_dest)
             # Read the new parquet file using pyarrow and compare against original table
@@ -434,22 +434,22 @@ class ParquetTestCase(BaseTestCase):
         schema_msec = table.schema.set(0, pyarrow.field('f', pyarrow.timestamp('ms')))
         timestamp_test_helper(table, schema_msec, 'timestamp_test_msec.parquet')
 
-    def test_read_single(self):
+    def test_read_single_file(self):
         table = empty_table(3).update(
             formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"]
         )
         single_parquet = os.path.join(self.temp_dir.name, "single.parquet")
         write(table, single_parquet)
 
-        with self.subTest(msg="read infer single infer definition"):
+        with self.subTest(msg="read infer single file infer definition"):
             actual = read(single_parquet)
             self.assert_table_equals(actual, table)
 
-        with self.subTest(msg="read single infer definition"):
-            actual = read(single_parquet, type=ParquetType.SINGLE)
+        with self.subTest(msg="read single file infer definition"):
+            actual = read(single_parquet, file_layout=ParquetFileLayout.SINGLE_FILE)
             self.assert_table_equals(actual, table)
 
-        with self.subTest(msg="read single"):
+        with self.subTest(msg="read single file"):
             actual = read(
                 single_parquet,
                 table_definition={
@@ -457,7 +457,7 @@ class ParquetTestCase(BaseTestCase):
                     "y": dtypes.double,
                     "z": dtypes.double,
                 },
-                type=ParquetType.SINGLE,
+                file_layout=ParquetFileLayout.SINGLE_FILE,
             )
             self.assert_table_equals(actual, table)
 
@@ -477,7 +477,7 @@ class ParquetTestCase(BaseTestCase):
             self.assert_table_equals(actual, table)
 
         with self.subTest(msg="read flat infer definition"):
-            actual = read(flat_dir, type=ParquetType.FLAT_PARTITIONED)
+            actual = read(flat_dir, file_layout=ParquetFileLayout.FLAT_PARTITIONED)
             self.assert_table_equals(actual, table)
 
         with self.subTest(msg="read flat"):
@@ -488,7 +488,7 @@ class ParquetTestCase(BaseTestCase):
                     "y": dtypes.double,
                     "z": dtypes.double,
                 },
-                type=ParquetType.FLAT_PARTITIONED,
+                file_layout=ParquetFileLayout.FLAT_PARTITIONED,
             )
             self.assert_table_equals(actual, table)
 
@@ -513,11 +513,11 @@ class ParquetTestCase(BaseTestCase):
         write(table.tail(3).drop_columns(["Partition"]), f2_parquet)
 
         with self.subTest(msg="read infer kv infer definition"):
-            actual = read(kv_dir).select()
+            actual = read(kv_dir)
             self.assert_table_equals(actual, table)
 
         with self.subTest(msg="read kv infer definition"):
-            actual = read(kv_dir, type=ParquetType.KV_PARTITIONED).select()
+            actual = read(kv_dir, file_layout=ParquetFileLayout.KV_PARTITIONED)
             self.assert_table_equals(actual, table)
 
         with self.subTest(msg="read kv"):
@@ -531,8 +531,8 @@ class ParquetTestCase(BaseTestCase):
                     Column("y", dtypes.double),
                     Column("z", dtypes.double),
                 ],
-                type=ParquetType.KV_PARTITIONED,
-            ).select()
+                file_layout=ParquetFileLayout.KV_PARTITIONED,
+            )
             self.assert_table_equals(actual, table)
 
     def test_read_with_table_definition_no_type(self):
@@ -549,7 +549,7 @@ class ParquetTestCase(BaseTestCase):
                     },
                 )
             self.assertIn(
-                "Must provide type when table_definition is set", str(cm.exception)
+                "Must provide file_layout when table_definition is set", str(cm.exception)
             )
 
 

@@ -14,7 +14,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.vector.*;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
@@ -78,7 +77,7 @@ public class ParquetTools {
      * key} order) location found will be used to infer schema.
      *
      * <p>
-     * Delegates to one of {@link #readSingleTable(File, ParquetInstructions)},
+     * Delegates to one of {@link #readSingleFileTable(File, ParquetInstructions)},
      * {@link #readPartitionedTableWithMetadata(File, ParquetInstructions)},
      * {@link #readFlatPartitionedTable(File, ParquetInstructions)}, or
      * {@link #readKeyValuePartitionedTable(File, ParquetInstructions)}.
@@ -104,7 +103,7 @@ public class ParquetTools {
      * key} order) location found will be used to infer schema.
      *
      * <p>
-     * Delegates to one of {@link #readSingleTable(File, ParquetInstructions)},
+     * Delegates to one of {@link #readSingleFileTable(File, ParquetInstructions)},
      * {@link #readPartitionedTableWithMetadata(File, ParquetInstructions)},
      * {@link #readFlatPartitionedTable(File, ParquetInstructions)}, or
      * {@link #readKeyValuePartitionedTable(File, ParquetInstructions)}.
@@ -133,7 +132,7 @@ public class ParquetTools {
      * key} order) location found will be used to infer schema.
      *
      * <p>
-     * Delegates to one of {@link #readSingleTable(File, ParquetInstructions)},
+     * Delegates to one of {@link #readSingleFileTable(File, ParquetInstructions)},
      * {@link #readPartitionedTableWithMetadata(File, ParquetInstructions)},
      * {@link #readFlatPartitionedTable(File, ParquetInstructions)}, or
      * {@link #readKeyValuePartitionedTable(File, ParquetInstructions)}.
@@ -159,7 +158,7 @@ public class ParquetTools {
      * key} order) location found will be used to infer schema.
      *
      * <p>
-     * Delegates to one of {@link #readSingleTable(File, ParquetInstructions)},
+     * Delegates to one of {@link #readSingleFileTable(File, ParquetInstructions)},
      * {@link #readPartitionedTableWithMetadata(File, ParquetInstructions)},
      * {@link #readFlatPartitionedTable(File, ParquetInstructions)}, or
      * {@link #readKeyValuePartitionedTable(File, ParquetInstructions)}.
@@ -603,7 +602,7 @@ public class ParquetTools {
      * key} order) location found will be used to infer schema.
      *
      * <p>
-     * Delegates to one of {@link #readSingleTable(File, ParquetInstructions)},
+     * Delegates to one of {@link #readSingleFileTable(File, ParquetInstructions)},
      * {@link #readPartitionedTableWithMetadata(File, ParquetInstructions)},
      * {@link #readFlatPartitionedTable(File, ParquetInstructions)}, or
      * {@link #readKeyValuePartitionedTable(File, ParquetInstructions)}.
@@ -623,7 +622,7 @@ public class ParquetTools {
         final BasicFileAttributes sourceAttr = readAttributes(sourcePath);
         if (sourceAttr.isRegularFile()) {
             if (sourceFileName.endsWith(PARQUET_FILE_EXTENSION)) {
-                return readSingleTable(source, instructions);
+                return readSingleFileTable(source, instructions);
             }
             if (sourceFileName.equals(ParquetMetadataFileLayout.METADATA_FILE_NAME)) {
                 return readPartitionedTableWithMetadata(source.getParentFile(), instructions);
@@ -681,8 +680,8 @@ public class ParquetTools {
      * Reads in a table from a single parquet file using the provided table definition.
      *
      * <p>
-     * Callers may prefer the simpler methods {@link #readSingleTable(File, ParquetInstructions)} or
-     * {@link #readSingleTable(File, ParquetInstructions, TableDefinition)}.
+     * Callers may prefer the simpler methods {@link #readSingleFileTable(File, ParquetInstructions)} or
+     * {@link #readSingleFileTable(File, ParquetInstructions, TableDefinition)}.
      *
      * @param tableLocationKey The {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions Instructions for customizations while reading
@@ -922,7 +921,7 @@ public class ParquetTools {
      *
      * <p>
      * Callers wishing to be more explicit (for example, to skip some columns) may prefer to call
-     * {@link #readSingleTable(File, ParquetInstructions, TableDefinition)}.
+     * {@link #readSingleFileTable(File, ParquetInstructions, TableDefinition)}.
      *
      * @param file the parquet file
      * @param readInstructions the instructions for customizations while reading
@@ -930,7 +929,7 @@ public class ParquetTools {
      * @see ParquetTableLocationKey#ParquetTableLocationKey(File, int, Map)
      * @see #readSingleFileTable(ParquetTableLocationKey, ParquetInstructions, TableDefinition)
      */
-    public static Table readSingleTable(
+    public static Table readSingleFileTable(
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions) {
         final ParquetSingleFileLayout keyFinder = new ParquetSingleFileLayout(file);
@@ -950,7 +949,7 @@ public class ParquetTools {
      * @see ParquetTableLocationKey#ParquetTableLocationKey(File, int, Map)
      * @see #readSingleFileTable(ParquetTableLocationKey, ParquetInstructions, TableDefinition)
      */
-    public static Table readSingleTable(
+    public static Table readSingleFileTable(
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {

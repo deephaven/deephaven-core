@@ -91,7 +91,7 @@ def _build_parquet_instructions(
 
     return builder.build()
 
-def _j_table_definition(table_definition: Union[Dict[str, DType], List[Column], None]):
+def _j_table_definition(table_definition: Union[Dict[str, DType], List[Column], None]) -> Optional[jpy.JType]:
     if table_definition is None:
         return None
     elif isinstance(table_definition, Dict):
@@ -106,12 +106,12 @@ def _j_table_definition(table_definition: Union[Dict[str, DType], List[Column], 
             [col.j_column_definition for col in table_definition]
         )
     else:
-        raise DHError("not type")
+        raise DHError(f"Unexpected table_definition type: {type(table_definition)}")
 
-class ParquetType(Enum):
-    """ The parquet file layout type. """
+class ParquetFileLayout(Enum):
+    """ The parquet file layout. """
 
-    SINGLE = 1
+    SINGLE_FILE = 1
     """ A single parquet file. """
 
     FLAT_PARTITIONED = 2
@@ -129,7 +129,7 @@ def read(
     col_instructions: Optional[List[ColumnInstruction]] = None,
     is_legacy_parquet: bool = False,
     is_refreshing: bool = False,
-    type: Optional[ParquetType] = None,
+    file_layout: Optional[ParquetFileLayout] = None,
     table_definition: Union[Dict[str, DType], List[Column], None] = None,
 ) -> Table:
     """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
@@ -140,12 +140,13 @@ def read(
             default.
         is_legacy_parquet (bool): if the parquet data is legacy
         is_refreshing (bool): if the parquet data represents a refreshing source
-        type (Optional[ParquetType]): the parquet type, by default None. When None, the type is inferred.
+        file_layout (Optional[ParquetFileLayout]): the parquet file layout, by default None. When None, the layout is
+            inferred.
         table_definition (Union[Dict[str, DType], List[Column], None]): the table definition, by default None. When None,
             the definition is inferred from the parquet file(s). Setting a definition guarantees the returned table will
             have that definition. This is useful for bootstrapping purposes when the initial partitioned directory is
             empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition. When set,
-            type must also be set.
+            file_layout must also be set.
     Returns:
         a table
 
@@ -163,31 +164,31 @@ def read(
         )
         j_table_definition = _j_table_definition(table_definition)
         if j_table_definition is not None:
-            if not type:
-                raise DHError("Must provide type when table_definition is set")
-            if type == ParquetType.SINGLE:
-                j_table = _JParquetTools.readSingleTable(_JFile(path), read_instructions, j_table_definition)
-            elif type == ParquetType.FLAT_PARTITIONED:
+            if not file_layout:
+                raise DHError("Must provide file_layout when table_definition is set")
+            if file_layout == ParquetFileLayout.SINGLE_FILE:
+                j_table = _JParquetTools.readSingleFileTable(_JFile(path), read_instructions, j_table_definition)
+            elif file_layout == ParquetFileLayout.FLAT_PARTITIONED:
                 j_table = _JParquetTools.readFlatPartitionedTable(_JFile(path), read_instructions, j_table_definition)
-            elif type == ParquetType.KV_PARTITIONED:
+            elif file_layout == ParquetFileLayout.KV_PARTITIONED:
                 j_table = _JParquetTools.readKeyValuePartitionedTable(_JFile(path), read_instructions, j_table_definition)
-            elif type == ParquetType.METADATA_PARTITIONED:
-                raise DHError(f"{ParquetType.METADATA_PARTITIONED} with table_definition not currently supported")
+            elif file_layout == ParquetFileLayout.METADATA_PARTITIONED:
+                raise DHError(f"file_layout={ParquetFileLayout.METADATA_PARTITIONED} with table_definition not currently supported")
             else:
-                raise DHError(f"Invalid parquet type '{type}'")
+                raise DHError(f"Invalid parquet file_layout '{file_layout}'")
         else:
-            if not type:
+            if not file_layout:
                 j_table = _JParquetTools.readTable(path, read_instructions)
-            elif type == ParquetType.SINGLE:
-                j_table = _JParquetTools.readSingleTable(_JFile(path), read_instructions)
-            elif type == ParquetType.FLAT_PARTITIONED:
+            elif file_layout == ParquetFileLayout.SINGLE_FILE:
+                j_table = _JParquetTools.readSingleFileTable(_JFile(path), read_instructions)
+            elif file_layout == ParquetFileLayout.FLAT_PARTITIONED:
                 j_table = _JParquetTools.readFlatPartitionedTable(_JFile(path), read_instructions)
-            elif type == ParquetType.KV_PARTITIONED:
+            elif file_layout == ParquetFileLayout.KV_PARTITIONED:
                 j_table = _JParquetTools.readKeyValuePartitionedTable(_JFile(path), read_instructions)
-            elif type == ParquetType.METADATA_PARTITIONED:
+            elif file_layout == ParquetFileLayout.METADATA_PARTITIONED:
                 j_table = _JParquetTools.readPartitionedTableWithMetadata(_JFile(path), read_instructions)
             else:
-                raise DHError(f"Invalid parquet type '{type}'")
+                raise DHError(f"Invalid parquet file_layout '{file_layout}'")
         return Table(j_table=j_table)
     except Exception as e:
         raise DHError(e, "failed to read parquet data.") from e
