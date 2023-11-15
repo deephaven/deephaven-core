@@ -9,7 +9,6 @@ import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.csv.util.MutableObject;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
