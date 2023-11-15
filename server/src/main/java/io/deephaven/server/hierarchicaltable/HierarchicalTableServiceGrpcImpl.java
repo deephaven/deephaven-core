@@ -91,7 +91,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             }
 
             session.newExport(request.getResultRollupTableId(), "rollup.resultRollupTableId")
-                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(sourceTableExport)
                     .onError(responseObserver)
                     .submit(() -> {
@@ -148,7 +148,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             }
 
             session.newExport(request.getResultTreeTableId(), "tree.resultTreeTableId")
-                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(sourceTableExport)
                     .onError(responseObserver)
                     .submit(() -> {
@@ -211,7 +211,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             }
 
             session.newExport(request.getResultHierarchicalTableId(), "apply.resultHierarchicalTableId")
-                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(inputHierarchicalTableExport)
                     .onError(responseObserver)
                     .submit(() -> {
@@ -404,7 +404,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             }
 
             resultExportBuilder
-                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
                     .onError(responseObserver)
                     .submit(() -> {
                         final Table keyTable = keyTableExport == null ? null : keyTableExport.get();
@@ -498,7 +498,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             }
 
             session.newExport(request.getResultTableId(), "exportSource.resultTableId")
-                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(hierarchicalTableExport)
                     .onError(responseObserver)
                     .submit(() -> {

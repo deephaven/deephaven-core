@@ -483,7 +483,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             }
 
             session.nonExport()
-                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(exportedTable)
                     .onError(responseObserver)
                     .submit(() -> {
@@ -644,7 +644,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             }
 
             session.nonExport()
-                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(export)
                     .onError(responseObserver)
                     .submit(() -> {
@@ -700,7 +700,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             session.newExport(resultId, "resultId")
                     .require(dependencies)
                     .onError(responseObserver)
-                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
                     .submit(() -> {
                         operation.checkPermission(request, dependencies);
                         final Table result = operation.create(request, dependencies);
@@ -760,7 +760,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         final Ticket resultId = operation.getResultTicket(request);
         final ExportBuilder<Table> exportBuilder =
                 resultId.getTicket().isEmpty() ? session.nonExport() : session.newExport(resultId, "resultId");
-        exportBuilder.queryPerformanceRecorder(queryPerformanceRecorder, true);
+        exportBuilder.parentQueryPerformanceRecorder(queryPerformanceRecorder);
         return new BatchExportBuilder<>(operation, request, exportBuilder);
     }
 

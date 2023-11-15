@@ -191,7 +191,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
             if (session != null) {
                 session.nonExport()
-                        .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                        .queryPerformanceRecorder(queryPerformanceRecorder)
                         .require(export)
                         .onError(responseObserver)
                         .submit(() -> {
@@ -248,7 +248,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
             if (session != null) {
                 session.nonExport()
-                        .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                        .queryPerformanceRecorder(queryPerformanceRecorder)
                         .require(export)
                         .onError(responseObserver)
                         .submit(() -> {

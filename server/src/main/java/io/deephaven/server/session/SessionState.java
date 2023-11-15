@@ -1334,23 +1334,29 @@ public class SessionState {
         }
 
         /**
-         * Set the performance recorder to aggregate performance data across exports.
-         * <p>
-         * When {@code qprIsForBatch}:
-         * <ul>
-         * <li>is {@code false}: The provided queryPerformanceRecorder is suspended and assumed by the export object
-         * <li>is {@code true}: Instrumentation logging is the responsibility of the caller and should not be performed
-         * until all sub-queries have completed.
-         * </ul>
+         * Set the performance recorder to resume when running this export.
          *
-         * @param queryPerformanceRecorder the performance recorder to aggregate into
-         * @param qprIsForBatch true if a sub-query should be created for the export and aggregated into the qpr
+         * @param queryPerformanceRecorder the performance recorder
          * @return this builder
          */
         public ExportBuilder<T> queryPerformanceRecorder(
-                @NotNull final QueryPerformanceRecorder queryPerformanceRecorder,
-                final boolean qprIsForBatch) {
-            export.setQueryPerformanceRecorder(queryPerformanceRecorder, qprIsForBatch);
+                @NotNull final QueryPerformanceRecorder queryPerformanceRecorder) {
+            export.setQueryPerformanceRecorder(queryPerformanceRecorder, false);
+            return this;
+        }
+
+        /**
+         * Set the performance recorder to aggregate performance data across exports.
+         * <p>
+         * Instrumentation logging is the responsibility of the caller and should not be performed until all sub-queries
+         * have completed.
+         *
+         * @param parentQueryPerformanceRecorder the performance recorder to aggregate into
+         * @return this builder
+         */
+        public ExportBuilder<T> parentQueryPerformanceRecorder(
+                @NotNull final QueryPerformanceRecorder parentQueryPerformanceRecorder) {
+            export.setQueryPerformanceRecorder(parentQueryPerformanceRecorder, true);
             return this;
         }
 

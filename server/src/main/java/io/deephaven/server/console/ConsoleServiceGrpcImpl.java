@@ -181,7 +181,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             }
 
             session.nonExport()
-                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
                     .requiresSerialQueue()
                     .require(exportedConsole)
                     .onError(responseObserver)
@@ -273,7 +273,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             final SessionState.ExportObject<ScriptSession> exportedConsole;
 
             ExportBuilder<?> exportBuilder = session.nonExport()
-                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
                     .requiresSerialQueue()
                     .onError(responseObserver);
 

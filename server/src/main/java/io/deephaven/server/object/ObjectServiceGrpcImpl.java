@@ -275,7 +275,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             }
 
             session.nonExport()
-                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(object)
                     .onError(responseObserver)
                     .submit(() -> {
