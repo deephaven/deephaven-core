@@ -6,12 +6,13 @@
 Parquet files. """
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union, Dict
 
 import jpy
 
 from deephaven import DHError
 from deephaven.column import Column
+from deephaven.dtypes import DType
 from deephaven.table import Table
 
 _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
@@ -90,6 +91,23 @@ def _build_parquet_instructions(
 
     return builder.build()
 
+def _j_table_definition(table_definition: Union[Dict[str, DType], List[Column], None]):
+    if table_definition is None:
+        return None
+    elif isinstance(table_definition, Dict):
+        return _JTableDefinition.of(
+            [
+                Column(name=name, data_type=dtype).j_column_definition
+                for name, dtype in table_definition.items()
+            ]
+        )
+    elif isinstance(table_definition, List):
+        return _JTableDefinition.of(
+            [col.j_column_definition for col in table_definition]
+        )
+    else:
+        raise DHError("not type")
+
 class ParquetType(Enum):
     """ The parquet file layout type. """
 
@@ -112,7 +130,7 @@ def read(
     is_legacy_parquet: bool = False,
     is_refreshing: bool = False,
     type: Optional[ParquetType] = None,
-    table_definition: Optional[List[Column]] = None,
+    table_definition: Union[Dict[str, DType], List[Column], None] = None,
 ) -> Table:
     """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
@@ -123,11 +141,11 @@ def read(
         is_legacy_parquet (bool): if the parquet data is legacy
         is_refreshing (bool): if the parquet data represents a refreshing source
         type (Optional[ParquetType]): the parquet type, by default None. When None, the type is inferred.
-        table_definition (Optional[List[Column]]): the table definition, by default None. When None, the definition is
-            inferred from the parquet file(s). Setting a definition guarantees the returned table will have that
-            definition. This is useful for bootstrapping purposes when the initial partitioned directory is empty and
-            is_refreshing=True. It is also useful for specifying a subset of the parquet definition. When set, type must
-            also be set.
+        table_definition (Union[Dict[str, DType], List[Column], None]): the table definition, by default None. When None,
+            the definition is inferred from the parquet file(s). Setting a definition guarantees the returned table will
+            have that definition. This is useful for bootstrapping purposes when the initial partitioned directory is
+            empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition. When set,
+            type must also be set.
     Returns:
         a table
 
@@ -143,10 +161,10 @@ def read(
             for_read=True,
             force_build=True,
         )
-        if table_definition is not None:
+        j_table_definition = _j_table_definition(table_definition)
+        if j_table_definition is not None:
             if not type:
                 raise DHError("Must provide type when table_definition is set")
-            j_table_definition = _JTableDefinition.of([col.j_column_definition for col in table_definition])
             if type == ParquetType.SINGLE:
                 j_table = _JParquetTools.readSingleTable(_JFile(path), read_instructions, j_table_definition)
             elif type == ParquetType.FLAT_PARTITIONED:

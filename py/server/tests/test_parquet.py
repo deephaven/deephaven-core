@@ -452,11 +452,11 @@ class ParquetTestCase(BaseTestCase):
         with self.subTest(msg="read single"):
             actual = read(
                 single_parquet,
-                table_definition=[
-                    Column("x", dtypes.int32),
-                    Column("y", dtypes.double),
-                    Column("z", dtypes.double),
-                ],
+                table_definition={
+                    "x": dtypes.int32,
+                    "y": dtypes.double,
+                    "z": dtypes.double,
+                },
                 type=ParquetType.SINGLE,
             )
             self.assert_table_equals(actual, table)
@@ -483,11 +483,11 @@ class ParquetTestCase(BaseTestCase):
         with self.subTest(msg="read flat"):
             actual = read(
                 flat_dir,
-                table_definition=[
-                    Column("x", dtypes.int32),
-                    Column("y", dtypes.double),
-                    Column("z", dtypes.double),
-                ],
+                table_definition={
+                    "x": dtypes.int32,
+                    "y": dtypes.double,
+                    "z": dtypes.double,
+                },
                 type=ParquetType.FLAT_PARTITIONED,
             )
             self.assert_table_equals(actual, table)
@@ -542,11 +542,11 @@ class ParquetTestCase(BaseTestCase):
             with self.assertRaises(DHError) as cm:
                 read(
                     fake_parquet,
-                    table_definition=[
-                        Column("x", dtypes.int32),
-                        Column("y", dtypes.double),
-                        Column("z", dtypes.double),
-                    ],
+                    table_definition={
+                        "x": dtypes.int32,
+                        "y": dtypes.double,
+                        "z": dtypes.double,
+                    },
                 )
             self.assertIn(
                 "Must provide type when table_definition is set", str(cm.exception)

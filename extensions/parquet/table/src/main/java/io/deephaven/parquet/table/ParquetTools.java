@@ -783,11 +783,9 @@ public class ParquetTools {
         return readPartitionedTable(locationKeyFinder, readInstructions);
     }
 
-    /**
-     * TODO(deephaven-core#877): Support schema merge when discovering multiple parquet files
-     */
     private static Pair<TableDefinition, ParquetInstructions> infer(
             KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys, ParquetInstructions readInstructions) {
+        // TODO(deephaven-core#877): Support schema merge when discovering multiple parquet files
         final ParquetTableLocationKey lastKey = inferenceKeys.getLastKey().orElse(null);
         if (lastKey == null) {
             throw new IllegalArgumentException(
