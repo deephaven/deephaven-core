@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main ]
   push:
-    branches: [ main ]
+    branches: [ main, docsite ]
 
 jobs:
   javadoc:
@@ -223,3 +223,7 @@ jobs:
       - name: Deploy R Docs
         if: ${{ github.ref == 'refs/heads/main' }}
         uses: burnett01/rsync-deployments@5.2
+
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@v3
+        if: failure()
