@@ -682,7 +682,11 @@ public class SessionState {
             this.errorHandler = errorHandler;
             this.successHandler = successHandler;
 
-            setState(ExportNotification.State.PENDING);
+            if (state != ExportNotification.State.PUBLISHING) {
+                setState(ExportNotification.State.PENDING);
+            } else if (dependentCount > 0) {
+                throw new IllegalStateException("published exports cannot have dependencies");
+            }
             if (dependentCount <= 0) {
                 dependentCount = 0;
                 scheduleExport();
@@ -920,7 +924,7 @@ public class SessionState {
          */
         private void scheduleExport() {
             synchronized (this) {
-                if (state != ExportNotification.State.PENDING) {
+                if (state != ExportNotification.State.PENDING && state != ExportNotification.State.PUBLISHING) {
                     return;
                 }
                 setState(ExportNotification.State.QUEUED);
