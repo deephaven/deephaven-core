@@ -469,28 +469,41 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         if (sourceId.getTicket().isEmpty()) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
         }
-        SessionState.ExportObject<Table> exportedTable =
-                ticketRouter.resolve(session, sourceId, "sourceId");
-        session.nonExport()
-                .require(exportedTable)
-                .onError(responseObserver)
-                .submit(() -> {
-                    final Table table = exportedTable.get();
-                    authWiring.checkPermissionSeekRow(session.getAuthContext(), request,
-                            Collections.singletonList(table));
-                    final String columnName = request.getColumnName();
-                    final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
-                    final Object seekValue = getSeekValue(request.getSeekValue(), dataType);
-                    final Long result = table.apply(new SeekRow(
-                            request.getStartingRow(),
-                            columnName,
-                            seekValue,
-                            request.getInsensitive(),
-                            request.getContains(),
-                            request.getIsBackward()));
-                    SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
-                    safelyComplete(responseObserver, rowResponse.setResultRow(result).build());
-                });
+        final String description =
+                "TableServiceGrpcImpl#seekRow(session=" + session.getSessionId() + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+
+        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
+            final String ticketName = ticketRouter.getLogNameFor(sourceId, "sourceId");
+            final SessionState.ExportObject<Table> exportedTable;
+            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
+                    "resolveTicket:" + ticketName)) {
+                exportedTable = ticketRouter.resolve(session, sourceId, "sourceId");
+            }
+
+            session.nonExport()
+                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .require(exportedTable)
+                    .onError(responseObserver)
+                    .submit(() -> {
+                        final Table table = exportedTable.get();
+                        authWiring.checkPermissionSeekRow(session.getAuthContext(), request,
+                                Collections.singletonList(table));
+                        final String columnName = request.getColumnName();
+                        final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
+                        final Object seekValue = getSeekValue(request.getSeekValue(), dataType);
+                        final Long result = table.apply(new SeekRow(
+                                request.getStartingRow(),
+                                columnName,
+                                seekValue,
+                                request.getInsensitive(),
+                                request.getContains(),
+                                request.getIsBackward()));
+                        SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
+                        safelyComplete(responseObserver, rowResponse.setResultRow(result).build());
+                    });
+        }
     }
 
     @Override
@@ -617,25 +630,38 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No request ticket supplied");
         }
 
-        final SessionState.ExportObject<Object> export = ticketRouter.resolve(session, request, "request");
+        final String description =
+                "TableServiceGrpcImpl#getExportedTableCreationResponse(session=" + session.getSessionId() + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        session.nonExport()
-                .require(export)
-                .onError(responseObserver)
-                .submit(() -> {
-                    final Object obj = export.get();
-                    if (!(obj instanceof Table)) {
-                        responseObserver.onError(
-                                Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                        "Ticket is not a table"));
-                        return;
-                    }
-                    authWiring.checkPermissionGetExportedTableCreationResponse(
-                            session.getAuthContext(), request, Collections.singletonList((Table) obj));
-                    final ExportedTableCreationResponse response =
-                            ExportUtil.buildTableCreationResponse(request, (Table) obj);
-                    safelyComplete(responseObserver, response);
-                });
+        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
+            final String ticketName = ticketRouter.getLogNameFor(request, "request");
+            final SessionState.ExportObject<Object> export;
+            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
+                    "resolveTicket:" + ticketName)) {
+                export = ticketRouter.resolve(session, request, "request");
+            }
+
+            session.nonExport()
+                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .require(export)
+                    .onError(responseObserver)
+                    .submit(() -> {
+                        final Object obj = export.get();
+                        if (!(obj instanceof Table)) {
+                            responseObserver.onError(
+                                    Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                                            "Ticket is not a table"));
+                            return;
+                        }
+                        authWiring.checkPermissionGetExportedTableCreationResponse(
+                                session.getAuthContext(), request, Collections.singletonList((Table) obj));
+                        final ExportedTableCreationResponse response =
+                                ExportUtil.buildTableCreationResponse(request, (Table) obj);
+                        safelyComplete(responseObserver, response);
+                    });
+        }
     }
 
     /**

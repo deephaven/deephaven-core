@@ -9,6 +9,9 @@ import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.csv.util.MutableObject;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -165,16 +168,30 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             return;
         }
 
-        final SessionState.ExportObject<Object> source = ticketRouter.resolve(
-                session, request.getSourceId(), "sourceId");
-        session.newExport(request.getResultId(), "resultId")
-                .require(source)
-                .onError(responseObserver)
-                .submit(() -> {
-                    final Object o = source.get();
-                    GrpcUtil.safelyComplete(responseObserver, ExportResponse.getDefaultInstance());
-                    return o;
-                });
+        final String description = "SessionServiceGrpcImpl#exportFromTicket(session=" + session.getSessionId() + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+
+        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
+            final String ticketName = ticketRouter.getLogNameFor(
+                    request.getSourceId(), "SessionServiceServiceGrpcImpl");
+
+            final SessionState.ExportObject<Object> source;
+            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
+                    "resolveTicket:" + ticketName)) {
+                source = ticketRouter.resolve(session, request.getSourceId(), "sourceId");
+            }
+
+            session.newExport(request.getResultId(), "resultId")
+                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .require(source)
+                    .onError(responseObserver)
+                    .submit(() -> {
+                        final Object o = source.get();
+                        GrpcUtil.safelyComplete(responseObserver, ExportResponse.getDefaultInstance());
+                        return o;
+                    });
+        }
     }
 
     @Override
@@ -194,18 +211,31 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             return;
         }
 
-        final SessionState.ExportObject<Object> source = ticketRouter.resolve(
-                session, request.getSourceId(), "sourceId");
-        Ticket resultId = request.getResultId();
+        final String description = "SessionServiceGrpcImpl#publishFromTicket(session=" + session.getSessionId() + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        final SessionState.ExportBuilder<Object> publisher = ticketRouter.publish(
-                session, resultId, "resultId", () -> {
-                    // when publish is complete, complete the gRPC request
-                    GrpcUtil.safelyComplete(responseObserver, PublishResponse.getDefaultInstance());
-                });
-        publisher.require(source)
-                .onError(responseObserver)
-                .submit(source::get);
+        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
+            final String ticketName = ticketRouter.getLogNameFor(
+                    request.getSourceId(), "SessionServiceServiceGrpcImpl");
+
+            final SessionState.ExportObject<Object> source;
+            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
+                    "resolveTicket:" + ticketName)) {
+                source = ticketRouter.resolve(session, request.getSourceId(), "sourceId");
+            }
+
+            Ticket resultId = request.getResultId();
+
+            ticketRouter.publish(session, resultId, "resultId", () -> {
+                // when publish is complete, complete the gRPC request
+                GrpcUtil.safelyComplete(responseObserver, PublishResponse.getDefaultInstance());
+            })
+                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .require(source)
+                    .onError(responseObserver)
+                    .submit(source::get);
+        }
     }
 
     @Override

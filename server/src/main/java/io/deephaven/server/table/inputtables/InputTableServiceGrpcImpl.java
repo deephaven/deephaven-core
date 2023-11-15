@@ -8,6 +8,8 @@ import io.deephaven.auth.codegen.impl.InputTableServiceContextualAuthWiring;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.config.MutableInputTable;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -21,6 +23,7 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,46 +55,64 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
             @NotNull final StreamObserver<AddTableResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
 
-        SessionState.ExportObject<Table> targetTable =
-                ticketRouter.resolve(session, request.getInputTable(), "inputTable");
-        SessionState.ExportObject<Table> tableToAddExport =
-                ticketRouter.resolve(session, request.getTableToAdd(), "tableToAdd");
+        final String description =
+                "InputTableServiceGrpcImpl#addTableToInputTable(session=" + session.getSessionId() + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        session.nonExport()
-                .requiresSerialQueue()
-                .onError(responseObserver)
-                .require(targetTable, tableToAddExport)
-                .submit(() -> {
-                    Object inputTable = targetTable.get().getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
-                    if (!(inputTable instanceof MutableInputTable)) {
-                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                "Table can't be used as an input table");
-                    }
 
-                    MutableInputTable mutableInputTable = (MutableInputTable) inputTable;
-                    Table tableToAdd = tableToAddExport.get();
+        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
+            final String targetName = ticketRouter.getLogNameFor(request.getInputTable(), "inputTable");
+            final SessionState.ExportObject<Table> targetTable;
+            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
+                    "resolveTargetTableTicket:" + targetName)) {
+                targetTable = ticketRouter.resolve(session, request.getInputTable(), "inputTable");
+            }
 
-                    authWiring.checkPermissionAddTableToInputTable(
-                            ExecutionContext.getContext().getAuthContext(), request,
-                            List.of(targetTable.get(), tableToAdd));
+            final String tableToAddName = ticketRouter.getLogNameFor(request.getTableToAdd(), "tableToAdd");
+            final SessionState.ExportObject<Table> tableToAddExport;
+            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
+                    "resolveTableToAddTicket:" + tableToAddName)) {
+                tableToAddExport = ticketRouter.resolve(session, request.getTableToAdd(), "tableToAdd");
+            }
 
-                    // validate that the columns are compatible
-                    try {
-                        mutableInputTable.validateAddOrModify(tableToAdd);
-                    } catch (TableDefinition.IncompatibleTableDefinitionException exception) {
-                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                "Provided tables's columns are not compatible: " + exception.getMessage());
-                    }
+            session.nonExport()
+                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .requiresSerialQueue()
+                    .onError(responseObserver)
+                    .require(targetTable, tableToAddExport)
+                    .submit(() -> {
+                        Object inputTable = targetTable.get().getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+                        if (!(inputTable instanceof MutableInputTable)) {
+                            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Table can't be used as an input table");
+                        }
 
-                    // actually add the tables contents
-                    try {
-                        mutableInputTable.add(tableToAdd);
-                        GrpcUtil.safelyComplete(responseObserver, AddTableResponse.getDefaultInstance());
-                    } catch (IOException ioException) {
-                        throw Exceptions.statusRuntimeException(Code.DATA_LOSS,
-                                "Error adding table to input table");
-                    }
-                });
+                        MutableInputTable mutableInputTable = (MutableInputTable) inputTable;
+                        Table tableToAdd = tableToAddExport.get();
+
+                        authWiring.checkPermissionAddTableToInputTable(
+                                ExecutionContext.getContext().getAuthContext(), request,
+                                List.of(targetTable.get(), tableToAdd));
+
+                        // validate that the columns are compatible
+                        try {
+                            mutableInputTable.validateAddOrModify(tableToAdd);
+                        } catch (TableDefinition.IncompatibleTableDefinitionException exception) {
+                            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Provided tables's columns are not compatible: " + exception.getMessage());
+                        }
+
+                        // actually add the tables contents
+                        try {
+                            mutableInputTable.add(tableToAdd);
+                            GrpcUtil.safelyComplete(responseObserver, AddTableResponse.getDefaultInstance());
+                        } catch (IOException ioException) {
+                            throw Exceptions.statusRuntimeException(Code.DATA_LOSS,
+                                    "Error adding table to input table");
+                        }
+                    });
+        }
     }
 
     @Override
@@ -100,48 +121,65 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
             @NotNull final StreamObserver<DeleteTableResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
 
-        SessionState.ExportObject<Table> targetTable =
-                ticketRouter.resolve(session, request.getInputTable(), "inputTable");
-        SessionState.ExportObject<Table> tableToDeleteExport =
-                ticketRouter.resolve(session, request.getTableToRemove(), "tableToDelete");
+        final String description =
+                "InputTableServiceGrpcImpl#deleteTableFromInputTable(session=" + session.getSessionId() + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        session.nonExport()
-                .requiresSerialQueue()
-                .onError(responseObserver)
-                .require(targetTable, tableToDeleteExport)
-                .submit(() -> {
-                    Object inputTable = targetTable.get().getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
-                    if (!(inputTable instanceof MutableInputTable)) {
-                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                "Table can't be used as an input table");
-                    }
+        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
+            final String targetName = ticketRouter.getLogNameFor(request.getInputTable(), "inputTable");
+            final SessionState.ExportObject<Table> targetTable;
+            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
+                    "resolveTargetTableTicket:" + targetName)) {
+                targetTable = ticketRouter.resolve(session, request.getInputTable(), "inputTable");
+            }
 
-                    MutableInputTable mutableInputTable = (MutableInputTable) inputTable;
-                    Table tableToDelete = tableToDeleteExport.get();
+            final String tableToRemove = ticketRouter.getLogNameFor(request.getTableToRemove(), "tableToRemove");
+            final SessionState.ExportObject<Table> tableToRemoveExport;
+            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
+                    "resolveTableToRemoveTicket:" + tableToRemove)) {
+                tableToRemoveExport = ticketRouter.resolve(session, request.getTableToRemove(), "tableToRemove");
+            }
 
-                    authWiring.checkPermissionDeleteTableFromInputTable(
-                            ExecutionContext.getContext().getAuthContext(), request,
-                            List.of(targetTable.get(), tableToDelete));
+            session.nonExport()
+                    .queryPerformanceRecorder(queryPerformanceRecorder, false)
+                    .requiresSerialQueue()
+                    .onError(responseObserver)
+                    .require(targetTable, tableToRemoveExport)
+                    .submit(() -> {
+                        Object inputTable = targetTable.get().getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+                        if (!(inputTable instanceof MutableInputTable)) {
+                            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Table can't be used as an input table");
+                        }
 
-                    // validate that the columns are compatible
-                    try {
-                        mutableInputTable.validateDelete(tableToDelete);
-                    } catch (TableDefinition.IncompatibleTableDefinitionException exception) {
-                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                "Provided tables's columns are not compatible: " + exception.getMessage());
-                    } catch (UnsupportedOperationException exception) {
-                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                "Provided input table does not support delete.");
-                    }
+                        MutableInputTable mutableInputTable = (MutableInputTable) inputTable;
+                        Table tableToDelete = tableToRemoveExport.get();
 
-                    // actually delete the table's contents
-                    try {
-                        mutableInputTable.delete(tableToDelete);
-                        GrpcUtil.safelyComplete(responseObserver, DeleteTableResponse.getDefaultInstance());
-                    } catch (IOException ioException) {
-                        throw Exceptions.statusRuntimeException(Code.DATA_LOSS,
-                                "Error deleting table from inputtable");
-                    }
-                });
+                        authWiring.checkPermissionDeleteTableFromInputTable(
+                                ExecutionContext.getContext().getAuthContext(), request,
+                                List.of(targetTable.get(), tableToDelete));
+
+                        // validate that the columns are compatible
+                        try {
+                            mutableInputTable.validateDelete(tableToDelete);
+                        } catch (TableDefinition.IncompatibleTableDefinitionException exception) {
+                            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Provided tables's columns are not compatible: " + exception.getMessage());
+                        } catch (UnsupportedOperationException exception) {
+                            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Provided input table does not support delete.");
+                        }
+
+                        // actually delete the table's contents
+                        try {
+                            mutableInputTable.delete(tableToDelete);
+                            GrpcUtil.safelyComplete(responseObserver, DeleteTableResponse.getDefaultInstance());
+                        } catch (IOException ioException) {
+                            throw Exceptions.statusRuntimeException(Code.DATA_LOSS,
+                                    "Error deleting table from inputtable");
+                        }
+                    });
+        }
     }
 }
