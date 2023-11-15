@@ -219,6 +219,10 @@ jobs:
 
       - name: Generate R Docs
         uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: rDocs
+          arguments: R:rClientSite
+          gradle-version: wrapper
 
       - name: Deploy R Docs
         if: ${{ github.ref == 'refs/heads/main' }}
