@@ -15,7 +15,6 @@ R --no-save --no-restore <<EOF
 library('pkgdown')
 status = tryCatch(
   {
-     print("hello!")
      pkgdown::build_site()
      0
   },
