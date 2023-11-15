@@ -77,14 +77,9 @@ public class ArrowFlightUtil {
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String ticketName = ticketRouter.getLogNameFor(request, "ArrowFlightUtil");
-
-            final SessionState.ExportObject<BaseTable<?>> export;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolveTicket:" + ticketName)) {
-                export = ticketRouter.resolve(session, request, "request");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<BaseTable<?>> export =
+                    ticketRouter.resolve(session, request, "request");
 
             final BarragePerformanceLog.SnapshotMetricsHelper metrics =
                     new BarragePerformanceLog.SnapshotMetricsHelper();
@@ -497,15 +492,9 @@ public class ArrowFlightUtil {
                     final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                             description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-                    try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-                        final String ticketName = ticketRouter.getLogNameFor(
-                                snapshotRequest.ticketAsByteBuffer(), "ArrowFlightUtil");
-
-                        final SessionState.ExportObject<BaseTable<?>> parent;
-                        try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                                "resolveTicket:" + ticketName)) {
-                            parent = ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "parent");
-                        }
+                    try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+                        final SessionState.ExportObject<BaseTable<?>> parent =
+                                ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "parent");
 
                         final BarragePerformanceLog.SnapshotMetricsHelper metrics =
                                 new BarragePerformanceLog.SnapshotMetricsHelper();
@@ -658,15 +647,9 @@ public class ArrowFlightUtil {
                     final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                             description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-                    try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-                        final String ticketName = ticketRouter.getLogNameFor(
-                                subscriptionRequest.ticketAsByteBuffer(), "ArrowFlightUtil");
-
-                        final SessionState.ExportObject<Object> parent;
-                        try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                                "resolveTicket:" + ticketName)) {
-                            parent = ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "parent");
-                        }
+                    try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+                        final SessionState.ExportObject<Object> parent =
+                                ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "parent");
 
                         synchronized (this) {
                             onExportResolvedContinuation = session.nonExport()

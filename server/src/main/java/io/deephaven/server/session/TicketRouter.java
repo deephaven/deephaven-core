@@ -5,6 +5,7 @@ package io.deephaven.server.session;
 
 import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
@@ -13,6 +14,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.auth.AuthorizationProvider;
+import io.deephaven.util.SafeCloseable;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
@@ -65,7 +67,11 @@ public class TicketRouter {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "could not resolve '" + logId + "' it's an empty ticket");
         }
-        return getResolver(ticket.get(ticket.position()), logId).resolve(session, ticket, logId);
+        final String ticketName = getLogNameFor(ticket, logId);
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget(
+                "resolveTicket:" + ticketName)) {
+            return getResolver(ticket.get(ticket.position()), logId).resolve(session, ticket, logId);
+        }
     }
 
     /**
@@ -113,7 +119,10 @@ public class TicketRouter {
             @Nullable final SessionState session,
             final Flight.FlightDescriptor descriptor,
             final String logId) {
-        return getResolver(descriptor, logId).resolve(session, descriptor, logId);
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget(
+                "resolveDescriptor:" + descriptor)) {
+            return getResolver(descriptor, logId).resolve(session, descriptor, logId);
+        }
     }
 
     /**
@@ -134,9 +143,13 @@ public class TicketRouter {
             final ByteBuffer ticket,
             final String logId,
             @Nullable final Runnable onPublish) {
-        final TicketResolver resolver = getResolver(ticket.get(ticket.position()), logId);
-        authorization.authorizePublishRequest(resolver, ticket);
-        return resolver.publish(session, ticket, logId, onPublish);
+        final String ticketName = getLogNameFor(ticket, logId);
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget(
+                "publishTicket:" + ticketName)) {
+            final TicketResolver resolver = getResolver(ticket.get(ticket.position()), logId);
+            authorization.authorizePublishRequest(resolver, ticket);
+            return resolver.publish(session, ticket, logId, onPublish);
+        }
     }
 
     /**
@@ -201,9 +214,12 @@ public class TicketRouter {
             final Flight.FlightDescriptor descriptor,
             final String logId,
             @Nullable final Runnable onPublish) {
-        final TicketResolver resolver = getResolver(descriptor, logId);
-        authorization.authorizePublishRequest(resolver, descriptor);
-        return resolver.publish(session, descriptor, logId, onPublish);
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget(
+                "publishDescriptor:" + descriptor)) {
+            final TicketResolver resolver = getResolver(descriptor, logId);
+            authorization.authorizePublishRequest(resolver, descriptor);
+            return resolver.publish(session, descriptor, logId, onPublish);
+        }
     }
 
     /**
@@ -220,7 +236,10 @@ public class TicketRouter {
             @Nullable final SessionState session,
             final Flight.FlightDescriptor descriptor,
             final String logId) {
-        return getResolver(descriptor, logId).flightInfoFor(session, descriptor, logId);
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget(
+                "flightInfoForDescriptor:" + descriptor)) {
+            return getResolver(descriptor, logId).flightInfoFor(session, descriptor, logId);
+        }
     }
 
     /**

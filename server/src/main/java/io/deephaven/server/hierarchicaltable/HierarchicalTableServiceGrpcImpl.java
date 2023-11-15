@@ -80,15 +80,9 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String ticketName = ticketRouter.getLogNameFor(request.getSourceTableId(),
-                    "HierarchicalTableServiceGrpcImpl");
-
-            final SessionState.ExportObject<Table> sourceTableExport;
-            try (final SafeCloseable ignored2 =
-                    QueryPerformanceRecorder.getInstance().getNugget("resolveTicket:" + ticketName)) {
-                sourceTableExport = ticketRouter.resolve(session, request.getSourceTableId(), "rollup.sourceTableId");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Table> sourceTableExport =
+                    ticketRouter.resolve(session, request.getSourceTableId(), "rollup.sourceTableId");
 
             session.newExport(request.getResultRollupTableId(), "rollup.resultRollupTableId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)
@@ -137,15 +131,9 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String ticketName = ticketRouter.getLogNameFor(request.getSourceTableId(),
-                    "HierarchicalTableServiceGrpcImpl");
-
-            final SessionState.ExportObject<Table> sourceTableExport;
-            try (final SafeCloseable ignored2 =
-                    QueryPerformanceRecorder.getInstance().getNugget("resolveTicket:" + ticketName)) {
-                sourceTableExport = ticketRouter.resolve(session, request.getSourceTableId(), "tree.sourceTableId");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Table> sourceTableExport =
+                    ticketRouter.resolve(session, request.getSourceTableId(), "tree.sourceTableId");
 
             session.newExport(request.getResultTreeTableId(), "tree.resultTreeTableId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)
@@ -199,16 +187,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String ticketName = ticketRouter.getLogNameFor(request.getInputHierarchicalTableId(),
-                    "HierarchicalTableServiceGrpcImpl");
-
-            final SessionState.ExportObject<HierarchicalTable<?>> inputHierarchicalTableExport;
-            try (final SafeCloseable ignored2 =
-                    QueryPerformanceRecorder.getInstance().getNugget("resolveTicket:" + ticketName)) {
-                inputHierarchicalTableExport = ticketRouter.resolve(
-                        session, request.getInputHierarchicalTableId(), "apply.inputHierarchicalTableId");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<HierarchicalTable<?>> inputHierarchicalTableExport =
+                    ticketRouter.resolve(session, request.getInputHierarchicalTableId(),
+                            "apply.inputHierarchicalTableId");
 
             session.newExport(request.getResultHierarchicalTableId(), "apply.resultHierarchicalTableId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)
@@ -362,7 +344,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
 
             final SessionState.ExportBuilder<HierarchicalTableView> resultExportBuilder =
                     session.newExport(request.getResultViewId(), "view.resultViewId");
@@ -382,21 +364,13 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                 default:
                     throw new IllegalStateException();
             }
-            final String ticketName = ticketRouter.getLogNameFor(request.getResultViewId(),
-                    "HierarchicalTableServiceGrpcImpl");
-            final SessionState.ExportObject<?> targetExport;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance()
-                    .getNugget("resolveTargetTicket:" + ticketName)) {
-                targetExport = ticketRouter.resolve(session, targetTicket, "view.target");
-            }
+            final SessionState.ExportObject<?> targetExport =
+                    ticketRouter.resolve(session, targetTicket, "view.target");
 
             final SessionState.ExportObject<Table> keyTableExport;
             if (request.hasExpansions()) {
-                try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance()
-                        .getNugget("resolveExpansionsTicket:" + ticketName)) {
-                    keyTableExport = ticketRouter.resolve(
-                            session, request.getExpansions().getKeyTableId(), "view.expansions.keyTableId");
-                }
+                keyTableExport = ticketRouter.resolve(
+                        session, request.getExpansions().getKeyTableId(), "view.expansions.keyTableId");
                 resultExportBuilder.require(targetExport, keyTableExport);
             } else {
                 keyTableExport = null;
@@ -486,16 +460,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String ticketName = ticketRouter.getLogNameFor(request.getHierarchicalTableId(),
-                    "HierarchicalTableServiceGrpcImpl");
-
-            final SessionState.ExportObject<HierarchicalTable<?>> hierarchicalTableExport;
-            try (final SafeCloseable ignored2 =
-                    QueryPerformanceRecorder.getInstance().getNugget("resolveTicket:" + ticketName)) {
-                hierarchicalTableExport = ticketRouter.resolve(
-                        session, request.getHierarchicalTableId(), "exportSource.hierarchicalTableId");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<HierarchicalTable<?>> hierarchicalTableExport =
+                    ticketRouter.resolve(session, request.getHierarchicalTableId(),
+                            "exportSource.hierarchicalTableId");
 
             session.newExport(request.getResultTableId(), "exportSource.resultTableId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)

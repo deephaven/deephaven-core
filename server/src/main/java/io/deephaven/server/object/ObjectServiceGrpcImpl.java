@@ -265,14 +265,9 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String ticketName = ticketRouter.getLogNameFor(request.getSourceId().getTicket(), "sourceId");
-
-            final SessionState.ExportObject<Object> object;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolveTicket:" + ticketName)) {
-                object = ticketRouter.resolve(session, request.getSourceId().getTicket(), "sourceId");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Object> object =
+                    ticketRouter.resolve(session, request.getSourceId().getTicket(), "sourceId");
 
             session.nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)

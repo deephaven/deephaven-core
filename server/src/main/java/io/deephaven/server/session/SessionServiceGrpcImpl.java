@@ -172,15 +172,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String ticketName = ticketRouter.getLogNameFor(
-                    request.getSourceId(), "SessionServiceServiceGrpcImpl");
-
-            final SessionState.ExportObject<Object> source;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolveTicket:" + ticketName)) {
-                source = ticketRouter.resolve(session, request.getSourceId(), "sourceId");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Object> source =
+                    ticketRouter.resolve(session, request.getSourceId(), "sourceId");
 
             session.newExport(request.getResultId(), "resultId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)
@@ -215,15 +209,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String ticketName = ticketRouter.getLogNameFor(
-                    request.getSourceId(), "SessionServiceServiceGrpcImpl");
-
-            final SessionState.ExportObject<Object> source;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolveTicket:" + ticketName)) {
-                source = ticketRouter.resolve(session, request.getSourceId(), "sourceId");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Object> source =
+                    ticketRouter.resolve(session, request.getSourceId(), "sourceId");
 
             Ticket resultId = request.getResultId();
 

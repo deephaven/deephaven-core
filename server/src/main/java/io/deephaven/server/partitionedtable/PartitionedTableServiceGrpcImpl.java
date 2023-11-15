@@ -63,15 +63,9 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String ticketName = ticketRouter.getLogNameFor(
-                    request.getTableId(), "PartitionedTableServiceGrpcImpl");
-
-            final SessionState.ExportObject<Table> targetTable;
-            try (final SafeCloseable ignored2 =
-                    QueryPerformanceRecorder.getInstance().getNugget("resolveTicket:" + ticketName)) {
-                targetTable = ticketRouter.resolve(session, request.getTableId(), "partition.tableId");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Table> targetTable =
+                    ticketRouter.resolve(session, request.getTableId(), "partition.tableId");
 
             session.newExport(request.getResultId(), "partition.resultId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)
@@ -98,15 +92,9 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String ticketName = ticketRouter.getLogNameFor(
-                    request.getPartitionedTable(), "PartitionedTableServiceGrpcImpl");
-
-            final SessionState.ExportObject<PartitionedTable> partitionedTable;
-            try (final SafeCloseable ignored2 =
-                    QueryPerformanceRecorder.getInstance().getNugget("resolveTicket:" + ticketName)) {
-                partitionedTable = ticketRouter.resolve(session, request.getPartitionedTable(), "partitionedTable");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<PartitionedTable> partitionedTable =
+                    ticketRouter.resolve(session, request.getPartitionedTable(), "partitionedTable");
 
             session.newExport(request.getResultId(), "resultId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)
@@ -141,22 +129,11 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String partitionTableLogId = ticketRouter.getLogNameFor(
-                    request.getPartitionedTable(), "PartitionedTableServiceGrpcImpl");
-            final String keyTableLogId = ticketRouter.getLogNameFor(
-                    request.getKeyTableTicket(), "PartitionedTableServiceGrpcImpl");
-
-            final SessionState.ExportObject<PartitionedTable> partitionedTable;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolvePartitionTableTicket:" + partitionTableLogId)) {
-                partitionedTable = ticketRouter.resolve(session, request.getPartitionedTable(), "partitionedTable");
-            }
-            final SessionState.ExportObject<Table> keys;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolvePartitionTableTicket:" + keyTableLogId)) {
-                keys = ticketRouter.resolve(session, request.getKeyTableTicket(), "keyTableTicket");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<PartitionedTable> partitionedTable =
+                    ticketRouter.resolve(session, request.getPartitionedTable(), "partitionedTable");
+            final SessionState.ExportObject<Table> keys =
+                    ticketRouter.resolve(session, request.getKeyTableTicket(), "keyTableTicket");
 
             session.newExport(request.getResultId(), "resultId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)

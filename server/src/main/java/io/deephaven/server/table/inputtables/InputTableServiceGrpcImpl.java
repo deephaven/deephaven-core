@@ -60,21 +60,12 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Table> targetTable =
+                    ticketRouter.resolve(session, request.getInputTable(), "inputTable");
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String targetName = ticketRouter.getLogNameFor(request.getInputTable(), "inputTable");
-            final SessionState.ExportObject<Table> targetTable;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolveTargetTableTicket:" + targetName)) {
-                targetTable = ticketRouter.resolve(session, request.getInputTable(), "inputTable");
-            }
-
-            final String tableToAddName = ticketRouter.getLogNameFor(request.getTableToAdd(), "tableToAdd");
-            final SessionState.ExportObject<Table> tableToAddExport;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolveTableToAddTicket:" + tableToAddName)) {
-                tableToAddExport = ticketRouter.resolve(session, request.getTableToAdd(), "tableToAdd");
-            }
+            final SessionState.ExportObject<Table> tableToAddExport =
+                    ticketRouter.resolve(session, request.getTableToAdd(), "tableToAdd");
 
             session.nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
@@ -126,20 +117,12 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String targetName = ticketRouter.getLogNameFor(request.getInputTable(), "inputTable");
-            final SessionState.ExportObject<Table> targetTable;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolveTargetTableTicket:" + targetName)) {
-                targetTable = ticketRouter.resolve(session, request.getInputTable(), "inputTable");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Table> targetTable =
+                    ticketRouter.resolve(session, request.getInputTable(), "inputTable");
 
-            final String tableToRemove = ticketRouter.getLogNameFor(request.getTableToRemove(), "tableToRemove");
-            final SessionState.ExportObject<Table> tableToRemoveExport;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolveTableToRemoveTicket:" + tableToRemove)) {
-                tableToRemoveExport = ticketRouter.resolve(session, request.getTableToRemove(), "tableToRemove");
-            }
+            final SessionState.ExportObject<Table> tableToRemoveExport =
+                    ticketRouter.resolve(session, request.getTableToRemove(), "tableToRemove");
 
             session.nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)

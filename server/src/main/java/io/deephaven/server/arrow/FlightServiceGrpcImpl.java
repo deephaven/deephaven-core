@@ -182,12 +182,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-
-            final SessionState.ExportObject<Flight.FlightInfo> export;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget("flightInfoFor")) {
-                export = ticketRouter.flightInfoFor(session, request, "request");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Flight.FlightInfo> export =
+                    ticketRouter.flightInfoFor(session, request, "request");
 
             if (session != null) {
                 session.nonExport()
@@ -239,12 +236,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-
-            final SessionState.ExportObject<Flight.FlightInfo> export;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget("flightInfoFor")) {
-                export = ticketRouter.flightInfoFor(session, request, "request");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Flight.FlightInfo> export =
+                    ticketRouter.flightInfoFor(session, request, "request");
 
             if (session != null) {
                 session.nonExport()

@@ -474,13 +474,9 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String ticketName = ticketRouter.getLogNameFor(sourceId, "sourceId");
-            final SessionState.ExportObject<Table> exportedTable;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolveTicket:" + ticketName)) {
-                exportedTable = ticketRouter.resolve(session, sourceId, "sourceId");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Table> exportedTable =
+                    ticketRouter.resolve(session, sourceId, "sourceId");
 
             session.nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
@@ -635,13 +631,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String ticketName = ticketRouter.getLogNameFor(request, "request");
-            final SessionState.ExportObject<Object> export;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolveTicket:" + ticketName)) {
-                export = ticketRouter.resolve(session, request, "request");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Object> export = ticketRouter.resolve(session, request, "request");
 
             session.nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
@@ -720,11 +711,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     "One-shot operations must use ticket references");
         }
 
-        final String ticketName = ticketRouter.getLogNameFor(ref.getTicket(), "TableServiceGrpcImpl");
-        try (final SafeCloseable ignored =
-                QueryPerformanceRecorder.getInstance().getNugget("resolveTicket:" + ticketName)) {
-            return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
-        }
+        return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
     }
 
     private SessionState.ExportObject<Table> resolveBatchReference(
@@ -733,11 +720,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             @NotNull final TableReference ref) {
         switch (ref.getRefCase()) {
             case TICKET:
-                final String ticketName = ticketRouter.getLogNameFor(ref.getTicket(), "TableServiceGrpcImpl");
-                try (final SafeCloseable ignored =
-                        QueryPerformanceRecorder.getInstance().getNugget("resolveTicket:" + ticketName)) {
-                    return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
-                }
+                return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
             case BATCH_OFFSET:
                 final int offset = ref.getBatchOffset();
                 if (offset < 0 || offset >= exportBuilders.size()) {

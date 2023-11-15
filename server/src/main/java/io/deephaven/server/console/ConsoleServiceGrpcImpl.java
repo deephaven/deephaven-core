@@ -171,14 +171,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String ticketName = ticketRouter.getLogNameFor(consoleId, "consoleId");
-
-            final SessionState.ExportObject<ScriptSession> exportedConsole;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolveTicket:" + ticketName)) {
-                exportedConsole = ticketRouter.resolve(session, consoleId, "consoleId");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<ScriptSession> exportedConsole =
+                    ticketRouter.resolve(session, consoleId, "consoleId");
 
             session.nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
@@ -261,14 +256,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
-            final String tableTicketName = ticketRouter.getLogNameFor(tableId, "tableId");
-
-            final SessionState.ExportObject<Table> exportedTable;
-            try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                    "resolveTableTicket:" + tableTicketName)) {
-                exportedTable = ticketRouter.resolve(session, tableId, "tableId");
-            }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Table> exportedTable =
+                    ticketRouter.resolve(session, tableId, "tableId");
 
             final SessionState.ExportObject<ScriptSession> exportedConsole;
 
@@ -278,12 +268,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .onError(responseObserver);
 
             if (request.hasConsoleId()) {
-                final String consoleTicketName = ticketRouter.getLogNameFor(request.getConsoleId(), "consoleId");
-
-                try (final SafeCloseable ignored2 = QueryPerformanceRecorder.getInstance().getNugget(
-                        "resolveConsoleTicket:" + consoleTicketName)) {
-                    exportedConsole = ticketRouter.resolve(session, request.getConsoleId(), "consoleId");
-                }
+                exportedConsole = ticketRouter.resolve(session, request.getConsoleId(), "consoleId");
                 exportBuilder.require(exportedTable, exportedConsole);
             } else {
                 exportedConsole = null;
