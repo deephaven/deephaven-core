@@ -17,6 +17,11 @@ import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 
+/**
+ * Unused class, use {@link OffsetIndexBasedColumnChunkPageStore} instead because the only way we could find to check if
+ * the page sizes are fixed without actually reading the page headers was through offset index. Also, test this class
+ * before using it since it might not work as-is.
+ */
 class FixedPageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
 
     private final int pageFixedSize;
@@ -34,7 +39,7 @@ class FixedPageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPag
 
         Require.gtZero(pageFixedSize, "pageFixedSize");
 
-        final int numPages = Math.toIntExact((size() - 1) / pageFixedSize + 1);
+        final int numPages = Math.toIntExact((numRows() - 1) / pageFixedSize + 1);
         this.columnPageReaders = new ColumnPageReader[numPages];
 
         // noinspection unchecked
@@ -84,7 +89,7 @@ class FixedPageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPag
     public @NotNull ChunkPage<ATTR> getPageContaining(FillContext fillContext,
             final long elementIndex) {
         final long row = elementIndex & mask();
-        Require.inRange(row, "row", size(), "numRows");
+        Require.inRange(row, "row", numRows(), "numRows");
 
         // This is safe because of our check in the constructor, and we know the row is in range.
         final int pageNum = (int) (row / pageFixedSize);

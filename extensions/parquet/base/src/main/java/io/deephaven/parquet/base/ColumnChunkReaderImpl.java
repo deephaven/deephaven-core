@@ -46,10 +46,12 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final PageMaterializer.Factory nullMaterializerFactory;
 
     private Path filePath;
+    private final long numRows;
+    private final String version;
 
-    ColumnChunkReaderImpl(
-            ColumnChunk columnChunk, SeekableChannelsProvider channelsProvider,
-            Path rootPath, MessageType type, OffsetIndex offsetIndex, List<Type> fieldTypes) {
+    ColumnChunkReaderImpl(ColumnChunk columnChunk, SeekableChannelsProvider channelsProvider, Path rootPath,
+            MessageType type, OffsetIndex offsetIndex, List<Type> fieldTypes, final long numRows,
+            final String version) {
         this.channelsProvider = channelsProvider;
         this.columnChunk = columnChunk;
         this.rootPath = rootPath;
@@ -65,6 +67,8 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         this.fieldTypes = fieldTypes;
         this.dictionarySupplier = new LazyCachingSupplier<>(this::getDictionary);
         this.nullMaterializerFactory = PageMaterializer.factoryForType(path.getPrimitiveType().getPrimitiveTypeName());
+        this.numRows = numRows;
+        this.version = version;
     }
 
     @Override
@@ -74,7 +78,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     @Override
     public long numRows() {
-        return numValues();
+        return numRows;
     }
 
     @Override
@@ -85,6 +89,10 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     @Override
     public int getMaxRl() {
         return path.getMaxRepetitionLevel();
+    }
+
+    public final OffsetIndex getOffsetIndex() {
+        return offsetIndex;
     }
 
     @Override
@@ -164,6 +172,11 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     @Override
     public PrimitiveType getType() {
         return path.getPrimitiveType();
+    }
+
+    @Override
+    public String getVersion() {
+        return version;
     }
 
     @NotNull
@@ -298,6 +311,17 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                             rowCount);
             pos++;
             return columnPageReader;
+        }
+
+        @Override
+        public ColumnPageReader getPageReader(final int pageNum) {
+            if (pageNum > offsetIndex.getPageCount()) {
+                throw new RuntimeException(
+                        "pageNum=" + pageNum + " > offsetIndex.getPageCount()=" + offsetIndex.getPageCount());
+            }
+            final int numValues = -1; // Will be populated properly when we read the page header
+            return new ColumnPageReaderImpl(channelsProvider, decompressor, dictionarySupplier, nullMaterializerFactory,
+                    path, getFilePath(), fieldTypes, offsetIndex.getOffset(pageNum), null, numValues);
         }
 
         @Override

@@ -139,7 +139,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
     @Override
     public ChunkPage<ATTR> getPageContaining(@NotNull final FillContext fillContext, long row) {
         row &= mask();
-        Require.inRange(row - pageRowOffsets[0], "row", size(), "numRows");
+        Require.inRange(row - pageRowOffsets[0], "row", numRows(), "numRows");
 
         int localNumPages = numPages;
         int pageNum = Arrays.binarySearch(pageRowOffsets, 1, localNumPages + 1, row);

@@ -174,12 +174,17 @@ public class ParquetFileReader {
     }
 
     public RowGroupReader getRowGroup(int groupNumber) {
+        return getRowGroup(groupNumber, null);
+    }
+
+    public RowGroupReader getRowGroup(int groupNumber, final String version) {
         return new RowGroupReaderImpl(
                 fileMetaData.getRow_groups().get(groupNumber),
                 channelsProvider,
                 rootPath,
                 type,
-                getSchema());
+                getSchema(),
+                version);
     }
 
     private static MessageType fromParquetSchema(List<SchemaElement> schema, List<ColumnOrder> columnOrders)

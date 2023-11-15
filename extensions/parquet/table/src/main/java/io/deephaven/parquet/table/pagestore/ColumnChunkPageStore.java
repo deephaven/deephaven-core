@@ -4,6 +4,7 @@
 package io.deephaven.parquet.table.pagestore;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.engine.table.Releasable;
 import io.deephaven.chunk.attributes.Any;
@@ -16,21 +17,26 @@ import io.deephaven.engine.page.PageStore;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public abstract class ColumnChunkPageStore<ATTR extends Any>
         implements PageStore<ATTR, ATTR, ChunkPage<ATTR>>, Page<ATTR>, SafeCloseable, Releasable {
 
-    protected final PageCache<ATTR> pageCache;
+    final PageCache<ATTR> pageCache;
     private final ColumnChunkReader columnChunkReader;
     private final long mask;
     private final ToPage<ATTR, ?> toPage;
 
-    private final long size;
+    private final long numRows;
     final ColumnChunkReader.ColumnPageReaderIterator columnPageReaderIterator;
 
     public static class CreatorResult<ATTR extends Any> {
@@ -48,25 +54,62 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         }
     }
 
+    private static boolean canUseOffsetIndexBasedPageStore(@NotNull final ColumnChunkReader columnChunkReader,
+            @NotNull final ColumnDefinition<?> columnDefinition) {
+        if (columnChunkReader.getOffsetIndex() == null) {
+            return false;
+        }
+        final String version = columnChunkReader.getVersion();
+        if (version == null) {
+            // Parquet file not written by deephaven
+            return true;
+        }
+        // For vector and array column types, versions before 0.31.0 had a bug in offset index calculation
+        final Class<?> columnType = columnDefinition.getDataType();
+        if (columnType.isArray() || Vector.class.isAssignableFrom(columnType)) {
+            return satisfiesMinimumVersionRequirements(version);
+        }
+        return true;
+    }
+
+    private static final Pattern VERSION_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)");
+
+    /**
+     * Check if the version is greater than 0.31.0
+     */
+    @VisibleForTesting
+    public static boolean satisfiesMinimumVersionRequirements(@Nullable final String version) {
+        if (version == null) {
+            return false;
+        }
+        final Matcher matcher = VERSION_PATTERN.matcher(version);
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException("Malformed version:" + version);
+        }
+        final int major = Integer.parseInt(matcher.group(1));
+        final int minor = Integer.parseInt(matcher.group(2));
+        return major > 0 || major == 0 && minor >= 31;
+    }
+
     public static <ATTR extends Any> CreatorResult<ATTR> create(
             @NotNull final PageCache<ATTR> pageCache,
             @NotNull final ColumnChunkReader columnChunkReader,
             final long mask,
-            @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
-        final boolean fixedSizePages = columnChunkReader.getPageFixedSize() >= 1;
-        final ColumnChunkPageStore<ATTR> columnChunkPageStore = fixedSizePages
-                ? new FixedPageSizeColumnChunkPageStore<>(pageCache, columnChunkReader, mask, toPage)
+            @NotNull final ToPage<ATTR, ?> toPage,
+            @NotNull final ColumnDefinition<?> columnDefinition) throws IOException {
+        final boolean canUseOffsetIndex = canUseOffsetIndexBasedPageStore(columnChunkReader, columnDefinition);
+        final ColumnChunkPageStore<ATTR> columnChunkPageStore = canUseOffsetIndex
+                ? new OffsetIndexBasedColumnChunkPageStore<>(pageCache, columnChunkReader, mask, toPage)
                 : new VariablePageSizeColumnChunkPageStore<>(pageCache, columnChunkReader, mask, toPage);
         final ToPage<DictionaryKeys, long[]> dictionaryKeysToPage =
                 toPage.getDictionaryKeysToPage();
         final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore =
                 dictionaryKeysToPage == null ? null
-                        : fixedSizePages
-                                ? new FixedPageSizeColumnChunkPageStore<>(pageCache.castAttr(), columnChunkReader, mask,
-                                        dictionaryKeysToPage)
+                        : canUseOffsetIndex
+                                ? new OffsetIndexBasedColumnChunkPageStore<>(pageCache.castAttr(), columnChunkReader,
+                                        mask, dictionaryKeysToPage)
                                 : new VariablePageSizeColumnChunkPageStore<>(pageCache.castAttr(), columnChunkReader,
-                                        mask,
-                                        dictionaryKeysToPage);
+                                        mask, dictionaryKeysToPage);
         return new CreatorResult<>(columnChunkPageStore, toPage::getDictionaryChunk,
                 dictionaryKeysColumnChunkPageStore);
     }
@@ -82,7 +125,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         this.mask = mask;
         this.toPage = toPage;
 
-        this.size = Require.inRange(columnChunkReader.numRows(), "numRows", mask, "mask");
+        this.numRows = Require.inRange(columnChunkReader.numRows(), "numRows", mask, "mask");
         this.columnPageReaderIterator = columnChunkReader.getPageIterator();
     }
 
@@ -101,8 +144,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         return 0;
     }
 
-    public long size() {
-        return size;
+    public long numRows() {
+        return numRows;
     }
 
     @Override

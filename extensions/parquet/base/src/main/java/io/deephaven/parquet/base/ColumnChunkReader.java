@@ -4,7 +4,9 @@
 package io.deephaven.parquet.base;
 
 import org.apache.parquet.column.Dictionary;
+import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.schema.PrimitiveType;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -32,9 +34,17 @@ public interface ColumnChunkReader {
      */
     int getMaxRl();
 
+    default @Nullable OffsetIndex getOffsetIndex() {
+        return null;
+    }
+
     interface ColumnPageReaderIterator extends Iterator<ColumnPageReader>, AutoCloseable {
         @Override
         void close() throws IOException;
+
+        default ColumnPageReader getPageReader(int pageNum) {
+            return null;
+        };
     }
 
     /**
@@ -69,4 +79,7 @@ public interface ColumnChunkReader {
     }
 
     PrimitiveType getType();
+
+    @Nullable
+    String getVersion();
 }

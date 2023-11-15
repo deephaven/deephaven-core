@@ -577,6 +577,15 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         if (numValues >= 0) {
             return;
         }
+        if (pageHeader == null) {
+            try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+                readChannel.position(offset);
+                ensurePageHeader(readChannel);
+                // Above will automatically populate numValues
+                Assert.geq(numValues, "numValues", 0);
+                return;
+            }
+        }
         Assert.neqNull(pageHeader, "pageHeader");
         switch (pageHeader.type) {
             case DATA_PAGE:

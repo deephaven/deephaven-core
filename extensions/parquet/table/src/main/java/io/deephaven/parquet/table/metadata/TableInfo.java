@@ -61,11 +61,11 @@ public abstract class TableInfo {
     }
 
     /**
-     * @return The Deephaven release version when this metadata format was defined
+     * @return The Deephaven release version when this metadata format was updated
      */
     @Value.Default
     public String version() {
-        return "0.4.0";
+        return "0.31.0";
     }
 
     /**
