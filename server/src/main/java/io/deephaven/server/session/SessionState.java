@@ -993,18 +993,25 @@ public class SessionState {
             try (final SafeCloseable ignored1 = session.executionContext.open();
                     final SafeCloseable ignored2 = LivenessScopeStack.open()) {
 
+                final String queryId;
+                if (isNonExport()) {
+                    queryId = "nonExport=" + logIdentity;
+                } else {
+                    queryId = "exportId=" + logIdentity;
+                }
+
                 final boolean isResume = queryPerformanceRecorder != null && !qprIsForBatch;
                 if (isResume) {
                     exportRecorder = queryPerformanceRecorder;
                 } else if (queryPerformanceRecorder != null) {
                     // this is a sub-query; no need to re-log the session id
                     exportRecorder = QueryPerformanceRecorder.newSubQuery(
-                            "ExportObject#doWork(exportId=" + logIdentity + ")",
+                            "ExportObject#doWork(" + queryId + ")",
                             queryPerformanceRecorder,
                             QueryPerformanceNugget.DEFAULT_FACTORY);
                 } else {
                     exportRecorder = QueryPerformanceRecorder.newQuery(
-                            "ExportObject#doWork(session=" + session.sessionId + ",exportId=" + logIdentity + ")",
+                            "ExportObject#doWork(session=" + session.sessionId + "," + queryId + ")",
                             QueryPerformanceNugget.DEFAULT_FACTORY);
                 }
                 queryProcessingResults = new QueryProcessingResults(exportRecorder);
