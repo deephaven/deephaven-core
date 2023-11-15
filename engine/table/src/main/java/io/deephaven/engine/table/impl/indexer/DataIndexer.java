@@ -96,7 +96,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     public boolean canMakeDataIndex(final Table table, final Collection<String> keyColumnNames) {
-        return true;
+        return keyColumnNames.size() > 0;
     }
 
     /**
@@ -265,7 +265,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                     created.setTrue();
                     return new DataIndexCache(isLast ? index : null);
                 });
-        if (!created.booleanValue()) {
+        if (isLast && !created.booleanValue()) {
             cache.localIndex = index;
         }
         if (!isLast) {

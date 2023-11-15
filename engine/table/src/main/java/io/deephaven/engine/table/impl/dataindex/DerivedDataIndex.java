@@ -158,35 +158,33 @@ public class DerivedDataIndex extends AbstractDataIndex {
             return parentIndex.positionLookup(usePrev);
         }
 
-        // We need to build a lookup function from the table, either using a successive binary search function or
-        // storing the keys in a hashmap.
-
         // Make sure we have a valid table on hand.
         final Table indexTable = table(usePrev);
 
         if (usePrev) {
             // Return a valid cached lookup function if possible.
-            final PositionLookup positionLookup = cachedPrevPositionLookup.get();
+            PositionLookup positionLookup = cachedPrevPositionLookup.get();
             if (positionLookup != null
                     && (!isRefreshing()
                             || indexTable.getUpdateGraph().clock().currentStep() == cachedPrevPositionLookupStep)) {
                 return positionLookup;
             }
 
-            // Decide whether to create a map or use a binary search strategy
-            final PositionLookup newLookup;
-            if (indexTable.size() >= BIN_SEARCH_THRESHOLD) {
-                // Use a binary search strategy rather than consume memory for the hashmap.
-                newLookup = buildPositionLookup(indexTable, keyColumnNames());
-            } else {
-                // Build a key to position hashmap from the table.
-                TObjectIntHashMap<Object> lookupMap = buildPositionMap(indexTable, keyColumnNames());
-                newLookup = lookupMap::get;
-            }
-            cachedPrevPositionLookup = new SoftReference<>(newLookup);
-            cachedPrevPositionLookupStep = indexTable.getUpdateGraph().clock().currentStep();
+            synchronized (this) {
+                // Test again in case another thread has already computed the lookup.
+                positionLookup = cachedPrevPositionLookup.get();
+                if (positionLookup != null
+                        && (!isRefreshing()
+                                || indexTable.getUpdateGraph().clock().currentStep() == cachedPrevPositionLookupStep)) {
+                    return positionLookup;
+                }
 
-            return newLookup;
+                final PositionLookup newLookup = buildPositionLookup(indexTable, keyColumnNames());
+                cachedPrevPositionLookup = new SoftReference<>(newLookup);
+                cachedPrevPositionLookupStep = indexTable.getUpdateGraph().clock().currentStep();
+
+                return newLookup;
+            }
         }
         // Return a valid cached lookup function if possible.
         final PositionLookup positionLookup = cachedPositionLookup.get();
@@ -196,15 +194,7 @@ public class DerivedDataIndex extends AbstractDataIndex {
         }
 
         // Decide whether to create a map or use a binary search strategy
-        final PositionLookup newLookup;
-        if (indexTable.size() >= BIN_SEARCH_THRESHOLD) {
-            // Use a binary search strategy rather than consume memory for the hashmap.
-            newLookup = buildPositionLookup(indexTable, keyColumnNames());
-        } else {
-            // Build a key to position hashmap from the table.
-            TObjectIntHashMap<Object> lookupMap = buildPositionMap(indexTable, keyColumnNames());
-            newLookup = lookupMap::get;
-        }
+        final PositionLookup newLookup = buildPositionLookup(indexTable, keyColumnNames());
         cachedPositionLookup = new SoftReference<>(newLookup);
         cachedPositionLookupStep = indexTable.getUpdateGraph().clock().currentStep();
 

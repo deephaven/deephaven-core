@@ -25,11 +25,17 @@ public abstract class AbstractDataIndex implements DataIndex {
         return DerivedDataIndex.from(this, transformer);
     }
 
+    /**
+     * Build a map from the keys of the provided index table to positions in the table.
+     *
+     * @param indexTable the table to search
+     * @param keyColumnNames the key columns to search
+     * @return a map from keys to table positions
+     */
     static TObjectIntHashMap<Object> buildPositionMap(final Table indexTable, final String[] keyColumnNames) {
-        TObjectIntHashMap<Object> result = new TObjectIntHashMap<>(indexTable.intSize());
-
-        // If we have only one key column, we will push values directly int the hashmap.
+        // If we have only one key column, we will push values directly into the hashmap.
         if (keyColumnNames.length == 1) {
+            TObjectIntHashMap<Object> result = new TObjectIntHashMap<>(indexTable.intSize());
             try (final CloseableIterator<Object> keyIterator = indexTable.columnIterator(keyColumnNames[0])) {
                 int position = 0;
                 while (keyIterator.hasNext()) {
@@ -38,6 +44,19 @@ public abstract class AbstractDataIndex implements DataIndex {
                 return result;
             }
         } else {
+            // Override the comparison and hashcode methods to handle arrays of keys.
+            TObjectIntHashMap<Object> result = new TObjectIntHashMap<>(indexTable.intSize()) {
+                @Override
+                protected boolean equals(Object k1, Object k2) {
+                    return Arrays.equals((Object[]) k1, (Object[]) k2);
+                }
+
+                @Override
+                protected int hash(Object key) {
+                    return Arrays.hashCode((Object[]) key);
+                }
+            };
+
             // Use Object[] as the keys for the map.
             ColumnIterator<?>[] keyIterators = Arrays.stream(keyColumnNames)
                     .map(indexTable::columnIterator).toArray(ColumnIterator[]::new);
@@ -54,7 +73,15 @@ public abstract class AbstractDataIndex implements DataIndex {
         }
     }
 
-    static @NotNull PositionLookup buildPositionLookup(final Table indexTable, final String[] keyColumnNames) {
+    /**
+     * Build a lookup function that leverages binary search to successively narrow the matching rows until 1 or 0
+     * remain. Requires that the table be sorted by the key columns.
+     *
+     * @param indexTable the table to search
+     * @param keyColumnNames the key columns to search
+     * @return
+     */
+    static @NotNull PositionLookup buildPositionBinSearchLookup(final Table indexTable, final String[] keyColumnNames) {
         final BinarySearcher[] keyVectors = Arrays.stream(keyColumnNames).map(colName -> BinarySearcher.from(
                 indexTable.getColumnSource(colName),
                 indexTable.getRowSet()))
@@ -95,6 +122,17 @@ public abstract class AbstractDataIndex implements DataIndex {
             Assert.eq(start, "start", end, "end");
             return start;
         };
+    }
+
+    /**
+     * Build a {@link PositionLookup lookup function} from the provided index table.
+     *
+     * @param indexTable the table to search
+     * @param keyColumnNames the key columns to search
+     * @return
+     */
+    static @NotNull PositionLookup buildPositionLookup(final Table indexTable, final String[] keyColumnNames) {
+        return buildPositionMap(indexTable, keyColumnNames)::get;
     }
 
     /**
