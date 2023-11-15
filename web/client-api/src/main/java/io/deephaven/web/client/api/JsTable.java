@@ -1419,8 +1419,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         TypedTicket typedTicket = new TypedTicket();
         typedTicket.setType(JsVariableType.PARTITIONEDTABLE);
         typedTicket.setTicket(partitionedTableTicket);
-        Promise<JsPartitionedTable> fetchPromise =
-                new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, typedTicket)).refetch();
+        Promise<JsPartitionedTable> fetchPromise = new JsWidget(workerConnection, typedTicket).refetch().then(
+                widget -> Promise.resolve(new JsPartitionedTable(workerConnection, widget)));
 
         // Ensure that the partition failure propagates first, but the result of the fetch will be returned - both
         // are running concurrently.
@@ -1435,6 +1435,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
+        if (column.getDescription() != null && column.getDescription().startsWith("Preview of type")) {
+            // TODO (deephaven-core#188) Remove this workaround when we don't preview columns until just before
+            // subscription
+            return Promise.reject("Can't produce column statistics for preview column");
+        }
         List<Runnable> toRelease = new ArrayList<>();
         return workerConnection.newState((c, state, metadata) -> {
             ColumnStatisticsRequest req = new ColumnStatisticsRequest();

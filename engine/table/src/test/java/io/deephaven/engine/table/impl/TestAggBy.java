@@ -818,7 +818,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(2.0, cs.get(0));
 
         result = dataTable.formatColumns("Doubles=Decimal(`##0.00%`)").headBy(1);
-        Set<String> columnNames = result.getColumnSourceMap().keySet();
+        List<String> columnNames = result.getDefinition().getColumnNames();
         assertEquals(3, columnNames.size()); // Additional column for formatting information of "Doubles"
         for (String colName : columnNames) {
             if (!colName.equalsIgnoreCase(doubleColName) && !colName.equalsIgnoreCase(intColName) &&

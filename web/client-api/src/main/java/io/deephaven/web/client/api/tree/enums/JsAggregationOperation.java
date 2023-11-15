@@ -45,8 +45,12 @@ public class JsAggregationOperation {
              */
             ABS_SUM = "AbsSum",
             /**
-             * The variance of all values in the specified column. Can only apply to numeric types. String value is
-             * "Var".
+             * The sample variance of all values in the specified column. Can only apply to numeric types. String value
+             * is "Var".
+             *
+             * Sample variance is computed using Bessel's correction
+             * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an
+             * unbiased estimator of population variance.
              */
             VAR = "Var",
             /**
@@ -55,8 +59,10 @@ public class JsAggregationOperation {
              */
             AVG = "Avg",
             /**
-             * The standard deviation of all values in the specified column. Can only apply to numeric types. String
-             * value is "Std".
+             * The sample standard deviation of all values in the specified column. Can only apply to numeric types.
+             * String value is "Std". Sample standard deviation is computed using Bessel's correction
+             * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an
+             * unbiased estimator of population variance.
              */
             STD = "Std",
             /**
