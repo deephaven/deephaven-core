@@ -31,7 +31,9 @@ class ArrowFlightService:
             writer, reader = self._flight_client.do_put(
                 pa.flight.FlightDescriptor.for_path("export", str(ticket)), dh_schema)
             writer.write_table(data)
-            writer.close()
+            # Note that pyarrow's write_table completes the gRPC. If we send another gRPC close
+            # it is possible that by the time the request arrives at the server that it no longer
+            # knows what it is for and sends a RST_STREAM causing a failure.
             _ = reader.read()
             flight_ticket = self.session.make_ticket(ticket)
             return Table(self.session, ticket=flight_ticket, size=data.num_rows, schema=dh_schema)
@@ -54,7 +56,7 @@ class ArrowFlightService:
 
         Returns:
             The corresponding Arrow FlightStreamWriter and FlightStreamReader.
-        """    
+        """
         try:
             desc = pa.flight.FlightDescriptor.for_command(b"dphn")
             options = paflight.FlightCallOptions(headers=self.session.grpc_metadata)
@@ -63,4 +65,4 @@ class ArrowFlightService:
 
         except Exception as e:
             raise DHError("failed to perform a flight DoExchange on the table.") from e
-            
+

@@ -38,7 +38,6 @@ def buildRClient = Docker.registerDockerTask(project, 'rClient') {
             include 'rdeephaven/NAMESPACE'
             include 'rdeephaven/README.md'
             include 'rdeephaven/inst/**'
-            include 'rdeephaven/man/**'
             include 'rdeephaven/etc/**'
             include 'rdeephaven/R/**'
             include 'rdeephaven/src/*.cpp'
@@ -54,14 +53,13 @@ def buildRClient = Docker.registerDockerTask(project, 'rClient') {
                         /out \\
                         ${prefix}/log \\
                         ${prefix}/bin/rdeephaven \\
-                        ${prefix}/src/rdeephaven/{inst,man,etc,src,R,bin}
+                        ${prefix}/src/rdeephaven/{inst,etc,src,R,bin}
                    """)
         copyFile('rdeephaven/DESCRIPTION',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/LICENSE',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/NAMESPACE',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/README.md',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/inst/',  "${prefix}/src/rdeephaven/inst/")
-        copyFile('rdeephaven/man/', "${prefix}/src/rdeephaven/man/")
         copyFile('rdeephaven/etc/', "${prefix}/src/rdeephaven/etc/")
         copyFile('rdeephaven/R/', "${prefix}/src/rdeephaven/R/")
         copyFile('rdeephaven/src/*.cpp', "${prefix}/src/rdeephaven/src/")
@@ -115,7 +113,7 @@ def rClientDoc = Docker.registerDockerTask(project, 'rClientDoc') {
         }
     }
     copyOut {
-        into layout.buildDirectory.dir('man')
+        into layout.projectDirectory.dir('rdeephaven/man')
     }
     dockerfile {
         from('deephaven/r-client:local-build')
@@ -153,18 +151,8 @@ def rClientDoc = Docker.registerDockerTask(project, 'rClientDoc') {
         copyFile('r-doc.sh', "${prefix}/bin/rdeephaven")
     }
     parentContainers = [ project.tasks.getByName('rClient') ]
-    entrypoint = ["${prefix}/bin/rdeephaven/r-doc.sh", '/out']
-}
-
-task updateRClientDoc {
-    dependsOn rClientDoc
-    doLast {
-        exec {
-            workingDir '.'
-            commandLine 'rm', '-f', 'man/*'
-            commandLine 'tar', '-C', 'rdeephaven', '-zxvf', 'build/man/man.tgz'
-        }
-    }
+    entrypoint = ["${prefix}/bin/rdeephaven/r-doc.sh"]
+    containerOutPath = "${prefix}/src/rdeephaven/man"
 }
 
 deephavenDocker.shouldLogIfTaskFails testRClient

@@ -9,6 +9,7 @@ import io.deephaven.base.cache.OpenAddressedCanonicalizationCache;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.qst.column.header.ColumnHeader;
 import org.jetbrains.annotations.NotNull;
@@ -205,6 +206,13 @@ public class TableDefinition implements LogOutputAppendable {
     }
 
     /**
+     * @return An unmodifiable set of column names
+     */
+    public Set<String> getColumnNameSet() {
+        return getColumnNameMap().keySet();
+    }
+
+    /**
      * @return A list of {@link ColumnDefinition column definitions} for all
      *         {@link ColumnDefinition.ColumnType#Partitioning partitioning} columns in the same relative order as the
      *         column definitions list
@@ -339,6 +347,26 @@ public class TableDefinition implements LogOutputAppendable {
     @SuppressWarnings("unused")
     public String getColumnNamesAsString() {
         return getColumnStream().map(ColumnDefinition::getName).collect(Collectors.joining(","));
+    }
+
+    /**
+     * Check this definition to ensure that {@code columnName} is present.
+     *
+     * @param columnName The column name to check
+     * @throws NoSuchColumnException If {@code columnName} is missing
+     */
+    public final void checkHasColumn(@NotNull String columnName) {
+        NoSuchColumnException.throwIf(getColumnNameSet(), columnName);
+    }
+
+    /**
+     * Check this definition to ensure that all {@code columns} are present.
+     *
+     * @param columns The column names to check
+     * @throws NoSuchColumnException If any {@code columns} were missing
+     */
+    public final void checkHasColumns(@NotNull Collection<String> columns) {
+        NoSuchColumnException.throwIf(getColumnNameSet(), columns);
     }
 
     /**

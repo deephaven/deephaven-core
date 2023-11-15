@@ -19,14 +19,12 @@ set(ALL_FILES
 
     src/impl/aggregate_impl.cc
     src/impl/client_impl.cc
-    src/impl/escape_utils.cc
     src/impl/table_handle_impl.cc
     src/impl/table_handle_manager_impl.cc
     src/impl/update_by_operation_impl.cc
 
     include/private/deephaven/client/impl/aggregate_impl.h
     include/private/deephaven/client/impl/client_impl.h
-    include/private/deephaven/client/impl/escape_utils.h
     include/private/deephaven/client/impl/table_handle_impl.h
     include/private/deephaven/client/impl/table_handle_manager_impl.h
     include/private/deephaven/client/impl/update_by_operation_impl.h

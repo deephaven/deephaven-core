@@ -841,7 +841,7 @@ public class ArgumentValidations {
         assertNotNull(t, "t", plotInfo);
         assertNotNull(cols, "cols", plotInfo);
         for (String c : cols) {
-            if (!t.getColumnSourceMap().containsKey(c)) {
+            if (!t.hasColumns(c)) {
                 throw new PlotIllegalArgumentException("Column " + c + " could not be found in table.", plotInfo);
             }
         }

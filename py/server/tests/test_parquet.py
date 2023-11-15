@@ -316,25 +316,6 @@ class ParquetTestCase(BaseTestCase):
         pa_table_from_disk = dharrow.to_arrow(from_disk)
         self.assertTrue(pa_table.equals(pa_table_from_disk))
 
-    def test_writing_time_via_pyarrow(self):
-        def _test_writing_time_helper(filename):
-            metadata = pyarrow.parquet.read_metadata(filename)
-            if "isAdjustedToUTC=false" in str(metadata.row_group(0).column(0)):
-                # TODO(deephaven-core#976): Unable to read non UTC adjusted timestamps
-                with self.assertRaises(DHError) as e:
-                    read(filename)
-                self.assertIn("ParquetFileReaderException", e.exception.root_cause)
-
-        df = pandas.DataFrame({
-            "f": pandas.date_range("20130101", periods=3),
-        })
-        df.to_parquet("pyarrow_26.parquet", engine='pyarrow', compression=None, version='2.6')
-        _test_writing_time_helper("pyarrow_26.parquet")
-        df.to_parquet("pyarrow_24.parquet", engine='pyarrow', compression=None, version='2.4')
-        _test_writing_time_helper("pyarrow_24.parquet")
-        df.to_parquet("pyarrow_10.parquet", engine='pyarrow', compression=None, version='1.0')
-        _test_writing_time_helper("pyarrow_10.parquet")
-
     def test_dictionary_encoding(self):
         dh_table = empty_table(10).update(formulas=[
             "shortStringColumn = `Row ` + i",
@@ -353,6 +334,107 @@ class ParquetTestCase(BaseTestCase):
                         ('RLE_DICTIONARY' not in str(metadata.row_group(0).column(2).encodings)))
         self.assertTrue((metadata.row_group(0).column(2).path_in_schema == 'someIntColumn') &
                         ('RLE_DICTIONARY' not in str(metadata.row_group(0).column(2).encodings)))
+
+    def test_dates_and_time(self):
+        dh_table = empty_table(10000).update(formulas=[
+            "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
+            "nullDateColumn = (java.time.LocalDate)null",
+            "someTimeColumn = i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
+            "nullTimeColumn = (java.time.LocalTime)null"
+        ])
+
+        write(dh_table, "data_from_dh.parquet", compression_codec_name="SNAPPY")
+        from_disk = read('data_from_dh.parquet')
+        self.assert_table_equals(dh_table, from_disk)
+
+        # TODO dtype_backend=None is a workaround until https://github.com/deephaven/deephaven-core/issues/4823 is fixed
+        df_from_disk = to_pandas(from_disk, dtype_backend=None)
+        if pandas.__version__.split('.')[0] == "1":
+            df_from_pandas = pandas.read_parquet("data_from_dh.parquet", use_nullable_dtypes=True)
+        else:
+            df_from_pandas = pandas.read_parquet("data_from_dh.parquet", dtype_backend="numpy_nullable")
+
+        # Test that all null columns are written as null
+        self.assertTrue(df_from_disk[["nullDateColumn", "nullTimeColumn"]].isnull().values.all())
+        self.assertTrue(df_from_pandas[["nullDateColumn", "nullTimeColumn"]].isnull().values.all())
+
+        # Pandas and DH convert date to different types when converting to dataframe, so we need to convert the
+        # dataframe to strings to compare the values
+        df_from_disk_as_str = df_from_disk.astype(str)
+        df_from_pandas_as_str = df_from_pandas.astype(str)
+        self.assertTrue((df_from_disk_as_str == df_from_pandas_as_str).all().values.all())
+
+        # Rewrite the dataframe back to parquet using pyarrow and read it back using deephaven.parquet to compare
+        df_from_pandas.to_parquet('data_from_pandas.parquet', compression='SNAPPY')
+        from_disk_pandas = read('data_from_pandas.parquet')
+
+        # Compare only the non-null columns because null columns are written as different logical types by pandas and
+        # deephaven
+        self.assert_table_equals(dh_table.select(["someDateColumn", "someTimeColumn"]),
+                                 from_disk_pandas.select(["someDateColumn", "someTimeColumn"]))
+
+    def test_time_with_different_units(self):
+        """ Test that we can write and read time columns with different units """
+        dh_table = empty_table(20000).update(formulas=[
+            "someTimeColumn = i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)"
+        ])
+        write(dh_table, "data_from_dh.parquet")
+        table = pyarrow.parquet.read_table('data_from_dh.parquet')
+
+        def time_test_helper(pa_table, new_schema, dest):
+            # Write the provided pyarrow table type-casted to the new schema
+            pyarrow.parquet.write_table(pa_table.cast(new_schema), dest)
+            from_disk = read(dest)
+
+            # TODO dtype_backend=None is a workaround until https://github.com/deephaven/deephaven-core/issues/4823 is fixed
+            df_from_disk = to_pandas(from_disk, dtype_backend=None)
+            original_df = pa_table.to_pandas()
+            # Compare the dataframes as strings
+            self.assertTrue((df_from_disk.astype(str) == original_df.astype(str)).all().values.all())
+
+        # Test for nanoseconds, microseconds, and milliseconds
+        schema_nsec = table.schema.set(0, pyarrow.field('someTimeColumn', pyarrow.time64('ns')))
+        time_test_helper(table, schema_nsec, "data_from_pq_nsec.parquet")
+
+        schema_usec = table.schema.set(0, pyarrow.field('someTimeColumn', pyarrow.time64('us')))
+        time_test_helper(table, schema_usec, "data_from_pq_usec.parquet")
+
+        schema_msec = table.schema.set(0, pyarrow.field('someTimeColumn', pyarrow.time32('ms')))
+        time_test_helper(table, schema_msec, "data_from_pq_msec.parquet")
+
+    def test_non_utc_adjusted_timestamps(self):
+        """ Test that we can read and read timestamp columns with isAdjustedToUTC set as false and different units """
+        df = pandas.DataFrame({
+            "f": pandas.date_range("11:00:00", "11:00:01", freq="1ms")
+        })
+        # Sprinkle some nulls
+        df["f"][0] = df["f"][5] = None
+        table = pyarrow.Table.from_pandas(df)
+
+        def timestamp_test_helper(pa_table, new_schema, dest):
+            # Cast the table to new schema and write it using pyarrow
+            pa_table = pa_table.cast(new_schema)
+            pyarrow.parquet.write_table(pa_table, dest)
+            # Verify that isAdjustedToUTC set as false in the metadata
+            metadata = pyarrow.parquet.read_metadata(dest)
+            if "isAdjustedToUTC=false" not in str(metadata.row_group(0).column(0)):
+                self.fail("isAdjustedToUTC is not set to false")
+            # Read the parquet file back using deephaven and write it back
+            dh_table_from_disk = read(dest)
+            dh_dest = "dh_" + dest
+            write(dh_table_from_disk, dh_dest)
+            # Read the new parquet file using pyarrow and compare against original table
+            pa_table_from_disk = pyarrow.parquet.read_table(dh_dest)
+            self.assertTrue(pa_table == pa_table_from_disk.cast(new_schema))
+
+        schema_nsec = table.schema.set(0, pyarrow.field('f', pyarrow.timestamp('ns')))
+        timestamp_test_helper(table, schema_nsec, 'timestamp_test_nsec.parquet')
+
+        schema_usec = table.schema.set(0, pyarrow.field('f', pyarrow.timestamp('us')))
+        timestamp_test_helper(table, schema_usec, 'timestamp_test_usec.parquet')
+
+        schema_msec = table.schema.set(0, pyarrow.field('f', pyarrow.timestamp('ms')))
+        timestamp_test_helper(table, schema_msec, 'timestamp_test_msec.parquet')
 
 
 if __name__ == '__main__':

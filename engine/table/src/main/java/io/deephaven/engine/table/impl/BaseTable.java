@@ -1020,13 +1020,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     }
 
     @Override
-    public void checkAvailableColumns(@NotNull final Collection<String> columns) {
-        final Map<String, ? extends ColumnSource<?>> sourceMap = getColumnSourceMap();
-        final String[] missingColumns =
-                columns.stream().filter(col -> !sourceMap.containsKey(col)).toArray(String[]::new);
-        if (missingColumns.length > 0) {
-            throw new NoSuchColumnException(sourceMap.keySet(), Arrays.asList(missingColumns));
-        }
+    public final void checkAvailableColumns(@NotNull final Collection<String> columns) {
+        getDefinition().checkHasColumns(columns);
     }
 
     public void copySortableColumns(
@@ -1063,7 +1058,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // Process the original set of sortable columns, adding them to the new set if one of the below
         // 1) The column exists in the new table and was not renamed in any way but the Identity (C1 = C1)
         // 2) The column does not exist in the new table, but was renamed to another (C2 = C1)
-        final Set<String> resultColumnNames = destination.getDefinition().getColumnNameMap().keySet();
+        final Set<String> resultColumnNames = destination.getDefinition().getColumnNameSet();
         for (final String columnName : currentSortableColumns) {
             // Only add it to the set of sortable columns if it hasn't changed in an unknown way
             final String maybeRenamedColumn = columnMapping.get(columnName);
@@ -1109,9 +1104,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
 
         // Now go through the other columns in the table and add them if they were unchanged
-        final Map<String, ? extends ColumnSource<?>> sourceMap = destination.getColumnSourceMap();
+        final Set<String> destKeys = destination.getDefinition().getColumnNameSet();
         for (String col : currentSortableSet) {
-            if (sourceMap.containsKey(col)) {
+            if (destKeys.contains(col)) {
                 newSortableSet.add(col);
             }
         }

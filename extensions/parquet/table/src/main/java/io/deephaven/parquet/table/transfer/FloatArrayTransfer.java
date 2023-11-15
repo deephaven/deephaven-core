@@ -16,9 +16,9 @@ import java.nio.FloatBuffer;
 
 final class FloatArrayTransfer extends PrimitiveArrayAndVectorTransfer<float[], float[], FloatBuffer> {
     FloatArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                     final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize / Float.BYTES, targetPageSize,
-                FloatBuffer.allocate(targetPageSize / Float.BYTES), Float.BYTES);
+                     final int targetPageSizeInBytes) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes / Float.BYTES, targetPageSizeInBytes,
+                FloatBuffer.allocate(targetPageSizeInBytes / Float.BYTES), Float.BYTES);
     }
 
     @Override

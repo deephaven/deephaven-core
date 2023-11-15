@@ -236,23 +236,13 @@ public class ParquetFileReader {
             }
 
             if (schemaElement.isSetLogicalType()) {
-                LogicalType logicalType = schemaElement.logicalType;
-                if (logicalType.isSetTIMESTAMP()) {
-                    TimestampType timestamp = logicalType.getTIMESTAMP();
-                    if (!timestamp.isAdjustedToUTC) {
-                        // TODO(deephaven-core#976): Unable to read non UTC adjusted timestamps
-                        throw new ParquetFileReaderException(String.format(
-                                "Only UTC timestamp is supported, found time column `%s` with isAdjustedToUTC=false",
-                                schemaElement.getName()));
-                    }
-                }
-                ((Types.Builder) childBuilder).as(getLogicalTypeAnnotation(logicalType));
+                ((Types.Builder) childBuilder).as(getLogicalTypeAnnotation(schemaElement.logicalType));
             }
 
             if (schemaElement.isSetConverted_type()) {
-                LogicalTypeAnnotation originalType =
-                        getLogicalTypeAnnotation(schemaElement.converted_type, schemaElement);
-                LogicalTypeAnnotation newOriginalType = schemaElement.isSetLogicalType()
+                final LogicalTypeAnnotation originalType = getLogicalTypeAnnotation(
+                        schemaElement.converted_type, schemaElement.logicalType, schemaElement);
+                final LogicalTypeAnnotation newOriginalType = schemaElement.isSetLogicalType()
                         && getLogicalTypeAnnotation(schemaElement.logicalType) != null
                                 ? getLogicalTypeAnnotation(schemaElement.logicalType)
                                 : null;
@@ -299,20 +289,20 @@ public class ParquetFileReader {
             case LIST:
                 return LogicalTypeAnnotation.listType();
             case TIME:
-                TimeType time = type.getTIME();
+                final TimeType time = type.getTIME();
                 return LogicalTypeAnnotation.timeType(time.isAdjustedToUTC, convertTimeUnit(time.unit));
             case STRING:
                 return LogicalTypeAnnotation.stringType();
             case DECIMAL:
-                DecimalType decimal = type.getDECIMAL();
+                final DecimalType decimal = type.getDECIMAL();
                 return LogicalTypeAnnotation.decimalType(decimal.scale, decimal.precision);
             case INTEGER:
-                IntType integer = type.getINTEGER();
+                final IntType integer = type.getINTEGER();
                 return LogicalTypeAnnotation.intType(integer.bitWidth, integer.isSigned);
             case UNKNOWN:
                 return null;
             case TIMESTAMP:
-                TimestampType timestamp = type.getTIMESTAMP();
+                final TimestampType timestamp = type.getTIMESTAMP();
                 return LogicalTypeAnnotation.timestampType(timestamp.isAdjustedToUTC, convertTimeUnit(timestamp.unit));
             default:
                 throw new ParquetFileReaderException("Unknown logical type " + type);
@@ -354,9 +344,9 @@ public class ParquetFileReader {
         return org.apache.parquet.schema.ColumnOrder.undefined();
     }
 
-    private static LogicalTypeAnnotation getLogicalTypeAnnotation(ConvertedType type, SchemaElement schemaElement)
-            throws ParquetFileReaderException {
-        switch (type) {
+    private static LogicalTypeAnnotation getLogicalTypeAnnotation(final ConvertedType convertedType,
+            final LogicalType logicalType, final SchemaElement schemaElement) throws ParquetFileReaderException {
+        switch (convertedType) {
             case UTF8:
                 return LogicalTypeAnnotation.stringType();
             case MAP:
@@ -368,23 +358,23 @@ public class ParquetFileReader {
             case ENUM:
                 return LogicalTypeAnnotation.enumType();
             case DECIMAL:
-                int scale = schemaElement == null ? 0 : schemaElement.scale;
-                int precision = schemaElement == null ? 0 : schemaElement.precision;
+                final int scale = schemaElement == null ? 0 : schemaElement.scale;
+                final int precision = schemaElement == null ? 0 : schemaElement.precision;
                 return LogicalTypeAnnotation.decimalType(scale, precision);
             case DATE:
                 return LogicalTypeAnnotation.dateType();
             case TIME_MILLIS:
-                // TODO(deephaven-core#976) Assuming that time is adjusted to UTC
+                // isAdjustedToUTC parameter is ignored while reading Parquet TIME type, so disregard it here
                 return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIME_MICROS:
-                // TODO(deephaven-core#976) Assuming that time is adjusted to UTC
                 return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case TIMESTAMP_MILLIS:
-                // TODO(deephaven-core#976) Assuming that time is adjusted to UTC
-                return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
+                // Converted type doesn't have isAdjustedToUTC parameter, so use the information from logical type
+                return LogicalTypeAnnotation.timestampType(isAdjustedToUTC(logicalType),
+                        LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIMESTAMP_MICROS:
-                // TODO(deephaven-core#976) Assuming that time is adjusted to UTC
-                return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
+                return LogicalTypeAnnotation.timestampType(isAdjustedToUTC(logicalType),
+                        LogicalTypeAnnotation.TimeUnit.MICROS);
             case INTERVAL:
                 return LogicalTypeAnnotation.IntervalLogicalTypeAnnotation.getInstance();
             case INT_8:
@@ -409,8 +399,21 @@ public class ParquetFileReader {
                 return LogicalTypeAnnotation.bsonType();
             default:
                 throw new ParquetFileReaderException(
-                        "Can't convert converted type to logical type, unknown converted type " + type);
+                        "Can't convert converted type to logical type, unknown converted type " + convertedType);
         }
+    }
+
+    /**
+     * Helper method to determine if a logical type is adjusted to UTC.
+     * 
+     * @param logicalType the logical type to check
+     * @return true if the logical type is a timestamp adjusted to UTC, false otherwise
+     */
+    private static boolean isAdjustedToUTC(final LogicalType logicalType) {
+        if (logicalType.getSetField() == LogicalType._Fields.TIMESTAMP) {
+            return logicalType.getTIMESTAMP().isAdjustedToUTC;
+        }
+        return false;
     }
 
     public MessageType getSchema() {

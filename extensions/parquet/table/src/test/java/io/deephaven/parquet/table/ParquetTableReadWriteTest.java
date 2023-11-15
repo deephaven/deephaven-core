@@ -48,6 +48,8 @@ import io.deephaven.vector.*;
 import org.apache.commons.lang3.mutable.*;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.io.api.Binary;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
+import org.apache.parquet.schema.PrimitiveType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -85,7 +87,7 @@ import static org.junit.Assert.*;
 public final class ParquetTableReadWriteTest {
 
     private static final String ROOT_FILENAME = ParquetTableReadWriteTest.class.getName() + "_root";
-    public static final int LARGE_TABLE_SIZE = 2_000_000;
+    private static final int LARGE_TABLE_SIZE = 2_000_000;
 
     private static File rootFile;
 
@@ -123,7 +125,10 @@ public final class ParquetTableReadWriteTest {
                         "someCharColumn = (char)i",
                         "someTime = DateTimeUtils.now() + i",
                         "someKey = `` + (int)(i /100)",
-                        "biColumn = java.math.BigInteger.valueOf(ii)",
+                        "someBiColumn = java.math.BigInteger.valueOf(ii)",
+                        "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
+                        "someTimeColumn = i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
+                        "someDateTimeColumn = i % 10 == 0 ? null : java.time.LocalDateTime.of(2000+i%10, i%12+1, i%30+1, (i+4)%24, (i+5)%60, (i+6)%60, i)",
                         "nullKey = i < -1?`123`:null",
                         "nullIntColumn = (int)null",
                         "nullLongColumn = (long)null",
@@ -135,7 +140,9 @@ public final class ParquetTableReadWriteTest {
                         "nullCharColumn = (char)null",
                         "nullTime = (Instant)null",
                         "nullBiColumn = (java.math.BigInteger)null",
-                        "nullString = (String)null"));
+                        "nullString = (String)null",
+                        "nullDateColumn = (java.time.LocalDate)null",
+                        "nullTimeColumn = (java.time.LocalTime)null"));
         if (includeBigDecimal) {
             columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
         }
@@ -432,7 +439,8 @@ public final class ParquetTableReadWriteTest {
         writeReadTableTest(table, dest, ParquetInstructions.EMPTY);
     }
 
-    private static void writeReadTableTest(final Table table, final File dest, ParquetInstructions writeInstructions) {
+    private static void writeReadTableTest(final Table table, final File dest,
+            final ParquetInstructions writeInstructions) {
         ParquetTools.writeTable(table, dest, writeInstructions);
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(table, fromDisk);
@@ -452,7 +460,9 @@ public final class ParquetTableReadWriteTest {
         writeReadTableTest(vectorTable, dest);
 
         // Convert the table from vector to array column
-        final Table arrayTable = vectorTable.updateView(vectorTable.getColumnSourceMap().keySet().stream()
+        final Table arrayTable = vectorTable.updateView(vectorTable.getDefinition()
+                .getColumnStream()
+                .map(ColumnDefinition::getName)
                 .map(name -> name + " = " + name + ".toArray()")
                 .toArray(String[]::new));
         writeReadTableTest(arrayTable, dest);
@@ -499,7 +509,10 @@ public final class ParquetTableReadWriteTest {
                         "someByteArrayColumn = new byte[] {i % 10 == 0 ? null : (byte)i}",
                         "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
                         "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
-                        "someBiColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
+                        "someBiArrayColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
+                        "someDateArrayColumn = new java.time.LocalDate[] {i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)}",
+                        "someTimeArrayColumn = new java.time.LocalTime[] {i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)}",
+                        "someDateTimeArrayColumn = new java.time.LocalDateTime[] {i % 10 == 0 ? null : java.time.LocalDateTime.of(2000+i%10, i%12+1, i%30+1, (i+4)%24, (i+5)%60, (i+6)%60, i)}",
                         "nullStringArrayColumn = new String[] {(String)null}",
                         "nullIntArrayColumn = new int[] {(int)null}",
                         "nullLongArrayColumn = new long[] {(long)null}",
@@ -510,7 +523,9 @@ public final class ParquetTableReadWriteTest {
                         "nullByteArrayColumn = new byte[] {(byte)null}",
                         "nullCharArrayColumn = new char[] {(char)null}",
                         "nullTimeArrayColumn = new Instant[] {(Instant)null}",
-                        "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"));
+                        "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}",
+                        "nullDateColumn = new java.time.LocalDate[] {(java.time.LocalDate)null}",
+                        "nullTimeColumn = new java.time.LocalTime[] {(java.time.LocalTime)null}"));
 
         Table arrayTable = TableTools.emptyTable(10000).select(Selectable.from(columns));
         final File dest = new File(rootFile + File.separator + "testArrayColumns.parquet");
@@ -912,7 +927,7 @@ public final class ParquetTableReadWriteTest {
         ParquetTools.writeTable(someTable, secondDataFile);
 
         Table partitionedTable = ParquetTools.readTable(parentDir).select();
-        final Set<?> columnsSet = partitionedTable.getColumnSourceMap().keySet();
+        final Set<String> columnsSet = partitionedTable.getDefinition().getColumnNameSet();
         assertTrue(columnsSet.size() == 2 && columnsSet.contains("A") && columnsSet.contains("X"));
 
         // Add an empty dot file and dot directory (with valid parquet files) in one of the partitions
@@ -1255,6 +1270,45 @@ public final class ParquetTableReadWriteTest {
         assertTableStatistics(groupedTableToSave, groupedTableDest);
     }
 
+    @Test
+    public void readWriteDateTimeTest() {
+        final int NUM_ROWS = 1000;
+        final Table table = TableTools.emptyTable(NUM_ROWS).view(
+                "someDateColumn = java.time.LocalDate.ofEpochDay(i)",
+                "someTimeColumn = java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
+                "someLocalDateTimeColumn = java.time.LocalDateTime.of(2000+i%10, i%12+1, i%30+1, (i+4)%24, (i+5)%60, (i+6)%60, i)",
+                "someInstantColumn = DateTimeUtils.now() + i").select();
+        final File dest = new File(rootFile, "readWriteDateTimeTest.parquet");
+        writeReadTableTest(table, dest);
+
+        // Verify that the types are correct in the schema
+        final ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+        final ColumnChunkMetaData dateColMetadata = metadata.getBlocks().get(0).getColumns().get(0);
+        assertTrue(dateColMetadata.toString().contains("someDateColumn"));
+        assertEquals(PrimitiveType.PrimitiveTypeName.INT32, dateColMetadata.getPrimitiveType().getPrimitiveTypeName());
+        assertEquals(LogicalTypeAnnotation.dateType(), dateColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
+
+        final ColumnChunkMetaData timeColMetadata = metadata.getBlocks().get(0).getColumns().get(1);
+        assertTrue(timeColMetadata.toString().contains("someTimeColumn"));
+        assertEquals(PrimitiveType.PrimitiveTypeName.INT64, timeColMetadata.getPrimitiveType().getPrimitiveTypeName());
+        assertEquals(LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.NANOS),
+                timeColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
+
+        final ColumnChunkMetaData localDateTimeColMetadata = metadata.getBlocks().get(0).getColumns().get(2);
+        assertTrue(localDateTimeColMetadata.toString().contains("someLocalDateTimeColumn"));
+        assertEquals(PrimitiveType.PrimitiveTypeName.INT64,
+                localDateTimeColMetadata.getPrimitiveType().getPrimitiveTypeName());
+        assertEquals(LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.NANOS),
+                localDateTimeColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
+
+        final ColumnChunkMetaData instantColMetadata = metadata.getBlocks().get(0).getColumns().get(3);
+        assertTrue(instantColMetadata.toString().contains("someInstantColumn"));
+        assertEquals(PrimitiveType.PrimitiveTypeName.INT64,
+                instantColMetadata.getPrimitiveType().getPrimitiveTypeName());
+        assertEquals(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS),
+                instantColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
+    }
+
     /**
      * Test our manual verification techniques against a file generated by pyarrow. Here is the code to produce the file
      * when/if this file needs to be re-generated or changed.
@@ -1323,12 +1377,25 @@ public final class ParquetTableReadWriteTest {
         assertTableStatistics(dhFromDisk, dhDest);
     }
 
+    @Test
+    public void inferParquetOrderLastKey() {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "inferParquetOrder");
+        parentDir.mkdir();
+        final TableDefinition td1 = TableDefinition.of(ColumnDefinition.ofInt("Foo"));
+        final TableDefinition td2 =
+                TableDefinition.of(ColumnDefinition.ofInt("Foo"), ColumnDefinition.ofString("Bar"));
+        ParquetTools.writeTable(TableTools.newTable(td1), new File(parentDir, "01.parquet"));
+        ParquetTools.writeTable(TableTools.newTable(td2), new File(parentDir, "02.parquet"));
+        final Table table = ParquetTools.readTable(parentDir);
+        assertEquals(td2, table.getDefinition());
+    }
+
     private void assertTableStatistics(Table inputTable, File dest) {
         // Verify that the columns have the correct statistics.
         final ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
 
-        final String[] colNames =
-                inputTable.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] colNames = inputTable.getDefinition().getColumnNamesArray();
         for (int colIdx = 0; colIdx < inputTable.numColumns(); ++colIdx) {
             final String colName = colNames[colIdx];
 
