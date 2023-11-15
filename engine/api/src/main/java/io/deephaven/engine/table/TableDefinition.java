@@ -287,52 +287,6 @@ public class TableDefinition implements LogOutputAppendable {
     }
 
     /**
-     * Checks if {@code columnName} exists. If not, throws a NoSuchColumnException.
-     *
-     * @param columnName the column name
-     */
-    public final void checkColumn(@NotNull final String columnName) {
-        if (!getColumnNameMap().containsKey(columnName)) {
-            throw new IllegalArgumentException(); // todo
-        }
-    }
-
-    /**
-     * Checks if {@code columnName} exists and if it is castable to {@code clazz}. Otherwise, throws a
-     * NoSuchColumnException or a {@link ClassCastException}.
-     *
-     * @param columnName the column name
-     * @param clazz the data type
-     * @see ColumnDefinition#checkCastTo(Class)
-     */
-    public final void checkColumn(final String columnName, Class<?> clazz) {
-        final ColumnDefinition<?> cd = getColumn(columnName);
-        if (cd == null) {
-            // todo: need nosuchelement
-            throw new IllegalArgumentException("");
-        }
-        cd.checkCastTo(clazz);
-    }
-
-    /**
-     * Checks if {@code columnName} exists and if it is castable to {@code clazz} and {@code componentType}. Otherwise,
-     * throws a NoSuchColumnException or a {@link ClassCastException}.
-     *
-     * @param columnName the column name
-     * @param clazz the data type
-     * @param componentType the component type
-     * @see ColumnDefinition#checkCastTo(Class, Class)
-     */
-    public final void checkColumn(final String columnName, Class<?> clazz, Class<?> componentType) {
-        final ColumnDefinition<?> cd = getColumn(columnName);
-        if (cd == null) {
-            // todo: need nosuchelement
-            throw new IllegalArgumentException("");
-        }
-        cd.checkCastTo(clazz, componentType);
-    }
-
-    /**
      * @param column The {@link ColumnDefinition} to search for
      * @return The index of {@code column}, or {@code -1} if no such column exists in this table definition
      * @apiNote This is an O({@link #numColumns()}) lookup.
@@ -360,6 +314,40 @@ public class TableDefinition implements LogOutputAppendable {
     }
 
     /**
+     * Checks if {@code columnName} exists and if supports {@link ColumnDefinition#checkCastTo(Class)} with
+     * {@code clazz}. Otherwise, throws a {@link NoSuchColumnException} or a {@link ClassCastException}.
+     *
+     * @param columnName the column name
+     * @param clazz the data type
+     * @see ColumnDefinition#checkCastTo(Class)
+     */
+    public final void checkHasColumn(@NotNull String columnName, @NotNull Class<?> clazz) {
+        final ColumnDefinition<?> cd = getColumn(columnName);
+        if (cd == null) {
+            throw new NoSuchColumnException(getColumnNameSet(), columnName);
+        }
+        cd.checkCastTo(clazz);
+    }
+
+    /**
+     * Checks if {@code columnName} exists and if supports {@link ColumnDefinition#checkCastTo(Class, Class)} with
+     * {@code clazz} and {@code componentType}. Otherwise, throws a {@link NoSuchColumnException} or a
+     * {@link ClassCastException}.
+     *
+     * @param columnName the column name
+     * @param clazz the data type
+     * @param componentType the component type
+     * @see ColumnDefinition#checkCastTo(Class, Class)
+     */
+    public final void checkHasColumn(@NotNull String columnName, @NotNull Class<?> clazz, Class<?> componentType) {
+        final ColumnDefinition<?> cd = getColumn(columnName);
+        if (cd == null) {
+            throw new NoSuchColumnException(getColumnNameSet(), columnName);
+        }
+        cd.checkCastTo(clazz, componentType);
+    }
+
+    /**
      * Check this definition to ensure that all {@code columns} are present.
      *
      * @param columns The column names to check
@@ -368,6 +356,7 @@ public class TableDefinition implements LogOutputAppendable {
     public final void checkHasColumns(@NotNull Collection<String> columns) {
         NoSuchColumnException.throwIf(getColumnNameSet(), columns);
     }
+
 
     /**
      * Tests mutual-compatibility of {@code this} and {@code other}. To be mutually compatible, they must have the same

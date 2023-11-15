@@ -161,21 +161,21 @@ public abstract class KafkaPublishOptions {
     @Check
     final void checkTopicColumn() {
         if (topicColumn().isPresent()) {
-            table().getDefinition().checkColumn(topicColumn().get().name(), CharSequence.class);
+            table().getDefinition().checkHasColumn(topicColumn().get().name(), CharSequence.class);
         }
     }
 
     @Check
     final void checkPartitionColumn() {
         if (partitionColumn().isPresent()) {
-            table().getDefinition().checkColumn(partitionColumn().get().name(), int.class);
+            table().getDefinition().checkHasColumn(partitionColumn().get().name(), int.class);
         }
     }
 
     @Check
     final void checkTimestampColumn() {
         if (timestampColumn().isPresent()) {
-            table().getDefinition().checkColumn(timestampColumn().get().name(), Instant.class);
+            table().getDefinition().checkHasColumn(timestampColumn().get().name(), Instant.class);
         }
     }
 

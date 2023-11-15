@@ -236,7 +236,7 @@ public interface Table extends
      * @param sourceName The name of the column
      * @param <T> The target type, as a type parameter. Inferred from context.
      * @return The column source for {@code sourceName}, parameterized by {@code T}
-     * @see TableDefinition#checkColumn(String)
+     * @see TableDefinition#checkHasColumn(String)
      */
     <T> ColumnSource<T> getColumnSource(String sourceName);
 
@@ -253,7 +253,7 @@ public interface Table extends
      * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return The column source for {@code sourceName}, parameterized by {@code T}
      * @see ColumnSource#cast(Class)
-     * @see TableDefinition#checkColumn(String, Class)
+     * @see TableDefinition#checkHasColumn(String, Class)
      */
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz);
 
@@ -272,7 +272,7 @@ public interface Table extends
      * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return The column source for {@code sourceName}, parameterized by {@code T}
      * @see ColumnSource#cast(Class, Class)
-     * @see TableDefinition#checkColumn(String, Class, Class)
+     * @see TableDefinition#checkHasColumn(String, Class, Class)
      */
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz, @Nullable Class<?> componentType);
 
