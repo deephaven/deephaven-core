@@ -38,6 +38,7 @@ jobs:
         run: |
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
+          export GITHUB_DHC_VERSION=$(./gradlew printVersion -q)
 
       - name: All Javadoc
         uses: burrunan/gradle-cache-action@v1
@@ -49,7 +50,7 @@ jobs:
       - name: Upload Javadocs
         uses: actions/upload-artifact@v3
         with:
-          name: javadocs
+          name: javadocs-${{env.GITHUB_DHC_VERSION}}
           path: 'combined-javadoc/build/docs/javadoc/'
 
       #- name: Deploy Javadoc
@@ -102,6 +103,12 @@ jobs:
           job-id: pythonDocs
           arguments: --scan sphinx:pythonDocs sphinx:pydeephavenDocs
           gradle-version: wrapper
+          
+      - name: Upload Python Docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: pydocs
+          path: 'sphinx/build/docs/'
 
       #- name: Deploy Python Docs
       #  if: ${{ github.ref == 'refs/heads/main' }}
@@ -166,6 +173,12 @@ jobs:
           job-id: cppDocs
           arguments: --scan sphinx:cppClientDocs sphinx:cppExamplesDocs
           gradle-version: wrapper
+          
+      - name: Upload Python Docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: cppdocs
+          path: 'sphinx/build/cppClientDocs/'
 
       #- name: Deploy Client C++ Docs
       #  if: ${{ github.ref == 'refs/heads/main' }}
