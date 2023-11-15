@@ -85,7 +85,7 @@ The base Python `docker-compose.yml` file can be found [here](https://raw.github
 
 ```sh
 mkdir deephaven-deployment
-cd deephaven.deployment
+cd deephaven-deployment
 
 curl -O https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/base/docker-compose.yml
 
@@ -123,7 +123,7 @@ from deephaven_server import Server
 s = Server(port=10000, jvm_args=["-Xmx4g"]).start()
 ```
 
-The input arguments to `Server` specify to connect to the Deephaven server on port `10000` and to allocate 4GB of memory to the JVM.
+The input arguments to `Server` specify to bind to the Deephaven server on port `10000` and to allocate 4GB of memory to the server JVM.
 
 ### Built from source
 
@@ -155,6 +155,10 @@ docker run hello-world
 Internally, the Java build process will use [Gradle Auto Provisioning](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning)
 to download and use the appropriate Java version for building and testing.
 
+:::
+
+:::note
+
 On Windows, all commands must be run inside a WSL 2 terminal.
 
 :::
@@ -166,7 +170,7 @@ A Python virtual environment is highly recommended for building Deephaven from s
 ```sh
 git clone https://github.com/deephaven/deephaven-core.git
 cd deephaven-core
-python -m venv /tmp/my-dh-venv
+python3 -m venv /tmp/my-dh-venv
 source /tmp/my-dh-venv/bin/activate
 ./gradlew py-server:assemble
 pip install "py/server/build/wheel/deephaven_core-<version>-py3-non-any.whl[autocomplete]
