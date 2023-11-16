@@ -505,8 +505,8 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     }
 
     /**
-     * Checks if {@link #getDataType() dataType} can be cast to {@code destDataType}. If not, this throws a
-     * {@link ClassCastException}.
+     * Checks if objects of type {@link #getDataType() dataType} can be cast to {@code destDataType} (equivalent to
+     * {@code destDataType.isAssignableFrom(dataType)}). If not, this throws a {@link ClassCastException}.
      *
      * @param destDataType the destination data type
      */
@@ -515,9 +515,11 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     }
 
     /**
-     * Checks if {@link #getDataType() dataType} can be cast to {@code destDataType} and checks that
-     * {@link #getComponentType() componentType} can be cast to {@code destComponentType} (both component types must be
-     * present and cast-able, or both must be {@code null}). If not, this throws a {@link ClassCastException}.
+     * Checks if objects of type {@link #getDataType() dataType} can be cast to {@code destDataType} (equivalent to
+     * {@code destDataType.isAssignableFrom(dataType)}) and checks that objects of type {@link #getComponentType()
+     * componentType} can be cast to {@code destComponentType} (both component types must be present and cast-able, or
+     * both must be {@code null}; when both present, is equivalent to
+     * {@code destComponentType.isAssignableFrom(componentType)}). If not, this throws a {@link ClassCastException}.
      *
      * @param destDataType the destination data type
      * @param destComponentType the destination component type, may be {@code null}

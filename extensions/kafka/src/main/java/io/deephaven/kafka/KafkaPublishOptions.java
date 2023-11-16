@@ -39,26 +39,26 @@ public abstract class KafkaPublishOptions {
     public abstract Table table();
 
     /**
-     * The default kafka topic to publish to. When {@code null}, {@link #topicColumn()} must be set.
+     * The default Kafka topic to publish to. When {@code null}, {@link #topicColumn()} must be set.
      *
-     * @return the default kafka topic
+     * @return the default Kafka topic
      * @see #topicColumn()
      */
     @Nullable
     public abstract String topic();
 
     /**
-     * The default kafka partition to publish to.
+     * The default Kafka partition to publish to.
      *
-     * @return the default kafka partition
+     * @return the default Kafka partition
      * @see #partitionColumn()
      */
     public abstract OptionalInt partition();
 
     /**
-     * The kafka configuration properties.
+     * The Kafka configuration properties.
      *
-     * @return the kafka configuration
+     * @return the Kafka configuration
      */
     public abstract Properties config();
 
@@ -110,7 +110,7 @@ public abstract class KafkaPublishOptions {
 
     /**
      * The topic column. When set, uses the the given {@link CharSequence}-compatible column from {@link #table()} as
-     * the first source for setting the kafka record topic. When not present, or the column value is null,
+     * the first source for setting the Kafka record topic. When not present, or if the column value is null,
      * {@link #topic()} will be used.
      *
      * @return the topic column name
@@ -119,10 +119,10 @@ public abstract class KafkaPublishOptions {
 
     /**
      * The partition column. When set, uses the the given {@code int} column from {@link #table()} as the first source
-     * for setting the kafka record partition. When not present, or the column value is null, {@link #partition()} will
-     * be used if present. If a valid partition number is specified, that partition will be used when sending the
-     * record. If no partition is specified but a key is present, a partition will be chosen using a hash of the key. If
-     * neither key nor partition is present, a partition will be assigned in a round-robin fashion.
+     * for setting the Kafka record partition. When not present, or if the column value is null, {@link #partition()}
+     * will be used if present. If a valid partition number is specified, that partition will be used when sending the
+     * record. Otherwise, Kafka will choose a partition using a hash of the key if the key is present, or will assign a
+     * partition in a round-robin fashion if the key is not present.
      *
      * @return the partition column name
      */
@@ -130,8 +130,8 @@ public abstract class KafkaPublishOptions {
 
     /**
      * The timestamp column. When set, uses the the given {@link Instant} column from {@link #table()} as the first
-     * source for setting the kafka record timestamp. When not present, or the column value is null, the producer will
-     * stamp the record with its current time. The timestamp eventually used by Kafka depends on the timestamp type
+     * source for setting the Kafka record timestamp. When not present, or if the column value is null, the producer
+     * will stamp the record with its current time. The timestamp eventually used by Kafka depends on the timestamp type
      * configured for the topic. If the topic is configured to use CreateTime, the timestamp in the producer record will
      * be used by the broker. If the topic is configured to use LogAppendTime, the timestamp in the producer record will
      * be overwritten by the broker with the broker local time when it appends the message to its log.

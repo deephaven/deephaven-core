@@ -51,7 +51,7 @@ class KafkaProducerTestCase(BaseTestCase):
         self.assertIsNotNone(cleanup)
         cleanup()
 
-    def test_simple_spec_topic_column_no_default_topic(self):
+    def test_simple_spec_topic_col_no_default_topic(self):
         """
         Check a simple Kafka producer works with a topic column but no default topic
         """
@@ -65,13 +65,13 @@ class KafkaProducerTestCase(BaseTestCase):
             None,
             key_spec=KeyValueSpec.IGNORE,
             value_spec=pk.simple_spec('Price'),
-            topic_column='Topic'
+            topic_col='Topic'
         )
 
         self.assertIsNotNone(cleanup)
         cleanup()
 
-    def test_simple_spec_topic_column_default_topic(self):
+    def test_simple_spec_topic_col_default_topic(self):
         """
         Check a simple Kafka producer works with a topic column and a default topic
         """
@@ -85,7 +85,7 @@ class KafkaProducerTestCase(BaseTestCase):
             'orders',
             key_spec=KeyValueSpec.IGNORE,
             value_spec=pk.simple_spec('Price'),
-            topic_column='Topic'
+            topic_col='Topic'
         )
 
         self.assertIsNotNone(cleanup)
@@ -110,7 +110,7 @@ class KafkaProducerTestCase(BaseTestCase):
         self.assertIsNotNone(cleanup)
         cleanup()
 
-    def test_simple_spec_partition_column_no_default_partition(self):
+    def test_simple_spec_partition_col_no_default_partition(self):
         """
         Check a simple Kafka producer works with a partition column
         """
@@ -124,13 +124,13 @@ class KafkaProducerTestCase(BaseTestCase):
             "orders",
             key_spec=KeyValueSpec.IGNORE,
             value_spec=pk.simple_spec('Price'),
-            partition_column='Partition'
+            partition_col='Partition'
         )
 
         self.assertIsNotNone(cleanup)
         cleanup()
 
-    def test_simple_spec_partition_column_default_partition(self):
+    def test_simple_spec_partition_col_default_partition(self):
         """
         Check a simple Kafka producer works with a partition column and default partition
         """
@@ -145,13 +145,13 @@ class KafkaProducerTestCase(BaseTestCase):
             key_spec=KeyValueSpec.IGNORE,
             value_spec=pk.simple_spec('Price'),
             partition=0,
-            partition_column='Partition'
+            partition_col='Partition'
         )
 
         self.assertIsNotNone(cleanup)
         cleanup()
 
-    def test_simple_spec_timestamp_column(self):
+    def test_simple_spec_timestamp_col(self):
         """
         Check a simple Kafka producer works with a timestamp column
         """
@@ -165,7 +165,7 @@ class KafkaProducerTestCase(BaseTestCase):
             "orders",
             key_spec=KeyValueSpec.IGNORE,
             value_spec=pk.simple_spec('Price'),
-            timestamp_column='Timestamp'
+            timestamp_col='Timestamp'
         )
 
         self.assertIsNotNone(cleanup)

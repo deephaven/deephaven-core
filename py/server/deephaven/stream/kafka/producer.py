@@ -43,18 +43,18 @@ def produce(
     last_by_key_columns: bool = False,
     publish_initial: bool = True,
     partition: Optional[int] = None,
-    topic_column: Optional[str] = None,
-    partition_column: Optional[str] = None,
-    timestamp_column: Optional[str] = None,
+    topic_col: Optional[str] = None,
+    partition_col: Optional[str] = None,
+    timestamp_col: Optional[str] = None,
 ) -> Callable[[], None]:
     """Produce to Kafka from a Deephaven table.
 
     Args:
         table (Table): the source table to publish to Kafka
-        kafka_config (Dict): configuration for the associated kafka producer.
+        kafka_config (Dict): configuration for the associated Kafka producer.
             This is used to call the constructor of org.apache.kafka.clients.producer.KafkaProducer;
             pass any KafkaProducer specific desired configuration here
-        topic (Optional[str]): the default topic name. When None, topic_column must be set. See topic_column for behavior.
+        topic (Optional[str]): the default topic name. When None, topic_col must be set. See topic_col for behavior.
         key_spec (KeyValueSpec): specifies how to map table column(s) to the Key field in produced Kafka messages.
             This should be the result of calling one of the functions simple_spec(), avro_spec() or json_spec() in this
             module, or the constant KeyValueSpec.IGNORE
@@ -66,17 +66,17 @@ def produce(
             aggregation on table grouped by the input columns of key_spec and publish to Kafka from the result.
         publish_initial (bool): whether the initial data in table should be published. When False, table.is_refreshing
             must be True. By default, is True.
-        partition (Optional[int]): the default partition, None by default. See partition_column for partition behavior.
-        topic_column (Optional[str]): the topic column, None by default. When set, uses the the given string column from
-            table as the first source for setting the kafka record topic. When None, or the column value is null, topic
+        partition (Optional[int]): the default partition, None by default. See partition_col for partition behavior.
+        topic_col (Optional[str]): the topic column, None by default. When set, uses the the given string column from
+            table as the first source for setting the Kafka record topic. When None, or if the column value is null, topic
             will be used.
-        partition_column (Optional[str]): the partition column, None by default. When set, uses the the given int column
-            from table as the first source for setting the kafka record partition. When None, or the column value is null,
-            partition will be used if present. If a valid partition number is specified, that partition will be used when
-            sending the record. If no partition is specified but a key is present, a partition will be chosen using a hash
-            of the key. If neither key nor partition is present, a partition will be assigned in a round-robin fashion.
-        timestamp_column (Optional[str]): the timestamp column, None by default. When set, uses the the given timestamp
-            column from table as the first source for setting the kafka record timestamp. When None, or the column value
+        partition_col (Optional[str]): the partition column, None by default. When set, uses the the given int column
+            from table as the first source for setting the Kafka record partition. When None, or if the column value is null,
+            partition will be used if present. If a valid partition number is specified, that partition will be used
+            when sending the record. Otherwise, Kafka will choose a partition using a hash of the key if the key is present,
+            or will assign a partition in a round-robin fashion if the key is not present.
+        timestamp_col (Optional[str]): the timestamp column, None by default. When set, uses the the given timestamp
+            column from table as the first source for setting the Kafka record timestamp. When None, or if the column value
             is null, the producer will stamp the record with its current time. The timestamp eventually used by Kafka
             depends on the timestamp type configured for the topic. If the topic is configured to use CreateTime, the
             timestamp in the producer record will be used by the broker. If the topic is configured to use LogAppendTime,
@@ -111,12 +111,12 @@ def produce(
             options_builder.topic(topic)
         if partition:
             options_builder.partition(partition)
-        if topic_column:
-            options_builder.topicColumn(_JColumnName.of(topic_column))
-        if partition_column:
-            options_builder.partitionColumn(_JColumnName.of(partition_column))
-        if timestamp_column:
-            options_builder.timestampColumn(_JColumnName.of(timestamp_column))
+        if topic_col:
+            options_builder.topicColumn(_JColumnName.of(topic_col))
+        if partition_col:
+            options_builder.partitionColumn(_JColumnName.of(partition_col))
+        if timestamp_col:
+            options_builder.timestampColumn(_JColumnName.of(timestamp_col))
 
         with auto_locking_ctx(table):
             runnable = _JKafkaTools.produceFromTable(options_builder.build())

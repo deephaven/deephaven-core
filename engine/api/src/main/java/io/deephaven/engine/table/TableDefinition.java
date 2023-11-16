@@ -314,8 +314,8 @@ public class TableDefinition implements LogOutputAppendable {
     }
 
     /**
-     * Checks if {@code columnName} exists and if supports {@link ColumnDefinition#checkCastTo(Class)} with
-     * {@code clazz}. Otherwise, throws a {@link NoSuchColumnException} or a {@link ClassCastException}.
+     * Checks if {@code columnName} exists and supports {@link ColumnDefinition#checkCastTo(Class)} with {@code clazz}.
+     * Otherwise, throws a {@link NoSuchColumnException} or a {@link ClassCastException}.
      *
      * @param columnName the column name
      * @param clazz the data type
@@ -330,7 +330,7 @@ public class TableDefinition implements LogOutputAppendable {
     }
 
     /**
-     * Checks if {@code columnName} exists and if supports {@link ColumnDefinition#checkCastTo(Class, Class)} with
+     * Checks if {@code columnName} exists and supports {@link ColumnDefinition#checkCastTo(Class, Class)} with
      * {@code clazz} and {@code componentType}. Otherwise, throws a {@link NoSuchColumnException} or a
      * {@link ClassCastException}.
      *
@@ -356,7 +356,6 @@ public class TableDefinition implements LogOutputAppendable {
     public final void checkHasColumns(@NotNull Collection<String> columns) {
         NoSuchColumnException.throwIf(getColumnNameSet(), columns);
     }
-
 
     /**
      * Tests mutual-compatibility of {@code this} and {@code other}. To be mutually compatible, they must have the same
