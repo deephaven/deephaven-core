@@ -157,7 +157,6 @@ jobs:
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
       - name: Upload JVM Error Logs
-        if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-artifact@v3
         if: failure()
         with:
