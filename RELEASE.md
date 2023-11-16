@@ -150,7 +150,8 @@ Once the workflow job is done, ensure all publication sources have the new artif
 ### 5. Download artifacts
 
 Once the full publish-ci.yml worflow is done, the release artifacts can be downloaded from the GitHub Artifacts (located in the "Summary" tab of the action).
-These are currently manual steps taken from the browser.
+Similarly, release artifacts can be download from the docs-ci.yml workflow.
+These are currently manual steps taken from the browser. (The artifacts will uploaded in Step #9)
 
 There is potential in the future for QA-ing these artifacts above and beyond the integration testing that CI provides, as the release is not set in stone yet.
 
@@ -208,7 +209,8 @@ Create a new [GitHub release](https://github.com/deephaven/deephaven-core/releas
 
 The convention is to have the Release title of the form `vX.Y.Z` and to autogenerate the release notes in comparison to the previous release tag. Question: should we always generate release notes based off of the previous minor release, instead of patch? Our git release workflow suggests we may want to do it always minor to minor.
 
-Upload the Deephaven server application, deephaven-core wheel, pydeephaven wheel, and SBOM artifacts.
+Upload the Deephaven server application, deephaven-core wheel, pydeephaven wheel, and SBOM artifacts. Also, upload the C++, Java, and Pyhon docs artifacts 
+previously downloaded from the docs-ci.yml workflow. (These are the artifacts downloaded in Step #5)
 
 Hit the GitHub "Publish release" button.
 
