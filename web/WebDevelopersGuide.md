@@ -992,9 +992,9 @@ This enum describes the name of each supported operation/aggregation type when c
  value is "Max".
  * `SUM` - The sum of all values in the specified column. Can only apply to numeric types. String value is "Sum".
  * `ABS_SUM` - The sum of all values, as their distance from zero, in the specified column. Can only apply to numeric types. String value is “AbsSum”.
- * `VAR` - The variance of all values in the specified column. Can only apply to numeric types. String value is "Var".
+ * `VAR` - The sample variance of all values in the specified column. Can only apply to numeric types. String value is "Var".
  * `AVG` - The average of all values in the specified column. Can only apply to numeric types. String value is "Avg".
- * `STD` - The standard deviation of all values in the specified column. Can only apply to numeric types. String value is
+ * `STD` - The sample standard deviation of all values in the specified column. Can only apply to numeric types. String value is
  "Std".
  * `FIRST` - The first value in the specified column. Can apply to any type. String value is "First".
  * `LAST` - The last value in the specified column. Can apply to any type. String value is "Last".

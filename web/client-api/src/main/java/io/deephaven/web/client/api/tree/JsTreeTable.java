@@ -95,12 +95,12 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * <li>There is no {@link JsTable#getTotalSize() totalSize} property.</li>
  * <li>The viewport is not un-set when changes are made to filter or sort, but changes will continue to be streamed in.
  * It is suggested that the viewport be changed to the desired position (usually the first N rows) after any filter/sort
- * change is made. Likewise, getViewportData() will always return the most recent data, and will not wait if a new
- * operation is pending.</li>
+ * change is made. Likewise, {@link #getViewportData()} will always return the most recent data, and will not wait if a
+ * new operation is pending.</li>
  * <li>Custom columns are not directly supported. If the TreeTable was created client-side, the original Table can have
  * custom columns applied, and the TreeTable can be recreated.</li>
- * <li>The {@link JsTable#getTotalsTableConfig()} property is instead a method, {@link #getTotalsTableConfig()}, and
- * returns a promise so the config can be fetched asynchronously.</li>
+ * <li>Whereas Table has a {@link JsTable#getTotalsTableConfig()} property, it is defined here as a method,
+ * {@link #getTotalsTableConfig()}. This returns a promise so the config can be fetched asynchronously.</li>
  * <li>Totals Tables for trees vary in behavior between tree tables and roll-up tables. This behavior is based on the
  * original flat table used to produce the Tree Table - for a hierarchical table (i.e. Table.treeTable in the query
  * config), the totals will include non-leaf nodes (since they are themselves actual rows in the table), but in a

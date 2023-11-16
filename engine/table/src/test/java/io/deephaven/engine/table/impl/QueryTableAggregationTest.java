@@ -116,12 +116,12 @@ public class QueryTableAggregationTest {
                     Arrays.stream(keySelectColumns).map(SelectColumn::getName).distinct().toArray(String[]::new);
 
             if (keyColumns.length == 0) {
-                expectedKeys = TableTools.emptyTable(adjustedInput.size() > 0 ? 1 : 0);
+                expectedKeys = TableTools.emptyTable(!adjustedInput.isEmpty() ? 1 : 0);
                 expected = adjustedInput;
             } else {
                 final Set<String> retainedColumns =
-                        new LinkedHashSet<>(adjustedInput.getDefinition().getColumnNameMap().keySet());
-                retainedColumns.removeAll(Arrays.stream(keyNames).collect(Collectors.toSet()));
+                        new LinkedHashSet<>(adjustedInput.getDefinition().getColumnNameSet());
+                Arrays.asList(keyNames).forEach(retainedColumns::remove);
                 final List<SelectColumn> allSelectColumns =
                         Stream.concat(Arrays.stream(keySelectColumns), retainedColumns.stream().map(SourceColumn::new))
                                 .collect(Collectors.toList());
@@ -887,7 +887,7 @@ public class QueryTableAggregationTest {
                         new BigDecimalGenerator(),
                         new IntGenerator()));
 
-        final Set<String> keyColumnSet = new LinkedHashSet<>(table.getColumnSourceMap().keySet());
+        final Set<String> keyColumnSet = new LinkedHashSet<>(table.getDefinition().getColumnNameSet());
         keyColumnSet.remove("NonKey");
         final String[] keyColumns = keyColumnSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 

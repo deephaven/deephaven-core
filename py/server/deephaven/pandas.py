@@ -112,7 +112,8 @@ _PYARROW_TO_PANDAS_TYPE_MAPPERS = {
 }
 
 
-def to_pandas(table: Table, cols: List[str] = None, dtype_backend: Literal[None, "pyarrow", "numpy_nullable"] = None,
+def to_pandas(table: Table, cols: List[str] = None,
+              dtype_backend: Literal[None, "pyarrow", "numpy_nullable"] = "numpy_nullable",
               conv_null: bool = True) -> pd.DataFrame:
     """Produces a pandas DataFrame from a table.
 
@@ -123,11 +124,13 @@ def to_pandas(table: Table, cols: List[str] = None, dtype_backend: Literal[None,
     Args:
         table (Table): the source table
         cols (List[str]): the source column names, default is None which means include all columns
-        dtype_backend (str): Which dtype_backend to use, e.g. whether a DataFrame should have NumPy arrays,
+        dtype_backend (str): which dtype_backend to use, e.g. whether a DataFrame should have NumPy arrays,
             nullable dtypes are used for all dtypes that have a nullable implementation when “numpy_nullable” is set,
-            pyarrow is used for all dtypes if “pyarrow” is set. default is None, meaning Numpy backed DataFrames with
-            no nullable dtypes.
-        conv_null (bool): When dtype_backend is not set, whether to check for Deephaven nulls in the data and
+            pyarrow is used for all dtypes if “pyarrow” is set. None means Numpy backed DataFrames with no nullable
+            dtypes. Both "numpy_nullable" and "pyarrow" automatically convert Deephaven nulls to Pandas NA and enable
+            Pandas extension types.  Extension types are needed to support types beyond NumPy's type system.  Extension
+            types support operations such as properly mapping Java Strings to Python strings. default is "numpy_nullable".
+        conv_null (bool): when dtype_backend is set to None, whether to check for Deephaven nulls in the data and
             automatically replace them with pd.NA. default is True.
 
     Returns:

@@ -1190,10 +1190,13 @@ def rolling_count_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
 
 
 def rolling_std_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
-    """Creates a rolling standard deviation UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
-    are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
-    is considered to belong to the reverse window but not the forward window. Also, negative values are allowed and
-    can be used to generate completely forward or completely reverse windows.
+    """Creates a rolling sample standard deviation UpdateByOperation for the supplied column names, using ticks as the
+    windowing unit. Ticks are row counts, and you may specify the reverse and forward window in number of rows to
+    include. The current row is considered to belong to the reverse window but not the forward window. Also, negative
+    values are allowed and can be used to generate completely forward or completely reverse windows.
+
+    Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+    which ensures that the sample variance will be an unbiased estimator of population variance.
 
     Here are some examples of window values:
         |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
@@ -1209,7 +1212,7 @@ def rolling_std_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling standard deviation operation on all columns.
+            i.e. "new_col = col"; when empty, update_by perform the rolling sample standard deviation operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -1228,11 +1231,14 @@ def rolling_std_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
 
 def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                        fwd_time: Union[int, str] = 0) -> UpdateByOperation:
-    """Creates a rolling standard deviation UpdateByOperation for the supplied column names, using time as the windowing unit. This
-    function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
-    allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
-    the timestamp column belongs to no window and will not be considered in the windows of other rows; its output will
-    be null.
+    """Creates a rolling sample standard deviation UpdateByOperation for the supplied column names, using time as the
+    windowing unit. This function accepts nanoseconds or time strings as the reverse and forward window parameters.
+    Negative values are allowed and can be used to generate completely forward or completely reverse windows. A row
+    containing a null in the timestamp column belongs to no window and will not be considered in the windows of other
+    rows; its output will be null.
+
+    Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+    which ensures that the sample variance will be an unbiased estimator of population variance.
 
     Here are some examples of window values:
         |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
@@ -1250,7 +1256,7 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     Args:
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling standard deviation operation on all columns.
+            i.e. "new_col = col"; when empty, update_by perform the rolling sample standard deviation operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time

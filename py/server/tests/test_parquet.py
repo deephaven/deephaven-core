@@ -347,7 +347,8 @@ class ParquetTestCase(BaseTestCase):
         from_disk = read('data_from_dh.parquet')
         self.assert_table_equals(dh_table, from_disk)
 
-        df_from_disk = to_pandas(from_disk)
+        # TODO dtype_backend=None is a workaround until https://github.com/deephaven/deephaven-core/issues/4823 is fixed
+        df_from_disk = to_pandas(from_disk, dtype_backend=None)
         if pandas.__version__.split('.')[0] == "1":
             df_from_pandas = pandas.read_parquet("data_from_dh.parquet", use_nullable_dtypes=True)
         else:
@@ -384,7 +385,9 @@ class ParquetTestCase(BaseTestCase):
             # Write the provided pyarrow table type-casted to the new schema
             pyarrow.parquet.write_table(pa_table.cast(new_schema), dest)
             from_disk = read(dest)
-            df_from_disk = to_pandas(from_disk)
+
+            # TODO dtype_backend=None is a workaround until https://github.com/deephaven/deephaven-core/issues/4823 is fixed
+            df_from_disk = to_pandas(from_disk, dtype_backend=None)
             original_df = pa_table.to_pandas()
             # Compare the dataframes as strings
             self.assertTrue((df_from_disk.astype(str) == original_df.astype(str)).all().values.all())

@@ -69,9 +69,10 @@ public class ReplicateParquetTransferObjects {
         replaceAll(PARQUET_INSTANT_VECTOR_TRANSFER_PATH, PARQUET_TIME_VECTOR_TRANSFER_PATH, null, NO_EXCEPTIONS, pairs);
 
         pairs = new String[][] {
+                {"io.deephaven.time.DateTimeUtils", "io.deephaven.parquet.table.util.TransferUtils"},
                 {"InstantArrayTransfer", "LocalDateTimeArrayTransfer"},
                 {"InstantVectorTransfer", "LocalDateTimeVectorTransfer"},
-                {"DateTimeUtils.epochNanos", "DateTimeUtils.epochNanosUTC"},
+                {"DateTimeUtils.epochNanos", "TransferUtils.epochNanosUTC"},
                 {"Instant", "LocalDateTime"}
         };
         replaceAll(PARQUET_INSTANT_ARRAY_TRANSFER_PATH, PARQUET_LOCAL_DATE_TIME_ARRAY_TRANSFER_PATH, null,
@@ -80,9 +81,10 @@ public class ReplicateParquetTransferObjects {
                 NO_EXCEPTIONS, pairs);
 
         pairs = new String[][] {
+                {"io.deephaven.time.DateTimeUtils", "io.deephaven.parquet.table.util.TransferUtils"},
                 {"TimeTransfer", "LocalDateTimeTransfer"},
                 {"LocalTime", "LocalDateTime"},
-                {"DateTimeUtils.nanosOfDay", "DateTimeUtils.epochNanosUTC"}
+                {"DateTimeUtils.nanosOfDay", "TransferUtils.epochNanosUTC"}
         };
         replaceAll(PARQUET_TIME_TRANSFER_PATH, PARQUET_LOCAL_DATE_TIME_TRANSFER_PATH, null, NO_EXCEPTIONS, pairs);
 
