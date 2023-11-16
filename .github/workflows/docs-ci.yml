@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main ]
   push:
-    branches: [ "**" ]
+    branches: [ main ]
 
 jobs:
   javadoc:
@@ -59,17 +59,17 @@ jobs:
           name: javadocs-${{ steps.dhc-version.outputs.version }}
           path: 'combined-javadoc/build/docs/javadoc/'
 
-      #- name: Deploy Javadoc
-      #  if: ${{ github.ref == 'refs/heads/main' }}
-      #  uses: burnett01/rsync-deployments@5.2
-      #  with:
-      #    switches: -avzr --delete
-      #    path: combined-javadoc/build/docs/javadoc/
-      #    remote_path: deephaven-core/javadoc/
-      #    remote_host: ${{ secrets.DOCS_HOST }}
-      #    remote_port: ${{ secrets.DOCS_PORT }}
-      #    remote_user: ${{ secrets.DOCS_USER }}
-      #    remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+      - name: Deploy Javadoc
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@5.2
+        with:
+          switches: -avzr --delete
+          path: combined-javadoc/build/docs/javadoc/
+          remote_path: deephaven-core/javadoc/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
   pydoc:
     runs-on: ubuntu-22.04
@@ -129,37 +129,37 @@ jobs:
           name: pyclient-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/pyclient-docs/'
 
-      #- name: Deploy Python Docs
-      #  if: ${{ github.ref == 'refs/heads/main' }}
-      #  uses: burnett01/rsync-deployments@5.2
-      #  with:
-      #    switches: -avzr --delete
-      #    path: sphinx/build/docs/
-      #    remote_path: deephaven-core/pydoc/
-      #    remote_host: ${{ secrets.DOCS_HOST }}
-      #    remote_port: ${{ secrets.DOCS_PORT }}
-      #    remote_user: ${{ secrets.DOCS_USER }}
-      #    remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+      - name: Deploy Python Docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@5.2
+        with:
+          switches: -avzr --delete
+          path: sphinx/build/docs/
+          remote_path: deephaven-core/pydoc/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
-      #- name: Deploy Client Python Docs
-      #  if: ${{ github.ref == 'refs/heads/main' }}
-      #  uses: burnett01/rsync-deployments@5.2
-      #  with:
-      #    switches: -avzr --delete
-      #    path: sphinx/build/pyclient-docs/
-      #    remote_path: deephaven-core/client-api/python/
-      #    remote_host: ${{ secrets.DOCS_HOST }}
-      #    remote_port: ${{ secrets.DOCS_PORT }}
-      #    remote_user: ${{ secrets.DOCS_USER }}
-      #    remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+      - name: Deploy Client Python Docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@5.2
+        with:
+          switches: -avzr --delete
+          path: sphinx/build/pyclient-docs/
+          remote_path: deephaven-core/client-api/python/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
-      #- name: Upload JVM Error Logs
-      #  uses: actions/upload-artifact@v3
-      #  if: failure()
-      #  with:
-      #    name: docs-ci-pydoc-jvm-err
-      #    path: '**/*_pid*.log'
-      #    if-no-files-found: ignore
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: docs-ci-pydoc-jvm-err
+          path: '**/*_pid*.log'
+          if-no-files-found: ignore
 
   cppdoc:
     runs-on: ubuntu-22.04
@@ -212,27 +212,27 @@ jobs:
           name: cppclient-examples-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/cppExamplesDocs/'
 
-      #- name: Deploy Client C++ Docs
-      #  if: ${{ github.ref == 'refs/heads/main' }}
-      #  uses: burnett01/rsync-deployments@5.2
-      #  with:
-      #    switches: -avzr --delete
-      #    path: sphinx/build/cppClientDocs/
-      #    remote_path: deephaven-core/client-api/cpp/
-      #    remote_host: ${{ secrets.DOCS_HOST }}
-      #    remote_port: ${{ secrets.DOCS_PORT }}
-      #    remote_user: ${{ secrets.DOCS_USER }}
-      #    remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+      - name: Deploy Client C++ Docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@5.2
+        with:
+          switches: -avzr --delete
+          path: sphinx/build/cppClientDocs/
+          remote_path: deephaven-core/client-api/cpp/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
-      #- name: Deploy Client C++ Example Docs
-      #  if: ${{ github.ref == 'refs/heads/main' }}
-      #  uses: burnett01/rsync-deployments@5.2
-      #  with:
-      #    switches: -avzr --delete
-      #    path: sphinx/build/cppExamplesDocs/
-      #    remote_path: deephaven-core/client-api/cpp-examples/
-      #    remote_host: ${{ secrets.DOCS_HOST }}
-      #    remote_port: ${{ secrets.DOCS_PORT }}
-      #    remote_user: ${{ secrets.DOCS_USER }}
-      #    remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+      - name: Deploy Client C++ Example Docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@5.2
+        with:
+          switches: -avzr --delete
+          path: sphinx/build/cppExamplesDocs/
+          remote_path: deephaven-core/client-api/cpp-examples/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
       
