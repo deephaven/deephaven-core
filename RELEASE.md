@@ -112,7 +112,7 @@ $ git cherry-pick <...>
 $ ...
 $ git commit -m "Bump to X.Y.1"
 $ git --no-pager log --oneline vX.Y.0..release/vX.Y.1
-
+#
 # Compare output to expected PR list for missing or extraneous PRs
 ```
 
