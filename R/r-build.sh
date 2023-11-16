@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo "HELLO THERE"
-
 set -euo pipefail
 
 for var in DHCPP NCPUS LD_LIBRARY_PATH; do
