@@ -148,6 +148,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         };
     }
 
+    @JsIgnore
     @Override
     public void notifyServerShutdown(TerminationNotificationResponse success) {
         final String details;

@@ -74,9 +74,7 @@ public class JsAggregationOperation {
              */
             LAST = "Last",
             UNIQUE = "Unique";
-    /**
-     * Indicates that this column should not be aggregated. String value is "Skip".
-     */
+
     // Array operation isn't legal in all contexts, just omit it for now
     // ARRAY = "Array",
     // These need some other parameter to function, not supported yet
@@ -84,7 +82,10 @@ public class JsAggregationOperation {
     // SORTED_FIRST="SortedFirst",
     // SORTED_LAST="SortedLast",
     // WSUM = "WeightedSum";
-    @Deprecated
+
+    /**
+     * Indicates that this column should not be aggregated. String value is "Skip".
+     */
     public static final String SKIP = "Skip";
 
     @JsIgnore
@@ -95,7 +96,8 @@ public class JsAggregationOperation {
             case DISTINCT:
             case FIRST:
             case LAST:
-            case UNIQUE: {
+            case UNIQUE:
+            case SKIP: {
                 // These operations are always safe
                 return true;
             }
