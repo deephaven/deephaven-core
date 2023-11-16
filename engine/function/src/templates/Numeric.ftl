@@ -481,7 +481,7 @@ public class Numeric {
 
         double sum = 0;
         double sum2 = 0;
-        int count = 0;
+        long count = 0;
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
