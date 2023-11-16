@@ -562,6 +562,7 @@ def _query_scope_ctx():
         # in the __main__ module, use the default main global scope
         yield
 
+
 def _query_scope_agg_ctx(aggs: Sequence[Aggregation]) -> contextlib.AbstractContextManager:
     has_agg_formula = any([agg.is_formula for agg in aggs])
     if has_agg_formula:
@@ -3319,13 +3320,12 @@ class PartitionedTableProxy(JObjectWrapper):
             by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
 
-            cm = _query_scope_agg_ctx()
+            cm = _query_scope_agg_ctx(aggs)
             with cm:
                 with auto_locking_ctx(self):
                     return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggBy(j_agg_list, *by))
         except Exception as e:
             raise DHError(e, "agg_by operation on the PartitionedTableProxy failed.") from e
-
 
     def agg_all_by(self, agg: Aggregation, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.agg_all_by` table operation to all constituent tables of the underlying

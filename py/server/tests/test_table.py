@@ -943,7 +943,7 @@ class TableTestCase(BaseTestCase):
 
     def test_callable_attrs_in_query(self):
         input_cols = [
-            datetime_col(name="DTCol", data=[1,10000000]),
+            datetime_col(name="DTCol", data=[1, 10000000]),
         ]
         test_table = new_table(cols=input_cols)
         rt = test_table.update("Year = (int)year(DTCol, timeZone(`ET`))")
@@ -1025,7 +1025,7 @@ class TableTestCase(BaseTestCase):
             unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=-1),
             count_distinct(cols=["csa = a", "csb = b"], count_nulls=True),
             distinct(cols=["da = a", "db = b"], include_nulls=True),
-            ]
+        ]
         rt = test_table.agg_by(aggs=aggs, by=["c"])
         self.assertEqual(rt.size, test_table.select_distinct(["c"]).size)
 
@@ -1064,17 +1064,46 @@ class TableTestCase(BaseTestCase):
         self.assertIn("string value", str(cm.exception))
 
     def test_agg_formula_scope(self):
-        def run_func_work():
-            def my_fn(vals):
-                import deephaven.dtypes as dht
-                return dht.array(dht.double, [i + 2 for i in vals])
+        with self.subTest("agg_by_formula"):
+            def agg_by_formula():
+                def my_fn(vals):
+                    import deephaven.dtypes as dht
+                    return dht.array(dht.double, [i + 2 for i in vals])
 
-            t = empty_table(1000).update_view(["A=i%2", "B=A+3"])
-            t = t.agg_by([formula("(double[])my_fn(each)", formula_param='each', cols=['C=B'])], by='A') # This
-            return t
+                t = empty_table(1000).update_view(["A=i%2", "B=A+3"])
+                t = t.agg_by([formula("(double[])my_fn(each)", formula_param='each', cols=['C=B']), median("B")],
+                             by='A')
+                return t
 
-        t = run_func_work()
-        self.assertIsNotNone(t)
+            t = agg_by_formula()
+            self.assertIsNotNone(t)
+
+        with self.subTest("agg_all_by_formula"):
+            def agg_all_by_formula():
+                def my_fn(vals):
+                    import deephaven.dtypes as dht
+                    return dht.array(dht.double, [i + 2 for i in vals])
+
+                t = empty_table(1000).update_view(["A=i%2", "B=A+3"])
+                t = t.agg_all_by(formula("(double[])my_fn(each)", formula_param='each', cols=['C=B']), by='A')
+                return t
+
+            t = agg_all_by_formula()
+            self.assertIsNotNone(t)
+
+        with self.subTest("partitioned_by_formula"):
+            def partitioned_by_formula():
+                def my_fn(vals):
+                    import deephaven.dtypes as dht
+                    return dht.array(dht.double, [i + 2 for i in vals])
+
+                t = empty_table(10).update(["grp_id=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"])
+                t = t.partitioned_agg_by(aggs=formula("(double[])my_fn(each)", formula_param='each',
+                                                      cols=['C=weights']), by="grp_id")
+                return t
+
+            t = partitioned_by_formula()
+            self.assertIsNotNone(t)
 
 
 if __name__ == "__main__":
