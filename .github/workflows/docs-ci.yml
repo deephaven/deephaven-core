@@ -38,7 +38,7 @@ jobs:
         run: |
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
-          export GITHUB_DHC_VERSION=$(./gradlew printVersion -q)
+          echo "GITHUB_DHC_VERSION=$(./gradlew printVersion -q)" >> "$GITHUB_ENV" 
 
       - name: All Javadoc
         uses: burrunan/gradle-cache-action@v1
