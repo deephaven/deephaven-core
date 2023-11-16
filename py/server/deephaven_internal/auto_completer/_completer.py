@@ -1,3 +1,7 @@
+#
+# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+#
+
 # only python 3.8 needs this, but it must be the first expression in the file, so we can't predicate it
 from __future__ import annotations
 from enum import Enum
