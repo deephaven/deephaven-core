@@ -40,9 +40,11 @@ jobs:
           cat gradle.properties
           
       - name: Set DHC_VERSION
+        id: dhc-version
         run: |
-          DHC_VERSION=$(./gradlew printVersion -q)
-          echo "DHC_VERSION=${DHC_VERSION}" >> $GITHUB_ENV
+          ./gradlew printVersion -q > dhc_version.txt
+          cat dhc_version.txt
+          echo "version=0.30.0" >> "$GITHUB_OUTPUT"
 
       - name: All Javadoc
         uses: burrunan/gradle-cache-action@v1
