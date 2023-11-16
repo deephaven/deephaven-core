@@ -386,9 +386,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * null if no property exists, a string if it is an easily serializable property, or a <b>Promise
-     * <Table>
-     * </b> that will either resolve with a table or error out if the object can't be passed to JS.
+     * null if no property exists, a string if it is an easily serializable property, or a {@code Promise
+     * &lt;Table&gt;} that will either resolve with a table or error out if the object can't be passed to JS.
      * 
      * @param attributeName
      * @return Object
@@ -877,7 +876,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * 
      * @return dh.TotalsTableConfig
      */
-    @JsMethod
+    @JsProperty
     public JsTotalsTableConfig getTotalsTableConfig() {
         // we want to communicate to the JS dev that there is no default config, so we allow
         // returning null here, rather than a default config. They can then easily build a

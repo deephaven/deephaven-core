@@ -87,7 +87,11 @@ public class ShortRollingAvgOperator extends BaseDoubleUpdateByOperator {
                 outputValues.set(outIdx, NULL_DOUBLE);
             } else {
                 final int count = shortWindowValues.size() - nullCount;
-                outputValues.set(outIdx, curVal / (double)count);
+                if (count == 0) {
+                    outputValues.set(outIdx, Double.NaN);
+                } else {
+                    outputValues.set(outIdx, curVal / (double)count);
+                }
             }
         }
 

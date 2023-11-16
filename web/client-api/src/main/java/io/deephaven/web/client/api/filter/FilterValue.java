@@ -20,6 +20,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Valu
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.LongWrapper;
+import io.deephaven.web.client.api.TableData;
+import io.deephaven.web.client.api.i18n.JsTimeZone;
 import javaemul.internal.annotations.DoNotAutobox;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
@@ -101,12 +103,13 @@ public class FilterValue {
 
     /**
      * Constructs a number for the filter API from the given parameter. Can also be used on the values returned from
-     * <b><Row.get/b> for DateTime values. To create a filter with a date, use <b>dh.DateWrapper.ofJsDate</b> or
-     * <b>dh.i18n.DateTimeFormat.parse</b>. To create a filter with a 64-bit long integer, use
-     * <b>dh.LongWrapper.ofString</b>.
+     * {@link io.deephaven.web.client.api.TableData.Row#get(TableData.RowPositionUnion)} for DateTime values. To create
+     * a filter with a date, use <b>dh.DateWrapper.ofJsDate</b> or
+     * {@link io.deephaven.web.client.api.i18n.JsDateTimeFormat#parse(String, JsTimeZone)}. To create a filter with a
+     * 64-bit long integer, use {@link LongWrapper#ofString(String)}.
      *
-     * @param input
-     * @return
+     * @param input the number to wrap as a FilterValue
+     * @return an immutable FilterValue that can be built into a filter
      */
     public static FilterValue ofNumber(OfNumberUnionParam input) {
         Objects.requireNonNull(input);
