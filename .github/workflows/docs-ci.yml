@@ -39,12 +39,10 @@ jobs:
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
           
-      - name: Set DHC_VERSION
+      - name: Get DHC Version
         id: dhc-version
         run: |
-          ./gradlew printVersion -q > dhc_version.txt
-          cat dhc_version.txt
-          echo "version=0.30.0" >> "$GITHUB_OUTPUT"
+          echo "version=$(./gradlew printVersion -q)" >> "$GITHUB_OUTPUT"
 
       - name: All Javadoc
         uses: burrunan/gradle-cache-action@v1
@@ -56,7 +54,7 @@ jobs:
       - name: Upload Javadocs
         uses: actions/upload-artifact@v3
         with:
-          name: javadocs-${{ env.GITHUB_DHC_VERSION }}
+          name: javadocs-${{ steps.dhc-version.outputs.version }}
           path: 'combined-javadoc/build/docs/javadoc/'
 
       #- name: Deploy Javadoc
