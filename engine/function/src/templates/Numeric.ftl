@@ -2314,16 +2314,12 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
-            <#if pt.valueType.isFloat >
                 if (isNaN(c)) {
                     return Double.NaN;
                 }
-            </#if>
-            <#if pt2.valueType.isFloat >
                 if (isNaN(w)) {
                     return Double.NaN;
                 }
-            </#if>
 
                 if (!isNull(c) && !isNull(w)) {
                     vsum += c * w;
@@ -2407,17 +2403,12 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
-        <#if pt.valueType.isFloat >
                 if (isNaN(c)) {
                     return Double.NaN;
                 }
-        </#if>
-        <#if pt2.valueType.isFloat >
                 if (isNaN(w)) {
                     return Double.NaN;
                 }
-        </#if>
-
                 if (!isNull(c) && !isNull(w)) {
                     vsum += c * w;
                     wsum += w;
