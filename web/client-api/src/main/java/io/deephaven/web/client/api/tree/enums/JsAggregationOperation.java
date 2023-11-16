@@ -45,8 +45,12 @@ public class JsAggregationOperation {
              */
             ABS_SUM = "AbsSum",
             /**
-             * The variance of all values in the specified column. Can only apply to numeric types. String value is
-             * "Var".
+             * The sample variance of all values in the specified column. Can only apply to numeric types. String value
+             * is "Var".
+             *
+             * Sample variance is computed using Bessel's correction
+             * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an
+             * unbiased estimator of population variance.
              */
             VAR = "Var",
             /**
@@ -55,8 +59,10 @@ public class JsAggregationOperation {
              */
             AVG = "Avg",
             /**
-             * The standard deviation of all values in the specified column. Can only apply to numeric types. String
-             * value is "Std".
+             * The sample standard deviation of all values in the specified column. Can only apply to numeric types.
+             * String value is "Std". Sample standard deviation is computed using Bessel's correction
+             * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an
+             * unbiased estimator of population variance.
              */
             STD = "Std",
             /**
@@ -68,9 +74,7 @@ public class JsAggregationOperation {
              */
             LAST = "Last",
             UNIQUE = "Unique";
-    /**
-     * Indicates that this column should not be aggregated. String value is "Skip".
-     */
+
     // Array operation isn't legal in all contexts, just omit it for now
     // ARRAY = "Array",
     // These need some other parameter to function, not supported yet
@@ -78,7 +82,10 @@ public class JsAggregationOperation {
     // SORTED_FIRST="SortedFirst",
     // SORTED_LAST="SortedLast",
     // WSUM = "WeightedSum";
-    @Deprecated
+
+    /**
+     * Indicates that this column should not be aggregated. String value is "Skip".
+     */
     public static final String SKIP = "Skip";
 
     @JsIgnore
@@ -89,7 +96,8 @@ public class JsAggregationOperation {
             case DISTINCT:
             case FIRST:
             case LAST:
-            case UNIQUE: {
+            case UNIQUE:
+            case SKIP: {
                 // These operations are always safe
                 return true;
             }

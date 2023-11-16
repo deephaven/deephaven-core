@@ -8,9 +8,6 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.vector.*;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Basic.count;

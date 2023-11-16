@@ -365,11 +365,9 @@ public class Numeric {
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
-    <#if pt.valueType.isFloat >
                 if (isNaN(c)) {
                     return Double.NaN;
                 }
-    </#if>
                 if (!isNull(c)) {
                     sum += c;
                     count++;
@@ -421,11 +419,12 @@ public class Numeric {
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
-    <#if pt.valueType.isFloat >
                 if (isNaN(c)) {
                     return Double.NaN;
                 }
-    </#if>
+                if (isInf(c)) {
+                    return Double.POSITIVE_INFINITY;
+                }
                 if (!isNull(c)) {
                     sum += Math.abs(c);
                     count++;
@@ -437,20 +436,26 @@ public class Numeric {
     }
 
     /**
-     * Returns the variance.  Null values are excluded.
+     * Returns the sample variance.  Null values are excluded.
+     *
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
-     * @return variance of non-null values.
+     * @return sample variance of non-null values.
      */
     public static double var(${pt.boxed}[] values) {
         return var(unbox(values));
     }
 
     /**
-     * Returns the variance.  Null values are excluded.
+     * Returns the sample variance.  Null values are excluded.
+     *
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
-     * @return variance of non-null values.
+     * @return sample variance of non-null values.
      */
     public static double var(${pt.primitive}... values) {
         if (values == null) {
@@ -461,10 +466,13 @@ public class Numeric {
     }
 
     /**
-     * Returns the variance.  Null values are excluded.
+     * Returns the sample variance.  Null values are excluded.
+     *
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
-     * @return variance of non-null values.
+     * @return sample variance of non-null values.
      */
     public static double var(${pt.vector} values) {
         if (values == null) {
@@ -473,15 +481,13 @@ public class Numeric {
 
         double sum = 0;
         double sum2 = 0;
-        double count = 0;
+        int count = 0;
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
-    <#if pt.valueType.isFloat >
-                if (isNaN(c)) {
+                if (isNaN(c) || isInf(c)) {
                     return Double.NaN;
                 }
-    </#if>
                 if (!isNull(c)) {
                     sum += (double)c;
                     sum2 += (double)c * (double)c;
@@ -497,23 +503,26 @@ public class Numeric {
 
         // Perform the calculation in a way that minimizes the impact of floating point error.
         final double eps = Math.ulp(sum2);
-        final double vs2bar = sum * (sum / count);
+        final double vs2bar = sum * (sum / (double)count);
         final double delta = sum2 - vs2bar;
         final double rel_eps = delta / eps;
 
-        // Return zero when the variance is leq the floating point error.
-        return Math.abs(rel_eps) > 1.0 ? delta / (count - 1) : 0.0;
+        // Return zero when the sample variance is leq the floating point error.
+        return Math.abs(rel_eps) > 1.0 ? delta / ((double)count - 1) : 0.0;
     }
 
     <#list primitiveTypes as pt2>
     <#if pt2.valueType.isNumber >
 
     /**
-     * Returns the weighted variance.  Null values are excluded.
+     * Returns the weighted sample variance.  Null values are excluded.
+     *
+     * Weighted sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the weighted sample variance will be an unbiased estimator of weighted population variance.
      *
      * @param values values.
      * @param weights weights
-     * @return weighted variance of non-null values.
+     * @return weighted sample variance of non-null values.
      */
     public static double wvar(${pt.primitive}[] values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
@@ -524,11 +533,14 @@ public class Numeric {
     }
 
     /**
-     * Returns the weighted variance.  Null values are excluded.
+     * Returns the weighted sample variance.  Null values are excluded.
+     *
+     * Weighted sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the weighted sample variance will be an unbiased estimator of weighted population variance.
      *
      * @param values values.
      * @param weights weights
-     * @return weighted variance of non-null values.
+     * @return weighted sample variance of non-null values.
      */
     public static double wvar(${pt.primitive}[] values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
@@ -539,11 +551,14 @@ public class Numeric {
     }
 
     /**
-     * Returns the weighted variance.  Null values are excluded.
+     * Returns the weighted sample variance.  Null values are excluded.
+     *
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
      * @param weights weights
-     * @return weighted variance of non-null values.
+     * @return weighted sample variance of non-null values.
      */
     public static double wvar(${pt.vector} values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
@@ -554,11 +569,14 @@ public class Numeric {
     }
 
     /**
-     * Returns the weighted variance.  Null values are excluded.
+     * Returns the weighted sample variance.  Null values are excluded.
+     *
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
      * @param weights weights
-     * @return weighted variance of non-null values.
+     * @return weighted sample variance of non-null values.
      */
     public static double wvar(${pt.vector} values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
@@ -583,16 +601,12 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
-    <#if pt.valueType.isFloat >
-                if (isNaN(c)) {
+                if (isNaN(c) || isInf(c)) {
                     return Double.NaN;
                 }
-    </#if>
-    <#if pt2.valueType.isFloat >
-                if (isNaN(w)) {
+                if (isNaN(w) || isInf(w)) {
                     return Double.NaN;
                 }
-    </#if>
                 if (!isNull(c) && !isNull(w)) {
                     sum += w * c;
                     sum2 += w * c * c;
@@ -620,20 +634,26 @@ public class Numeric {
 
 
     /**
-     * Returns the standard deviation.  Null values are excluded.
+     * Returns the sample standard deviation.  Null values are excluded.
+     *
+     * Sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
-     * @return standard deviation of non-null values.
+     * @return sample standard deviation of non-null values.
      */
     public static double std(${pt.boxed}[] values) {
         return std(unbox(values));
     }
 
     /**
-     * Returns the standard deviation.  Null values are excluded.
+     * Returns the sample standard deviation.  Null values are excluded.
+     *
+     * Sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
-     * @return standard deviation of non-null values.
+     * @return sample standard deviation of non-null values.
      */
     public static double std(${pt.primitive}... values) {
         if (values == null) {
@@ -644,10 +664,13 @@ public class Numeric {
     }
 
     /**
-     * Returns the standard deviation.  Null values are excluded.
+     * Returns the sample standard deviation.  Null values are excluded.
+     *
+     * Sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param values values.
-     * @return standard deviation of non-null values.
+     * @return sample standard deviation of non-null values.
      */
     public static double std(${pt.vector} values) {
         if (values == null) {
@@ -662,11 +685,14 @@ public class Numeric {
     <#if pt2.valueType.isNumber >
 
     /**
-     * Returns the weighted standard deviation.  Null values are excluded.
+     * Returns the weighted sample standard deviation.  Null values are excluded.
+     *
+     * Weighted sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the weighted sample variance will be an unbiased estimator of weighted population variance.
      *
      * @param values values.
      * @param weights weights
-     * @return weighted standard deviation of non-null values.
+     * @return weighted sample standard deviation of non-null values.
      */
     public static double wstd(${pt.primitive}[] values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
@@ -677,11 +703,14 @@ public class Numeric {
     }
 
     /**
-     * Returns the weighted standard deviation.  Null values are excluded.
+     * Returns the weighted sample standard deviation.  Null values are excluded.
+     *
+     * Weighted sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the weighted sample variance will be an unbiased estimator of weighted population variance.
      *
      * @param values values.
      * @param weights weights
-     * @return weighted standard deviation of non-null values.
+     * @return weighted sample standard deviation of non-null values.
      */
     public static double wstd(${pt.primitive}[] values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
@@ -692,11 +721,14 @@ public class Numeric {
     }
 
     /**
-     * Returns the weighted standard deviation.  Null values are excluded.
+     * Returns the weighted sample standard deviation.  Null values are excluded.
+     *
+     * Weighted sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the weighted sample variance will be an unbiased estimator of weighted population variance.
      *
      * @param values values.
      * @param weights weights
-     * @return weighted standard deviation of non-null values.
+     * @return weighted sample standard deviation of non-null values.
      */
     public static double wstd(${pt.vector} values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
@@ -707,11 +739,14 @@ public class Numeric {
     }
 
     /**
-     * Returns the weighted standard deviation.  Null values are excluded.
+     * Returns the weighted sample standard deviation.  Null values are excluded.
+     *
+     * Weighted sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the weighted sample variance will be an unbiased estimator of weighted population variance.
      *
      * @param values values.
      * @param weights weights
-     * @return weighted standard deviation of non-null values.
+     * @return weighted sample standard deviation of non-null values.
      */
     public static double wstd(${pt.vector} values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
@@ -1314,16 +1349,12 @@ public class Numeric {
             while (v0i.hasNext()) {
                 final ${pt.primitive} v0 = v0i.${pt.iteratorNext}();
                 final ${pt2.primitive} v1 = v1i.${pt2.iteratorNext}();
-    <#if pt.valueType.isFloat >
-                if (isNaN(v0)) {
+                if (isNaN(v0) || isInf(v0)) {
                     return Double.NaN;
                 }
-    </#if>
-    <#if pt2.valueType.isFloat >
-                if (isNaN(v1)) {
+                if (isNaN(v1) || isInf(v1)) {
                     return Double.NaN;
                 }
-    </#if>
 
                 if (!isNull(v0) && !isNull(v1)) {
                     sum0 += v0;
@@ -1412,16 +1443,12 @@ public class Numeric {
             while (v0i.hasNext()) {
                 final ${pt.primitive} v0 = v0i.${pt.iteratorNext}();
                 final ${pt2.primitive} v1 = v1i.${pt2.iteratorNext}();
-    <#if pt.valueType.isFloat >
-                if (isNaN(v0)) {
+                if (isNaN(v0) || isInf(v0)) {
                     return Double.NaN;
                 }
-    </#if>
-    <#if pt2.valueType.isFloat >
-                if (isNaN(v1)) {
+                if (isNaN(v1) || isInf(v1)) {
                     return Double.NaN;
                 }
-    </#if>
 
                 if (!isNull(v0) && !isNull(v1)) {
                     sum0 += v0;
@@ -1503,8 +1530,8 @@ public class Numeric {
         ${pt.primitive} prod = 1;
         int count = 0;
     <#if pt.valueType.isFloat >
-        double zeroCount = 0;
-        double infCount = 0;
+        int zeroCount = 0;
+        int infCount = 0;
     </#if>
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
