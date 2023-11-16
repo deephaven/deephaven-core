@@ -39,7 +39,7 @@ jobs:
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
           
-      - name: Set DHC_VERSION
+      - name: Set DHC Version
         id: dhc-version
         run: |
           ./gradlew printVersion -q 
@@ -102,6 +102,13 @@ jobs:
         run: |
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
+          
+      - name: Set DHC Version
+        id: dhc-version
+        run: |
+          ./gradlew printVersion -q 
+          ./gradlew printVersion -q > dhc_version.txt
+          echo "version="`cat dhc_version.txt` >> "$GITHUB_OUTPUT"
 
       - name: Generate Python Docs
         uses: burrunan/gradle-cache-action@v1
@@ -110,11 +117,17 @@ jobs:
           arguments: --scan sphinx:pythonDocs sphinx:pydeephavenDocs
           gradle-version: wrapper
           
-      - name: Upload Python Docs
+      - name: Upload Python Server Docs
         uses: actions/upload-artifact@v3
         with:
-          name: pydocs
+          name: pyserver-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/docs/'
+          
+      - name: Upload Python Client Docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: pyclient-docs-${{ steps.dhc-version.outputs.version }}
+          path: 'sphinx/build/pyclient-docs/'
 
       #- name: Deploy Python Docs
       #  if: ${{ github.ref == 'refs/heads/main' }}
@@ -172,6 +185,13 @@ jobs:
         run: |
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
+          
+      - name: Set DHC Version
+        id: dhc-version
+        run: |
+          ./gradlew printVersion -q 
+          ./gradlew printVersion -q > dhc_version.txt
+          echo "version="`cat dhc_version.txt` >> "$GITHUB_OUTPUT"
 
       - name: Generate C++ Docs
         uses: burrunan/gradle-cache-action@v1
@@ -180,11 +200,17 @@ jobs:
           arguments: --scan sphinx:cppClientDocs sphinx:cppExamplesDocs
           gradle-version: wrapper
           
-      - name: Upload Python Docs
+      - name: Upload Client C++ Docs
         uses: actions/upload-artifact@v3
         with:
-          name: cppdocs
+          name: cppclient-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/cppClientDocs/'
+          
+      - name: Upload Client C++ Example Docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: cppclient-examples-${{ steps.dhc-version.outputs.version }}
+          path: 'sphinx/build/cppExamplesDocs/'
 
       #- name: Deploy Client C++ Docs
       #  if: ${{ github.ref == 'refs/heads/main' }}
