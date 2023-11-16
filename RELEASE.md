@@ -151,7 +151,7 @@ Once the workflow job is done, ensure all publication sources have the new artif
 
 Once the full publish-ci.yml worflow is done, the release artifacts can be downloaded from the GitHub Artifacts (located in the "Summary" tab of the action).
 Similarly, release artifacts can be downloaded from the docs-ci.yml workflow.
-These are currently manual steps taken from the browser. (The artifacts will uploaded in Step #9)
+These are currently manual steps taken from the browser. (The artifacts will be uploaded in Step #9)
 
 There is potential in the future for QA-ing these artifacts above and beyond the integration testing that CI provides, as the release is not set in stone yet.
 
