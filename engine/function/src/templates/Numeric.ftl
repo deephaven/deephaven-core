@@ -1530,8 +1530,8 @@ public class Numeric {
         ${pt.primitive} prod = 1;
         int count = 0;
     <#if pt.valueType.isFloat >
-        int zeroCount = 0;
-        int infCount = 0;
+        long zeroCount = 0;
+        long infCount = 0;
     </#if>
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
