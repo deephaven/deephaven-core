@@ -71,39 +71,44 @@ import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRange
 import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 /**
- * Behaves like a JsTable externally, but data, state, and viewports are managed by an entirely different mechanism, and
- * so reimplemented here.
- *
+ * Behaves like a {@link JsTable} externally, but data, state, and viewports are managed by an entirely different
+ * mechanism, and so reimplemented here.
+ * <p>
  * Any time a change is made, we build a new request and send it to the server, and wait for the updated state.
- *
+ * <p>
  * Semantics around getting updates from the server are slightly different - we don't "unset" the viewport here after
  * operations are performed, but encourage the client code to re-set them to the desired position.
- *
+ * <p>
  * The table size will be -1 until a viewport has been fetched.
- *
+ * <p>
  * Similar to a table, a Tree Table provides access to subscribed viewport data on the current hierarchy. A different
  * Row type is used within that viewport, showing the depth of that node within the tree and indicating details about
- * whether or not it has children or is expanded. The Tree Table itself then provides the ability to change if a row is
+ * whether it has children or is expanded. The Tree Table itself then provides the ability to change if a row is
  * expanded or not. Methods used to control or check if a row should be expanded or not can be invoked on a TreeRow
  * instance, or on the number of the row (thus allowing for expanding/collapsing rows which are not currently visible in
  * the viewport).
- *
- * Events and viewports are somewhat different than tables, due to the expense of computing the expanded/collapsed rows
+ * <p>
+ * Events and viewports are somewhat different from tables, due to the expense of computing the expanded/collapsed rows
  * and count of children at each level of the hierarchy, and differences in the data that is available.
- *
- * - There is no <b>totalSize</b> property. - The viewport is not un-set when changes are made to filter or sort, but
- * changes will continue to be streamed in. It is suggested that the viewport be changed to the desired position
- * (usually the first N rows) after any filter/sort change is made. Likewise, <b>getViewportData()</b> will always
- * return the most recent data, and will not wait if a new operation is pending. - Custom columns are not directly
- * supported. If the <b>TreeTable</b> was created client-side, the original Table can have custom columns applied, and
- * the <b>TreeTable</b> can be recreated. - The <b>totalsTableConfig</b> property is instead a method, and returns a
- * promise so the config can be fetched asynchronously. - Totals Tables for trees vary in behavior between hierarchical
- * tables and roll-up tables. This behavior is based on the original flat table used to produce the Tree Table - for a
- * hierarchical table (i.e. Table.treeTable in the query config), the totals will include non-leaf nodes (since they are
- * themselves actual rows in the table), but in a roll-up table, the totals only include leaf nodes (as non-leaf nodes
- * are generated through grouping the contents of the original table). Roll-ups also have the
- * <b>isIncludeConstituents</b> property, indicating that a <b>Column</b> in the tree may have a <b>constituentType</b>
- * property reflecting that the type of cells where <b>hasChildren</b> is false will be different from usual.
+ * <p>
+ * <ul>
+ * <li>There is no {@link JsTable#getTotalSize() totalSize} property.</li>
+ * <li>The viewport is not un-set when changes are made to filter or sort, but changes will continue to be streamed in.
+ * It is suggested that the viewport be changed to the desired position (usually the first N rows) after any filter/sort
+ * change is made. Likewise, {@link #getViewportData()} will always return the most recent data, and will not wait if a
+ * new operation is pending.</li>
+ * <li>Custom columns are not directly supported. If the TreeTable was created client-side, the original Table can have
+ * custom columns applied, and the TreeTable can be recreated.</li>
+ * <li>Whereas Table has a {@link JsTable#getTotalsTableConfig()} property, it is defined here as a method,
+ * {@link #getTotalsTableConfig()}. This returns a promise so the config can be fetched asynchronously.</li>
+ * <li>Totals Tables for trees vary in behavior between tree tables and roll-up tables. This behavior is based on the
+ * original flat table used to produce the Tree Table - for a hierarchical table (i.e. Table.treeTable in the query
+ * config), the totals will include non-leaf nodes (since they are themselves actual rows in the table), but in a
+ * roll-up table, the totals only include leaf nodes (as non-leaf nodes are generated through grouping the contents of
+ * the original table). Roll-ups also have the {@link JsRollupConfig#includeConstituents} property, indicating that a
+ * {@link Column} in the tree may have a {@link Column#getConstituentType()} property reflecting that the type of cells
+ * where {@link TreeRow#hasChildren()} is false will be different from usual.</li>
+ * </ul>
  */
 @JsType(namespace = "dh", name = "TreeTable")
 public class JsTreeTable extends HasLifecycle implements ServerObject {
