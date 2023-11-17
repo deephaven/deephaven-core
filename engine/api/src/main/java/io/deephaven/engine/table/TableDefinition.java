@@ -314,6 +314,40 @@ public class TableDefinition implements LogOutputAppendable {
     }
 
     /**
+     * Checks if {@code columnName} exists and supports {@link ColumnDefinition#checkCastTo(Class)} with {@code clazz}.
+     * Otherwise, throws a {@link NoSuchColumnException} or a {@link ClassCastException}.
+     *
+     * @param columnName the column name
+     * @param clazz the data type
+     * @see ColumnDefinition#checkCastTo(Class)
+     */
+    public final void checkHasColumn(@NotNull String columnName, @NotNull Class<?> clazz) {
+        final ColumnDefinition<?> cd = getColumn(columnName);
+        if (cd == null) {
+            throw new NoSuchColumnException(getColumnNameSet(), columnName);
+        }
+        cd.checkCastTo(clazz);
+    }
+
+    /**
+     * Checks if {@code columnName} exists and supports {@link ColumnDefinition#checkCastTo(Class, Class)} with
+     * {@code clazz} and {@code componentType}. Otherwise, throws a {@link NoSuchColumnException} or a
+     * {@link ClassCastException}.
+     *
+     * @param columnName the column name
+     * @param clazz the data type
+     * @param componentType the component type
+     * @see ColumnDefinition#checkCastTo(Class, Class)
+     */
+    public final void checkHasColumn(@NotNull String columnName, @NotNull Class<?> clazz, Class<?> componentType) {
+        final ColumnDefinition<?> cd = getColumn(columnName);
+        if (cd == null) {
+            throw new NoSuchColumnException(getColumnNameSet(), columnName);
+        }
+        cd.checkCastTo(clazz, componentType);
+    }
+
+    /**
      * Check this definition to ensure that all {@code columns} are present.
      *
      * @param columns The column names to check
