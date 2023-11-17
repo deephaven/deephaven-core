@@ -39,7 +39,8 @@ public abstract class QueryPerformanceRecorderState {
     private static final String[] PACKAGE_FILTERS;
     private static final ThreadLocal<String> CACHED_CALLSITE = new ThreadLocal<>();
     private static final ThreadLocal<MutableLong> POOL_ALLOCATED_BYTES = ThreadLocal.withInitial(
-            () -> new MutableLong(ThreadProfiler.DEFAULT.memoryProfilingAvailable() ? 0L
+            () -> new MutableLong(ThreadProfiler.DEFAULT.memoryProfilingAvailable()
+                    ? 0L
                     : io.deephaven.util.QueryConstants.NULL_LONG));
 
     static {
@@ -83,7 +84,6 @@ public abstract class QueryPerformanceRecorderState {
         THE_LOCAL.remove();
     }
 
-
     /**
      * Install {@link QueryPerformanceRecorderState#recordPoolAllocation(java.util.function.Supplier)} as the allocation
      * recorder for {@link io.deephaven.chunk.util.pools.ChunkPool chunk pools}.
@@ -93,7 +93,8 @@ public abstract class QueryPerformanceRecorderState {
     }
 
     /**
-     * Install this {@link QueryPerformanceRecorder} as the lock action recorder for {@link UpdateGraphLock}.
+     * Use nuggets from the current {@link QueryPerformanceRecorder} as the lock action recorder for
+     * {@link UpdateGraphLock}.
      */
     public static void installUpdateGraphLockInstrumentation() {
         UpdateGraphLock.installInstrumentation(new UpdateGraphLock.Instrumentation() {
@@ -178,7 +179,7 @@ public abstract class QueryPerformanceRecorderState {
      * See {@link QueryPerformanceRecorder#setCallsite()}.
      */
     static boolean setCallsite() {
-        // This is very similar to the other getCallsite, but we don't want to invoke getCallerLine() unless we
+        // This is very similar to the other setCallsite overload, but we don't want to invoke getCallerLine() unless we
         // really need to.
         if (CACHED_CALLSITE.get() == null) {
             CACHED_CALLSITE.set(getCallerLine());
@@ -191,7 +192,7 @@ public abstract class QueryPerformanceRecorderState {
     /**
      * Clear any previously set callsite. See {@link #setCallsite(String)}
      */
-    public static void clearCallsite() {
+    static void clearCallsite() {
         CACHED_CALLSITE.remove();
     }
 
