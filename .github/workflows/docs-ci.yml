@@ -109,7 +109,7 @@ jobs:
         uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
-          path: web/client-api/docs/build/documentation/
+          path: web/client-api/types/build/documentation/
           remote_path: deephaven-core/client-api/javascript/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
