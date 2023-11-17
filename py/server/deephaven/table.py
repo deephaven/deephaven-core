@@ -563,6 +563,15 @@ def _query_scope_ctx():
         yield
 
 
+def _query_scope_agg_ctx(aggs: Sequence[Aggregation]) -> contextlib.AbstractContextManager:
+    has_agg_formula = any([agg.is_formula for agg in aggs])
+    if has_agg_formula:
+        cm = _query_scope_ctx()
+    else:
+        cm = contextlib.nullcontext()
+    return cm
+
+
 class SortDirection(Enum):
     """An enum defining the sorting orders."""
     DESCENDING = auto()
@@ -1955,13 +1964,16 @@ class Table(JObjectWrapper):
             if not by and initial_groups:
                 raise ValueError("missing group-by column names when initial_groups is provided.")
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            if not by:
-                return Table(j_table=self.j_table.aggBy(j_agg_list, preserve_empty))
-            else:
-                j_column_name_list = j_array_list([_JColumnName.of(col) for col in by])
-                initial_groups = unwrap(initial_groups)
-                return Table(
-                    j_table=self.j_table.aggBy(j_agg_list, preserve_empty, initial_groups, j_column_name_list))
+
+            cm = _query_scope_agg_ctx(aggs)
+            with cm:
+                if not by:
+                    return Table(j_table=self.j_table.aggBy(j_agg_list, preserve_empty))
+                else:
+                    j_column_name_list = j_array_list([_JColumnName.of(col) for col in by])
+                    initial_groups = unwrap(initial_groups)
+                    return Table(
+                        j_table=self.j_table.aggBy(j_agg_list, preserve_empty, initial_groups, j_column_name_list))
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e
 
@@ -1998,8 +2010,11 @@ class Table(JObjectWrapper):
             by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
             initial_groups = unwrap(initial_groups)
-            return PartitionedTable(
-                j_partitioned_table=self.j_table.partitionedAggBy(j_agg_list, preserve_empty, initial_groups, *by))
+
+            cm = _query_scope_agg_ctx(aggs)
+            with cm:
+                return PartitionedTable(
+                    j_partitioned_table=self.j_table.partitionedAggBy(j_agg_list, preserve_empty, initial_groups, *by))
         except Exception as e:
             raise DHError(e, "table partitioned_agg_by operation failed.") from e
 
@@ -2022,7 +2037,9 @@ class Table(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            return Table(j_table=self.j_table.aggAllBy(agg.j_agg_spec, *by))
+            cm = _query_scope_agg_ctx([agg])
+            with cm:
+                return Table(j_table=self.j_table.aggAllBy(agg.j_agg_spec, *by))
         except Exception as e:
             raise DHError(e, "table agg_all_by operation failed.") from e
 
@@ -2270,12 +2287,15 @@ class Table(JObjectWrapper):
             aggs = to_sequence(aggs)
             by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            if not by:
-                return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents), aggs=aggs,
-                                   include_constituents=include_constituents, by=by)
-            else:
-                return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents, by),
-                                   aggs=aggs, include_constituents=include_constituents, by=by)
+
+            cm = _query_scope_agg_ctx(aggs)
+            with cm:
+                if not by:
+                    return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents), aggs=aggs,
+                                       include_constituents=include_constituents, by=by)
+                else:
+                    return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents, by),
+                                       aggs=aggs, include_constituents=include_constituents, by=by)
         except Exception as e:
             raise DHError(e, "table rollup operation failed.") from e
 
@@ -3293,8 +3313,11 @@ class PartitionedTableProxy(JObjectWrapper):
             aggs = to_sequence(aggs)
             by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggBy(j_agg_list, *by))
+
+            cm = _query_scope_agg_ctx(aggs)
+            with cm:
+                with auto_locking_ctx(self):
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggBy(j_agg_list, *by))
         except Exception as e:
             raise DHError(e, "agg_by operation on the PartitionedTableProxy failed.") from e
 
@@ -3318,8 +3341,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggAllBy(agg.j_agg_spec, *by))
+
+            cm = _query_scope_agg_ctx([agg])
+            with cm:
+                with auto_locking_ctx(self):
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggAllBy(agg.j_agg_spec, *by))
         except Exception as e:
             raise DHError(e, "agg_all_by operation on the PartitionedTableProxy failed.") from e
 
