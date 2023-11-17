@@ -100,13 +100,6 @@ jobs:
         run: |
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
-          
-      - name: Set DHC Version
-        id: dhc-version
-        run: |
-          ./gradlew printVersion -q 
-          ./gradlew printVersion -q > dhc_version.txt
-          echo "version="`cat dhc_version.txt` >> "$GITHUB_OUTPUT"
 
       - name: Generate Python Docs
         uses: burrunan/gradle-cache-action@v1
@@ -189,13 +182,6 @@ jobs:
         run: |
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
-          
-      - name: Set DHC Version
-        id: dhc-version
-        run: |
-          ./gradlew printVersion -q 
-          ./gradlew printVersion -q > dhc_version.txt
-          echo "version="`cat dhc_version.txt` >> "$GITHUB_OUTPUT"
 
       - name: Generate C++ Docs
         uses: burrunan/gradle-cache-action@v1
