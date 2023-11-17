@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main ]
   push:
-    branches: [ main ]
+    branches: [ ** ]
 
 jobs:
   javadoc:
@@ -38,23 +38,20 @@ jobs:
         run: |
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
-          
-      - name: Set DHC Version
-        id: dhc-version
-        run: |
-          ./gradlew printVersion -q 
-          ./gradlew printVersion -q > dhc_version.txt
-          echo "version="`cat dhc_version.txt` >> "$GITHUB_OUTPUT"
 
       - name: All Javadoc
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: allJavadoc
-          arguments: --scan combined-javadoc:allJavadoc
+          arguments: --scan outputVersion combined-javadoc:allJavadoc
           gradle-version: wrapper
+          
+      - name: Get Deephaven Version
+        id: dhc-version
+        run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Upload Javadocs
-        if: ${{ github.ref == 'refs/heads/main' }}
+        #if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-artifact@v3
         with:
           name: javadocs-${{ steps.dhc-version.outputs.version }}
@@ -119,14 +116,14 @@ jobs:
           gradle-version: wrapper
           
       - name: Upload Python Server Docs
-        if: ${{ github.ref == 'refs/heads/main' }}
+        #if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-artifact@v3
         with:
           name: pyserver-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/docs/'
           
       - name: Upload Python Client Docs
-        if: ${{ github.ref == 'refs/heads/main' }}
+        #if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-artifact@v3
         with:
           name: pyclient-docs-${{ steps.dhc-version.outputs.version }}
@@ -204,14 +201,14 @@ jobs:
           gradle-version: wrapper
           
       - name: Upload Client C++ Docs
-        if: ${{ github.ref == 'refs/heads/main' }}
+        #if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-artifact@v3
         with:
           name: cppclient-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/cppClientDocs/'
           
       - name: Upload Client C++ Example Docs
-        if: ${{ github.ref == 'refs/heads/main' }}
+        #if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-artifact@v3
         with:
           name: cppclient-examples-${{ steps.dhc-version.outputs.version }}
