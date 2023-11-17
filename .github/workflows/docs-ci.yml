@@ -230,7 +230,7 @@ jobs:
         with:
           switches: -avzr --delete
           path: R/rdeephaven/docs/
-          remote_path: deephaven-core/client-api/R/
+          remote_path: deephaven-core/client-api/r/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
