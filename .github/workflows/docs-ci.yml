@@ -95,7 +95,7 @@ jobs:
       - name: Run typedoc on JS API
         uses: burrunan/gradle-cache-action@v1
         with:
-          job-id: allJavadoc
+          job-id: typedoc
           arguments: --scan :web-client-api:types:typedoc
           gradle-version: wrapper
       - name: Upload JavaScript/TypeScript docs
