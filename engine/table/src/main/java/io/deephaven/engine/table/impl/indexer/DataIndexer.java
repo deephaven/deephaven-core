@@ -47,7 +47,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
         /** The index at this level. */
         @Nullable
-        private volatile DataIndex localIndex;
+        private volatile DataIndex localIndex; // TODO-RWC: Weak reference
 
         /** The sub-indexes below this level. */
         private final WeakHashMap<ColumnSource<?>, DataIndexCache> descendantCaches;

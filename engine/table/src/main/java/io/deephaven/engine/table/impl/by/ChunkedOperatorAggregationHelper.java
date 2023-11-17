@@ -19,7 +19,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
-import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sort.findruns.IntFindRunsKernel;
@@ -119,18 +118,22 @@ public class ChunkedOperatorAggregationHelper {
         final ColumnSource<?>[] keySources =
                 Arrays.stream(keyNames).map(input::getColumnSource).toArray(ColumnSource[]::new);
 
-        // If the table is refreshing and using an index, include the index baseTable in the snapshot control.
-        if (input.isRefreshing() && control.considerIndexing(input, keySources)) {
+        // If the table is refreshing and using an index, include the index table in the snapshot control.
+        final DataIndex dataIndex;
+        if (control.considerIndexing(input, keySources)) {
             final DataIndexer dataIndexer = DataIndexer.of(input.getRowSet());
-            final DataIndex dataIndex = dataIndexer.getDataIndex(input, keyNames);
+            dataIndex = dataIndexer.getDataIndex(input, keyNames);
             if (dataIndex != null) {
-                snapshotControl =
-                        new OperationSnapshotControlEx(input,
-                                (BaseTable) ((AbstractDataIndex) dataIndex).baseIndexTable());
+                final Table dataIndexTable = dataIndex.table();
+                Assert.eq(input.isRefreshing(), "input.isRefreshing()",
+                        dataIndexTable.isRefreshing(), "dataIndexTable.isRefreshing()");
+                snapshotControl = input.createSnapshotControlIfRefreshing(it ->
+                        new OperationSnapshotControlEx(it, (NotificationStepSource) dataIndexTable));
             } else {
                 snapshotControl = input.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
             }
         } else {
+            dataIndex = null;
             snapshotControl = input.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
         }
 
@@ -138,7 +141,7 @@ public class ChunkedOperatorAggregationHelper {
                 "by(" + aggregationContextFactory + ", " + groupByColumns + ")", snapshotControl,
                 (usePrev, beforeClockValue) -> {
                     resultHolder.setValue(aggregation(control, snapshotControl, aggregationContextFactory,
-                            input, preserveEmpty, initialKeys, keyNames, usePrev));
+                            input, dataIndex, preserveEmpty, initialKeys, keyNames, usePrev));
                     return true;
                 });
         return resultHolder.getValue();
@@ -149,6 +152,7 @@ public class ChunkedOperatorAggregationHelper {
             @Nullable final OperationSnapshotControl snapshotControl,
             @NotNull final AggregationContextFactory aggregationContextFactory,
             @NotNull final QueryTable input,
+            @Nullable final DataIndex dataIndex,
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
             @NotNull final String[] keyNames,
@@ -170,20 +174,13 @@ public class ChunkedOperatorAggregationHelper {
 
         final PermuteKernel[] permuteKernels = ac.makePermuteKernels();
 
-        final boolean useIndexing;
-
-        if (control.considerIndexing(input, keySources)) {
-            useIndexing = DataIndexer.of(input.getRowSet()).hasDataIndex(keySources);
-            if (useIndexing && initialKeys == null && !input.isRefreshing()) {
-                return staticIndexedAggregation(input, keyNames, keySources, ac);
-            }
-        } else {
-            useIndexing = false;
+        if (dataIndex != null && initialKeys == null && !input.isRefreshing()) {
+            return staticIndexedAggregation(dataIndex, keyNames, keySources, ac);
         }
 
         final Table symbolTable;
         final boolean useSymbolTable;
-        if (!input.isRefreshing() && control.considerSymbolTables(input, useIndexing, keySources)) {
+        if (!input.isRefreshing() && control.considerSymbolTables(input, dataIndex != null, keySources)) {
             Assert.eq(keySources.length, "keySources.length", 1);
 
             symbolTable = ((SymbolTableSource<?>) keySources[0]).getStaticSymbolTable(input.getRowSet(),
@@ -208,8 +205,9 @@ public class ChunkedOperatorAggregationHelper {
 
         final RowSetBuilderRandom initialRowsBuilder =
                 initialKeys != null && !preserveEmpty ? new BitmapRandomBuilder(stateManager.maxTableSize() - 1) : null;
-        if (useIndexing) {
-            initialIndexedKeyAddition(input, keySources, ac, stateManager, outputPosition, initialRowsBuilder, usePrev);
+        if (dataIndex != null) {
+            initialIndexedKeyAddition(dataIndex, keySources, ac, stateManager,
+                    outputPosition, initialRowsBuilder, usePrev);
         } else {
             initialBucketedKeyAddition(input, reinterpretedKeySources, ac, permuteKernels, stateManager,
                     outputPosition, initialRowsBuilder, usePrev);
@@ -251,7 +249,7 @@ public class ChunkedOperatorAggregationHelper {
         final QueryTable result = new QueryTable(resultRowSet, resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result, outputPosition.intValue());
 
-        if (input.isRefreshing()) {
+        if (snapshotControl != null) {
             assert keyColumnsCopied != null;
 
             ac.startTrackingPrevValues();
@@ -1564,16 +1562,14 @@ public class ChunkedOperatorAggregationHelper {
 
     @NotNull
     private static QueryTable staticIndexedAggregation(
-            QueryTable withView,
-            String[] keyNames,
-            ColumnSource<?>[] keySources,
-            AggregationContext ac) {
-        // We will incorporate index columns into the result table, so lets get an immutable version.
-        final DataIndex dataIndex = DataIndexer.of(withView.getRowSet()).getDataIndex(keySources).transform(
-                DataIndexTransformer.builder()
-                        .sortByFirstRowKey(true) // Preserve encounter order
-                        .immutable(true) // Ensure that we can re-use the key column sources
-                        .build());
+            final DataIndex preTransformDataIndex,
+            final String[] keyNames,
+            final ColumnSource<?>[] keySources,
+            final AggregationContext ac) {
+        final DataIndex dataIndex = preTransformDataIndex.transform(DataIndexTransformer.builder()
+                .sortByFirstRowKey(true) // Preserve encounter order
+                .immutable(true) // Ensure that we can re-use the key column sources in the result table
+                .build());
         final Table indexTable = dataIndex.table();
         final int groupCount = indexTable.intSize();
 
@@ -1659,7 +1655,7 @@ public class ChunkedOperatorAggregationHelper {
 
     private static OperatorAggregationStateManager initialKeyTableAddition(
             @NotNull final AggregationControl control,
-            @NotNull final Table initialKeys,
+            @NotNull final Table inputInitialKeys,
             @NotNull final String[] keyColumnNames,
             @NotNull final AggregationContext ac,
             @NotNull final MutableInt outputPosition,
@@ -1668,11 +1664,29 @@ public class ChunkedOperatorAggregationHelper {
         // This logic is duplicative of the logic in the main aggregation function, but it's hard to consolidate
         // further. A better strategy might be to do a selectDistinct first, but that would result in more hash table
         // inserts.
-        final ColumnSource<?>[] keySources = Arrays.stream(keyColumnNames)
-                .map(initialKeys::getColumnSource)
+        final ColumnSource<?>[] inputKeySources = Arrays.stream(keyColumnNames)
+                .map(inputInitialKeys::getColumnSource)
                 .toArray(ColumnSource[]::new);
 
-        final boolean useIndexAllowed = control.considerIndexing(initialKeys, keySources);
+        final DataIndexer dataIndexer = control.considerIndexing(inputInitialKeys, inputKeySources)
+                ? DataIndexer.of(inputInitialKeys.getRowSet())
+                : null;
+
+        final Table initialKeys;
+        final ColumnSource<?>[] keySources;
+        if (dataIndexer != null && dataIndexer.hasDataIndex(inputKeySources)) {
+            final DataIndex dataIndex = dataIndexer.getDataIndex(inputKeySources).transform(
+                    DataIndexTransformer.builder()
+                            .sortByFirstRowKey(true) // Preserve encounter order
+                            .build());
+            initialKeys = dataIndex.table();
+            Assert.eq(inputInitialKeys.isRefreshing(), "inputInitialKeys.isRefreshing()",
+                    initialKeys.isRefreshing(), "initialKeys.isRefreshing()");
+            keySources = dataIndex.indexKeyColumns(inputKeySources);
+        } else {
+            initialKeys = inputInitialKeys;
+            keySources = inputKeySources;
+        }
 
         final OperatorAggregationStateManager stateManager;
         if (initialKeys.isRefreshing()) {
@@ -1684,15 +1698,14 @@ public class ChunkedOperatorAggregationHelper {
                         ConstructSnapshot.makeSnapshotControl(false, true, (NotificationStepSource) initialKeys),
                         (final boolean usePrev, final long beforeClockValue) -> {
                             stateManagerHolder.setValue(makeInitializedStateManager(
-                                    initialKeys, keySources, ac, outputPosition, stateManagerSupplier,
-                                    useIndexAllowed, usePrev));
+                                    initialKeys, keySources, outputPosition, stateManagerSupplier, usePrev));
                             return true;
                         });
                 stateManager = stateManagerHolder.getValue();
             }
         } else {
-            stateManager = makeInitializedStateManager(initialKeys, keySources, ac, outputPosition,
-                    stateManagerSupplier, useIndexAllowed, false);
+            stateManager = makeInitializedStateManager(
+                    initialKeys, keySources, outputPosition, stateManagerSupplier, false);
         }
         try (final RowSet empty = RowSetFactory.empty()) {
             doIndexedAddition(ac, () -> empty, outputPosition.intValue(), 0);
@@ -1702,32 +1715,15 @@ public class ChunkedOperatorAggregationHelper {
 
     private static OperatorAggregationStateManager makeInitializedStateManager(
             @NotNull final Table initialKeys,
-            @NotNull ColumnSource<?>[] keySources,
-            @NotNull final AggregationContext ac,
+            @NotNull final ColumnSource<?>[] keySources,
             @NotNull final MutableInt outputPosition,
             @NotNull final Supplier<OperatorAggregationStateManager> stateManagerSupplier,
-            final boolean indexingAllowed,
             final boolean usePrev) {
         outputPosition.setValue(0);
         final OperatorAggregationStateManager stateManager = stateManagerSupplier.get();
 
-        ColumnSource<?>[] keyColumnsToInsert;
-        final RowSequence rowsToInsert;
-        final DataIndexer dataIndexer = DataIndexer.of(initialKeys.getRowSet());
-
-        if (indexingAllowed && dataIndexer.hasDataIndex(keySources)) {
-            final DataIndex dataIndex = dataIndexer.getDataIndex(keySources).transform(
-                    DataIndexTransformer.builder()
-                            .sortByFirstRowKey(true) // Preserve encounter order
-                            .build());
-            final Table indexTable = dataIndex.table();
-            keyColumnsToInsert = dataIndex.indexKeyColumns(keySources);
-            rowsToInsert = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
-        } else {
-            keyColumnsToInsert = keySources;
-            rowsToInsert = usePrev ? initialKeys.getRowSet().prev() : initialKeys.getRowSet();
-        }
-        keyColumnsToInsert = Arrays.stream(keyColumnsToInsert)
+        final RowSequence rowsToInsert = usePrev ? initialKeys.getRowSet().prev() : initialKeys.getRowSet();;
+        final ColumnSource<?>[] keyColumnsToInsert = Arrays.stream(keySources)
                 .map(ReinterpretUtils::maybeConvertToPrimitive)
                 .map(cs -> usePrev && !cs.isImmutable() ? cs.getPrevSource() : cs)
                 .toArray(ColumnSource[]::new);
@@ -1848,18 +1844,16 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static void initialIndexedKeyAddition(
-            QueryTable input,
-            ColumnSource<?>[] keySources,
-            AggregationContext ac,
-            OperatorAggregationStateManager stateManager,
-            MutableInt outputPosition,
-            RowSetBuilderRandom initialRowsBuilder,
-            boolean usePrev) {
-        final DataIndexer dataIndexer = DataIndexer.of(input.getRowSet());
-        final DataIndex dataIndex = dataIndexer.getDataIndex(keySources).transform(
-                DataIndexTransformer.builder()
-                        .sortByFirstRowKey(true) // Preserve encounter order
-                        .build());
+            final DataIndex preTransformDataIndex,
+            final ColumnSource<?>[] keySources,
+            final AggregationContext ac,
+            final OperatorAggregationStateManager stateManager,
+            final MutableInt outputPosition,
+            final RowSetBuilderRandom initialRowsBuilder,
+            final boolean usePrev) {
+        final DataIndex dataIndex = preTransformDataIndex.transform(DataIndexTransformer.builder()
+                .sortByFirstRowKey(true) // Preserve encounter order
+                .build());
         final Table indexTable = dataIndex.table();
 
         final int indexEntryCount = indexTable.intSize();

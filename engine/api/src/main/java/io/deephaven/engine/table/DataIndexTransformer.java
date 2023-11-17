@@ -83,7 +83,7 @@ public interface DataIndexTransformer {
         /** Map the new key columns to the old columns. */
         Builder putAllOldToNewColumnMap(Map<? extends ColumnSource<?>, ? extends ColumnSource<?>> entries);
 
-        /** Whether to force the materialized table to be static and immutable. */
+        /** Whether to force the materialized table to be static, flat, and immutable. */
         Builder immutable(boolean immutable);
 
         DataIndexTransformer build();
