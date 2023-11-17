@@ -34,8 +34,6 @@ import io.deephaven.server.table.ops.AggregationAdapter;
 import io.deephaven.server.table.ops.FilterTableGrpcImpl;
 import io.deephaven.server.table.ops.filter.FilterFactory;
 import io.deephaven.util.SafeCloseable;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -358,9 +356,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                 break;
             case TARGET_NOT_SET:
             default:
-                throw Status.INVALID_ARGUMENT
-                        .augmentDescription("No target specified")
-                        .asRuntimeException();
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "No target specified");
         }
 
         final String description = "HierarchicalTableServiceGrpcImpl#view(target="

@@ -73,6 +73,7 @@ import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
@@ -526,8 +527,10 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
         try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
             // step 1: initialize exports
+            final MutableInt offset = new MutableInt(0);
             final List<BatchExportBuilder<?>> exportBuilders = request.getOpsList().stream()
-                    .map(op -> createBatchExportBuilder(session, queryPerformanceRecorder, op))
+                    .map(op -> createBatchExportBuilder(
+                            offset.getAndIncrement(), session, queryPerformanceRecorder, op))
                     .collect(Collectors.toList());
 
             // step 2: resolve dependencies
@@ -732,17 +735,27 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     private <T> BatchExportBuilder<T> createBatchExportBuilder(
+            final int offset,
             @NotNull final SessionState session,
-            @NotNull final QueryPerformanceRecorder queryPerformanceRecorder,
+            @NotNull final QueryPerformanceRecorder batchQueryPerformanceRecorder,
             final BatchTableRequest.Operation op) {
         final GrpcTableOperation<T> operation = getOp(op.getOpCase());
         final T request = operation.getRequestFromOperation(op);
         operation.validateRequest(request);
 
         final Ticket resultId = operation.getResultTicket(request);
+        boolean hasResultId = !resultId.getTicket().isEmpty();
         final ExportBuilder<Table> exportBuilder =
-                resultId.getTicket().isEmpty() ? session.nonExport() : session.newExport(resultId, "resultId");
-        exportBuilder.parentQueryPerformanceRecorder(queryPerformanceRecorder);
+                hasResultId ? session.newExport(resultId, "resultId") : session.nonExport();
+        final String resultDescription = hasResultId
+                ? "resultId=" + ticketRouter.getLogNameFor(resultId, "resultId") + ", "
+                : "";
+
+        final String description = "TableService#" + op.getOpCase().name() + "(" + resultDescription + "batchOffset="
+                + offset + ")";
+        exportBuilder.queryPerformanceRecorder(QueryPerformanceRecorder.newSubQuery(
+                description, batchQueryPerformanceRecorder, QueryPerformanceNugget.DEFAULT_FACTORY));
+
         return new BatchExportBuilder<>(operation, request, exportBuilder);
     }
 

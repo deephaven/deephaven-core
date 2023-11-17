@@ -19,6 +19,8 @@ import java.util.*;
  */
 public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
 
+    @Nullable
+    private final QueryPerformanceRecorder parent;
     private final QueryPerformanceNugget queryNugget;
     private final QueryPerformanceNugget.Factory nuggetFactory;
     private final ArrayList<QueryPerformanceNugget> operationNuggets = new ArrayList<>();
@@ -50,6 +52,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
                     QueryPerformanceRecorderState.QUERIES_PROCESSED.getAndIncrement(), description,
                     this::releaseNugget);
         }
+        this.parent = parent;
         this.nuggetFactory = nuggetFactory;
     }
 
@@ -76,6 +79,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
      *
      * @return the query's state or null if it isn't initialized yet
      */
+    @Override
     public synchronized QueryState getState() {
         return state;
     }
@@ -98,7 +102,12 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         }
         state = QueryState.FINISHED;
         suspendInternal();
-        return queryNugget.done();
+
+        boolean shouldLog = queryNugget.done();
+        if (parent != null) {
+            parent.accumulate(this);
+        }
+        return shouldLog;
     }
 
     /**

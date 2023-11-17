@@ -159,6 +159,13 @@ public interface QueryPerformanceRecorder {
     }
 
     /**
+     * Return the query's current state
+     *
+     * @return the query's state
+     */
+    QueryState getState();
+
+    /**
      * Starts a query.
      * <p>
      * It is an error to start a query more than once or while another query is running on this thread.

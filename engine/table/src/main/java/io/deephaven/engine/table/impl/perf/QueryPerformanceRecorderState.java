@@ -237,6 +237,11 @@ public abstract class QueryPerformanceRecorderState {
         }
 
         @Override
+        public QueryState getState() {
+            throw new UnsupportedOperationException("Dummy recorder does not support getState()");
+        }
+
+        @Override
         public SafeCloseable startQuery() {
             throw new UnsupportedOperationException("Dummy recorder does not support startQuery()");
         }
