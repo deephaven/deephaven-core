@@ -112,9 +112,13 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: pythonDocs
-          arguments: --scan sphinx:pythonDocs sphinx:pydeephavenDocs
+          arguments: --scan outputVersion sphinx:pythonDocs sphinx:pydeephavenDocs
           gradle-version: wrapper
-          
+ 
+      - name: Get Deephaven Version
+        id: dhc-version
+        run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
+ 
       - name: Upload Python Server Docs
         #if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-artifact@v3
@@ -197,9 +201,13 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: cppDocs
-          arguments: --scan sphinx:cppClientDocs sphinx:cppExamplesDocs
+          arguments: --scan outputVersion sphinx:cppClientDocs sphinx:cppExamplesDocs
           gradle-version: wrapper
-          
+         
+      - name: Get Deephaven Version
+        id: dhc-version
+        run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
+  
       - name: Upload Client C++ Docs
         #if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-artifact@v3
