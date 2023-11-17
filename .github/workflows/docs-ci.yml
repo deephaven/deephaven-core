@@ -68,7 +68,7 @@ jobs:
   typedoc:
     runs-on: ubuntu-22.04
     concurrency:
-      group: javadoc-${{ github.workflow }}-${{ github.ref }}
+      group: typedoc-${{ github.workflow }}-${{ github.ref }}
       # We don't want to cancel in-progress jobs against main because that might leave the upload in a bad state.
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
