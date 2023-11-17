@@ -4,7 +4,6 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -12,11 +11,9 @@ import io.deephaven.engine.table.impl.by.AggregationControl;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.sources.RowSetColumnSourceWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,12 +37,6 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
     final String[] keyColumnNames;
 
     private AggregationRowLookup lookupFunction;
-
-    private SoftReference<Table> cachedPrevTable = new SoftReference<>(null);
-    private long cachedPrevTableStep = -1;
-
-    private SoftReference<PositionLookup> cachedPrevPositionLookup = new SoftReference<>(null);
-    private long cachedPrevPositionLookupStep = -1;
 
     public TableBackedDataIndexImpl(@NotNull final QueryTable sourceTable,
             @NotNull final String[] keyColumnNames) {
@@ -83,44 +74,20 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
 
     @Override
     @NotNull
-    public Table table(final boolean usePrev) {
-        if (usePrev && isRefreshing()) {
-            // Return the cached table if possible.
-            final Table cached = cachedPrevTable.get();
-            if (cached != null && cached.getUpdateGraph().clock().currentStep() == cachedPrevTableStep) {
-                return cached;
-            }
-
-            // Get the live current table.
-            final Table currentTable = table();
-
-            // Return a table containing the previous values of the index table.
-            final TrackingRowSet prevRowSet = currentTable.getRowSet().copyPrev().toTracking();
-            final Map<String, ColumnSource<?>> prevColumnSourceMap = new LinkedHashMap<>();
-            currentTable.getColumnSourceMap().forEach((columnName, columnSource) -> {
-                if (columnName.equals(rowSetColumnName())) {
-                    prevColumnSourceMap.put(columnName, RowSetColumnSourceWrapper
-                            .from((ColumnSource<TrackingRowSet>) columnSource).getPrevSource());
-                    return;
-                }
-                prevColumnSourceMap.put(columnName, columnSource.getPrevSource());
-            });
-
-            final Table result = new QueryTable(prevRowSet, prevColumnSourceMap);
-            cachedPrevTable = new SoftReference<>(result);
-            cachedPrevTableStep = currentTable.getUpdateGraph().clock().currentStep();
-
-            return result;
+    public Table table() {
+        if (indexTable != null) {
+            return indexTable;
         }
-
-        if (indexTable == null) {
-            // TODO: break the hard reference from the index table to the source table. Otherwise this index will keep
-            // the source table from being garbage collected.
+        synchronized (this) {
+            // Test again under the lock.
+            if (indexTable != null) {
+                return indexTable;
+            }
 
             // Create the index table, grouped by the key column sources.
             indexTable = QueryPerformanceRecorder
                     .withNugget("Build Table Backed Data Index [" + String.join(", ", keyColumnNames) + "]", () -> {
-                        final Table groupedTable = sourceTable
+                        final QueryTable groupedTable = sourceTable
                                 .aggNoMemo(
                                         AggregationControl.IGNORE_GROUPING,
                                         AggregationProcessor.forExposeGroupRowSets(),
@@ -131,61 +98,40 @@ public class TableBackedDataIndexImpl extends AbstractDataIndex {
                         lookupFunction = AggregationProcessor.getRowLookup(groupedTable);
                         Assert.neqNull(lookupFunction, "AggregationRowLookup lookupFunction should never be null");
 
-                        return groupedTable.renameColumns(
-                                Collections.singleton(Pair.of(EXPOSED_GROUP_ROW_SETS, ColumnName.of(INDEX_COL_NAME))));
+                        final QueryTable renamed = (QueryTable) groupedTable.renameColumns(
+                                Collections
+                                        .singleton(Pair.of(EXPOSED_GROUP_ROW_SETS, ColumnName.of(INDEX_COL_NAME))));
+
+                        return wrappedRowSetTable(renamed, INDEX_COL_NAME);
                     });
         }
         return indexTable;
     }
 
     @Override
-    public @Nullable RowSetLookup rowSetLookup(final boolean usePrev) {
-        if (usePrev && isRefreshing()) {
-            final Table prevTable = table(true);
-            final PositionLookup prevPositionLookup = positionLookup(true);
-            return (Object key) -> {
-                // Pass the object to the aggregation lookup, then return the row set at that position.
-                final int position = prevPositionLookup.apply(key);
-                final long rowKey = prevTable.getRowSet().get(position);
-                return (RowSet) prevTable.getColumnSource(rowSetColumnName()).get(rowKey);
-            };
-        }
-        return (Object key) -> {
-            // Pass the object to the aggregation lookup, then return the row set at that position.
+    public @Nullable RowSetLookup rowSetLookup() {
+        final ColumnSource<RowSet> rowSetColumnSource = rowSetColumn();
+        return (Object key, boolean usePrev) -> {
+            // Pass the object to the position lookup, then return the row set at that position.
             final int position = lookupFunction.get(key);
-            return (RowSet) indexTable.getColumnSource(rowSetColumnName()).get(position);
+            if (position == AggregationRowLookup.DEFAULT_UNKNOWN_ROW) {
+                return null;
+            }
+            if (usePrev) {
+                final long prevRowKey = table().getRowSet().prev().get(position);
+                return rowSetColumnSource.getPrev(prevRowKey);
+            } else {
+                final long rowKey = table().getRowSet().get(position);
+                return rowSetColumnSource.get(rowKey);
+            }
         };
     }
 
     @Override
-    public @NotNull PositionLookup positionLookup(final boolean usePrev) {
-        if (usePrev && isRefreshing()) {
-            // Return a valid cached lookup function if possible.
-            final Table currentTable = table();
-            PositionLookup positionLookup = cachedPrevPositionLookup.get();
-            if (positionLookup != null
-                    && table().getUpdateGraph().clock().currentStep() == cachedPrevPositionLookupStep) {
-                return positionLookup;
-            }
-            synchronized (this) {
-                // Test again, in case another thread has already updated the cache.
-                positionLookup = cachedPrevPositionLookup.get();
-                if (positionLookup != null
-                        && table().getUpdateGraph().clock().currentStep() == cachedPrevPositionLookupStep) {
-                    return positionLookup;
-                }
-
-                final Table prevTable = table(true);
-
-                final PositionLookup newLookup = buildPositionLookup(prevTable, keyColumnNames);
-                cachedPrevPositionLookup = new SoftReference<>(newLookup);
-                cachedPrevPositionLookupStep = currentTable.getUpdateGraph().clock().currentStep();
-
-                return newLookup;
-            }
-        }
-        return (Object key) -> {
-            // Pass the object to the aggregation lookup, then return the resulting position
+    public @NotNull PositionLookup positionLookup() {
+        return (Object key, boolean usePrev) -> {
+            // Pass the object to the aggregation lookup, then return the resulting position. This index will be
+            // correct in prev or current space because of the aggregation's hash-based lookup.
             return lookupFunction.get(key);
         };
     }

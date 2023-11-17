@@ -32,10 +32,11 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
     private final QueryTable indexTable;
     private final WritableColumnSource<Object> indexKeySource;
-    private final ObjectArraySource<RowSet> indexRowSetSource;
+    private final ObjectArraySource<WritableRowSet> indexRowSetSource;
+    private final ModifiedColumnSet rowSetModifiedColumnSet;
 
     /** Provides fast lookup from keys to positions in the index table **/
-    private final TObjectIntHashMap<Object> cachedPositionMap;
+    private final TObjectIntHashMap<Object> keyPositionMap;
 
     public PartitioningColumnDataIndexImpl(@NotNull final Table sourceTable,
             final ColumnSource<?> keySource,
@@ -54,28 +55,13 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
                 10,
                 keySource.getType(),
                 null);
-        indexRowSetSource = new ObjectArraySource<>(RowSet.class, null);
+        indexRowSetSource = new ObjectArraySource<>(WritableRowSet.class, null);
 
-        cachedPositionMap = new TObjectIntHashMap<>(locationTable.intSize(), 0.5F, -1);
+        keyPositionMap = new TObjectIntHashMap<>(locationTable.intSize(), 0.5F, -1);
 
         indexTable = new QueryTable(RowSetFactory.empty().toTracking(), Map.of(
                 this.keyColumnName, indexKeySource,
                 INDEX_COL_NAME, indexRowSetSource));
-
-        if (sourceTable.isRefreshing()) {
-            indexTable.setRefreshing(true);
-            indexKeySource.startTrackingPrevValues();
-            indexRowSetSource.startTrackingPrevValues();
-
-            final TableUpdateListener validatorTableListener =
-                    new InstrumentedTableUpdateListenerAdapter(locationTable, false) {
-                        @Override
-                        public void onUpdate(TableUpdate upstream) {
-                            processUpdate(upstream, false);
-                        }
-                    };
-            locationTable.addUpdateListener(validatorTableListener);
-        }
 
         // Create a dummy update for the initial state.
         TableUpdate initialUpdate = new TableUpdateImpl(
@@ -85,12 +71,38 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
                 RowSetShiftData.EMPTY,
                 ModifiedColumnSet.EMPTY);
         processUpdate(initialUpdate, true);
+
+        if (sourceTable.isRefreshing()) {
+            indexTable.setRefreshing(true);
+            indexKeySource.startTrackingPrevValues();
+            indexRowSetSource.startTrackingPrevValues();
+            rowSetModifiedColumnSet = indexTable.newModifiedColumnSet(rowSetColumnName());
+
+            final TableUpdateListener validatorTableListener =
+                    new InstrumentedTableUpdateListenerAdapter(locationTable, false) {
+                        @Override
+                        public void onUpdate(TableUpdate upstream) {
+                            processUpdate(upstream, false);
+                        }
+                    };
+            locationTable.addUpdateListener(validatorTableListener);
+        } else {
+            rowSetModifiedColumnSet = null;
+        }
     }
 
     private synchronized void processUpdate(final TableUpdate update, final boolean initializing) {
         if (update.removed().isNonempty()) {
             throw new UnsupportedOperationException("Removed rows are not currently supported.");
         }
+        if (update.shifted().nonempty()) {
+            throw new UnsupportedOperationException("Shifted rows are not currently supported.");
+        }
+
+        final boolean trackUpdates = isRefreshing() && !initializing;
+
+        final RowSetBuilderSequential addedBuilder = trackUpdates ? null : RowSetFactory.builderSequential();
+        final RowSetBuilderRandom modifiedBuilder = trackUpdates ? null : RowSetFactory.builderRandom();
 
         // Get the location table from the RegionedColumnSourceManager.
         final Table locationTable = columnSourceManager.locationTable();
@@ -112,18 +124,25 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
                 final TableLocation location = locationColumnSource.get(key);
                 // Compute the offset from the key (which is the location region index).
                 final long firstKey = RegionedColumnSource.getFirstRowKey(Math.toIntExact(key));
-                final RowSet shiftedRowSet = rowSetColumnSource.get(key).shift(firstKey);
+                final WritableRowSet shiftedRowSet = rowSetColumnSource.get(key).shift(firstKey);
 
                 final Object locationKey = location.getKey().getPartitionValue(this.keyColumnName);
 
-                final int pos = cachedPositionMap.get(locationKey);
+                final int pos = keyPositionMap.get(locationKey);
                 if (pos == -1) {
                     // Key not found, add it.
-                    addEntry(position.getAndIncrement(), locationKey, shiftedRowSet);
+                    final int addedPos = position.getAndIncrement();
+                    addEntry(addedPos, locationKey, shiftedRowSet);
+                    if (addedBuilder != null) {
+                        addedBuilder.appendKey(pos);
+                    }
                 } else {
-                    // Key found, update it.
-                    final RowSet existingRowSet = indexRowSetSource.get(pos);
-                    updateEntry(pos, existingRowSet.union(shiftedRowSet));
+                    // Key found, insert these rows to the existing set.
+                    final WritableRowSet existingRowSet = indexRowSetSource.get(pos);
+                    existingRowSet.insert(shiftedRowSet);
+                    if (modifiedBuilder != null) {
+                        modifiedBuilder.addKey(pos);
+                    }
                 }
             });
         }
@@ -131,23 +150,43 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
         update.modified().forAllRowKeys((long key) -> {
             final TableLocation location = locationColumnSource.get(key);
             final long firstKey = RegionedColumnSource.getFirstRowKey(Math.toIntExact(key));
-            final RowSet shiftedRowSet = rowSetColumnSource.get(key).shift(firstKey);
+            final WritableRowSet shiftedRowSet = rowSetColumnSource.get(key).shift(firstKey);
 
             final Object locationKey = location.getKey().getPartitionValue(this.keyColumnName);
 
-            final int pos = cachedPositionMap.get(locationKey);
+            final int pos = keyPositionMap.get(locationKey);
             if (pos == -1) {
                 // Key not found. This is a problem.
                 throw new IllegalStateException("Modified partition key does not exist.");
             } else {
-                // Key found, union these rows to the existing set.
-                final RowSet existingRowSet = indexRowSetSource.get(pos);
-                updateEntry(pos, existingRowSet.union(shiftedRowSet));
+                // Key found, insert these rows to the existing set.
+                final WritableRowSet existingRowSet = indexRowSetSource.get(pos);
+                existingRowSet.insert(shiftedRowSet);
+                if (modifiedBuilder != null) {
+                    modifiedBuilder.addKey(pos);
+                }
             }
         });
+
+        if (trackUpdates) {
+            // Send the downstream updates to any listeners of the index table.
+            final RowSet added = addedBuilder.build();
+            final RowSet modified = modifiedBuilder.build();
+
+            final TableUpdate downstream = new TableUpdateImpl(
+                    added,
+                    modified,
+                    RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY,
+                    modified.isNonempty() ? rowSetModifiedColumnSet : ModifiedColumnSet.EMPTY);
+
+            if (!downstream.empty()) {
+                indexTable.notifyListeners(downstream);
+            }
+        }
     }
 
-    private synchronized void addEntry(final int index, final Object key, final RowSet rowSet) {
+    private synchronized void addEntry(final int index, final Object key, final WritableRowSet rowSet) {
         final Class<?> clazz = key.getClass();
 
         if (clazz == Byte.class) {
@@ -169,11 +208,7 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
         }
         indexRowSetSource.set(index, rowSet);
 
-        cachedPositionMap.put(key, index);
-    }
-
-    private synchronized void updateEntry(final int index, final RowSet rowSet) {
-        indexRowSetSource.set(index, rowSet);
+        keyPositionMap.put(key, index);
     }
 
     @Override
@@ -192,47 +227,32 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public @Nullable Table table(final boolean usePrev) {
-        if (usePrev && isRefreshing()) {
-            // TODO: need a custom ColumnSource<RowSet> wrapper that returns {@link TrackingRowSet#prev()} for
-            // {@link #getPrev(long)}.
-            throw new UnsupportedOperationException(
-                    "usePrev==true is not currently supported for refreshing partition data index tables");
-        }
-
-        // if (usePrev && isRefreshing()) {
-        // // Return a table containing the previous values of the index table.
-        // final TrackingRowSet prevRowSet = indexTable.getRowSet().copyPrev().toTracking();
-        // final Map<String, ColumnSource<?>> prevColumnSourceMap = new LinkedHashMap<>();
-        // indexTable.getColumnSourceMap().forEach((columnName, columnSource) -> {
-        // prevColumnSourceMap.put(columnName, columnSource.getPrevSource());
-        // });
-        //
-        // final Table prevTable = new QueryTable(prevRowSet, prevColumnSourceMap);
-        // return prevTable;
-        // }
+    public @Nullable Table table() {
         return indexTable;
     }
 
     @Override
-    public @Nullable RowSetLookup rowSetLookup(final boolean usePrev) {
-        if (usePrev && isRefreshing()) {
-            throw new UnsupportedOperationException(
-                    "usePrev==true is not currently supported for refreshing partition data index tables");
-        }
-        return (Object o) -> {
-            final int position = cachedPositionMap.get(o);
-            return position == -1 ? null : indexRowSetSource.get(position);
+    public @Nullable RowSetLookup rowSetLookup() {
+        final ColumnSource<RowSet> rowSetColumnSource = rowSetColumn();
+        return (Object key, boolean usePrev) -> {
+            // Pass the object to the position map, then return the row set at that position.
+            final int position = keyPositionMap.get(key);
+            if (position == -1) {
+                return null;
+            }
+            if (usePrev) {
+                final long prevRowKey = table().getRowSet().prev().get(position);
+                return rowSetColumnSource.getPrev(prevRowKey);
+            } else {
+                final long rowKey = table().getRowSet().get(position);
+                return rowSetColumnSource.get(rowKey);
+            }
         };
     }
 
     @Override
-    public @NotNull PositionLookup positionLookup(final boolean usePrev) {
-        if (usePrev && isRefreshing()) {
-            throw new UnsupportedOperationException(
-                    "usePrev==true is not currently supported for refreshing partition data index tables");
-        }
-        return cachedPositionMap::get;
+    public @NotNull PositionLookup positionLookup() {
+        return (Object key, boolean usePrev) -> keyPositionMap.get(key);
     }
 
     @Override

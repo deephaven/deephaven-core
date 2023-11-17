@@ -1,6 +1,7 @@
 package io.deephaven.engine.table;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
@@ -12,37 +13,50 @@ import java.util.*;
  * and the RowSets associated with each unique combination of values. DataIndexes may be loaded from persistent storage
  * or created using aggregations.
  */
-public interface DataIndex {
+public interface DataIndex extends LivenessReferent {
     /**
      * Provides a lookup function from {@code key} to the position in the index table. Keys are specified as follows:
      * <dl>
-     * <dt>No group-by columns</dt>
+     * <dt>No key columns</dt>
      * <dd>"Empty" keys are signified by any zero-length {@code Object[]}</dd>
-     * <dt>One group-by column</dt>
+     * <dt>One key column</dt>
      * <dd>Singular keys are (boxed, if needed) objects</dd>
-     * <dt>Multiple group-by columns</dt>
-     * <dd>Compound keys are {@code Object[]} of (boxed, if needed) objects, in the order of the index key columns</dd>
+     * <dt>Multiple key columns</dt>
+     * <dd>Compound keys are {@code Object[]} of (boxed, if needed) objects, in the order of the index's key
+     * columns</dd>
      * </dl>
      */
     interface PositionLookup {
-        int apply(Object key);
+        /**
+         * Get the position in the index table for the provided key.
+         *
+         * @param key The key to lookup
+         * @return The result position
+         */
+        int apply(Object key, boolean usePrev);
     }
 
     /**
      * Provides a lookup function from {@code key} to the {@link RowSet} containing the matching table rows. Keys are
      * specified as follows:
      * <dl>
-     * <dt>No group-by columns</dt>
+     * <dt>No key columns</dt>
      * <dd>"Empty" keys are signified by any zero-length {@code Object[]}</dd>
-     * <dt>One group-by column</dt>
+     * <dt>One key column</dt>
      * <dd>Singular keys are (boxed, if needed) objects</dd>
-     * <dt>Multiple group-by columns</dt>
-     * <dd>Compound keys are {@code Object[]} of (boxed, if needed) objects, in the order of the aggregation's group-by
+     * <dt>Multiple key columns</dt>
+     * <dd>Compound keys are {@code Object[]} of (boxed, if needed) objects, in the order of the index's key
      * columns</dd>
      * </dl>
      */
     interface RowSetLookup {
-        RowSet apply(Object key);
+        /**
+         * Get the {@link RowSet} for the provided key.
+         *
+         * @param key The key to lookup
+         * @return The result RowSet
+         */
+        RowSet apply(Object key, boolean usePrev);
     }
 
     /** Get the key column names for the index {@link #table() table}. */
@@ -56,46 +70,30 @@ public interface DataIndex {
 
     /** Return the index table key sources in the relative order of the indexed sources supplied. **/
     @FinalDefault
-    default ColumnSource<?>[] indexKeyColumns(ColumnSource<?>[] tableSources) {
+    default ColumnSource<?>[] indexKeyColumns(@NotNull final ColumnSource<?>[] columnSources) {
         final Table indexTable = table();
-        final Map<ColumnSource<?>, String> columnNameMap = this.keyColumnMap();
+        final Map<ColumnSource<?>, String> keyColumnMap = keyColumnMap();
         // Verify that the provided sources match the sources of the index.
-        if (tableSources.length != columnNameMap.size()
-                || !columnNameMap.keySet().containsAll(Arrays.asList(tableSources))) {
-            throw new IllegalArgumentException("The provided columns must match the data index key column");
+        if (columnSources.length != keyColumnMap.size()
+                || !keyColumnMap.keySet().containsAll(Arrays.asList(columnSources))) {
+            throw new IllegalArgumentException("The provided columns must match the data index key columns");
         }
-        Set<ColumnSource<?>> providedSources = new HashSet<>(Arrays.asList(tableSources));
-        Assert.eqTrue(Objects.equals(providedSources, columnNameMap.keySet()),
-                "provided key column sources == index key column sources");
-        return Arrays.stream(tableSources)
-                .map(columnNameMap::get)
+        return Arrays.stream(columnSources)
+                .map(keyColumnMap::get)
                 .map(indexTable::getColumnSource)
                 .toArray(ColumnSource[]::new);
+        // TODO-RWC: Should this be in a static helper instead of the interface?
     }
 
     /** Return the index table row set source. **/
     @FinalDefault
     default ColumnSource<RowSet> rowSetColumn() {
-        final Table indexTable = table();
-        return indexTable.getColumnSource(rowSetColumnName());
+        return table().getColumnSource(rowSetColumnName(), RowSet.class);
     }
 
     /** Get the index as a table. */
     @NotNull
-    @FinalDefault
-    default Table table() {
-        return table(false);
-    }
-
-    /**
-     * Get the index as a table.
-     *
-     * @param usePrev whether to use previous values and row keys.
-     *
-     * @return the index as a table.
-     */
-    @NotNull
-    Table table(final boolean usePrev);
+    Table table();
 
     /**
      * Build a {@link RowSetLookup lookup} function of index row sets for this index. If {@link #isRefreshing()} is
@@ -104,19 +102,7 @@ public interface DataIndex {
      * @return a function that provides map-like lookup of matching rows from an index key.
      */
     @NotNull
-    @FinalDefault
-    default RowSetLookup rowSetLookup() {
-        return rowSetLookup(false);
-    }
-
-    /**
-     * Build a {@link RowSetLookup lookup} function of index row sets for this index. If {@link #isRefreshing()} is
-     * true, this lookup function is guaranteed to be accurate only for the current cycle.
-     *
-     * @return a function that provides map-like lookup of matching rows from an index key.
-     */
-    @NotNull
-    RowSetLookup rowSetLookup(final boolean usePrev);
+    RowSetLookup rowSetLookup();
 
     /**
      * Build a {@link PositionLookup lookup} of positions for this index. If {@link #isRefreshing()} is true, this
@@ -125,19 +111,7 @@ public interface DataIndex {
      * @return a function that provides map-like lookup of index table positions from an index key.
      */
     @NotNull
-    @FinalDefault
-    default PositionLookup positionLookup() {
-        return positionLookup(false);
-    }
-
-    /**
-     * Build a {@link PositionLookup lookup} of positions for this index. If {@link #isRefreshing()} is true, this
-     * lookup function is guaranteed to be accurate only for the current cycle.
-     *
-     * @return a function that provides map-like lookup of index table positions from an index key.
-     */
-    @NotNull
-    PositionLookup positionLookup(final boolean usePrev);
+    PositionLookup positionLookup();
 
     /**
      * Transform and return a new {@link DataIndex} with the provided transform operations applied. Some transformations

@@ -3407,7 +3407,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
     }
 
-    private enum StandardOptions implements Predicate<String> {
+    public enum StandardOptions implements Predicate<String> {
         COPY_ALL {
             @Override
             public boolean test(String attributeName) {

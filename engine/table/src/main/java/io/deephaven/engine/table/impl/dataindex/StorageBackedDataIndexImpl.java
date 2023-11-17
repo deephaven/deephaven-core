@@ -1,21 +1,25 @@
 package io.deephaven.engine.table.impl.dataindex;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.by.AggregationProcessor;
+import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.sources.RowSetColumnSourceWrapper;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.SoftReference;
 import java.util.*;
+
+import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 
 /**
  * This class provides data indexes for merged tables. It is responsible for ensuring that the provided table accounts
@@ -41,13 +45,18 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     final String[] keyColumnNames;
 
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
-    private Table indexTable;
+    private QueryTable indexTable;
+    /** The partitioned table containing the location index tables. */
+    private final QueryTable partitions;
+    private final ObjectArraySource<Table> partitionTableConstituentSource;
+    private final ModifiedColumnSet partitionsConstituentModifiedColumnSet;
 
-    private SoftReference<Table> cachedPrevTable = new SoftReference<>(null);
+    private final ArrayList<LocationState> locationStates;
 
-    private SoftReference<PositionLookup> cachedPositionLookup = new SoftReference<>(null);
-    private SoftReference<PositionLookup> cachedPrevPositionLookup = new SoftReference<>(null);
-    private SoftReference<PositionLookup> cachedRowSetLookup = new SoftReference<>(null);
+    private AggregationRowLookup lookupFunction;
+
+    /** Whether this index is known to be corrupt. */
+    private boolean isCorrupt = false;
 
     public StorageBackedDataIndexImpl(@NotNull final Table sourceTable,
             final ColumnSource<?>[] keySources,
@@ -67,15 +76,27 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
         // Store the column source manager for later use.
         final Table locationTable = columnSourceManager.locationTable();
 
+        // Create the column source for the locations. The keys for this column source are the row keys of the
+        // location table.
+        locationStates = new ArrayList<>();
+
+        // Create the underlying partitions table to hold the materialized location data indexes.
+        final Map<String, ColumnSource<?>> partitionsColumnSourceMap = new LinkedHashMap<>();
+        partitionTableConstituentSource = new ObjectArraySource<>(Table.class);
+        partitionsColumnSourceMap.put(CONSTITUENT.name(), partitionTableConstituentSource);
+        partitions = new QueryTable(RowSetFactory.empty().toTracking(), partitionsColumnSourceMap);
+        partitionsConstituentModifiedColumnSet = partitions.newModifiedColumnSet(CONSTITUENT.name());
+
         if (sourceTable.isRefreshing()) {
-            final TableUpdateListener validatorTableListener =
+            partitions.setRefreshing(true);
+            final TableUpdateListener locationUpdateListener =
                     new InstrumentedTableUpdateListenerAdapter(locationTable, false) {
                         @Override
                         public void onUpdate(TableUpdate upstream) {
                             processUpdate(upstream, false);
                         }
                     };
-            locationTable.addUpdateListener(validatorTableListener);
+            locationTable.addUpdateListener(locationUpdateListener);
         }
 
         // Create a dummy update for the initial state.
@@ -95,37 +116,86 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
             throw new UnsupportedOperationException("Removed rows are not currently supported.");
         }
 
-        // Get the location table from the RegionedColumnSourceManager.
-        final Table locationTable = columnSourceManager.locationTable();
+        // We will track updates only when we have already materialized the index table.
+        final boolean trackUpdates = isRefreshing() && indexTable != null;
 
-        // Add all the existing locations to the map.
-        final ColumnSource<TableLocation> locationColumnSource =
-                locationTable.getColumnSource(columnSourceManager.locationColumnName());
+        final RowSetBuilderSequential addedBuilder = trackUpdates ? null : RowSetFactory.builderSequential();
+        final RowSetBuilderRandom modifiedBuilder = trackUpdates ? null : RowSetFactory.builderRandom();
 
-        // Invalidate the index table and cached lookup objects.
-        indexTable = null;
-        cachedPositionLookup = new SoftReference<>(null);
-        cachedPrevPositionLookup = new SoftReference<>(null);
-        cachedRowSetLookup = new SoftReference<>(null);
+        // Get the location column from the RegionedColumnSourceManager.
+        final ColumnSource<TableLocation> locationTableColumnSource =
+                columnSourceManager.locationTable().getColumnSource(columnSourceManager.locationColumnName());
 
-        update.added().forAllRowKeys((long key) -> {
-            // Add new locations to the map for future addition to the data index.
-            final TableLocation location = locationColumnSource.get(key);
-            final long firstKey = RegionedColumnSource.getFirstRowKey(Math.toIntExact(key));
+        if (update.added().isNonempty()) {
+            // Resize the column sources to accommodate the new rows.
+            if (trackUpdates) {
+                final long newSize = partitions.size() + update.added().lastRowKey() + 1;
+                partitionTableConstituentSource.ensureCapacity(newSize);
+            }
 
-            final LocationState locationState =
-                    new LocationState(location, firstKey, keyColumnNames);
-            locations.put(location, locationState);
-        });
+            update.added().forAllRowKeys((long key) -> {
+                final TableLocation location = locationTableColumnSource.get(key);
+                final LocationState locationState = new LocationState(
+                        location,
+                        RegionedColumnSource.getFirstRowKey(Math.toIntExact(key)),
+                        keyColumnNames);
+                // Added location keys should always be dense and consecutive.
+                Assert.eq(key, "key", locationStates.size() + 1, "locationStates.size() + 1");
+                locationStates.set((int)key, locationState);
+
+                if (trackUpdates) {
+                    // Since the index table is already materialized, we need to load the location data index table
+                    // and add it to the partitioned table.
+                    try {
+                        final Table locationIndexTable = locationState.getCachedIndexTable();
+                        partitionTableConstituentSource.set(key, locationIndexTable);
+                        addedBuilder.appendKey(key);
+                    } catch (Exception e) {
+                        // Mark this index as corrupted.
+                        isCorrupt = true;
+                        throw new IllegalStateException("Failed to update data index.", e);
+                    }
+                }
+            });
+        }
 
         update.modified().forAllRowKeys((long key) -> {
-            // Invalidate the cached index table for the modified locations.
-            final TableLocation location = locationColumnSource.get(key);
-            locations.get(location).cachedIndexTable = null;
-        });
-    }
+            final LocationState locationState = locationStates.get((int)key);
+            // Reset the cached index table for the modified location states.
+            locationState.cachedIndexTable = null;
 
-    private final LinkedHashMap<TableLocation, LocationState> locations = new LinkedHashMap<>();
+            if (trackUpdates) {
+                // Since the index table is already materialized, we need to load the new location data index table
+                // and replace it in the partitioned table.
+                try {
+                    final Table locationIndexTable = locationState.getCachedIndexTable();
+                    partitionTableConstituentSource.set(key, locationIndexTable);
+                    modifiedBuilder.addKey(key);
+                } catch (Exception e) {
+                    // Mark this index as corrupted.
+                    isCorrupt = true;
+                    throw new IllegalStateException("Failed to update data index.", e);
+                }
+            }
+        });
+
+        if (trackUpdates) {
+            // Send an updates to the partitioned table listeners.
+            final RowSet added = addedBuilder.build();
+            final RowSet modified = modifiedBuilder.build();
+
+            final TableUpdate downstream = new TableUpdateImpl(
+                    added,
+                    modified,
+                    RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY,
+                    modified.isNonempty() ? partitionsConstituentModifiedColumnSet : ModifiedColumnSet.EMPTY);
+
+            if (!downstream.empty()) {
+                partitions.notifyListeners(downstream);
+            }
+        }
+    }
 
     @Override
     public String[] keyColumnNames() {
@@ -143,186 +213,121 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public Table table(final boolean usePrev) {
-        if (usePrev && isRefreshing()) {
-            // Return the cached table if possible.
-            Table cached = cachedPrevTable.get();
-            if (cached != null) {
-                return cached;
+    public Table table() {
+        if (indexTable != null) {
+            return indexTable;
+        }
+
+        synchronized (this) {
+            // Test again under the lock.
+            if (indexTable != null) {
+                return indexTable;
             }
 
-            synchronized (this) {
-                // Test again in case another thread has already created the table.
-                cached = cachedPrevTable.get();
-                if (cached != null) {
-                    return cached;
-                }
-
-                // Get the live current table.
-                final Table currentTable = table();
-
-                // Return a table containing the previous values of the index table.
-                final TrackingRowSet prevRowSet = currentTable.getRowSet().copyPrev().toTracking();
-                final Map<String, ColumnSource<?>> prevColumnSourceMap = new LinkedHashMap<>();
-                currentTable.getColumnSourceMap().forEach((columnName, columnSource) -> {
-                    if (columnName.equals(rowSetColumnName())) {
-                        prevColumnSourceMap.put(columnName, RowSetColumnSourceWrapper
-                                .from((ColumnSource<TrackingRowSet>) columnSource).getPrevSource());
-                        return;
+            indexTable = QueryPerformanceRecorder.withNugget("Build Storage Backed Data Index [" + String.join(", ", keyColumnNames) + "]",
+                () -> {
+                    // Populate the partitions table with location index tables.
+                    final long size = locationStates.size();
+                    partitionTableConstituentSource.ensureCapacity(size);
+                    long partitionRowKey = 0;
+                    try {
+                        // TODO: load all the data indexes in parallel. Can we use the JobScheduler and
+                        //  block on a future? Or would that lead to a deadlock if this is running on a UGP thread?
+                        //  How can we tell if this is UGP or initialization pool?
+                        for (final LocationState ls : locationStates) {
+                            final Table locationIndexTable = ls.getCachedIndexTable();
+                            partitionTableConstituentSource.set(partitionRowKey++, locationIndexTable);
+                        }
+                    } catch (Exception e) {
+                        // Mark this index as corrupted.
+                        isCorrupt = true;
+                        throw new IllegalStateException("Failed to load data index.", e);
                     }
-                    prevColumnSourceMap.put(columnName, columnSource.getPrevSource());
+                    partitions.getRowSet().writableCast().insertRange(0, size - 1);
+
+                    // Merge all the location index tables into a single table then partition it by the keys.
+                    final Table merged = PartitionedTableFactory.of(partitions).merge();
+                    final PartitionedTable pt = merged.partitionBy(keyColumnNames);
+
+                    // Transform the partitioned table to create a new table with a single row set column.
+                    final PartitionedTable transformed = pt.transform(t -> {
+                        // Create a new table with only one row, containing the key columns and the merged RowSet.
+                        Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+                        for (String keyColumnName : keyColumnNames) {
+                            columnSourceMap.put(keyColumnName, t.getColumnSource(keyColumnName));
+                        }
+
+                        // Build a new row set from the individual row sets (with their offset keys).
+                        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+                        try (final CloseableIterator<RowSet> rsIt = t.columnIterator(INDEX_COL_NAME);
+                             final CloseableIterator<Long> keyIt = t.columnIterator(OFFSET_KEY_COL_NAME)) {
+                            while (rsIt.hasNext()) {
+                                final RowSet rowSet = rsIt.next();
+                                final long offsetKey = keyIt.next();
+                                builder.appendRowSequenceWithOffset(rowSet, offsetKey);
+                            }
+                        }
+                        final RowSet outputRowSet = builder.build();
+
+                        // Create a SingleValueColumnSource for the row set and add it to the column
+                        // source map.
+                        SingleValueColumnSource<RowSet> rowSetColumnSource =
+                                SingleValueColumnSource.getSingleValueColumnSource(RowSet.class);
+                        rowSetColumnSource.set(outputRowSet);
+                        columnSourceMap.put(INDEX_COL_NAME, rowSetColumnSource);
+
+                        // The result table row set is a single key. We'll use the first key of the input
+                        // table to get the correct key values from the key column sources.
+                        final WritableRowSet resultRowSet =
+                                RowSetFactory.fromKeys(t.getRowSet().firstRowKey());
+
+                        return new QueryTable(resultRowSet.toTracking(), columnSourceMap);
+                    });
+
+                    // Flatten the result table to cache all the redirections we just created.
+                    final Table mergedOutput = transformed.merge();
+
+                    // TODO: need to be able to get the lookup function from the merged PartitionedTable
+                    lookupFunction = AggregationProcessor.getRowLookup(mergedOutput);
+                    Assert.neqNull(lookupFunction,
+                            "AggregationRowLookup lookupFunction should never be null");
+
+                    final QueryTable result = wrappedRowSetTable((QueryTable) mergedOutput.select(), INDEX_COL_NAME);
+                    result.setRefreshing(sourceTable.isRefreshing());
+
+                    return result;
                 });
-
-                final Table result = new QueryTable(prevRowSet, prevColumnSourceMap);
-                cachedPrevTable = new SoftReference<>(result);
-
-                return result;
-            }
         }
 
-        if (indexTable == null) {
-            synchronized (this) {
-                // Test again in case another thread has already created the table.
-                if (indexTable != null) {
-                    return indexTable;
-                }
-
-                indexTable = QueryPerformanceRecorder
-                        .withNugget("Build Storage Backed Data Index [" + String.join(", ", keyColumnNames) + "]",
-                                () -> {
-
-                                    final Table[] locationIndexes = new Table[locations.size()];
-                                    int tCount = 0;
-                                    for (final LocationState ls : locations.values()) {
-                                        final Table locationIndex = ls.getCachedIndexTable();
-                                        // If any location is missing a data index, we must bail out because we can't
-                                        // guarantee a consistent index.
-                                        if (locationIndex == null) {
-                                            return null;
-                                        }
-
-                                        locationIndexes[tCount++] = locationIndex;
-                                    }
-
-                                    // Merge all the individual indexes into a single table.
-                                    final Table merged = TableTools.merge(locationIndexes);
-
-                                    // Partition the merged table by the keys
-                                    final PartitionedTable pt = merged.partitionBy(keyColumnNames);
-                                    final PartitionedTable transformed = pt.transform(t -> {
-                                        // Create a new table containing the key columns and a RowSet.
-                                        Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
-                                        for (String keyColumnName : keyColumnNames) {
-                                            columnSourceMap.put(keyColumnName, t.getColumnSource(keyColumnName));
-                                        }
-
-                                        // Build a new row set from the individual row sets (with their offset keys).
-                                        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-                                        try (final CloseableIterator<RowSet> rsIt = t.columnIterator(INDEX_COL_NAME);
-                                                final CloseableIterator<Long> keyIt =
-                                                        t.columnIterator(OFFSET_KEY_COL_NAME)) {
-                                            while (rsIt.hasNext()) {
-                                                final RowSet rowSet = rsIt.next();
-                                                final long offsetKey = keyIt.next();
-                                                builder.appendRowSequenceWithOffset(rowSet, offsetKey);
-                                            }
-                                        }
-                                        final RowSet outputRowSet = builder.build();
-
-                                        // Create a SingleValueColumnSource for the row set and add it to the column
-                                        // source map.
-                                        SingleValueColumnSource<RowSet> rowSetColumnSource =
-                                                SingleValueColumnSource.getSingleValueColumnSource(RowSet.class);
-                                        rowSetColumnSource.set(outputRowSet);
-                                        columnSourceMap.put(INDEX_COL_NAME, rowSetColumnSource);
-
-                                        // The result table row set is a single key. We'll use the first key of input
-                                        // table to get
-                                        // the
-                                        // correct key values from the key column sources.
-                                        final WritableRowSet resultRowSet =
-                                                RowSetFactory.fromKeys(t.getRowSet().firstRowKey());
-
-                                        return new QueryTable(resultRowSet.toTracking(), columnSourceMap);
-                                    });
-
-                                    // Flatten the result table to cache all the redirections we just created.
-                                    final Table mergedOutput = transformed.merge()
-                                            .sort(keyColumnNames)
-                                            .select();
-
-                                    return mergedOutput;
-                                });
-            }
-        }
         return indexTable;
     }
 
     @Override
-    public RowSetLookup rowSetLookup(final boolean usePrev) {
-        if (usePrev && isRefreshing()) {
-            final Table prevTable = table(true);
-            final PositionLookup prevPositionLookup = positionLookup(true);
-            return (Object key) -> {
-                // Pass the object to the aggregation lookup, then return the row set at that position.
-                final int position = prevPositionLookup.apply(key);
-                return (RowSet) prevTable.getColumnSource(rowSetColumnName()).get(position);
-            };
-        }
-
-        PositionLookup positionLookup = positionLookup();
-        return (Object o) -> {
-            final int position = positionLookup.apply(o);
-            if (position < 0) {
+    public RowSetLookup rowSetLookup() {
+        final ColumnSource<RowSet> rowSetColumnSource = rowSetColumn();
+        return (Object key, boolean usePrev) -> {
+            // Pass the object to the position lookup, then return the row set at that position.
+            final int position = lookupFunction.get(key);
+            if (position == AggregationRowLookup.DEFAULT_UNKNOWN_ROW) {
                 return null;
             }
-            return (RowSet) indexTable.getColumnSource(INDEX_COL_NAME).get(position);
+            if (usePrev) {
+                final long prevRowKey = table().getRowSet().prev().get(position);
+                return rowSetColumnSource.getPrev(prevRowKey);
+            } else {
+                final long rowKey = table().getRowSet().get(position);
+                return rowSetColumnSource.get(rowKey);
+            }
         };
     }
 
     @Override
-    public @NotNull PositionLookup positionLookup(final boolean usePrev) {
-        if (usePrev && isRefreshing()) {
-            // Return a valid cached lookup function if possible.
-            PositionLookup positionLookup = cachedPrevPositionLookup.get();
-            if (positionLookup != null) {
-                return positionLookup;
-            }
-            synchronized (this) {
-                // Test again in case another thread has already created the lookup.
-                positionLookup = cachedPrevPositionLookup.get();
-                if (positionLookup != null) {
-                    return positionLookup;
-                }
-
-                final Table prevTable = table(true);
-
-                // Decide whether to create a map or use a binary search strategy
-                final PositionLookup newLookup = buildPositionLookup(prevTable, keyColumnNames);
-                cachedPrevPositionLookup = new SoftReference<>(newLookup);
-                return newLookup;
-            }
-        }
-
-        PositionLookup positionLookup = cachedPositionLookup.get();
-        if (positionLookup != null) {
-            return positionLookup;
-        }
-        synchronized (this) {
-            // Test again in case another thread has already created the lookup.
-            positionLookup = cachedPositionLookup.get();
-            if (positionLookup != null) {
-                return positionLookup;
-            }
-
-            // Resolve the table and decide whether to create a map or use a binary search strategy
-            final Table indexTable = table();
-            final PositionLookup newLookup = buildPositionLookup(indexTable, keyColumnNames);
-            cachedPositionLookup = new SoftReference<>(newLookup);
-            return newLookup;
-
-        }
-
+    public @NotNull PositionLookup positionLookup() {
+        return (Object key, boolean usePrev) -> {
+            // Pass the object to the aggregation lookup, then return the resulting position. This index will be
+            // correct in prev or current space because of the aggregation's hash-based lookup.
+            return lookupFunction.get(key);
+        };
     }
 
     @Override
@@ -332,11 +337,11 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
 
     @Override
     public Table baseIndexTable() {
-        return columnSourceManager.locationTable();
+        return table();
     }
 
     private static class LocationState {
-        private final TableLocation location;
+        private final TableLocation location;-
         private final long offsetKey;
         private final String[] keyColumns;
         private SoftReference<Table> cachedIndexTable;
@@ -388,8 +393,11 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
 
     @Override
     public boolean validate() {
+        if (isCorrupt) {
+            return false;
+        }
         // Examine the locations for this index and validate that every location has a data index.
-        for (final LocationState ls : locations.values()) {
+        for (final LocationState ls : locationStates) {
             // The Location test is fast but incomplete.
             if (!ls.location.hasDataIndex(keyColumnNames)) {
                 return false;

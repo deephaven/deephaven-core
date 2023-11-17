@@ -69,6 +69,7 @@ public interface DataIndexTransformer {
 
         /** Whether to sort the index table by the first row key within each row set. */
         @SuppressWarnings("unused")
+        // TODO-RWC: What is `sort`?
         Builder sortByFirstRowKey(boolean sort);
 
         /** Map the new key columns to the old columns. */

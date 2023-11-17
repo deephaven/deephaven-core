@@ -35,14 +35,8 @@ public class DerivedDataIndex extends AbstractDataIndex {
     private SoftReference<Table> cachedTable = new SoftReference<>(null);
     private long cachedTableStep = -1;
 
-    private SoftReference<Table> cachedPrevTable = new SoftReference<>(null);
-    private long cachedPrevTableStep = -1;
-
     private SoftReference<PositionLookup> cachedPositionLookup = new SoftReference<>(null);
     private long cachedPositionLookupStep = -1;
-
-    private SoftReference<PositionLookup> cachedPrevPositionLookup = new SoftReference<>(null);
-    private long cachedPrevPositionLookupStep = -1;
 
     public static DerivedDataIndex from(@NotNull final DataIndex index,
             @NotNull final DataIndexTransformer transformer) {
@@ -88,55 +82,42 @@ public class DerivedDataIndex extends AbstractDataIndex {
     }
 
     @Override
-    public @NotNull Table table(final boolean usePrev) {
-        Table resultTable;
-        if (usePrev && isRefreshing()) {
-            // Return a valid cached table if possible. If the index was computed on this cycle, it remains
-            // valid. Otherwise, we need to recompute the index from its parent.
-            final Table cached = cachedPrevTable.get();
-            if (cached != null && (cached.getUpdateGraph().clock().currentStep() == cachedPrevTableStep)) {
+    public @NotNull Table table() {
+        // Return a valid cached table if possible. If the index was computed on this cycle or is derived from a static
+        // index, it remains valid. Otherwise, we need to recompute the index from its parent.
+        Table cached = cachedTable.get();
+        if (cached != null
+                && (!parentIndex.isRefreshing() || cached.getUpdateGraph().clock().currentStep() == cachedTableStep)) {
+            return cached;
+        }
+
+        synchronized (this) {
+            // Test again under the lock.
+            cached = cachedTable.get();
+            if (cached != null
+                    && (!parentIndex.isRefreshing() || cached.getUpdateGraph().clock().currentStep() == cachedTableStep)) {
                 return cached;
             }
 
-            // Get the parent index table and resolve our operations.
-            resultTable = parentIndex.table(usePrev);
+            Table resultTable = parentIndex.table();
 
             resultTable = maybeIntersectAndInvert(resultTable);
             resultTable = maybeSortByFirsKey(resultTable);
             resultTable = maybeMakeImmutable(resultTable);
 
-            // Cache the result table.
-            cachedPrevTable = new SoftReference<>(resultTable);
-            cachedPrevTableStep = resultTable.getUpdateGraph().clock().currentStep();
+            // Cache the result.
+            cachedTable = new SoftReference<>(resultTable);
+            cachedTableStep = resultTable.getUpdateGraph().clock().currentStep();
 
             return resultTable;
         }
-
-        // Return a valid cached table if possible. If the index was computed on this cycle, it remains
-        // valid. Otherwise, we need to recompute the index from its parent.
-        final Table cached = cachedTable.get();
-        if (cached != null && (cached.getUpdateGraph().clock().currentStep() == cachedTableStep)) {
-            return cached;
-        }
-
-        resultTable = parentIndex.table();
-
-        resultTable = maybeIntersectAndInvert(resultTable);
-        resultTable = maybeSortByFirsKey(resultTable);
-        resultTable = maybeMakeImmutable(resultTable);
-
-        // Cache the result table.
-        cachedTable = new SoftReference<>(resultTable);
-        cachedTableStep = resultTable.getUpdateGraph().clock().currentStep();
-
-        return resultTable;
     }
 
     @Override
-    public @NotNull RowSetLookup rowSetLookup(final boolean usePrev) {
+    public @NotNull RowSetLookup rowSetLookup() {
         // Assuming the parent lookup function is fast and efficient, we will leverage the parent's function
         // and apply the mutator to the retrieved result.
-        final RowSetLookup lookup = parentIndex.rowSetLookup(usePrev);
+        final RowSetLookup lookup = parentIndex.rowSetLookup();
         if (transformer.intersectRowSet().isEmpty() && transformer.invertRowSet().isEmpty()) {
             // No need to mutate retrieved row set.
             return lookup;
@@ -144,61 +125,52 @@ public class DerivedDataIndex extends AbstractDataIndex {
 
         final Function<RowSet, RowSet> mutator =
                 getMutator(transformer.intersectRowSet().orElse(null), transformer.invertRowSet().orElse(null));
-        return (Object o) -> {
-            final RowSet rowSet = lookup.apply(o);
+        return (Object key, boolean usePrev) -> {
+            final RowSet rowSet = lookup.apply(key, usePrev);
             return rowSet == null ? null : mutator.apply(rowSet);
         };
     }
 
     @Override
-    public @NotNull PositionLookup positionLookup(final boolean usePrev) {
+    public @NotNull PositionLookup positionLookup() {
         if (!mayModifyParentIndexRowSet()) {
             // We can use the parent lookup function directly because the operations being applied will not change
             // the index table row set and the key vs. position will be correct.
-            return parentIndex.positionLookup(usePrev);
+            return parentIndex.positionLookup();
         }
 
-        // Make sure we have a valid table on hand.
-        final Table indexTable = table(usePrev);
+        // Make sure we have a valid table on hand to check the current clock.
+        final Table indexTable = table();
 
-        if (usePrev) {
-            // Return a valid cached lookup function if possible.
-            PositionLookup positionLookup = cachedPrevPositionLookup.get();
-            if (positionLookup != null
-                    && (!isRefreshing()
-                            || indexTable.getUpdateGraph().clock().currentStep() == cachedPrevPositionLookupStep)) {
-                return positionLookup;
+        // Return a valid cached table if possible. If the index was computed on this cycle or is derived from a static
+        // index, it remains valid. Otherwise, we need to recompute the index from its parent.
+        PositionLookup cachedLookup = cachedPositionLookup.get();
+        if (cachedLookup != null
+                && (!parentIndex.isRefreshing() || indexTable.getUpdateGraph().clock().currentStep() == cachedPositionLookupStep)) {
+            return cachedLookup;
+        }
+
+        synchronized (this) {
+            cachedLookup = cachedPositionLookup.get();
+            if (cachedLookup != null
+                    && (!parentIndex.isRefreshing() || indexTable.getUpdateGraph().clock().currentStep() == cachedPositionLookupStep)) {
+                return cachedLookup;
             }
 
-            synchronized (this) {
-                // Test again in case another thread has already computed the lookup.
-                positionLookup = cachedPrevPositionLookup.get();
-                if (positionLookup != null
-                        && (!isRefreshing()
-                                || indexTable.getUpdateGraph().clock().currentStep() == cachedPrevPositionLookupStep)) {
-                    return positionLookup;
-                }
+            // TODO: This is wretched nonsense. Starting point for discussion only...
+            final TObjectIntHashMap prevKeyPositionMap = buildPositionMap(indexTable, keyColumnNames(), true);
+            final TObjectIntHashMap keyPositionMap = buildPositionMap(indexTable, keyColumnNames(), false);
 
-                final PositionLookup newLookup = buildPositionLookup(indexTable, keyColumnNames());
-                cachedPrevPositionLookup = new SoftReference<>(newLookup);
-                cachedPrevPositionLookupStep = indexTable.getUpdateGraph().clock().currentStep();
+            cachedLookup = (Object key, boolean usePrev) -> {
+                return usePrev ? prevKeyPositionMap.get(key) : keyPositionMap.get(key);
+            };
 
-                return newLookup;
-            }
+            // Cache the result.
+            cachedPositionLookup = new SoftReference<>(cachedLookup);
+            cachedPositionLookupStep = indexTable.getUpdateGraph().clock().currentStep();
+
+            return cachedLookup;
         }
-        // Return a valid cached lookup function if possible.
-        final PositionLookup positionLookup = cachedPositionLookup.get();
-        if (positionLookup != null
-                && (!isRefreshing() || indexTable.getUpdateGraph().clock().currentStep() == cachedPositionLookupStep)) {
-            return positionLookup;
-        }
-
-        // Decide whether to create a map or use a binary search strategy
-        final PositionLookup newLookup = buildPositionLookup(indexTable, keyColumnNames());
-        cachedPositionLookup = new SoftReference<>(newLookup);
-        cachedPositionLookupStep = indexTable.getUpdateGraph().clock().currentStep();
-
-        return newLookup;
     }
 
     @Override

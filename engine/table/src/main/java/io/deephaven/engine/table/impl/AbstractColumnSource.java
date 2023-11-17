@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
+import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
@@ -135,14 +136,23 @@ public abstract class AbstractColumnSource<T> implements
             final RowSetBuilderRandom allInMatchingGroups = RowSetFactory.builderRandom();
 
             if (caseInsensitive && (type == String.class)) {
-                // Iterate over the entries in the index table and add the case-insensitive matches
-                final Table indexTable = dataIndex.table(usePrev);
+                // Linear scan through the index table, adding case-insensitive matches
+                final Table indexTable = dataIndex.table();
 
                 KeyedObjectHashSet keySet = new KeyedObjectHashSet<>(new CIStringKey());
                 Collections.addAll(keySet, keys);
-                try (final CloseableIterator<String> keyIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0]);
+
+                final RowSet rowSetToUse = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
+                final ColumnSource<?> keySource = usePrev
+                        ? indexTable.getColumnSource(dataIndex.keyColumnNames()[0]).getPrevSource()
+                        : indexTable.getColumnSource(dataIndex.keyColumnNames()[0]);
+                final ColumnSource<RowSet> rowSetSource = usePrev
+                        ? dataIndex.rowSetColumn().getPrevSource()
+                        : dataIndex.rowSetColumn();
+
+                try (final CloseableIterator<String> keyIt = ChunkedColumnIterator.make(keySource, rowSetToUse);
                         final CloseableIterator<RowSet> rowSetIt =
-                                indexTable.columnIterator(dataIndex.rowSetColumnName())) {
+                                ChunkedColumnIterator.make(rowSetSource, rowSetToUse)) {
                     while (keyIt.hasNext()) {
                         final String key = keyIt.next();
                         final RowSet rowSet = rowSetIt.next();
@@ -153,9 +163,9 @@ public abstract class AbstractColumnSource<T> implements
                 }
             } else {
                 // Use the lookup function
-                final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup(usePrev);
+                final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup();
                 for (Object key : keys) {
-                    RowSet range = rowSetLookup.apply(key);
+                    RowSet range = rowSetLookup.apply(key, usePrev);
                     if (range != null) {
                         allInMatchingGroups.addRowSet(range);
                     }
