@@ -34,6 +34,8 @@ import io.deephaven.server.table.ops.AggregationAdapter;
 import io.deephaven.server.table.ops.FilterTableGrpcImpl;
 import io.deephaven.server.table.ops.filter.FilterFactory;
 import io.deephaven.util.SafeCloseable;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -76,9 +78,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
 
         final SessionState session = sessionService.getCurrentSession();
 
-        final String description = "HierarchicalTableServiceGrpcImpl#rollup(session=" + session.getSessionId() + ")";
+        final String description = "HierarchicalTableServiceGrpcImpl#rollup(source="
+                + ticketRouter.getLogNameFor(request.getSourceTableId(), "sourceId") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Table> sourceTableExport =
@@ -127,9 +130,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
 
         final SessionState session = sessionService.getCurrentSession();
 
-        final String description = "HierarchicalTableServiceGrpcImpl#tree(session=" + session.getSessionId() + ")";
+        final String description = "HierarchicalTableServiceGrpcImpl#tree(source="
+                + ticketRouter.getLogNameFor(request.getSourceTableId(), "source") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Table> sourceTableExport =
@@ -183,9 +187,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
 
         final SessionState session = sessionService.getCurrentSession();
 
-        final String description = "HierarchicalTableServiceGrpcImpl#apply(session=" + session.getSessionId() + ")";
+        final String description = "HierarchicalTableServiceGrpcImpl#apply(source="
+                + ticketRouter.getLogNameFor(request.getInputHierarchicalTableId(), "source") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<HierarchicalTable<?>> inputHierarchicalTableExport =
@@ -340,30 +345,33 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
 
         final SessionState session = sessionService.getCurrentSession();
 
-        final String description = "HierarchicalTableServiceGrpcImpl#view(session=" + session.getSessionId() + ")";
+        final boolean usedExisting;
+        final Ticket targetTicket;
+        switch (request.getTargetCase()) {
+            case HIERARCHICAL_TABLE_ID:
+                usedExisting = false;
+                targetTicket = request.getHierarchicalTableId();
+                break;
+            case EXISTING_VIEW_ID:
+                usedExisting = true;
+                targetTicket = request.getExistingViewId();
+                break;
+            case TARGET_NOT_SET:
+            default:
+                throw Status.INVALID_ARGUMENT
+                        .augmentDescription("No target specified")
+                        .asRuntimeException();
+        }
+
+        final String description = "HierarchicalTableServiceGrpcImpl#view(target="
+                + ticketRouter.getLogNameFor(targetTicket, "target") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-
             final SessionState.ExportBuilder<HierarchicalTableView> resultExportBuilder =
                     session.newExport(request.getResultViewId(), "view.resultViewId");
 
-            final boolean usedExisting;
-            final Ticket targetTicket;
-            switch (request.getTargetCase()) {
-                case HIERARCHICAL_TABLE_ID:
-                    usedExisting = false;
-                    targetTicket = request.getHierarchicalTableId();
-                    break;
-                case EXISTING_VIEW_ID:
-                    usedExisting = true;
-                    targetTicket = request.getExistingViewId();
-                    break;
-                case TARGET_NOT_SET:
-                default:
-                    throw new IllegalStateException();
-            }
             final SessionState.ExportObject<?> targetExport =
                     ticketRouter.resolve(session, targetTicket, "view.target");
 
@@ -455,10 +463,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
 
         final SessionState session = sessionService.getCurrentSession();
 
-        final String description =
-                "HierarchicalTableServiceGrpcImpl#exportSource(session=" + session.getSessionId() + ")";
+        final String description = "HierarchicalTableServiceGrpcImpl#exportSource(source="
+                + ticketRouter.getLogNameFor(request.getHierarchicalTableId(), "source") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<HierarchicalTable<?>> hierarchicalTableExport =

@@ -177,10 +177,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             @NotNull final StreamObserver<Flight.FlightInfo> responseObserver) {
         final SessionState session = sessionService.getOptionalSession();
 
-        final String description =
-                "FlightService#getFlightInfo(session=" + (session == null ? "Anonymous" : session.getSessionId()) + ")";
+        final String description = "FlightService#getFlightInfo(request=" + request + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session == null ? null : session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Flight.FlightInfo> export =
@@ -231,10 +230,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             @NotNull final StreamObserver<Flight.SchemaResult> responseObserver) {
         final SessionState session = sessionService.getOptionalSession();
 
-        final String description =
-                "FlightService#getSchema(session=" + (session == null ? "Anonymous" : session.getSessionId()) + ")";
+        final String description = "FlightService#getSchema(request=" + request + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session == null ? null : session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Flight.FlightInfo> export =

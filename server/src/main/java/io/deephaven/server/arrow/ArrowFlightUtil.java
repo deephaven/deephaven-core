@@ -73,9 +73,10 @@ public class ArrowFlightUtil {
             final Flight.Ticket request,
             final StreamObserver<InputStream> observer) {
 
-        final String description = "FlightService#DoGet(session=" + session.getSessionId() + ")";
+        final String description =
+                "FlightService#DoGet(request=" + ticketRouter.getLogNameFor(request, "request") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<BaseTable<?>> export =
@@ -487,10 +488,10 @@ public class ArrowFlightUtil {
                     final BarrageSnapshotRequest snapshotRequest = BarrageSnapshotRequest
                             .getRootAsBarrageSnapshotRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                    final String description =
-                            "FlightService#DoExchange(snapshot, session=" + session.getSessionId() + ")";
+                    final String description = "FlightService#DoExchange(snapshot, request="
+                            + ticketRouter.getLogNameFor(snapshotRequest.ticketAsByteBuffer(), "request") + ")";
                     final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                            description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                            description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
                     try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
                         final SessionState.ExportObject<BaseTable<?>> parent =
@@ -642,21 +643,21 @@ public class ArrowFlightUtil {
                     preExportSubscriptions = new ArrayDeque<>();
                     preExportSubscriptions.add(subscriptionRequest);
 
-                    final String description =
-                            "FlightService#DoExchange(subscription, session=" + session.getSessionId() + ")";
+                    final String description = "FlightService#DoExchange(subscription, request="
+                            + ticketRouter.getLogNameFor(subscriptionRequest.ticketAsByteBuffer(), "request") + ")";
                     final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                            description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                            description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
                     try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-                        final SessionState.ExportObject<Object> parent =
-                                ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "parent");
+                        final SessionState.ExportObject<Object> request =
+                                ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "request");
 
                         synchronized (this) {
                             onExportResolvedContinuation = session.nonExport()
                                     .queryPerformanceRecorder(queryPerformanceRecorder)
-                                    .require(parent)
+                                    .require(request)
                                     .onErrorHandler(DoExchangeMarshaller.this::onError)
-                                    .submit(() -> onExportResolved(parent));
+                                    .submit(() -> onExportResolved(request));
                         }
                     }
                 }

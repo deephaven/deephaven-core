@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Predicate;
 
@@ -54,6 +55,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
          *
          * @param evaluationNumber A unique identifier for the query evaluation that triggered this nugget creation
          * @param description The operation description
+         * @param sessionId The gRPC client session-id if applicable
          * @param onCloseCallback A callback that is invoked when the nugget is closed. It returns whether the nugget
          *        should be logged.
          * @return A new nugget
@@ -61,9 +63,10 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         default QueryPerformanceNugget createForQuery(
                 final long evaluationNumber,
                 @NotNull final String description,
+                @Nullable final String sessionId,
                 @NotNull final Predicate<QueryPerformanceNugget> onCloseCallback) {
-            return new QueryPerformanceNugget(evaluationNumber, NULL_LONG, NULL_INT, NULL_INT, NULL_INT,
-                    description, false, NULL_LONG, onCloseCallback);
+            return new QueryPerformanceNugget(evaluationNumber, NULL_LONG, NULL_INT, NULL_INT, NULL_INT, description,
+                    sessionId, false, NULL_LONG, onCloseCallback);
         }
 
         /**
@@ -82,8 +85,8 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
                 @NotNull final String description,
                 @NotNull final Predicate<QueryPerformanceNugget> onCloseCallback) {
             Assert.eqTrue(parentQuery.isQueryLevel(), "parentQuery.isQueryLevel()");
-            return new QueryPerformanceNugget(evaluationNumber, parentQuery.getEvaluationNumber(),
-                    NULL_INT, NULL_INT, NULL_INT, description, false, NULL_LONG, onCloseCallback);
+            return new QueryPerformanceNugget(evaluationNumber, parentQuery.getEvaluationNumber(), NULL_INT, NULL_INT,
+                    NULL_INT, description, parentQuery.getSessionId(), false, NULL_LONG, onCloseCallback);
         }
 
         /**
@@ -116,6 +119,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
                     parentQueryOrOperation.getOperationNumber(),
                     depth,
                     description,
+                    parentQueryOrOperation.getSessionId(),
                     true, // operations are always user
                     inputSize,
                     onCloseCallback);
@@ -142,6 +146,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
                     NULL_INT, // catch all has no parent operation
                     0, // catch all is a root operation
                     QueryPerformanceRecorder.UNINSTRUMENTED_CODE_DESCRIPTION,
+                    parentQuery.getSessionId(),
                     false, // catch all is not user
                     NULL_LONG,
                     onCloseCallback); // catch all has no input size
@@ -156,6 +161,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
     private final int parentOperationNumber;
     private final int depth;
     private final String description;
+    private final String sessionId;
     private final boolean isUser;
     private final long inputSize;
     private final Predicate<QueryPerformanceNugget> onCloseCallback;
@@ -196,6 +202,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
             final int parentOperationNumber,
             final int depth,
             @NotNull final String description,
+            @Nullable final String sessionId,
             final boolean isUser,
             final long inputSize,
             @NotNull final Predicate<QueryPerformanceNugget> onCloseCallback) {
@@ -212,6 +219,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         } else {
             this.description = description;
         }
+        this.sessionId = sessionId;
         this.isUser = isUser;
         this.inputSize = inputSize;
         this.onCloseCallback = onCloseCallback;
@@ -238,6 +246,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         parentOperationNumber = NULL_INT;
         depth = 0;
         description = null;
+        sessionId = null;
         isUser = false;
         inputSize = NULL_LONG;
         onCloseCallback = null;
@@ -367,6 +376,11 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
 
     public String getName() {
         return description;
+    }
+
+    @Nullable
+    public String getSessionId() {
+        return sessionId;
     }
 
     public boolean isUser() {

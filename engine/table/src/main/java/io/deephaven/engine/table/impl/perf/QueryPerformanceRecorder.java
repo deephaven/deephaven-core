@@ -139,8 +139,9 @@ public interface QueryPerformanceRecorder {
      */
     static QueryPerformanceRecorder newQuery(
             @NotNull final String description,
+            @Nullable final String sessionId,
             @NotNull final QueryPerformanceNugget.Factory nuggetFactory) {
-        return new QueryPerformanceRecorderImpl(description, null, nuggetFactory);
+        return new QueryPerformanceRecorderImpl(description, sessionId, null, nuggetFactory);
     }
 
     /**
@@ -154,7 +155,7 @@ public interface QueryPerformanceRecorder {
             @NotNull final String description,
             @Nullable final QueryPerformanceRecorder parent,
             @NotNull final QueryPerformanceNugget.Factory nuggetFactory) {
-        return new QueryPerformanceRecorderImpl(description, parent, nuggetFactory);
+        return new QueryPerformanceRecorderImpl(description, null, parent, nuggetFactory);
     }
 
     /**

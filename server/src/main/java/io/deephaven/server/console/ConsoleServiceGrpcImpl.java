@@ -167,9 +167,10 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
         }
 
-        final String description = "ConsoleServiceGrpcImpl#executeCommand(session=" + session.getSessionId() + ")";
+        final String description = "ConsoleServiceGrpcImpl#executeCommand(console="
+                + ticketRouter.getLogNameFor(consoleId, "consoleId") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<ScriptSession> exportedConsole =
@@ -247,14 +248,16 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             @NotNull final StreamObserver<BindTableToVariableResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
 
-        Ticket tableId = request.getTableId();
+        final Ticket tableId = request.getTableId();
         if (tableId.getTicket().isEmpty()) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No source tableId supplied");
         }
 
-        final String description = "ConsoleServiceGrpcImpl#bindTableToVariable(session=" + session.getSessionId() + ")";
+        final String description = "ConsoleServiceGrpcImpl#bindTableToVariable(tableId="
+                + ticketRouter.getLogNameFor(tableId, "tableId") + ", variableName=" + request.getVariableName()
+                + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Table> exportedTable =

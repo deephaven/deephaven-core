@@ -261,9 +261,10 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "No ticket supplied");
         }
 
-        final String description = "ObjectServiceGrpcImpl#fetchObject(session=" + session.getSessionId() + ")";
+        final String description = "ObjectServiceGrpcImpl#fetchObject(source="
+                + ticketRouter.getLogNameFor(request.getSourceId().getTicket(), "source") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Object> object =

@@ -55,10 +55,11 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
             @NotNull final StreamObserver<AddTableResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
 
-        final String description =
-                "InputTableServiceGrpcImpl#addTableToInputTable(session=" + session.getSessionId() + ")";
+        final String description = "InputTableServiceGrpcImpl#addTableToInputTable(inputTable="
+                + ticketRouter.getLogNameFor(request.getInputTable(), "inputTable") + ", tableToAdd="
+                + ticketRouter.getLogNameFor(request.getTableToAdd(), "tableToAdd") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Table> targetTable =
@@ -112,10 +113,11 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
             @NotNull final StreamObserver<DeleteTableResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
 
-        final String description =
-                "InputTableServiceGrpcImpl#deleteTableFromInputTable(session=" + session.getSessionId() + ")";
+        final String description = "InputTableServiceGrpcImpl#deleteTableFromInputTable(inputTable="
+                + ticketRouter.getLogNameFor(request.getInputTable(), "inputTable") + ", tableToRemove="
+                + ticketRouter.getLogNameFor(request.getTableToRemove(), "tableToRemove") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Table> targetTable =

@@ -58,10 +58,10 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
             @NotNull final StreamObserver<PartitionByResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
 
-        final String description =
-                "PartitionedTableServiceGrpcImpl#partitionBy(session=" + session.getSessionId() + ")";
+        final String description = "PartitionedTableServiceGrpcImpl#partitionBy(source="
+                + ticketRouter.getLogNameFor(request.getTableId(), "source") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Table> targetTable =
@@ -88,9 +88,10 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
             @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
 
-        final String description = "PartitionedTableServiceGrpcImpl#merge(session=" + session.getSessionId() + ")";
+        final String description = "PartitionedTableServiceGrpcImpl#merge(source="
+                + ticketRouter.getLogNameFor(request.getPartitionedTable(), "source") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<PartitionedTable> partitionedTable =
@@ -125,9 +126,11 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
             @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
 
-        final String description = "PartitionedTableServiceGrpcImpl#getTable(session=" + session.getSessionId() + ")";
+        final String description = "PartitionedTableServiceGrpcImpl#getTable(source="
+                + ticketRouter.getLogNameFor(request.getPartitionedTable(), "source") + ", keyTable="
+                + ticketRouter.getLogNameFor(request.getKeyTableTicket(), "keyTable") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<PartitionedTable> partitionedTable =

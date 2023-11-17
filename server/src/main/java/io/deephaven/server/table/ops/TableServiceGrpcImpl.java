@@ -469,10 +469,10 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         if (sourceId.getTicket().isEmpty()) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
         }
-        final String description =
-                "TableServiceGrpcImpl#seekRow(session=" + session.getSessionId() + ")";
+        final String description = "TableServiceGrpcImpl#seekRow(source="
+                + ticketRouter.getLogNameFor(sourceId, "source") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Table> exportedTable =
@@ -522,8 +522,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         final SessionState session = sessionService.getCurrentSession();
 
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                "TableService#batch(session=" + session.getSessionId() + ")",
-                QueryPerformanceNugget.DEFAULT_FACTORY);
+                "TableService#batch()", session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored1 = queryPerformanceRecorder.startQuery()) {
             // step 1: initialize exports
@@ -626,10 +625,10 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No request ticket supplied");
         }
 
-        final String description =
-                "TableServiceGrpcImpl#getExportedTableCreationResponse(session=" + session.getSessionId() + ")";
+        final String description = "TableServiceGrpcImpl#getExportedTableCreationResponse(request="
+                + ticketRouter.getLogNameFor(request, "request") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Object> export = ticketRouter.resolve(session, request, "request");
@@ -675,11 +674,11 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No result ticket supplied");
         }
 
-        final String description = "TableService#" + op.name() + "(session=" + session.getSessionId() + ", resultId="
+        final String description = "TableService#" + op.name() + "(resultId="
                 + ticketRouter.getLogNameFor(resultId, "TableServiceGrpcImpl") + ")";
 
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             operation.validateRequest(request);

@@ -167,9 +167,10 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             return;
         }
 
-        final String description = "SessionServiceGrpcImpl#exportFromTicket(session=" + session.getSessionId() + ")";
+        final String description = "SessionServiceGrpcImpl#exportFromTicket(source="
+                + ticketRouter.getLogNameFor(request.getSourceId(), "source") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Object> source =
@@ -204,9 +205,10 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             return;
         }
 
-        final String description = "SessionServiceGrpcImpl#publishFromTicket(session=" + session.getSessionId() + ")";
+        final String description = "SessionServiceGrpcImpl#publishFromTicket(source="
+                + ticketRouter.getLogNameFor(request.getSourceId(), "source") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, QueryPerformanceNugget.DEFAULT_FACTORY);
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Object> source =

@@ -37,11 +37,12 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
      */
     QueryPerformanceRecorderImpl(
             @NotNull final String description,
+            @Nullable final String sessionId,
             @Nullable final QueryPerformanceRecorder parent,
             @NotNull final QueryPerformanceNugget.Factory nuggetFactory) {
         if (parent == null) {
             queryNugget = nuggetFactory.createForQuery(
-                    QueryPerformanceRecorderState.QUERIES_PROCESSED.getAndIncrement(), description,
+                    QueryPerformanceRecorderState.QUERIES_PROCESSED.getAndIncrement(), description, sessionId,
                     this::releaseNugget);
         } else {
             queryNugget = nuggetFactory.createForSubQuery(

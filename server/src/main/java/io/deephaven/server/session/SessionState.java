@@ -1011,8 +1011,8 @@ public class SessionState {
                             QueryPerformanceNugget.DEFAULT_FACTORY);
                 } else {
                     exportRecorder = QueryPerformanceRecorder.newQuery(
-                            "ExportObject#doWork(session=" + session.sessionId + "," + queryId + ")",
-                            QueryPerformanceNugget.DEFAULT_FACTORY);
+                            "ExportObject#doWork(" + queryId + ")",
+                            session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
                 }
                 queryProcessingResults = new QueryProcessingResults(exportRecorder);
 
