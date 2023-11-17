@@ -5,9 +5,9 @@ package io.deephaven.engine.table.impl.select.codegen;
 
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.context.QueryScopeParam;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
@@ -260,8 +260,7 @@ public class JavaKernelBuilder {
     @SuppressWarnings("SameParameterValue")
     private static Class<?> compileFormula(final String what, final String classBody, final String className) {
         // System.out.printf("compileFormula: formulaString is %s. Code is...%n%s%n", what, classBody);
-        try (final QueryPerformanceNugget nugget =
-                QueryPerformanceRecorder.getInstance().getNugget("Compile:" + what)) {
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget("Compile:" + what)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
             final QueryCompiler compiler = ExecutionContext.getContext().getQueryCompiler();
             return compiler.compile(className, classBody, QueryCompiler.FORMULA_PREFIX);

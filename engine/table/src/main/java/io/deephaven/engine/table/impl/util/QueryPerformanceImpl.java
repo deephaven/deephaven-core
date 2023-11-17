@@ -6,11 +6,11 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
-import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.tablelogger.Row.Flags;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -40,9 +40,9 @@ class QueryPerformanceImpl implements QueryPerformanceLogLogger {
     @Override
     public void log(
             @NotNull final Flags flags,
-            @NotNull final QueryProcessingResults queryProcessingResults,
-            @NotNull final QueryPerformanceNugget nugget) throws IOException {
-        publisher.add(queryProcessingResults, nugget);
-        qplLogger.log(flags, queryProcessingResults, nugget);
+            @NotNull final QueryPerformanceNugget nugget,
+            @Nullable final Exception exception) throws IOException {
+        publisher.add(nugget, exception);
+        qplLogger.log(flags, nugget, exception);
     }
 }

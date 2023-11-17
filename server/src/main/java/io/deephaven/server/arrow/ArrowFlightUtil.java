@@ -73,14 +73,13 @@ public class ArrowFlightUtil {
             final Flight.Ticket request,
             final StreamObserver<InputStream> observer) {
 
-        final String description =
-                "FlightService#DoGet(request=" + ticketRouter.getLogNameFor(request, "request") + ")";
+        final String description = "FlightService#DoGet(table=" + ticketRouter.getLogNameFor(request, "table") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-            final SessionState.ExportObject<BaseTable<?>> export =
-                    ticketRouter.resolve(session, request, "request");
+            final SessionState.ExportObject<BaseTable<?>> tableExport =
+                    ticketRouter.resolve(session, request, "table");
 
             final BarragePerformanceLog.SnapshotMetricsHelper metrics =
                     new BarragePerformanceLog.SnapshotMetricsHelper();
@@ -88,11 +87,11 @@ public class ArrowFlightUtil {
             final long queueStartTm = System.nanoTime();
             session.nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
-                    .require(export)
+                    .require(tableExport)
                     .onError(observer)
                     .submit(() -> {
                         metrics.queueNanos = System.nanoTime() - queueStartTm;
-                        final BaseTable<?> table = export.get();
+                        final BaseTable<?> table = tableExport.get();
                         metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                         metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
@@ -488,14 +487,14 @@ public class ArrowFlightUtil {
                     final BarrageSnapshotRequest snapshotRequest = BarrageSnapshotRequest
                             .getRootAsBarrageSnapshotRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                    final String description = "FlightService#DoExchange(snapshot, request="
-                            + ticketRouter.getLogNameFor(snapshotRequest.ticketAsByteBuffer(), "request") + ")";
+                    final String description = "FlightService#DoExchange(snapshot, table="
+                            + ticketRouter.getLogNameFor(snapshotRequest.ticketAsByteBuffer(), "table") + ")";
                     final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                             description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
                     try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-                        final SessionState.ExportObject<BaseTable<?>> parent =
-                                ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "parent");
+                        final SessionState.ExportObject<BaseTable<?>> tableExport =
+                                ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "table");
 
                         final BarragePerformanceLog.SnapshotMetricsHelper metrics =
                                 new BarragePerformanceLog.SnapshotMetricsHelper();
@@ -503,11 +502,11 @@ public class ArrowFlightUtil {
                         final long queueStartTm = System.nanoTime();
                         session.nonExport()
                                 .queryPerformanceRecorder(queryPerformanceRecorder)
-                                .require(parent)
+                                .require(tableExport)
                                 .onError(listener)
                                 .submit(() -> {
                                     metrics.queueNanos = System.nanoTime() - queueStartTm;
-                                    final BaseTable<?> table = parent.get();
+                                    final BaseTable<?> table = tableExport.get();
                                     metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                                     metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
@@ -643,21 +642,21 @@ public class ArrowFlightUtil {
                     preExportSubscriptions = new ArrayDeque<>();
                     preExportSubscriptions.add(subscriptionRequest);
 
-                    final String description = "FlightService#DoExchange(subscription, request="
-                            + ticketRouter.getLogNameFor(subscriptionRequest.ticketAsByteBuffer(), "request") + ")";
+                    final String description = "FlightService#DoExchange(subscription, table="
+                            + ticketRouter.getLogNameFor(subscriptionRequest.ticketAsByteBuffer(), "table") + ")";
                     final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                             description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
                     try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-                        final SessionState.ExportObject<Object> request =
-                                ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "request");
+                        final SessionState.ExportObject<Object> table =
+                                ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "table");
 
                         synchronized (this) {
                             onExportResolvedContinuation = session.nonExport()
                                     .queryPerformanceRecorder(queryPerformanceRecorder)
-                                    .require(request)
+                                    .require(table)
                                     .onErrorHandler(DoExchangeMarshaller.this::onError)
-                                    .submit(() -> onExportResolved(request));
+                                    .submit(() -> onExportResolved(table));
                         }
                     }
                 }

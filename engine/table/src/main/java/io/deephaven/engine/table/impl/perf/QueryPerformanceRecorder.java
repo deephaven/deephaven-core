@@ -34,8 +34,8 @@ public interface QueryPerformanceRecorder {
      * recorder is installed.
      *
      * @param name the nugget name
-     * @return A new QueryPerformanceNugget to encapsulate user query operations. {@link QueryPerformanceNugget#done()}
-     *         or {@link QueryPerformanceNugget#close()} must be called on the nugget.
+     * @return A new QueryPerformanceNugget to encapsulate user query operations. {@link QueryPerformanceNugget#close()}
+     *         must be called on the nugget.
      */
     @FinalDefault
     default QueryPerformanceNugget getNugget(@NotNull String name) {
@@ -48,8 +48,8 @@ public interface QueryPerformanceRecorder {
      *
      * @param name the nugget name
      * @param inputSize the nugget's input size
-     * @return A new QueryPerformanceNugget to encapsulate user query operations. {@link QueryPerformanceNugget#done()}
-     *         or {@link QueryPerformanceNugget#close()} must be called on the nugget.
+     * @return A new QueryPerformanceNugget to encapsulate user query operations. {@link QueryPerformanceNugget#close()}
+     *         must be called on the nugget.
      */
     QueryPerformanceNugget getNugget(@NotNull String name, long inputSize);
 
@@ -61,16 +61,16 @@ public interface QueryPerformanceRecorder {
     QueryPerformanceNugget getEnclosingNugget();
 
 
-    interface EntrySetter {
-        void set(long evaluationNumber, int operationNumber, boolean uninstrumented);
+    interface QueryDataConsumer {
+        void accept(long evaluationNumber, int operationNumber, boolean uninstrumented);
     }
 
     /**
-     * Provide current query data via the setter.
+     * Provide current query data via the consumer.
      *
-     * @param setter a callback to receive query data
+     * @param consumer a callback to receive query data
      */
-    void setQueryData(final EntrySetter setter);
+    void supplyQueryData(@NotNull QueryDataConsumer consumer);
 
     /**
      * @return The current callsite. This is the last set callsite or the line number of the user's detected callsite.
@@ -168,35 +168,54 @@ public interface QueryPerformanceRecorder {
     /**
      * Starts a query.
      * <p>
-     * It is an error to start a query more than once or while another query is running on this thread.
+     * A query is {@link QueryState#RUNNING} if it has been started or {@link #resumeQuery() resumed} without a
+     * subsequent {@link #endQuery() end}, {@link #suspendQuery() suspend}, or {@link #abortQuery() abort}.
+     *
+     * @throws IllegalStateException if the query state isn't {@link QueryState#NOT_STARTED} or another query is running
+     *         on this thread
      */
     SafeCloseable startQuery();
 
     /**
      * End a query.
      * <p>
-     * It is an error to end a query not currently running on this thread.
+     * A query is {@link QueryState#RUNNING} if it has been {@link #startQuery() started} or {@link #resumeQuery()
+     * resumed} without a subsequent end, {@link #suspendQuery() suspend}, or {@link #abortQuery() abort}.
      *
      * @return whether the query should be logged
+     * @throws IllegalStateException if the query staet isn't {@link QueryState#RUNNING},
+     *         {@link QueryState#INTERRUPTED}, or was not running on this thread
      */
     boolean endQuery();
 
     /**
      * Suspends a query.
      * <p>
-     * It is an error to suspend a query not currently running on this thread.
+     * A query is {@link QueryState#RUNNING} if it has been {@link #startQuery() started} or {@link #resumeQuery()
+     * resumed} without a subsequent {@link #endQuery() end}, suspend, or {@link #abortQuery() abort}.
+     *
+     * @throws IllegalStateException if the query wasn't running or was not running on this thread
      */
     void suspendQuery();
 
     /**
      * Resumes a suspend query.
      * <p>
-     * It is an error to resume a query while another query is running on this thread.
+     * A query is {@link QueryState#RUNNING} if it has been {@link #startQuery() started} or resumed without a
+     * subsequent {@link #endQuery() end}, {@link #suspendQuery() suspend}, or {@link #abortQuery() abort}.
+     *
+     * @throws IllegalStateException if the query state was not {@link QueryState#SUSPENDED} or another query is running
+     *         on this thread
      */
     SafeCloseable resumeQuery();
 
     /**
      * Abort a query.
+     * <p>
+     * A query is {@link QueryState#RUNNING} if it has been {@link #startQuery() started} or {@link #resumeQuery()
+     * resumed} without a subsequent {@link #endQuery() end}, {@link #suspendQuery() suspend}, or abort.
+     * <p>
+     * Note that this method is invoked out-of-band and does not throw if the query has been completed.
      */
     @SuppressWarnings("unused")
     void abortQuery();
@@ -214,7 +233,8 @@ public interface QueryPerformanceRecorder {
     List<QueryPerformanceNugget> getOperationLevelPerformanceData();
 
     /**
-     * Accumulate the values from another recorder into this one. The provided recorder will not be mutated.
+     * Accumulate performance information from another recorder into this one. The provided recorder will not be
+     * mutated.
      *
      * @param subQuery the recorder to accumulate into this
      */
@@ -238,13 +258,10 @@ public interface QueryPerformanceRecorder {
      */
     static void withNugget(final String name, final Runnable r) {
         final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-
-        try {
-            nugget = getInstance().getNugget(name);
+        try (final QueryPerformanceNugget ignored = getInstance().getNugget(name)) {
             r.run();
         } finally {
-            finishAndClear(nugget, needClear);
+            maybeClearCallsite(needClear);
         }
     }
 
@@ -257,13 +274,10 @@ public interface QueryPerformanceRecorder {
      */
     static <T> T withNugget(final String name, final Supplier<T> r) {
         final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-
-        try {
-            nugget = getInstance().getNugget(name);
+        try (final QueryPerformanceNugget ignored = getInstance().getNugget(name)) {
             return r.get();
         } finally {
-            finishAndClear(nugget, needClear);
+            maybeClearCallsite(needClear);
         }
     }
 
@@ -277,12 +291,10 @@ public interface QueryPerformanceRecorder {
             final String name,
             final ThrowingRunnable<T> r) throws T {
         final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-        try {
-            nugget = getInstance().getNugget(name);
+        try (final QueryPerformanceNugget ignored = getInstance().getNugget(name)) {
             r.run();
         } finally {
-            finishAndClear(nugget, needClear);
+            maybeClearCallsite(needClear);
         }
     }
 
@@ -298,12 +310,10 @@ public interface QueryPerformanceRecorder {
             final String name,
             final ThrowingSupplier<R, ExceptionType> r) throws ExceptionType {
         final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-        try {
-            nugget = getInstance().getNugget(name);
+        try (final QueryPerformanceNugget ignored = getInstance().getNugget(name)) {
             return r.get();
         } finally {
-            finishAndClear(nugget, needClear);
+            maybeClearCallsite(needClear);
         }
     }
 
@@ -315,12 +325,10 @@ public interface QueryPerformanceRecorder {
      */
     static void withNugget(final String name, final long inputSize, final Runnable r) {
         final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-        try {
-            nugget = getInstance().getNugget(name, inputSize);
+        try (final QueryPerformanceNugget ignored = getInstance().getNugget(name, inputSize)) {
             r.run();
         } finally {
-            finishAndClear(nugget, needClear);
+            maybeClearCallsite(needClear);
         }
     }
 
@@ -333,12 +341,10 @@ public interface QueryPerformanceRecorder {
      */
     static <T> T withNugget(final String name, final long inputSize, final Supplier<T> r) {
         final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-        try {
-            nugget = getInstance().getNugget(name, inputSize);
+        try (final QueryPerformanceNugget ignored = getInstance().getNugget(name, inputSize)) {
             return r.get();
         } finally {
-            finishAndClear(nugget, needClear);
+            maybeClearCallsite(needClear);
         }
     }
 
@@ -354,12 +360,10 @@ public interface QueryPerformanceRecorder {
             final long inputSize,
             final ThrowingRunnable<T> r) throws T {
         final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-        try {
-            nugget = getInstance().getNugget(name, inputSize);
+        try (final QueryPerformanceNugget ignored = getInstance().getNugget(name, inputSize)) {
             r.run();
         } finally {
-            finishAndClear(nugget, needClear);
+            maybeClearCallsite(needClear);
         }
     }
 
@@ -377,27 +381,19 @@ public interface QueryPerformanceRecorder {
             final long inputSize,
             final ThrowingSupplier<R, ExceptionType> r) throws ExceptionType {
         final boolean needClear = setCallsite();
-        QueryPerformanceNugget nugget = null;
-        try {
-            nugget = getInstance().getNugget(name, inputSize);
+        try (final QueryPerformanceNugget ignored = getInstance().getNugget(name, inputSize)) {
             return r.get();
         } finally {
-            finishAndClear(nugget, needClear);
+            maybeClearCallsite(needClear);
         }
     }
 
-
     /**
-     * Finish the nugget and clear the callsite if needed.
+     * Clear the callsite if needed.
      *
-     * @param nugget an optional nugget
      * @param needClear true if the callsite needs to be cleared
      */
-    private static void finishAndClear(@Nullable final QueryPerformanceNugget nugget, final boolean needClear) {
-        if (nugget != null) {
-            nugget.done();
-        }
-
+    private static void maybeClearCallsite(final boolean needClear) {
         if (needClear) {
             clearCallsite();
         }

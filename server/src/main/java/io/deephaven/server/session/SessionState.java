@@ -15,7 +15,6 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.table.impl.perf.QueryState;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -986,7 +985,6 @@ public class SessionState {
             T localResult = null;
             boolean shouldLog = false;
             final QueryPerformanceRecorder exportRecorder;
-            final QueryProcessingResults queryProcessingResults;
             try (final SafeCloseable ignored1 = session.executionContext.open();
                     final SafeCloseable ignored2 = LivenessScopeStack.open()) {
 
@@ -1002,7 +1000,6 @@ public class SessionState {
                 exportRecorder = Objects.requireNonNullElseGet(queryPerformanceRecorder,
                         () -> QueryPerformanceRecorder.newQuery("ExportObject#doWork(" + queryId + ")",
                                 session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY));
-                queryProcessingResults = new QueryProcessingResults(exportRecorder);
 
                 try (final SafeCloseable ignored3 = isResume
                         ? exportRecorder.resumeQuery()
@@ -1021,7 +1018,6 @@ public class SessionState {
                 }
 
                 if (caughtException != null) {
-                    queryProcessingResults.setException(caughtException.toString());
                     synchronized (this) {
                         if (!isExportStateTerminal(state)) {
                             maybeAssignErrorId();
@@ -1034,7 +1030,7 @@ public class SessionState {
                     }
                 }
                 if (shouldLog || caughtException != null) {
-                    EngineMetrics.getInstance().logQueryProcessingResults(queryProcessingResults);
+                    EngineMetrics.getInstance().logQueryProcessingResults(exportRecorder, caughtException);
                 }
                 if (caughtException == null) {
                     // must set result after ending the query so that onSuccess may resume / finalize a parent query

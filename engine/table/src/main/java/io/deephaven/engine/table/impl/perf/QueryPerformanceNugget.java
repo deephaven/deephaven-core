@@ -4,9 +4,11 @@
 package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.auth.AuthContext;
+import io.deephaven.base.clock.SystemClock;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.util.QueryConstants;
@@ -14,7 +16,7 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.function.Predicate;
+import java.util.function.Consumer;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -24,9 +26,6 @@ import static io.deephaven.util.QueryConstants.*;
  * of encapsulation into account.
  */
 public class QueryPerformanceNugget extends BasePerformanceEntry implements SafeCloseable {
-    private static final QueryPerformanceLogThreshold LOG_THRESHOLD = new QueryPerformanceLogThreshold("", 1_000_000);
-    private static final QueryPerformanceLogThreshold UNINSTRUMENTED_LOG_THRESHOLD =
-            new QueryPerformanceLogThreshold("Uninstrumented", 1_000_000_000);
     private static final int MAX_DESCRIPTION_LENGTH = 16 << 10;
 
     /**
@@ -39,12 +38,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         }
 
         @Override
-        public boolean shouldLogThisAndStackParents() {
-            return false;
-        }
-
-        @Override
-        boolean shouldLogNugget(boolean isUninstrumented) {
+        public boolean shouldLog() {
             return false;
         }
     };
@@ -64,7 +58,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
                 final long evaluationNumber,
                 @NotNull final String description,
                 @Nullable final String sessionId,
-                @NotNull final Predicate<QueryPerformanceNugget> onCloseCallback) {
+                @NotNull final Consumer<QueryPerformanceNugget> onCloseCallback) {
             return new QueryPerformanceNugget(evaluationNumber, NULL_LONG, NULL_INT, NULL_INT, NULL_INT, description,
                     sessionId, false, NULL_LONG, onCloseCallback);
         }
@@ -83,7 +77,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
                 @NotNull final QueryPerformanceNugget parentQuery,
                 final long evaluationNumber,
                 @NotNull final String description,
-                @NotNull final Predicate<QueryPerformanceNugget> onCloseCallback) {
+                @NotNull final Consumer<QueryPerformanceNugget> onCloseCallback) {
             Assert.eqTrue(parentQuery.isQueryLevel(), "parentQuery.isQueryLevel()");
             return new QueryPerformanceNugget(evaluationNumber, parentQuery.getEvaluationNumber(), NULL_INT, NULL_INT,
                     NULL_INT, description, parentQuery.getSessionId(), false, NULL_LONG, onCloseCallback);
@@ -104,7 +98,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
                 final int operationNumber,
                 final String description,
                 final long inputSize,
-                @NotNull final Predicate<QueryPerformanceNugget> onCloseCallback) {
+                @NotNull final Consumer<QueryPerformanceNugget> onCloseCallback) {
             int depth = parentQueryOrOperation.getDepth();
             if (depth == NULL_INT) {
                 depth = 0;
@@ -137,7 +131,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         default QueryPerformanceNugget createForCatchAll(
                 @NotNull final QueryPerformanceNugget parentQuery,
                 final int operationNumber,
-                @NotNull final Predicate<QueryPerformanceNugget> onCloseCallback) {
+                @NotNull final Consumer<QueryPerformanceNugget> onCloseCallback) {
             Assert.eqTrue(parentQuery.isQueryLevel(), "parentQuery.isQueryLevel()");
             return new QueryPerformanceNugget(
                     parentQuery.getEvaluationNumber(),
@@ -164,20 +158,20 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
     private final String sessionId;
     private final boolean isUser;
     private final long inputSize;
-    private final Predicate<QueryPerformanceNugget> onCloseCallback;
+    private final Consumer<QueryPerformanceNugget> onCloseCallback;
     private final AuthContext authContext;
     private final String callerLine;
 
-    private long startClockEpochNanos = NULL_LONG;
-    private long endClockEpochNanos = NULL_LONG;
+    private long startClockEpochNanos;
+    private long endClockEpochNanos;
 
     private volatile QueryState state;
 
+    private RuntimeMemory.Sample startMemorySample;
+    private RuntimeMemory.Sample endMemorySample;
 
-    private final RuntimeMemory.Sample startMemorySample;
-    private final RuntimeMemory.Sample endMemorySample;
-
-    private boolean shouldLogThisAndStackParents;
+    /** whether this nugget triggers the logging of itself and every other nugget in its stack of nesting operations */
+    private boolean shouldLog;
 
     /**
      * Full constructor for nuggets.
@@ -205,9 +199,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
             @Nullable final String sessionId,
             final boolean isUser,
             final long inputSize,
-            @NotNull final Predicate<QueryPerformanceNugget> onCloseCallback) {
-        startMemorySample = new RuntimeMemory.Sample();
-        endMemorySample = new RuntimeMemory.Sample();
+            @NotNull final Consumer<QueryPerformanceNugget> onCloseCallback) {
         this.evaluationNumber = evaluationNumber;
         this.parentEvaluationNumber = parentEvaluationNumber;
         this.operationNumber = operationNumber;
@@ -227,19 +219,16 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         authContext = ExecutionContext.getContext().getAuthContext();
         callerLine = QueryPerformanceRecorder.getCallerLine();
 
-        final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
-        runtimeMemory.read(startMemorySample);
+        startClockEpochNanos = NULL_LONG;
+        endClockEpochNanos = NULL_LONG;
 
         state = QueryState.NOT_STARTED;
-        shouldLogThisAndStackParents = false;
     }
 
     /**
      * Construct a "dummy" nugget, which will never gather any information or be recorded.
      */
     private QueryPerformanceNugget() {
-        startMemorySample = null;
-        endMemorySample = null;
         evaluationNumber = NULL_LONG;
         parentEvaluationNumber = NULL_LONG;
         operationNumber = NULL_INT;
@@ -250,28 +239,36 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         isUser = false;
         inputSize = NULL_LONG;
         onCloseCallback = null;
-
         authContext = null;
         callerLine = null;
 
-        state = null; // This turns close into a no-op.
-        shouldLogThisAndStackParents = false;
+        startClockEpochNanos = NULL_LONG;
+        endClockEpochNanos = NULL_LONG;
+
+        state = QueryState.NOT_STARTED;
     }
 
-    public void markStartTime() {
-        if (startClockEpochNanos != NULL_LONG) {
-            throw new IllegalStateException("Nugget start time already set");
-        }
-
-        startClockEpochNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis());
-    }
-
+    /**
+     * Start clock epoch nanos is set if this is the first time this nugget has been started.
+     */
     @Override
     public synchronized void onBaseEntryStart() {
-        super.onBaseEntryStart();
+        // note that we explicitly do not call super.onBaseEntryStart() on query level nuggets as all top level nuggets
+        // accumulate into it to account for parallelized execution
+        if (operationNumber != NULL_INT) {
+            super.onBaseEntryStart();
+        }
         if (state == QueryState.RUNNING) {
             throw new IllegalStateException("Nugget was already started");
         }
+        if (startClockEpochNanos == NULL_LONG) {
+            startClockEpochNanos = SystemClock.systemUTC().currentTimeNanos();
+        }
+        startMemorySample = new RuntimeMemory.Sample();
+        endMemorySample = new RuntimeMemory.Sample();
+        final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
+        runtimeMemory.read(startMemorySample);
+
         state = QueryState.RUNNING;
     }
 
@@ -281,20 +278,15 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
             throw new IllegalStateException("Nugget isn't running");
         }
         state = QueryState.SUSPENDED;
-        super.onBaseEntryEnd();
+        // note that we explicitly do not call super.onBaseEntryEnd() on query level nuggets as all top level nuggets
+        // accumulate into it to account for parallelized execution
+        if (operationNumber != NULL_INT) {
+            super.onBaseEntryEnd();
+        }
     }
 
     /**
      * Mark this nugget {@link QueryState#FINISHED} and notify the recorder.
-     *
-     * @return if the nugget passes logging thresholds.
-     */
-    public boolean done() {
-        return close(QueryState.FINISHED);
-    }
-
-    /**
-     * Mark this nugget {@link QueryState#FINISHED} and notify the recorder. Is an alias for {@link #done()}.
      * <p>
      * {@link SafeCloseable} implementation for try-with-resources.
      */
@@ -303,8 +295,8 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         close(QueryState.FINISHED);
     }
 
-    public boolean abort() {
-        return close(QueryState.INTERRUPTED);
+    public void abort() {
+        close(QueryState.INTERRUPTED);
     }
 
     /**
@@ -312,46 +304,40 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
      *
      * @param closingState The current query state. If it is anything other than {@link QueryState#RUNNING} nothing will
      *        happen and it will return false;
-     *
-     * @return If the nugget passes criteria for logging.
      */
-    private boolean close(final QueryState closingState) {
+    private void close(final QueryState closingState) {
         if (state != QueryState.RUNNING) {
-            return false;
+            return;
         }
 
         synchronized (this) {
             if (state != QueryState.RUNNING) {
-                return false;
-            }
-
-            if (startClockEpochNanos == NULL_LONG) {
-                throw new IllegalStateException("Nugget was never started");
+                return;
             }
 
             onBaseEntryEnd();
-            endClockEpochNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis());
+            endClockEpochNanos = SystemClock.systemUTC().currentTimeNanos();
 
             final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
             runtimeMemory.read(endMemorySample);
 
             state = closingState;
-            return onCloseCallback.test(this);
+            onCloseCallback.accept(this);
         }
     }
 
     @Override
     public String toString() {
-        return evaluationNumber
-                + ":" + (isQueryLevel() ? "query_level" : operationNumber)
-                + ":" + description
-                + ":" + callerLine;
+        return new LogOutputStringImpl().append(this).toString();
     }
 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
-        // override BasePerformanceEntry's impl and match toString()
-        return logOutput.append(toString());
+        // override BasePerformanceEntry's impl
+        return logOutput.append(evaluationNumber)
+                .append(":").append(isQueryLevel() ? "query_level" : Integer.toString(operationNumber))
+                .append(":").append(description)
+                .append(":").append(callerLine);
     }
 
     public long getEvaluationNumber() {
@@ -374,7 +360,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         return depth;
     }
 
-    public String getName() {
+    public String getDescription() {
         return description;
     }
 
@@ -484,41 +470,15 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
     /**
      * Ensure this nugget gets logged, alongside its stack of nesting operations.
      */
-    void setShouldLogThisAndStackParents() {
-        shouldLogThisAndStackParents = true;
+    void setShouldLog() {
+        shouldLog = true;
     }
 
     /**
      * @return true if this nugget triggers the logging of itself and every other nugget in its stack of nesting
      *         operations.
      */
-    boolean shouldLogThisAndStackParents() {
-        return shouldLogThisAndStackParents;
-    }
-
-    /**
-     * Suppress de minimus performance nuggets using the properties defined above.
-     *
-     * @param isUninstrumented this nugget for uninstrumented code? If so the thresholds for inclusion in the logs are
-     *        configured distinctly.
-     *
-     * @return if this nugget is significant enough to be logged.
-     */
-    boolean shouldLogNugget(final boolean isUninstrumented) {
-        if (shouldLogThisAndStackParents) {
-            return true;
-        }
-
-        // Nuggets will have a null value for end time if they weren't closed for a RUNNING query; this is an abnormal
-        // condition and the nugget should be logged
-        if (endClockEpochNanos == NULL_LONG) {
-            return true;
-        }
-
-        if (isUninstrumented) {
-            return UNINSTRUMENTED_LOG_THRESHOLD.shouldLog(getUsageNanos());
-        } else {
-            return LOG_THRESHOLD.shouldLog(getUsageNanos());
-        }
+    boolean shouldLog() {
+        return shouldLog;
     }
 }

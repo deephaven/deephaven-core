@@ -167,7 +167,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
         }
 
-        final String description = "ConsoleServiceGrpcImpl#executeCommand(console="
+        final String description = "ConsoleService#executeCommand(console="
                 + ticketRouter.getLogNameFor(consoleId, "consoleId") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
@@ -253,8 +253,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No source tableId supplied");
         }
 
-        final String description = "ConsoleServiceGrpcImpl#bindTableToVariable(tableId="
-                + ticketRouter.getLogNameFor(tableId, "tableId") + ", variableName=" + request.getVariableName()
+        final String description = "ConsoleService#bindTableToVariable(table="
+                + ticketRouter.getLogNameFor(tableId, "table") + ", variableName=" + request.getVariableName()
                 + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);

@@ -10,10 +10,8 @@ import com.google.rpc.Code;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.auth.BasicAuthMarshaller;
-import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -197,7 +195,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 return;
             }
 
-            String exception = null;
+            StatusRuntimeException exception = null;
             if (export.tryRetainReference()) {
                 try {
                     if (export.getState() == ExportNotification.State.EXPORTED) {
@@ -208,18 +206,12 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     export.dropReference();
                 }
             } else {
-                final StatusRuntimeException err =
-                        Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info");
-                exception = err.getMessage();
-                GrpcUtil.safelyError(responseObserver, err);
+                exception = Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info");
+                GrpcUtil.safelyError(responseObserver, exception);
             }
 
             if (queryPerformanceRecorder.endQuery() || exception != null) {
-                QueryProcessingResults results = new QueryProcessingResults(queryPerformanceRecorder);
-                if (exception != null) {
-                    results.setException(exception);
-                }
-                EngineMetrics.getInstance().logQueryProcessingResults(results);
+                EngineMetrics.getInstance().logQueryProcessingResults(queryPerformanceRecorder, exception);
             }
         }
     }
@@ -252,7 +244,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 return;
             }
 
-            String exception = null;
+            StatusRuntimeException exception = null;
             if (export.tryRetainReference()) {
                 try {
                     if (export.getState() == ExportNotification.State.EXPORTED) {
@@ -265,18 +257,12 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     export.dropReference();
                 }
             } else {
-                final StatusRuntimeException err =
-                        Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info");
-                exception = err.getMessage();
-                responseObserver.onError(err);
+                exception = Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info");
+                responseObserver.onError(exception);
             }
 
             if (queryPerformanceRecorder.endQuery() || exception != null) {
-                QueryProcessingResults results = new QueryProcessingResults(queryPerformanceRecorder);
-                if (exception != null) {
-                    results.setException(exception);
-                }
-                EngineMetrics.getInstance().logQueryProcessingResults(results);
+                EngineMetrics.getInstance().logQueryProcessingResults(queryPerformanceRecorder, exception);
             }
         }
     }

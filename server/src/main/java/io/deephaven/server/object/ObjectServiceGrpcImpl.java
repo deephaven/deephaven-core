@@ -8,7 +8,6 @@ import com.google.rpc.Code;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -261,8 +260,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "No ticket supplied");
         }
 
-        final String description = "ObjectServiceGrpcImpl#fetchObject(source="
-                + ticketRouter.getLogNameFor(request.getSourceId().getTicket(), "source") + ")";
+        final String description = "ObjectService#fetchObject(object="
+                + ticketRouter.getLogNameFor(request.getSourceId().getTicket(), "sourceId") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 

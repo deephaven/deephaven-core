@@ -167,8 +167,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             return;
         }
 
-        final String description = "SessionServiceGrpcImpl#exportFromTicket(source="
-                + ticketRouter.getLogNameFor(request.getSourceId(), "source") + ")";
+        final String description = "SessionService#exportFromTicket(object="
+                + ticketRouter.getLogNameFor(request.getSourceId(), "sourceId") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
@@ -205,8 +205,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             return;
         }
 
-        final String description = "SessionServiceGrpcImpl#publishFromTicket(source="
-                + ticketRouter.getLogNameFor(request.getSourceId(), "source") + ")";
+        final String description = "SessionService#publishFromTicket(object="
+                + ticketRouter.getLogNameFor(request.getSourceId(), "sourceId") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 

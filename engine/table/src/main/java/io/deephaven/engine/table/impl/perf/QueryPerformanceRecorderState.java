@@ -212,8 +212,8 @@ public abstract class QueryPerformanceRecorderState {
         }
 
         @Override
-        public void setQueryData(EntrySetter setter) {
-            setter.set(QueryConstants.NULL_LONG, QueryConstants.NULL_INT, false);
+        public void supplyQueryData(final @NotNull QueryDataConsumer consumer) {
+            consumer.accept(QueryConstants.NULL_LONG, QueryConstants.NULL_INT, false);
         }
 
         @Override

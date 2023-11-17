@@ -192,7 +192,7 @@ public class UpdatePerformanceTracker {
         final QueryPerformanceRecorder qpr = QueryPerformanceRecorder.getInstance();
 
         final MutableObject<PerformanceEntry> entryMu = new MutableObject<>();
-        qpr.setQueryData((evaluationNumber, operationNumber, uninstrumented) -> {
+        qpr.supplyQueryData((evaluationNumber, operationNumber, uninstrumented) -> {
             final String effectiveDescription;
             if (StringUtils.isNullOrEmpty(description) && uninstrumented) {
                 effectiveDescription = QueryPerformanceRecorder.UNINSTRUMENTED_CODE_DESCRIPTION;

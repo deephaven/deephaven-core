@@ -55,7 +55,7 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
             @NotNull final StreamObserver<AddTableResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
 
-        final String description = "InputTableServiceGrpcImpl#addTableToInputTable(inputTable="
+        final String description = "InputTableService#addTableToInputTable(inputTable="
                 + ticketRouter.getLogNameFor(request.getInputTable(), "inputTable") + ", tableToAdd="
                 + ticketRouter.getLogNameFor(request.getTableToAdd(), "tableToAdd") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
@@ -113,7 +113,7 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
             @NotNull final StreamObserver<DeleteTableResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
 
-        final String description = "InputTableServiceGrpcImpl#deleteTableFromInputTable(inputTable="
+        final String description = "InputTableService#deleteTableFromInputTable(inputTable="
                 + ticketRouter.getLogNameFor(request.getInputTable(), "inputTable") + ", tableToRemove="
                 + ticketRouter.getLogNameFor(request.getTableToRemove(), "tableToRemove") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
@@ -139,15 +139,15 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         }
 
                         MutableInputTable mutableInputTable = (MutableInputTable) inputTable;
-                        Table tableToDelete = tableToRemoveExport.get();
+                        Table tableToRemove = tableToRemoveExport.get();
 
                         authWiring.checkPermissionDeleteTableFromInputTable(
                                 ExecutionContext.getContext().getAuthContext(), request,
-                                List.of(targetTable.get(), tableToDelete));
+                                List.of(targetTable.get(), tableToRemove));
 
                         // validate that the columns are compatible
                         try {
-                            mutableInputTable.validateDelete(tableToDelete);
+                            mutableInputTable.validateDelete(tableToRemove);
                         } catch (TableDefinition.IncompatibleTableDefinitionException exception) {
                             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                     "Provided tables's columns are not compatible: " + exception.getMessage());
@@ -158,7 +158,7 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
 
                         // actually delete the table's contents
                         try {
-                            mutableInputTable.delete(tableToDelete);
+                            mutableInputTable.delete(tableToRemove);
                             GrpcUtil.safelyComplete(responseObserver, DeleteTableResponse.getDefaultInstance());
                         } catch (IOException ioException) {
                             throw Exceptions.statusRuntimeException(Code.DATA_LOSS,

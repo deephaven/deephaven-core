@@ -11,6 +11,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 /**
  * Query performance instrumentation implementation. Manages a hierarchy of {@link QueryPerformanceNugget} instances.
  * <p>
@@ -18,6 +20,9 @@ import java.util.*;
  * suspended and resumed on another thread.
  */
 public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
+    private static final QueryPerformanceLogThreshold LOG_THRESHOLD = new QueryPerformanceLogThreshold("", 1_000_000);
+    private static final QueryPerformanceLogThreshold UNINSTRUMENTED_LOG_THRESHOLD =
+            new QueryPerformanceLogThreshold("Uninstrumented", 1_000_000_000);
 
     @Nullable
     private final QueryPerformanceRecorder parent;
@@ -56,10 +61,8 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         this.nuggetFactory = nuggetFactory;
     }
 
-    /**
-     * Abort a query.
-     */
     public synchronized void abortQuery() {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/53): support out-of-order abortion
         if (state != QueryState.RUNNING) {
             return;
         }
@@ -89,25 +92,26 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         if (state != QueryState.NOT_STARTED) {
             throw new IllegalStateException("Can't resume a query that has already started");
         }
-        queryNugget.markStartTime();
         return resumeInternal();
     }
 
     @Override
     public synchronized boolean endQuery() {
         if (state != QueryState.RUNNING) {
-            // We only allow the query to be RUNNING or INTERRUPTED when we end it; else we are in an illegal state.
-            Assert.eq(state, "state", QueryState.INTERRUPTED, "QueryState.INTERRUPTED");
+            if (state != QueryState.INTERRUPTED) {
+                // We only allow the query to be RUNNING or INTERRUPTED when we end it; else we are in an illegal state.
+                throw new IllegalStateException("Can't end a query that isn't running or interrupted");
+            }
             return false;
         }
         state = QueryState.FINISHED;
         suspendInternal();
 
-        boolean shouldLog = queryNugget.done();
+        queryNugget.close();
         if (parent != null) {
             parent.accumulate(this);
         }
-        return shouldLog;
+        return shouldLogNugget(queryNugget);
     }
 
     /**
@@ -169,18 +173,16 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
 
     private void startCatchAll() {
         catchAllNugget = nuggetFactory.createForCatchAll(queryNugget, operationNuggets.size(), this::releaseNugget);
-        catchAllNugget.markStartTime();
         catchAllNugget.onBaseEntryStart();
     }
 
     private void stopCatchAll(final boolean abort) {
-        final boolean shouldLog;
         if (abort) {
-            shouldLog = catchAllNugget.abort();
+            catchAllNugget.abort();
         } else {
-            shouldLog = catchAllNugget.done();
+            catchAllNugget.close();
         }
-        if (shouldLog) {
+        if (catchAllNugget.shouldLog()) {
             Assert.eq(operationNuggets.size(), "operationsNuggets.size()",
                     catchAllNugget.getOperationNumber(), "catchAllNugget.getOperationNumber()");
             operationNuggets.add(catchAllNugget);
@@ -212,7 +214,6 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
 
         final QueryPerformanceNugget nugget = nuggetFactory.createForOperation(
                 parent, operationNuggets.size(), name, inputSize, this::releaseNugget);
-        nugget.markStartTime();
         nugget.onBaseEntryStart();
         operationNuggets.add(nugget);
         userNuggetStack.addLast(nugget);
@@ -223,12 +224,11 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
      * This is our onCloseCallback from the nugget.
      *
      * @param nugget the nugget to be released
-     * @return If the nugget passes criteria for logging.
      */
-    private synchronized boolean releaseNugget(@NotNull final QueryPerformanceNugget nugget) {
-        boolean shouldLog = nugget.shouldLogNugget(nugget == catchAllNugget);
+    private synchronized void releaseNugget(@NotNull final QueryPerformanceNugget nugget) {
+        final boolean shouldLog = shouldLogNugget(nugget);
         if (!nugget.isUser()) {
-            return shouldLog;
+            return;
         }
 
         final QueryPerformanceNugget removed = userNuggetStack.removeLast();
@@ -245,12 +245,14 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
             final QueryPerformanceNugget parent = userNuggetStack.getLast();
             parent.accumulate(nugget);
 
-            if (removed.shouldLogThisAndStackParents()) {
-                parent.setShouldLogThisAndStackParents();
+            if (shouldLog) {
+                parent.setShouldLog();
             }
 
             // resume the parent
             parent.onBaseEntryStart();
+        } else {
+            queryNugget.accumulate(nugget);
         }
 
         if (!shouldLog) {
@@ -269,8 +271,21 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         if (userNuggetStack.isEmpty() && queryNugget != null && state == QueryState.RUNNING) {
             startCatchAll();
         }
+    }
 
-        return shouldLog;
+    private boolean shouldLogNugget(@NotNull QueryPerformanceNugget nugget) {
+        if (nugget.shouldLog()) {
+            return true;
+        } else if (nugget.getEndClockEpochNanos() == NULL_LONG) {
+            // Nuggets will have a null value for end time if they weren't closed for a RUNNING query; this is an
+            // abnormal
+            // condition and the nugget should be logged
+            return true;
+        } else if (nugget == catchAllNugget) {
+            return UNINSTRUMENTED_LOG_THRESHOLD.shouldLog(nugget.getUsageNanos());
+        } else {
+            return LOG_THRESHOLD.shouldLog(nugget.getUsageNanos());
+        }
     }
 
     @Override
@@ -283,7 +298,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
     }
 
     @Override
-    public void setQueryData(final EntrySetter setter) {
+    public void supplyQueryData(final @NotNull QueryDataConsumer consumer) {
         final long evaluationNumber;
         final int operationNumber;
         boolean uninstrumented = false;
@@ -295,15 +310,15 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
             if (operationNumber > 0) {
                 // ensure UPL and QOPL are consistent/joinable.
                 if (!userNuggetStack.isEmpty()) {
-                    userNuggetStack.getLast().setShouldLogThisAndStackParents();
+                    userNuggetStack.getLast().setShouldLog();
                 } else {
                     uninstrumented = true;
                     Assert.neqNull(catchAllNugget, "catchAllNugget");
-                    catchAllNugget.setShouldLogThisAndStackParents();
+                    catchAllNugget.setShouldLog();
                 }
             }
         }
-        setter.set(evaluationNumber, operationNumber, uninstrumented);
+        consumer.accept(evaluationNumber, operationNumber, uninstrumented);
     }
 
     @Override

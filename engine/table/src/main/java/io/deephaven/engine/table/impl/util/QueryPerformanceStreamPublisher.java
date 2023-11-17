@@ -8,13 +8,13 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
-import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
 import io.deephaven.util.BooleanUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -63,8 +63,8 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
     }
 
     public synchronized void add(
-            final QueryProcessingResults queryProcessingResults,
-            final QueryPerformanceNugget nugget) {
+            @NotNull final QueryPerformanceNugget nugget,
+            @Nullable final Exception exception) {
 
         // ColumnDefinition.ofLong("EvaluationNumber")
         chunks[0].asWritableLongChunk().add(nugget.getEvaluationNumber());
@@ -73,7 +73,7 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
         chunks[1].asWritableLongChunk().add(nugget.getParentEvaluationNumber());
 
         // ColumnDefinition.ofString("Description")
-        chunks[2].<String>asWritableObjectChunk().add(nugget.getName());
+        chunks[2].<String>asWritableObjectChunk().add(nugget.getDescription());
 
         // ColumnDefinition.ofString("SessionId")
         chunks[3].<String>asWritableObjectChunk().add(nugget.getSessionId());
@@ -121,7 +121,7 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
         chunks[17].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.wasInterrupted()));
 
         // ColumnDefinition.ofString("Exception")
-        chunks[18].<String>asWritableObjectChunk().add(queryProcessingResults.getException());
+        chunks[18].<String>asWritableObjectChunk().add(exception == null ? null : exception.getMessage());
 
         // ColumnDefinition.ofString("AuthContext")
         chunks[19].<String>asWritableObjectChunk().add(Objects.toString(nugget.getAuthContext()));

@@ -1,10 +1,9 @@
 package io.deephaven.engine.tablelogger;
 
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
-import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.tablelogger.Row;
-import io.deephaven.tablelogger.Row.Flags;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 
@@ -16,26 +15,23 @@ import static io.deephaven.tablelogger.TableLogger.DEFAULT_INTRADAY_LOGGER_FLAGS
  */
 public interface QueryPerformanceLogLogger {
     default void log(
-            @NotNull final QueryProcessingResults queryProcessingResults,
-            @NotNull final QueryPerformanceNugget nugget) throws IOException {
-        log(DEFAULT_INTRADAY_LOGGER_FLAGS, queryProcessingResults, nugget);
+            @NotNull final QueryPerformanceNugget nugget,
+            @Nullable final Exception exception) throws IOException {
+        log(DEFAULT_INTRADAY_LOGGER_FLAGS, nugget, exception);
     }
 
     void log(
             @NotNull final Row.Flags flags,
-            @NotNull final QueryProcessingResults queryProcessingResults,
-            @NotNull final QueryPerformanceNugget nugget) throws IOException;
+            @NotNull final QueryPerformanceNugget nugget,
+            @Nullable final Exception exception) throws IOException;
 
     enum Noop implements QueryPerformanceLogLogger {
         INSTANCE;
 
         @Override
         public void log(
-                @NotNull final Flags flags,
-                @NotNull final QueryProcessingResults queryProcessingResults,
-                @NotNull final QueryPerformanceNugget nugget)
-                throws IOException {
-
-        }
+                @NotNull final Row.Flags flags,
+                @NotNull final QueryPerformanceNugget nugget,
+                @Nullable final Exception exception) {}
     }
 }

@@ -10,7 +10,6 @@ import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -470,8 +469,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         if (sourceId.getTicket().isEmpty()) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
         }
-        final String description = "TableServiceGrpcImpl#seekRow(source="
-                + ticketRouter.getLogNameFor(sourceId, "source") + ")";
+        final String description = "TableService#seekRow(table="
+                + ticketRouter.getLogNameFor(sourceId, "sourceId") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
@@ -545,22 +544,20 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
             final Runnable onOneResolved = () -> {
                 int numRemaining = remaining.decrementAndGet();
+                Assert.geqZero(numRemaining, "numRemaining");
                 if (numRemaining > 0) {
                     return;
                 }
-                Assert.geqZero(numRemaining, "numRemaining");
 
                 try (final SafeCloseable ignored2 = queryPerformanceRecorder.resumeQuery()) {
-                    final QueryProcessingResults results = new QueryProcessingResults(queryPerformanceRecorder);
                     final StatusRuntimeException failure = firstFailure.get();
                     if (failure != null) {
-                        results.setException(failure.getMessage());
                         safelyError(responseObserver, failure);
                     } else {
                         safelyComplete(responseObserver);
                     }
                     if (queryPerformanceRecorder.endQuery()) {
-                        EngineMetrics.getInstance().logQueryProcessingResults(results);
+                        EngineMetrics.getInstance().logQueryProcessingResults(queryPerformanceRecorder, failure);
                     }
                 }
             };
@@ -628,7 +625,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No request ticket supplied");
         }
 
-        final String description = "TableServiceGrpcImpl#getExportedTableCreationResponse(request="
+        final String description = "TableService#getExportedTableCreationResponse(table="
                 + ticketRouter.getLogNameFor(request, "request") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
@@ -678,7 +675,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         }
 
         final String description = "TableService#" + op.name() + "(resultId="
-                + ticketRouter.getLogNameFor(resultId, "TableServiceGrpcImpl") + ")";
+                + ticketRouter.getLogNameFor(resultId, "TableService") + ")";
 
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
@@ -744,7 +741,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         operation.validateRequest(request);
 
         final Ticket resultId = operation.getResultTicket(request);
-        boolean hasResultId = !resultId.getTicket().isEmpty();
+        final boolean hasResultId = !resultId.getTicket().isEmpty();
         final ExportBuilder<Table> exportBuilder =
                 hasResultId ? session.newExport(resultId, "resultId") : session.nonExport();
         final String resultDescription = hasResultId

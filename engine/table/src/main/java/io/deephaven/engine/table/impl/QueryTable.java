@@ -3573,12 +3573,9 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private <R> R applyInternal(@NotNull final Function<Table, R> function) {
-        final QueryPerformanceNugget nugget =
-                QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")");
-        try {
+        try (final SafeCloseable ignored =
+                QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")")) {
             return function.apply(this);
-        } finally {
-            nugget.done();
         }
     }
 

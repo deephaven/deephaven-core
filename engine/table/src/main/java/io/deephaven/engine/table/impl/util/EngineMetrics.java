@@ -9,7 +9,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
-import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
@@ -20,6 +20,7 @@ import io.deephaven.process.ProcessInfoConfig;
 import io.deephaven.stats.Driver;
 import io.deephaven.stats.StatsIntradayLogger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.List;
@@ -111,19 +112,21 @@ public class EngineMetrics {
         return statsImpl;
     }
 
-    public void logQueryProcessingResults(@NotNull final QueryProcessingResults results) {
+    public void logQueryProcessingResults(
+            @NotNull final QueryPerformanceRecorder recorder,
+            @Nullable final Exception exception) {
         final QueryPerformanceLogLogger qplLogger = getQplLogger();
         final QueryOperationPerformanceLogLogger qoplLogger = getQoplLogger();
         try {
             final QueryPerformanceNugget queryNugget = Require.neqNull(
-                    results.getRecorder().getQueryLevelPerformanceData(),
+                    recorder.getQueryLevelPerformanceData(),
                     "queryProcessingResults.getRecorder().getQueryLevelPerformanceData()");
 
             synchronized (qplLogger) {
-                qplLogger.log(results, queryNugget);
+                qplLogger.log(queryNugget, exception);
             }
             final List<QueryPerformanceNugget> nuggets =
-                    results.getRecorder().getOperationLevelPerformanceData();
+                    recorder.getOperationLevelPerformanceData();
             synchronized (qoplLogger) {
                 for (QueryPerformanceNugget nugget : nuggets) {
                     qoplLogger.log(nugget);

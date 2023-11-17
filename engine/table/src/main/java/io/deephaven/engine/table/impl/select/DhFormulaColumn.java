@@ -14,7 +14,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer;
 import io.deephaven.engine.table.impl.select.codegen.JavaKernelBuilder;
@@ -32,6 +31,7 @@ import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.TimeLiteralReplacedExpression;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
@@ -772,8 +772,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     @SuppressWarnings("SameParameterValue")
     private Class<?> compileFormula(final String what, final String classBody, final String className) {
         // System.out.printf("compileFormula: what is %s. Code is...%n%s%n", what, classBody);
-        try (final QueryPerformanceNugget ignored =
-                QueryPerformanceRecorder.getInstance().getNugget("Compile:" + what)) {
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget("Compile:" + what)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
 
             final List<Class<?>> paramClasses = new ArrayList<>();

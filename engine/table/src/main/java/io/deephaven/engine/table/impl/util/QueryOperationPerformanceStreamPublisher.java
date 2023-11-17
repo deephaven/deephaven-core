@@ -84,7 +84,7 @@ class QueryOperationPerformanceStreamPublisher implements StreamPublisher {
         chunks[4].asWritableIntChunk().add(nugget.getDepth());
 
         // ColumnDefinition.ofString("Description"),
-        chunks[5].<String>asWritableObjectChunk().add(nugget.getName());
+        chunks[5].<String>asWritableObjectChunk().add(nugget.getDescription());
 
         // ColumnDefinition.ofString("SessionId"),
         chunks[6].<String>asWritableObjectChunk().add(nugget.getSessionId());
@@ -93,7 +93,7 @@ class QueryOperationPerformanceStreamPublisher implements StreamPublisher {
         chunks[7].<String>asWritableObjectChunk().add(nugget.getCallerLine());
 
         // ColumnDefinition.ofBoolean("IsCompilation"),
-        chunks[8].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.getName().startsWith("Compile:")));
+        chunks[8].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.getDescription().startsWith("Compile:")));
 
         // ColumnDefinition.ofTime("StartTime"),
         chunks[9].asWritableLongChunk().add(nugget.getStartClockEpochNanos());

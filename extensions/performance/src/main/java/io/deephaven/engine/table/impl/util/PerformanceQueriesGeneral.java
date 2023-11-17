@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import com.google.common.collect.Sets;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.util.TableTools;
@@ -14,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static io.deephaven.api.agg.Aggregation.AggFirst;
@@ -25,7 +27,12 @@ import static io.deephaven.api.agg.Aggregation.AggSum;
  * Generalizes {@link PerformanceQueries} to accept table parameters and make evaluation number parameter optional.
  */
 public class PerformanceQueriesGeneral {
-    private static boolean formatPctColumns = true;
+    private static boolean FORMAT_PCT_COLUMNS = true;
+    private static final Set<String> ALLOWED_MISSING_COLUMN_NAMES = Sets.newHashSet(
+            "ProcessUniqueId", // does not exist in DHC
+            "ParentEvaluationNumber", // may not exist in DHE
+            "ParentOperationNumber" // may not exist in DHE
+    );
 
     public static Table queryPerformance(Table queryPerformanceLog, final long evaluationNumber) {
 
@@ -52,7 +59,7 @@ public class PerformanceQueriesGeneral {
                 "QueryMemUsed", "QueryMemFree", "QueryMemUsedPct",
                 "EndTime", "TimeSecs", "NetMemoryChange");
 
-        if (formatPctColumns) {
+        if (FORMAT_PCT_COLUMNS) {
             queryPerformanceLog = formatColumnsAsPct(queryPerformanceLog, "QueryMemUsedPct");
         }
         return queryPerformanceLog;
@@ -121,7 +128,7 @@ public class PerformanceQueriesGeneral {
                 "Ratio", "QueryMemUsed", "QueryMemUsedPct", "IntervalEndTime",
                 "RowsPerSec", "RowsPerCPUSec", "EntryDescription");
 
-        if (formatPctColumnsLocal && formatPctColumns) {
+        if (formatPctColumnsLocal && FORMAT_PCT_COLUMNS) {
             queryUpdatePerformance = formatColumnsAsPctUpdatePerformance(queryUpdatePerformance);
         }
         return queryUpdatePerformance;
@@ -177,7 +184,7 @@ public class PerformanceQueriesGeneral {
                 AggPct(0.50, "Ratio_50_Percentile = Ratio", "QueryMemUsedPct_50_Percentile = QueryMemUsedPct"),
                 AggMax("Ratio_Max = Ratio", "QueryMemUsedPct_Max = QueryMemUsedPct")));
 
-        if (formatPctColumns) {
+        if (FORMAT_PCT_COLUMNS) {
             qup = formatColumnsAsPctUpdatePerformance(qup);
             worstInterval = formatColumnsAsPct(worstInterval, "Ratio");
             updateWorst = formatColumnsAsPctUpdatePerformance(updateWorst);
@@ -319,13 +326,15 @@ public class PerformanceQueriesGeneral {
 
     public static TreeTable queryOperationPerformanceAsTreeTable(
             @NotNull final Table qpl, @NotNull final Table qopl) {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/4814): use NULL_INT for ParentOperationNumber and
+        // Depth once we can prevent any compilation or at least reduce multiple usages to a single formula
         Table mergeWithAggKeys = TableTools.merge(
                 qpl.updateView(
-                        "EvalKey = `` + EvaluationNumber",
-                        "ParentEvalKey = ParentEvaluationNumber == null ? null : (`` + ParentEvaluationNumber)",
+                        "EvalKey = Long.toString(EvaluationNumber)",
+                        "ParentEvalKey = ParentEvaluationNumber == null ? null : (long.toString(ParentEvaluationNumber))",
                         "OperationNumber = NULL_INT",
-                        "ParentOperationNumber = NULL_INT",
-                        "Depth = NULL_INT",
+                        "ParentOperationNumber = OperationNumber",
+                        "Depth = OperationNumber",
                         "CallerLine = (String) null",
                         "IsCompilation = NULL_BOOLEAN",
                         "InputSizeLong = NULL_LONG"),
@@ -361,6 +370,9 @@ public class PerformanceQueriesGeneral {
     }
 
     private static Table maybeMoveColumnsUp(final Table source, final String... cols) {
-        return source.moveColumnsUp(Stream.of(cols).filter(source::hasColumns).toArray(String[]::new));
+        return source.moveColumnsUp(Stream.of(cols)
+                .filter(columnName -> !ALLOWED_MISSING_COLUMN_NAMES.contains(columnName)
+                        || source.hasColumns(columnName))
+                .toArray(String[]::new));
     }
 }
