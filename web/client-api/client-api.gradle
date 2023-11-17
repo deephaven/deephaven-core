@@ -6,14 +6,16 @@ apply from: "$rootDir/gradle/web-client.gradle"
 
 configurations {
     js
+    dts
+    typescriptDoclet
 }
 
 dependencies {
     implementation project(':web-shared-beans')
     implementation project(':web-client-backplane')
 
-    implementation 'com.vertispan.tsdefs:jsinterop-ts-defs-annotations:1.0.0-RC2'
-    annotationProcessor 'com.vertispan.tsdefs:jsinterop-ts-defs-processor:1.0.0-RC2'
+    implementation 'com.vertispan.tsdefs:jsinterop-ts-defs-annotations:1.0.0-RC3'
+    typescriptDoclet 'com.vertispan.tsdefs:jsinterop-ts-defs-doclet:1.0.0-RC3'
 
     implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
 
@@ -36,9 +38,22 @@ def gwtOutput = tasks.register('gwtOutput', Sync) {
     into jsOutput
 }
 
+def dtsOutput = layout.buildDirectory.dir('ts-types');
+def tsDefs = tasks.register('typescriptDefinitions', Javadoc) {
+    dependsOn 'compileJava'
+    source = sourceSets.main.allJava
+    options.classpath = sourceSets.main.compileClasspath.files as List
+    destinationDir = dtsOutput.get().asFile
+    options.docletpath = (configurations.typescriptDoclet.files as List) + (sourceSets.main.compileClasspath.files as List)
+    options.doclet = 'com.vertispan.tsdefs.doclet.TsDoclet'
+}
+
 artifacts {
     js(jsOutput) {
         builtBy gwtOutput
+    }
+    dts(dtsOutput) {
+        builtBy tsDefs
     }
 }
 

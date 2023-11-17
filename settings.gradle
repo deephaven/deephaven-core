@@ -416,6 +416,10 @@ Closure configureWebModule = {
 
 webMods.collect({ project(":$it")}).each configureWebModule
 
+include ':web-client-api:types'
+project(':web-client-api:types').projectDir = file('web/client-api/types')
+
+
 buildCache {
     local {
         removeUnusedEntriesAfterDays = 4
