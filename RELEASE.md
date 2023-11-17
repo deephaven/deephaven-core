@@ -54,6 +54,16 @@ The Deephaven python client is released as the `pydeephaven` wheel at [PyPi](htt
 ### Deephaven go client
 The Deephaven go client is released as a [Go package](https://pkg.go.dev/github.com/deephaven/deephaven-core/go).
 
+### Deephaven API docs
+API documentation is generated for Java, Python and C++ implemetations for Deephaven integration.
+The artifacts are released to [GitHub releases](https://github.com/deephaven/deephaven-core/releases)
+and are published as the following:
+* [Java Client/Server API](https://deephaven.io/core/javadoc/)
+* [Python Integration API](https://deephaven.io/core/pydoc/)
+* [Python Client API](https://deephaven.io/core/client-api/python/)
+* [C++ Client API](https://deephaven.io/core/client-api/cpp/)
+* [C++ Examples](https://deephaven.io/core/client-api/cpp-examples/)
+
 ## Release process
 
 The majority of the release procedure is controlled through the [publish-ci.yml workflow](./.github/workflows/publish-ci.yml).
