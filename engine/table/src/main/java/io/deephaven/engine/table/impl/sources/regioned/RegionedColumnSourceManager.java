@@ -72,13 +72,13 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     private final List<IncludedTableLocationEntry> orderedIncludedTableLocations = new ArrayList<>();
 
     /**
-     * Non-empty table locations stored in a table. Row keys are assigned location indices.
+     * Non-empty table locations stored in a table. Rows are keyed by location index.
      */
     private final QueryTable includedLocationsTable;
+    private static final String LOCATION_COLUMN_NAME = "dh_location";
     private final ObjectArraySource<TableLocation> locationSource;
+    private static final String ROWSET_COLUMN_NAME = "dh_rowset";
     private final ObjectArraySource<RowSet> rowSetSource;
-    private final String LOCATION_COLUMN_NAME = "dh_location";
-    private final String ROWSET_COLUMN_NAME = "dh_rowset";
     private final ModifiedColumnSet rowSetModifiedColumnSet;
 
     /**
@@ -103,11 +103,11 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         // Create the table that will hold the location data
         locationSource = new ObjectArraySource<>(TableLocation.class);
         rowSetSource = new ObjectArraySource<>(RowSet.class);
-        final Map<String, ColumnSource<?>> columnLocationMap = new LinkedHashMap<>();
-        columnLocationMap.put(LOCATION_COLUMN_NAME, locationSource);
-        columnLocationMap.put(ROWSET_COLUMN_NAME, rowSetSource);
+        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+        columnSourceMap.put(LOCATION_COLUMN_NAME, locationSource);
+        columnSourceMap.put(ROWSET_COLUMN_NAME, rowSetSource);
 
-        includedLocationsTable = new QueryTable(RowSetFactory.empty().toTracking(), columnLocationMap);
+        includedLocationsTable = new QueryTable(RowSetFactory.empty().toTracking(), columnSourceMap);
         if (isRefreshing) {
             includedLocationsTable.setRefreshing(true);
             locationSource.startTrackingPrevValues();
@@ -175,6 +175,9 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) {
             if (entry.pollUpdates(addedRowSetBuilder)) {
                 // Changes were detected, update the row set in the table and mark the row/column as modified.
+                /* Since TableLocationState.getRowSet() returns a copy(), we should consider adding an UpdateCommitter
+                 * to close() the previous row sets for modified locations. This is not important for current
+                 * implementations, since they always allocate new, flat RowSets. */
                 rowSetSource.set(entry.regionIndex, entry.location.getRowSet());
                 if (modifiedRegionBuilder != null) {
                     modifiedRegionBuilder.appendKey(entry.regionIndex);
@@ -212,7 +215,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
 
                 // We have a new location, add the row set to the table and mark the row as added.
                 locationSource.set(entry.regionIndex, entry.location);
-                rowSetSource.set(entry.regionIndex, entryToInclude.initialRowSet);
+                rowSetSource.set(entry.regionIndex, entry.location.getRowSet());
             }
             includedLocationsTable.getRowSet().writableCast().insertRange(startIndex, endIndex);
             if (addedRegionBuilder != null) {
@@ -221,22 +224,21 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         }
         if (!isRefreshing) {
             emptyTableLocations.clear();
-        } else {
+        } else if (!initializing) {
             // Send the downstream updates to any listeners of the table.
-            if (!initializing) {
-                final RowSet added = addedRegionBuilder.build();
-                final RowSet modified = modifiedRegionBuilder.build();
-
+            final RowSet added = addedRegionBuilder.build();
+            final RowSet modified = modifiedRegionBuilder.build();
+            if (added.isEmpty() && modified.isEmpty()) {
+                added.close();
+                modified.close();
+            } else {
                 final TableUpdate update = new TableUpdateImpl(
                         added,
-                        modified,
                         RowSetFactory.empty(),
+                        modified,
                         RowSetShiftData.EMPTY,
                         modified.isNonempty() ? rowSetModifiedColumnSet : ModifiedColumnSet.EMPTY);
-
-                if (!update.empty()) {
-                    includedLocationsTable.notifyListeners(update);
-                }
+                includedLocationsTable.notifyListeners(update);
             }
         }
         return addedRowSetBuilder.build();
