@@ -1268,11 +1268,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         final BasePerformanceEntry basePerformanceEntry =
                                                 initialFilterExecution.getBasePerformanceEntry();
                                         if (basePerformanceEntry != null) {
-                                            final QueryPerformanceNugget outerNugget =
-                                                    QueryPerformanceRecorder.getInstance().getOuterNugget();
-                                            if (outerNugget != null) {
-                                                outerNugget.addBaseEntry(basePerformanceEntry);
-                                            }
+                                            QueryPerformanceRecorder.getInstance().getEnclosingNugget()
+                                                    .accumulate(basePerformanceEntry);
                                         }
                                     }
                                     currentMapping.initializePreviousValue();
@@ -1516,11 +1513,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             } finally {
                                 final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
                                 if (baseEntry != null) {
-                                    final QueryPerformanceNugget outerNugget =
-                                            QueryPerformanceRecorder.getInstance().getOuterNugget();
-                                    if (outerNugget != null) {
-                                        outerNugget.addBaseEntry(baseEntry);
-                                    }
+                                    QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(baseEntry);
                                 }
                             }
                         }
@@ -3572,12 +3565,9 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private <R> R applyInternal(@NotNull final Function<Table, R> function) {
-        final QueryPerformanceNugget nugget =
-                QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")");
-        try {
+        try (final SafeCloseable ignored =
+                QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")")) {
             return function.apply(this);
-        } finally {
-            nugget.done();
         }
     }
 

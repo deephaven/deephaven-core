@@ -7,6 +7,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.util.profiling.ThreadProfiler;
+import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.minus;
 import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.plus;
@@ -15,13 +16,13 @@ import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.plu
  * A smaller entry that simply records usage data, meant for aggregating into the larger entry.
  */
 public class BasePerformanceEntry implements LogOutputAppendable {
-    private long intervalUsageNanos;
+    private long usageNanos;
 
-    private long intervalCpuNanos;
-    private long intervalUserCpuNanos;
+    private long cpuNanos;
+    private long userCpuNanos;
 
-    private long intervalAllocatedBytes;
-    private long intervalPoolAllocatedBytes;
+    private long allocatedBytes;
+    private long poolAllocatedBytes;
 
     private long startTimeNanos;
 
@@ -31,26 +32,26 @@ public class BasePerformanceEntry implements LogOutputAppendable {
     private long startAllocatedBytes;
     private long startPoolAllocatedBytes;
 
-    public void onBaseEntryStart() {
+    public synchronized void onBaseEntryStart() {
         startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
-        startPoolAllocatedBytes = QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread();
+        startPoolAllocatedBytes = QueryPerformanceRecorderState.getPoolAllocatedBytesForCurrentThread();
 
         startUserCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadUserTime();
         startCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadCpuTime();
         startTimeNanos = System.nanoTime();
     }
 
-    public void onBaseEntryEnd() {
-        intervalUserCpuNanos = plus(intervalUserCpuNanos,
+    public synchronized void onBaseEntryEnd() {
+        userCpuNanos = plus(userCpuNanos,
                 minus(ThreadProfiler.DEFAULT.getCurrentThreadUserTime(), startUserCpuNanos));
-        intervalCpuNanos =
-                plus(intervalCpuNanos, minus(ThreadProfiler.DEFAULT.getCurrentThreadCpuTime(), startCpuNanos));
+        cpuNanos =
+                plus(cpuNanos, minus(ThreadProfiler.DEFAULT.getCurrentThreadCpuTime(), startCpuNanos));
 
-        intervalUsageNanos += System.nanoTime() - startTimeNanos;
+        usageNanos += System.nanoTime() - startTimeNanos;
 
-        intervalPoolAllocatedBytes = plus(intervalPoolAllocatedBytes,
-                minus(QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread(), startPoolAllocatedBytes));
-        intervalAllocatedBytes = plus(intervalAllocatedBytes,
+        poolAllocatedBytes = plus(poolAllocatedBytes,
+                minus(QueryPerformanceRecorderState.getPoolAllocatedBytesForCurrentThread(), startPoolAllocatedBytes));
+        allocatedBytes = plus(allocatedBytes,
                 minus(ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes(), startAllocatedBytes));
 
         startAllocatedBytes = 0;
@@ -61,46 +62,76 @@ public class BasePerformanceEntry implements LogOutputAppendable {
         startTimeNanos = 0;
     }
 
-    void baseEntryReset() {
+    synchronized void baseEntryReset() {
         Assert.eqZero(startTimeNanos, "startTimeNanos");
 
-        intervalUsageNanos = 0;
+        usageNanos = 0;
 
-        intervalCpuNanos = 0;
-        intervalUserCpuNanos = 0;
+        cpuNanos = 0;
+        userCpuNanos = 0;
 
-        intervalAllocatedBytes = 0;
-        intervalPoolAllocatedBytes = 0;
+        allocatedBytes = 0;
+        poolAllocatedBytes = 0;
     }
 
-    public long getIntervalUsageNanos() {
-        return intervalUsageNanos;
+    /**
+     * Get the aggregate usage in nanoseconds. This getter should be called by exclusive owners of the entry, and never
+     * concurrently with mutators.
+     *
+     * @return total wall clock time in nanos
+     */
+    public long getUsageNanos() {
+        return usageNanos;
     }
 
-    public long getIntervalCpuNanos() {
-        return intervalCpuNanos;
+    /**
+     * Get the aggregate cpu time in nanoseconds. This getter should be called by exclusive owners of the entry, and
+     * never concurrently with mutators.
+     *
+     * @return total cpu time in nanos
+     */
+    public long getCpuNanos() {
+        return cpuNanos;
     }
 
-    public long getIntervalUserCpuNanos() {
-        return intervalUserCpuNanos;
+    /**
+     * Get the aggregate cpu user time in nanoseconds. This getter should be called by exclusive owners of the entry,
+     * and never concurrently with mutators.
+     *
+     * @return total cpu user time in nanos
+     */
+    public long getUserCpuNanos() {
+        return userCpuNanos;
     }
 
-    public long getIntervalAllocatedBytes() {
-        return intervalAllocatedBytes;
+    /**
+     * Get the aggregate allocated memory in bytes. This getter should be called by exclusive owners of the entry, and
+     * never concurrently with mutators.
+     *
+     * @return The bytes of allocated memory attributed to the instrumented operation.
+     */
+    public long getAllocatedBytes() {
+        return allocatedBytes;
     }
 
-    public long getIntervalPoolAllocatedBytes() {
-        return intervalPoolAllocatedBytes;
+    /**
+     * Get allocated pooled/reusable memory attributed to the instrumented operation in bytes. This getter should be
+     * called by exclusive owners of the entry, and never concurrently with mutators.
+     *
+     * @return total pool allocated memory in bytes
+     */
+    public long getPoolAllocatedBytes() {
+        return poolAllocatedBytes;
     }
 
     @Override
-    public LogOutput append(LogOutput logOutput) {
+    public LogOutput append(@NotNull final LogOutput logOutput) {
         final LogOutput currentValues = logOutput.append("BasePerformanceEntry{")
-                .append(", intervalUsageNanos=").append(intervalUsageNanos)
-                .append(", intervalCpuNanos=").append(intervalCpuNanos)
-                .append(", intervalUserCpuNanos=").append(intervalUserCpuNanos)
-                .append(", intervalAllocatedBytes=").append(intervalAllocatedBytes)
-                .append(", intervalPoolAllocatedBytes=").append(intervalPoolAllocatedBytes);
+                .append(", intervalUsageNanos=").append(usageNanos)
+                .append(", intervalCpuNanos=").append(cpuNanos)
+                .append(", intervalUserCpuNanos=").append(userCpuNanos)
+                .append(", intervalAllocatedBytes=").append(allocatedBytes)
+                .append(", intervalPoolAllocatedBytes=").append(poolAllocatedBytes);
         return appendStart(currentValues)
                 .append('}');
     }
@@ -114,12 +145,17 @@ public class BasePerformanceEntry implements LogOutputAppendable {
                 .append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes);
     }
 
-    public void accumulate(BasePerformanceEntry entry) {
-        this.intervalUsageNanos += entry.intervalUsageNanos;
-        this.intervalCpuNanos = plus(this.intervalCpuNanos, entry.intervalCpuNanos);
-        this.intervalUserCpuNanos = plus(this.intervalUserCpuNanos, entry.intervalUserCpuNanos);
+    /**
+     * Accumulate the values from another entry into this one. The provided entry will not be mutated.
+     *
+     * @param entry the entry to accumulate
+     */
+    public synchronized void accumulate(@NotNull final BasePerformanceEntry entry) {
+        this.usageNanos += entry.usageNanos;
+        this.cpuNanos = plus(this.cpuNanos, entry.cpuNanos);
+        this.userCpuNanos = plus(this.userCpuNanos, entry.userCpuNanos);
 
-        this.intervalAllocatedBytes = plus(this.intervalAllocatedBytes, entry.intervalAllocatedBytes);
-        this.intervalPoolAllocatedBytes = plus(this.intervalPoolAllocatedBytes, entry.intervalPoolAllocatedBytes);
+        this.allocatedBytes = plus(this.allocatedBytes, entry.allocatedBytes);
+        this.poolAllocatedBytes = plus(this.poolAllocatedBytes, entry.poolAllocatedBytes);
     }
 }

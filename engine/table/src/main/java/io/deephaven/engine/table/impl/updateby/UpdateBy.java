@@ -22,7 +22,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
@@ -908,19 +907,14 @@ public abstract class UpdateBy {
             final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
             if (accumulated != null) {
                 if (initialStep) {
-                    final QueryPerformanceNugget outerNugget = QueryPerformanceRecorder.getInstance().getOuterNugget();
-                    if (outerNugget != null) {
-                        outerNugget.addBaseEntry(accumulated);
-                    }
+                    QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(accumulated);
                 } else {
                     source.getUpdateGraph().addNotification(new TerminalNotification() {
                         @Override
                         public void run() {
-                            synchronized (accumulated) {
-                                final PerformanceEntry entry = sourceListener().getEntry();
-                                if (entry != null) {
-                                    entry.accumulate(accumulated);
-                                }
+                            final PerformanceEntry entry = sourceListener().getEntry();
+                            if (entry != null) {
+                                entry.accumulate(accumulated);
                             }
                         }
                     });
