@@ -168,52 +168,56 @@ public interface QueryPerformanceRecorder {
     /**
      * Starts a query.
      * <p>
-     * A query is {@link QueryState#RUNNING} if it has been started or {@link #resumeQuery() resumed} without a
+     * A query is {@link QueryState#RUNNING RUNNING} if it has been started or {@link #resumeQuery() resumed} without a
      * subsequent {@link #endQuery() end}, {@link #suspendQuery() suspend}, or {@link #abortQuery() abort}.
      *
-     * @throws IllegalStateException if the query state isn't {@link QueryState#NOT_STARTED} or another query is running
-     *         on this thread
+     * @throws IllegalStateException if the query state isn't {@link QueryState#NOT_STARTED NOT_STARTED} or another
+     *         query is running on this thread
      */
     SafeCloseable startQuery();
 
     /**
      * End a query.
      * <p>
-     * A query is {@link QueryState#RUNNING} if it has been {@link #startQuery() started} or {@link #resumeQuery()
-     * resumed} without a subsequent end, {@link #suspendQuery() suspend}, or {@link #abortQuery() abort}.
+     * A query is {@link QueryState#RUNNING RUNNING} if it has been {@link #startQuery() started} or
+     * {@link #resumeQuery() resumed} without a subsequent end, {@link #suspendQuery() suspend}, or {@link #abortQuery()
+     * abort}.
      *
      * @return whether the query should be logged
-     * @throws IllegalStateException if the query staet isn't {@link QueryState#RUNNING},
-     *         {@link QueryState#INTERRUPTED}, or was not running on this thread
+     * @throws IllegalStateException if the query state isn't {@link QueryState#RUNNING RUNNING},
+     *         {@link QueryState#INTERRUPTED INTERRUPTED}, or was not running on this thread
      */
     boolean endQuery();
 
     /**
      * Suspends a query.
      * <p>
-     * A query is {@link QueryState#RUNNING} if it has been {@link #startQuery() started} or {@link #resumeQuery()
-     * resumed} without a subsequent {@link #endQuery() end}, suspend, or {@link #abortQuery() abort}.
+     * A query is {@link QueryState#RUNNING RUNNING} if it has been {@link #startQuery() started} or
+     * {@link #resumeQuery() resumed} without a subsequent {@link #endQuery() end}, suspend, or {@link #abortQuery()
+     * abort}.
      *
-     * @throws IllegalStateException if the query wasn't running or was not running on this thread
+     * @throws IllegalStateException if the query state isn't {@link QueryState#RUNNING RUNNING} or was not running on
+     *         this thread
      */
     void suspendQuery();
 
     /**
      * Resumes a suspend query.
      * <p>
-     * A query is {@link QueryState#RUNNING} if it has been {@link #startQuery() started} or resumed without a
+     * A query is {@link QueryState#RUNNING RUNNING} if it has been {@link #startQuery() started} or resumed without a
      * subsequent {@link #endQuery() end}, {@link #suspendQuery() suspend}, or {@link #abortQuery() abort}.
      *
-     * @throws IllegalStateException if the query state was not {@link QueryState#SUSPENDED} or another query is running
-     *         on this thread
+     * @throws IllegalStateException if the query state isn't {@link QueryState#SUSPENDED SUSPENDED} or another query is
+     *         running on this thread
      */
     SafeCloseable resumeQuery();
 
     /**
      * Abort a query.
      * <p>
-     * A query is {@link QueryState#RUNNING} if it has been {@link #startQuery() started} or {@link #resumeQuery()
-     * resumed} without a subsequent {@link #endQuery() end}, {@link #suspendQuery() suspend}, or abort.
+     * A query is {@link QueryState#RUNNING RUNNING} if it has been {@link #startQuery() started} or
+     * {@link #resumeQuery() resumed} without a subsequent {@link #endQuery() end}, {@link #suspendQuery() suspend}, or
+     * abort.
      * <p>
      * Note that this method is invoked out-of-band and does not throw if the query has been completed.
      */

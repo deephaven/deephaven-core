@@ -27,12 +27,11 @@ import static io.deephaven.api.agg.Aggregation.AggSum;
  * Generalizes {@link PerformanceQueries} to accept table parameters and make evaluation number parameter optional.
  */
 public class PerformanceQueriesGeneral {
-    private static boolean FORMAT_PCT_COLUMNS = true;
+    private static final boolean FORMAT_PCT_COLUMNS = true;
     private static final Set<String> ALLOWED_MISSING_COLUMN_NAMES = Sets.newHashSet(
-            "ProcessUniqueId", // does not exist in DHC
-            "ParentEvaluationNumber", // may not exist in DHE
-            "ParentOperationNumber" // may not exist in DHE
-    );
+            "ProcessUniqueId",
+            "ParentEvaluationNumber",
+            "ParentOperationNumber");
 
     public static Table queryPerformance(Table queryPerformanceLog, final long evaluationNumber) {
 
@@ -331,7 +330,7 @@ public class PerformanceQueriesGeneral {
         Table mergeWithAggKeys = TableTools.merge(
                 qpl.updateView(
                         "EvalKey = Long.toString(EvaluationNumber)",
-                        "ParentEvalKey = ParentEvaluationNumber == null ? null : (long.toString(ParentEvaluationNumber))",
+                        "ParentEvalKey = ParentEvaluationNumber == null ? null : (Long.toString(ParentEvaluationNumber))",
                         "OperationNumber = NULL_INT",
                         "ParentOperationNumber = OperationNumber",
                         "Depth = OperationNumber",

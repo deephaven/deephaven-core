@@ -16,8 +16,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 /**
  * Query performance instrumentation implementation. Manages a hierarchy of {@link QueryPerformanceNugget} instances.
  * <p>
- * Many methods are synchronized to 1) support external abortion of query and 2) for scenarios where the query is
- * suspended and resumed on another thread.
+ * Many methods are synchronized to 1) support external abort of query and 2) for scenarios where the query is suspended
+ * and resumed on another thread.
  */
 public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
     private static final QueryPerformanceLogThreshold LOG_THRESHOLD = new QueryPerformanceLogThreshold("", 1_000_000);
@@ -61,8 +61,9 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         this.nuggetFactory = nuggetFactory;
     }
 
+    @Override
     public synchronized void abortQuery() {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/53): support out-of-order abortion
+        // TODO (https://github.com/deephaven/deephaven-core/issues/53): support out-of-order abort
         if (state != QueryState.RUNNING) {
             return;
         }
@@ -111,7 +112,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         if (parent != null) {
             parent.accumulate(this);
         }
-        return shouldLogNugget(queryNugget);
+        return shouldLogNugget(queryNugget) || !operationNuggets.isEmpty() || hasSubQueries;
     }
 
     /**
@@ -278,8 +279,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
             return true;
         } else if (nugget.getEndClockEpochNanos() == NULL_LONG) {
             // Nuggets will have a null value for end time if they weren't closed for a RUNNING query; this is an
-            // abnormal
-            // condition and the nugget should be logged
+            // abnormal condition and the nugget should be logged
             return true;
         } else if (nugget == catchAllNugget) {
             return UNINSTRUMENTED_LOG_THRESHOLD.shouldLog(nugget.getUsageNanos());

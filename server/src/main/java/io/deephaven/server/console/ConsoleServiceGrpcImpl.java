@@ -254,7 +254,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         }
 
         final String description = "ConsoleService#bindTableToVariable(table="
-                + ticketRouter.getLogNameFor(tableId, "table") + ", variableName=" + request.getVariableName()
+                + ticketRouter.getLogNameFor(tableId, "tableId") + ", variableName=" + request.getVariableName()
                 + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
