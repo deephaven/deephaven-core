@@ -1407,7 +1407,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
-  TableHandle WAvgBy(std::string weight_column, std::vector<std::string> columnSpecs) const;
+  TableHandle WAvgBy(std::string weight_column, std::vector<std::string> column_specs) const;
   /**
    * A variadic form of WAvgBy(std::string, std::vector<std::string>) const that takes a combination of
    * argument types.
@@ -1538,7 +1538,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
-  TableHandle Merge(std::string key_column, std::vector<TableHandle> sources) const;
+  TableHandle Merge(std::string key_columns, std::vector<TableHandle> sources) const;
   /**
    * A variadic form of Merge(std::string, std::vector<std::string>) const that takes a combination of
    * argument types.
@@ -1848,8 +1848,8 @@ public:
    * Subscribe to a ticking table (C-style).
    */
   [[nodiscard]]
-  std::shared_ptr<SubscriptionHandle> Subscribe(onTickCallback_t onTick, void *onTickUserData,
-      onErrorCallback_t on_error, void *onErrorUserData);
+  std::shared_ptr<SubscriptionHandle> Subscribe(onTickCallback_t on_tick, void *on_tick_user_data,
+      onErrorCallback_t on_error, void *on_error_user_data);
   /**
    * Unsubscribe from the table.
    */
