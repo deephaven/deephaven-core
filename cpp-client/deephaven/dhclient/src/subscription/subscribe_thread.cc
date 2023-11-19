@@ -68,7 +68,7 @@ private:
 class UpdateProcessor final : public SubscriptionHandle {
 public:
   [[nodiscard]]
-  static std::shared_ptr<UpdateProcessor> startThread(std::unique_ptr<FlightStreamReader> fsr,
+  static std::shared_ptr<UpdateProcessor> StartThread(std::unique_ptr<FlightStreamReader> fsr,
       std::unique_ptr<FlightStreamWriter> fsw, std::shared_ptr<Schema> schema,
       std::shared_ptr<TickingCallback> callback);
 
@@ -158,22 +158,21 @@ std::shared_ptr<SubscriptionHandle> SubscribeState::InvokeHelper() {
 
   descriptor.type = arrow::flight::FlightDescriptor::DescriptorType::CMD;
   descriptor.cmd = std::string(magic_data, 4);
-  std::unique_ptr<FlightStreamWriter> fsw;
-  std::unique_ptr<FlightStreamReader> fsr;
-  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(client->DoExchange(fco, descriptor, &fsw, &fsr)));
+  auto res = client->DoExchange(fco, descriptor);
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(res));
 
   auto sub_req_raw = BarrageProcessor::CreateSubscriptionRequest(ticketBytes_.data(),
       ticketBytes_.size());
   auto buffer = std::make_shared<OwningBuffer>(std::move(sub_req_raw));
-  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->WriteMetadata(std::move(buffer))));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(res->writer->WriteMetadata(std::move(buffer))));
 
   // Run forever (until error or cancellation)
-  auto processor = UpdateProcessor::startThread(std::move(fsr), std::move(fsw), std::move(schema_),
-      std::move(callback_));
+  auto processor = UpdateProcessor::StartThread(std::move(res->reader), std::move(res->writer),
+      std::move(schema_), std::move(callback_));
   return processor;
 }
 
-std::shared_ptr<UpdateProcessor> UpdateProcessor::startThread(
+std::shared_ptr<UpdateProcessor> UpdateProcessor::StartThread(
     std::unique_ptr<FlightStreamReader> fsr,
     std::unique_ptr<FlightStreamWriter> fsw,
     std::shared_ptr<Schema> schema,
@@ -195,12 +194,12 @@ UpdateProcessor::~UpdateProcessor() {
 }
 
 void UpdateProcessor::Cancel() {
-  static const char *const me = "UpdateProcessor::Cancel";
-  gpr_log(GPR_INFO, "%s: Subscription Shutdown requested.", me);
+  constexpr const char *const kMe = "UpdateProcessor::Cancel";
+  gpr_log(GPR_INFO, "%s: Subscription Shutdown requested.", kMe);
   std::unique_lock guard(mutex_);
   if (cancelled_) {
     guard.unlock(); // to be nice
-    gpr_log(GPR_ERROR, "%s: Already cancelled.", me);
+    gpr_log(GPR_ERROR, "%s: Already cancelled.", kMe);
     return;
   }
   cancelled_ = true;
@@ -223,12 +222,12 @@ void UpdateProcessor::RunUntilCancelled(std::shared_ptr<UpdateProcessor> self) {
 
 void UpdateProcessor::RunForeverHelper() {
   // Reuse the chunk for efficiency.
-  arrow::flight::FlightStreamChunk flight_stream_chunk;
   BarrageProcessor bp(schema_);
   // Process Arrow Flight messages until error or cancellation.
   while (true) {
-    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr_->Next(&flight_stream_chunk)));
-    const auto &cols = flight_stream_chunk.data->columns();
+    auto chunk = fsr_->Next();
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(chunk));
+    const auto &cols = chunk->data->columns();
     auto column_sources = MakeReservedVector<std::shared_ptr<ColumnSource>>(cols.size());
     auto sizes = MakeReservedVector<size_t>(cols.size());
     for (const auto &col : cols) {
@@ -239,9 +238,9 @@ void UpdateProcessor::RunForeverHelper() {
 
     const void *metadata = nullptr;
     size_t metadata_size = 0;
-    if (flight_stream_chunk.app_metadata != nullptr) {
-      metadata = flight_stream_chunk.app_metadata->data();
-      metadata_size = flight_stream_chunk.app_metadata->size();
+    if (chunk->app_metadata != nullptr) {
+      metadata = chunk->app_metadata->data();
+      metadata_size = chunk->app_metadata->size();
     }
     auto result = bp.ProcessNextChunk(column_sources, sizes, metadata, metadata_size);
 
@@ -307,9 +306,9 @@ ColumnSourceAndSize ArrayToColumnSource(const arrow::Array &array) {
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
-  const auto listElement = list_array->GetScalar(0).ValueOrDie();
+  const auto list_element = list_array->GetScalar(0).ValueOrDie();
   const auto *list_scalar = VerboseCast<const arrow::ListScalar *>(
-      DEEPHAVEN_LOCATION_EXPR(listElement.get()));
+      DEEPHAVEN_LOCATION_EXPR(list_element.get()));
   const auto &list_scalar_value = list_scalar->value;
 
   ArrayToColumnSourceVisitor v(list_scalar_value);
