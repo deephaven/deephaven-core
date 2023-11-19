@@ -80,8 +80,8 @@ Consider the following program from ``cpp-examples/read_table_with_arrow_flight`
     auto manager = client.getManager();
 
     try {
-      auto table = makeTable(manager);
-      dumpSymbolColumn(table);
+      auto table = MakeTable(manager);
+      DumpSymbolColumn(table);
     } catch (const std::runtime_error &e) {
       std::cerr << "Caught exception: " << e.what() << '\n';
     }

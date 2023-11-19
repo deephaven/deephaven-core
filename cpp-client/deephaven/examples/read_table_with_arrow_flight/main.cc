@@ -12,15 +12,15 @@ using deephaven::client::utility::OkOrThrow;
 using deephaven::client::utility::TableMaker;
 
 namespace {
-TableHandle makeTable(const TableHandleManager &manager);
-void dumpSymbolColumn(const TableHandle &tableHandle);
+TableHandle MakeTable(const TableHandleManager &manager);
+void DumpSymbolColumn(const TableHandle &table_handle);
 }  // namespace
 
 int main(int argc, char *argv[]) {
   const char *server = "localhost:10000";
   if (argc > 1) {
     if (argc != 2 || std::strcmp("-h", argv[1]) == 0) {
-      std::cerr << "Usage: " << argv[0] << " [host:port]" << std::endl;
+      std::cerr << "Usage: " << argv[0] << " [host:port]\n";
       std::exit(1);
     }
     server = argv[1];
@@ -29,15 +29,15 @@ int main(int argc, char *argv[]) {
   try {
     auto client = Client::Connect(server);
     auto manager = client.GetManager();
-    auto table = makeTable(manager);
-    dumpSymbolColumn(table);
+    auto table = MakeTable(manager);
+    DumpSymbolColumn(table);
   } catch (const std::exception &e) {
     std::cerr << "Caught exception: " << e.what() << '\n';
   }
 }
 
 namespace {
-TableHandle makeTable(const TableHandleManager &manager) {
+TableHandle MakeTable(const TableHandleManager &manager) {
   TableMaker tm;
   std::vector<std::string> symbols{"FB", "AAPL", "NFLX", "GOOG"};
   std::vector<double> prices{101.1, 102.2, 103.3, 104.4};
@@ -46,40 +46,40 @@ TableHandle makeTable(const TableHandleManager &manager) {
   return tm.MakeTable(manager);
 }
 
-void dumpSymbolColumn(const TableHandle &tableHandle) {
-  auto fsr = tableHandle.GetFlightStreamReader();
+void DumpSymbolColumn(const TableHandle &table_handle) {
+  auto fsr = table_handle.GetFlightStreamReader();
   while (true) {
-    arrow::flight::FlightStreamChunk chunk;
-    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr->Next(&chunk)));
-    if (chunk.data == nullptr) {
+    auto res = fsr->Next();
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(res));
+    if (res->data == nullptr) {
       break;
     }
 
-    auto symbolChunk = chunk.data->GetColumnByName("Symbol");
-    if (symbolChunk == nullptr) {
+    auto symbol_chunk = res->data->GetColumnByName("Symbol");
+    if (symbol_chunk == nullptr) {
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Symbol column not found"));
     }
-    auto priceChunk = chunk.data->GetColumnByName("Price");
-    if (priceChunk == nullptr) {
+    auto price_chunk = res->data->GetColumnByName("Price");
+    if (price_chunk == nullptr) {
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Price column not found"));
     }
 
-    auto symbolAsStringArray = std::dynamic_pointer_cast<arrow::StringArray>(symbolChunk);
-    auto priceAsDoubleArray = std::dynamic_pointer_cast<arrow::DoubleArray>(priceChunk);
-    if (symbolAsStringArray == nullptr) {
+    auto symbol_as_string_array = std::dynamic_pointer_cast<arrow::StringArray>(symbol_chunk);
+    auto price_as_double_array = std::dynamic_pointer_cast<arrow::DoubleArray>(price_chunk);
+    if (symbol_as_string_array == nullptr) {
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR("symbolChunk was not an arrow::StringArray"));
     }
-    if (priceAsDoubleArray == nullptr) {
+    if (price_as_double_array == nullptr) {
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR("priceChunk was not an arrow::DoubleArray"));
     }
 
-    if (symbolAsStringArray->length() != priceAsDoubleArray->length()) {
+    if (symbol_as_string_array->length() != price_as_double_array->length()) {
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Lengths differ"));
     }
 
-    for (int64_t i = 0; i < symbolAsStringArray->length(); ++i) {
-      auto symbol = symbolAsStringArray->GetView(i);
-      auto price = priceAsDoubleArray->Value(i);
+    for (int64_t i = 0; i < symbol_as_string_array->length(); ++i) {
+      auto symbol = symbol_as_string_array->GetView(i);
+      auto price = price_as_double_array->Value(i);
       std::cout << symbol << ' ' << price << '\n';
     }
   }
