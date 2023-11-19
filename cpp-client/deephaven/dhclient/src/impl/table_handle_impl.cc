@@ -715,7 +715,7 @@ std::shared_ptr<Schema> TableHandleImpl::Schema() {
   std::unique_lock guard(mutex_);
   if (schema_request_sent_) {
     // Schema request already sent by someone else. So wait for the successful result or error.
-    mutex_.unlock();
+    guard.unlock();
     return schema_future_.get();
   }
 
