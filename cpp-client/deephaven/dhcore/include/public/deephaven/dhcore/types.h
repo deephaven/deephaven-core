@@ -9,6 +9,9 @@
 #include <ostream>
 #include "deephaven/dhcore/utility/utility.h"
 
+#define FMT_HEADER_ONLY
+#include "fmt/ostream.h"
+
 namespace deephaven::dhcore {
 struct ElementTypeId {
   // We don't use "enum class" here because we can't figure out how to get it to work right with Cython.
@@ -333,13 +336,6 @@ public:
   }
 
   /**
-   * Parses a string in ISO 8601 format into a DateTime.
-   * @param iso_8601_timestamp The timestamp, in ISO 8601 format.
-   * @return The corresponding DateTime.
-   */
-  static DateTime Parse(std::string_view iso_8601_timestamp);
-
-  /**
    * Default constructor. Sets the DateTime equal to the epoch.
    */
   DateTime() = default;
@@ -392,3 +388,5 @@ private:
   friend std::ostream &operator<<(std::ostream &s, const DateTime &o);
 };
 }  // namespace deephaven::dhcore
+
+template<> struct fmt::formatter<deephaven::dhcore::DateTime> : ostream_formatter {};

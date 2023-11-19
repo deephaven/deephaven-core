@@ -95,9 +95,9 @@ set_property(TARGET dhcore_objlib PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_compile_options(dhcore_objlib PRIVATE -Wall -Werror -Wno-deprecated-declarations)
 
+target_include_directories(dhcore_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/fmt/include>)
 target_include_directories(dhcore_objlib PRIVATE include/private)
 target_include_directories(dhcore_objlib PRIVATE third_party/flatbuffers/include)
-target_include_directories(dhcore_objlib PRIVATE third_party/fmt/include)
 target_include_directories(dhcore_objlib PRIVATE third_party/roaring/include)
 target_include_directories(dhcore_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 
@@ -117,15 +117,16 @@ get_property(object_link_libs TARGET dhcore_objlib PROPERTY LINK_LIBRARIES)
 
 add_library(dhcore SHARED $<TARGET_OBJECTS:dhcore_objlib>)
 # TODO: How to avoid repetition here for target_include_directories?
+target_include_directories(dhcore PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/fmt/include>)
 target_include_directories(dhcore PRIVATE include/private)
 target_include_directories(dhcore PRIVATE third_party/flatbuffers/include)
-target_include_directories(dhcore PRIVATE third_party/fmt/include)
 target_include_directories(dhcore PRIVATE third_party/roaring/include)
 target_include_directories(dhcore PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 target_link_libraries(dhcore PUBLIC ${object_link_libs})
 
 add_library(dhcore_static STATIC $<TARGET_OBJECTS:dhcore_objlib>)
 # TODO: How to avoid repetition here for target_include_directories?
+target_include_directories(dhcore_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/fmt/include>)
 target_include_directories(dhcore_static PRIVATE include/private)
 target_include_directories(dhcore_static PRIVATE third_party/flatbuffers/include)
 target_include_directories(dhcore_static PRIVATE third_party/roaring/include)

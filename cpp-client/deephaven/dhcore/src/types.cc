@@ -7,8 +7,13 @@
 
 #include "deephaven/dhcore/utility/utility.h"
 
-using deephaven::dhcore::utility::Stringf;
+#define FMT_HEADER_ONLY
+#include "fmt/chrono.h"
+#include "fmt/core.h"
+#include "fmt/ostream.h"
+static_assert(FMT_VERSION >= 100000);
 
+using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::dhcore {
 constexpr const char16_t DeephavenConstants::kNullChar;
@@ -51,29 +56,6 @@ constexpr const int64_t DeephavenConstants::kNullLong;
 constexpr const int64_t DeephavenConstants::kMinLong;
 constexpr const int64_t DeephavenConstants::kMaxLong;
 
-DateTime DateTime::Parse(std::string_view iso_8601_timestamp) {
-  constexpr const char *kFormatToUse = "%Y-%m-%dT%H:%M:%S%z";
-  constexpr const int64_t kOneBillion = 1'000'000'000;
-
-  struct tm tm;
-  memset(&tm, 0, sizeof(struct tm));
-  const char *result = strptime(iso_8601_timestamp.data(), "%Y-%m-%dT%H:%M:%S%z", &tm);
-  if (result == nullptr) {
-    auto message = Stringf(R"x(Can't parse "%o" as ISO 8601 timestamp (using format string "%o"))x",
-        iso_8601_timestamp, kFormatToUse);
-    throw std::runtime_error(message);
-  }
-  if (result != iso_8601_timestamp.end()) {
-    auto message = Stringf(R"x(Input string "%o" had extra trailing characters "%o" (using format string "%o"))x",
-        iso_8601_timestamp, result, kFormatToUse);
-    throw std::runtime_error(message);
-  }
-
-  auto tz_offset_secs = tm.tm_gmtoff;
-  auto time_secs = timegm(&tm) - tz_offset_secs;
-  return DateTime::FromNanos(time_secs * kOneBillion);
-}
-
 DateTime::DateTime(int year, int month, int day) : DateTime(year, month, day, 0, 0, 0, 0) {}
 
 DateTime::DateTime(int year, int month, int day, int hour, int minute, int second) :
@@ -94,16 +76,16 @@ DateTime::DateTime(int year, int month, int day, int hour, int minute, int secon
 }
 
 std::ostream &operator<<(std::ostream &s, const DateTime &o) {
-  size_t one_billions = 1'000'000'000;
-  time_t time_secs = o.nanos_ / one_billions;
-  auto nanos = o.nanos_ % one_billions;
-  struct tm tm = {};
-  gmtime_r(&time_secs, &tm);
-  char date_buffer[32];  // ample
-  char nanos_buffer[32];  // ample
-  strftime(date_buffer, sizeof(date_buffer), "%FT%T", &tm);
-  snprintf(nanos_buffer, sizeof(nanos_buffer), "%09zd", nanos);
-  s << date_buffer << '.' << nanos_buffer << " UTC";
+  std::chrono::nanoseconds ns(o.nanos_);
+  // Make a system_clock with a resolution of nanoseconds so that the date is formatted with 9
+  // digits of fractional precision in the seconds field. Note also that system_clock is assumed by
+  // fmt to be UTC (this is what we want).
+  auto tp = std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>(ns);
+  // %F - Equivalent to %Y-%m-%d, e.g. “1955-11-12”.
+  // T - literal 'T'
+  // %T - Equivalent to %H:%M:%S
+  // Z - literal 'Z'
+  fmt::print(s, "{:%FT%TZ}", tp);
   return s;
 }
 }  // namespace deephaven::client

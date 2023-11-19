@@ -1,11 +1,13 @@
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
+#include "deephaven/client/utility/date_time_util.h"
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 
 using deephaven::client::TableHandleManager;
 using deephaven::client::TableHandle;
+using deephaven::client::utility::DateTimeUtil;
 using deephaven::client::utility::TableMaker;
 using deephaven::dhcore::DateTime;
 using deephaven::dhcore::utility::Streamf;
@@ -45,11 +47,11 @@ TEST_CASE("Aj", "[join]") {
   {
     std::vector<std::string> ticker_data = {"AAPL", "AAPL", "AAPL", "IBM", "IBM"};
     std::vector<DateTime> instant_data = {
-        DateTime::Parse("2021-04-05T09:10:00-0500"),
-        DateTime::Parse("2021-04-05T09:31:00-0500"),
-        DateTime::Parse("2021-04-05T16:00:00-0500"),
-        DateTime::Parse("2021-04-05T16:00:00-0500"),
-        DateTime::Parse("2021-04-05T16:30:00-0500")
+        DateTimeUtil::Parse("2021-04-05T09:10:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T09:31:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:00:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:00:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:30:00-0500")
     };
     std::vector<double> price_data = {2.5, 3.7, 3.0, 100.50, 110};
     std::vector<int32_t> size_data = {52, 14, 73, 11, 6};
@@ -66,11 +68,11 @@ TEST_CASE("Aj", "[join]") {
   {
     std::vector<std::string> ticker_data = {"AAPL", "AAPL", "IBM", "IBM", "IBM"};
     std::vector<DateTime> timestamp_data = {
-        DateTime::Parse("2021-04-05T09:11:00-0500"),
-        DateTime::Parse("2021-04-05T09:30:00-0500"),
-        DateTime::Parse("2021-04-05T16:00:00-0500"),
-        DateTime::Parse("2021-04-05T16:30:00-0500"),
-        DateTime::Parse("2021-04-05T17:00:00-0500")
+        DateTimeUtil::Parse("2021-04-05T09:11:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T09:30:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:00:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:30:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T17:00:00-0500")
     };
     std::vector<double> bid_data = {2.5, 3.4, 97, 102, 108};
     std::vector<int32_t> bid_size_data = {10, 20, 5, 13, 23};
@@ -94,11 +96,11 @@ TEST_CASE("Aj", "[join]") {
   {
     std::vector<std::string> ticker_data = {"AAPL", "AAPL", "AAPL", "IBM", "IBM"};
     std::vector<DateTime> timestamp_data = {
-        DateTime::Parse("2021-04-05T09:10:00-0500"),
-        DateTime::Parse("2021-04-05T09:31:00-0500"),
-        DateTime::Parse("2021-04-05T16:00:00-0500"),
-        DateTime::Parse("2021-04-05T16:00:00-0500"),
-        DateTime::Parse("2021-04-05T16:30:00-0500")
+        DateTimeUtil::Parse("2021-04-05T09:10:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T09:31:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:00:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:00:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:30:00-0500")
     };
     for (const auto &ts : timestamp_data) {
       Streamf(std::cout, "%o - %o\n", ts, ts.Nanos());
@@ -141,11 +143,11 @@ TEST_CASE("Raj", "[join]") {
   {
     std::vector<std::string> ticker_data = {"AAPL", "AAPL", "AAPL", "IBM", "IBM"};
     std::vector<DateTime> instant_data = {
-        DateTime::Parse("2021-04-05T09:10:00-0500"),
-        DateTime::Parse("2021-04-05T09:31:00-0500"),
-        DateTime::Parse("2021-04-05T16:00:00-0500"),
-        DateTime::Parse("2021-04-05T16:00:00-0500"),
-        DateTime::Parse("2021-04-05T16:30:00-0500")
+        DateTimeUtil::Parse("2021-04-05T09:10:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T09:31:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:00:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:00:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:30:00-0500")
     };
     std::vector<double> price_data = {2.5, 3.7, 3.0, 100.50, 110};
     std::vector<int32_t> size_data = {52, 14, 73, 11, 6};
@@ -162,11 +164,11 @@ TEST_CASE("Raj", "[join]") {
   {
     std::vector<std::string> ticker_data = {"AAPL", "AAPL", "IBM", "IBM", "IBM"};
     std::vector<DateTime> timestamp_data = {
-        DateTime::Parse("2021-04-05T09:11:00-0500"),
-        DateTime::Parse("2021-04-05T09:30:00-0500"),
-        DateTime::Parse("2021-04-05T16:00:00-0500"),
-        DateTime::Parse("2021-04-05T16:30:00-0500"),
-        DateTime::Parse("2021-04-05T17:00:00-0500")
+        DateTimeUtil::Parse("2021-04-05T09:11:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T09:30:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:00:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:30:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T17:00:00-0500")
     };
     std::vector<double> bid_data = {2.5, 3.4, 97, 102, 108};
     std::vector<int32_t> bid_size_data = {10, 20, 5, 13, 23};
@@ -190,11 +192,11 @@ TEST_CASE("Raj", "[join]") {
   {
     std::vector<std::string> ticker_data = {"AAPL", "AAPL", "AAPL", "IBM", "IBM"};
     std::vector<DateTime> timestamp_data = {
-        DateTime::Parse("2021-04-05T09:10:00-0500"),
-        DateTime::Parse("2021-04-05T09:31:00-0500"),
-        DateTime::Parse("2021-04-05T16:00:00-0500"),
-        DateTime::Parse("2021-04-05T16:00:00-0500"),
-        DateTime::Parse("2021-04-05T16:30:00-0500")
+        DateTimeUtil::Parse("2021-04-05T09:10:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T09:31:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:00:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:00:00-0500"),
+        DateTimeUtil::Parse("2021-04-05T16:30:00-0500")
     };
     for (const auto &ts : timestamp_data) {
       Streamf(std::cout, "%o - %o\n", ts, ts.Nanos());
