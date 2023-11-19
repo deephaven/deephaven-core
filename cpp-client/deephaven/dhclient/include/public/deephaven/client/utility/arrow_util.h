@@ -16,6 +16,13 @@ namespace deephaven::client::utility {
 arrow::flight::FlightDescriptor ConvertTicketToFlightDescriptor(const std::string &ticket);
 
 /**
+ * If status is OK, do nothing. Otherwise throw a runtime error with an informative message.
+ * @param debug_info A DebugInfo object, typically as provided by DEEPHAVEN_LOCATION_EXPR.
+ * @param status the arrow::Status
+ */
+void OkOrThrow(const deephaven::dhcore::utility::DebugInfo &debug_info, const arrow::Status &status);
+
+/**
  * If result's status is OK, do nothing. Otherwise throw a runtime error with an informative message.
  * @param debug_info A DebugInfo object, typically as provided by DEEPHAVEN_LOCATION_EXPR.
  * @param result an arrow::Result
@@ -24,13 +31,6 @@ template<typename T>
 void OkOrThrow(const deephaven::dhcore::utility::DebugInfo &debug_info, const arrow::Result<T> &result) {
   OkOrThrow(debug_info, result.status());
 }
-
-/**
- * If status is OK, do nothing. Otherwise throw a runtime error with an informative message.
- * @param debug_info A DebugInfo object, typically as provided by DEEPHAVEN_LOCATION_EXPR.
- * @param status the arrow::Status
- */
-void OkOrThrow(const deephaven::dhcore::utility::DebugInfo &debug_info, const arrow::Status &status);
 
 /**
  * If result's internal status is OK, return result's contained value.
