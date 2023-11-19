@@ -362,7 +362,6 @@ void Server::SendRpc(const std::function<grpc::Status(grpc::ClientContext *)> &c
       const char *message = "Server cancelled. All further RPCs are being rejected";
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
-    guard.unlock();
   }
 
   auto status = callback(&ctx);
