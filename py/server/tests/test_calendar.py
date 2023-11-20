@@ -26,7 +26,7 @@ class CalendarTestCase(BaseTestCase):
         Objects = jpy.get_type("java.util.Objects")
         return Paths.get(Objects.requireNonNull(obj.getClass().getResource(resource_path)).toURI()).toString()
 
-    def test_add_calendar(self):
+    def test_add_remove_calendar(self):
         path1 = self.get_resource_path("/TEST1.calendar")
         path2 = self.get_resource_path("/TEST2.calendar")
 
@@ -43,6 +43,8 @@ class CalendarTestCase(BaseTestCase):
 
         add_calendar(cal=cal)
         self.assertIn("TEST2", calendar_names())
+
+        # Testing calendar removal here so that the global calendar state is not affected by the test
 
         remove_calendar("TEST1")
         remove_calendar("TEST2")
