@@ -27,8 +27,6 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
 
     private final ColumnSourceManager columnSourceManager;
 
-    private final Table sourceTable;
-
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
     private final QueryTable indexTable;
     private final WritableColumnSource<Object> indexKeySource;
@@ -38,13 +36,10 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     /** Provides fast lookup from keys to positions in the index table **/
     private final TObjectIntHashMap<Object> keyPositionMap;
 
-    public PartitioningColumnDataIndexImpl(@NotNull final Table sourceTable,
+    public PartitioningColumnDataIndexImpl(
             final ColumnSource<?> keySource,
             final ColumnSourceManager columnSourceManager,
             @NotNull final String keyColumnName) {
-        Assert.eqTrue(sourceTable.hasColumns(keyColumnName), keyColumnName + " was not found in the source table");
-
-        this.sourceTable = sourceTable;
         this.keySource = keySource;
         this.columnSourceManager = columnSourceManager;
         this.keyColumnName = keyColumnName;
@@ -72,7 +67,7 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
                 ModifiedColumnSet.EMPTY);
         processUpdate(initialUpdate, true);
 
-        if (sourceTable.isRefreshing()) {
+        if (locationTable.isRefreshing()) {
             indexTable.setRefreshing(true);
             indexKeySource.startTrackingPrevValues();
             indexRowSetSource.startTrackingPrevValues();
