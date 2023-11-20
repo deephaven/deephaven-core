@@ -66,7 +66,7 @@ Then install the package.
 Note the actual name of the `.whl` file may be different depending on system details.
 
 ```
-pip3 install --force --no-deps dist/pydeephaven_ticking-0.31.0-cp310-cp310-linux_x86_64.whl
+pip3 install --force --no-deps dist/pydeephaven_ticking-<x.y.z>-cp310-cp310-linux_x86_64.whl
 ```
 
 The reason for the "--force" flag is to overwrite any previously-built version of the package that
