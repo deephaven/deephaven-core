@@ -5,12 +5,29 @@
 """ This module provides Java compatibility support including convenience functions to create some widely used Java
 data structures from corresponding Python ones in order to be able to call Java methods. """
 
-from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, TypeVar, Union
+from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, TypeVar, Union, Tuple, Literal
 
 import jpy
+import numpy as np
+import pandas as pd
 
+from deephaven import dtypes, DHError
 from deephaven._wrapper import unwrap, wrap_j_object
-from deephaven.dtypes import DType
+from deephaven.dtypes import DType, _PRIMITIVE_DTYPE_NULL_MAP, _J_ARRAY_NP_TYPE_MAP
+
+_NULL_BOOLEAN_AS_BYTE = jpy.get_type("io.deephaven.util.BooleanUtils").NULL_BOOLEAN_AS_BYTE
+_JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
+
+_DH_PANDAS_NULLABLE_TYPE_MAP: Dict[DType, pd.api.extensions.ExtensionDtype] = {
+    dtypes.bool_: pd.BooleanDtype,
+    dtypes.byte: pd.Int8Dtype,
+    dtypes.short: pd.Int16Dtype,
+    dtypes.char: pd.UInt16Dtype,
+    dtypes.int32: pd.Int32Dtype,
+    dtypes.int64: pd.Int64Dtype,
+    dtypes.float32: pd.Float32Dtype,
+    dtypes.float64: pd.Float64Dtype,
+}
 
 
 def is_java_type(obj: Any) -> bool:
@@ -181,11 +198,114 @@ def to_sequence(v: Union[T, Sequence[T]] = None, wrapped: bool = False) -> Seque
         return ()
     if wrapped:
         if not isinstance(v, Sequence) or isinstance(v, str):
-            return (v, )
+            return (v,)
         else:
             return tuple(v)
 
     if not isinstance(v, Sequence) or isinstance(v, str):
-        return (unwrap(v), )
+        return (unwrap(v),)
     else:
         return tuple((unwrap(o) for o in v))
+
+
+def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool = False, no_promotion: bool = False) -> \
+        np.ndarray:
+    """ Produces a numpy array from the DType and given Java array."""
+    if dtype.is_primitive:
+        np_array = np.frombuffer(j_array, dtype.np_type)
+    elif dtype == dtypes.Instant:
+        longs = _JPrimitiveArrayConversionUtility.translateArrayInstantToLong(j_array)
+        np_long_array = np.frombuffer(longs, np.int64)
+        np_array = np_long_array.view(dtype.np_type)
+    elif dtype == dtypes.bool_:
+        bytes_ = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(j_array)
+        np_array = np.frombuffer(bytes_, dtype.np_type)
+    elif dtype == dtypes.string:
+        np_array = np.array([s for s in j_array], dtypes.string.np_type)
+    elif dtype.np_type is not np.object_:
+        try:
+            np_array = np.frombuffer(j_array, dtype.np_type)
+        except:
+            np_array = np.array(j_array, np.object_)
+    else:
+        np_array = np.array(j_array, np.object_)
+
+    if conv_null:
+        dh_null = _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)
+        if dh_null:
+            if dtype in (dtypes.float32, dtypes.float64):
+                np_array = np.copy(np_array)
+                np_array[np_array == dh_null] = np.nan
+            else:
+                if no_promotion:
+                    raise DHError(f"Java array contains Deephaven nulls for dtype {dtype}")
+                if dtype is dtypes.bool_:  # promote boolean to float64
+                    np_array = np.frombuffer(np_array, np.byte)
+                if any(np_array[np_array == dh_null]):
+                    raise DHError(f"Java array contains Deephaven nulls for dtype {dtype}")
+
+    return np_array
+
+
+def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.Series:
+    """Produce a copy of the specified Java array as a pandas.Series object.
+
+    Args:
+        j_array (jpy.JType): the Java array
+        dtype (DType): the data type of the Java array
+        conv_null (bool): whether to check for Deephaven nulls in the data and automatically replace them with
+            pd.NA.
+
+    Returns:
+        a pandas Series
+
+    Raises:
+        DHError
+    """
+    if conv_null and dtype == dtypes.bool_:
+        j_array = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(j_array)
+        np_array = np.frombuffer(j_array, dtype=np.byte)
+        s = pd.Series(data=np_array, dtype=pd.Int8Dtype(), copy=False)
+        s.mask(s == _NULL_BOOLEAN_AS_BYTE, inplace=True)
+        return s.astype(pd.BooleanDtype(), copy=False)
+
+    np_array = _j_array_to_numpy_array(dtype, j_array, conv_null=False)
+    if conv_null and (nv := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)) is not None:
+        pd_ex_dtype = _DH_PANDAS_NULLABLE_TYPE_MAP.get(dtype)
+        s = pd.Series(data=np_array, dtype=pd_ex_dtype(), copy=False)
+        s.mask(s == nv, inplace=True)
+    else:
+        s = pd.Series(data=np_array, copy=False)
+
+    return s
+
+
+def _convert_udf_args(args: Tuple[Any], fn_signature: str, null_value: Literal[np.nan, pd.NA, None]) -> List[Any]:
+    converted_args = []
+    for arg, np_dtype_char in zip(args, fn_signature):
+        if np_dtype_char == 'O':
+            converted_args.append(arg)
+        elif src_np_dtype := _J_ARRAY_NP_TYPE_MAP.get(type(arg)):
+            # array types
+            np_dtype = np.dtype(np_dtype_char)
+            if src_np_dtype != np_dtype and np_dtype != np.object_:
+                raise DHError(f"Cannot convert Java array of type {src_np_dtype} to numpy array of type {np_dtype}")
+            dtype = dtypes.from_np_dtype(np_dtype)
+            if null_value is pd.NA:
+                converted_args.append(_j_array_to_series(dtype, arg, conv_null=True))
+            else:  # np.nan or None
+                converted_args.append(_j_array_to_numpy_array(dtype, arg, conv_null=bool(null_value)))
+        else:  # scalar type or array types that don't need conversion
+            try:
+                np_dtype = np.dtype(np_dtype_char)
+            except TypeError:
+                converted_args.append(arg)
+            else:
+                dtype = dtypes.from_np_dtype(np_dtype)
+                if dtype is dtypes.bool_:
+                    converted_args.append(null_value if arg is None else arg)
+                elif dh_null := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
+                    converted_args.append(null_value if arg == dh_null else arg)
+                else:
+                    converted_args.append(arg)
+    return converted_args

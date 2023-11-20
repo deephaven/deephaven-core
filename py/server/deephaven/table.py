@@ -9,14 +9,16 @@ from __future__ import annotations
 
 import contextlib
 import inspect
+from dataclasses import dataclass, field
 from enum import Enum
 from enum import auto
 from functools import wraps
-from typing import Any, Optional, Callable, Dict, _GenericAlias
+from typing import Any, Optional, Callable, Dict, _GenericAlias, Set, Tuple
 from typing import Sequence, List, Union, Protocol
 
 import jpy
 import numba
+import numpy
 import numpy as np
 
 from deephaven import DHError
@@ -27,12 +29,14 @@ from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter, and_, or_
-from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
+from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap, _convert_udf_args, \
+    _j_array_to_numpy_array
 from deephaven.jcompat import to_sequence, j_array_list
+from deephaven.time import to_np_datetime64
 from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
-from deephaven.dtypes import _BUILDABLE_ARRAY_DTYPE_MAP, _scalar, _np_dtype_char, \
-    _component_np_dtype_char
+from deephaven.dtypes import _BUILDABLE_ARRAY_DTYPE_MAP, _scalar, _np_dtype_char, _component_np_dtype_char, DType, \
+    _np_ndarray_component_type, _J_ARRAY_NP_TYPE_MAP, _PRIMITIVE_DTYPE_NULL_MAP
 
 # Table
 _J_Table = jpy.get_type("io.deephaven.engine.table.Table")
@@ -363,21 +367,7 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return None
 
 
-_SUPPORTED_NP_TYPE_CODES = ["i", "l", "h", "f", "d", "b", "?", "U", "M", "O"]
-
-
-def _parse_annotation(annotation: Any) -> Any:
-    """Parse a Python annotation, for now mostly to extract the non-None type from an Optional(Union) annotation,
-    otherwise return the original annotation. """
-    if isinstance(annotation, _GenericAlias) and annotation.__origin__ == Union and len(annotation.__args__) == 2:
-        if annotation.__args__[1] == type(None):  # noqa: E721
-            return annotation.__args__[0]
-        elif annotation.__args__[0] == type(None):  # noqa: E721
-            return annotation.__args__[1]
-        else:
-            return annotation
-    else:
-        return annotation
+_SUPPORTED_NP_TYPE_CODES = {"b", "h", "i", "l", "f", "d", "?", "U", "M", "O"}
 
 
 def _encode_signature(fn: Callable) -> str:
@@ -394,15 +384,15 @@ def _encode_signature(fn: Callable) -> str:
         # numpy ufuncs actually have signature encoded in their 'types' attribute, we want to better support
         # them in the future (https://github.com/deephaven/deephaven-core/issues/4762)
         if type(fn) == np.ufunc:
-            return "O"*fn.nin + "->" + "O"
+            return "O" * fn.nin + "->" + "O"
         return "->O"
 
     np_type_codes = []
     for n, p in sig.parameters.items():
-        p_annotation = _parse_annotation(p.annotation)
+        p_annotation = _parse_param_annotation(p.annotation)
         np_type_codes.append(_np_dtype_char(p_annotation))
 
-    return_annotation = _parse_annotation(sig.return_annotation)
+    return_annotation = _parse_param_annotation(sig.return_annotation)
     return_type_code = _np_dtype_char(return_annotation)
     np_type_codes = [c if c in _SUPPORTED_NP_TYPE_CODES else "O" for c in np_type_codes]
     return_type_code = return_type_code if return_type_code in _SUPPORTED_NP_TYPE_CODES else "O"
@@ -411,11 +401,188 @@ def _encode_signature(fn: Callable) -> str:
     return "".join(np_type_codes)
 
 
-def _udf_return_dtype(fn):
+@dataclass
+class ParsedAnnotation:
+    orig_types: set[type] = field(default_factory=set)
+    encoded_types: set[str] = field(default_factory=set)
+    is_optional: bool = False
+    is_array: bool = False
+
+
+@dataclass
+class ParsedSignature:
+    fn: Callable = None
+    parameters: List[ParsedAnnotation] = field(default_factory=list)
+    return_annotation: ParsedAnnotation = None
+
+
+def _encode_param_type(t: type) -> str:
+    """Returns the numpy based char codes for the given type.
+    If the type is a numpy ndarray, prefix the numpy dtype char with '[' using Java convention
+    If the type is a NoneType, return 'N'
+    """
+    if t is type(None):
+        return "N"
+
+    # find the component type if it is numpy ndarray
+    component_type = _np_ndarray_component_type(t)
+    if component_type:
+        t = component_type
+
+    tc = _np_dtype_char(t)
+    tc = tc if tc in _SUPPORTED_NP_TYPE_CODES else "O"
+
+    if component_type:
+        tc = "[" + tc
+    return tc
+
+
+def _parse_param_annotation(annotation: Any) -> ParsedAnnotation:
+    """ Parse an annotation in a function's signature """
+    pa = ParsedAnnotation()
+
+    # in the absence of annotations, we'll use the 'n' to indicate that.
+    if annotation is inspect._empty:
+        pa.encoded_types.add("n")
+    elif isinstance(annotation, _GenericAlias) and annotation.__origin__ == Union:
+        for t in annotation.__args__:
+            pa.orig_types.add(t)
+            tc = _encode_param_type(t)
+            if "[" in tc:
+                pa.is_array = True
+            elif tc == "N":
+                pa.is_optional = True
+            pa.encoded_types.add(tc)
+    else:
+        pa.orig_types.add(annotation)
+        pa.encoded_types.add(_encode_param_type(annotation))
+    return pa
+
+
+def _parse_return_annotation(annotation: Any) -> ParsedAnnotation:
+    """ Parse an annotation in a function's signature """
+    pa = ParsedAnnotation()
+
+    t = annotation
+    pa.orig_types.add(t)
+    if isinstance(annotation, _GenericAlias) and annotation.__origin__ == Union and len(annotation.__args__) == 2:
+        if annotation.__args__[1] == type(None):  # noqa: E721
+            t = annotation.__args__[0]
+        elif annotation.__args__[0] == type(None):  # noqa: E721
+            t = annotation.__args__[1]
+    component_char = _component_np_dtype_char(t)
+    if component_char:
+        pa.encoded_types.add("[" + component_char)
+        pa.is_array = True
+    else:
+        pa.encoded_types.add(_np_dtype_char(t))
+    return pa
+
+
+def _parse_signature(fn: Callable) -> ParsedSignature:
+    """ Parse the signature of a function, return a ParsedSignature object """
+
+    parsed_signature = ParsedSignature(fn=fn)
+    parsed_annotations = []
+    if isinstance(fn, (numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc)):
+        sig = fn.signature
+        rtype = sig.split("->")[-1]
+        for p in sig.split("(")[1].split(")")[0].split(","):
+            parsed_annotations.append(_parse_param_annotation(p))
+    elif isinstance(fn, numpy.ufunc):
+        # in case inspect.signature() fails, we'll just use the default 'O' - object type.
+        # numpy ufuncs actually have signature encoded in their 'types' attribute, we want to better support
+        # them in the future (https://github.com/deephaven/deephaven-core/issues/4762)
+        if type(fn) == np.ufunc:
+            return [ParsedAnnotation()] * fn.nin + "->" + "O"
+        return "->O"
+    else:
+        sig = inspect.signature(fn)
+        for n, p in sig.parameters.items():
+            parsed_annotations.append(_parse_param_annotation(p.annotation))
+        parsed_signature.parameters = parsed_annotations
+        parsed_signature.return_annotation = _parse_return_annotation(sig.return_annotation)
+
+    if len(parsed_signature.return_annotation.orig_types) > 1:
+        raise ValueError("only single return type is supported.")
+
+    return parsed_signature
+
+
+def _udf_return_dtype(fn: Callable, signature: str) -> dtypes.Dtype:
     if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
         return dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
     else:
-        return dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
+        return dtypes.from_np_dtype(np.dtype(signature[-1]))
+
+
+def _convert_arg(param: ParsedAnnotation, arg: Any) -> Any:
+    """ Convert a single argument to the type specified by the annotation """
+    if arg is None:
+        if "0" in param.encoded_types or "n" in param.encoded_types or "[" in param.encoded_types:
+            return None
+        else:
+            raise TypeError(f"Argument {arg} is not compatible with annotation {param.orig_types}")
+
+    # if the arg is a Java array
+    if np_dtype := _J_ARRAY_NP_TYPE_MAP.get(type(arg)):
+        encoded_type = "[" + np_dtype.char
+        # if it matches one of the encoded types, convert it
+        if encoded_type in param.encoded_types:
+            dtype = dtypes.from_np_dtype(np_dtype)
+            return _j_array_to_numpy_array(dtype, arg, conv_null=True, no_promotion=True)
+        # if the annotation is missing, or it is a generic object type, return the arg
+        elif "0" in param.encoded_types or "n" in param.encoded_types:
+            return arg
+        else:
+            raise TypeError(f"Argument {arg} is not compatible with annotation {param.orig_types}")
+    else:  # if the arg is not Java array
+        # find the numpy dtype for the annotation
+        # if found, convert the arg to that type, take care of nulls (if null and optional, return None, else raise)
+        # if not found, if empyt annotation, return arg, else return
+        # if dh_null := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
+        possible_types = param.encoded_types - {"n", "O"}
+        if possible_types:
+            for t in possible_types:
+                if t.startswith("["):
+                    continue
+
+                dtype = dtypes.from_np_dtype(np.dtype(t))
+                dh_null = _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)
+
+                if t in {"b", "h", "i", "l"}:
+                    if isinstance(arg, int):
+                        if arg == dh_null:
+                            if "N" in param.encoded_types:
+                                return None
+                            else:
+                                raise TypeError(f"Argument {arg} is not compatible with annotation {param.orig_types}")
+                        else:
+                            return arg
+                elif t in {"f", "d"}:
+                    if isinstance(arg, float):
+                        if arg == dh_null:
+                            return np.nan if "N" not in param.encoded_types else None
+                        else:
+                            return arg
+                elif t == "?":
+                    if isinstance(arg, bool):
+                        return arg
+                elif t == "M":
+                    return to_np_datetime64(arg)
+                elif t == "U":
+                    return str(arg)
+            else:
+                raise TypeError(f"Argument {arg} is not compatible with annotation {param.orig_types}")
+        else:
+            return arg
+
+
+def _convert_args(parsed_sig: ParsedSignature, args: Tuple[Any, ...]) -> List[Any, ...]:
+    converted_args = []
+    for arg, param in zip(args, parsed_sig.parameters):
+        converted_args.append(_convert_arg(param, arg))
+    return converted_args
 
 
 def _py_udf(fn: Callable):
@@ -423,48 +590,25 @@ def _py_udf(fn: Callable):
     Python and Java. This decorator is intended for use by the Deephaven query engine and should not be used by
     users.
 
-    For now, this decorator is only capable of converting Python function return values to Java values. It
-    does not yet convert Java values in arguments to usable Python object (e.g. numpy arrays) or properly translate
-    Deephaven primitive null values.
-
-    For properly annotated functions, including numba vectorized and guvectorized ones, this decorator inspects the
-    signature of the function and determines its return type, including supported primitive types and arrays of
-    the supported primitive types. It then converts the return value of the function to the corresponding Java value
-    of the same type. For unsupported types, the decorator returns the original Python value which appears as
-    org.jpy.PyObject in Java.
+    It carries out two conversions:
+    1. convert Python function return values to Java values.
+        For properly annotated functions, including numba vectorized and guvectorized ones, this decorator inspects the
+        signature of the function and determines its return type, including supported primitive types and arrays of
+        the supported primitive types. It then converts the return value of the function to the corresponding Java value
+        of the same type. For unsupported types, the decorator returns the original Python value which appears as
+        org.jpy.PyObject in Java.
+    2. convert Java function arguments to Python values based on the signature of the function.
     """
-
     if hasattr(fn, "return_type"):
         return fn
-    ret_dtype = _udf_return_dtype(fn)
-
-    return_array = False
-    # If the function is a numba guvectorized function, examine the signature of the function to determine if it
-    # returns an array.
-    if isinstance(fn, numba.np.ufunc.gufunc.GUFunc):
-        sig = fn.signature
-        rtype = sig.split("->")[-1].strip("()")
-        if rtype:
-            return_array = True
-    else:
-        try:
-            return_annotation = _parse_annotation(inspect.signature(fn).return_annotation)
-        except ValueError:
-            # the function has no return annotation, and since we can't know what the exact type is, the return type
-            # defaults to the generic object type therefore it is not an array of a specific type,
-            # but see (https://github.com/deephaven/deephaven-core/issues/4762) for future imporvement to better support
-            # numpy ufuncs.
-            pass
-        else:
-            component_type = _component_np_dtype_char(return_annotation)
-            if component_type:
-                ret_dtype = dtypes.from_np_dtype(np.dtype(component_type))
-                if ret_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
-                    return_array = True
+    parsed_signature = _parse_signature(fn)
+    return_array = parsed_signature.return_annotation.is_array
+    ret_dtype = dtypes.from_np_dtype(np.dtype(list(parsed_signature.return_annotation.encoded_types)[0][-1]))
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        ret = fn(*args, **kwargs)
+        converted_args = _convert_args(parsed_signature, args)
+        ret = fn(*converted_args, **kwargs)
         if return_array:
             return dtypes.array(ret_dtype, ret)
         elif ret_dtype == dtypes.PyObject:
@@ -473,7 +617,7 @@ def _py_udf(fn: Callable):
             return _scalar(ret, ret_dtype)
 
     wrapper.j_name = ret_dtype.j_name
-    real_ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype) if return_array else ret_dtype
+    real_ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype, dtypes.PyObject) if return_array else ret_dtype
 
     if hasattr(ret_dtype.j_type, 'jclass'):
         j_class = real_ret_dtype.j_type.jclass
@@ -500,14 +644,14 @@ def dh_vectorize(fn):
     The current vectorized function signature includes (1) the size of the input arrays, (2) the output array,
     and (3) the input arrays.
     """
-    signature = _encode_signature(fn)
-    ret_dtype = _udf_return_dtype(fn)
+    fn_signature = _encode_signature(fn)
+    ret_dtype = _udf_return_dtype(fn, signature=fn_signature)
 
     @wraps(fn)
     def wrapper(*args):
-        if len(args) != len(signature) - len("->?") + 2:
+        if len(args) != len(fn_signature) - len("->?") + 2:
             raise ValueError(
-                f"The number of arguments doesn't match the function signature. {len(args) - 2}, {signature}")
+                f"The number of arguments doesn't match the function signature. {len(args) - 2}, {fn_signature}")
         if args[0] <= 0:
             raise ValueError(f"The chunk size argument must be a positive integer. {args[0]}")
 
@@ -525,7 +669,7 @@ def dh_vectorize(fn):
         return chunk_result
 
     wrapper.callable = fn
-    wrapper.signature = signature
+    wrapper.signature = fn_signature
     wrapper.dh_vectorized = True
 
     if _test_vectorization:
@@ -3694,6 +3838,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "update-by operation on the PartitionedTableProxy failed.") from e
 
+
 class MultiJoinInput(JObjectWrapper):
     """A MultiJoinInput represents the input tables, key columns and additional columns to be used in the multi-table
     natural join. """
@@ -3761,7 +3906,8 @@ class MultiJoinTable(JObjectWrapper):
                 with auto_locking_ctx(*tables):
                     j_tables = to_sequence(input)
                     self.j_multijointable = _JMultiJoinFactory.of(on, *j_tables)
-            elif isinstance(input, MultiJoinInput) or (isinstance(input, Sequence) and all(isinstance(ji, MultiJoinInput) for ji in input)):
+            elif isinstance(input, MultiJoinInput) or (
+                    isinstance(input, Sequence) and all(isinstance(ji, MultiJoinInput) for ji in input)):
                 if on is not None:
                     raise DHError(message="on parameter is not permitted when MultiJoinInput objects are provided.")
                 wrapped_input = to_sequence(input, wrapped=True)
@@ -3770,11 +3916,11 @@ class MultiJoinTable(JObjectWrapper):
                     input = to_sequence(input)
                     self.j_multijointable = _JMultiJoinFactory.of(*input)
             else:
-                raise DHError(message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs.")
+                raise DHError(
+                    message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs.")
 
         except Exception as e:
             raise DHError(e, "failed to build a MultiJoinTable object.") from e
-
 
 
 def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],

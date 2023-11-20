@@ -188,6 +188,18 @@ _BUILDABLE_ARRAY_DTYPE_MAP = {
 }
 
 
+_J_ARRAY_NP_TYPE_MAP = {
+    boolean_array.j_type: np.dtype("?"),
+    byte_array.j_type: np.dtype("b"),
+    char_array.j_type: np.dtype("uint16"),
+    short_array.j_type: np.dtype("h"),
+    int32_array.j_type: np.dtype("i"),
+    long_array.j_type: np.dtype("l"),
+    float32_array.j_type: np.dtype("f"),
+    double_array.j_type: np.dtype("d")
+}
+
+
 def null_remap(dtype: DType) -> Callable[[Any], Any]:
     """ Creates a null value remap function for the provided DType.
 
@@ -329,6 +341,17 @@ _NUMPY_INT_TYPE_CODES = ["i", "l", "h", "b"]
 _NUMPY_FLOATING_TYPE_CODES = ["f", "d"]
 
 
+def _is_py_null(x: Any) -> bool:
+    """Checks if the value is a Python null value, i.e. None or NaN, or Pandas.NA."""
+    if x is None:
+        return True
+
+    try:
+        return pd.isna(x)
+    except ValueError:
+        return False
+
+
 def _scalar(x: Any, dtype: DType) -> Any:
     """Converts a Python value to a Java scalar value. It converts the numpy primitive types, string to
     their Python equivalents so that JPY can handle them. For datetime values, it converts them to Java Instant.
@@ -336,7 +359,7 @@ def _scalar(x: Any, dtype: DType) -> Any:
 
     # NULL_BOOL will appear in Java as a byte value which causes a cast error. We just let JPY converts it to Java null
     # and the engine has casting logic to handle it.
-    if x is None and dtype != bool_ and _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
+    if x is None and dtype not in (bool_, char) and _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
         return _PRIMITIVE_DTYPE_NULL_MAP[dtype]
 
     try:
@@ -354,6 +377,8 @@ def _scalar(x: Any, dtype: DType) -> Any:
             elif x.dtype.char == 'M':
                 from deephaven.time import to_j_instant
                 return to_j_instant(x)
+            elif x.dtype.char == 'H':  # np.uint16
+                return jpy.get_type("java.lang.Character")(int(x))
         elif isinstance(x, (datetime.datetime, pd.Timestamp)):
                 from deephaven.time import to_j_instant
                 return to_j_instant(x)
@@ -382,14 +407,26 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
     if isinstance(t, _GenericAlias) and issubclass(t.__origin__, Sequence):
         component_type = t.__args__[0]
 
+    if not component_type:
+        component_type = _np_ndarray_component_type(t)
+
+    if component_type:
+        return _np_dtype_char(component_type)
+    else:
+        return None
+
+
+def _np_ndarray_component_type(t):
+    """Returns the numpy ndarray component type if the type is a numpy ndarray, otherwise return None."""
+
     # Py3.8: npt.NDArray can be used in Py 3.8 as a generic alias, but a specific alias (e.g. npt.NDArray[np.int64])
     # is an instance of a private class of np, yet we don't have a choice but to use it. And when npt.NDArray is used,
     # the 1st argument is typing.Any, the 2nd argument is another generic alias of which the 1st argument is the
     # component type
-    if not component_type and sys.version_info.minor == 8:
+    component_type = None
+    if sys.version_info.minor == 8:
         if isinstance(t, np._typing._generic_alias._GenericAlias) and t.__origin__ == np.ndarray:
             component_type = t.__args__[1].__args__[0]
-
     # Py3.9+, np.ndarray as a generic alias is only supported in Python 3.9+, also npt.NDArray is still available but a
     # specific alias (e.g. npt.NDArray[np.int64]) now is an instance of typing.GenericAlias.
     # when npt.NDArray is used, the 1st argument is typing.Any, the 2nd argument is another generic alias of which
@@ -406,8 +443,4 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
                 a1 = t.__args__[1]
                 if a0 == typing.Any and isinstance(a1, types.GenericAlias):
                     component_type = a1.__args__[0]
-
-    if component_type:
-        return _np_dtype_char(component_type)
-    else:
-        return None
+    return component_type
