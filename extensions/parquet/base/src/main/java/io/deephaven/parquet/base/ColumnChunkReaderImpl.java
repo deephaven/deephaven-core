@@ -28,6 +28,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
@@ -78,11 +79,6 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @Override
-    public int getPageFixedSize() {
-        return -1;
-    }
-
-    @Override
     public long numRows() {
         return numRows;
     }
@@ -110,6 +106,14 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         } else {
             return new ColumnPageReaderIteratorIndexImpl(path, channelsProvider);
         }
+    }
+
+    @Override
+    public final ColumnPageDirectAccessor getPageAccessor() {
+        if (offsetIndex == null) {
+            throw new UnsupportedOperationException("Cannot use direct accessor without offset index");
+        }
+        return new ColumnPageDirectAccessorImpl(path, channelsProvider);
     }
 
     private Path getFilePath() {
@@ -306,23 +310,39 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         @Override
         public ColumnPageReader next() {
             if (!hasNext()) {
-                throw new RuntimeException("No next element");
+                throw new NoSuchElementException("No next element");
             }
-            int rowCount =
-                    (int) (offsetIndex.getLastRowIndex(pos, columnChunk.getMeta_data().getNum_values())
-                            - offsetIndex.getFirstRowIndex(pos) + 1);
+            // Following logic assumes that offsetIndex will store the number of values for a page instead of number
+            // of rows (which can be different for array and vector columns). This behavior is because of a bug on
+            // parquet writing side which got fixed in deephaven-core/pull/4844 and is only kept to support reading
+            // parquet files written before deephaven-core/pull/4844.
+            final int numValues = (int) (offsetIndex.getLastRowIndex(pos, columnChunk.getMeta_data().getNum_values())
+                    - offsetIndex.getFirstRowIndex(pos) + 1);
             ColumnPageReaderImpl columnPageReader =
                     new ColumnPageReaderImpl(channelsProvider, decompressor, dictionarySupplier,
                             nullMaterializerFactory, path, getFilePath(), fieldTypes, offsetIndex.getOffset(pos), null,
-                            rowCount);
+                            numValues);
             pos++;
             return columnPageReader;
         }
 
         @Override
+        public void close() {}
+    }
+
+    class ColumnPageDirectAccessorImpl implements ColumnPageDirectAccessor {
+        private final SeekableChannelsProvider channelsProvider;
+        private final ColumnDescriptor path;
+
+        ColumnPageDirectAccessorImpl(final ColumnDescriptor path, final SeekableChannelsProvider channelsProvider) {
+            this.path = path;
+            this.channelsProvider = channelsProvider;
+        }
+
+        @Override
         public ColumnPageReader getPageReader(final int pageNum) {
             if (pageNum > offsetIndex.getPageCount()) {
-                throw new RuntimeException(
+                throw new NoSuchElementException(
                         "pageNum=" + pageNum + " > offsetIndex.getPageCount()=" + offsetIndex.getPageCount());
             }
             final int numValues = -1; // Will be populated properly when we read the page header
@@ -331,6 +351,6 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         }
 
         @Override
-        public void close() throws IOException {}
+        public void close() {}
     }
 }

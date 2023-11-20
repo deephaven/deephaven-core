@@ -14,11 +14,6 @@ import java.util.function.Supplier;
 
 public interface ColumnChunkReader {
     /**
-     * @return -1 if the current column doesn't guarantee fixed page size, otherwise the fixed page size
-     */
-    int getPageFixedSize();
-
-    /**
      * @return The number of rows in this ColumnChunk, or -1 if it's unknown.
      */
     long numRows();
@@ -42,22 +37,28 @@ public interface ColumnChunkReader {
 
     interface ColumnPageReaderIterator extends Iterator<ColumnPageReader>, AutoCloseable {
         @Override
-        void close() throws IOException;
-
-        /**
-         * Directly access a page reader for a given page number. This is an optional method that may not be
-         * implemented. Note that the user should either use {@link Iterator} methods or this method, but not both.
-         */
-        @Nullable
-        default ColumnPageReader getPageReader(final int pageNum) {
-            return null;
-        };
+        void close();
     }
 
     /**
      * @return An iterator over individual parquet pages
      */
     ColumnPageReaderIterator getPageIterator() throws IOException;
+
+    interface ColumnPageDirectAccessor extends AutoCloseable {
+        /**
+         * Directly access a page reader for a given page number.
+         */
+        ColumnPageReader getPageReader(final int pageNum);
+
+        @Override
+        void close();
+    }
+
+    /**
+     * @return An accessor for individual parquet pages
+     */
+    ColumnPageDirectAccessor getPageAccessor();
 
     /**
      * @return Whether this column chunk uses a dictionary-based encoding on every page

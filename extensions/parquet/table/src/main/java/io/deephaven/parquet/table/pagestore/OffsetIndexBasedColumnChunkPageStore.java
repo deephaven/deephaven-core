@@ -17,22 +17,33 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
+    private static final long PAGE_SIZE_NOT_FIXED = -1;
+
     private final OffsetIndex offsetIndex;
     private final int numPages;
     /**
-     * Set if first ({@link #numPages}-1) pages have equal number of rows
-     */
-    private boolean isPageSizeFixed;
-    /**
-     * Fixed number of rows per page, only valid if {@link #isPageSizeFixed} is true. Used to map from row index to page
-     * number.
+     * Fixed number of rows per page. Set as positive value if first ({@link #numPages}-1) pages have equal number of
+     * rows, else equal to {@value #PAGE_SIZE_NOT_FIXED}. We don't care about the size of the last page, because we can
+     * assume all pages to be of the same size and calculate the page number as
+     * {@code row_index / fixed_page_size -> page_number}. If it is greater than {@link #numPages}, we can assume the
+     * row to be coming from last page.
      */
     private final long fixedPageSize;
-    private final Object[] objectsForSynchronizingPageAccess;
-    private final ColumnPageReader[] columnPageReaders;
-    private final WeakReference<PageCache.IntrusivePage<ATTR>>[] pages;
+
+    private final class PageState {
+        WeakReference<PageCache.IntrusivePage<ATTR>> pageRef;
+
+        PageState() {
+            // Initialized when used for the first time
+            pageRef = null;
+        }
+    }
+
+    private final AtomicReferenceArray<PageState> pageStates;
+    private final ColumnChunkReader.ColumnPageDirectAccessor columnPageDirectAccessor;
 
     OffsetIndexBasedColumnChunkPageStore(@NotNull final PageCache<ATTR> pageCache,
             @NotNull final ColumnChunkReader columnChunkReader,
@@ -42,31 +53,22 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         offsetIndex = columnChunkReader.getOffsetIndex();
         Assert.assertion(offsetIndex != null, "offsetIndex != null");
         numPages = offsetIndex.getPageCount();
+        Assert.assertion(numPages > 0, "numPages > 0");
+        pageStates = new AtomicReferenceArray<>(numPages);
+        columnPageDirectAccessor = columnChunkReader.getPageAccessor();
 
-        // noinspection unchecked
-        pages = (WeakReference<PageCache.IntrusivePage<ATTR>>[]) new WeakReference[numPages];
-        columnPageReaders = new ColumnPageReader[numPages];
-
-        isPageSizeFixed = true;
-        final long firstPageSize;
-        if (numPages > 1) {
-            firstPageSize = offsetIndex.getFirstRowIndex(1) - offsetIndex.getFirstRowIndex(0);
-        } else {
-            firstPageSize = numRows();
+        if (numPages == 1) {
+            fixedPageSize = numRows();
+            return;
         }
-        objectsForSynchronizingPageAccess = new Object[numPages];
-        for (int i = 0; i < numPages; ++i) {
-            objectsForSynchronizingPageAccess[i] = new Object();
-            if (isPageSizeFixed && i > 0
-                    && offsetIndex.getFirstRowIndex(i) - offsetIndex.getFirstRowIndex(i - 1) != firstPageSize) {
+        boolean isPageSizeFixed = true;
+        final long firstPageSize = offsetIndex.getFirstRowIndex(1) - offsetIndex.getFirstRowIndex(0);
+        for (int i = 2; i < numPages && isPageSizeFixed; ++i) {
+            if (offsetIndex.getFirstRowIndex(i) - offsetIndex.getFirstRowIndex(i - 1) != firstPageSize) {
                 isPageSizeFixed = false;
             }
         }
-        if (isPageSizeFixed) {
-            fixedPageSize = firstPageSize;
-        } else {
-            fixedPageSize = -1;
-        }
+        fixedPageSize = isPageSizeFixed ? firstPageSize : PAGE_SIZE_NOT_FIXED;
     }
 
     /**
@@ -95,32 +97,24 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         if (pageNum < 0 || pageNum >= numPages) {
             throw new IllegalArgumentException("pageNum " + pageNum + " is out of range [0, " + numPages + ")");
         }
-        final PageCache.IntrusivePage<ATTR> page;
-        WeakReference<PageCache.IntrusivePage<ATTR>> pageRef = pages[pageNum];
-        if (pageRef == null || pageRef.get() == null) {
-            synchronized (objectsForSynchronizingPageAccess[pageNum]) {
+        PageCache.IntrusivePage<ATTR> page;
+        PageState pageState = pageStates.get(pageNum);
+        if (pageState == null) {
+            pageState = pageStates.updateAndGet(pageNum, p -> p == null ? new PageState() : p);
+        }
+        if (pageState.pageRef == null || (page = pageState.pageRef.get()) == null) {
+            synchronized (pageState) {
                 // Make sure no one materialized this page as we waited for the lock
-                pageRef = pages[pageNum];
-                if (pageRef == null || pageRef.get() == null) {
-                    if (columnPageReaders[pageNum] == null) {
-                        columnPageReaders[pageNum] = columnPageReaderIterator.getPageReader(pageNum);
-                    }
+                if (pageState.pageRef == null || (page = pageState.pageRef.get()) == null) {
+                    final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum);
                     try {
-                        page = new PageCache.IntrusivePage<>(toPage(offsetIndex.getFirstRowIndex(pageNum),
-                                columnPageReaders[pageNum]));
+                        page = new PageCache.IntrusivePage<>(toPage(offsetIndex.getFirstRowIndex(pageNum), reader));
                     } catch (final IOException except) {
                         throw new UncheckedIOException(except);
                     }
-                    pages[pageNum] = new WeakReference<>(page);
-                } else {
-                    page = pageRef.get();
+                    pageState.pageRef = new WeakReference<>(page);
                 }
             }
-        } else {
-            page = pageRef.get();
-        }
-        if (page == null) {
-            throw new IllegalStateException("Page should not be null");
         }
         pageCache.touch(page);
         return page.getPage();
@@ -133,7 +127,12 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         Require.inRange(row, "row", numRows(), "numRows");
 
         int pageNum;
-        if (isPageSizeFixed) {
+        if (fixedPageSize == PAGE_SIZE_NOT_FIXED) {
+            pageNum = findPageNumUsingOffsetIndex(offsetIndex, row);
+            if (pageNum < 0) {
+                pageNum = -2 - pageNum;
+            }
+        } else {
             pageNum = (int) (row / fixedPageSize);
             if (pageNum >= numPages) {
                 // This can happen if the last page is of different size from rest of the pages.
@@ -142,12 +141,6 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
                         "row >= offsetIndex.getFirstRowIndex(numPages - 1)");
                 pageNum = (numPages - 1);
             }
-        } else {
-            pageNum = findPageNumUsingOffsetIndex(offsetIndex, row);
-            if (pageNum < 0) {
-                pageNum = -2 - pageNum;
-            }
-
         }
         return getPage(pageNum);
     }

@@ -22,7 +22,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,7 +35,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     private final ToPage<ATTR, ?> toPage;
 
     private final long numRows;
-    final ColumnChunkReader.ColumnPageReaderIterator columnPageReaderIterator;
 
     public static class CreatorResult<ATTR extends Any> {
 
@@ -75,7 +73,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     private static final Pattern VERSION_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)");
 
     /**
-     * Check if the version is greater than 0.31.0
+     * Check if the version is greater than or equal to 0.31.0
      */
     @VisibleForTesting
     public static boolean satisfiesMinimumVersionRequirements(@NotNull final String version) {
@@ -123,7 +121,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         this.toPage = toPage;
 
         this.numRows = Require.inRange(columnChunkReader.numRows(), "numRows", mask, "mask");
-        this.columnPageReaderIterator = columnChunkReader.getPageIterator();
     }
 
     ChunkPage<ATTR> toPage(final long offset, @NotNull final ColumnPageReader columnPageReader)
@@ -170,11 +167,5 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     }
 
     @Override
-    public void close() {
-        try {
-            columnPageReaderIterator.close();
-        } catch (IOException except) {
-            throw new UncheckedIOException(except);
-        }
-    }
+    public void close() {}
 }

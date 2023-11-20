@@ -17,18 +17,17 @@ import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 
-class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
+final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
 
     // We will set numPages after changing all of these arrays in place and/or setting additional
-    // elements to the
-    // end of the array. Thus, for i < numPages, array[i] will always have the same value, and be
-    // valid to use, as
-    // long as we fetch numPages before accessing the arrays. This is the thread-safe pattern used
+    // elements to the end of the array. Thus, for i < numPages, array[i] will always have the same value, and be
+    // valid to use, as long as we fetch numPages before accessing the arrays. This is the thread-safe pattern used
     // throughout.
 
     private volatile int numPages = 0;
     private volatile long[] pageRowOffsets;
     private volatile ColumnPageReader[] columnPageReaders;
+    private final ColumnChunkReader.ColumnPageReaderIterator columnPageReaderIterator;
     private volatile WeakReference<PageCache.IntrusivePage<ATTR>>[] pages;
 
     VariablePageSizeColumnChunkPageStore(@NotNull final PageCache<ATTR> pageCache,
@@ -41,6 +40,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
         pageRowOffsets = new long[INIT_ARRAY_SIZE + 1];
         pageRowOffsets[0] = 0;
         columnPageReaders = new ColumnPageReader[INIT_ARRAY_SIZE];
+        columnPageReaderIterator = columnChunkReader.getPageIterator();
 
         // noinspection unchecked
         pages = (WeakReference<PageCache.IntrusivePage<ATTR>>[]) new WeakReference[INIT_ARRAY_SIZE];
@@ -159,5 +159,10 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
         }
 
         return getPage(pageNum);
+    }
+
+    @Override
+    public void close() {
+        columnPageReaderIterator.close();
     }
 }
