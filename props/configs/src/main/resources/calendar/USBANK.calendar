@@ -8,11 +8,11 @@
     <language>en</language>
     <country>US</country>
     <firstValidDate>2013-01-01</firstValidDate>
-    <lastValidDate>2034-12-25</lastValidDate>
+    <lastValidDate>2027-12-31</lastValidDate>
     <description>
         United States Banking Business Calendar.
-        Sources: https://www.frbservices.org/about/holiday-schedules, https://www.public-holidays.us/mobile_US_EN_2029_Federal%20holidays, https://www.federalreserve.gov/aboutthefed/k8.htm, https://www.federalholidays.net/usa/federal-holidays-2022.html
-        Last updated 7/23/2023
+        Sources: https://www.frbservices.org/about/holiday-schedules, https://www.public-holidays.us/mobile_US_EN_2029_Federal%20holidays, https://www.federalreserve.gov/aboutthefed/k8.htm, https://www.federalholidays.net/usa/federal-holidays-2022.html, https://www.chicagofed.org/utilities/about-us/bank-holidays
+        Last updated 11/10/2023
     </description>
     <default>
         <businessPeriod><open>09:00</open><close>17:00</close></businessPeriod>
@@ -782,7 +782,7 @@
         <date>2025-09-01</date>
     </holiday>
     <holiday>
-        <date>2025-10-12</date>
+        <date>2025-10-13</date>
     </holiday>
     <holiday>
         <date>2025-11-11</date>
@@ -849,218 +849,5 @@
     </holiday>
     <holiday>
         <date>2027-11-25</date>
-    </holiday>
-    <holiday>
-        <date>2028-01-17</date>
-    </holiday>
-    <holiday>
-        <date>2028-02-21</date>
-    </holiday>
-    <holiday>
-        <date>2028-05-29</date>
-    </holiday>
-    <holiday>
-        <date>2028-06-19</date>
-    </holiday>
-    <holiday>
-        <date>2028-07-04</date>
-    </holiday>
-    <holiday>
-        <date>2028-09-04</date>
-    </holiday>
-    <holiday>
-        <date>2028-10-09</date>
-    </holiday>
-    <holiday>
-        <date>2028-11-23</date>
-    </holiday>
-    <holiday>
-        <date>2028-12-25</date>
-    </holiday>
-    <holiday>
-        <date>2029-01-01</date>
-    </holiday>
-    <holiday>
-        <date>2029-01-15</date>
-    </holiday>
-    <holiday>
-        <date>2029-02-19</date>
-    </holiday>
-    <holiday>
-        <date>2029-05-28</date>
-    </holiday>
-    <holiday>
-        <date>2029-06-19</date>
-    </holiday>
-    <holiday>
-        <date>2029-07-04</date>
-    </holiday>
-    <holiday>
-        <date>2029-09-03</date>
-    </holiday>
-    <holiday>
-        <date>2029-10-08</date>
-    </holiday>
-    <holiday>
-        <date>2029-11-12</date>
-    </holiday>
-    <holiday>
-        <date>2029-11-22</date>
-    </holiday>
-    <holiday>
-        <date>2029-12-25</date>
-    </holiday>
-    <holiday>
-        <date>2030-01-01</date>
-    </holiday>
-    <holiday>
-        <date>2030-01-21</date>
-    </holiday>
-    <holiday>
-        <date>2030-02-18</date>
-    </holiday>
-    <holiday>
-        <date>2030-05-27</date>
-    </holiday>
-    <holiday>
-        <date>2030-06-19</date>
-    </holiday>
-    <holiday>
-        <date>2030-07-04</date>
-    </holiday>
-    <holiday>
-        <date>2030-09-02</date>
-    </holiday>
-    <holiday>
-        <date>2030-10-14</date>
-    </holiday>
-    <holiday>
-        <date>2030-11-11</date>
-    </holiday>
-    <holiday>
-        <date>2030-11-28</date>
-    </holiday>
-    <holiday>
-        <date>2030-12-25</date>
-    </holiday>
-    <holiday>
-        <date>2031-01-01</date>
-    </holiday>
-    <holiday>
-        <date>2031-01-20</date>
-    </holiday>
-    <holiday>
-        <date>2031-02-17</date>
-    </holiday>
-    <holiday>
-        <date>2031-05-26</date>
-    </holiday>
-    <holiday>
-        <date>2031-06-19</date>
-    </holiday>
-    <holiday>
-        <date>2031-07-04</date>
-    </holiday>
-    <holiday>
-        <date>2031-09-01</date>
-    </holiday>
-    <holiday>
-        <date>2031-10-13</date>
-    </holiday>
-    <holiday>
-        <date>2031-11-11</date>
-    </holiday>
-    <holiday>
-        <date>2031-11-27</date>
-    </holiday>
-    <holiday>
-        <date>2031-12-25</date>
-    </holiday>
-    <holiday>
-        <date>2032-01-01</date>
-    </holiday>
-    <holiday>
-        <date>2032-01-19</date>
-    </holiday>
-    <holiday>
-        <date>2032-02-16</date>
-    </holiday>
-    <holiday>
-        <date>2032-05-31</date>
-    </holiday>
-    <holiday>
-        <date>2032-07-05</date>
-    </holiday>
-    <holiday>
-        <date>2032-09-06</date>
-    </holiday>
-    <holiday>
-        <date>2032-10-11</date>
-    </holiday>
-    <holiday>
-        <date>2032-11-11</date>
-    </holiday>
-    <holiday>
-        <date>2032-11-25</date>
-    </holiday>
-    <holiday>
-        <date>2033-01-17</date>
-    </holiday>
-    <holiday>
-        <date>2033-02-21</date>
-    </holiday>
-    <holiday>
-        <date>2033-05-30</date>
-    </holiday>
-    <holiday>
-        <date>2033-06-20</date>
-    </holiday>
-    <holiday>
-        <date>2033-07-04</date>
-    </holiday>
-    <holiday>
-        <date>2033-09-05</date>
-    </holiday>
-    <holiday>
-        <date>2033-10-10</date>
-    </holiday>
-    <holiday>
-        <date>2033-11-11</date>
-    </holiday>
-    <holiday>
-        <date>2033-11-24</date>
-    </holiday>
-    <holiday>
-        <date>2033-12-26</date>
-    </holiday>
-    <holiday>
-        <date>2034-01-02</date>
-    </holiday>
-    <holiday>
-        <date>2034-01-16</date>
-    </holiday>
-    <holiday>
-        <date>2034-02-20</date>
-    </holiday>
-    <holiday>
-        <date>2034-05-29</date>
-    </holiday>
-    <holiday>
-        <date>2034-06-19</date>
-    </holiday>
-    <holiday>
-        <date>2034-07-04</date>
-    </holiday>
-    <holiday>
-        <date>2034-09-04</date>
-    </holiday>
-    <holiday>
-        <date>2034-10-09</date>
-    </holiday>
-    <holiday>
-        <date>2034-11-23</date>
-    </holiday>
-    <holiday>
-        <date>2034-12-25</date>
     </holiday>
 </calendar>
