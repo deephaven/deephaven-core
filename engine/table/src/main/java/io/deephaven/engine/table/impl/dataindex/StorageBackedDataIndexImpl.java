@@ -31,7 +31,7 @@ import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreator
  * @implNote This is an experimental feature, it is likely to change.
  */
 @InternalUseOnly
-public class StorageBackedDataIndexImpl extends AbstractDataIndex {
+public class StorageBackedDataIndexImpl extends BaseDataIndex {
     private static final String OFFSET_KEY_COL_NAME = "dh_offset_key";
 
     @NotNull
@@ -329,12 +329,7 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
 
     @Override
     public boolean isRefreshing() {
-        return sourceTable.isRefreshing();
-    }
-
-    @Override
-    public Table baseIndexTable() {
-        return table();
+        return columnSourceManager.locationTable().isRefreshing();
     }
 
     private static class LocationState {

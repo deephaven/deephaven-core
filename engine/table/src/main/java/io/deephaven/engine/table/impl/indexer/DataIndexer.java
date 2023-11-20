@@ -9,7 +9,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
+import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
 import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndexImpl;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -87,7 +87,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (localRoot) {
             final DataIndex dataIndex = findIndex(localRoot, keyColumns);
-            return dataIndex != null && ((AbstractDataIndex) dataIndex).validate();
+            return dataIndex != null && ((BaseDataIndex) dataIndex).validate();
         }
     }
 
@@ -185,6 +185,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @param index the index to add
      */
     public void addDataIndex(final DataIndex index) {
+        // TODO-RWC/LAB: We need to prevent "snapshot" derived data indexes from being added to the data indexer, here and in create.
         final ColumnSource<?>[] keyColumns = index.keyColumnMap().keySet().toArray(ColumnSource<?>[]::new);
         final List<ColumnSource<?>> keys = Arrays.asList(keyColumns);
 

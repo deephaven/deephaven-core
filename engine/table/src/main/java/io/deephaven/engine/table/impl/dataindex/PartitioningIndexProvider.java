@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static io.deephaven.engine.table.impl.dataindex.AbstractDataIndex.INDEX_COL_NAME;
+import static io.deephaven.engine.table.impl.dataindex.BaseDataIndex.INDEX_COL_NAME;
 
 /**
  * This class will provide methods to build a deferred single-column index (i.e. grouping) for a partitioning

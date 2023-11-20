@@ -11,7 +11,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
+import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
@@ -71,7 +71,7 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
         }
 
         final DataIndexer dataIndexer = DataIndexer.of(rowSet.trackingCast());
-        final AbstractDataIndex dataIndex = (AbstractDataIndex) dataIndexer.getDataIndex(groupColumns);
+        final BaseDataIndex dataIndex = (BaseDataIndex) dataIndexer.getDataIndex(groupColumns);
 
 
         final Table indexTable = dataIndex.table(usePrev);

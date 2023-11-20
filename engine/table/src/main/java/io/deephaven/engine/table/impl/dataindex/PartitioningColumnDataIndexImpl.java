@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl.dataindex;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
@@ -16,9 +15,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 /**
- * This data index is from a grouping column, one that contains
+ * DataIndex over a partitioning column of a SourceTable.
  */
-public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
+public class PartitioningColumnDataIndexImpl extends BaseDataIndex {
+
     @NotNull
     private final ColumnSource<?> keySource;
 
@@ -256,13 +256,7 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public Table baseIndexTable() {
-        return indexTable;
-    }
-
-    @Override
     public boolean validate() {
         return true;
     }
 }
-
