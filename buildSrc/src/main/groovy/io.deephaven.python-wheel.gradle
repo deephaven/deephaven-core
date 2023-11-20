@@ -34,6 +34,8 @@ configurations {
 }
 
 project.evaluationDependsOn(Docker.registryProject('python'))
+def wheelPath = project.layout.buildDirectory.dir('wheel')
+
 def buildWheel = Docker.registerDockerTask(project, 'buildWheel') { config ->
     config.copyIn { Sync sync ->
         // apply the extension spec, copying into src
@@ -58,10 +60,12 @@ def buildWheel = Docker.registerDockerTask(project, 'buildWheel') { config ->
     config.parentContainers = [ Docker.registryTask(project, 'python') ]
     config.containerOutPath='/usr/src/app/dist'
     config.copyOut { Sync sync ->
-        sync.into "build/wheel"
+        sync.into wheelPath
     }
 }
 
 artifacts {
-    pythonWheel buildWheel
+    pythonWheel(wheelPath) {
+        builtBy buildWheel
+    }
 }

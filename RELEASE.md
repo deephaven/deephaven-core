@@ -111,6 +111,9 @@ $ git cherry-pick <...>
 # See https://github.com/deephaven/deephaven-core/issues/3466 for future improvements to this process.
 $ ...
 $ git commit -m "Bump to X.Y.1"
+$ git --no-pager log --oneline vX.Y.0..release/vX.Y.1
+#
+# Compare output to expected PR list for missing or extraneous PRs
 ```
 
 ### 3. Push to upstream

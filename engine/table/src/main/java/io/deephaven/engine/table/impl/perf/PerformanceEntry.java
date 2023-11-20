@@ -13,13 +13,14 @@ import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Entry class for tracking the performance characteristics of a single recurring update event.
  */
 public class PerformanceEntry extends BasePerformanceEntry implements TableListener.Entry {
-    private final int id;
-    private final int evaluationNumber;
+    private final long id;
+    private final long evaluationNumber;
     private final int operationNumber;
     private final String description;
     private final String callerLine;
@@ -42,7 +43,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     private final RuntimeMemory.Sample startSample;
     private final RuntimeMemory.Sample endSample;
 
-    PerformanceEntry(final int id, final int evaluationNumber, final int operationNumber,
+    PerformanceEntry(final long id, final long evaluationNumber, final int operationNumber,
             final String description, final String callerLine, final String updateGraphName) {
         this.id = id;
         this.evaluationNumber = evaluationNumber;
@@ -114,7 +115,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     }
 
     @Override
-    public LogOutput append(final LogOutput logOutput) {
+    public LogOutput append(@NotNull final LogOutput logOutput) {
         final LogOutput beginning = logOutput.append("PerformanceEntry{")
                 .append(", id=").append(id)
                 .append(", evaluationNumber=").append(evaluationNumber)
@@ -122,16 +123,16 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
                 .append(", description='").append(description).append('\'')
                 .append(", callerLine='").append(callerLine).append('\'')
                 .append(", authContext=").append(authContext)
-                .append(", intervalUsageNanos=").append(getIntervalUsageNanos())
-                .append(", intervalCpuNanos=").append(getIntervalCpuNanos())
-                .append(", intervalUserCpuNanos=").append(getIntervalUserCpuNanos())
+                .append(", intervalUsageNanos=").append(getUsageNanos())
+                .append(", intervalCpuNanos=").append(getCpuNanos())
+                .append(", intervalUserCpuNanos=").append(getUserCpuNanos())
                 .append(", intervalInvocationCount=").append(intervalInvocationCount)
                 .append(", intervalAdded=").append(intervalAdded)
                 .append(", intervalRemoved=").append(intervalRemoved)
                 .append(", intervalModified=").append(intervalModified)
                 .append(", intervalShifted=").append(intervalShifted)
-                .append(", intervalAllocatedBytes=").append(getIntervalAllocatedBytes())
-                .append(", intervalPoolAllocatedBytes=").append(getIntervalPoolAllocatedBytes())
+                .append(", intervalAllocatedBytes=").append(getAllocatedBytes())
+                .append(", intervalPoolAllocatedBytes=").append(getPoolAllocatedBytes())
                 .append(", maxTotalMemory=").append(maxTotalMemory)
                 .append(", minFreeMemory=").append(minFreeMemory)
                 .append(", collections=").append(collections)
@@ -140,11 +141,11 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
                 .append('}');
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public int getEvaluationNumber() {
+    public long getEvaluationNumber() {
         return evaluationNumber;
     }
 
@@ -217,7 +218,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
      */
     boolean shouldLogEntryInterval() {
         return intervalInvocationCount > 0 &&
-                UpdatePerformanceTracker.LOG_THRESHOLD.shouldLog(getIntervalUsageNanos());
+                UpdatePerformanceTracker.LOG_THRESHOLD.shouldLog(getUsageNanos());
     }
 
     public void accumulate(PerformanceEntry entry) {

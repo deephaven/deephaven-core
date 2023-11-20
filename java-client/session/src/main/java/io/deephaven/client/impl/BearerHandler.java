@@ -1,5 +1,6 @@
 package io.deephaven.client.impl;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.grpc.CallCredentials;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -14,6 +15,7 @@ import io.grpc.Status;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 
 import static io.deephaven.client.impl.Authentication.AUTHORIZATION_HEADER;
@@ -54,6 +56,11 @@ public final class BearerHandler extends CallCredentials implements ClientInterc
         if (!Objects.equals(localBearerToken, bearerToken)) {
             this.bearerToken = Objects.requireNonNull(bearerToken);
         }
+    }
+
+    @VisibleForTesting
+    public UUID getCurrentToken() {
+        return UUID.fromString(bearerToken);
     }
 
     private void handleMetadata(Metadata metadata) {

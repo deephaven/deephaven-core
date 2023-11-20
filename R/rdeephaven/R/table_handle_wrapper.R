@@ -56,12 +56,12 @@
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create a data frame, push it to the server, and retrieve a TableHandle referencing the new table
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:50],
-#'   boolCol = sample(c(TRUE,FALSE), 50, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 50, TRUE),
 #'   col1 = sample(1000, size = 50, replace = TRUE),
 #'   col2 = sample(1000, size = 50, replace = TRUE),
 #'   col3 = 1:50

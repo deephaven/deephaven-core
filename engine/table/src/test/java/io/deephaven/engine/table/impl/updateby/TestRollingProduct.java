@@ -4,18 +4,17 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.testutil.GenerateTableUpdates;
-import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.testutil.generator.CharGenerator;
-import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
-import io.deephaven.engine.testutil.generator.TestDataGenerator;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
@@ -28,13 +27,12 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Function;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
+import static io.deephaven.engine.testutil.TstUtils.getTable;
+import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.function.Basic.isNull;
 
@@ -100,6 +98,62 @@ public class TestRollingProduct extends BaseUpdateByTest {
         return Arrays.stream(columns)
                 .map(c -> String.format("%s=(double)%s", c, c))
                 .toArray(String[]::new);
+    }
+
+    /**
+     * Create a custom test table where the values are small enough they won't overflow Double.MAX_VALUE when
+     * multiplied. This will allow the results to be verified with the Numeric#product() function.
+     */
+    @SuppressWarnings({"rawtypes"})
+    static CreateResult createSmallTestTable(int tableSize,
+            boolean includeSym,
+            boolean includeGroups,
+            boolean isRefreshing,
+            int seed,
+            String[] extraNames,
+            TestDataGenerator[] extraGenerators) {
+        if (includeGroups && !includeSym) {
+            throw new IllegalArgumentException();
+        }
+
+        final List<String> colsList = new ArrayList<>();
+        final List<TestDataGenerator> generators = new ArrayList<>();
+        if (includeSym) {
+            colsList.add("Sym");
+            generators.add(new SetGenerator<>("a", "b", "c", "d", null));
+        }
+
+        if (extraNames.length > 0) {
+            colsList.addAll(Arrays.asList(extraNames));
+            generators.addAll(Arrays.asList(extraGenerators));
+        }
+
+        colsList.addAll(Arrays.asList("byteCol", "shortCol", "intCol", "longCol", "floatCol", "doubleCol", "boolCol",
+                "bigIntCol", "bigDecimalCol"));
+        generators.addAll(Arrays.asList(new ByteGenerator((byte) -1, (byte) 5, .1),
+                new ShortGenerator((short) -1, (short) 5, .1),
+                new IntGenerator(-1, 5, .1),
+                new LongGenerator(-1, 5, .1),
+                new FloatGenerator(-1, 5, .1),
+                new DoubleGenerator(-1, 5, .1),
+                new BooleanGenerator(.5, .1),
+                new BigIntegerGenerator(new BigInteger("-1"), new BigInteger("5"), .1),
+                new BigDecimalGenerator(new BigInteger("1"), new BigInteger("2"), 5, .1)));
+
+        final Random random = new Random(seed);
+        final ColumnInfo[] columnInfos = initColumnInfos(colsList.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                generators.toArray(new TestDataGenerator[0]));
+        final QueryTable t = getTable(tableSize, random, columnInfos);
+
+        if (!isRefreshing && includeGroups) {
+            final AbstractColumnSource groupingSource = (AbstractColumnSource) t.getColumnSource("Sym");
+            final Map<String, RowSet> gtr = groupingSource.getValuesMapping(t.getRowSet());
+            groupingSource.setGroupToRange(gtr);
+        }
+
+        t.setRefreshing(isRefreshing);
+
+        return new CreateResult(t, columnInfos, random);
     }
 
     // region Object Helper functions
@@ -396,7 +450,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
     }
 
     private void doTestStaticZeroKey(final int prevTicks, final int postTicks) {
-        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131,
+        final QueryTable t = createSmallTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131,
                 new String[] {"charCol"},
                 new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
 
@@ -411,7 +465,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
     }
 
     private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
-        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
+        final QueryTable t = createSmallTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
                 new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
                         DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
                         DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),

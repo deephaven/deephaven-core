@@ -20,6 +20,8 @@ import io.deephaven.engine.table.ElementSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.NoSuchColumnException;
+import io.deephaven.engine.table.impl.NoSuchColumnException.Type;
 import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.Formula;
@@ -173,11 +175,12 @@ public class TstUtils {
             }
         }
 
-        if (!usedNames.containsAll(table.getColumnSourceMap().keySet())) {
-            final Set<String> expected = new LinkedHashSet<>(table.getColumnSourceMap().keySet());
-            expected.removeAll(usedNames);
-            throw new IllegalStateException("Not all columns were populated, missing " + expected);
-        }
+        NoSuchColumnException.throwIf(
+                usedNames,
+                table.getDefinition().getColumnNameSet(),
+                "Not all columns were populated, missing [%s], available [%s]",
+                Type.MISSING,
+                Type.AVAILABLE);
 
         table.getRowSet().writableCast().insert(rowSet);
         if (table.isFlat()) {

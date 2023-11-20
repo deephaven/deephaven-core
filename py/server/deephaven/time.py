@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import Union, Optional
+from typing import Union, Optional, Literal
 
 import jpy
 import numpy
@@ -32,7 +32,7 @@ _NANOS_PER_MICRO = 1000
 # region Clock
 
 
-def dh_now(system: bool = False, resolution: str = 'ns') -> Instant:
+def dh_now(system: bool = False, resolution: Literal["ns", "ms"] = "ns") -> Instant:
     """ Provides the current datetime according to the current Deephaven clock.
 
     Query strings should use the built-in "now" function instead of this function.
@@ -43,9 +43,8 @@ def dh_now(system: bool = False, resolution: str = 'ns') -> Instant:
         system (bool): True to use the system clock; False to use the default clock.  Under most circumstances,
             the default clock will return the current system time, but during replay simulations, the default
             clock can return the replay time.
-
-        resolution (str): The resolution of the returned time.  The default 'ns' will return nanosecond resolution times
-            if possible. 'ms' will return millisecond resolution times.
+        resolution (str): The resolution of the returned time.  The default "ns" will return nanosecond resolution times
+            if possible. "ms" will return millisecond resolution times.
 
     Returns:
         Instant

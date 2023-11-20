@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util;
 import com.google.auto.service.AutoService;
 import io.deephaven.engine.table.Table;
 
+import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.util.annotations.ScriptApi;
 
@@ -66,6 +67,27 @@ public class PerformanceQueries {
     public static Table queryOperationPerformance(final long evaluationNumber) {
         return PerformanceQueriesGeneral.queryOperationPerformance(TableLoggers.queryOperationPerformanceLog(),
                 evaluationNumber);
+    }
+
+    /**
+     * Converts the query performance table into a tree table.
+     *
+     * @return query performance tree table.
+     */
+    @ScriptApi
+    public static TreeTable queryPerformanceAsTreeTable() {
+        return PerformanceQueriesGeneral.queryPerformanceAsTreeTable(TableLoggers.queryPerformanceLog());
+    }
+
+    /**
+     * Merges the query performance and query operation performance tables into a single tree table.
+     *
+     * @return query operation performance tree table.
+     */
+    @ScriptApi
+    public static TreeTable queryOperationPerformanceAsTreeTable() {
+        return PerformanceQueriesGeneral.queryOperationPerformanceAsTreeTable(
+                TableLoggers.queryPerformanceLog(), TableLoggers.queryOperationPerformanceLog());
     }
 
     /**
