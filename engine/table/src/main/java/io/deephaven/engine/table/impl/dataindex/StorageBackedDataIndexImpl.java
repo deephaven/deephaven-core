@@ -34,13 +34,9 @@ import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreator
 public class StorageBackedDataIndexImpl extends BaseDataIndex {
     private static final String OFFSET_KEY_COL_NAME = "dh_offset_key";
 
-    @NotNull
     private final WeakHashMap<ColumnSource<?>, String> keyColumnMap;
-
-    private final ColumnSourceManager columnSourceManager;
-
-    @NotNull
     final String[] keyColumnNames;
+    private final ColumnSourceManager columnSourceManager;
 
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
     private QueryTable indexTable;
@@ -58,8 +54,8 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
 
     public StorageBackedDataIndexImpl(
             @NotNull final ColumnSource<?>[] keySources,
-            @NotNull final ColumnSourceManager columnSourceManager,
-            @NotNull final String[] keyColumnNames) {
+            @NotNull final String[] keyColumnNames,
+            @NotNull final ColumnSourceManager columnSourceManager) {
 
         this.columnSourceManager = columnSourceManager;
         this.keyColumnNames = keyColumnNames;
