@@ -119,7 +119,7 @@ public abstract class QueryPerformanceRecorderState {
      * @param operation The operation to record allocation for
      * @return The result of the operation.
      */
-    private static <RESULT_TYPE> RESULT_TYPE recordPoolAllocation(@NotNull final Supplier<RESULT_TYPE> operation) {
+    static <RESULT_TYPE> RESULT_TYPE recordPoolAllocation(@NotNull final Supplier<RESULT_TYPE> operation) {
         final long startThreadAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
         try {
             return operation.get();

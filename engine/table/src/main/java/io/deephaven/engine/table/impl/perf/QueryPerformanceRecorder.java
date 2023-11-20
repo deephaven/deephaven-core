@@ -159,6 +159,16 @@ public interface QueryPerformanceRecorder {
     }
 
     /**
+     * Record a single-threaded operation's allocations as "pool" allocated memory attributable to the current thread.
+     *
+     * @param operation The operation to record allocation for
+     * @return The result of the operation.
+     */
+    static <RESULT_TYPE> RESULT_TYPE recordPoolAllocation(@NotNull final Supplier<RESULT_TYPE> operation) {
+        return QueryPerformanceRecorderState.recordPoolAllocation(operation);
+    }
+
+    /**
      * Return the query's current state
      *
      * @return the query's state
