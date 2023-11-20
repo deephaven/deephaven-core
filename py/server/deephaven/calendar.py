@@ -132,5 +132,3 @@ def calendar(name: Optional[str] = None) -> BusinessCalendar:
         raise DHError(e, "failed to get the default calendar.") from e
 
 
-
-#TODO: to_numpy_calendar method
