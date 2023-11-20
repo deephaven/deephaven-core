@@ -54,11 +54,19 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     private final Path filePath;
     private final List<Type> fieldTypes;
 
+    /**
+     * Stores the offset from where the next byte should be read. Can be the offset of page header if
+     * {@link #pageHeader} is {@code null}, else will be the offset of data.
+     */
     private long offset;
     private PageHeader pageHeader;
     private int numValues;
     private int rowCount = -1;
 
+    /**
+     * @param offset The offset for page header if supplied {@code pageHeader} is {@code null}. Else, the offset of data
+     *        in the page.
+     */
     ColumnPageReaderImpl(SeekableChannelsProvider channelsProvider,
             CompressorAdapter compressorAdapter,
             Supplier<Dictionary> dictionarySupplier,
@@ -108,9 +116,17 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
+    /**
+     * If {@link #pageHeader} is {@code null}, read it from the file and increment the {@link #offset} and file position
+     * by the length of page header. This method assumes that file position is set to {@link #offset} before calling.
+     * This method also read the number of values in the page from the header.
+     */
     private synchronized void ensurePageHeader(SeekableByteChannel file) throws IOException {
         if (pageHeader == null) {
-            offset = file.position();
+            if (file.position() != offset) {
+                throw new IllegalStateException("File position = " + file.position() + " not equal to expected offset ="
+                        + offset);
+            }
             int maxHeader = START_HEADER;
             boolean success;
             do {
