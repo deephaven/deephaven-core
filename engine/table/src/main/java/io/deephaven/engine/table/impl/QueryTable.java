@@ -251,11 +251,6 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     private static final AtomicReferenceFieldUpdater<QueryTable, ModifiedColumnSet> MODIFIED_COLUMN_SET_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, ModifiedColumnSet.class, "modifiedColumnSet");
-
-    private static final AtomicReferenceFieldUpdater<QueryTable, Map> INDEXED_DATA_COLUMNS_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, Map.class, "indexedDataColumns");
-    private static final Map<String, IndexedDataColumn<?>> EMPTY_INDEXED_DATA_COLUMNS = Collections.emptyMap();
-
     private static final AtomicReferenceFieldUpdater<QueryTable, Map> CACHED_OPERATIONS_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, Map.class, "cachedOperations");
     private static final Map<MemoizedOperationKey, MemoizedResult<?>> EMPTY_CACHED_OPERATIONS = Collections.emptyMap();
@@ -264,10 +259,6 @@ public class QueryTable extends BaseTable<QueryTable> {
     private final LinkedHashMap<String, ColumnSource<?>> columns;
     @SuppressWarnings("FieldMayBeFinal") // Set via MODIFIED_COLUMN_SET_UPDATER if not initialized
     private volatile ModifiedColumnSet modifiedColumnSet;
-
-    // Cached data columns
-    @SuppressWarnings("FieldMayBeFinal") // Set via INDEXED_DATA_COLUMNS_UPDATER
-    private volatile Map<String, IndexedDataColumn<?>> indexedDataColumns = EMPTY_INDEXED_DATA_COLUMNS;
 
     // Flattened table support
     private boolean flat;
@@ -823,6 +814,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             final boolean preserveEmpty,
             @Nullable final Table initialGroups,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
+        // TODO-RWC: Understand if we need this.
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             final String description = "aggregation(" + aggregationContextFactory
@@ -1557,9 +1549,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             if (resultTable.getRowSet().isFlat()) {
                                 resultTable.setFlat();
                             }
-                            if (resultTable.getRowSet() == rowSet) {
-                                propagateDataIndexes(processedColumns, resultTable);
-                            }
+                            propagateDataIndexes(processedColumns, resultTable);
                             for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
                                 if (columnSource instanceof PossiblyImmutableColumnSource) {
                                     ((PossiblyImmutableColumnSource) columnSource).setImmutable();
@@ -1586,6 +1576,10 @@ public class QueryTable extends BaseTable<QueryTable> {
      * retrievable from the result table column sources.
      */
     private void propagateDataIndexes(SelectColumn[] selectColumns, QueryTable resultTable) {
+        if (rowSet != resultTable.getRowSet()) {
+            return;
+        }
+
         // Get a list of all the data indexes in the source table.
         final DataIndexer dataIndexer = DataIndexer.of(rowSet);
         final List<DataIndex> dataIndexes = dataIndexer.dataIndexes();
@@ -1601,10 +1595,10 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         final Set<ColumnSource<?>> usedOutputColumns = new HashSet<>();
 
-        // Maintain a list of unique old to new mappings. NOTE: this is complex because select() may return
-        // multiple aliases for the same source column. Until/unless we have a guarantee that only a single
-        // alias is creating, we must create a new data index for each alias and this requires generating all
-        // unique mappings for these columns.
+        // Maintain a list of unique old to new mappings.
+        // NOTE: this is complex because select() may return multiple aliases for the same source column. Until/unless
+        // we have a guarantee that only a single alias is creating, we must create a new data index for each alias and
+        // this requires generating all unique mappings for these columns.
         final List<Map<ColumnSource<?>, ColumnSource<?>>> oldToNewMaps = new ArrayList<>();
 
         for (SelectColumn selectColumn : selectColumns) {
@@ -1616,55 +1610,51 @@ public class QueryTable extends BaseTable<QueryTable> {
             if (selectColumn instanceof SourceColumn) {
                 sourceColumn = (SourceColumn) selectColumn;
             }
-            if (sourceColumn != null) {
-                final ColumnSource<?> resultSource = resultTable.getColumnSource(sourceColumn.getName());
-                if (usedOutputColumns.contains(resultSource)) {
-                    // We already handled this result source.
-                    continue;
-                }
-                final ColumnSource<?> originalSource = getColumnSource(sourceColumn.getSourceName());
-                if (!indexedColumns.contains(originalSource)) {
-                    // Not part of an index, ignore this column.
-                    continue;
-                }
 
-                final ColumnSource<?> reinterpOriginalColumnSource = ReinterpretUtils.maybeConvertToPrimitive(
-                        originalSource);
-                final ColumnSource<?> reinterpSelectedColumnSource = ReinterpretUtils.maybeConvertToPrimitive(
-                        resultSource);
+            if (sourceColumn == null) {
+                continue;
+            }
 
-                if (reinterpOriginalColumnSource != reinterpSelectedColumnSource) {
-                    if (oldToNewMaps.isEmpty()) {
-                        oldToNewMaps.add(new HashMap<>());
-                    }
+            final ColumnSource<?> resultSource = resultTable.getColumnSource(sourceColumn.getName());
+            if (usedOutputColumns.contains(resultSource)) {
+                // We already handled this result source.
+                continue;
+            }
+            usedOutputColumns.add(resultSource);
 
-                    // Map original source to the new source.
-                    final Map<ColumnSource<?>, ColumnSource<?>> firstMap = oldToNewMaps.get(0);
-                    if (firstMap.containsKey(originalSource)) {
-                        // We have a collision, which means our mapping won't be unique. We need to clone
-                        // conflicting mappings with a new map containing our updated target.
-                        final ColumnSource<?> prevValue = firstMap.get(originalSource);
-                        final List<Map<ColumnSource<?>, ColumnSource<?>>> newMaps = new ArrayList<>();
-                        oldToNewMaps.stream().filter(map -> map.get(originalSource) == prevValue).forEach(map -> {
+            final ColumnSource<?> originalSource = getColumnSource(sourceColumn.getSourceName());
+            if (!indexedColumns.contains(originalSource) || originalSource == resultSource) {
+                // Not part of an index, or not changed, ignore this column.
+                continue;
+            }
+
+            if (oldToNewMaps.isEmpty()) {
+                oldToNewMaps.add(new HashMap<>());
+            }
+
+            // Map original source to the new source.
+            final Map<ColumnSource<?>, ColumnSource<?>> firstMap = oldToNewMaps.get(0);
+            if (firstMap.containsKey(originalSource)) {
+                // We have a collision, which means our mapping won't be unique. We need to clone
+                // conflicting mappings with a new map containing our updated target.
+                final ColumnSource<?> previousResultSource = firstMap.get(originalSource);
+                final List<Map<ColumnSource<?>, ColumnSource<?>>> newMaps = new ArrayList<>();
+                oldToNewMaps.stream()
+                        .filter(map -> map.get(originalSource) == previousResultSource)
+                        .forEach(map -> {
                             final Map<ColumnSource<?>, ColumnSource<?>> newMap = new HashMap<>(map);
                             newMap.put(originalSource, resultSource);
                             newMaps.add(newMap);
                         });
-                        oldToNewMaps.addAll(newMaps);
-                    } else {
-                        oldToNewMaps.forEach(map -> map.put(originalSource, resultSource));
-                    }
-                }
-                usedOutputColumns.add(resultSource);
+                oldToNewMaps.addAll(newMaps);
+            } else {
+                oldToNewMaps.forEach(map -> map.put(originalSource, resultSource));
             }
         }
 
         if (oldToNewMaps.isEmpty()) {
             return;
         }
-
-        // NOTE: When the row set is the same for the result table, this is also the source indexer.
-        final DataIndexer resultIndexer = DataIndexer.of(resultTable.getRowSet());
 
         // Add new DataIndex entries to the DataIndexer with the remapped column sources.
         for (final DataIndex dataIndex : dataIndexes) {
@@ -1682,7 +1672,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 .build());
 
                 // Add the new index to the DataIndexer.
-                resultIndexer.addDataIndex(remappedIndex);
+                dataIndexer.addDataIndex(remappedIndex);
             });
         }
     }
@@ -3407,7 +3397,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
     }
 
-    public enum StandardOptions implements Predicate<String> {
+    private enum StandardOptions implements Predicate<String> {
         COPY_ALL {
             @Override
             public boolean test(String attributeName) {

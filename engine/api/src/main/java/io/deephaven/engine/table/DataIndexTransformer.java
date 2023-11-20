@@ -24,14 +24,14 @@ public interface DataIndexTransformer {
         return false;
     }
 
-    /** Map the new key columns to the old columns. */
-    Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap();
-
-    /** Whether to force the materialized table to be static and immutable. */
+    /** Whether to force the materialized table to be static, flat, and immutable. */
     @Value.Default
     default boolean immutable() {
         return false;
     }
+
+    /** Map the old key columns to the new key columns. */
+    Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap();
 
     /**
      * Create a {@link DataIndexTransformer.Builder builder} that specifies transformations to apply to an existing
@@ -43,7 +43,7 @@ public interface DataIndexTransformer {
      * <li>Invert the output row sets.</li>
      * <li>Sort the index table by the first row key within each row set.</li>
      * <li>Force the materialized table to be static and immutable.</li>
-     * <li>Map the new key columns to the old columns.</li>
+     * <li>Map the old key columns to the new columns.</li>
      * </ol>
      * </p>
      *
@@ -69,8 +69,10 @@ public interface DataIndexTransformer {
 
         /** Whether to sort the index table by the first row key within each row set. */
         @SuppressWarnings("unused")
-        // TODO-RWC: What is `sort`?
         Builder sortByFirstRowKey(boolean sort);
+
+        /** Whether to force the materialized table to be static, flat, and immutable. */
+        Builder immutable(boolean immutable);
 
         /** Map the new key columns to the old columns. */
         @SuppressWarnings("unused")
@@ -82,9 +84,6 @@ public interface DataIndexTransformer {
 
         /** Map the new key columns to the old columns. */
         Builder putAllOldToNewColumnMap(Map<? extends ColumnSource<?>, ? extends ColumnSource<?>> entries);
-
-        /** Whether to force the materialized table to be static, flat, and immutable. */
-        Builder immutable(boolean immutable);
 
         DataIndexTransformer build();
     }
