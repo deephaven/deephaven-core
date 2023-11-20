@@ -10,8 +10,6 @@
 #include <arrow/flight/types.h>
 #include "deephaven/dhcore/utility/utility.h"
 
-using namespace std;
-
 namespace deephaven::client::utility {
 void OkOrThrow(const deephaven::dhcore::utility::DebugInfo &debug_info,
     const arrow::Status &status) {
