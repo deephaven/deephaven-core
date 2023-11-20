@@ -240,7 +240,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 QueryLanguageFunctionUtils.class.getName(),
                 Aggregation.class.getName(),
                 UpdateByOperation.class.getName(),
-                Calendars.class.getName(),
+                io.deephaven.time.calendar.Calendars.class.getName(),
                 StaticCalendarMethods.class.getName());
     }
 
