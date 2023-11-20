@@ -13,6 +13,8 @@ import java.util.logging.Logger;
 
 /**
  * A Java function description for use in code generation.
+ *
+ * JavaFunctions are equal if they have the same method names and parameter types.
  */
 public class JavaFunction implements Comparable<JavaFunction> {
     private static final Logger log = Logger.getLogger(JavaFunction.class.toString());

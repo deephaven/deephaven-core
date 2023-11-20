@@ -18,6 +18,8 @@ import java.util.logging.Logger;
 
 /**
  * Abstract class for generating Java code from methods of one or more classes.
+ *
+ * {@link #generateCode()} must be called to generate the code.
  */
 public abstract class AbstractBasicJavaGenerator {
     private static final Logger log = Logger.getLogger(AbstractBasicJavaGenerator.class.toString());
