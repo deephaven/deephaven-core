@@ -172,7 +172,7 @@ public class Calendars {
     // region Methods
 
     /**
-     * Sets the default calendar by name.  The calendar must already be present in the collection.
+     * Sets the default calendar by name. The calendar must already be present in the collection.
      *
      * @see #calendar() to get the default calendar
      * @see #calendarName() to get the name of the default calendar
@@ -220,8 +220,8 @@ public class Calendars {
      *
      * @see #setCalendar(String) to set the default calendar
      * @see #calendar() to get the default calendar
-     * @return name of the default business calendar. The default is specified by the {@code Calendar.default} property or
-     *         {@link #setCalendar(String)}.
+     * @return name of the default business calendar. The default is specified by the {@code Calendar.default} property
+     *         or {@link #setCalendar(String)}.
      */
     public synchronized static String calendarName() {
         return defaultName;
