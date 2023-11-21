@@ -247,6 +247,10 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
                         final Table merged = PartitionedTableFactory.of(partitions).merge();
                         final PartitionedTable pt = merged.partitionBy(keyColumnNames);
 
+                        lookupFunction = AggregationProcessor.getRowLookup(pt.table());
+                        Assert.neqNull(lookupFunction,
+                                "AggregationRowLookup lookupFunction should never be null");
+
                         // Transform the partitioned table to create a new table with a single row set column.
                         final PartitionedTable transformed = pt.transform(t -> {
                             // Create a new table with only one row, containing the key columns and the merged RowSet.
@@ -284,11 +288,6 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
 
                         // Flatten the result table to cache all the redirections we just created.
                         final Table mergedOutput = transformed.merge();
-
-                        // TODO: need to be able to get the lookup function from the merged PartitionedTable
-                        lookupFunction = AggregationProcessor.getRowLookup(mergedOutput);
-                        Assert.neqNull(lookupFunction,
-                                "AggregationRowLookup lookupFunction should never be null");
 
                         final QueryTable result =
                                 wrappedRowSetTable((QueryTable) mergedOutput.select(), INDEX_COL_NAME);

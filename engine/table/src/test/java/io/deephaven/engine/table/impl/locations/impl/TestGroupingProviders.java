@@ -163,6 +163,10 @@ public class TestGroupingProviders {
 
         TstUtils.assertTableEquals(expected, actual);
 
+        // Make sure we have the partitioning column index
+        Assert.eqTrue(DataIndexer.of(actual.getRowSet()).hasDataIndex(actual, "Part"),
+                "DataIndexer.of(actual.getRowSet()).hasDataIndex(actual, \"Sym\")");
+
         // Without
         TestCase.assertEquals(!missingGroups,
                 DataIndexer.of(actual.getRowSet()).hasDataIndex(actual.getColumnSource("Sym")));
