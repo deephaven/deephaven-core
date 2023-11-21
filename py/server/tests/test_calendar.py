@@ -6,7 +6,8 @@ import unittest
 
 import jpy
 
-from deephaven import DHError
+from deephaven import DHError, new_table
+from deephaven.column import string_col, bool_col
 from deephaven.calendar import add_calendar, remove_calendar, set_calendar, calendar_names, calendar_name, calendar
 from tests.testbase import BaseTestCase
 
@@ -75,6 +76,32 @@ class CalendarTestCase(BaseTestCase):
 
         with self.assertRaises(DHError) as cm:
             calendar("JUNK_NAME")
+
+    # A simple integration test to make sure the calendar is working
+    def test_integration(self):
+        default = calendar_name()
+        # Wed / Thurs / Fri / Sat / Sun / Mon
+        t = new_table([
+            string_col("Date", ["2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04", "2020-01-05", "2020-01-06"]),
+            bool_col("TARGET_NYSE", [False, True, True, False, False, True]),
+            bool_col("TARGET_UTC", [True, True, True, True, True, True]),
+        ])
+
+        try:
+            set_calendar("USNYSE")
+            cal = calendar("USNYSE")
+            t2 = t.update([
+                "EQUAL_NYSE_1 = isBusinessDay(Date) == TARGET_NYSE",
+                "EQUAL_NYSE_2 = cal.isBusinessDay(Date) == TARGET_NYSE",
+                "EQUAL_NYSE_3 = calendar(`USNYSE`).isBusinessDay(Date) == TARGET_NYSE",
+                "EQUAL_UTC = calendar(`UTC`).isBusinessDay(Date) == TARGET_UTC",
+            ])
+            self.assertEqual(t2.where("!EQUAL_NYSE_1").size, 0)
+            self.assertEqual(t2.where("!EQUAL_NYSE_2").size, 0)
+            self.assertEqual(t2.where("!EQUAL_NYSE_3").size, 0)
+            self.assertEqual(t2.where("!EQUAL_UTC").size, 0)
+        finally:
+            set_calendar(default)
 
 
 if __name__ == '__main__':

@@ -42,6 +42,13 @@ public class TestBusinessPeriod extends BaseArrayTestCase {
             assertTrue(e.getMessage().contains("after"));
         }
 
+        try {
+            new BusinessPeriod<>(open1, open1);
+            TestCase.fail("Expected an exception");
+        } catch (IllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("same"));
+        }
+
         BusinessPeriod<Instant> period = new BusinessPeriod<>(open1, close1);
         assertEquals(open1, period.start());
         assertEquals(close1, period.end());

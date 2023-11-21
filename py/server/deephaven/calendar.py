@@ -44,7 +44,7 @@ def add_calendar(cal: Union[BusinessCalendar, str]) -> None:
         raise DHError("cal must be specified")
     elif isinstance(cal, str):
         try:
-            _JCalendars.addCalendarFromFile(file)
+            _JCalendars.addCalendarFromFile(cal)
         except Exception as e:
             raise DHError(e, f"failed to add calendar from file '{cal}'") from e
     else:
