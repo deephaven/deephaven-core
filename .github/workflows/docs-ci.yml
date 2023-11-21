@@ -2,9 +2,9 @@ name: Docs CI
 
 on:
   pull_request:
-    branches: [ 'main', 'release/v*' ]
-  push:
     branches: [ main ]
+  push:
+    branches: [ 'main', 'release/v*' ]
 
 jobs:
   javadoc:
@@ -58,7 +58,7 @@ jobs:
           path: 'combined-javadoc/build/docs/javadoc/'
 
       - name: Deploy Javadoc
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
@@ -115,7 +115,7 @@ jobs:
           path: 'web/client-api/types/build/documentation/'
 
       - name: Deploy JavaScript/TypeScript docs
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
@@ -184,7 +184,7 @@ jobs:
           path: 'sphinx/build/pyclient-docs/'
 
       - name: Deploy Python Docs
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
@@ -196,7 +196,7 @@ jobs:
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
       - name: Deploy Client Python Docs
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
@@ -266,7 +266,7 @@ jobs:
           path: 'sphinx/build/cppExamplesDocs/'
 
       - name: Deploy Client C++ Docs
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
@@ -278,7 +278,7 @@ jobs:
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
       - name: Deploy Client C++ Example Docs
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
@@ -333,7 +333,7 @@ jobs:
           path: 'R/rdeephaven/docs/'
 
       - name: Deploy R Docs
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
