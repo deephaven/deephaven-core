@@ -43,8 +43,10 @@ public class PerformanceQueriesGeneral {
         queryPerformanceLog = queryPerformanceLog
                 .updateView(
                         "WorkerHeapSize = " + workerHeapSizeBytes + "L",
+                        // How long this query ran for, in nanoseconds
+                        "DurationNanos = EndTime - StartTime",
                         // How long this query ran for, in seconds
-                        "TimeSecs = nanosToMillis(EndTime - StartTime) / 1000d",
+                        "TimeSecs = nanosToMillis(DurationNanos) / 1000d",
                         "NetMemoryChange = FreeMemoryChange - TotalMemoryChange",
                         // Memory in use by the query. (Only includes active heap memory.)
                         "QueryMemUsed = TotalMemory - FreeMemory",
@@ -75,7 +77,8 @@ public class PerformanceQueriesGeneral {
 
         queryOps = queryOps
                 .updateView(
-                        "TimeSecs = nanosToMillis(EndTime - StartTime) / 1000d",
+                        "DurationNanos = EndTime - StartTime",
+                        "TimeSecs = nanosToMillis(DurationNanos) / 1000d",
                         // Change in memory usage delta while this query was executing
                         "NetMemoryChange = FreeMemoryChange - TotalMemoryChange");
 
@@ -106,9 +109,10 @@ public class PerformanceQueriesGeneral {
         final long workerHeapSizeBytes = getWorkerHeapSizeBytes();
         queryUpdatePerformance = queryUpdatePerformance
                 .updateView(
+                        "IntervalDurationNanos = IntervalEndTime - IntervalStartTime",
                         "WorkerHeapSize = " + workerHeapSizeBytes + "L",
                         // % of time during this interval that the operation was using CPU
-                        "Ratio = EntryIntervalUsage / IntervalDurationNanos",
+                        "Ratio = UsageNanos / IntervalDurationNanos",
                         // Memory in use by the query. (Only includes active heap memory.)
                         "QueryMemUsed = MaxTotalMemory - MinFreeMemory",
                         // Memory usage as a percentage of the max heap size (-Xmx)
@@ -116,11 +120,11 @@ public class PerformanceQueriesGeneral {
                         // Remaining memory until the query runs into the max heap size
                         "QueryMemFree = WorkerHeapSize - QueryMemUsed",
                         // Total number of changed rows
-                        "NRows = EntryIntervalAdded + EntryIntervalRemoved + EntryIntervalModified",
+                        "NRows = RowsAdded + RowsRemoved + RowsModified",
                         // Average rate data is ticking at
                         "RowsPerSec = round(NRows / IntervalDurationNanos * 1.0e9)",
                         // Approximation of how fast CPU handles row changes
-                        "RowsPerCPUSec = round(NRows / EntryIntervalUsage * 1.0e9)");
+                        "RowsPerCPUSec = round(NRows / UsageNanos * 1.0e9)");
 
         queryUpdatePerformance = maybeMoveColumnsUp(queryUpdatePerformance,
                 "ProcessUniqueId", "EvaluationNumber", "OperationNumber",
@@ -140,7 +144,8 @@ public class PerformanceQueriesGeneral {
     public static Map<String, Table> queryUpdatePerformanceMap(final Table queryUpdatePerformance,
             final long evaluationNumber) {
         final Map<String, Table> resultMap = new HashMap<>();
-        Table qup = queryUpdatePerformance(queryUpdatePerformance, evaluationNumber, false);
+        Table qup = queryUpdatePerformance(queryUpdatePerformance, evaluationNumber, false)
+                .updateView("IntervalDurationNanos = IntervalEndTime - IntervalStartTime");
 
         Table worstInterval = qup
                 .groupBy("IntervalStartTime", "IntervalDurationNanos")
@@ -153,11 +158,11 @@ public class PerformanceQueriesGeneral {
                         "EntryDescription",
                         "IntervalDurationNanos",
                         "Ratio",
-                        "EntryIntervalUsage",
-                        "EntryIntervalAdded",
-                        "EntryIntervalRemoved",
-                        "EntryIntervalModified",
-                        "EntryIntervalShifted",
+                        "UsageNanos",
+                        "RowsAdded",
+                        "RowsRemoved",
+                        "RowsModified",
+                        "RowsShifted",
                         "NRows");
 
         // Create a table showing the 'worst' updates, i.e. the operations with the greatest 'Ratio'
@@ -167,13 +172,20 @@ public class PerformanceQueriesGeneral {
         // interval, operations are still sorted with the greatest Ratio at the top.)
         Table updateMostRecent = updateWorst.sortDescending("IntervalEndTime").moveColumnsUp("IntervalEndTime");
 
+        final String[] groupByColumns;
+        if (qup.hasColumns("ProcessUniqueId")) {
+            groupByColumns = new String[] {"IntervalStartTime", "IntervalEndTime", "ProcessUniqueId"};
+        } else {
+            groupByColumns = new String[] {"IntervalStartTime", "IntervalEndTime"};
+        }
+
         // Create a table that summarizes the update performance data within each interval
         Table updateAggregate = qup.aggBy(
                 Arrays.asList(
-                        AggSum("NRows", "EntryIntervalUsage"),
+                        AggSum("NRows", "UsageNanos"),
                         AggFirst("QueryMemUsed", "WorkerHeapSize", "QueryMemUsedPct", "IntervalDurationNanos")),
-                "IntervalStartTime", "IntervalEndTime", "ProcessUniqueId")
-                .updateView("Ratio = EntryIntervalUsage / IntervalDurationNanos")
+                groupByColumns)
+                .updateView("Ratio = UsageNanos / IntervalDurationNanos")
                 .moveColumnsUp("IntervalStartTime", "IntervalEndTime", "Ratio");
 
         Table updateSummaryStats = updateAggregate.aggBy(Arrays.asList(

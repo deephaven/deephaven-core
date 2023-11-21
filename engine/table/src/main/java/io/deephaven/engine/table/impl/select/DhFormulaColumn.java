@@ -772,7 +772,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     @SuppressWarnings("SameParameterValue")
     private Class<?> compileFormula(final String what, final String classBody, final String className) {
         // System.out.printf("compileFormula: what is %s. Code is...%n%s%n", what, classBody);
-        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget("Compile:" + what)) {
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getCompilationNugget(what)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
 
             final List<Class<?>> paramClasses = new ArrayList<>();

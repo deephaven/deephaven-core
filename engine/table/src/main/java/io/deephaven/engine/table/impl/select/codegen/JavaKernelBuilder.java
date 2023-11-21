@@ -260,7 +260,7 @@ public class JavaKernelBuilder {
     @SuppressWarnings("SameParameterValue")
     private static Class<?> compileFormula(final String what, final String classBody, final String className) {
         // System.out.printf("compileFormula: formulaString is %s. Code is...%n%s%n", what, classBody);
-        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget("Compile:" + what)) {
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getCompilationNugget(what)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
             final QueryCompiler compiler = ExecutionContext.getContext().getQueryCompiler();
             return compiler.compile(className, classBody, QueryCompiler.FORMULA_PREFIX);

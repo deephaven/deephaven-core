@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Function;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -191,12 +192,20 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         catchAllNugget = null;
     }
 
-    /**
-     * @param name the nugget name
-     * @param inputSize the nugget's input size
-     * @return A new QueryPerformanceNugget to encapsulate user query operations. done() must be called on the nugget.
-     */
+    @Override
     public synchronized QueryPerformanceNugget getNugget(@NotNull final String name, final long inputSize) {
+        return getNuggetInternal(parent -> nuggetFactory.createForOperation(
+                parent, operationNuggets.size(), name, inputSize, this::releaseNugget));
+    }
+
+    @Override
+    public QueryPerformanceNugget getCompilationNugget(@NotNull final String name) {
+        return getNuggetInternal(parent -> nuggetFactory.createForCompilation(
+                parent, operationNuggets.size(), name, this::releaseNugget));
+    }
+
+    private QueryPerformanceNugget getNuggetInternal(
+            @NotNull final Function<QueryPerformanceNugget, QueryPerformanceNugget> nuggetSupplier) {
         Assert.eq(state, "state", QueryState.RUNNING, "QueryState.RUNNING");
         if (Thread.interrupted()) {
             throw new CancellationException("interrupted in QueryPerformanceNugget");
@@ -213,8 +222,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
             parent.onBaseEntryEnd();
         }
 
-        final QueryPerformanceNugget nugget = nuggetFactory.createForOperation(
-                parent, operationNuggets.size(), name, inputSize, this::releaseNugget);
+        final QueryPerformanceNugget nugget = nuggetSupplier.apply(parent);
         nugget.onBaseEntryStart();
         operationNuggets.add(nugget);
         userNuggetStack.addLast(nugget);
@@ -301,22 +309,18 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
     public void supplyQueryData(final @NotNull QueryDataConsumer consumer) {
         final long evaluationNumber;
         final int operationNumber;
-        boolean uninstrumented = false;
+        final boolean uninstrumented;
         synchronized (this) {
             // we should never be called if we're not running
             Assert.eq(state, "state", QueryState.RUNNING, "QueryState.RUNNING");
-            evaluationNumber = queryNugget.getEvaluationNumber();
-            operationNumber = operationNuggets.size();
-            if (operationNumber > 0) {
-                // ensure UPL and QOPL are consistent/joinable.
-                if (!userNuggetStack.isEmpty()) {
-                    userNuggetStack.getLast().setShouldLog();
-                } else {
-                    uninstrumented = true;
-                    Assert.neqNull(catchAllNugget, "catchAllNugget");
-                    catchAllNugget.setShouldLog();
-                }
-            }
+
+            final QueryPerformanceNugget nugget = getEnclosingNugget();
+            evaluationNumber = nugget.getEvaluationNumber();
+            operationNumber = nugget.getOperationNumber();
+            uninstrumented = nugget == catchAllNugget;
+
+            // ensure UPL and QOPL are consistent/joinable.
+            nugget.setShouldLog();
         }
         consumer.accept(evaluationNumber, operationNumber, uninstrumented);
     }

@@ -23,11 +23,11 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
     private static final TableDefinition DEFINITION = TableDefinition.of(
             ColumnDefinition.ofLong("EvaluationNumber"),
             ColumnDefinition.ofLong("ParentEvaluationNumber"),
-            ColumnDefinition.ofString("Description"),
             ColumnDefinition.ofString("SessionId"),
+            ColumnDefinition.ofString("Description"),
             ColumnDefinition.ofTime("StartTime"),
             ColumnDefinition.ofTime("EndTime"),
-            ColumnDefinition.ofLong("DurationNanos"),
+            ColumnDefinition.ofLong("UsageNanos"),
             ColumnDefinition.ofLong("CpuNanos"),
             ColumnDefinition.ofLong("UserCpuNanos"),
             ColumnDefinition.ofLong("FreeMemory"),
@@ -72,11 +72,11 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
         // ColumnDefinition.ofLong("ParentEvaluationNumber")
         chunks[1].asWritableLongChunk().add(nugget.getParentEvaluationNumber());
 
-        // ColumnDefinition.ofString("Description")
-        chunks[2].<String>asWritableObjectChunk().add(nugget.getDescription());
-
         // ColumnDefinition.ofString("SessionId")
-        chunks[3].<String>asWritableObjectChunk().add(nugget.getSessionId());
+        chunks[2].<String>asWritableObjectChunk().add(nugget.getSessionId());
+
+        // ColumnDefinition.ofString("Description")
+        chunks[3].<String>asWritableObjectChunk().add(nugget.getDescription());
 
         // ColumnDefinition.ofTime("StartTime");
         chunks[4].asWritableLongChunk().add(nugget.getStartClockEpochNanos());
@@ -84,7 +84,7 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
         // ColumnDefinition.ofTime("EndTime")
         chunks[5].asWritableLongChunk().add(nugget.getEndClockEpochNanos());
 
-        // ColumnDefinition.ofLong("DurationNanos")
+        // ColumnDefinition.ofLong("UsageNanos")
         chunks[6].asWritableLongChunk().add(nugget.getUsageNanos());
 
         // ColumnDefinition.ofLong("CpuNanos")
