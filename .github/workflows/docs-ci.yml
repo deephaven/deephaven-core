@@ -100,7 +100,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: typedoc
-          arguments: --scan :web-client-api:types:typedoc
+          arguments: --scan outputVersion :web-client-api:types:typedoc
           gradle-version: wrapper
           
       - name: Get Deephaven Version
@@ -318,7 +318,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: rDocs
-          arguments: R:rClientSite
+          arguments: --scan outputVersion R:rClientSite
           gradle-version: wrapper
           
       - name: Get Deephaven Version
