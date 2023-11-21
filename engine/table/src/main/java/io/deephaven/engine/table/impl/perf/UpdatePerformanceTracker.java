@@ -32,7 +32,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * <p>
@@ -122,7 +122,7 @@ public class UpdatePerformanceTracker {
         }
     }
 
-    private static final AtomicInteger entryIdCounter = new AtomicInteger(1);
+    private static final AtomicLong entryIdCounter = new AtomicLong(1);
 
     private final UpdateGraph updateGraph;
     private final PerformanceEntry aggregatedSmallUpdatesEntry;
@@ -137,10 +137,10 @@ public class UpdatePerformanceTracker {
     public UpdatePerformanceTracker(final UpdateGraph updateGraph) {
         this.updateGraph = Objects.requireNonNull(updateGraph);
         this.aggregatedSmallUpdatesEntry = new PerformanceEntry(
-                QueryConstants.NULL_INT, QueryConstants.NULL_INT, QueryConstants.NULL_INT,
+                QueryConstants.NULL_LONG, QueryConstants.NULL_LONG, QueryConstants.NULL_INT,
                 "Aggregated Small Updates", null, updateGraph.getName());
         this.flushEntry = new PerformanceEntry(
-                QueryConstants.NULL_INT, QueryConstants.NULL_INT, QueryConstants.NULL_INT,
+                QueryConstants.NULL_LONG, QueryConstants.NULL_LONG, QueryConstants.NULL_INT,
                 "UpdatePerformanceTracker Flush", null, updateGraph.getName());
     }
 
@@ -192,7 +192,7 @@ public class UpdatePerformanceTracker {
         final QueryPerformanceRecorder qpr = QueryPerformanceRecorder.getInstance();
 
         final MutableObject<PerformanceEntry> entryMu = new MutableObject<>();
-        qpr.setQueryData((evaluationNumber, operationNumber, uninstrumented) -> {
+        qpr.supplyQueryData((evaluationNumber, operationNumber, uninstrumented) -> {
             final String effectiveDescription;
             if (StringUtils.isNullOrEmpty(description) && uninstrumented) {
                 effectiveDescription = QueryPerformanceRecorder.UNINSTRUMENTED_CODE_DESCRIPTION;

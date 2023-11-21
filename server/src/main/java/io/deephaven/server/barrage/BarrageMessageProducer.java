@@ -151,7 +151,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         @Override
         public String getDescription() {
-            return "BarrageMessageProducer(" + updateIntervalMs + ")";
+            return "BarrageMessageProducer(" + updateIntervalMs + "," + System.identityHashCode(parent) + ")";
         }
 
         @Override

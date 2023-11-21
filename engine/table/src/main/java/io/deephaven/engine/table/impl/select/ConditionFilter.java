@@ -18,7 +18,6 @@ import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.time.TimeLiteralReplacedExpression;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
@@ -382,8 +381,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         final StringBuilder classBody = getClassBody(tableDefinition, timeConversionResult, result);
         if (classBody == null)
             return;
-        final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget("Compile:" + formula);
-        try {
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget("Compile:" + formula)) {
             final List<Class<?>> paramClasses = new ArrayList<>();
             final Consumer<Class<?>> addParamClass = (cls) -> {
                 if (cls != null) {
@@ -409,8 +407,6 @@ public class ConditionFilter extends AbstractConditionFilter {
             filterKernelClass = ExecutionContext.getContext().getQueryCompiler()
                     .compile("GeneratedFilterKernel", this.classBody = classBody.toString(),
                             QueryCompiler.FORMULA_PREFIX, QueryScopeParamTypeUtil.expandParameterClasses(paramClasses));
-        } finally {
-            nugget.done();
         }
     }
 

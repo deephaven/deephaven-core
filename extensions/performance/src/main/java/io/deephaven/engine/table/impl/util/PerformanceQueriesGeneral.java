@@ -3,16 +3,20 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import com.google.common.collect.Sets;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
+import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.Figure;
 import io.deephaven.plot.PlottingConvenience;
 import io.deephaven.util.QueryConstants;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.OptionalLong;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import static io.deephaven.api.agg.Aggregation.AggFirst;
 import static io.deephaven.api.agg.Aggregation.AggMax;
@@ -23,7 +27,11 @@ import static io.deephaven.api.agg.Aggregation.AggSum;
  * Generalizes {@link PerformanceQueries} to accept table parameters and make evaluation number parameter optional.
  */
 public class PerformanceQueriesGeneral {
-    private static boolean formatPctColumns = true;
+    private static final boolean FORMAT_PCT_COLUMNS = true;
+    private static final Set<String> ALLOWED_MISSING_COLUMN_NAMES = Sets.newHashSet(
+            "ProcessUniqueId",
+            "ParentEvaluationNumber",
+            "ParentOperationNumber");
 
     public static Table queryPerformance(Table queryPerformanceLog, final long evaluationNumber) {
 
@@ -35,21 +43,22 @@ public class PerformanceQueriesGeneral {
         queryPerformanceLog = queryPerformanceLog
                 .updateView(
                         "WorkerHeapSize = " + workerHeapSizeBytes + "L",
-                        "TimeSecs = nanosToMillis(EndTime - StartTime) / 1000d", // How long this query ran for, in
-                                                                                 // seconds
+                        // How long this query ran for, in seconds
+                        "TimeSecs = nanosToMillis(EndTime - StartTime) / 1000d",
                         "NetMemoryChange = FreeMemoryChange - TotalMemoryChange",
-                        "QueryMemUsed = TotalMemory - FreeMemory", // Memory in use by the query. (Only
-                                                                   // includes active heap memory.)
-                        "QueryMemUsedPct = QueryMemUsed / WorkerHeapSize", // Memory usage as a percenage of max heap
-                                                                           // size (-Xmx)
-                        "QueryMemFree = WorkerHeapSize - QueryMemUsed" // Remaining memory until the query runs into the
-                                                                       // max heap size
-                )
-                .moveColumnsUp(
-                        "ProcessUniqueId", "EvaluationNumber",
-                        "QueryMemUsed", "QueryMemFree", "QueryMemUsedPct",
-                        "EndTime", "TimeSecs", "NetMemoryChange");
-        if (formatPctColumns) {
+                        // Memory in use by the query. (Only includes active heap memory.)
+                        "QueryMemUsed = TotalMemory - FreeMemory",
+                        // Memory usage as a percenage of max heap size (-Xmx)
+                        "QueryMemUsedPct = QueryMemUsed / WorkerHeapSize",
+                        // Remaining memory until the query runs into the max heap size
+                        "QueryMemFree = WorkerHeapSize - QueryMemUsed");
+
+        queryPerformanceLog = maybeMoveColumnsUp(queryPerformanceLog,
+                "ProcessUniqueId", "EvaluationNumber", "ParentEvaluationNumber",
+                "QueryMemUsed", "QueryMemFree", "QueryMemUsedPct",
+                "EndTime", "TimeSecs", "NetMemoryChange");
+
+        if (FORMAT_PCT_COLUMNS) {
             queryPerformanceLog = formatColumnsAsPct(queryPerformanceLog, "QueryMemUsedPct");
         }
         return queryPerformanceLog;
@@ -64,15 +73,16 @@ public class PerformanceQueriesGeneral {
             queryOps = queryOps.where(whereConditionForEvaluationNumber(evaluationNumber));
         }
 
-        return queryOps
+        queryOps = queryOps
                 .updateView(
                         "TimeSecs = nanosToMillis(EndTime - StartTime) / 1000d",
-                        "NetMemoryChange = FreeMemoryChange - TotalMemoryChange" // Change in memory usage delta while
-                                                                                 // this query was executing
-                )
-                .moveColumnsUp(
-                        "ProcessUniqueId", "EvaluationNumber", "OperationNumber",
-                        "EndTime", "TimeSecs", "NetMemoryChange");
+                        // Change in memory usage delta while this query was executing
+                        "NetMemoryChange = FreeMemoryChange - TotalMemoryChange");
+
+        return maybeMoveColumnsUp(queryOps,
+                "ProcessUniqueId", "EvaluationNumber", "ParentEvaluationNumber",
+                "OperationNumber", "ParentOperationNumber",
+                "EndTime", "TimeSecs", "NetMemoryChange");
     }
 
     public static Table queryOperationPerformance(final Table queryOps) {
@@ -84,11 +94,7 @@ public class PerformanceQueriesGeneral {
         processInfo = processInfo
                 .where("Id = `" + processInfoId + "`", "Type = `" + type + "`", "Key = `" + key + "`")
                 .select("Value");
-        try {
-            return (String) DataAccessHelpers.getColumn(processInfo, 0).get(0);
-        } catch (Exception e) {
-            return null;
-        }
+        return processInfo.<String>getColumnSource("Value").get(processInfo.getRowSet().firstRowKey());
     }
 
     public static Table queryUpdatePerformance(Table queryUpdatePerformance, final long evaluationNumber,
@@ -101,25 +107,27 @@ public class PerformanceQueriesGeneral {
         queryUpdatePerformance = queryUpdatePerformance
                 .updateView(
                         "WorkerHeapSize = " + workerHeapSizeBytes + "L",
-                        "Ratio = EntryIntervalUsage / IntervalDurationNanos", // % of time during this interval that the
-                                                                              // operation was using CPU
-                        "QueryMemUsed = MaxTotalMemory - MinFreeMemory", // Memory in use by the query. (Only
-                                                                         // includes active heap memory.)
-                        "QueryMemUsedPct = QueryMemUsed / WorkerHeapSize", // Memory usage as a percenage of the max
-                                                                           // heap size (-Xmx)
-                        "QueryMemFree = WorkerHeapSize - QueryMemUsed", // Remaining memory until the query runs into
-                                                                        // the max heap size
-                        "NRows = EntryIntervalAdded + EntryIntervalRemoved + EntryIntervalModified", // Total number of
-                                                                                                     // changed rows
-                        "RowsPerSec = round(NRows / IntervalDurationNanos * 1.0e9)", // Average rate data is ticking at
-                        "RowsPerCPUSec = round(NRows / EntryIntervalUsage * 1.0e9)" // Approximation of how fast CPU
-                                                                                    // handles row changes
-                )
-                .moveColumnsUp(
-                        "ProcessUniqueId", "EvaluationNumber", "OperationNumber",
-                        "Ratio", "QueryMemUsed", "QueryMemUsedPct", "IntervalEndTime",
-                        "RowsPerSec", "RowsPerCPUSec", "EntryDescription");
-        if (formatPctColumnsLocal && formatPctColumns) {
+                        // % of time during this interval that the operation was using CPU
+                        "Ratio = EntryIntervalUsage / IntervalDurationNanos",
+                        // Memory in use by the query. (Only includes active heap memory.)
+                        "QueryMemUsed = MaxTotalMemory - MinFreeMemory",
+                        // Memory usage as a percentage of the max heap size (-Xmx)
+                        "QueryMemUsedPct = QueryMemUsed / WorkerHeapSize",
+                        // Remaining memory until the query runs into the max heap size
+                        "QueryMemFree = WorkerHeapSize - QueryMemUsed",
+                        // Total number of changed rows
+                        "NRows = EntryIntervalAdded + EntryIntervalRemoved + EntryIntervalModified",
+                        // Average rate data is ticking at
+                        "RowsPerSec = round(NRows / IntervalDurationNanos * 1.0e9)",
+                        // Approximation of how fast CPU handles row changes
+                        "RowsPerCPUSec = round(NRows / EntryIntervalUsage * 1.0e9)");
+
+        queryUpdatePerformance = maybeMoveColumnsUp(queryUpdatePerformance,
+                "ProcessUniqueId", "EvaluationNumber", "OperationNumber",
+                "Ratio", "QueryMemUsed", "QueryMemUsedPct", "IntervalEndTime",
+                "RowsPerSec", "RowsPerCPUSec", "EntryDescription");
+
+        if (formatPctColumnsLocal && FORMAT_PCT_COLUMNS) {
             queryUpdatePerformance = formatColumnsAsPctUpdatePerformance(queryUpdatePerformance);
         }
         return queryUpdatePerformance;
@@ -149,6 +157,7 @@ public class PerformanceQueriesGeneral {
                         "EntryIntervalAdded",
                         "EntryIntervalRemoved",
                         "EntryIntervalModified",
+                        "EntryIntervalShifted",
                         "NRows");
 
         // Create a table showing the 'worst' updates, i.e. the operations with the greatest 'Ratio'
@@ -174,7 +183,7 @@ public class PerformanceQueriesGeneral {
                 AggPct(0.50, "Ratio_50_Percentile = Ratio", "QueryMemUsedPct_50_Percentile = QueryMemUsedPct"),
                 AggMax("Ratio_Max = Ratio", "QueryMemUsedPct_Max = QueryMemUsedPct")));
 
-        if (formatPctColumns) {
+        if (FORMAT_PCT_COLUMNS) {
             qup = formatColumnsAsPctUpdatePerformance(qup);
             worstInterval = formatColumnsAsPct(worstInterval, "Ratio");
             updateWorst = formatColumnsAsPctUpdatePerformance(updateWorst);
@@ -270,7 +279,7 @@ public class PerformanceQueriesGeneral {
         final Table pm = serverState(pml);
         resultMap.put("ServerState", pm);
 
-        int maxMemMiB = DataAccessHelpers.getColumn(pm, "MaxMemMiB").getInt(0);
+        int maxMemMiB = pm.getColumnSource("MaxMemMiB").getInt(pm.getRowSet().firstRowKey());
         if (maxMemMiB == QueryConstants.NULL_INT) {
             maxMemMiB = 4096;
         }
@@ -310,6 +319,35 @@ public class PerformanceQueriesGeneral {
         return resultMap;
     }
 
+    public static TreeTable queryPerformanceAsTreeTable(@NotNull final Table qpl) {
+        return qpl.tree("EvaluationNumber", "ParentEvaluationNumber");
+    }
+
+    public static TreeTable queryOperationPerformanceAsTreeTable(
+            @NotNull final Table qpl, @NotNull final Table qopl) {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/4814): use NULL_INT for ParentOperationNumber and
+        // Depth once we can prevent any compilation or at least reduce multiple usages to a single formula
+        Table mergeWithAggKeys = TableTools.merge(
+                qpl.updateView(
+                        "EvalKey = Long.toString(EvaluationNumber)",
+                        "ParentEvalKey = ParentEvaluationNumber == null ? null : (Long.toString(ParentEvaluationNumber))",
+                        "OperationNumber = NULL_INT",
+                        "ParentOperationNumber = OperationNumber",
+                        "Depth = OperationNumber",
+                        "CallerLine = (String) null",
+                        "IsCompilation = NULL_BOOLEAN",
+                        "InputSizeLong = NULL_LONG"),
+                qopl.updateView(
+                        "EvalKey = EvaluationNumber + `:` + OperationNumber",
+                        "ParentEvalKey = EvaluationNumber + (ParentOperationNumber == null ? `` : (`:` + ParentOperationNumber))",
+                        "Exception = (String) null"))
+                .moveColumnsUp("EvalKey", "ParentEvalKey")
+                .moveColumnsDown("EvaluationNumber", "ParentEvaluationNumber", "OperationNumber",
+                        "ParentOperationNumber");
+
+        return mergeWithAggKeys.tree("EvalKey", "ParentEvalKey");
+    }
+
     private static Table formatColumnsAsPct(final Table t, final String... cols) {
         final String[] formats = new String[cols.length];
         for (int i = 0; i < cols.length; ++i) {
@@ -323,11 +361,17 @@ public class PerformanceQueriesGeneral {
     }
 
     private static long getWorkerHeapSizeBytes() {
-        final OptionalLong opt = EngineMetrics.getProcessInfo().getMemoryInfo().heap().max();
-        return opt.orElse(0);
+        return EngineMetrics.getProcessInfo().getMemoryInfo().heap().max().orElse(0);
     }
 
     private static String whereConditionForEvaluationNumber(final long evaluationNumber) {
-        return "EvaluationNumber = " + evaluationNumber + "";
+        return "EvaluationNumber = " + evaluationNumber;
+    }
+
+    private static Table maybeMoveColumnsUp(final Table source, final String... cols) {
+        return source.moveColumnsUp(Stream.of(cols)
+                .filter(columnName -> !ALLOWED_MISSING_COLUMN_NAMES.contains(columnName)
+                        || source.hasColumns(columnName))
+                .toArray(String[]::new));
     }
 }

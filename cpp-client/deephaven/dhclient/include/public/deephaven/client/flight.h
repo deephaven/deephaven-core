@@ -30,7 +30,7 @@ public:
    * @return An Arrow FlightStreamReader
    */
   [[nodiscard]]
-  std::shared_ptr<arrow::flight::FlightStreamReader> GetFlightStreamReader(
+  std::unique_ptr<arrow::flight::FlightStreamReader> GetFlightStreamReader(
       const TableHandle &table) const;
 
   /**

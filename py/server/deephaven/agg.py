@@ -44,6 +44,10 @@ class Aggregation:
             raise DHError(message="unsupported aggregation operation.")
         return self._j_agg_spec
 
+    @property
+    def is_formula(self):
+        return isinstance(self._j_agg_spec, jpy.get_type("io.deephaven.api.agg.spec.AggSpecFormula"))
+
 
 def sum_(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a Sum aggregation.

@@ -345,6 +345,24 @@ class PartitionedTableProxyTestCase(BaseTestCase):
 
         self.assertIsNotNone(inner_func("param str"))
 
+    @unittest.skip("https://github.com/deephaven/deephaven-core/issues/4847")
+    def test_agg_formula_scope(self):
+        with self.subTest("agg_by_formula"):
+            def agg_by_formula():
+                def my_fn(vals):
+                    import deephaven.dtypes as dht
+                    return dht.array(dht.double, [i + 2 for i in vals])
+
+                t = empty_table(1000).update_view(["A=i%2", "B=A+3"])
+                pt_proxy = t.partition_by("A").proxy()
+                rlt_pt_proxy = pt_proxy.agg_by([formula("(double[])my_fn(each)", formula_param='each', cols=['C=B']),
+                                      median("B")],
+                             by='A')
+                return rlt_pt_proxy
+
+            ptp = agg_by_formula()
+            self.assertIsNotNone(ptp)
+
 
 def global_fn() -> str:
     return "global str"
