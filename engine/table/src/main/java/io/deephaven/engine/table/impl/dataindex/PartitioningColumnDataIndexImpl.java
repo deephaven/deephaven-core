@@ -8,7 +8,6 @@ import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
-import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,15 +17,15 @@ import java.util.Map;
 /**
  * DataIndex over a partitioning column of a SourceTable.
  */
-public class PartitioningColumnDataIndexImpl extends BaseDataIndex {
+public class PartitioningColumnDataIndexImpl<KEY_TYPE> extends BaseDataIndex {
 
-    private final ColumnSource<?> keySource;
+    private final ColumnSource<KEY_TYPE> keySource;
     private final String keyColumnName;
     private final ColumnSourceManager columnSourceManager;
 
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
     private final QueryTable indexTable;
-    private final WritableColumnSource<?> indexKeySource;
+    private final WritableColumnSource<KEY_TYPE> indexKeySource;
     private final ObjectArraySource<WritableRowSet> indexRowSetSource;
     private final ModifiedColumnSet rowSetModifiedColumnSet;
 
@@ -34,7 +33,7 @@ public class PartitioningColumnDataIndexImpl extends BaseDataIndex {
     private final TObjectIntHashMap<Object> keyPositionMap;
 
     public PartitioningColumnDataIndexImpl(
-            @NotNull final ColumnSource<?> keySource,
+            @NotNull final ColumnSource<KEY_TYPE> keySource,
             @NotNull final String keyColumnName,
             @NotNull final ColumnSourceManager columnSourceManager) {
         this.keySource = keySource;
@@ -124,7 +123,8 @@ public class PartitioningColumnDataIndexImpl extends BaseDataIndex {
                 final long firstKey = RegionedColumnSource.getFirstRowKey(Math.toIntExact(key));
                 final WritableRowSet shiftedRowSet = rowSetColumnSource.get(key).shift(firstKey);
 
-                final Object locationKey = location.getKey().getPartitionValue(keyColumnName);
+                //noinspection DataFlowIssue
+                final KEY_TYPE locationKey = location.getKey().getPartitionValue(keyColumnName);
 
                 final int pos = keyPositionMap.get(locationKey);
                 if (pos == -1) {
@@ -184,26 +184,8 @@ public class PartitioningColumnDataIndexImpl extends BaseDataIndex {
         }
     }
 
-    private synchronized void addEntry(final int index, final Object key, final WritableRowSet rowSet) {
-        final Class<?> clazz = key.getClass();
-
-        if (clazz == Byte.class) {
-            indexKeySource.set(index, TypeUtils.unbox((Byte) key));
-        } else if (clazz == Character.class) {
-            indexKeySource.set(index, (char) key);
-        } else if (clazz == Float.class) {
-            indexKeySource.set(index, (float) key);
-        } else if (clazz == Double.class) {
-            indexKeySource.set(index, (double) key);
-        } else if (clazz == Short.class) {
-            indexKeySource.set(index, (short) key);
-        } else if (clazz == Integer.class) {
-            indexKeySource.set(index, (int) key);
-        } else if (clazz == Long.class) {
-            indexKeySource.set(index, (long) key);
-        } else {
-            indexKeySource.set(index, key);
-        }
+    private synchronized void addEntry(final int index, final KEY_TYPE key, final WritableRowSet rowSet) {
+        indexKeySource.set(index, key);
         indexRowSetSource.set(index, rowSet);
 
         keyPositionMap.put(key, index);

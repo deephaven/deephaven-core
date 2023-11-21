@@ -352,7 +352,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         final TableDefinition tableDefinition = getDefinition();
         for (final ColumnDefinition<?> partitioningColumnDefinition : tableDefinition.getPartitioningColumns()) {
             final ColumnSource<?> keySource = columnSourceMap.get(partitioningColumnDefinition.getName());
-            final DataIndex dataIndex = new PartitioningColumnDataIndexImpl(
+            final DataIndex dataIndex = new PartitioningColumnDataIndexImpl<>(
                     keySource,
                     partitioningColumnDefinition.getName(),
                     columnSourceManager
