@@ -247,9 +247,9 @@ mention the version explicitly. These files are listed below:
 
 ```
 #
-# Edit files for version change, updating from 0.31.0-SNAPSHOT to 0.32.0-SNAPSHOT
+# Edit files for version change
 #
-buildSrc/src/main/groovy/io.deephaven.common-conventions.gradle
+gradle.properties
 R/rdeephaven/DESCRIPTION
 ```
 
