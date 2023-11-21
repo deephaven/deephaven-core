@@ -17,7 +17,7 @@ import java.time.Instant
 
 class ColumnExpressionCompletionHandlerTest extends Specification implements ChunkerCompleterMixin {
 
-    private static String src_(String methodName = 't', String columnName = 'Date', String completion = "prev") {
+    private static String src_(String methodName = 't', String columnName = 'Date', String completion = "past") {
         return """u = ${methodName}.update('$columnName = $completion"""
     }
 
@@ -35,7 +35,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
     def "Completion at #position should find typesafe column completion for partially completed column expressions"(int position, Set<String> completions) {
         given:
 
-//u = t.update('Date=prev
+//u = t.update('Date=past
             String src = src_()
             CompletionParser p = new CompletionParser()
             doc = p.parse(src)
@@ -44,7 +44,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
         VariableProvider variables = Mock(VariableProvider) {
                 (0..1) * getVariableNames() >> ['t']
                 (0..1) * getVariableType('t') >> Table
-                (0..1) * getTableDefinition('t') >> TableDefinition.from(['Date', 'DateTime'], [String, Instant]
+                (0..1) * getTableDefinition('t') >> TableDefinition.from(['Date', 'DateTime'], [java.time.LocalDate, Instant]
                 )
             }
 
@@ -69,27 +69,15 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
             position | completions
             // between `e=`, expect method name completions, and a single column name completion, for Clock
             19 | [
-                src_('t', 'Date', "previousDay("),
-                src_('t', 'Date', "previousDay(\""),
-                src_('t', 'Date', "previousDay()'"),
-                src_('t', 'Date', "previousBusinessDay("),
-                src_('t', 'Date', "previousBusinessDay(\""),
-                src_('t', 'Date', "previousBusinessDay()'"),
-                src_('t', 'Date', "previousNonBusinessDay("),
-                src_('t', 'Date', "previousNonBusinessDay(\""),
-                src_('t', 'Date', "previousNonBusinessDay()'"),
+                src_('t', 'Date', "pastDate("),
+                src_('t', 'Date', "pastBusinessDate("),
+                src_('t', 'Date', "pastNonBusinessDate("),
             ]
             18 | [
-                src_('t', 'Date', "previousDay("),
-                src_('t', 'Date', "previousDay(\""),
-                src_('t', 'Date', "previousDay()'"),
-                src_('t', 'Date', "previousBusinessDay("),
-                src_('t', 'Date', "previousBusinessDay(\""),
-                src_('t', 'Date', "previousBusinessDay()'"),
-                src_('t', 'Date', "previousNonBusinessDay("),
-                src_('t', 'Date', "previousNonBusinessDay(\""),
-                src_('t', 'Date', "previousNonBusinessDay()'"),
-                src_('t', 'DateTime', "prev"),
+                src_('t', 'Date', "pastDate("),
+                src_('t', 'Date', "pastBusinessDate("),
+                src_('t', 'Date', "pastNonBusinessDate("),
+                src_('t', 'DateTime', "past"),
             ]
     }
 
