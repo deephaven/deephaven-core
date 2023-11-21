@@ -196,6 +196,23 @@ class NumpyTestCase(BaseTestCase):
 
         remove_calendar("NUMPY_TEST")
 
+    def test_to_np_busdaycalendar_empty(self):
+
+        with self.assertRaises(DHError) as cm:
+            to_np_busdaycalendar("test")
+
+        add_calendar(self.get_resource_path("/EMPTY.calendar"))
+        jcal = calendar("EMPTY")
+
+        # Include partial days
+
+        with self.assertRaises(DHError) as cm:
+            npcal = to_np_busdaycalendar(jcal, include_partial=True)
+
+        self.assertTrue("Cannot construct a numpy.busdaycal with a weekmask of all zeros" in cm.exception.root_cause)
+
+        remove_calendar("EMPTY")
+
 
 if __name__ == '__main__':
     unittest.main()
