@@ -35,4 +35,4 @@ plot = Figure() \
 
 ## API Reference
 
-[start here](https://deephaven.io/core/pydoc/)
+[Start here](https://deephaven.io/core/pydoc/)
