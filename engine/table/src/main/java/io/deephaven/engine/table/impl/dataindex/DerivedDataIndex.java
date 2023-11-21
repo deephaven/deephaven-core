@@ -23,7 +23,7 @@ import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.function.Function;
 
-public class DerivedDataIndex extends AbstractDataIndex {
+public class DerivedDataIndex extends BaseDataIndex {
     private static final int CHUNK_SIZE = 2048;
     @NotNull
     final DataIndex parentIndex;
@@ -200,7 +200,7 @@ public class DerivedDataIndex extends AbstractDataIndex {
     @Override
     public Table baseIndexTable() {
         // Return the parent index's base table.
-        return ((AbstractDataIndex) parentIndex).baseIndexTable();
+        return ((BaseDataIndex) parentIndex).baseIndexTable();
     }
 
     // region DataIndex materialization operations
@@ -383,6 +383,6 @@ public class DerivedDataIndex extends AbstractDataIndex {
 
     @Override
     public boolean validate() {
-        return ((AbstractDataIndex) parentIndex).validate();
+        return ((BaseDataIndex) parentIndex).validate();
     }
 }

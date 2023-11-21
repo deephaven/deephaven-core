@@ -31,18 +31,12 @@ import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreator
  * @implNote This is an experimental feature, it is likely to change.
  */
 @InternalUseOnly
-public class StorageBackedDataIndexImpl extends AbstractDataIndex {
+public class StorageBackedDataIndexImpl extends BaseDataIndex {
     private static final String OFFSET_KEY_COL_NAME = "dh_offset_key";
 
-    @NotNull
     private final WeakHashMap<ColumnSource<?>, String> keyColumnMap;
-
-    private final ColumnSourceManager columnSourceManager;
-
-    private final Table sourceTable;
-
-    @NotNull
     final String[] keyColumnNames;
+    private final ColumnSourceManager columnSourceManager;
 
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
     private QueryTable indexTable;
@@ -58,12 +52,11 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
     /** Whether this index is known to be corrupt. */
     private boolean isCorrupt = false;
 
-    public StorageBackedDataIndexImpl(@NotNull final Table sourceTable,
-            final ColumnSource<?>[] keySources,
-            final ColumnSourceManager columnSourceManager,
-            @NotNull final String[] keyColumnNames) {
+    public StorageBackedDataIndexImpl(
+            @NotNull final ColumnSource<?>[] keySources,
+            @NotNull final String[] keyColumnNames,
+            @NotNull final ColumnSourceManager columnSourceManager) {
 
-        this.sourceTable = sourceTable;
         this.columnSourceManager = columnSourceManager;
         this.keyColumnNames = keyColumnNames;
 
@@ -87,7 +80,7 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
         partitions = new QueryTable(RowSetFactory.empty().toTracking(), partitionsColumnSourceMap);
         partitionsConstituentModifiedColumnSet = partitions.newModifiedColumnSet(CONSTITUENT.name());
 
-        if (sourceTable.isRefreshing()) {
+        if (locationTable.isRefreshing()) {
             partitions.setRefreshing(true);
             final TableUpdateListener locationUpdateListener =
                     new InstrumentedTableUpdateListenerAdapter(locationTable, false) {
@@ -293,7 +286,7 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
                             "AggregationRowLookup lookupFunction should never be null");
 
                     final QueryTable result = wrappedRowSetTable((QueryTable) mergedOutput.select(), INDEX_COL_NAME);
-                    result.setRefreshing(sourceTable.isRefreshing());
+                    result.setRefreshing(columnSourceManager.locationTable().isRefreshing());
 
                     return result;
                 });
@@ -332,12 +325,7 @@ public class StorageBackedDataIndexImpl extends AbstractDataIndex {
 
     @Override
     public boolean isRefreshing() {
-        return sourceTable.isRefreshing();
-    }
-
-    @Override
-    public Table baseIndexTable() {
-        return table();
+        return columnSourceManager.locationTable().isRefreshing();
     }
 
     private static class LocationState {

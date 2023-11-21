@@ -131,4 +131,3 @@ public interface DataIndex extends LivenessReferent {
      */
     boolean isRefreshing();
 }
-

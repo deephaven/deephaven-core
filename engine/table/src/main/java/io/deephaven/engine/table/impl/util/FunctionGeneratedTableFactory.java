@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.ListenerRecorder;
 import io.deephaven.engine.table.impl.MergedListener;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -17,7 +16,6 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -273,7 +271,7 @@ public class FunctionGeneratedTableFactory {
                     if (parentListener != null) {
                         parentListener.forceReferenceCountToZero();
                     }
-                    delayedErrorReference = new DelayedErrorNotifier(e, this);
+                    delayedErrorReference = new DelayedErrorNotifier(e, null, this);
                 } else {
                     notifyListenersOnError(e, null);
                     forceReferenceCountToZero();
@@ -290,34 +288,6 @@ public class FunctionGeneratedTableFactory {
             if (parentListener != null) {
                 parentListener.forceReferenceCountToZero();
             }
-        }
-    }
-
-    private static final class DelayedErrorNotifier implements Runnable {
-
-        private final Throwable error;
-        private final UpdateGraph updateGraph;
-        private final WeakReference<BaseTable<?>> tableReference;
-
-        private DelayedErrorNotifier(@NotNull final Throwable error,
-                @NotNull final BaseTable<?> table) {
-            this.error = error;
-            updateGraph = table.getUpdateGraph();
-            tableReference = new WeakReference<>(table);
-            updateGraph.addSource(this);
-        }
-
-        @Override
-        public void run() {
-            updateGraph.removeSource(this);
-
-            final BaseTable<?> table = tableReference.get();
-            if (table == null) {
-                return;
-            }
-
-            table.notifyListenersOnError(error, null);
-            table.forceReferenceCountToZero();
         }
     }
 }

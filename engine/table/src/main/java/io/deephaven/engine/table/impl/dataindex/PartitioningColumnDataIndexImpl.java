@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl.dataindex;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
@@ -16,51 +15,49 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 /**
- * This data index is from a grouping column, one that contains
+ * DataIndex over a partitioning column of a SourceTable.
  */
-public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
-    @NotNull
-    private final ColumnSource<?> keySource;
+public class PartitioningColumnDataIndexImpl<KEY_TYPE> extends BaseDataIndex {
 
-    @NotNull
+    private final ColumnSource<KEY_TYPE> keySource;
     private final String keyColumnName;
-
     private final ColumnSourceManager columnSourceManager;
-
-    private final Table sourceTable;
 
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
     private final QueryTable indexTable;
-    private final WritableColumnSource<Object> indexKeySource;
+    private final WritableColumnSource<KEY_TYPE> indexKeySource;
     private final ObjectArraySource<WritableRowSet> indexRowSetSource;
     private final ModifiedColumnSet rowSetModifiedColumnSet;
 
     /** Provides fast lookup from keys to positions in the index table **/
     private final TObjectIntHashMap<Object> keyPositionMap;
 
-    public PartitioningColumnDataIndexImpl(@NotNull final Table sourceTable,
-            final ColumnSource<?> keySource,
-            final ColumnSourceManager columnSourceManager,
-            @NotNull final String keyColumnName) {
-        Assert.eqTrue(sourceTable.hasColumns(keyColumnName), keyColumnName + " was not found in the source table");
-
-        this.sourceTable = sourceTable;
+    public PartitioningColumnDataIndexImpl(
+            @NotNull final ColumnSource<KEY_TYPE> keySource,
+            @NotNull final String keyColumnName,
+            @NotNull final ColumnSourceManager columnSourceManager) {
         this.keySource = keySource;
         this.columnSourceManager = columnSourceManager;
         this.keyColumnName = keyColumnName;
 
         // Build the index table and the position lookup map.
         final Table locationTable = columnSourceManager.locationTable();
-        indexKeySource = (WritableColumnSource<Object>) ArrayBackedColumnSource.getMemoryColumnSource(
-                10,
+        indexKeySource = ArrayBackedColumnSource.getMemoryColumnSource(
+                locationTable.size(),
                 keySource.getType(),
-                null);
+                keySource.getComponentType());
         indexRowSetSource = new ObjectArraySource<>(WritableRowSet.class, null);
 
+        // TODO-RWC/LAB: Should we consider an approach we're we work like the storage-backed, and use FunctionalColumns?
+//        indexTable = locationTable.select(
+//                String.format("%s = %s.getPartitionValue(%s)", keyColumnName, columnSourceManager.locationColumnName(), keyColumnName),
+//                columnSourceManager.rowSetColumnName())
+//                .updateView(String.format("%s = %s.shift(%s.getFirstRowKey())", columnSourceManager.rowSetColumnName(), columnSourceManager.rowSetColumnName(), columnSourceManager.locationColumnName()));
+//
         keyPositionMap = new TObjectIntHashMap<>(locationTable.intSize(), 0.5F, -1);
 
         indexTable = new QueryTable(RowSetFactory.empty().toTracking(), Map.of(
-                this.keyColumnName, indexKeySource,
+                keyColumnName, indexKeySource,
                 INDEX_COL_NAME, indexRowSetSource));
 
         // Create a dummy update for the initial state.
@@ -72,7 +69,7 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
                 ModifiedColumnSet.EMPTY);
         processUpdate(initialUpdate, true);
 
-        if (sourceTable.isRefreshing()) {
+        if (locationTable.isRefreshing()) {
             indexTable.setRefreshing(true);
             indexKeySource.startTrackingPrevValues();
             indexRowSetSource.startTrackingPrevValues();
@@ -126,7 +123,8 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
                 final long firstKey = RegionedColumnSource.getFirstRowKey(Math.toIntExact(key));
                 final WritableRowSet shiftedRowSet = rowSetColumnSource.get(key).shift(firstKey);
 
-                final Object locationKey = location.getKey().getPartitionValue(this.keyColumnName);
+                //noinspection DataFlowIssue
+                final KEY_TYPE locationKey = location.getKey().getPartitionValue(keyColumnName);
 
                 final int pos = keyPositionMap.get(locationKey);
                 if (pos == -1) {
@@ -152,7 +150,7 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
             final long firstKey = RegionedColumnSource.getFirstRowKey(Math.toIntExact(key));
             final WritableRowSet shiftedRowSet = rowSetColumnSource.get(key).shift(firstKey);
 
-            final Object locationKey = location.getKey().getPartitionValue(this.keyColumnName);
+            final Object locationKey = location.getKey().getPartitionValue(keyColumnName);
 
             final int pos = keyPositionMap.get(locationKey);
             if (pos == -1) {
@@ -186,26 +184,8 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
         }
     }
 
-    private synchronized void addEntry(final int index, final Object key, final WritableRowSet rowSet) {
-        final Class<?> clazz = key.getClass();
-
-        if (clazz == Byte.class) {
-            indexKeySource.set(index, (byte) key);
-        } else if (clazz == Character.class) {
-            indexKeySource.set(index, (char) key);
-        } else if (clazz == Float.class) {
-            indexKeySource.set(index, (float) key);
-        } else if (clazz == Double.class) {
-            indexKeySource.set(index, (double) key);
-        } else if (clazz == Short.class) {
-            indexKeySource.set(index, (short) key);
-        } else if (clazz == Integer.class) {
-            indexKeySource.set(index, (int) key);
-        } else if (clazz == Long.class) {
-            indexKeySource.set(index, (long) key);
-        } else {
-            indexKeySource.set(index, key);
-        }
+    private synchronized void addEntry(final int index, final KEY_TYPE key, final WritableRowSet rowSet) {
+        indexKeySource.set(index, key);
         indexRowSetSource.set(index, rowSet);
 
         keyPositionMap.put(key, index);
@@ -261,13 +241,7 @@ public class PartitioningColumnDataIndexImpl extends AbstractDataIndex {
     }
 
     @Override
-    public Table baseIndexTable() {
-        return indexTable;
-    }
-
-    @Override
     public boolean validate() {
         return true;
     }
 }
-

@@ -5,13 +5,14 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.dataindex.PartitioningColumnDataIndexImpl;
 import io.deephaven.engine.table.impl.dataindex.StorageBackedDataIndexImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.*;
-import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
@@ -20,13 +21,13 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -104,13 +105,18 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         this.updateSourceRegistrar = updateSourceRegistrar;
 
         final boolean isRefreshing = updateSourceRegistrar != null;
-        columnSourceManager = componentFactory.createColumnSourceManager(isRefreshing, ColumnToCodecMappings.EMPTY,
-                definition.getColumns() // NB: this is the *re-written* definition passed to the super-class
-                                        // constructor.
-        );
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            columnSourceManager = componentFactory.createColumnSourceManager(
+                    isRefreshing,
+                    ColumnToCodecMappings.EMPTY,
+                    definition.getColumns() // This is the *re-written* definition passed to the super-class constructor
+            );
 
-        // Add a liveness reference to the location table.
-        manage(columnSourceManager.locationTable());
+            // Add a liveness reference to the location table.
+            if (isRefreshing) {
+                manage(columnSourceManager.locationTable());
+            }
+        }
 
         setRefreshing(isRefreshing);
         setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -235,7 +241,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 }
                 maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
 
-                // NB: This class previously had functionality to notify "location listeners", but it was never used.
+                // This class previously had functionality to notify "location listeners", but it was never used.
                 // Resurrect from git history if needed.
                 if (!locationSizesInitialized) {
                     // We don't want to start polling size changes until the initial RowSet has been computed.
@@ -247,20 +253,25 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     return;
                 }
 
+                if (rowSet.isEmpty()) {
+                    // Transitioning from empty to non-empty, so we need to initialize the location-driven data indexes.
+                    initializeLocationDataIndexes();
+                }
+
                 rowSet.insert(added);
                 notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
             } catch (Exception e) {
                 updateSourceRegistrar.removeSource(this);
 
                 // Notify listeners to the SourceTable when we had an issue refreshing available locations.
-                notifyListenersOnError(e, null);
+                notifyListenersOnError(e, entry);
 
                 // Notify any listeners to the locations table that we had an error.
-                final BaseTable locationTable = (BaseTable) columnSourceManager.locationTable();
+                final BaseTable<?> locationTable = (BaseTable<?>) columnSourceManager.locationTable();
                 if (locationTable.getLastNotificationStep() == updateGraph.clock().currentStep()) {
-                    delayedErrorReference = new DelayedErrorNotifier(e, locationTable);
+                    delayedErrorReference = new DelayedErrorNotifier(e, entry, locationTable);
                 } else {
-                    locationTable.notifyListenersOnError(e, null);
+                    locationTable.notifyListenersOnError(e, entry);
                     locationTable.forceReferenceCountToZero();
                 }
             }
@@ -289,6 +300,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
 
                     @Override
                     public boolean subscribeForUpdates(@NotNull final TableUpdateListener listener) {
+                        // This impl cannot call super.subscribeForUpdates(), because we must subscribe to the actual
+                        // (uncoalesced) SourceTable.
                         return addUpdateListenerUncoalesced(listener, lastNotificationStep);
                     }
                 });
@@ -307,8 +320,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
 
                             @Override
                             protected void destroy() {
-                                // NB: This implementation cannot call super.destroy() for the same reason as the swap
-                                // listener
+                                // This impl cannot call super.destroy() because we must unsubscribe from the actual
+                                // (uncoalesced) SourceTable.
                                 removeUpdateListenerUncoalesced(this);
                             }
                         };
@@ -316,41 +329,13 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             }
 
             // As part of coalescing, create the RowSet-level data indexes for partitioning and indexed columns.
-            final DataIndexer dataIndexer = DataIndexer.of(rowSet);
-
-            final Map<String, ? extends ColumnSource<?>> columnSourceMap = columnSourceManager.getColumnSources();
 
             // Add the partitioning columns as trivial data indexes
-            final TableDefinition tableDefinition = getDefinition();
-            for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
-                if (columnDefinition.isPartitioning()) {
-                    final ColumnSource<?> keySource = columnSourceMap.get(columnDefinition.getName());
-                    final DataIndex dataIndex = new PartitioningColumnDataIndexImpl(
-                            resultTable,
-                            keySource,
-                            columnSourceManager,
-                            columnDefinition.getName());
-                    dataIndexer.addDataIndex(dataIndex);
-                }
-            }
+            initializePartitionDataIndexes();
 
             // Inspect the locations to see what other data indexes exist.
-            final Collection<TableLocation> locations = columnSourceManager.allLocations();
-            if (!locations.isEmpty()) {
-                // Use the first location as a proxy for the whole table
-                final TableLocation firstLocation = locations.iterator().next();
-
-                for (final String[] keyArr : firstLocation.getDataIndexColumns()) {
-                    final ColumnSource<?>[] keySources = Arrays.stream(keyArr).map(columnSourceMap::get)
-                            .toArray(ColumnSource[]::new);
-
-                    final DataIndex dataIndex = new StorageBackedDataIndexImpl(
-                            resultTable,
-                            keySources,
-                            columnSourceManager,
-                            keyArr);
-                    dataIndexer.addDataIndex(dataIndex);
-                }
+            if (!columnSourceManager.isEmpty()) {
+                initializeLocationDataIndexes();
             }
 
             result.setValue(resultTable);
@@ -358,6 +343,45 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         });
 
         return result.getValue();
+    }
+
+    private void initializePartitionDataIndexes() {
+        final Map<String, ? extends ColumnSource<?>> columnSourceMap = columnSourceManager.getColumnSources();
+        final DataIndexer dataIndexer = DataIndexer.of(rowSet);
+
+        final TableDefinition tableDefinition = getDefinition();
+        for (final ColumnDefinition<?> partitioningColumnDefinition : tableDefinition.getPartitioningColumns()) {
+            final ColumnSource<?> keySource = columnSourceMap.get(partitioningColumnDefinition.getName());
+            final DataIndex dataIndex = new PartitioningColumnDataIndexImpl<>(
+                    keySource,
+                    partitioningColumnDefinition.getName(),
+                    columnSourceManager
+            );
+            dataIndexer.addDataIndex(dataIndex);
+        }
+    }
+
+    private void initializeLocationDataIndexes() {
+        final Collection<TableLocation> includedLocations = columnSourceManager.includedLocations();
+        Assert.eqFalse(includedLocations.isEmpty(), "includedLocations.isEmpty()");
+
+        final Map<String, ? extends ColumnSource<?>> columnSourceMap = columnSourceManager.getColumnSources();
+        final DataIndexer dataIndexer = DataIndexer.of(rowSet);
+
+        // Use the first location as a proxy for the whole table; since data indexes must be complete over all
+        // locations, this is a valid assumption.
+        final TableLocation firstLocation = includedLocations.iterator().next();
+
+        for (final String[] keyColumnNames : firstLocation.getDataIndexColumns()) {
+            final ColumnSource<?>[] keySources = Arrays.stream(keyColumnNames)
+                    .map(columnSourceMap::get)
+                    .toArray(ColumnSource[]::new);
+            final DataIndex dataIndex = new StorageBackedDataIndexImpl(
+                    keySources,
+                    keyColumnNames,
+                    columnSourceManager);
+            dataIndexer.addDataIndex(dataIndex);
+        }
     }
 
     protected static class QueryTableReference extends DeferredViewTable.TableReference {
@@ -392,34 +416,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             if (locationChangePoller != null) {
                 updateSourceRegistrar.removeSource(locationChangePoller);
             }
-        }
-    }
-
-    private static final class DelayedErrorNotifier implements Runnable {
-
-        private final Throwable error;
-        private final UpdateGraph updateGraph;
-        private final WeakReference<BaseTable<?>> tableReference;
-
-        private DelayedErrorNotifier(@NotNull final Throwable error,
-                @NotNull final BaseTable<?> table) {
-            this.error = error;
-            updateGraph = table.getUpdateGraph();
-            tableReference = new WeakReference<>(table);
-            updateGraph.addSource(this);
-        }
-
-        @Override
-        public void run() {
-            updateGraph.removeSource(this);
-
-            final BaseTable<?> table = tableReference.get();
-            if (table == null) {
-                return;
-            }
-
-            table.notifyListenersOnError(error, null);
-            table.forceReferenceCountToZero();
         }
     }
 }
