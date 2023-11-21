@@ -19,30 +19,32 @@ import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+/**
+ * A {@link ColumnChunkPageStore} that uses {@link OffsetIndex} to find the page containing a row.
+ */
 final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
     private static final long PAGE_SIZE_NOT_FIXED = -1;
+
+    private static final class PageState<ATTR extends Any> {
+        private volatile WeakReference<PageCache.IntrusivePage<ATTR>> pageRef;
+
+        PageState() {
+            pageRef = null; // Initialized when used for the first time
+        }
+    }
 
     private final OffsetIndex offsetIndex;
     private final int numPages;
     /**
      * Fixed number of rows per page. Set as positive value if first ({@link #numPages}-1) pages have equal number of
-     * rows, else equal to {@value #PAGE_SIZE_NOT_FIXED}. We don't care about the size of the last page, because we can
-     * assume all pages to be of the same size and calculate the page number as
-     * {@code row_index / fixed_page_size -> page_number}. If it is greater than {@link #numPages}, we can assume the
-     * row to be coming from last page.
+     * rows, else equal to {@value #PAGE_SIZE_NOT_FIXED}. We cannot find the number of rows in the last page size from
+     * offset index, because it only has the first row index of each page. And we don't want to materialize any pages.
+     * So as a workaround, in case first ({@link #numPages}-1) pages have equal size, we can assume all pages to be of
+     * the same size and calculate the page number as {@code row_index / fixed_page_size -> page_number}. If it is
+     * greater than {@link #numPages}, we will infer that the row is coming from last page.
      */
     private final long fixedPageSize;
-
-    private final class PageState {
-        WeakReference<PageCache.IntrusivePage<ATTR>> pageRef;
-
-        PageState() {
-            // Initialized when used for the first time
-            pageRef = null;
-        }
-    }
-
-    private final AtomicReferenceArray<PageState> pageStates;
+    private final AtomicReferenceArray<PageState<ATTR>> pageStates;
     private final ColumnChunkReader.ColumnPageDirectAccessor columnPageDirectAccessor;
 
     OffsetIndexBasedColumnChunkPageStore(@NotNull final PageCache<ATTR> pageCache,
@@ -98,15 +100,19 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         if (pageNum < 0 || pageNum >= numPages) {
             throw new IllegalArgumentException("pageNum " + pageNum + " is out of range [0, " + numPages + ")");
         }
-        PageCache.IntrusivePage<ATTR> page;
-        PageState pageState = pageStates.get(pageNum);
-        if (pageState == null) {
-            pageState = pageStates.updateAndGet(pageNum, p -> p == null ? new PageState() : p);
+        PageState<ATTR> pageState;
+        while ((pageState = pageStates.get(pageNum)) == null) {
+            pageState = new PageState<>();
+            if (pageStates.weakCompareAndSetVolatile(pageNum, null, pageState)) {
+                break;
+            }
         }
-        if (pageState.pageRef == null || (page = pageState.pageRef.get()) == null) {
+        PageCache.IntrusivePage<ATTR> page;
+        WeakReference<PageCache.IntrusivePage<ATTR>> localRef;
+        if ((localRef = pageState.pageRef) == null || (page = localRef.get()) == null) {
             synchronized (pageState) {
                 // Make sure no one materialized this page as we waited for the lock
-                if (pageState.pageRef == null || (page = pageState.pageRef.get()) == null) {
+                if ((localRef = pageState.pageRef) == null || (page = localRef.get()) == null) {
                     final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum);
                     try {
                         page = new PageCache.IntrusivePage<>(toPage(offsetIndex.getFirstRowIndex(pageNum), reader));
