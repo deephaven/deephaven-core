@@ -258,7 +258,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         final RowSetBuilderRandom rowSetBuilder = RowSetFactory.builderRandom();
         final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup();
         liveValues.forEach(key -> {
-            final RowSet rowSet = rowSetLookup.apply(key);
+            final RowSet rowSet = rowSetLookup.apply(key, false);
             if (rowSet != null) {
                 rowSetBuilder.addRowSet(rowSet);
             }
@@ -307,7 +307,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         if (indexedSourceIndices.size() == 1) {
             // Only one indexed source, so we can use the RowSetLookup directly and return the row set.
             liveValues.forEach(key -> {
-                final RowSet rowSet = indexLookupArr[0].apply(key);
+                final RowSet rowSet = indexLookupArr[0].apply(key, false);
                 if (rowSet != null) {
                     // Make a copy of the row set.
                     indexKeyRowSetMap.put(key, rowSet.copy());
@@ -321,7 +321,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                     final int tupleIndex = indexedSourceIndices.get(ii);
                     // noinspection unchecked
                     final Object singleKey = indexedTupleSource.exportElementReinterpreted(key, tupleIndex);
-                    final RowSet rowSet = indexLookupArr[ii].apply(singleKey);
+                    final RowSet rowSet = indexLookupArr[ii].apply(singleKey, false);
                     if (rowSet != null) {
                         result = result == null ? rowSet.copy() : result.intersect(rowSet);
                     }

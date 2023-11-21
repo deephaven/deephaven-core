@@ -355,8 +355,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             final DataIndex dataIndex = new PartitioningColumnDataIndexImpl<>(
                     keySource,
                     partitioningColumnDefinition.getName(),
-                    columnSourceManager
-            );
+                    columnSourceManager);
             dataIndexer.addDataIndex(dataIndex);
         }
     }

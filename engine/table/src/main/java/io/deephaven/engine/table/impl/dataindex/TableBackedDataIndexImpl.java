@@ -142,11 +142,6 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
     }
 
     @Override
-    public Table baseIndexTable() {
-        return table();
-    }
-
-    @Override
     public boolean validate() {
         return true;
     }

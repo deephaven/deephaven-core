@@ -95,7 +95,8 @@ public class DerivedDataIndex extends BaseDataIndex {
             // Test again under the lock.
             cached = cachedTable.get();
             if (cached != null
-                    && (!parentIndex.isRefreshing() || cached.getUpdateGraph().clock().currentStep() == cachedTableStep)) {
+                    && (!parentIndex.isRefreshing()
+                            || cached.getUpdateGraph().clock().currentStep() == cachedTableStep)) {
                 return cached;
             }
 
@@ -146,14 +147,16 @@ public class DerivedDataIndex extends BaseDataIndex {
         // index, it remains valid. Otherwise, we need to recompute the index from its parent.
         PositionLookup cachedLookup = cachedPositionLookup.get();
         if (cachedLookup != null
-                && (!parentIndex.isRefreshing() || indexTable.getUpdateGraph().clock().currentStep() == cachedPositionLookupStep)) {
+                && (!parentIndex.isRefreshing()
+                        || indexTable.getUpdateGraph().clock().currentStep() == cachedPositionLookupStep)) {
             return cachedLookup;
         }
 
         synchronized (this) {
             cachedLookup = cachedPositionLookup.get();
             if (cachedLookup != null
-                    && (!parentIndex.isRefreshing() || indexTable.getUpdateGraph().clock().currentStep() == cachedPositionLookupStep)) {
+                    && (!parentIndex.isRefreshing()
+                            || indexTable.getUpdateGraph().clock().currentStep() == cachedPositionLookupStep)) {
                 return cachedLookup;
             }
 
@@ -195,12 +198,6 @@ public class DerivedDataIndex extends BaseDataIndex {
         return transformer.intersectRowSet().isPresent()
                 || transformer.invertRowSet().isPresent()
                 || transformer.immutable();
-    }
-
-    @Override
-    public Table baseIndexTable() {
-        // Return the parent index's base table.
-        return ((BaseDataIndex) parentIndex).baseIndexTable();
     }
 
     // region DataIndex materialization operations

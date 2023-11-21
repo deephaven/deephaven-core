@@ -3,7 +3,10 @@ package io.deephaven.engine.table.impl.dataindex;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.ColumnSourceManager;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
@@ -48,12 +51,6 @@ public class PartitioningColumnDataIndexImpl<KEY_TYPE> extends BaseDataIndex {
                 keySource.getComponentType());
         indexRowSetSource = new ObjectArraySource<>(WritableRowSet.class, null);
 
-        // TODO-RWC/LAB: Should we consider an approach we're we work like the storage-backed, and use FunctionalColumns?
-//        indexTable = locationTable.select(
-//                String.format("%s = %s.getPartitionValue(%s)", keyColumnName, columnSourceManager.locationColumnName(), keyColumnName),
-//                columnSourceManager.rowSetColumnName())
-//                .updateView(String.format("%s = %s.shift(%s.getFirstRowKey())", columnSourceManager.rowSetColumnName(), columnSourceManager.rowSetColumnName(), columnSourceManager.locationColumnName()));
-//
         keyPositionMap = new TObjectIntHashMap<>(locationTable.intSize(), 0.5F, -1);
 
         indexTable = new QueryTable(RowSetFactory.empty().toTracking(), Map.of(
@@ -96,10 +93,10 @@ public class PartitioningColumnDataIndexImpl<KEY_TYPE> extends BaseDataIndex {
             throw new UnsupportedOperationException("Shifted rows are not currently supported.");
         }
 
-        final boolean trackUpdates = isRefreshing() && !initializing;
+        final boolean generateUpdates = isRefreshing() && !initializing;
 
-        final RowSetBuilderSequential addedBuilder = trackUpdates ? null : RowSetFactory.builderSequential();
-        final RowSetBuilderRandom modifiedBuilder = trackUpdates ? null : RowSetFactory.builderRandom();
+        final RowSetBuilderSequential addedBuilder = generateUpdates ? RowSetFactory.builderSequential() : null;
+        final RowSetBuilderRandom modifiedBuilder = generateUpdates ? RowSetFactory.builderRandom() : null;
 
         // Get the location table from the RegionedColumnSourceManager.
         final Table locationTable = columnSourceManager.locationTable();
@@ -123,14 +120,17 @@ public class PartitioningColumnDataIndexImpl<KEY_TYPE> extends BaseDataIndex {
                 final long firstKey = RegionedColumnSource.getFirstRowKey(Math.toIntExact(key));
                 final WritableRowSet shiftedRowSet = rowSetColumnSource.get(key).shift(firstKey);
 
-                //noinspection DataFlowIssue
+                // noinspection DataFlowIssue
                 final KEY_TYPE locationKey = location.getKey().getPartitionValue(keyColumnName);
 
                 final int pos = keyPositionMap.get(locationKey);
                 if (pos == -1) {
                     // Key not found, add it.
                     final int addedPos = position.getAndIncrement();
-                    addEntry(addedPos, locationKey, shiftedRowSet);
+                    indexKeySource.set(addedPos, locationKey);
+                    indexRowSetSource.set(addedPos, shiftedRowSet);
+                    keyPositionMap.put(locationKey, addedPos);
+
                     if (addedBuilder != null) {
                         addedBuilder.appendKey(pos);
                     }
@@ -166,7 +166,7 @@ public class PartitioningColumnDataIndexImpl<KEY_TYPE> extends BaseDataIndex {
             }
         });
 
-        if (trackUpdates) {
+        if (generateUpdates) {
             // Send the downstream updates to any listeners of the index table.
             final RowSet added = addedBuilder.build();
             final RowSet modified = modifiedBuilder.build();
@@ -182,13 +182,6 @@ public class PartitioningColumnDataIndexImpl<KEY_TYPE> extends BaseDataIndex {
                 indexTable.notifyListeners(downstream);
             }
         }
-    }
-
-    private synchronized void addEntry(final int index, final KEY_TYPE key, final WritableRowSet rowSet) {
-        indexKeySource.set(index, key);
-        indexRowSetSource.set(index, rowSet);
-
-        keyPositionMap.put(key, index);
     }
 
     @Override

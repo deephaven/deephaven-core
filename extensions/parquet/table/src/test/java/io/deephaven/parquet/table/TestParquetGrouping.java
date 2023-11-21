@@ -57,8 +57,8 @@ public class TestParquetGrouping extends RefreshingTableTestCase {
             final ColumnSource<RowSet> rowSetColumnSource = dataIndex.rowSetColumn();
 
             for (int i = 0; i < data.length / 4; i++) {
-                assertEquals(rowSetLookup.apply(i), RowSetFactory.fromRange(i * 4, i * 4 + 3));
-                int pos = posLookup.apply(i);
+                assertEquals(rowSetLookup.apply(i, false), RowSetFactory.fromRange(i * 4, i * 4 + 3));
+                int pos = posLookup.apply(i, false);
                 assertEquals(rowSetColumnSource.get(pos), RowSetFactory.fromRange(i * 4, i * 4 + 3));
             }
 

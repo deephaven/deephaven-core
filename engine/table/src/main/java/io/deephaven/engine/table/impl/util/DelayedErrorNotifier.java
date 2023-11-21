@@ -9,8 +9,8 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
 
 /**
- * Re-usable tool for scheduling delayed error notifications to be enqueued on the next update graph cycle. This is
- * used when an error is detected, but delivering the error would violate single-notification guarantees.
+ * Re-usable tool for scheduling delayed error notifications to be enqueued on the next update graph cycle. This is used
+ * when an error is detected, but delivering the error would violate single-notification guarantees.
  */
 public final class DelayedErrorNotifier implements Runnable {
 

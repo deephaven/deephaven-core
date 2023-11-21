@@ -127,8 +127,8 @@ public class ChunkedOperatorAggregationHelper {
                 final Table dataIndexTable = dataIndex.table();
                 Assert.eq(input.isRefreshing(), "input.isRefreshing()",
                         dataIndexTable.isRefreshing(), "dataIndexTable.isRefreshing()");
-                snapshotControl = input.createSnapshotControlIfRefreshing(it ->
-                        new OperationSnapshotControlEx(it, (NotificationStepSource) dataIndexTable));
+                snapshotControl = input.createSnapshotControlIfRefreshing(
+                        it -> new OperationSnapshotControlEx(it, (NotificationStepSource) dataIndexTable));
             } else {
                 snapshotControl = input.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
             }

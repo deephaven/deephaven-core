@@ -185,7 +185,8 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @param index the index to add
      */
     public void addDataIndex(final DataIndex index) {
-        // TODO-RWC/LAB: We need to prevent "snapshot" derived data indexes from being added to the data indexer, here and in create.
+        // TODO-RWC/LAB: We need to prevent "snapshot" derived data indexes from being added to the data indexer, here
+        // and in create.
         final ColumnSource<?>[] keyColumns = index.keyColumnMap().keySet().toArray(ColumnSource<?>[]::new);
         final List<ColumnSource<?>> keys = Arrays.asList(keyColumns);
 

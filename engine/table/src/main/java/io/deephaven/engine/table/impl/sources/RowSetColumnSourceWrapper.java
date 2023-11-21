@@ -31,11 +31,11 @@ public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet> {
     private final ColumnSource<? extends TrackingRowSet> source;
 
     private static class GetContext implements ChunkSource.GetContext {
-        private final ChunkSource.GetContext sourceContext;
+        private final ChunkSource.GetContext parentContext;
         protected WritableObjectChunk<RowSet, ? extends Values> localChunk;
 
         private GetContext(ChunkSource.GetContext sourceContext) {
-            this.sourceContext = sourceContext;
+            this.parentContext = sourceContext;
         }
 
         @Override
@@ -44,7 +44,7 @@ public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet> {
                 localChunk.close();
                 localChunk = null;
             }
-            sourceContext.close();
+            parentContext.close();
         }
     }
 
@@ -60,12 +60,14 @@ public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet> {
     @Override
     public Chunk<? extends Values> getChunk(@NotNull ColumnSource.GetContext context,
             @NotNull RowSequence rowSequence) {
-        return source.getChunk(context, rowSequence);
+        final GetContext ctx = (GetContext) context;
+        return source.getChunk(ctx.parentContext, rowSequence);
     }
 
     @Override
     public Chunk<? extends Values> getChunk(@NotNull ColumnSource.GetContext context, long firstKey, long lastKey) {
-        return source.getChunk(context, firstKey, lastKey);
+        final GetContext ctx = (GetContext) context;
+        return source.getChunk(ctx.parentContext, firstKey, lastKey);
     }
 
     @Override
@@ -87,13 +89,13 @@ public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet> {
     @Override
     public Chunk<? extends Values> getPrevChunk(@NotNull ChunkSource.GetContext context,
             @NotNull RowSequence rowSequence) {
-        final GetContext localContext = (RowSetColumnSourceWrapper.GetContext) context;
+        final GetContext ctx = (RowSetColumnSourceWrapper.GetContext) context;
 
         // Must return a chunk of the prev() values for each row in rowSequence
         ObjectChunk<TrackingRowSet, ? extends Values> chunk =
-                (ObjectChunk<TrackingRowSet, ? extends Values>) source.getChunk(localContext.sourceContext,
+                (ObjectChunk<TrackingRowSet, ? extends Values>) source.getChunk(ctx.parentContext,
                         rowSequence);
-        WritableObjectChunk<RowSet, ? extends Values> contextChunk = ensureContextChunk(localContext, chunk.size());
+        WritableObjectChunk<RowSet, ? extends Values> contextChunk = ensureContextChunk(ctx, chunk.size());
 
         for (int ii = 0; ii < chunk.size(); ii++) {
             contextChunk.set(ii, chunk.get(ii).prev());
@@ -103,13 +105,13 @@ public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet> {
 
     @Override
     public Chunk<? extends Values> getPrevChunk(@NotNull ColumnSource.GetContext context, long firstKey, long lastKey) {
-        final GetContext localContext = (RowSetColumnSourceWrapper.GetContext) context;
+        final GetContext ctx = (RowSetColumnSourceWrapper.GetContext) context;
 
         // Must return a chunk of the prev() values for each row in rowSequence
         ObjectChunk<TrackingRowSet, ? extends Values> chunk =
-                (ObjectChunk<TrackingRowSet, ? extends Values>) source.getChunk(localContext.sourceContext, firstKey,
+                (ObjectChunk<TrackingRowSet, ? extends Values>) source.getChunk(ctx.parentContext, firstKey,
                         lastKey);
-        WritableObjectChunk<RowSet, ? extends Values> contextChunk = ensureContextChunk(localContext, chunk.size());
+        WritableObjectChunk<RowSet, ? extends Values> contextChunk = ensureContextChunk(ctx, chunk.size());
 
         for (int ii = 0; ii < chunk.size(); ii++) {
             contextChunk.set(ii, chunk.get(ii).prev());

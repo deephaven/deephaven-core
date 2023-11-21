@@ -74,7 +74,7 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
         final BaseDataIndex dataIndex = (BaseDataIndex) dataIndexer.getDataIndex(groupColumns);
 
 
-        final Table indexTable = dataIndex.table(usePrev);
+        final Table indexTable = dataIndex.table();
 
         // Create column iterators for the keys and the row set
         final CloseableIterator<?>[] keyIterators =
@@ -111,15 +111,15 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
         SafeCloseable.closeAll(rsIt);
 
         // Verify that every key in the row set is in the index at the correct position.
-        final DataIndex.RowSetLookup lookup = dataIndex.rowSetLookup(usePrev);
+        final DataIndex.RowSetLookup lookup = dataIndex.rowSetLookup();
         for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
             long next = it.nextLong();
             Object[] key = Arrays.stream(groupColumns).map(cs -> cs.get(next)).toArray();
             final RowSet keyRowSet;
             if (key.length == 1) {
-                keyRowSet = lookup.apply(key[0]);
+                keyRowSet = lookup.apply(key[0], usePrev);
             } else {
-                keyRowSet = lookup.apply(key);
+                keyRowSet = lookup.apply(key, usePrev);
             }
             Assert.assertion(keyRowSet != null, "keyRowSet != null", next, "next", key, "key", context, "context");
             if (keyRowSet != null) {
@@ -167,7 +167,7 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
             return;
         }
         final DataIndex index = dataIndexer.getDataIndex(groupColumns);
-        final Table indexTable = index.table(true);
+        final Table indexTable = index.table();
 
         // Create column iterators for the keys and the row set
         final CloseableIterator<?>[] keyIterators =
@@ -191,15 +191,15 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
             }
         }
 
-        final DataIndex.RowSetLookup lookup = index.rowSetLookup(true);
+        final DataIndex.RowSetLookup lookup = index.rowSetLookup();
         for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
             long next = it.nextLong();
             Object[] key = Arrays.stream(groupColumns).map(cs -> cs.getPrev(next)).toArray();
             final RowSet keyRowSet;
             if (key.length == 1) {
-                keyRowSet = lookup.apply(key[0]);
+                keyRowSet = lookup.apply(key[0], true);
             } else {
-                keyRowSet = lookup.apply(key);
+                keyRowSet = lookup.apply(key, true);
             }
             Assert.assertion(keyRowSet != null, "keyRowSet != null", next, "next", key, "key", context, "context");
             if (keyRowSet != null) {
