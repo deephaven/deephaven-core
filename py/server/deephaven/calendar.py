@@ -30,33 +30,28 @@ def remove_calendar(name: str) -> None:
         raise DHError(e, f"failed to remove calendar '{name}'") from e
 
 
-def add_calendar(cal: Optional[BusinessCalendar] = None, file: Optional[str] = None) -> None:
+def add_calendar(cal: Union[BusinessCalendar, str]) -> None:
     """ Adds a new business calendar to the set of available options.
 
     Args:
-        cal (BusinessCalendar): business calendar
-        file (str): business calendar file
+        cal (Union[BusinessCalendar, str]): business calendar or a path to a business calendar file
 
     Raises:
         DHError
     """
 
-    if cal is None and file is None:
-        raise DHError("either cal or file must be specified")
-    elif cal is not None and file is not None:
-        raise DHError("only one of cal or file may be specified")
-    elif cal is not None:
+    if cal is None:
+        raise DHError("cal must be specified")
+    elif isinstance(cal, str):
+        try:
+            _JCalendars.addCalendarFromFile(file)
+        except Exception as e:
+            raise DHError(e, f"failed to add calendar from file '{cal}'") from e
+    else:
         try:
             _JCalendars.addCalendar(cal)
         except Exception as e:
             raise DHError(e, f"failed to add calendar") from e
-    elif file is not None:
-        try:
-            _JCalendars.addCalendarFromFile(file)
-        except Exception as e:
-            raise DHError(e, f"failed to add calendar from file '{file}'") from e
-    else:
-        raise DHError(f"unexpected error: cal={cal} file={file}")
 
 
 def set_calendar(name: str) -> None:

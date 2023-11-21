@@ -33,15 +33,12 @@ class CalendarTestCase(BaseTestCase):
         cal = jpy.get_type("io.deephaven.time.calendar.BusinessCalendarParser").loadBusinessCalendar(path2)
 
         with self.assertRaises(DHError) as cm:
-            add_calendar(cal=None, file=None)
+            add_calendar(None)
 
-        with self.assertRaises(DHError) as cm:
-            add_calendar(cal=cal, file=path1)
-
-        add_calendar(file=path1)
+        add_calendar(path1)
         self.assertIn("TEST1", calendar_names())
 
-        add_calendar(cal=cal)
+        add_calendar(cal)
         self.assertIn("TEST2", calendar_names())
 
         # Testing calendar removal here so that the global calendar state is not affected by the test

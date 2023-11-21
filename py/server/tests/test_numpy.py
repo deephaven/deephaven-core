@@ -159,7 +159,7 @@ class NumpyTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             to_np_busdaycalendar("test")
 
-        add_calendar(file=self.get_resource_path("/NUMPY_TEST.calendar"))
+        add_calendar(self.get_resource_path("/NUMPY_TEST.calendar"))
         jcal = calendar("NUMPY_TEST")
 
         # Include partial days
