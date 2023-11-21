@@ -163,7 +163,7 @@ def to_table(np_array: np.ndarray, cols: List[str]) -> Table:
         raise DHError(e, "failed to create a Deephaven Table from a Pandas DataFrame.") from e
 
 
-def to_busdaycalendar(cal: BusinessCalendar, include_partial: bool = True) -> np.busdaycalendar:
+def to_np_busdaycalendar(cal: BusinessCalendar, include_partial: bool = True) -> np.busdaycalendar:
     """ Creates a numpy business day calendar from a Java BusinessCalendar.
 
     Partial holidays in the business calendar are interepreted as full holidays in the numpy business day calendar.

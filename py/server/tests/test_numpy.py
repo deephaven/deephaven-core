@@ -12,7 +12,7 @@ from deephaven import DHError, new_table, dtypes
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_LONG, MAX_LONG
-from deephaven.numpy import to_numpy, to_table, to_busdaycalendar
+from deephaven.numpy import to_numpy, to_table, to_np_busdaycalendar
 from deephaven.jcompat import j_array_list
 from deephaven.calendar import add_calendar, remove_calendar, calendar
 from tests.testbase import BaseTestCase
@@ -154,17 +154,17 @@ class NumpyTestCase(BaseTestCase):
         Objects = jpy.get_type("java.util.Objects")
         return Paths.get(Objects.requireNonNull(obj.getClass().getResource(resource_path)).toURI()).toString()
 
-    def test_to_busdaycalendar(self):
+    def test_to_np_busdaycalendar(self):
 
         with self.assertRaises(DHError) as cm:
-            to_busdaycalendar("test")
+            to_np_busdaycalendar("test")
 
         add_calendar(file=self.get_resource_path("/NUMPY_TEST.calendar"))
         jcal = calendar("NUMPY_TEST")
 
         # Include partial days
 
-        npcal = to_busdaycalendar(jcal, include_partial=True)
+        npcal = to_np_busdaycalendar(jcal, include_partial=True)
 
         # Check weekdays vs weekends for a normal week
         days = ["2023-11-06", "2023-11-07", "2023-11-08", "2023-11-09", "2023-11-10", "2023-11-11", "2023-11-12"]
@@ -180,7 +180,7 @@ class NumpyTestCase(BaseTestCase):
 
         # Exclude partial days
 
-        npcal = to_busdaycalendar(jcal, include_partial=False)
+        npcal = to_np_busdaycalendar(jcal, include_partial=False)
 
         # Check weekdays vs weekends for a normal week
         days = ["2023-11-06", "2023-11-07", "2023-11-08", "2023-11-09", "2023-11-10", "2023-11-11", "2023-11-12"]
