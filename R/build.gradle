@@ -164,6 +164,7 @@ def rClientSite = Docker.registerDockerTask(project, 'rClientSite') {
         from(layout.projectDirectory) {
             include 'r-site.sh'
             include 'rdeephaven/man/**'
+            include 'rdeephaven/pkgdown/**'
         }
     }
     copyOut {
@@ -173,6 +174,7 @@ def rClientSite = Docker.registerDockerTask(project, 'rClientSite') {
         from('deephaven/r-client-doc:local-build')
         // We need the contents of 'man' to build the docsite
         copyFile('rdeephaven/man/**', "${prefix}/src/rdeephaven/man/")
+        copyFile('rdeephaven/pkgdown/**', "${prefix}/src/rdeephaven/pkgdown/")
         runCommand("mkdir -p ${prefix}/src/rdeephaven/docs")
         runCommand('''echo "status = tryCatch(" \
                            "   {" \
