@@ -25,7 +25,7 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
             ColumnDefinition.ofString("EntryCallerLine"),
             ColumnDefinition.ofTime("IntervalStartTime"),
             ColumnDefinition.ofTime("IntervalEndTime"),
-            ColumnDefinition.ofLong("Usage"),
+            ColumnDefinition.ofLong("UsageNanos"),
             ColumnDefinition.ofLong("CpuNanos"),
             ColumnDefinition.ofLong("UserCpuNanos"),
             ColumnDefinition.ofLong("RowsAdded"),
@@ -78,7 +78,7 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
         chunks[5].asWritableLongChunk().add(intervalLevelDetails.getIntervalStartTimeEpochNanos());
         // ColumnDefinition.ofTime("IntervalEndTime"),
         chunks[6].asWritableLongChunk().add(intervalLevelDetails.getIntervalEndTimeEpochNanos());
-        // ColumnDefinition.ofLong("Usage"),
+        // ColumnDefinition.ofLong("UsageNanos"),
         chunks[7].asWritableLongChunk().add(performanceEntry.getUsageNanos());
         // ColumnDefinition.ofLong("CpuNanos"),
         chunks[8].asWritableLongChunk().add(performanceEntry.getCpuNanos());
