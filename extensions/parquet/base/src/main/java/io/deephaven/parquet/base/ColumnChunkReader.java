@@ -45,14 +45,11 @@ public interface ColumnChunkReader {
      */
     ColumnPageReaderIterator getPageIterator() throws IOException;
 
-    interface ColumnPageDirectAccessor extends AutoCloseable {
+    interface ColumnPageDirectAccessor {
         /**
          * Directly access a page reader for a given page number.
          */
         ColumnPageReader getPageReader(final int pageNum);
-
-        @Override
-        void close();
     }
 
     /**

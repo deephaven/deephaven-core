@@ -63,9 +63,10 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         }
         boolean isPageSizeFixed = true;
         final long firstPageSize = offsetIndex.getFirstRowIndex(1) - offsetIndex.getFirstRowIndex(0);
-        for (int i = 2; i < numPages && isPageSizeFixed; ++i) {
+        for (int i = 2; i < numPages; ++i) {
             if (offsetIndex.getFirstRowIndex(i) - offsetIndex.getFirstRowIndex(i - 1) != firstPageSize) {
                 isPageSizeFixed = false;
+                break;
             }
         }
         fixedPageSize = isPageSizeFixed ? firstPageSize : PAGE_SIZE_NOT_FIXED;
@@ -88,9 +89,9 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             else if (midVal > row)
                 high = mid - 1;
             else
-                return mid; // key found
+                return mid; // 'row' is the first row of page
         }
-        return -(low + 1); // key not found.
+        return (low - 1); // 'row' is somewhere in the middle of page
     }
 
     private ChunkPage<ATTR> getPage(final int pageNum) {
@@ -129,13 +130,10 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         int pageNum;
         if (fixedPageSize == PAGE_SIZE_NOT_FIXED) {
             pageNum = findPageNumUsingOffsetIndex(offsetIndex, row);
-            if (pageNum < 0) {
-                pageNum = -2 - pageNum;
-            }
         } else {
             pageNum = (int) (row / fixedPageSize);
             if (pageNum >= numPages) {
-                // This can happen if the last page is of different size from rest of the pages.
+                // This can happen if the last page is larger than rest of the pages, which are all the same size.
                 // We have already checked that row is less than numRows.
                 Assert.assertion(row >= offsetIndex.getFirstRowIndex(numPages - 1),
                         "row >= offsetIndex.getFirstRowIndex(numPages - 1)");

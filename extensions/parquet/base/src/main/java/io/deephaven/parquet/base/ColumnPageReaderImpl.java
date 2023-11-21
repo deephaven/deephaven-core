@@ -148,6 +148,13 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                 }
             } while (!success);
             file.position(offset);
+            if (numValues >= 0) {
+                // Make sure the number of values are same as those in the header
+                if (numValues != readNumValuesFromPageHeader(pageHeader)) {
+                    throw new IllegalStateException("numValues = " + numValues + " different from number of values " +
+                            "read from the page header");
+                }
+            }
         }
         ensureNumValues();
     }
@@ -585,34 +592,34 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     @Override
     public int numValues() throws IOException {
-        ensureNumValues();
-        return numValues;
+        if (numValues > 0) {
+            return numValues;
+        }
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+            readChannel.position(offset);
+            ensurePageHeader(readChannel);
+            // Above will automatically populate numValues
+            Assert.geq(numValues, "numValues", 0);
+            return numValues;
+        }
     }
 
     private void ensureNumValues() throws IOException {
         if (numValues >= 0) {
             return;
         }
-        if (pageHeader == null) {
-            try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
-                readChannel.position(offset);
-                ensurePageHeader(readChannel);
-                // Above will automatically populate numValues
-                Assert.geq(numValues, "numValues", 0);
-                return;
-            }
-        }
         Assert.neqNull(pageHeader, "pageHeader");
-        switch (pageHeader.type) {
+        numValues = readNumValuesFromPageHeader(pageHeader);
+    }
+
+    private static int readNumValuesFromPageHeader(@NotNull final PageHeader header) throws IOException {
+        switch (header.type) {
             case DATA_PAGE:
-                numValues = pageHeader.getData_page_header().getNum_values();
-                break;
+                return header.getData_page_header().getNum_values();
             case DATA_PAGE_V2:
-                numValues = pageHeader.getData_page_header_v2().getNum_values();
-                break;
+                return header.getData_page_header_v2().getNum_values();
             default:
-                throw new IOException(
-                        String.format("Unexpected page of type {%s}", pageHeader.getType()));
+                throw new IOException(String.format("Unexpected page of type {%s}", header.getType()));
         }
     }
 

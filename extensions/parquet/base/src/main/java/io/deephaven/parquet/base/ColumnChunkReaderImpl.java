@@ -101,10 +101,9 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     public ColumnPageReaderIterator getPageIterator() {
         final long dataPageOffset = columnChunk.meta_data.getData_page_offset();
         if (offsetIndex == null) {
-            return new ColumnPageReaderIteratorImpl(dataPageOffset, columnChunk.getMeta_data().getNum_values(),
-                    path, channelsProvider);
+            return new ColumnPageReaderIteratorImpl(dataPageOffset, columnChunk.getMeta_data().getNum_values());
         } else {
-            return new ColumnPageReaderIteratorIndexImpl(path, channelsProvider);
+            return new ColumnPageReaderIteratorIndexImpl();
         }
     }
 
@@ -113,7 +112,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         if (offsetIndex == null) {
             throw new UnsupportedOperationException("Cannot use direct accessor without offset index");
         }
-        return new ColumnPageDirectAccessorImpl(path, channelsProvider);
+        return new ColumnPageDirectAccessorImpl();
     }
 
     private Path getFilePath() {
@@ -215,21 +214,13 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         return dictionaryPage.getEncoding().initDictionary(path, dictionaryPage);
     }
 
-    class ColumnPageReaderIteratorImpl implements ColumnPageReaderIterator {
-        private final SeekableChannelsProvider channelsProvider;
+    private final class ColumnPageReaderIteratorImpl implements ColumnPageReaderIterator {
         private long currentOffset;
-        private final ColumnDescriptor path;
-
         private long remainingValues;
 
-        ColumnPageReaderIteratorImpl(final long startOffset,
-                final long numValues,
-                @NotNull final ColumnDescriptor path,
-                @NotNull final SeekableChannelsProvider channelsProvider) {
+        ColumnPageReaderIteratorImpl(final long startOffset, final long numValues) {
             this.remainingValues = numValues;
             this.currentOffset = startOffset;
-            this.path = path;
-            this.channelsProvider = channelsProvider;
         }
 
         @Override
@@ -290,15 +281,10 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         public void close() {}
     }
 
-    class ColumnPageReaderIteratorIndexImpl implements ColumnPageReaderIterator {
-        private final SeekableChannelsProvider channelsProvider;
+    private final class ColumnPageReaderIteratorIndexImpl implements ColumnPageReaderIterator {
         private int pos;
-        private final ColumnDescriptor path;
 
-        ColumnPageReaderIteratorIndexImpl(ColumnDescriptor path,
-                SeekableChannelsProvider channelsProvider) {
-            this.path = path;
-            this.channelsProvider = channelsProvider;
+        ColumnPageReaderIteratorIndexImpl() {
             pos = 0;
         }
 
@@ -330,27 +316,19 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         public void close() {}
     }
 
-    class ColumnPageDirectAccessorImpl implements ColumnPageDirectAccessor {
-        private final SeekableChannelsProvider channelsProvider;
-        private final ColumnDescriptor path;
+    private final class ColumnPageDirectAccessorImpl implements ColumnPageDirectAccessor {
 
-        ColumnPageDirectAccessorImpl(final ColumnDescriptor path, final SeekableChannelsProvider channelsProvider) {
-            this.path = path;
-            this.channelsProvider = channelsProvider;
-        }
+        ColumnPageDirectAccessorImpl() {}
 
         @Override
         public ColumnPageReader getPageReader(final int pageNum) {
-            if (pageNum > offsetIndex.getPageCount()) {
-                throw new NoSuchElementException(
-                        "pageNum=" + pageNum + " > offsetIndex.getPageCount()=" + offsetIndex.getPageCount());
+            if (pageNum < 0 || pageNum >= offsetIndex.getPageCount()) {
+                throw new IndexOutOfBoundsException(
+                        "pageNum=" + pageNum + ", offsetIndex.getPageCount()=" + offsetIndex.getPageCount());
             }
             final int numValues = -1; // Will be populated properly when we read the page header
             return new ColumnPageReaderImpl(channelsProvider, decompressor, dictionarySupplier, nullMaterializerFactory,
                     path, getFilePath(), fieldTypes, offsetIndex.getOffset(pageNum), null, numValues);
         }
-
-        @Override
-        public void close() {}
     }
 }
