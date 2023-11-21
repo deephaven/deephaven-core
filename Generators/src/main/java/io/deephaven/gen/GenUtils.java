@@ -205,7 +205,7 @@ public class GenUtils {
                 }
 
                 TypeVariable<Method> t = f.getTypeParameters()[i];
-                log.info("BOUNDS: " + Arrays.toString(t.getBounds()));
+                log.fine("BOUNDS: " + Arrays.toString(t.getBounds()));
                 s += t;
 
                 Type[] bounds = t.getBounds();
