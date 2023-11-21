@@ -109,7 +109,7 @@ docker compose up
 
 ### pip-installed Deephaven
 
-Users who wish to use Python but not Docker should use [pip-installed Deephaven](https://deephaven.io/core/docs/tutorials/quickstart-pip/).
+Users who wish to use Python but not Docker should use [pip-installed Deephaven](https://deephaven.io/core/docs/tutorials/quickstart-pip/). For users with Windows operating systems, WSL is **not** required to use Deephaven this way.
 
 ```sh
 pip install --upgrade pip setuptools wheel
