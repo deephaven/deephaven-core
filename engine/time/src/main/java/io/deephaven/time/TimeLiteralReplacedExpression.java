@@ -77,6 +77,7 @@ public class TimeLiteralReplacedExpression {
         int nanosIndex = 0;
         int periodIndex = 0;
         int durationIndex = 0;
+        int tzIndex = 0;
 
         final Matcher matcher = Pattern.compile("'[^']*'").matcher(expression);
 
@@ -129,8 +130,16 @@ public class TimeLiteralReplacedExpression {
                         .append(expression, matcher.start() + 1, matcher.end() - 1).append("\");\n");
                 newVariables.put("_localTime" + nanosIndex, LocalTime.class);
                 nanosIndex++;
+            } else if (DateTimeUtils.parseTimeZoneQuiet(s) != null) {
+                matcher.appendReplacement(convertedFormula, "_timeZone" + tzIndex);
+                instanceVariablesString.append("        private java.time.ZoneId _timeZone").append(tzIndex)
+                        .append("=DateTimeUtils.parseTimeZone(\"")
+                        .append(expression, matcher.start() + 1, matcher.end() - 1).append("\");\n");
+                newVariables.put("_timeZone" + tzIndex, ZoneId.class);
+                tzIndex++;
             } else {
-                throw new Exception("Cannot parse datetime/time/period : " + s);
+                throw new Exception(
+                        "Cannot parse literal as a datetime, date, time, duration, period, or timezone: " + s);
             }
         }
 

@@ -209,10 +209,10 @@ def datetime_col(name: str, data: Sequence) -> InputColumn:
 
 
 def pyobj_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing complex, non-primitive-like Python objects.
+    """Creates an input column containing complex, non-primitive-like Python objects.
 
-        name (str): the column name
     Args:
+        name (str): the column name
         data (Any): a sequence of Python objects
 
     Returns:

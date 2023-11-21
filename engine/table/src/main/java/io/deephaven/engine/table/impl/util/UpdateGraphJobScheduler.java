@@ -47,9 +47,7 @@ public class UpdateGraphJobScheduler implements JobScheduler {
                     throw e;
                 } finally {
                     baseEntry.onBaseEntryEnd();
-                    synchronized (accumulatedBaseEntry) {
-                        accumulatedBaseEntry.accumulate(baseEntry);
-                    }
+                    accumulatedBaseEntry.accumulate(baseEntry);
                 }
             }
 

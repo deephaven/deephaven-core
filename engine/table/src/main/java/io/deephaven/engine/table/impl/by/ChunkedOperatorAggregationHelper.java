@@ -18,6 +18,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.NoSuchColumnException.Type;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
@@ -42,10 +43,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -76,6 +74,18 @@ public class ChunkedOperatorAggregationHelper {
                 aggregationContextFactory, input, preserveEmpty, initialKeys, groupByColumns);
     }
 
+    private static void checkGroupByColumns(String context, TableDefinition tableDefinition, String[] keyNames) {
+        NoSuchColumnException.throwIf(
+                tableDefinition.getColumnNameSet(),
+                Arrays.asList(keyNames),
+                String.format(
+                        "aggregation: not all group-by columns [%%s] are present in %s with columns [%%s]. Missing columns: [%%s]",
+                        context),
+                Type.REQUESTED,
+                Type.AVAILABLE,
+                Type.MISSING);
+    }
+
     @VisibleForTesting
     public static QueryTable aggregation(
             @NotNull final AggregationControl control,
@@ -85,29 +95,22 @@ public class ChunkedOperatorAggregationHelper {
             @Nullable final Table initialKeys,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final String[] keyNames = groupByColumns.stream().map(ColumnName::name).toArray(String[]::new);
-        if (!input.hasColumns(keyNames)) {
-            throw new IllegalArgumentException("aggregation: not all group-by columns " + Arrays.toString(keyNames)
-                    + " are present in input table with columns "
-                    + Arrays.toString(input.getDefinition().getColumnNamesArray()));
-        }
+        checkGroupByColumns("input table", input.getDefinition(), keyNames);
         if (initialKeys != null) {
             if (keyNames.length == 0) {
                 throw new IllegalArgumentException(
                         "aggregation: initial groups must not be specified if no group-by columns are specified");
             }
-            if (!initialKeys.hasColumns(keyNames)) {
-                throw new IllegalArgumentException("aggregation: not all group-by columns " + Arrays.toString(keyNames)
-                        + " are present in initial groups table with columns "
-                        + Arrays.toString(initialKeys.getDefinition().getColumnNamesArray()));
-            }
+            checkGroupByColumns("initial groups", initialKeys.getDefinition(), keyNames);
             for (final String keyName : keyNames) {
                 final ColumnDefinition<?> inputDef = input.getDefinition().getColumn(keyName);
                 final ColumnDefinition<?> initialKeysDef = initialKeys.getDefinition().getColumn(keyName);
                 if (!inputDef.isCompatible(initialKeysDef)) {
-                    throw new IllegalArgumentException(
-                            "aggregation: column definition mismatch between input table and initial groups table for "
-                                    + keyName + " input has " + inputDef.describeForCompatibility()
-                                    + ", initial groups has " + initialKeysDef.describeForCompatibility());
+                    throw new IllegalArgumentException(String.format(
+                            "aggregation: column definition mismatch between input table and initial groups table for %s; input has %s, initial groups has %s",
+                            keyName,
+                            inputDef.describeForCompatibility(),
+                            initialKeysDef.describeForCompatibility()));
                 }
             }
         }

@@ -58,7 +58,7 @@ public class MultiColumnSortTest {
                         new BigIntegerGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100)),
                         new BigDecimalGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100))));
 
-        final List<String> columnNames = new ArrayList<>(table.getColumnSourceMap().keySet());
+        final List<String> columnNames = table.getDefinition().getColumnNames();
 
         doMultiColumnTest(table, SortColumn.asc(ColumnName.of("boolCol")), SortColumn.desc(ColumnName.of("Sym")));
 

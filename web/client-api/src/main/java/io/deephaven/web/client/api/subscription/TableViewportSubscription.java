@@ -238,7 +238,7 @@ public class TableViewportSubscription extends HasEventHandling {
      * forwarding events and optionally close the underlying table/subscription.
      */
     public void internalClose() {
-        // indicate that the base table shouldn't get events any more, even if it this is still retained elsewhere
+        // indicate that the base table shouldn't get events anymore, even if it is still retained elsewhere
         originalActive = false;
 
         if (retained || status == Status.DONE) {

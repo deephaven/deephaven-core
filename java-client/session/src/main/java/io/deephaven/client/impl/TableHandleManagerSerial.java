@@ -3,7 +3,7 @@
  */
 package io.deephaven.client.impl;
 
-import io.deephaven.client.impl.TableHandle.Lifecycle;
+import io.deephaven.client.impl.TableServiceImpl.Lifecycle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.client.impl.TableHandle.UncheckedInterruptedException;
 import io.deephaven.client.impl.TableHandle.UncheckedTableHandleException;
@@ -32,24 +32,15 @@ import java.util.Set;
  * Serial execution is useful for initial development and debugging. There will be a server/client round-trip for each
  * table operation. Exceptions should have the exact line if there is an error in operation execution.
  */
-final class TableHandleManagerSerial extends TableHandleManagerBase {
+abstract class TableHandleManagerSerial extends TableHandleManagerBase {
 
-    public static TableHandleManagerSerial of(Session session) {
-        return new TableHandleManagerSerial(session);
-    }
-
-    private TableHandleManagerSerial(Session session) {
-        super(session, null);
-    }
-
-    private TableHandleManagerSerial(Session session, Lifecycle lifecycle) {
-        super(session, lifecycle);
-    }
+    protected abstract ExportService exportService();
 
     @Override
     public TableHandle execute(TableSpec table) throws TableHandleException, InterruptedException {
+        final ExportService exportService = exportService();
         final Tracker tracker = new Tracker();
-        final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
+        final TableHandleManager manager = inner(exportService, tracker);
         final TableAdapterResults<TableHandle, TableHandle> results;
         try {
             // noinspection RedundantTypeArguments
@@ -65,8 +56,9 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
 
     @Override
     public List<TableHandle> execute(Iterable<TableSpec> tables) throws TableHandleException, InterruptedException {
+        final ExportService exportService = exportService();
         final Tracker tracker = new Tracker();
-        final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
+        final TableHandleManager manager = inner(exportService, tracker);
         final TableAdapterResults<TableHandle, TableHandle> results;
         try {
             // noinspection RedundantTypeArguments
@@ -87,8 +79,9 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
 
     @Override
     public TableHandle executeLogic(TableCreationLogic logic) throws TableHandleException, InterruptedException {
+        final ExportService exportService = exportService();
         final Tracker tracker = new Tracker();
-        final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
+        final TableHandleManager manager = inner(exportService, tracker);
         final TableHandle out;
         try {
             out = checked(() -> logic.create(manager));
@@ -103,8 +96,9 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
     @Override
     public List<TableHandle> executeLogic(Iterable<TableCreationLogic> logics)
             throws TableHandleException, InterruptedException {
+        final ExportService exportService = exportService();
         final Tracker tracker = new Tracker();
-        final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
+        final TableHandleManager manager = inner(exportService, tracker);
         final List<TableHandle> out = new ArrayList<>();
         try {
             for (TableCreationLogic logic : logics) {
@@ -121,8 +115,9 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
     @Override
     public LabeledValues<TableHandle> executeLogic(TableCreationLabeledLogic logic)
             throws TableHandleException, InterruptedException {
+        final ExportService exportService = exportService();
         final Tracker tracker = new Tracker();
-        final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
+        final TableHandleManager manager = inner(exportService, tracker);
         final LabeledValues<TableHandle> out;
         try {
             out = checked(() -> logic.create(manager));
@@ -196,4 +191,17 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
         }
     }
 
+    private static TableHandleManagerSerial inner(ExportService exportService, Tracker tracker) {
+        return new TableHandleManagerSerial() {
+            @Override
+            protected ExportService exportService() {
+                return exportService;
+            }
+
+            @Override
+            protected TableHandle handle(TableSpec table) {
+                return TableServiceImpl.executeUnchecked(exportService, table, tracker);
+            }
+        };
+    }
 }

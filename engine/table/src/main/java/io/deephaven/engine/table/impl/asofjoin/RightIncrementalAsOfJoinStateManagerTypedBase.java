@@ -129,7 +129,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
     protected void migrateCookie(long cookie, int destinationLocation) {
         if (cookie >= cookieGeneration && cookie - cookieGeneration < nextCookie) {
-            hashSlots.set(cookie, destinationLocation | mainInsertMask);
+            hashSlots.set(cookie - cookieGeneration, destinationLocation | mainInsertMask);
             mainCookieSource.set(destinationLocation, cookie);
         }
     }

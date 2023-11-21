@@ -130,6 +130,11 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         initializeLocationSizes();
     }
 
+    @TestUseOnly
+    public final TableLocationProvider tableLocationProvider() {
+        return locationProvider;
+    }
+
     /**
      * This is only for unit tests, at this time.
      */

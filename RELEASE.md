@@ -54,6 +54,18 @@ The Deephaven python client is released as the `pydeephaven` wheel at [PyPi](htt
 ### Deephaven go client
 The Deephaven go client is released as a [Go package](https://pkg.go.dev/github.com/deephaven/deephaven-core/go).
 
+### Deephaven API docs
+API documentation is generated for Java, Python and C++ implemetations for Deephaven integration.
+The artifacts are released to [GitHub releases](https://github.com/deephaven/deephaven-core/releases)
+and are published as the following:
+* [Java Client/Server API](https://deephaven.io/core/javadoc/)
+* [Python Integration API](https://deephaven.io/core/pydoc/)
+* [Python Client API](https://deephaven.io/core/client-api/python/)
+* [C++ Client API](https://deephaven.io/core/client-api/cpp/)
+* [C++ Examples](https://deephaven.io/core/client-api/cpp-examples/)
+* [R Client API](https://deephaven.io/core/client-api/r/)
+* [TypeScript Client API](https://deephaven.io/core/client-api/javascript/)
+
 ## Release process
 
 The majority of the release procedure is controlled through the [publish-ci.yml workflow](./.github/workflows/publish-ci.yml).
@@ -111,6 +123,9 @@ $ git cherry-pick <...>
 # See https://github.com/deephaven/deephaven-core/issues/3466 for future improvements to this process.
 $ ...
 $ git commit -m "Bump to X.Y.1"
+$ git --no-pager log --oneline vX.Y.0..release/vX.Y.1
+#
+# Compare output to expected PR list for missing or extraneous PRs
 ```
 
 ### 3. Push to upstream
@@ -147,7 +162,8 @@ Once the workflow job is done, ensure all publication sources have the new artif
 ### 5. Download artifacts
 
 Once the full publish-ci.yml worflow is done, the release artifacts can be downloaded from the GitHub Artifacts (located in the "Summary" tab of the action).
-These are currently manual steps taken from the browser.
+Similarly, release artifacts can be downloaded from the docs-ci.yml workflow.
+These are currently manual steps taken from the browser. (The artifacts will be uploaded in Step #9)
 
 There is potential in the future for QA-ing these artifacts above and beyond the integration testing that CI provides, as the release is not set in stone yet.
 
@@ -205,7 +221,8 @@ Create a new [GitHub release](https://github.com/deephaven/deephaven-core/releas
 
 The convention is to have the Release title of the form `vX.Y.Z` and to autogenerate the release notes in comparison to the previous release tag. Question: should we always generate release notes based off of the previous minor release, instead of patch? Our git release workflow suggests we may want to do it always minor to minor.
 
-Upload the Deephaven server application, deephaven-core wheel, pydeephaven wheel, and SBOM artifacts.
+Upload the Deephaven server application, deephaven-core wheel, pydeephaven wheel, and SBOM artifacts. Also, upload the C++, Java, Python, R and TypeScript docs artifacts. 
+(These are the artifacts downloaded in Step #5)
 
 Hit the GitHub "Publish release" button.
 

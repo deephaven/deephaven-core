@@ -20,10 +20,10 @@ class AsyncErrorStreamPublisher implements StreamPublisher {
 
     private static final TableDefinition DEFINITION = TableDefinition.of(
             ColumnDefinition.ofTime("Time"),
-            ColumnDefinition.ofInt("EvaluationNumber"),
+            ColumnDefinition.ofLong("EvaluationNumber"),
             ColumnDefinition.ofInt("OperationNumber"),
             ColumnDefinition.ofString("Description"),
-            ColumnDefinition.ofInt("SourceQueryEvaluationNumber"),
+            ColumnDefinition.ofLong("SourceQueryEvaluationNumber"),
             ColumnDefinition.ofInt("SourceQueryOperationNumber"),
             ColumnDefinition.ofString("SourceQueryDescription"),
             ColumnDefinition.of("Cause", Type.ofCustom(Throwable.class)));
@@ -51,18 +51,18 @@ class AsyncErrorStreamPublisher implements StreamPublisher {
 
     public synchronized void add(
             long timeNanos,
-            int evaluationNumber,
+            long evaluationNumber,
             int operationNumber,
             String description,
-            int sourceQueryEvaluationNumber,
+            long sourceQueryEvaluationNumber,
             int sourceQueryOperationNumber,
             String sourceQueryDescription,
             Throwable cause) {
         chunks[0].asWritableLongChunk().add(timeNanos);
-        chunks[1].asWritableIntChunk().add(evaluationNumber);
+        chunks[1].asWritableLongChunk().add(evaluationNumber);
         chunks[2].asWritableIntChunk().add(operationNumber);
         chunks[3].<String>asWritableObjectChunk().add(description);
-        chunks[4].asWritableIntChunk().add(sourceQueryEvaluationNumber);
+        chunks[4].asWritableLongChunk().add(sourceQueryEvaluationNumber);
         chunks[5].asWritableIntChunk().add(sourceQueryOperationNumber);
         chunks[6].<String>asWritableObjectChunk().add(sourceQueryDescription);
         chunks[7].<Throwable>asWritableObjectChunk().add(cause);

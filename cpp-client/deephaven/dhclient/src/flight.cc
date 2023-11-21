@@ -16,17 +16,17 @@ FlightWrapper TableHandleManager::CreateFlightWrapper() const {
 FlightWrapper::FlightWrapper(std::shared_ptr<impl::TableHandleManagerImpl> impl) : impl_(std::move(impl)) {}
 FlightWrapper::~FlightWrapper() = default;
 
-std::shared_ptr<arrow::flight::FlightStreamReader> FlightWrapper::GetFlightStreamReader(
+std::unique_ptr<arrow::flight::FlightStreamReader> FlightWrapper::GetFlightStreamReader(
     const TableHandle &table) const {
   arrow::flight::FlightCallOptions options;
   AddHeaders(&options);
 
-  std::unique_ptr<arrow::flight::FlightStreamReader> fsr;
   arrow::flight::Ticket tkt;
   tkt.ticket = table.Impl()->Ticket().ticket();
 
-  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(impl_->Server()->FlightClient()->DoGet(options, tkt, &fsr)));
-  return fsr;
+  auto fsr_result = impl_->Server()->FlightClient()->DoGet(options, tkt);
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr_result));
+  return std::move(*fsr_result);
 }
 
 void FlightWrapper::AddHeaders(arrow::flight::FlightCallOptions *options) const {

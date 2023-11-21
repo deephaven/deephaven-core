@@ -2,7 +2,6 @@
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/flight.h"
-#include "deephaven/client/flight.h"
 #include "deephaven/client/utility/table_maker.h"
 #include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/dhcore/utility/utility.h"
@@ -19,11 +18,11 @@ TableMaker::TableMaker() = default;
 TableMaker::~TableMaker() = default;
 
 void TableMaker::FinishAddColumn(std::string name, internal::TypeConverter info) {
-  auto kvMetadata = std::make_shared<arrow::KeyValueMetadata>();
-  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(kvMetadata->Set("deephaven:type", info.DeephavenType())));
+  auto kv_metadata = std::make_shared<arrow::KeyValueMetadata>();
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(kv_metadata->Set("deephaven:type", info.DeephavenType())));
 
   auto field = std::make_shared<arrow::Field>(std::move(name), std::move(info.DataType()), true,
-      std::move(kvMetadata));
+      std::move(kv_metadata));
   OkOrThrow(DEEPHAVEN_LOCATION_EXPR(schemaBuilder_.AddField(field)));
 
   if (columns_.empty()) {
@@ -42,30 +41,28 @@ TableHandle TableMaker::MakeTable(const TableHandleManager &manager) {
 
   auto wrapper = manager.CreateFlightWrapper();
   auto ticket = manager.NewTicket();
-  auto flightDescriptor = ConvertTicketToFlightDescriptor(ticket);
+  auto flight_descriptor = ConvertTicketToFlightDescriptor(ticket);
 
   arrow::flight::FlightCallOptions options;
   wrapper.AddHeaders(&options);
 
-  std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
-  std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(wrapper.FlightClient()->DoPut(options, flightDescriptor,
-      schema, &fsw, &fmr)));
+  auto res = wrapper.FlightClient()->DoPut(options, flight_descriptor, schema);
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(res));
   auto batch = arrow::RecordBatch::Make(schema, numRows_, std::move(columns_));
 
-  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->WriteRecordBatch(*batch)));
-  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->DoneWriting()));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(res->writer->WriteRecordBatch(*batch)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(res->writer->DoneWriting()));
 
   std::shared_ptr<arrow::Buffer> buf;
-  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fmr->ReadMetadata(&buf)));
-  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->Close()));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(res->reader->ReadMetadata(&buf)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(res->writer->Close()));
   return manager.MakeTableHandleFromTicket(std::move(ticket));
 }
 
 namespace internal {
-TypeConverter::TypeConverter(std::shared_ptr<arrow::DataType> dataType,
-    std::string deephavenType, std::shared_ptr<arrow::Array> column) :
-    dataType_(std::move(dataType)), deephavenType_(std::move(deephavenType)),
+TypeConverter::TypeConverter(std::shared_ptr<arrow::DataType> data_type,
+    std::string deephaven_type, std::shared_ptr<arrow::Array> column) :
+    dataType_(std::move(data_type)), deephavenType_(std::move(deephaven_type)),
     column_(std::move(column)) {}
     TypeConverter::~TypeConverter() = default;
 
