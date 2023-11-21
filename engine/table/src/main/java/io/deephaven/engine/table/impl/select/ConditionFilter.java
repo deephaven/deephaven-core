@@ -381,7 +381,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         final StringBuilder classBody = getClassBody(tableDefinition, timeConversionResult, result);
         if (classBody == null)
             return;
-        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget("Compile:" + formula)) {
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getCompilationNugget(formula)) {
             final List<Class<?>> paramClasses = new ArrayList<>();
             final Consumer<Class<?>> addParamClass = (cls) -> {
                 if (cls != null) {

@@ -54,6 +54,16 @@ public interface QueryPerformanceRecorder {
     QueryPerformanceNugget getNugget(@NotNull String name, long inputSize);
 
     /**
+     * Create a nugget at the top of the user stack for a compilation task. May return a
+     * {@link QueryPerformanceNugget#DUMMY_NUGGET} if no recorder is installed.
+     *
+     * @param name the nugget name
+     * @return A new QueryPerformanceNugget to encapsulate the compilation. {@link QueryPerformanceNugget#close()}
+     *         must be called on the nugget.
+     */
+    QueryPerformanceNugget getCompilationNugget(@NotNull String name);
+
+    /**
      * This is the nugget enclosing the current operation. It may belong to the dummy recorder, or a real one.
      *
      * @return Either a "catch-all" nugget, or the top of the user nugget stack.

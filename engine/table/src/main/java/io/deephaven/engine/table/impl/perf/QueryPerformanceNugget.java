@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.auth.AuthContext;
-import io.deephaven.base.clock.SystemClock;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
@@ -50,8 +50,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
          * @param evaluationNumber A unique identifier for the query evaluation that triggered this nugget creation
          * @param description The operation description
          * @param sessionId The gRPC client session-id if applicable
-         * @param onCloseCallback A callback that is invoked when the nugget is closed. It returns whether the nugget
-         *        should be logged.
+         * @param onCloseCallback A callback that is invoked when the nugget is closed.
          * @return A new nugget
          */
         default QueryPerformanceNugget createForQuery(
@@ -60,7 +59,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
                 @Nullable final String sessionId,
                 @NotNull final Consumer<QueryPerformanceNugget> onCloseCallback) {
             return new QueryPerformanceNugget(evaluationNumber, NULL_LONG, NULL_INT, NULL_INT, NULL_INT, description,
-                    sessionId, false, NULL_LONG, onCloseCallback);
+                    sessionId, false, false, NULL_LONG, onCloseCallback);
         }
 
         /**
@@ -69,8 +68,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
          * @param parentQuery The parent query nugget
          * @param evaluationNumber A unique identifier for the sub-query evaluation that triggered this nugget creation
          * @param description The operation description
-         * @param onCloseCallback A callback that is invoked when the nugget is closed. It returns whether the nugget
-         *        should be logged.
+         * @param onCloseCallback A callback that is invoked when the nugget is closed.
          * @return A new nugget
          */
         default QueryPerformanceNugget createForSubQuery(
@@ -80,7 +78,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
                 @NotNull final Consumer<QueryPerformanceNugget> onCloseCallback) {
             Assert.eqTrue(parentQuery.isQueryLevel(), "parentQuery.isQueryLevel()");
             return new QueryPerformanceNugget(evaluationNumber, parentQuery.getEvaluationNumber(), NULL_INT, NULL_INT,
-                    NULL_INT, description, parentQuery.getSessionId(), false, NULL_LONG, onCloseCallback);
+                    NULL_INT, description, parentQuery.getSessionId(), false, false, NULL_LONG, onCloseCallback);
         }
 
         /**
@@ -89,8 +87,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
          * @param parentQueryOrOperation The parent query / operation nugget
          * @param operationNumber A query-unique identifier for the operation
          * @param description The operation description
-         * @param onCloseCallback A callback that is invoked when the nugget is closed. It returns whether the nugget
-         *        should be logged.
+         * @param onCloseCallback A callback that is invoked when the nugget is closed.
          * @return A new nugget
          */
         default QueryPerformanceNugget createForOperation(
@@ -115,7 +112,43 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
                     description,
                     parentQueryOrOperation.getSessionId(),
                     true, // operations are always user
+                    false, // operations are not compilation
                     inputSize,
+                    onCloseCallback);
+        }
+
+        /**
+         * Factory method for compilation-level nuggets.
+         *
+         * @param parentQueryOrOperation The parent query / operation nugget
+         * @param operationNumber A query-unique identifier for the operation
+         * @param description The compilation description
+         * @param onCloseCallback A callback that is invoked when the nugget is closed.
+         * @return A new nugget
+         */
+        default QueryPerformanceNugget createForCompilation(
+                @NotNull final QueryPerformanceNugget parentQueryOrOperation,
+                final int operationNumber,
+                final String description,
+                @NotNull final Consumer<QueryPerformanceNugget> onCloseCallback) {
+            int depth = parentQueryOrOperation.getDepth();
+            if (depth == NULL_INT) {
+                depth = 0;
+            } else {
+                ++depth;
+            }
+
+            return new QueryPerformanceNugget(
+                    parentQueryOrOperation.getEvaluationNumber(),
+                    parentQueryOrOperation.getParentEvaluationNumber(),
+                    operationNumber,
+                    parentQueryOrOperation.getOperationNumber(),
+                    depth,
+                    description,
+                    parentQueryOrOperation.getSessionId(),
+                    true, // compilations are always user
+                    true, // compilations are .. compilations
+                    0, // compilations have no input size
                     onCloseCallback);
         }
 
@@ -124,8 +157,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
          *
          * @param parentQuery The parent query nugget
          * @param operationNumber A query-unique identifier for the operation
-         * @param onCloseCallback A callback that is invoked when the nugget is closed. It returns whether the nugget
-         *        should be logged.
+         * @param onCloseCallback A callback that is invoked when the nugget is closed.
          * @return A new nugget
          */
         default QueryPerformanceNugget createForCatchAll(
@@ -142,6 +174,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
                     QueryPerformanceRecorder.UNINSTRUMENTED_CODE_DESCRIPTION,
                     parentQuery.getSessionId(),
                     false, // catch all is not user
+                    false, // catch all is not compilation
                     NULL_LONG,
                     onCloseCallback); // catch all has no input size
         }
@@ -157,6 +190,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
     private final String description;
     private final String sessionId;
     private final boolean isUser;
+    private final boolean isCompilation;
     private final long inputSize;
     private final Consumer<QueryPerformanceNugget> onCloseCallback;
     private final AuthContext authContext;
@@ -185,6 +219,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
      * @param depth Depth in the evaluation chain for the respective operation
      * @param description The operation description
      * @param isUser Whether this is a "user" nugget or one created by the system
+     * @param isCompilation Whether this is a compilation nugget
      * @param inputSize The size of the input data
      * @param onCloseCallback A callback that is invoked when the nugget is closed. It returns whether the nugget should
      *        be logged.
@@ -198,6 +233,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
             @NotNull final String description,
             @Nullable final String sessionId,
             final boolean isUser,
+            final boolean isCompilation,
             final long inputSize,
             @NotNull final Consumer<QueryPerformanceNugget> onCloseCallback) {
         this.evaluationNumber = evaluationNumber;
@@ -213,6 +249,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         }
         this.sessionId = sessionId;
         this.isUser = isUser;
+        this.isCompilation = isCompilation;
         this.inputSize = inputSize;
         this.onCloseCallback = onCloseCallback;
 
@@ -237,6 +274,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
         description = null;
         sessionId = null;
         isUser = false;
+        isCompilation = false;
         inputSize = NULL_LONG;
         onCloseCallback = null;
         authContext = null;
@@ -262,7 +300,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
             throw new IllegalStateException("Nugget was already started");
         }
         if (startClockEpochNanos == NULL_LONG) {
-            startClockEpochNanos = SystemClock.systemUTC().currentTimeNanos();
+            startClockEpochNanos = Clock.system().currentTimeNanos();
         }
         startMemorySample = new RuntimeMemory.Sample();
         endMemorySample = new RuntimeMemory.Sample();
@@ -316,7 +354,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
             }
 
             onBaseEntryEnd();
-            endClockEpochNanos = SystemClock.systemUTC().currentTimeNanos();
+            endClockEpochNanos = Clock.system().currentTimeNanos();
 
             final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
             runtimeMemory.read(endMemorySample);
@@ -371,6 +409,10 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
 
     public boolean isUser() {
         return isUser;
+    }
+
+    public boolean isCompilation() {
+        return isCompilation;
     }
 
     public boolean isQueryLevel() {

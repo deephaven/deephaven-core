@@ -93,7 +93,7 @@ class QueryOperationPerformanceStreamPublisher implements StreamPublisher {
         chunks[7].<String>asWritableObjectChunk().add(nugget.getCallerLine());
 
         // ColumnDefinition.ofBoolean("IsCompilation"),
-        chunks[8].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.getDescription().startsWith("Compile:")));
+        chunks[8].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.isCompilation()));
 
         // ColumnDefinition.ofTime("StartTime"),
         chunks[9].asWritableLongChunk().add(nugget.getStartClockEpochNanos());

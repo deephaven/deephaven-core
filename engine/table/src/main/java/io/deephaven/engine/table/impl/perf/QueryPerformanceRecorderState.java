@@ -207,6 +207,11 @@ public abstract class QueryPerformanceRecorderState {
         }
 
         @Override
+        public QueryPerformanceNugget getCompilationNugget(@NotNull final String name) {
+            return QueryPerformanceNugget.DUMMY_NUGGET;
+        }
+
+        @Override
         public QueryPerformanceNugget getEnclosingNugget() {
             return QueryPerformanceNugget.DUMMY_NUGGET;
         }
