@@ -592,7 +592,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     @Override
     public int numValues() throws IOException {
-        if (numValues > 0) {
+        if (numValues >= 0) {
             return numValues;
         }
         try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
