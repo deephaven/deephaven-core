@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main ]
   push:
-    branches: [ main ]
+    branches: [ 'main', 'release/v*' ]
 
 jobs:
   javadoc:
@@ -43,14 +43,18 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: allJavadoc
-          arguments: --scan combined-javadoc:allJavadoc
+          arguments: --scan outputVersion combined-javadoc:allJavadoc
           gradle-version: wrapper
+          
+      - name: Get Deephaven Version
+        id: dhc-version
+        run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Upload Javadocs
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
         uses: actions/upload-artifact@v3
         with:
-          name: javadocs
+          name: javadocs-${{ steps.dhc-version.outputs.version }}
           path: 'combined-javadoc/build/docs/javadoc/'
 
       - name: Deploy Javadoc
@@ -96,14 +100,20 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: typedoc
-          arguments: --scan :web-client-api:types:typedoc
+          arguments: --scan outputVersion :web-client-api:types:typedoc
           gradle-version: wrapper
+          
+      - name: Get Deephaven Version
+        id: dhc-version
+        run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
+          
       - name: Upload JavaScript/TypeScript docs
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
         uses: actions/upload-artifact@v3
         with:
-          name: typedoc
+          name: typedoc-${{ steps.dhc-version.outputs.version }}
           path: 'web/client-api/types/build/documentation/'
+
       - name: Deploy JavaScript/TypeScript docs
         if: ${{ github.ref == 'refs/heads/main' }}
         uses: burnett01/rsync-deployments@5.2
@@ -152,8 +162,26 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: pythonDocs
-          arguments: --scan sphinx:pythonDocs sphinx:pydeephavenDocs
+          arguments: --scan outputVersion sphinx:pythonDocs sphinx:pydeephavenDocs
           gradle-version: wrapper
+ 
+      - name: Get Deephaven Version
+        id: dhc-version
+        run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
+ 
+      - name: Upload Python Server Docs
+        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: pyserver-docs-${{ steps.dhc-version.outputs.version }}
+          path: 'sphinx/build/docs/'
+          
+      - name: Upload Python Client Docs
+        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: pyclient-docs-${{ steps.dhc-version.outputs.version }}
+          path: 'sphinx/build/pyclient-docs/'
 
       - name: Deploy Python Docs
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -216,8 +244,26 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: cppDocs
-          arguments: --scan sphinx:cppClientDocs sphinx:cppExamplesDocs
+          arguments: --scan outputVersion sphinx:cppClientDocs sphinx:cppExamplesDocs
           gradle-version: wrapper
+         
+      - name: Get Deephaven Version
+        id: dhc-version
+        run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
+  
+      - name: Upload Client C++ Docs
+        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: cppclient-docs-${{ steps.dhc-version.outputs.version }}
+          path: 'sphinx/build/cppClientDocs/'
+          
+      - name: Upload Client C++ Example Docs
+        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: cppclient-examples-${{ steps.dhc-version.outputs.version }}
+          path: 'sphinx/build/cppExamplesDocs/'
 
       - name: Deploy Client C++ Docs
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -272,8 +318,19 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: rDocs
-          arguments: R:rClientSite
+          arguments: --scan outputVersion R:rClientSite
           gradle-version: wrapper
+          
+      - name: Get Deephaven Version
+        id: dhc-version
+        run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
+        
+      - name: Upload R Docs
+        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: rdoc-${{ steps.dhc-version.outputs.version }}
+          path: 'R/rdeephaven/docs/'
 
       - name: Deploy R Docs
         if: ${{ github.ref == 'refs/heads/main' }}
