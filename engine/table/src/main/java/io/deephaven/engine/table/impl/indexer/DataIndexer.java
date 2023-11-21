@@ -16,6 +16,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Collectors;
@@ -47,7 +48,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
         /** The index at this level. */
         @Nullable
-        private volatile DataIndex localIndex; // TODO-RWC: Weak reference
+        private volatile WeakReference<DataIndex> localIndex; // TODO-RWC: Weak reference
 
         /** The sub-indexes below this level. */
         private final WeakHashMap<ColumnSource<?>, DataIndexCache> descendantCaches;

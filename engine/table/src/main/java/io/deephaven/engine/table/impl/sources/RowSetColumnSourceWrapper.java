@@ -49,6 +49,9 @@ public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet> {
     }
 
     private RowSetColumnSourceWrapper(ColumnSource<? extends TrackingRowSet> source) {
+        // TODO-RWC: Accept any RowSet source
+        //  final boolean usePrevGroup = usePrev && currGroupRowSet.isTracking();
+        //  final RowSet groupRowSet = usePrevGroup ? currGroupRowSet.trackingCast().prev() : currGroupRowSet;
         super(RowSet.class);
         this.source = source;
     }

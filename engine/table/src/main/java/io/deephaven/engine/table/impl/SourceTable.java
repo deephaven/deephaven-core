@@ -345,6 +345,14 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         return result.getValue();
     }
 
+    /*
+     * TODO-RWC:
+     * SourceTable to strongly refer to DeferredDataIndex objects, as well as manage them (if refreshing) on coalesce.
+     * SourceTable to manage its own includedLocationsTable.
+     * SourceTable destruction should also destroy includedLocationsTable and DeferredDataIndexes.
+     * Create deferred data indexes, use snapshots, etc.
+     */
+
     private void initializePartitionDataIndexes() {
         final Map<String, ? extends ColumnSource<?>> columnSourceMap = columnSourceManager.getColumnSources();
         final DataIndexer dataIndexer = DataIndexer.of(rowSet);

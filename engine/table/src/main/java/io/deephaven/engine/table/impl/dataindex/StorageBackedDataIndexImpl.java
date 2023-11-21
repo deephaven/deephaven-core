@@ -334,10 +334,12 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
     }
 
     private static class LocationState {
+
         private final TableLocation location;
         private final long offsetKey;
         private final String[] keyColumns;
-        private SoftReference<Table> cachedIndexTable;
+
+        private volatile SoftReference<Table> cachedIndexTableReference;
 
         private LocationState(final TableLocation location,
                 final long offsetKey,
@@ -349,34 +351,36 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
 
         @Nullable
         private Table getCachedIndexTable() {
+            SoftReference<Table> localCachedIndexTableReference;
+            Table localCachedIndexTable;
+
             // Already cached?
-            if (cachedIndexTable != null) {
-                final Table result = cachedIndexTable.get();
-                if (result != null) {
-                    return result;
-                }
+            if ((localCachedIndexTableReference = cachedIndexTableReference) != null
+                    && (localCachedIndexTable = localCachedIndexTableReference.get()) != null) {
+                return localCachedIndexTable;
             }
 
             synchronized (this) {
-                if (cachedIndexTable != null) {
-                    final Table result = cachedIndexTable.get();
-                    if (result != null) {
-                        return result;
-                    }
+                // Now already cached?
+                if ((localCachedIndexTableReference = cachedIndexTableReference) != null
+                        && (localCachedIndexTable = localCachedIndexTableReference.get()) != null) {
+                    return localCachedIndexTable;
                 }
 
+                // I guess not... load it.
                 Table indexTable = location.getDataIndex(keyColumns);
                 if (indexTable != null) {
-                    Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>(indexTable.getColumnSourceMap());
+                    final Map<String, ColumnSource<?>> columnSourceMap =
+                            new LinkedHashMap<>(indexTable.getColumnSourceMap());
 
                     // Record the first key as a column of this table using a SingleValueColumnSource.
-                    SingleValueColumnSource<?> offsetKeySource =
+                    final SingleValueColumnSource<?> offsetKeySource =
                             SingleValueColumnSource.getSingleValueColumnSource(long.class);
                     offsetKeySource.set(offsetKey);
                     columnSourceMap.put(OFFSET_KEY_COL_NAME, offsetKeySource);
 
                     indexTable = new QueryTable(indexTable.getRowSet(), columnSourceMap);
-                    cachedIndexTable = new SoftReference<>(indexTable);
+                    cachedIndexTableReference = new SoftReference<>(indexTable);
                 }
                 return indexTable;
             }

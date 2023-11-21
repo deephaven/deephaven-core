@@ -33,7 +33,7 @@ public interface DataIndex extends LivenessReferent {
          * @param key The key to lookup
          * @return The result position
          */
-        int apply(Object key, boolean usePrev);
+        int apply(Object key, boolean usePrev); // TODO-RWC: Decide about prev impl for the lookups
     }
 
     /**
