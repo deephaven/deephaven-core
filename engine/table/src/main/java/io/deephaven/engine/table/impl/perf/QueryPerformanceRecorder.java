@@ -58,8 +58,8 @@ public interface QueryPerformanceRecorder {
      * {@link QueryPerformanceNugget#DUMMY_NUGGET} if no recorder is installed.
      *
      * @param name the nugget name
-     * @return A new QueryPerformanceNugget to encapsulate the compilation. {@link QueryPerformanceNugget#close()}
-     *         must be called on the nugget.
+     * @return A new QueryPerformanceNugget to encapsulate the compilation. {@link QueryPerformanceNugget#close()} must
+     *         be called on the nugget.
      */
     QueryPerformanceNugget getCompilationNugget(@NotNull String name);
 

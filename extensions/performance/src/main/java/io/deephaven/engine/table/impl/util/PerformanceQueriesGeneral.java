@@ -158,7 +158,7 @@ public class PerformanceQueriesGeneral {
                         "EntryDescription",
                         "IntervalDurationNanos",
                         "Ratio",
-                        "Usage",
+                        "UsageNanos",
                         "RowsAdded",
                         "RowsRemoved",
                         "RowsModified",
@@ -172,12 +172,19 @@ public class PerformanceQueriesGeneral {
         // interval, operations are still sorted with the greatest Ratio at the top.)
         Table updateMostRecent = updateWorst.sortDescending("IntervalEndTime").moveColumnsUp("IntervalEndTime");
 
+        final String[] groupByColumns;
+        if (qup.hasColumns("ProcessUniqueId")) {
+            groupByColumns = new String[] {"IntervalStartTime", "IntervalEndTime", "ProcessUniqueId"};
+        } else {
+            groupByColumns = new String[] {"IntervalStartTime", "IntervalEndTime"};
+        }
+
         // Create a table that summarizes the update performance data within each interval
         Table updateAggregate = qup.aggBy(
                 Arrays.asList(
                         AggSum("NRows", "UsageNanos"),
                         AggFirst("QueryMemUsed", "WorkerHeapSize", "QueryMemUsedPct", "IntervalDurationNanos")),
-                "IntervalStartTime", "IntervalEndTime", "ProcessUniqueId")
+                groupByColumns)
                 .updateView("Ratio = UsageNanos / IntervalDurationNanos")
                 .moveColumnsUp("IntervalStartTime", "IntervalEndTime", "Ratio");
 

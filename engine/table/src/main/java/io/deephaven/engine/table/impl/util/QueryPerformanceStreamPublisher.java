@@ -23,8 +23,8 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
     private static final TableDefinition DEFINITION = TableDefinition.of(
             ColumnDefinition.ofLong("EvaluationNumber"),
             ColumnDefinition.ofLong("ParentEvaluationNumber"),
-            ColumnDefinition.ofString("Description"),
             ColumnDefinition.ofString("SessionId"),
+            ColumnDefinition.ofString("Description"),
             ColumnDefinition.ofTime("StartTime"),
             ColumnDefinition.ofTime("EndTime"),
             ColumnDefinition.ofLong("UsageNanos"),

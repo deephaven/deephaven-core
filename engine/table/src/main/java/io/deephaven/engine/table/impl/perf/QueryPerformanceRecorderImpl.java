@@ -201,7 +201,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
     @Override
     public QueryPerformanceNugget getCompilationNugget(@NotNull final String name) {
         return getNuggetInternal(parent -> nuggetFactory.createForCompilation(
-                parent, operationNuggets.size(), "Compile: " + name, this::releaseNugget));
+                parent, operationNuggets.size(), name, this::releaseNugget));
     }
 
     private QueryPerformanceNugget getNuggetInternal(
@@ -309,22 +309,18 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
     public void supplyQueryData(final @NotNull QueryDataConsumer consumer) {
         final long evaluationNumber;
         final int operationNumber;
-        boolean uninstrumented = false;
+        final boolean uninstrumented;
         synchronized (this) {
             // we should never be called if we're not running
             Assert.eq(state, "state", QueryState.RUNNING, "QueryState.RUNNING");
-            evaluationNumber = queryNugget.getEvaluationNumber();
-            operationNumber = operationNuggets.size();
-            if (operationNumber > 0) {
-                // ensure UPL and QOPL are consistent/joinable.
-                if (!userNuggetStack.isEmpty()) {
-                    userNuggetStack.getLast().setShouldLog();
-                } else {
-                    uninstrumented = true;
-                    Assert.neqNull(catchAllNugget, "catchAllNugget");
-                    catchAllNugget.setShouldLog();
-                }
-            }
+
+            final QueryPerformanceNugget nugget = getEnclosingNugget();
+            evaluationNumber = nugget.getEvaluationNumber();
+            operationNumber = nugget.getOperationNumber();
+            uninstrumented = nugget == catchAllNugget;
+
+            // ensure UPL and QOPL are consistent/joinable.
+            nugget.setShouldLog();
         }
         consumer.accept(evaluationNumber, operationNumber, uninstrumented);
     }
