@@ -20,17 +20,17 @@ import java.util.Objects;
 /**
  * Schedule for a single business day.
  *
- * A business day / schedule may contain multiple business periods. For example, some financial exchanges have a morning
- * and an afternoon trading session. This would be represented by a business schedule with two business periods.
+ * A business day may contain multiple business periods. For example, some financial exchanges have a morning and an
+ * afternoon trading session. This would be represented by a business day with two business periods.
  *
  * @param <T> time type
  */
-public class BusinessSchedule<T extends Comparable<T> & Temporal> {
+public class BusinessDay<T extends Comparable<T> & Temporal> {
 
     /**
      * A holiday with no business periods.
      */
-    public static final BusinessSchedule<LocalTime> HOLIDAY = new BusinessSchedule<>();
+    public static final BusinessDay<LocalTime> HOLIDAY = new BusinessDay<>();
 
     private final BusinessPeriod<T>[] openPeriods;
     private final T businessStart;
@@ -38,13 +38,13 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
     private final long businessNanos;
 
     /**
-     * Creates a BusinessSchedule instance.
+     * Creates a BusinessDay instance.
      *
      * @param businessPeriods array of business periods
      * @throws IllegalArgumentException if {@code businessPeriods} overlaps.
      * @throws RequirementFailure if {@code businessPeriods} or any constituent business periods are null.
      */
-    BusinessSchedule(@NotNull final BusinessPeriod<T>[] businessPeriods) {
+    BusinessDay(@NotNull final BusinessPeriod<T>[] businessPeriods) {
         Require.neqNull(businessPeriods, "businessPeriods");
 
         for (int i = 0; i < businessPeriods.length; i++) {
@@ -78,9 +78,9 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
     }
 
     /**
-     * Creates a BusinessSchedule instance with no business periods. THis is a holiday.
+     * Creates a BusinessDay instance with no business periods. THis is a holiday.
      */
-    BusinessSchedule() {
+    BusinessDay() {
         // noinspection unchecked
         this(new BusinessPeriod[0]);
     }
@@ -186,9 +186,9 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
     public boolean equals(Object o) {
         if (this == o)
             return true;
-        if (!(o instanceof BusinessSchedule))
+        if (!(o instanceof BusinessDay))
             return false;
-        BusinessSchedule<?> that = (BusinessSchedule<?>) o;
+        BusinessDay<?> that = (BusinessDay<?>) o;
         return businessNanos == that.businessNanos && Arrays.equals(openPeriods, that.openPeriods)
                 && Objects.equals(businessStart, that.businessStart) && Objects.equals(businessEnd, that.businessEnd);
     }
@@ -202,7 +202,7 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
 
     @Override
     public String toString() {
-        return "BusinessSchedule{" +
+        return "BusinessDay{" +
                 "openPeriods=" + Arrays.toString(openPeriods) +
                 '}';
     }
@@ -215,10 +215,10 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
      * @param timeZone time zone for the new business schedule
      * @return new business schedule in the specified date and time zone
      */
-    public static BusinessSchedule<Instant> toInstant(final BusinessSchedule<LocalTime> s, final LocalDate date,
+    public static BusinessDay<Instant> toInstant(final BusinessDay<LocalTime> s, final LocalDate date,
             final ZoneId timeZone) {
         // noinspection unchecked
-        return new BusinessSchedule<>(Arrays.stream(s.periods()).map(p -> BusinessPeriod.toInstant(p, date, timeZone))
+        return new BusinessDay<>(Arrays.stream(s.periods()).map(p -> BusinessPeriod.toInstant(p, date, timeZone))
                 .toArray(BusinessPeriod[]::new));
     }
 }

@@ -41,9 +41,9 @@ public class BusinessCalendarParser {
         private ZoneId timeZone;
         private LocalDate firstValidDate;
         private LocalDate lastValidDate;
-        private BusinessSchedule<LocalTime> standardBusinessSchedule;
+        private BusinessDay<LocalTime> standardBusinessDay;
         private Set<DayOfWeek> weekendDays;
-        private Map<LocalDate, BusinessSchedule<Instant>> holidays;
+        private Map<LocalDate, BusinessDay<Instant>> holidays;
     }
 
     /**
@@ -67,7 +67,7 @@ public class BusinessCalendarParser {
 
         return new BusinessCalendar(in.calendarName, in.description,
                 in.timeZone, in.firstValidDate, in.lastValidDate,
-                in.standardBusinessSchedule, in.weekendDays, in.holidays);
+                in.standardBusinessDay, in.weekendDays, in.holidays);
     }
 
     private static BusinessCalendarInputs parseBusinessCalendarInputs(@NotNull final File file) {
@@ -88,7 +88,7 @@ public class BusinessCalendarParser {
             // Set the default values
             final Element defaultElement = getRequiredChild(root, "default");
             calendarElements.weekendDays = parseWeekendDays(defaultElement);
-            calendarElements.standardBusinessSchedule = parseBusinessSchedule(defaultElement);
+            calendarElements.standardBusinessDay = parseBusinessDaySchedule(defaultElement);
 
             return calendarElements;
         } catch (Exception e) {
@@ -124,10 +124,10 @@ public class BusinessCalendarParser {
         return element == null ? null : element.getTextTrim();
     }
 
-    private static BusinessSchedule<LocalTime> parseBusinessSchedule(final Element element) throws Exception {
+    private static BusinessDay<LocalTime> parseBusinessDaySchedule(final Element element) throws Exception {
         final List<Element> businessPeriods = element.getChildren("businessPeriod");
-        return businessPeriods.isEmpty() ? BusinessSchedule.HOLIDAY
-                : new BusinessSchedule<>(parseBusinessPeriods(businessPeriods));
+        return businessPeriods.isEmpty() ? BusinessDay.HOLIDAY
+                : new BusinessDay<>(parseBusinessPeriods(businessPeriods));
     }
 
     private static BusinessPeriod<LocalTime>[] parseBusinessPeriods(final List<Element> businessPeriods)
@@ -146,16 +146,16 @@ public class BusinessCalendarParser {
         return rst;
     }
 
-    private static Map<LocalDate, BusinessSchedule<Instant>> parseHolidays(final Element root, final ZoneId timeZone)
+    private static Map<LocalDate, BusinessDay<Instant>> parseHolidays(final Element root, final ZoneId timeZone)
             throws Exception {
-        final Map<LocalDate, BusinessSchedule<Instant>> holidays = new ConcurrentHashMap<>();
+        final Map<LocalDate, BusinessDay<Instant>> holidays = new ConcurrentHashMap<>();
         final List<Element> holidayElements = root.getChildren("holiday");
 
         for (Element holidayElement : holidayElements) {
             final Element dateElement = getRequiredChild(holidayElement, "date");
             final LocalDate date = DateTimeUtils.parseLocalDate(getText(dateElement));
-            final BusinessSchedule<LocalTime> schedule = parseBusinessSchedule(holidayElement);
-            holidays.put(date, BusinessSchedule.toInstant(schedule, date, timeZone));
+            final BusinessDay<LocalTime> schedule = parseBusinessDaySchedule(holidayElement);
+            holidays.put(date, BusinessDay.toInstant(schedule, date, timeZone));
         }
 
         return holidays;

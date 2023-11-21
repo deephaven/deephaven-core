@@ -6,7 +6,7 @@ package io.deephaven.plot.axistransformations;
 import io.deephaven.base.verify.Require;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.calendar.BusinessCalendar;
-import io.deephaven.time.calendar.BusinessSchedule;
+import io.deephaven.time.calendar.BusinessDay;
 import io.deephaven.time.calendar.BusinessPeriod;
 
 import java.io.Serializable;
@@ -28,10 +28,10 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
     private static final long serialVersionUID = -8648623559661981847L;
 
     private static class Nugget {
-        private final BusinessSchedule<Instant> businessDay;
+        private final BusinessDay<Instant> businessDay;
         private final long cumulativeBusinessTimeNanosAtStartOfDay;
 
-        private Nugget(BusinessSchedule<Instant> day, long cumulativeBusinessTimeNanosAtStartOfDay) {
+        private Nugget(BusinessDay<Instant> day, long cumulativeBusinessTimeNanosAtStartOfDay) {
             this.businessDay = day;
             this.cumulativeBusinessTimeNanosAtStartOfDay = cumulativeBusinessTimeNanosAtStartOfDay;
         }
@@ -65,14 +65,14 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
 
         if (nMin == null) {
             final Instant t = DateTimeUtils.epochNanosToInstant((long) timeNanos);
-            nMin = new Nugget(busCal.businessSchedule(busCal.minusBusinessDays(t, 1)), 0);
+            nMin = new Nugget(busCal.businessDay(busCal.minusBusinessDays(t, 1)), 0);
             nMax = nMin;
             nuggets.add(nMin);
         }
 
         while (timeNanos < DateTimeUtils.epochNanos(nMin.businessDay.businessStart())) {
-            final BusinessSchedule<Instant> d =
-                    busCal.businessSchedule(busCal.minusBusinessDays(nMin.businessDay.businessStart(), 1));
+            final BusinessDay<Instant> d =
+                    busCal.businessDay(busCal.minusBusinessDays(nMin.businessDay.businessStart(), 1));
             final Nugget n = new Nugget(d, nMin.cumulativeBusinessTimeNanosAtStartOfDay - d.businessNanos());
             nuggets.add(0, n);
 
@@ -81,8 +81,8 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
 
         // noinspection ConstantConditions nMax can't cause NPE (for now! Don't add nulls to nuggets!)
         while (timeNanos > DateTimeUtils.epochNanos(nMax.businessDay.businessEnd())) {
-            final BusinessSchedule<Instant> d =
-                    busCal.businessSchedule(busCal.plusBusinessDays(nMax.businessDay.businessEnd(), 1));
+            final BusinessDay<Instant> d =
+                    busCal.businessDay(busCal.plusBusinessDays(nMax.businessDay.businessEnd(), 1));
             final Nugget n =
                     new Nugget(d, nMax.cumulativeBusinessTimeNanosAtStartOfDay + nMax.businessDay.businessNanos());
             nuggets.add(n);
@@ -106,8 +106,8 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
         }
 
         while (value < nMin.cumulativeBusinessTimeNanosAtStartOfDay) {
-            final BusinessSchedule<Instant> d =
-                    busCal.businessSchedule(busCal.minusBusinessDays(nMin.businessDay.businessStart(), 1));
+            final BusinessDay<Instant> d =
+                    busCal.businessDay(busCal.minusBusinessDays(nMin.businessDay.businessStart(), 1));
             final Nugget n = new Nugget(d, nMin.cumulativeBusinessTimeNanosAtStartOfDay - d.businessNanos());
             nuggets.add(0, n);
 
@@ -119,8 +119,8 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
         }
 
         while (value > nMax.cumulativeBusinessTimeNanosAtStartOfDay + nMax.businessDay.businessNanos()) {
-            final BusinessSchedule<Instant> d =
-                    busCal.businessSchedule(busCal.plusBusinessDays(nMax.businessDay.businessEnd(), 1));
+            final BusinessDay<Instant> d =
+                    busCal.businessDay(busCal.plusBusinessDays(nMax.businessDay.businessEnd(), 1));
             final Nugget n =
                     new Nugget(d, nMax.cumulativeBusinessTimeNanosAtStartOfDay + nMax.businessDay.businessNanos());
             nuggets.add(n);

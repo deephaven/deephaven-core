@@ -8,7 +8,7 @@
 package io.deephaven.time.calendar;
 
 import io.deephaven.time.calendar.BusinessCalendar;
-import io.deephaven.time.calendar.BusinessSchedule;
+import io.deephaven.time.calendar.BusinessDay;
 import io.deephaven.time.calendar.Calendar;
 import java.lang.String;
 import java.time.DayOfWeek;
@@ -53,20 +53,20 @@ public class StaticCalendarMethods {
     /** @see io.deephaven.time.calendar.BusinessCalendar#businessDates(java.time.ZonedDateTime,java.time.ZonedDateTime,boolean,boolean) */
     public static  java.time.LocalDate[] businessDates( java.time.ZonedDateTime start, java.time.ZonedDateTime end, boolean startInclusive, boolean endInclusive ) {return Calendars.calendar().businessDates( start, end, startInclusive, endInclusive );}
 
-    /** @see io.deephaven.time.calendar.BusinessCalendar#businessSchedule() */
-    public static  io.deephaven.time.calendar.BusinessSchedule<java.time.Instant> businessSchedule( ) {return Calendars.calendar().businessSchedule( );}
+    /** @see io.deephaven.time.calendar.BusinessCalendar#businessDay() */
+    public static  io.deephaven.time.calendar.BusinessDay<java.time.Instant> businessDay( ) {return Calendars.calendar().businessDay( );}
 
-    /** @see io.deephaven.time.calendar.BusinessCalendar#businessSchedule(java.lang.String) */
-    public static  io.deephaven.time.calendar.BusinessSchedule<java.time.Instant> businessSchedule( java.lang.String date ) {return Calendars.calendar().businessSchedule( date );}
+    /** @see io.deephaven.time.calendar.BusinessCalendar#businessDay(java.lang.String) */
+    public static  io.deephaven.time.calendar.BusinessDay<java.time.Instant> businessDay( java.lang.String date ) {return Calendars.calendar().businessDay( date );}
 
-    /** @see io.deephaven.time.calendar.BusinessCalendar#businessSchedule(java.time.Instant) */
-    public static  io.deephaven.time.calendar.BusinessSchedule<java.time.Instant> businessSchedule( java.time.Instant time ) {return Calendars.calendar().businessSchedule( time );}
+    /** @see io.deephaven.time.calendar.BusinessCalendar#businessDay(java.time.Instant) */
+    public static  io.deephaven.time.calendar.BusinessDay<java.time.Instant> businessDay( java.time.Instant time ) {return Calendars.calendar().businessDay( time );}
 
-    /** @see io.deephaven.time.calendar.BusinessCalendar#businessSchedule(java.time.LocalDate) */
-    public static  io.deephaven.time.calendar.BusinessSchedule<java.time.Instant> businessSchedule( java.time.LocalDate date ) {return Calendars.calendar().businessSchedule( date );}
+    /** @see io.deephaven.time.calendar.BusinessCalendar#businessDay(java.time.LocalDate) */
+    public static  io.deephaven.time.calendar.BusinessDay<java.time.Instant> businessDay( java.time.LocalDate date ) {return Calendars.calendar().businessDay( date );}
 
-    /** @see io.deephaven.time.calendar.BusinessCalendar#businessSchedule(java.time.ZonedDateTime) */
-    public static  io.deephaven.time.calendar.BusinessSchedule<java.time.Instant> businessSchedule( java.time.ZonedDateTime time ) {return Calendars.calendar().businessSchedule( time );}
+    /** @see io.deephaven.time.calendar.BusinessCalendar#businessDay(java.time.ZonedDateTime) */
+    public static  io.deephaven.time.calendar.BusinessDay<java.time.Instant> businessDay( java.time.ZonedDateTime time ) {return Calendars.calendar().businessDay( time );}
 
     /** @see io.deephaven.time.calendar.Calendar#calendarDate() */
     public static  java.time.LocalDate calendarDate( ) {return Calendars.calendar().calendarDate( );}
@@ -177,7 +177,7 @@ public class StaticCalendarMethods {
     public static  java.time.LocalDate futureNonBusinessDate( int days ) {return Calendars.calendar().futureNonBusinessDate( days );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#holidays() */
-    public static  java.util.Map<java.time.LocalDate, io.deephaven.time.calendar.BusinessSchedule<java.time.Instant>> holidays( ) {return Calendars.calendar().holidays( );}
+    public static  java.util.Map<java.time.LocalDate, io.deephaven.time.calendar.BusinessDay<java.time.Instant>> holidays( ) {return Calendars.calendar().holidays( );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#isBusinessDay() */
     public static  boolean isBusinessDay( ) {return Calendars.calendar().isBusinessDay( );}
@@ -419,11 +419,11 @@ public class StaticCalendarMethods {
     /** @see io.deephaven.time.calendar.BusinessCalendar#plusNonBusinessDays(java.time.ZonedDateTime,int) */
     public static  java.time.ZonedDateTime plusNonBusinessDays( java.time.ZonedDateTime time, int days ) {return Calendars.calendar().plusNonBusinessDays( time, days );}
 
+    /** @see io.deephaven.time.calendar.BusinessCalendar#standardBusinessDay() */
+    public static  io.deephaven.time.calendar.BusinessDay<java.time.LocalTime> standardBusinessDay( ) {return Calendars.calendar().standardBusinessDay( );}
+
     /** @see io.deephaven.time.calendar.BusinessCalendar#standardBusinessNanos() */
     public static  long standardBusinessNanos( ) {return Calendars.calendar().standardBusinessNanos( );}
-
-    /** @see io.deephaven.time.calendar.BusinessCalendar#standardBusinessSchedule() */
-    public static  io.deephaven.time.calendar.BusinessSchedule<java.time.LocalTime> standardBusinessSchedule( ) {return Calendars.calendar().standardBusinessSchedule( );}
 
     /** @see io.deephaven.time.calendar.Calendar#timeZone() */
     public static  java.time.ZoneId calendarTimeZone( ) {return Calendars.calendar().timeZone( );}

@@ -568,7 +568,7 @@ public class FigureWidgetTranslator {
             final DayOfWeek day = DayOfWeek.valueOf(dayOfWeek.name());
             return businessCalendar.isBusinessDay(day);
         }).forEach(businessCalendarDescriptor::addBusinessDays);
-        Arrays.stream(businessCalendar.standardBusinessSchedule().periods()).map(period -> {
+        Arrays.stream(businessCalendar.standardBusinessDay().periods()).map(period -> {
             // noinspection ConstantConditions
             final String open = TIME_FORMATTER.withZone(businessCalendar.timeZone())
                     .format(period.start());

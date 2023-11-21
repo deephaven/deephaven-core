@@ -20,8 +20,8 @@ public class TestBusinessCalendarParser extends BaseArrayTestCase {
         assertEquals(LocalDate.of(2000, 1, 2), cal.firstValidDate());
         assertEquals(LocalDate.of(2030, 11, 12), cal.lastValidDate());
         assertEquals(2, cal.weekendDays().size());
-        assertEquals(LocalTime.of(6, 14), cal.standardBusinessSchedule().businessStart());
-        assertEquals(LocalTime.of(12, 34), cal.standardBusinessSchedule().businessEnd());
+        assertEquals(LocalTime.of(6, 14), cal.standardBusinessDay().businessStart());
+        assertEquals(LocalTime.of(12, 34), cal.standardBusinessDay().businessEnd());
         assertTrue(cal.weekendDays().contains(DayOfWeek.MONDAY));
         assertTrue(cal.weekendDays().contains(DayOfWeek.WEDNESDAY));
         assertEquals(2, cal.holidays().size());
@@ -29,9 +29,9 @@ public class TestBusinessCalendarParser extends BaseArrayTestCase {
         assertTrue(cal.holidays().containsKey(LocalDate.of(2015, 4, 6)));
 
         assertEquals(DateTimeUtils.parseInstant("2015-04-06T14:15 Asia/Tokyo"),
-                cal.businessSchedule("2015-04-06").businessStart());
+                cal.businessDay("2015-04-06").businessStart());
         assertEquals(DateTimeUtils.parseInstant("2015-04-06T16:46 Asia/Tokyo"),
-                cal.businessSchedule("2015-04-06").businessEnd());
+                cal.businessDay("2015-04-06").businessEnd());
     }
 
     public void testLoad() throws URISyntaxException {
