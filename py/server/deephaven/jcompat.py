@@ -237,12 +237,17 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool = 
                 np_array = np.copy(np_array)
                 np_array[np_array == dh_null] = np.nan
             else:
-                if no_promotion:
-                    raise DHError(f"Java array contains Deephaven nulls for dtype {dtype}")
                 if dtype is dtypes.bool_:  # promote boolean to float64
                     np_array = np.frombuffer(np_array, np.byte)
                 if any(np_array[np_array == dh_null]):
-                    raise DHError(f"Java array contains Deephaven nulls for dtype {dtype}")
+                    if no_promotion:
+                        raise DHError(f"Java array contains Deephaven nulls for dtype {dtype}")
+                    np_array = np_array.astype(np.float64)
+                    np_array[np_array == dh_null] = np.nan
+                else:
+                    if dtype is dtypes.bool_:  # promote boolean to float64
+                        np_array = np.frombuffer(np_array, np.bool_)
+                    return np_array
 
     return np_array
 
