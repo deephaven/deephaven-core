@@ -695,32 +695,51 @@ public final class ParquetTableReadWriteTest {
         assertTrue(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("1.3.0"));
     }
 
-    @Test
-    public void testWritingDifferentPageSizes() {
-        // Make a table with arrays of decreasing sizes such that different pages will have different number of rows
-        Table arrayTable = TableTools.emptyTable(100).update(
-                "intArrays = java.util.stream.IntStream.range(0, i).toArray()").reverse();
-        final File dest = new File(rootFile, "testWritingDifferentPageSizes.parquet");
-        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
-                .setTargetPageSize(ParquetInstructions.MIN_TARGET_PAGE_SIZE)
-                .build();
-        ParquetTools.writeTable(arrayTable, dest, writeInstructions);
-        checkSingleTable(arrayTable, dest);
 
-        // Make a table such that only the last page has different number of rows, all else have equal number
-        final long NUM_ROWS = 1000;
-        arrayTable = TableTools.emptyTable(NUM_ROWS).update(
-                "intArrays = (i <= 900) ? java.util.stream.IntStream.range(i, i+50).toArray() : " +
-                        "java.util.stream.IntStream.range(i, i+2).toArray()");
-        ParquetTools.writeTable(arrayTable, dest, writeInstructions);
-        final Table fromDisk = readSingleFileTable(dest, EMPTY);
+    /**
+     * Test if the parquet reading code can read pre-generated parquet files which have different number of rows in each
+     * page. Following is how these files are generated.
+     *
+     * <pre>
+     * Table arrayTable = TableTools.emptyTable(100).update(
+     *         "intArrays = java.util.stream.IntStream.range(0, i).toArray()").reverse();
+     * File dest = new File(rootFile, "ReferenceParquetFileWithDifferentPageSizes1.parquet");
+     * final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+     *         .setTargetPageSize(ParquetInstructions.MIN_TARGET_PAGE_SIZE)
+     *         .build();
+     * ParquetTools.writeTable(arrayTable, dest, writeInstructions);
+     *
+     * arrayTable = TableTools.emptyTable(1000).update(
+     *         "intArrays = (i <= 900) ? java.util.stream.IntStream.range(i, i+50).toArray() : " +
+     *                 "java.util.stream.IntStream.range(i, i+2).toArray()");
+     * dest = new File(rootFile, "ReferenceParquetFileWithDifferentPageSizes2.parquet");
+     * ParquetTools.writeTable(arrayTable, dest, writeInstructions);
+     * </pre>
+     */
+    @Test
+    public void testReadingParquetFilesWithDifferentPageSizes() {
+        Table expected = TableTools.emptyTable(100).update(
+                "intArrays = java.util.stream.IntStream.range(0, i).toArray()").reverse();
+        String path = ParquetTableReadWriteTest.class
+                .getResource("/ReferenceParquetFileWithDifferentPageSizes1.parquet").getFile();
+        Table fromDisk = readParquetFileFromGitLFS(new File(path));
+        assertTableEquals(expected, fromDisk);
+
+        path = ParquetTableReadWriteTest.class
+                .getResource("/ReferenceParquetFileWithDifferentPageSizes2.parquet").getFile();
+        fromDisk = readParquetFileFromGitLFS(new File(path));
+
         // Access something on the last page to make sure we can read it
         final int[] data = (int[]) fromDisk.getColumnSource("intArrays").get(998);
         assertNotNull(data);
         assertEquals(2, data.length);
         assertEquals(998, data[0]);
         assertEquals(999, data[1]);
-        assertTableEquals(arrayTable, fromDisk);
+
+        expected = TableTools.emptyTable(1000).update(
+                "intArrays = (i <= 900) ? java.util.stream.IntStream.range(i, i+50).toArray() : " +
+                        "java.util.stream.IntStream.range(i, i+2).toArray()");
+        assertTableEquals(expected, fromDisk);
     }
 
     // Following is used for testing both writing APIs for parquet tables
