@@ -4,9 +4,10 @@
 
 import os
 import unittest
+from datetime import datetime
 
 from deephaven import kafka_producer as pk, new_table, time_table
-from deephaven.column import string_col, int_col, double_col
+from deephaven.column import string_col, int_col, double_col, datetime_col
 from deephaven.stream import kafka
 from deephaven.stream.kafka.producer import KeyValueSpec
 from tests.testbase import BaseTestCase
@@ -45,6 +46,126 @@ class KafkaProducerTestCase(BaseTestCase):
             'orders',
             key_spec=KeyValueSpec.IGNORE,
             value_spec=pk.simple_spec('Price')
+        )
+
+        self.assertIsNotNone(cleanup)
+        cleanup()
+
+    def test_simple_spec_topic_col_no_default_topic(self):
+        """
+        Check a simple Kafka producer works with a topic column but no default topic
+        """
+        t = new_table(cols=[
+            string_col('Topic', ['orders_a', 'orders_b', 'orders_a', 'orders_b']),
+            double_col('Price', [10.0, 10.5, 11.0, 11.5])
+        ])
+        cleanup = pk.produce(
+            t,
+            {'bootstrap.servers': 'redpanda:29092'},
+            None,
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=pk.simple_spec('Price'),
+            topic_col='Topic'
+        )
+
+        self.assertIsNotNone(cleanup)
+        cleanup()
+
+    def test_simple_spec_topic_col_default_topic(self):
+        """
+        Check a simple Kafka producer works with a topic column and a default topic
+        """
+        t = new_table(cols=[
+            string_col('Topic', ['orders_a', None, 'orders_a', 'orders_b']),
+            double_col('Price', [10.0, 10.5, 11.0, 11.5])
+        ])
+        cleanup = pk.produce(
+            t,
+            {'bootstrap.servers': 'redpanda:29092'},
+            'orders',
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=pk.simple_spec('Price'),
+            topic_col='Topic'
+        )
+
+        self.assertIsNotNone(cleanup)
+        cleanup()
+
+    def test_simple_spec_default_partition(self):
+        """
+        Check a simple Kafka producer works with a default partition
+        """
+        t = new_table(cols=[
+            double_col('Price', [10.0, 10.5, 11.0, 11.5])]
+        )
+        cleanup = pk.produce(
+            t,
+            {'bootstrap.servers': 'redpanda:29092'},
+            "orders",
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=pk.simple_spec('Price'),
+            partition=0
+        )
+
+        self.assertIsNotNone(cleanup)
+        cleanup()
+
+    def test_simple_spec_partition_col_no_default_partition(self):
+        """
+        Check a simple Kafka producer works with a partition column
+        """
+        t = new_table(cols=[
+            int_col('Partition', [0, 0, 0, 0]),
+            double_col('Price', [10.0, 10.5, 11.0, 11.5])
+        ])
+        cleanup = pk.produce(
+            t,
+            {'bootstrap.servers': 'redpanda:29092'},
+            "orders",
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=pk.simple_spec('Price'),
+            partition_col='Partition'
+        )
+
+        self.assertIsNotNone(cleanup)
+        cleanup()
+
+    def test_simple_spec_partition_col_default_partition(self):
+        """
+        Check a simple Kafka producer works with a partition column and default partition
+        """
+        t = new_table(cols=[
+            int_col('Partition', [0, 0, None, 0]),
+            double_col('Price', [10.0, 10.5, 11.0, 11.5])
+        ])
+        cleanup = pk.produce(
+            t,
+            {'bootstrap.servers': 'redpanda:29092'},
+            "orders",
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=pk.simple_spec('Price'),
+            partition=0,
+            partition_col='Partition'
+        )
+
+        self.assertIsNotNone(cleanup)
+        cleanup()
+
+    def test_simple_spec_timestamp_col(self):
+        """
+        Check a simple Kafka producer works with a timestamp column
+        """
+        t = new_table(cols=[
+            datetime_col('Timestamp', [datetime.now(), datetime.now(), None, datetime.now()]),
+            double_col('Price', [10.0, 10.5, 11.0, 11.5])
+        ])
+        cleanup = pk.produce(
+            t,
+            {'bootstrap.servers': 'redpanda:29092'},
+            "orders",
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=pk.simple_spec('Price'),
+            timestamp_col='Timestamp'
         )
 
         self.assertIsNotNone(cleanup)

@@ -13,8 +13,8 @@ final class CodecTransfer<COLUMN_TYPE> extends ObjectTransfer<COLUMN_TYPE> {
     private final ObjectCodec<? super COLUMN_TYPE> codec;
 
     CodecTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final ObjectCodec<? super COLUMN_TYPE> codec,
-            @NotNull final RowSequence tableRowSet, final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize);
+            @NotNull final RowSequence tableRowSet, final int targetPageSizeInBytes) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes);
         this.codec = codec;
     }
 

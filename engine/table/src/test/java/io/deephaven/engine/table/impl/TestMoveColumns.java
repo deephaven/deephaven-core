@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
@@ -149,12 +150,15 @@ public class TestMoveColumns extends RefreshingTableTestCase {
     }
 
     private void checkColumnOrder(Table t, String expectedOrder) {
-        final String order = t.getColumnSourceMap().keySet().stream().collect(Collectors.joining(""));
+        final String order = t.getDefinition()
+                .getColumnStream()
+                .map(ColumnDefinition::getName)
+                .collect(Collectors.joining(""));
         assertEquals(expectedOrder, order);
     }
 
     private void checkColumnValueOrder(Table t, String expectedOrder) {
-        final String order = t.getColumnSourceMap().values().stream().mapToInt((col) -> col.getInt(0))
+        final String order = t.getColumnSources().stream().mapToInt((col) -> col.getInt(0))
                 .mapToObj(String::valueOf).collect(Collectors.joining(""));
         assertEquals(expectedOrder, order);
     }

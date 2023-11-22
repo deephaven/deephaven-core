@@ -386,17 +386,9 @@ public:
   [[nodiscard]]
   int64_t Nanos() const { return nanos_; }
 
-  /**
-   * Used internally to serialize this object to Deephaven.
-   */
-  void StreamIrisRepresentation(std::ostream &result) const;
-
 private:
   int64_t nanos_ = 0;
 
-  friend std::ostream &operator<<(std::ostream &s, const DateTime &o) {
-    o.StreamIrisRepresentation(s);
-    return s;
-  }
+  friend std::ostream &operator<<(std::ostream &s, const DateTime &o);
 };
 }  // namespace deephaven::dhcore

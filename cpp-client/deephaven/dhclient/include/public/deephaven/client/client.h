@@ -568,8 +568,11 @@ public:
   }
 
   /**
-   * Returns an aggregator that computes the standard deviation of values, within an aggregation
-   * group, for each input column.
+   * Returns an aggregator that computes the sample standard deviation of values, within an
+   * aggregation group, for each input column.
+   *
+   * Sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+   * which ensures that the sample variance will be an unbiased estimator of population variance.
    */
   [[nodiscard]]
   static Aggregate Std(std::vector<std::string> column_specs);
@@ -608,8 +611,11 @@ public:
   }
 
   /**
-   * Returns an aggregator that computes the variance of values, within an aggregation group,
+   * Returns an aggregator that computes the sample variance of values, within an aggregation group,
    * for each input column.
+   *
+   * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+   * which ensures that the sample variance will be an unbiased estimator of population variance.
    */
   [[nodiscard]]
   static Aggregate Var(std::vector<std::string> column_specs);
@@ -801,8 +807,11 @@ Aggregate AggPct(double percentile, Args &&... args) {
 }
 
 /**
- * Returns an aggregator that computes the standard deviation of values, within an aggregation
- * group, for each input column.
+ * Returns an aggregator that computes the sample standard deviation of values, within an aggregation group,
+ * for each input column.
+ *
+ * Sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+ * which ensures that the sample variance will be an unbiased estimator of population variance.
  */
 template<typename ...Args>
 [[nodiscard]]
@@ -821,8 +830,11 @@ Aggregate aggSum(Args &&... args) {
 }
 
 /**
- * Returns an aggregator that computes the variance of values, within an aggregation group,
+ * Returns an aggregator that computes the sample variance of values, within an aggregation group,
  * for each input column.
+ *
+ * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+ * which ensures that the sample variance will be an unbiased estimator of population variance.
  */
 template<typename ...Args>
 [[nodiscard]]
@@ -1395,7 +1407,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
-  TableHandle WAvgBy(std::string weight_column, std::vector<std::string> columnSpecs) const;
+  TableHandle WAvgBy(std::string weight_column, std::vector<std::string> column_specs) const;
   /**
    * A variadic form of WAvgBy(std::string, std::vector<std::string>) const that takes a combination of
    * argument types.
@@ -1526,7 +1538,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
-  TableHandle Merge(std::string key_column, std::vector<TableHandle> sources) const;
+  TableHandle Merge(std::string key_columns, std::vector<TableHandle> sources) const;
   /**
    * A variadic form of Merge(std::string, std::vector<std::string>) const that takes a combination of
    * argument types.
@@ -1836,8 +1848,8 @@ public:
    * Subscribe to a ticking table (C-style).
    */
   [[nodiscard]]
-  std::shared_ptr<SubscriptionHandle> Subscribe(onTickCallback_t onTick, void *onTickUserData,
-      onErrorCallback_t on_error, void *onErrorUserData);
+  std::shared_ptr<SubscriptionHandle> Subscribe(onTickCallback_t on_tick, void *on_tick_user_data,
+      onErrorCallback_t on_error, void *on_error_user_data);
   /**
    * Unsubscribe from the table.
    */

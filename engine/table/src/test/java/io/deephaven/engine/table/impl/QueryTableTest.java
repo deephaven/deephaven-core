@@ -558,13 +558,17 @@ public class QueryTableTest extends QueryTableTestBase {
 
         try {
             table.dropColumns(Collections.singletonList("DoesNotExist"));
-        } catch (RuntimeException e) {
-            assertEquals("Unknown columns: [DoesNotExist], available columns = [String, Int, Double]", e.getMessage());
+            fail("Expected NoSuchColumnException");
+        } catch (NoSuchColumnException e) {
+            assertEquals("Unknown column names [DoesNotExist], available column names are [String, Int, Double]",
+                    e.getMessage());
         }
         try {
             table.dropColumns(Arrays.asList("Int", "DoesNotExist"));
-        } catch (RuntimeException e) {
-            assertEquals("Unknown columns: [DoesNotExist], available columns = [String, Int, Double]", e.getMessage());
+            fail("Expected NoSuchColumnException");
+        } catch (NoSuchColumnException e) {
+            assertEquals("Unknown column names [DoesNotExist], available column names are [String, Int, Double]",
+                    e.getMessage());
         }
     }
 
@@ -1461,6 +1465,9 @@ public class QueryTableTest extends QueryTableTestBase {
             // Now we should flush the second snapshot
             flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
+            // Which also generates a result notification as a pass-through
+            flushed = updateGraph.flushOneNotificationForUnitTests();
+            TestCase.assertTrue(flushed);
             TestCase.assertTrue(
                     snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
             TestCase.assertTrue(
@@ -1469,6 +1476,9 @@ public class QueryTableTest extends QueryTableTestBase {
                     snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // This should flush the second TUV
+            flushed = updateGraph.flushOneNotificationForUnitTests();
+            TestCase.assertTrue(flushed);
+            // Which also generates a result notification as a pass-through
             flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 

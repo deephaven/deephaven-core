@@ -64,7 +64,12 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 return new DoubleChunkInputStreamGenerator(chunk.asDoubleChunk(), Double.BYTES, rowOffset);
             case Object:
                 if (type.isArray()) {
-                    return new VarListChunkInputStreamGenerator<>(type, chunk.asObjectChunk(), rowOffset);
+                    if (componentType == byte.class) {
+                        return new VarBinaryChunkInputStreamGenerator<>(chunk.asObjectChunk(), rowOffset,
+                                (out, item) -> out.write((byte[]) item));
+                    } else {
+                        return new VarListChunkInputStreamGenerator<>(type, chunk.asObjectChunk(), rowOffset);
+                    }
                 }
                 if (Vector.class.isAssignableFrom(type)) {
                     //noinspection unchecked
@@ -205,7 +210,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                         Double.BYTES, options,fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Object:
                 if (type.isArray()) {
-                    if(componentType == byte.class) {
+                    if (componentType == byte.class) {
                         return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
                               is,
                               fieldNodeIter,

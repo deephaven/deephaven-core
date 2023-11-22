@@ -261,6 +261,10 @@ public class JsRollupConfig {
                 // case JsAggregationOperation.WSUM: {
                 // // TODO #3302 support this
                 // }
+                case JsAggregationOperation.SKIP: {
+                    // cancel entirely, start the loop again
+                    return;
+                }
                 default:
                     JsLog.warn("Aggregation " + aggregationType + " not supported, ignoring");
             }

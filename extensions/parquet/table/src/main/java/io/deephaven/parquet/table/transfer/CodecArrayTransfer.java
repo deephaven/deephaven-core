@@ -19,8 +19,8 @@ final class CodecArrayTransfer<VALUE_TYPE> extends ObjectArrayTransfer<VALUE_TYP
 
     CodecArrayTransfer(final @NotNull ColumnSource<?> columnSource,
             @NotNull final ObjectCodec<? super VALUE_TYPE> codec,
-            final @NotNull RowSequence tableRowSet, final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize);
+            final @NotNull RowSequence tableRowSet, final int targetPageSizeInBytes) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes);
         this.codec = codec;
     }
 

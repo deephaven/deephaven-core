@@ -187,9 +187,9 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * the table with the given key.
+     * Fetch the table with the given key.
      * 
-     * @param key
+     * @param key The key to fetch. An array of values for each key column, in the same order as the key columns are.
      * @return Promise of dh.Table
      */
     public Promise<JsTable> getTable(Object key) {
@@ -208,6 +208,12 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         return entry.get().then(cts -> Promise.resolve(new JsTable(cts.getConnection(), cts)));
     }
 
+    /**
+     * Open a new table that is the result of merging all constituent tables. See
+     * {@link io.deephaven.engine.table.PartitionedTable#merge()} for details.
+     * 
+     * @return A merged representation of the constituent tables.
+     */
     public Promise<JsTable> getMergedTable() {
         return connection.newState((c, cts, metadata) -> {
             MergeRequest requestMessage = new MergeRequest();
@@ -224,7 +230,6 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      * for <b>keyadded</b> will ensure no keys are missed.
      * 
      * @return Set of Object
-     *
      */
     public JsSet<Object> getKeys() {
         if (subscription.getColumns().length == 1) {

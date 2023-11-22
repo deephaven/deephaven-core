@@ -22,7 +22,7 @@ public class DoubleGenerator extends AbstractGenerator<Double> {
     private final double posInfFraction;
 
     public DoubleGenerator() {
-        this(QueryConstants.NULL_DOUBLE + 1, Double.MAX_VALUE);
+        this(Math.nextUp(-Double.MAX_VALUE), Double.MAX_VALUE);
     }
 
     public DoubleGenerator(double from, double to) {
@@ -74,7 +74,7 @@ public class DoubleGenerator extends AbstractGenerator<Double> {
                 return Double.POSITIVE_INFINITY;
             }
         }
-        return from + (random.nextDouble() * to - from);
+        return (from / 2 + (random.nextDouble() * (to / 2 - from / 2))) * 2;
     }
 
     @Override

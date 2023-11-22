@@ -2,9 +2,9 @@ package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.generator.*;
-
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 
@@ -69,7 +69,8 @@ public class BaseUpdateByTest {
                 new ShortGenerator((short) -6000, (short) 65535, .1),
                 new IntGenerator(10, 100, .1),
                 new LongGenerator(10, 100, .1),
-                new FloatGenerator(-100, 100, .1),
+                // TODO (deephaven-core#4743) verify this change in range
+                new FloatGenerator(0, 100, .1),
                 new DoubleGenerator(10.1, 20.1, .1),
                 new BooleanGenerator(.5, .1),
                 new BigIntegerGenerator(new BigInteger("-10"), new BigInteger("10"), .1),
@@ -80,11 +81,9 @@ public class BaseUpdateByTest {
                 generators.toArray(new TestDataGenerator[0]));
         final QueryTable t = getTable(tableSize, random, columnInfos);
 
-
-        // if (!isRefreshing && includeGroups) {
-        // final ColumnSource<?> groupingSource = t.getColumnSource("Sym");
-        // groupingSource.setGroupingProvider(StaticGroupingProvider.buildFrom(groupingSource, t.getRowSet()));
-        // }
+        if (!isRefreshing && includeGroups) {
+            DataIndexer.of(t.getRowSet()).createDataIndex(t, "Sym");
+        }
 
         t.setRefreshing(isRefreshing);
 

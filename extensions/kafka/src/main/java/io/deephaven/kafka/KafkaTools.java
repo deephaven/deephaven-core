@@ -1442,12 +1442,16 @@ public class KafkaTools {
                     options.config(),
                     effectiveTable,
                     options.topic(),
+                    options.partition().isEmpty() ? null : options.partition().getAsInt(),
                     keyColumns,
                     keySpecSerializer,
                     keySerializer,
                     valueColumns,
                     valueSpecSerializer,
                     valueSerializer,
+                    options.topicColumn().orElse(null),
+                    options.partitionColumn().orElse(null),
+                    options.timestampColumn().orElse(null),
                     options.publishInitial());
         }
         return publisherScope::release;

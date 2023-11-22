@@ -37,7 +37,7 @@ class JsPluginsZipFilesystem {
         tempDir.toFile().deleteOnExit();
         final Path fsZip = tempDir.resolve("deephaven-js-plugins.zip");
         fsZip.toFile().deleteOnExit();
-        final URI uri = URI.create(String.format("jar:file:%s!/", fsZip));
+        final URI uri = URI.create(String.format("jar:%s!/", fsZip.toUri()));
         final JsPluginsZipFilesystem jsPlugins = new JsPluginsZipFilesystem(uri);
         jsPlugins.init();
         return jsPlugins;

@@ -3,19 +3,28 @@
  */
 package io.deephaven.kafka.publish;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.BlinkTableTools;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.liveness.LivenessScope;
-import io.deephaven.engine.table.impl.*;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.kafka.KafkaPublishOptions;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.ReferentialIntegrity;
@@ -26,8 +35,10 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.Serializer;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -43,12 +54,35 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
 
     private final Table table;
     private final KafkaProducer<K, V> producer;
-    private final String topic;
+    private final String defaultTopic;
+    private final Integer defaultPartition;
     private final KeyOrValueSerializer<K> keyChunkSerializer;
     private final KeyOrValueSerializer<V> valueChunkSerializer;
+    private final ColumnSource<CharSequence> topicColumnSource;
+    private final ColumnSource<Integer> partitionColumnSource;
+    private final ColumnSource<Long> timestampColumnSource;
 
     @ReferentialIntegrity
     private final PublishListener publishListener;
+
+    /**
+     * @deprecated please use {@link io.deephaven.kafka.KafkaTools#produceFromTable(KafkaPublishOptions)}
+     */
+    @Deprecated(forRemoval = true)
+    public PublishToKafka(
+            final Properties props,
+            final Table table,
+            final String topic,
+            final String[] keyColumns,
+            final Serializer<K> kafkaKeySerializer,
+            final KeyOrValueSerializer<K> keyChunkSerializer,
+            final String[] valueColumns,
+            final Serializer<V> kafkaValueSerializer,
+            final KeyOrValueSerializer<V> valueChunkSerializer,
+            final boolean publishInitial) {
+        this(props, table, topic, null, keyColumns, kafkaKeySerializer, keyChunkSerializer, valueColumns,
+                kafkaValueSerializer, valueChunkSerializer, null, null, null, publishInitial);
+    }
 
     /**
      * <p>
@@ -77,7 +111,8 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      *
      * @param props The Kafka {@link Properties}
      * @param table The source {@link Table}
-     * @param topic The destination topic
+     * @param defaultTopic The default destination topic
+     * @param defaultPartition The default destination partition
      * @param keyColumns Optional array of string column names from table for the columns corresponding to Kafka's Key
      *        field.
      * @param kafkaKeySerializer The kafka {@link Serializer} to use for keys
@@ -89,26 +124,46 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      * @param valueChunkSerializer Optional {@link KeyOrValueSerializer} to consume table data and produce Kafka record
      *        values in chunk-oriented fashion
      * @param publishInitial If the initial data in {@code table} should be published
+     * @param topicColumn The topic column. When set, uses the the given {@link CharSequence} column from {@code table}
+     *        as the first source for setting the kafka record topic.
+     * @param partitionColumn The partition column. When set, uses the the given {@code int} column from {@code table}
+     *        as the first source for setting the kafka record partition.
+     * @param timestampColumn The timestamp column. When set, uses the the given {@link Instant} column from
+     *        {@code table} as the first source for setting the kafka record timestamp.
      */
     public PublishToKafka(
             final Properties props,
-            final Table table,
-            final String topic,
+            Table table,
+            final String defaultTopic,
+            final Integer defaultPartition,
             final String[] keyColumns,
             final Serializer<K> kafkaKeySerializer,
             final KeyOrValueSerializer<K> keyChunkSerializer,
             final String[] valueColumns,
             final Serializer<V> kafkaValueSerializer,
             final KeyOrValueSerializer<V> valueChunkSerializer,
+            final ColumnName topicColumn,
+            final ColumnName partitionColumn,
+            final ColumnName timestampColumn,
             final boolean publishInitial) {
-        this.table = table;
+        this.table = (table = table.coalesce());
         this.producer = new KafkaProducer<>(
                 props,
                 Objects.requireNonNull(kafkaKeySerializer),
                 Objects.requireNonNull(kafkaValueSerializer));
-        this.topic = topic;
+        this.defaultTopic = defaultTopic;
+        this.defaultPartition = defaultPartition;
         this.keyChunkSerializer = keyChunkSerializer;
         this.valueChunkSerializer = valueChunkSerializer;
+        this.topicColumnSource = topicColumn == null
+                ? null
+                : table.getColumnSource(topicColumn.name(), CharSequence.class);
+        this.partitionColumnSource = partitionColumn == null
+                ? null
+                : table.getColumnSource(partitionColumn.name(), int.class);
+        this.timestampColumnSource = timestampColumn == null
+                ? null
+                : ReinterpretUtils.instantToLongSource(table.getColumnSource(timestampColumn.name(), Instant.class));
         if (publishInitial) {
             // Publish the initial table state
             try (final PublicationGuard guard = new PublicationGuard()) {
@@ -133,6 +188,38 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
                 : ((QueryTable) table).newModifiedColumnSet(columns);
     }
 
+    private String topic(ObjectChunk<CharSequence, ?> topicChunk, int index) {
+        if (topicChunk == null) {
+            return defaultTopic;
+        }
+        final CharSequence charSequence = topicChunk.get(index);
+        return charSequence == null ? defaultTopic : charSequence.toString();
+    }
+
+    private Integer partition(IntChunk<?> partitionChunk, int index) {
+        if (partitionChunk == null) {
+            return defaultPartition;
+        }
+        final int partition = partitionChunk.get(index);
+        return partition == QueryConstants.NULL_INT ? defaultPartition : Integer.valueOf(partition);
+    }
+
+    public static Long timestampMillis(LongChunk<?> nanosChunk, int index) {
+        if (nanosChunk == null) {
+            return null;
+        }
+        final long nanos = nanosChunk.get(index);
+        return nanos == QueryConstants.NULL_LONG ? null : TimeUnit.NANOSECONDS.toMillis(nanos);
+    }
+
+    private static <T> T object(ObjectChunk<T, ?> chunk, int index) {
+        return chunk == null ? null : chunk.get(index);
+    }
+
+    private static ChunkSource.GetContext makeGetContext(ColumnSource<?> source, int chunkSize) {
+        return source == null ? null : source.makeGetContext(chunkSize);
+    }
+
     private void publishMessages(@NotNull final RowSet rowsToPublish, final boolean usePrevious,
             final boolean publishValues, @NotNull final PublicationGuard guard) {
         if (rowsToPublish.isEmpty()) {
@@ -142,31 +229,55 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
 
         final int chunkSize = (int) Math.min(CHUNK_SIZE, rowsToPublish.size());
         try (final RowSequence.Iterator rowsIterator = rowsToPublish.getRowSequenceIterator();
-                final KeyOrValueSerializer.Context keyContext =
-                        keyChunkSerializer != null ? keyChunkSerializer.makeContext(chunkSize) : null;
-                final KeyOrValueSerializer.Context valueContext =
-                        publishValues && valueChunkSerializer != null ? valueChunkSerializer.makeContext(chunkSize)
-                                : null) {
+                final KeyOrValueSerializer.Context keyContext = keyChunkSerializer != null
+                        ? keyChunkSerializer.makeContext(chunkSize)
+                        : null;
+                final KeyOrValueSerializer.Context valueContext = publishValues && valueChunkSerializer != null
+                        ? valueChunkSerializer.makeContext(chunkSize)
+                        : null;
+                final ChunkSource.GetContext topicContext = makeGetContext(topicColumnSource, chunkSize);
+                final ChunkSource.GetContext partitionContext = makeGetContext(partitionColumnSource, chunkSize);
+                final ChunkSource.GetContext timestampContext = makeGetContext(timestampColumnSource, chunkSize)) {
             while (rowsIterator.hasMore()) {
                 final RowSequence chunkRowKeys = rowsIterator.getNextRowSequenceWithLength(chunkSize);
 
-                final ObjectChunk<K, Values> keyChunk;
-                if (keyContext != null) {
-                    keyChunk = keyChunkSerializer.handleChunk(keyContext, chunkRowKeys, usePrevious);
-                } else {
-                    keyChunk = null;
-                }
+                final ObjectChunk<K, ?> keyChunk = keyContext == null
+                        ? null
+                        : keyChunkSerializer.handleChunk(keyContext, chunkRowKeys, usePrevious);
 
-                final ObjectChunk<V, Values> valueChunk;
-                if (valueContext != null) {
-                    valueChunk = valueChunkSerializer.handleChunk(valueContext, chunkRowKeys, usePrevious);
-                } else {
-                    valueChunk = null;
-                }
+                final ObjectChunk<V, ?> valueChunk = valueContext == null
+                        ? null
+                        : valueChunkSerializer.handleChunk(valueContext, chunkRowKeys, usePrevious);
 
-                for (int ii = 0; ii < chunkRowKeys.intSize(); ++ii) {
-                    final ProducerRecord<K, V> record = new ProducerRecord<>(topic,
-                            keyChunk != null ? keyChunk.get(ii) : null, valueChunk != null ? valueChunk.get(ii) : null);
+                final ObjectChunk<CharSequence, ?> topicChunk = topicContext == null
+                        ? null
+                        : (usePrevious
+                                ? topicColumnSource.getPrevChunk(topicContext, chunkRowKeys)
+                                : topicColumnSource.getChunk(topicContext, chunkRowKeys))
+                                .asObjectChunk();
+
+                final IntChunk<?> partitionChunk = partitionContext == null
+                        ? null
+                        : (usePrevious
+                                ? partitionColumnSource.getPrevChunk(partitionContext, chunkRowKeys)
+                                : partitionColumnSource.getChunk(partitionContext, chunkRowKeys))
+                                .asIntChunk();
+
+                final LongChunk<?> timestampChunk = timestampContext == null
+                        ? null
+                        : (usePrevious
+                                ? timestampColumnSource.getPrevChunk(timestampContext, chunkRowKeys)
+                                : timestampColumnSource.getChunk(timestampContext, chunkRowKeys))
+                                .asLongChunk();
+
+                final int numRecords = chunkRowKeys.intSize();
+                for (int ii = 0; ii < numRecords; ++ii) {
+                    final ProducerRecord<K, V> record = new ProducerRecord<>(
+                            topic(topicChunk, ii),
+                            partition(partitionChunk, ii),
+                            timestampMillis(timestampChunk, ii),
+                            object(keyChunk, ii),
+                            object(valueChunk, ii));
                     producer.send(record, guard);
                 }
             }

@@ -12,7 +12,7 @@ import inspect
 from enum import Enum
 from enum import auto
 from functools import wraps
-from typing import Any, Optional, Callable, Dict
+from typing import Any, Optional, Callable, Dict, _GenericAlias
 from typing import Sequence, List, Union, Protocol
 
 import jpy
@@ -366,6 +366,20 @@ def _j_py_script_session() -> _JPythonScriptSession:
 _SUPPORTED_NP_TYPE_CODES = ["i", "l", "h", "f", "d", "b", "?", "U", "M", "O"]
 
 
+def _parse_annotation(annotation: Any) -> Any:
+    """Parse a Python annotation, for now mostly to extract the non-None type from an Optional(Union) annotation,
+    otherwise return the original annotation. """
+    if isinstance(annotation, _GenericAlias) and annotation.__origin__ == Union and len(annotation.__args__) == 2:
+        if annotation.__args__[1] == type(None):  # noqa: E721
+            return annotation.__args__[0]
+        elif annotation.__args__[0] == type(None):  # noqa: E721
+            return annotation.__args__[1]
+        else:
+            return annotation
+    else:
+        return annotation
+
+
 def _encode_signature(fn: Callable) -> str:
     """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
     type to numpy dtype chars (i,l,h,f,d,b,?,U,M,O), and pack them into a string with parameter type chars first,
@@ -373,18 +387,35 @@ def _encode_signature(fn: Callable) -> str:
 
     If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
     """
-    sig = inspect.signature(fn)
+    try:
+        sig = inspect.signature(fn)
+    except:
+        # in case inspect.signature() fails, we'll just use the default 'O' - object type.
+        # numpy ufuncs actually have signature encoded in their 'types' attribute, we want to better support
+        # them in the future (https://github.com/deephaven/deephaven-core/issues/4762)
+        if type(fn) == np.ufunc:
+            return "O"*fn.nin + "->" + "O"
+        return "->O"
 
     np_type_codes = []
     for n, p in sig.parameters.items():
-        np_type_codes.append(_np_dtype_char(p.annotation))
+        p_annotation = _parse_annotation(p.annotation)
+        np_type_codes.append(_np_dtype_char(p_annotation))
 
-    return_type_code = _np_dtype_char(sig.return_annotation)
+    return_annotation = _parse_annotation(sig.return_annotation)
+    return_type_code = _np_dtype_char(return_annotation)
     np_type_codes = [c if c in _SUPPORTED_NP_TYPE_CODES else "O" for c in np_type_codes]
     return_type_code = return_type_code if return_type_code in _SUPPORTED_NP_TYPE_CODES else "O"
 
     np_type_codes.extend(["-", ">", return_type_code])
     return "".join(np_type_codes)
+
+
+def _udf_return_dtype(fn):
+    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
+        return dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
+    else:
+        return dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
 
 
 def _py_udf(fn: Callable):
@@ -405,14 +436,9 @@ def _py_udf(fn: Callable):
 
     if hasattr(fn, "return_type"):
         return fn
-
-    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
-        dh_dtype = dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
-    else:
-        dh_dtype = dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
+    ret_dtype = _udf_return_dtype(fn)
 
     return_array = False
-
     # If the function is a numba guvectorized function, examine the signature of the function to determine if it
     # returns an array.
     if isinstance(fn, numba.np.ufunc.gufunc.GUFunc):
@@ -421,29 +447,38 @@ def _py_udf(fn: Callable):
         if rtype:
             return_array = True
     else:
-        component_type = _component_np_dtype_char(inspect.signature(fn).return_annotation)
-        if component_type:
-            dh_dtype = dtypes.from_np_dtype(np.dtype(component_type))
-            if dh_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
-                return_array = True
+        try:
+            return_annotation = _parse_annotation(inspect.signature(fn).return_annotation)
+        except ValueError:
+            # the function has no return annotation, and since we can't know what the exact type is, the return type
+            # defaults to the generic object type therefore it is not an array of a specific type,
+            # but see (https://github.com/deephaven/deephaven-core/issues/4762) for future imporvement to better support
+            # numpy ufuncs.
+            pass
+        else:
+            component_type = _component_np_dtype_char(return_annotation)
+            if component_type:
+                ret_dtype = dtypes.from_np_dtype(np.dtype(component_type))
+                if ret_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
+                    return_array = True
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
         ret = fn(*args, **kwargs)
         if return_array:
-            return dtypes.array(dh_dtype, ret)
-        elif dh_dtype == dtypes.PyObject:
+            return dtypes.array(ret_dtype, ret)
+        elif ret_dtype == dtypes.PyObject:
             return ret
         else:
-            return _scalar(ret)
+            return _scalar(ret, ret_dtype)
 
-    wrapper.j_name = dh_dtype.j_name
-    ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(dh_dtype) if return_array else dh_dtype
+    wrapper.j_name = ret_dtype.j_name
+    real_ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype) if return_array else ret_dtype
 
-    if hasattr(dh_dtype.j_type, 'jclass'):
-        j_class = ret_dtype.j_type.jclass
+    if hasattr(ret_dtype.j_type, 'jclass'):
+        j_class = real_ret_dtype.j_type.jclass
     else:
-        j_class = ret_dtype.qst_type.clazz()
+        j_class = real_ret_dtype.qst_type.clazz()
 
     wrapper.return_type = j_class
 
@@ -466,6 +501,7 @@ def dh_vectorize(fn):
     and (3) the input arrays.
     """
     signature = _encode_signature(fn)
+    ret_dtype = _udf_return_dtype(fn)
 
     @wraps(fn)
     def wrapper(*args):
@@ -481,10 +517,10 @@ def dh_vectorize(fn):
             vectorized_args = zip(*args[2:])
             for i in range(chunk_size):
                 scalar_args = next(vectorized_args)
-                chunk_result[i] = _scalar(fn(*scalar_args))
+                chunk_result[i] = _scalar(fn(*scalar_args), ret_dtype)
         else:
             for i in range(chunk_size):
-                chunk_result[i] = fn()
+                chunk_result[i] = _scalar(fn(), ret_dtype)
 
         return chunk_result
 
@@ -525,6 +561,15 @@ def _query_scope_ctx():
     else:
         # in the __main__ module, use the default main global scope
         yield
+
+
+def _query_scope_agg_ctx(aggs: Sequence[Aggregation]) -> contextlib.AbstractContextManager:
+    has_agg_formula = any([agg.is_formula for agg in aggs])
+    if has_agg_formula:
+        cm = _query_scope_ctx()
+    else:
+        cm = contextlib.nullcontext()
+    return cm
 
 
 class SortDirection(Enum):
@@ -1762,7 +1807,10 @@ class Table(JObjectWrapper):
             raise DHError(e, "table avg_by operation failed.") from e
 
     def std_by(self, by: Union[str, Sequence[str]] = None) -> Table:
-        """The std_by method creates a new table containing the standard deviation for each group.
+        """The std_by method creates a new table containing the sample standard deviation for each group.
+
+        Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+        which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
             by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
@@ -1783,7 +1831,10 @@ class Table(JObjectWrapper):
             raise DHError(e, "table std_by operation failed.") from e
 
     def var_by(self, by: Union[str, Sequence[str]] = None) -> Table:
-        """The var_by method creates a new table containing the variance for each group.
+        """The var_by method creates a new table containing the sample variance for each group.
+
+        Sample variance is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+        which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
             by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
@@ -1919,13 +1970,16 @@ class Table(JObjectWrapper):
             if not by and initial_groups:
                 raise ValueError("missing group-by column names when initial_groups is provided.")
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            if not by:
-                return Table(j_table=self.j_table.aggBy(j_agg_list, preserve_empty))
-            else:
-                j_column_name_list = j_array_list([_JColumnName.of(col) for col in by])
-                initial_groups = unwrap(initial_groups)
-                return Table(
-                    j_table=self.j_table.aggBy(j_agg_list, preserve_empty, initial_groups, j_column_name_list))
+
+            cm = _query_scope_agg_ctx(aggs)
+            with cm:
+                if not by:
+                    return Table(j_table=self.j_table.aggBy(j_agg_list, preserve_empty))
+                else:
+                    j_column_name_list = j_array_list([_JColumnName.of(col) for col in by])
+                    initial_groups = unwrap(initial_groups)
+                    return Table(
+                        j_table=self.j_table.aggBy(j_agg_list, preserve_empty, initial_groups, j_column_name_list))
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e
 
@@ -1962,8 +2016,11 @@ class Table(JObjectWrapper):
             by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
             initial_groups = unwrap(initial_groups)
-            return PartitionedTable(
-                j_partitioned_table=self.j_table.partitionedAggBy(j_agg_list, preserve_empty, initial_groups, *by))
+
+            cm = _query_scope_agg_ctx(aggs)
+            with cm:
+                return PartitionedTable(
+                    j_partitioned_table=self.j_table.partitionedAggBy(j_agg_list, preserve_empty, initial_groups, *by))
         except Exception as e:
             raise DHError(e, "table partitioned_agg_by operation failed.") from e
 
@@ -1986,7 +2043,9 @@ class Table(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            return Table(j_table=self.j_table.aggAllBy(agg.j_agg_spec, *by))
+            cm = _query_scope_agg_ctx([agg])
+            with cm:
+                return Table(j_table=self.j_table.aggAllBy(agg.j_agg_spec, *by))
         except Exception as e:
             raise DHError(e, "table agg_all_by operation failed.") from e
 
@@ -2156,19 +2215,19 @@ class Table(JObjectWrapper):
     def slice(self, start: int, stop: int) -> Table:
         """Extracts a subset of a table by row positions into a new Table.
 
-          If both the start and the stop are positive, then both are counted from the beginning of the table.
-          The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
-          The start must be less than or equal to the stop.
+        If both the start and the stop are positive, then both are counted from the beginning of the table.
+        The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
+        The start must be less than or equal to the stop.
 
-          If the start is positive and the stop is negative, then the start is counted from the beginning of the
-          table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
-          rows but the first and last. If the stop is before the start, the result is an empty table.
+        If the start is positive and the stop is negative, then the start is counted from the beginning of the
+        table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
+        rows but the first and last. If the stop is before the start, the result is an empty table.
 
-          If the start is negative, and the stop is zero, then the start is counted from the end of the table,
-          and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
+        If the start is negative, and the stop is zero, then the start is counted from the end of the table,
+        and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
 
-          If the start is negative and the stop is negative, they are both counted from the end of the
-          table. For example, slice(-2, -1) returns the second to last row of the table.
+        If the start is negative and the stop is negative, they are both counted from the end of the
+        table. For example, slice(-2, -1) returns the second to last row of the table.
 
         Args:
             start (int): the first row position to include in the result
@@ -2234,12 +2293,15 @@ class Table(JObjectWrapper):
             aggs = to_sequence(aggs)
             by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            if not by:
-                return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents), aggs=aggs,
-                                   include_constituents=include_constituents, by=by)
-            else:
-                return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents, by),
-                                   aggs=aggs, include_constituents=include_constituents, by=by)
+
+            cm = _query_scope_agg_ctx(aggs)
+            with cm:
+                if not by:
+                    return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents), aggs=aggs,
+                                       include_constituents=include_constituents, by=by)
+                else:
+                    return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents, by),
+                                       aggs=aggs, include_constituents=include_constituents, by=by)
         except Exception as e:
             raise DHError(e, "table rollup operation failed.") from e
 
@@ -3257,8 +3319,11 @@ class PartitionedTableProxy(JObjectWrapper):
             aggs = to_sequence(aggs)
             by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggBy(j_agg_list, *by))
+
+            cm = _query_scope_agg_ctx(aggs)
+            with cm:
+                with auto_locking_ctx(self):
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggBy(j_agg_list, *by))
         except Exception as e:
             raise DHError(e, "agg_by operation on the PartitionedTableProxy failed.") from e
 
@@ -3282,8 +3347,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggAllBy(agg.j_agg_spec, *by))
+
+            cm = _query_scope_agg_ctx([agg])
+            with cm:
+                with auto_locking_ctx(self):
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggAllBy(agg.j_agg_spec, *by))
         except Exception as e:
             raise DHError(e, "agg_all_by operation on the PartitionedTableProxy failed.") from e
 

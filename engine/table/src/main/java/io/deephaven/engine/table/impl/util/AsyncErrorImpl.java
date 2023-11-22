@@ -39,7 +39,7 @@ class AsyncErrorImpl {
             @Nullable TableListener.Entry entry,
             @Nullable TableListener.Entry sourceEntry,
             Throwable originalException) {
-        final int evaluationNumber;
+        final long evaluationNumber;
         final int operationNumber;
         final String description;
         if (entry instanceof PerformanceEntry) {
@@ -52,7 +52,7 @@ class AsyncErrorImpl {
             operationNumber = QueryConstants.NULL_INT;
             description = null;
         }
-        final int sourceEvaluationNumber;
+        final long sourceEvaluationNumber;
         final int sourceOperationNumber;
         final String sourceDescription;
         if (sourceEntry instanceof PerformanceEntry) {

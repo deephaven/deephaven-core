@@ -4,16 +4,10 @@
 package io.deephaven.parquet.table;
 
 import gnu.trove.list.array.TIntArrayList;
-import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.RawString;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.NullSelectColumn;
@@ -70,20 +64,20 @@ public class ParquetTableWriter {
      */
     public static class IndexWritingInfo {
         /**
-         * Name(s) of the indexing column(s)
+         * Name(s) of the indexing key column(s)
          */
         public final String[] indexColumnNames;
         /**
-         * Parquet name(s) of the indexing column(s)
+         * Parquet name(s) of the indexing key column(s)
          */
         public final String[] parquetColumnNames;
         /**
-         * File path to be added in the grouping metadata of main parquet file
+         * File path to be added in the index metadata of main parquet file
          */
         public final File metadataFilePath;
 
         /**
-         * Destination path for writing the grouping file. The two filenames can differ because we write grouping files
+         * Destination path for writing the index file. The two filenames can differ because we write index files
          * to shadow file paths first and then place them at the final path once the write is complete. But the metadata
          * should always hold the accurate path.
          */
@@ -145,14 +139,14 @@ public class ParquetTableWriter {
 
                     final String[] parquetColumnNames = info.parquetColumnNames;
                     final File metadataFilePath = info.metadataFilePath;
-                    final File groupingDestFile = info.destFile;
-                    cleanupFiles.add(groupingDestFile);
+                    final File indexDestFile = info.destFile;
+                    cleanupFiles.add(indexDestFile);
 
                     tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
                             destDirPath.relativize(metadataFilePath.toPath()).toString(),
                             parquetColumnNames));
                     write(indexTable, indexTable.getDefinition(), writeInstructions,
-                            groupingDestFile.getAbsolutePath(), Collections.emptyMap(), TableInfo.builder());
+                            indexDestFile.getAbsolutePath(), Collections.emptyMap(), TableInfo.builder());
                 }
             }
             write(t, definition, writeInstructions, destPathName, incomingMeta, tableInfoBuilder);
@@ -563,23 +557,5 @@ public class ParquetTableWriter {
                 }
             } while (transferObject.hasMoreDataToBuffer());
         }
-    }
-
-    private static Table groupingAsTable(Table tableToSave, String columnName) {
-        final QueryTable coalesced = (QueryTable) tableToSave.coalesce();
-        final Table tableToGroup = (coalesced.isRefreshing() ? (QueryTable) coalesced.silent() : coalesced)
-                .withAttributes(Map.of(Table.BLINK_TABLE_ATTRIBUTE, true)); // We want persistent first/last-by
-        final Table grouped = tableToGroup
-                .view(List.of(Selectable.of(ColumnName.of(GROUPING_KEY), ColumnName.of(columnName)),
-                        Selectable.of(ColumnName.of(BEGIN_POS), RawString.of("ii")), // Range start, inclusive
-                        Selectable.of(ColumnName.of(END_POS), RawString.of("ii+1")))) // Range end, exclusive
-                .aggBy(List.of(Aggregation.AggFirst(BEGIN_POS), Aggregation.AggLast(END_POS)),
-                        List.of(ColumnName.of(GROUPING_KEY)));
-        final Table invalid = grouped.where(BEGIN_POS + " != 0 && " + BEGIN_POS + " != " + END_POS + "_[ii-1]");
-        if (!invalid.isEmpty()) {
-            throw new UncheckedDeephavenException(
-                    "Range grouping is not possible for column because some indices are not contiguous");
-        }
-        return grouped;
     }
 }

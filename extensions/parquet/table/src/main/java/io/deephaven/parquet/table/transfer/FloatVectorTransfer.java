@@ -18,9 +18,9 @@ import java.nio.FloatBuffer;
 
 final class FloatVectorTransfer extends PrimitiveVectorTransfer<FloatVector, FloatBuffer> {
     FloatVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                      final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize / Float.BYTES, targetPageSize,
-                FloatBuffer.allocate(targetPageSize / Float.BYTES), Float.BYTES);
+                      final int targetPageSizeInBytes) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes / Float.BYTES, targetPageSizeInBytes,
+                FloatBuffer.allocate(targetPageSizeInBytes / Float.BYTES), Float.BYTES);
     }
 
     @Override

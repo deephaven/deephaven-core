@@ -19,8 +19,8 @@ import java.util.function.Supplier;
 abstract class ObjectVectorTransfer<VALUE_TYPE>
         extends ObjectArrayAndVectorTransfer<ObjectVector<VALUE_TYPE>, VALUE_TYPE> {
     ObjectVectorTransfer(final @NotNull ColumnSource<?> columnSource, final @NotNull RowSequence tableRowSet,
-                         final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize);
+                         final int targetPageSizeInBytes) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes);
     }
 
     @Override

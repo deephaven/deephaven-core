@@ -68,10 +68,10 @@ public class OuterJoinTools {
         // find a sentinel column name to use to identify right-side only rows
         int numAttempts = 0;
         String sentinelColumnName;
-        final Map<String, ? extends ColumnSource<?>> resultColumns = leftTable.getColumnSourceMap();
+        final Set<String> resultColumns = leftTable.getDefinition().getColumnNameSet();
         do {
             sentinelColumnName = "__sentinel_" + (numAttempts++) + "__";
-        } while (resultColumns.containsKey(sentinelColumnName));
+        } while (resultColumns.contains(sentinelColumnName));
 
         // only need match columns from the left; rename to right names and drop remaining to avoid name conflicts
         final List<SelectColumn> leftColumns = Streams.concat(

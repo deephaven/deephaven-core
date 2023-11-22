@@ -74,12 +74,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
          *
          * @param t the error
          */
-        void onError(Throwable t);
-
-        /**
-         * Called when the subscription is closed; will not be invoked after an onError.
-         */
-        void onClose();
+        void onError(@NotNull Throwable t);
     }
 
     public static final boolean DEBUG_ENABLED =
@@ -99,10 +94,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     protected long capacity = 0;
     /** the reinterpreted destination writable sources */
     protected final WritableColumnSource<?>[] destSources;
-
-
-    /** unsubscribed must never be reset to false once it has been set to true */
-    private volatile boolean unsubscribed = false;
 
     /**
      * The client and the server update asynchronously with respect to one another. The client requests a viewport, the
@@ -242,8 +233,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     @Override
     public void handleBarrageMessage(final BarrageMessage update) {
-        if (unsubscribed) {
-            beginLog(LogLevel.INFO).append(": Discarding update for unsubscribed table!").endl();
+        if (pendingError != null || isFailed()) {
+            beginLog(LogLevel.INFO).append(": Discarding update for errored table!").endl();
             return;
         }
 
@@ -255,10 +246,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             try {
                 realRefresh();
             } catch (Throwable err) {
-                if (viewportChangedCallback != null) {
-                    viewportChangedCallback.onError(err);
-                    viewportChangedCallback = null;
-                }
+                tryToDeliverErrorToCallback(err);
                 throw err;
             }
         } else {
@@ -269,6 +257,13 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     @Override
     public void handleBarrageError(Throwable t) {
         enqueueError(t);
+    }
+
+    private synchronized void tryToDeliverErrorToCallback(final Throwable err) {
+        if (viewportChangedCallback != null) {
+            viewportChangedCallback.onError(err);
+            viewportChangedCallback = null;
+        }
     }
 
     private class SourceRefresher extends InstrumentedUpdateSource {
@@ -289,10 +284,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
                         .append(err).endl();
                 notifyListenersOnError(err, null);
 
-                if (viewportChangedCallback != null) {
-                    viewportChangedCallback.onError(err);
-                    viewportChangedCallback = null;
-                }
+                tryToDeliverErrorToCallback(err);
                 if (err instanceof Error) {
                     // rethrow if this was an error (which should not be swallowed)
                     throw err;
@@ -301,7 +293,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
     }
 
-    protected void updateServerViewport(
+    protected synchronized void updateServerViewport(
             final RowSet viewport,
             final BitSet columns,
             final boolean reverseViewport) {
@@ -337,32 +329,20 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     }
 
     private synchronized void realRefresh() {
+        if (isFailed()) {
+            discardAnyPendingUpdates();
+            return;
+        }
+
         if (pendingError != null) {
-            if (viewportChangedCallback != null) {
-                viewportChangedCallback.onError(pendingError);
-                viewportChangedCallback = null;
-            }
+            tryToDeliverErrorToCallback(pendingError);
             if (isRefreshing()) {
                 notifyListenersOnError(pendingError, null);
             }
             // once we notify on error we are done, we can not notify any further, we are failed
             cleanup();
-            return;
-        }
-        if (unsubscribed) {
-            if (getRowSet().isNonempty()) {
-                // publish one last clear downstream; this data would be stale
-                final RowSet allRows = getRowSet().copy();
-                getRowSet().writableCast().remove(allRows);
-                if (isRefreshing()) {
-                    notifyListeners(RowSetFactory.empty(), allRows, RowSetFactory.empty());
-                }
-            }
-            if (viewportChangedCallback != null) {
-                viewportChangedCallback.onClose();
-                viewportChangedCallback = null;
-            }
-            cleanup();
+            // we are quite certain the shadow copies should have been drained on the last run
+            Assert.eqZero(shadowPendingUpdates.size(), "shadowPendingUpdates.size()");
             return;
         }
 
@@ -396,20 +376,22 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
     }
 
+    private void discardAnyPendingUpdates() {
+        synchronized (pendingUpdatesLock) {
+            pendingUpdates.forEach(BarrageMessage::close);
+            pendingUpdates.clear();
+        }
+    }
+
     private void cleanup() {
-        unsubscribed = true;
         if (stats != null) {
             stats.stop();
         }
         if (isRefreshing()) {
             registrar.removeSource(refresher);
         }
-        synchronized (pendingUpdatesLock) {
-            // release any pending snapshots, as we will never process them
-            pendingUpdates.clear();
-        }
-        // we are quite certain the shadow copies should have been drained on the last run
-        Assert.eqZero(shadowPendingUpdates.size(), "shadowPendingUpdates.size()");
+        // release any pending snapshots, as we will never process them
+        discardAnyPendingUpdates();
     }
 
     @Override
@@ -430,10 +412,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             try {
                 realRefresh();
             } catch (Throwable err) {
-                if (viewportChangedCallback != null) {
-                    viewportChangedCallback.onError(err);
-                    viewportChangedCallback = null;
-                }
+                tryToDeliverErrorToCallback(err);
                 throw err;
             }
         } else {
@@ -587,9 +566,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     @Override
     protected void destroy() {
         super.destroy();
-        if (stats != null) {
-            stats.stop();
-        }
+        cleanup();
     }
 
     public LongConsumer getDeserializationTmConsumer() {
