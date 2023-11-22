@@ -4,6 +4,7 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
@@ -11,39 +12,40 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
-import io.deephaven.parquet.table.metadata.DataIndexInfo;
-import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.vector.*;
-import io.deephaven.stringset.StringSet;
-import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.SimpleSourceTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
-import io.deephaven.engine.table.impl.locations.impl.*;
+import io.deephaven.engine.table.impl.locations.impl.KnownLocationKeyFinder;
+import io.deephaven.engine.table.impl.locations.impl.PollingTableLocationProvider;
+import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
+import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
+import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
+import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.engine.util.file.TrackedFileHandleFactory;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
+import io.deephaven.parquet.base.ParquetFileReader;
+import io.deephaven.parquet.base.util.CachedChannelProvider;
 import io.deephaven.parquet.table.layout.ParquetFlatPartitionedLayout;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.parquet.table.layout.ParquetMetadataFileLayout;
 import io.deephaven.parquet.table.layout.ParquetSingleFileLayout;
 import io.deephaven.parquet.table.location.ParquetTableLocationFactory;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
-import io.deephaven.parquet.table.util.TrackedSeekableChannelsProvider;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
-import io.deephaven.api.util.NameValidator;
+import io.deephaven.parquet.table.metadata.DataIndexInfo;
+import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
+import io.deephaven.parquet.table.metadata.TableInfo;
+import io.deephaven.parquet.table.util.TrackedSeekableChannelsProvider;
+import io.deephaven.stringset.StringSet;
 import io.deephaven.util.SimpleTypeMap;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.parquet.base.ParquetFileReader;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
-import io.deephaven.parquet.base.util.CachedChannelProvider;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.vector.*;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
@@ -56,7 +58,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.function.Function;
 
 import static io.deephaven.parquet.table.ParquetTableWriter.*;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
@@ -427,11 +428,11 @@ public class ParquetTools {
     }
 
     /**
-     * Helper function for building grouping column info for writing and deleting any backup grouping column files
+     * Helper function for building index column info for writing and deleting any backup index column files
      *
      * @param indexColumnNameArr Names of index columns, stored as String[] for each index
      * @param parquetColumnNameArr Names of index columns for the parquet file, stored as String[] for each index
-     * @param destFile The destination path for the main table containing these grouping columns
+     * @param destFile The destination path for the main table containing these index columns
      */
     private static List<ParquetTableWriter.IndexWritingInfo> indexInfoBuilderHelper(
             @NotNull final String[][] indexColumnNameArr,
@@ -441,17 +442,19 @@ public class ParquetTools {
                 "parquetColumnNameArr.length");
         final List<ParquetTableWriter.IndexWritingInfo> indexInfoList = new ArrayList<>();
         for (int gci = 0; gci < indexColumnNameArr.length; gci++) {
-            final String[] groupingColumnNames = indexColumnNameArr[gci];
+            final String[] indexColumnNames = indexColumnNameArr[gci];
             final String[] parquetColumnNames = parquetColumnNameArr[gci];
-            final String indexFilePath = getRelativeIndexFilePath(destFile, parquetColumnNames);
-            final File groupingFile = new File(indexFilePath);
-            deleteBackupFile(groupingFile);
-            final File shadowGroupingFile = getShadowFile(groupingFile);
+            final String indexFileRelativePath = getRelativeIndexFilePath(destFile, parquetColumnNames);
+            final File indexFile = new File(destFile.getParent(), indexFileRelativePath);
+            prepareDestinationFileLocation(indexFile);
+            deleteBackupFile(indexFile);
+
+            final File shadowGroupingFile = getShadowFile(indexFile);
 
             final ParquetTableWriter.IndexWritingInfo info = new ParquetTableWriter.IndexWritingInfo(
-                    groupingColumnNames,
+                    indexColumnNames,
                     parquetColumnNames,
-                    groupingFile,
+                    indexFile,
                     shadowGroupingFile);
 
             indexInfoList.add(info);
@@ -460,9 +463,9 @@ public class ParquetTools {
     }
 
     /**
-     * Writes tables to disk in parquet format to a supplied set of destinations. If you specify grouping columns, there
-     * must already be grouping information for those columns in the sources. This can be accomplished with
-     * {@code .groupBy(<grouping columns>).ungroup()} or {@code .sort(<grouping column>)}.
+     * Writes tables to disk in parquet format to a supplied set of destinations. If you specify index columns, there
+     * must already be index information for those columns in the sources. This can be accomplished with
+     * {@code DataInder.of(table.getRowSet()).createDataIndex()}.
      *
      * @param sources The tables to write
      * @param definition The common schema for all the tables to write
@@ -472,8 +475,7 @@ public class ParquetTools {
      *        unsafe for concurrent use
      * @param indexColumnArr arrays containing the column names(s) for written indexes (the write operation will store
      *        the index info as sidecar tables)
-     * @param indexColumnArr List of columns the tables are grouped by (the write operation will store the grouping
-     *        info)
+     * @param indexColumnArr List of columns the tables are indexed by (the write operation will store the index info)
      */
     public static void writeParquetTables(@NotNull final Table[] sources,
             @NotNull final TableDefinition definition,
