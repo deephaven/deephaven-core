@@ -11,7 +11,6 @@ import numpy as np
 from deephaven import empty_table, DHError
 from deephaven.dtypes import double_array, int32_array, long_array, int16_array, char_array, int8_array, \
     float32_array
-from deephaven.table import dh_vectorize
 from tests.testbase import BaseTestCase
 
 _J_TYPE_NULL_MAP = {
@@ -113,7 +112,36 @@ def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
                         tbl.update("Col3 = test_udf(Col1, Col2)")
 
     def test_j_scalar_to_py_no_null(self):
-        ...
+        col1_formula = "Col1 = i % 10"
+        for j_dtype, null_name in _J_TYPE_NULL_MAP.items():
+            col2_formula = f"Col2 = ({j_dtype})i"
+            with self.subTest(j_dtype):
+                np_type = _J_TYPE_NP_DTYPE_MAP[j_dtype]
+                func = f"""
+def test_udf(col: {np_type}) -> bool:
+    if np.isnan(col):
+        return True
+    else:
+        return False
+        """
+                exec(func, globals())
+                with self.subTest(j_dtype):
+                    tbl = empty_table(100).update([col1_formula, col2_formula])
+                    res = tbl.update("Col3 = test_udf(Col2)")
+                    self.assertEqual(0, res.to_string().count("true"))
+
+                func = f"""
+def test_udf(col: Optional[{np_type}]) -> bool:
+    if col is None:
+        return True
+    else:
+        return False
+        """
+                exec(func, globals())
+                with self.subTest(j_dtype):
+                    tbl = empty_table(100).update([col1_formula, col2_formula])
+                    res = tbl.update("Col3 = test_udf(Col2)")
+                    self.assertEqual(0, res.to_string().count("true"))
 
     def test_j_scalar_to_py_null(self):
         col1_formula = "Col1 = i % 10"
