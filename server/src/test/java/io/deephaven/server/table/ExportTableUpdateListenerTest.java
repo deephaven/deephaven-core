@@ -82,7 +82,7 @@ public class ExportTableUpdateListenerTest {
 
         // create and export the table
         final QueryTable src = TstUtils.testTable(RowSetFactory.flat(100).toTracking());
-        final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
+        final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src, "test");
 
         // validate we receive an initial table size update
         expectSizes(t1.getExportId(), 100);
@@ -96,7 +96,7 @@ public class ExportTableUpdateListenerTest {
     public void testRefreshStaticTable() {
         // create and export the table
         final QueryTable src = TstUtils.testTable(RowSetFactory.flat(1024).toTracking());
-        final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
+        final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src, "test");
 
         // now add the listener
         final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
@@ -124,7 +124,7 @@ public class ExportTableUpdateListenerTest {
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
-            t1 = session.newServerSideExport(src);
+            t1 = session.newServerSideExport(src, "test");
         }
 
         // validate we receive an initial table size update
@@ -146,7 +146,7 @@ public class ExportTableUpdateListenerTest {
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
-            t1 = session.newServerSideExport(src);
+            t1 = session.newServerSideExport(src, "test");
         }
 
         // now add the listener
@@ -173,7 +173,7 @@ public class ExportTableUpdateListenerTest {
         // create and export the table
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         // create t1 in global query scope
-        final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
+        final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src, "test");
 
         // now add the listener
         final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
@@ -205,7 +205,7 @@ public class ExportTableUpdateListenerTest {
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
-            t1 = session.newServerSideExport(src);
+            t1 = session.newServerSideExport(src, "test");
         }
 
         // now add the listener
@@ -238,7 +238,7 @@ public class ExportTableUpdateListenerTest {
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
-            t1 = session.newServerSideExport(src);
+            t1 = session.newServerSideExport(src, "test");
         }
 
         // now add the listener
@@ -298,7 +298,7 @@ public class ExportTableUpdateListenerTest {
             // Must be off-thread to use concurrent instantiation
             final Thread thread = new Thread(() -> {
                 try (final SafeCloseable scope = LivenessScopeStack.open()) {
-                    t1.setValue(session.newServerSideExport(src));
+                    t1.setValue(session.newServerSideExport(src, "test"));
                 }
             });
             thread.start();

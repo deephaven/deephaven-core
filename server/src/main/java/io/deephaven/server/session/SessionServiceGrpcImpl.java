@@ -177,6 +177,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     ticketRouter.resolve(session, request.getSourceId(), "sourceId");
 
             session.newExport(request.getResultId(), "resultId")
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(source)
                     .onError(responseObserver)
@@ -220,6 +221,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 // when publish is complete, complete the gRPC request
                 GrpcUtil.safelyComplete(responseObserver, PublishResponse.getDefaultInstance());
             })
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(source)
                     .onError(responseObserver)

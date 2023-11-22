@@ -6,6 +6,7 @@ plugins {
 description 'Engine Update Graph: Core utilities for maintaining a DAG for update processing'
 
 dependencies {
+    api project(':Util')
     api project(':qst')
 
     implementation project(':engine-chunk')
