@@ -370,37 +370,6 @@ def _j_py_script_session() -> _JPythonScriptSession:
 _SUPPORTED_NP_TYPE_CODES = {"b", "h", "i", "l", "f", "d", "?", "U", "M", "O"}
 
 
-def _encode_signature(fn: Callable) -> str:
-    """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
-    type to numpy dtype chars (i,l,h,f,d,b,?,U,M,O), and pack them into a string with parameter type chars first,
-    in their original order, followed by the delimiter string '->', then the return type_char.
-
-    If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
-    """
-    try:
-        sig = inspect.signature(fn)
-    except:
-        # in case inspect.signature() fails, we'll just use the default 'O' - object type.
-        # numpy ufuncs actually have signature encoded in their 'types' attribute, we want to better support
-        # them in the future (https://github.com/deephaven/deephaven-core/issues/4762)
-        if type(fn) == np.ufunc:
-            return "O" * fn.nin + "->" + "O"
-        return "->O"
-
-    np_type_codes = []
-    for n, p in sig.parameters.items():
-        p_annotation = _parse_param_annotation(p.annotation)
-        np_type_codes.append(_np_dtype_char(p_annotation))
-
-    return_annotation = _parse_return_annotation(sig.return_annotation)
-    return_type_code = return_annotation.encoded_types.pop()
-    np_type_codes = [c if c in _SUPPORTED_NP_TYPE_CODES else "O" for c in np_type_codes]
-    return_type_code = return_type_code if return_type_code in _SUPPORTED_NP_TYPE_CODES else "O"
-
-    np_type_codes.extend(["-", ">", return_type_code])
-    return "".join(np_type_codes)
-
-
 @dataclass
 class ParsedAnnotation:
     orig_types: set[type] = field(default_factory=set)
@@ -416,6 +385,17 @@ class ParsedSignature:
     fn: Callable = None
     params: List[ParsedAnnotation] = field(default_factory=list)
     ret_annotation: ParsedAnnotation = None
+
+    @property
+    def encoded(self) -> str:
+        """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
+        type to numpy dtype chars (i,l,h,f,d,b,?,U,M,O,n,N), and pack them into a string with parameter type chars
+        first, in their original order, followed by the delimiter string '->', then the return type_char.
+        If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
+        """
+        param_str = ",".join(["".join(p.encoded_types) for p in self.params])
+        return_type_code = list(self.ret_annotation.encoded_types)[0].strip("N")
+        return param_str + "->" + return_type_code
 
 
 def _encode_param_type(t: type) -> str:
@@ -445,7 +425,7 @@ def _parse_param_annotation(annotation: Any) -> ParsedAnnotation:
 
     # in the absence of annotations, we'll use the 'n' to indicate that.
     if annotation is inspect._empty:
-        p_annotation.encoded_types.add("n")
+        p_annotation.encoded_types.add("O")
         p_annotation.is_none_legal = True
     elif isinstance(annotation, _GenericAlias) and annotation.__origin__ == Union:
         for t in annotation.__args__:
@@ -584,15 +564,7 @@ def _parse_signature(fn: Callable) -> ParsedSignature:
         p_sig.ret_annotation = _parse_return_annotation(sig.return_annotation)
         if len(p_sig.ret_annotation.orig_types) > 1:
             raise DHError(message="only single return type is supported for a Python UDF.")
-
-    return p_sig
-
-
-def _udf_return_dtype(fn: Callable, signature: str) -> dtypes.Dtype:
-    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
-        return dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
-    else:
-        return dtypes.from_np_dtype(np.dtype(signature[-1]))
+        return p_sig
 
 
 def _convert_arg(param: ParsedAnnotation, arg: Any) -> Any:
@@ -611,7 +583,7 @@ def _convert_arg(param: ParsedAnnotation, arg: Any) -> Any:
             dtype = dtypes.from_np_dtype(np_dtype)
             return _j_array_to_numpy_array(dtype, arg, conv_null=True, no_promotion=True)
         # if the annotation is missing, or it is a generic object type, return the arg
-        elif "0" in param.encoded_types or "n" in param.encoded_types:
+        elif "O" in param.encoded_types:
             return arg
         else:
             raise TypeError(f"Argument {arg} is not compatible with annotation {param.encoded_types}")
@@ -620,7 +592,7 @@ def _convert_arg(param: ParsedAnnotation, arg: Any) -> Any:
         # if found, convert the arg to that type, take care of nulls (if null and optional, return None, else raise)
         # if not found, if empyt annotation, return arg, else return
         # if dh_null := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
-        specific_types = param.encoded_types - {"n", "N", "O"}
+        specific_types = param.encoded_types - {"N", "O"}
         if specific_types:
             for t in specific_types:
                 if t.startswith("["):
@@ -656,7 +628,7 @@ def _convert_arg(param: ParsedAnnotation, arg: Any) -> Any:
                 elif t == "U" and isinstance(arg, str):
                     return arg
             else:  # didn't return from inside the for loop
-                if param.encoded_types & {"n", "O"}:
+                if "O" in param.encoded_types:
                     return arg
                 else:
                     raise TypeError(f"Argument {arg} is not compatible with annotation {param.orig_types}")
@@ -730,15 +702,17 @@ def dh_vectorize(fn):
     The current vectorized function signature includes (1) the size of the input arrays, (2) the output array,
     and (3) the input arrays.
     """
-    fn_signature = _encode_signature(fn)
-    ret_dtype = _udf_return_dtype(fn, signature=fn_signature)
-    parsed_signature = _parse_signature(fn)
+    # sig_str = _encode_signature(fn)
+    # ret_dtype = _udf_return_dtype(fn, signature=fn_signature)
+    p_sig = _parse_signature(fn)
+    sig_str = p_sig.encoded
+    ret_dtype = dtypes.from_np_dtype(np.dtype(list(p_sig.ret_annotation.encoded_types)[0][-1]))
 
     @wraps(fn)
     def wrapper(*args):
-        if len(args) != len(fn_signature) - len("->?") + 2:
+        if len(args) != len(p_sig.params) + 2:
             raise ValueError(
-                f"The number of arguments doesn't match the function signature. {len(args) - 2}, {fn_signature}")
+                f"The number of arguments doesn't match the function signature. {len(args) - 2}, {sig_str}")
         if args[0] <= 0:
             raise ValueError(f"The chunk size argument must be a positive integer. {args[0]}")
 
@@ -748,7 +722,7 @@ def dh_vectorize(fn):
             vectorized_args = zip(*args[2:])
             for i in range(chunk_size):
                 scalar_args = next(vectorized_args)
-                converted_args = _convert_args(parsed_signature, scalar_args)
+                converted_args = _convert_args(p_sig, scalar_args)
                 chunk_result[i] = _scalar(fn(*converted_args), ret_dtype)
         else:
             for i in range(chunk_size):
@@ -757,7 +731,7 @@ def dh_vectorize(fn):
         return chunk_result
 
     wrapper.callable = fn
-    wrapper.signature = fn_signature
+    wrapper.signature = sig_str
     wrapper.dh_vectorized = True
 
     if _test_vectorization:
