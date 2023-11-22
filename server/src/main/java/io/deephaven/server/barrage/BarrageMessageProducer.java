@@ -2042,8 +2042,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     || isBlinkTable;
 
             if (log.isDebugEnabled()) {
-                log.debug().append(logPrefix).append("finalizing snapshot for subscription=")
-                        .append(subscription.logPrefix).append(", isComplete=").append(isComplete).endl();
+                log.debug().append(logPrefix)
+                        .append(subscription.logPrefix)
+                        .append("finalizing snapshot isComplete=").append(isComplete)
+                        .endl();
             }
 
             if (isComplete) {

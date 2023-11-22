@@ -1183,8 +1183,8 @@ public class ConstructSnapshot {
      * this method will perform a static snapshot without locks or retrying. In this case, the {@link SnapshotControl}'s
      * {@link SnapshotControl#usePreviousValues usePreviousValues} must return {@code false},
      * {@link SnapshotControl#snapshotCompletedConsistently snapshotCompletedConsistently} must return {@code true}, and
-     * the clock step returned by this method will be the {@link LogicalClock#NULL_CLOCK_VALUE NULL_CLOCK_VALUE}.
-     *
+     * the {@link LogicalClock#NULL_CLOCK_VALUE NULL_CLOCK_VALUE} will be supplied to {@code usePreviousValues} and
+     * {@code snapshotCompletedConsistently}.
      *
      * @param logPrefix A prefix for our log messages
      * @param control A {@link SnapshotControl} to define the parameters and consistency for this snapshot
