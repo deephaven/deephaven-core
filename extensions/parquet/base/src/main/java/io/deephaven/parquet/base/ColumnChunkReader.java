@@ -35,15 +35,10 @@ public interface ColumnChunkReader {
     @Nullable
     OffsetIndex getOffsetIndex();
 
-    interface ColumnPageReaderIterator extends Iterator<ColumnPageReader>, AutoCloseable {
-        @Override
-        void close();
-    }
-
     /**
      * @return An iterator over individual parquet pages
      */
-    ColumnPageReaderIterator getPageIterator() throws IOException;
+    Iterator<ColumnPageReader> getPageIterator() throws IOException;
 
     interface ColumnPageDirectAccessor {
         /**

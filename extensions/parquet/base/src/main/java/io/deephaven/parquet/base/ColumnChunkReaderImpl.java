@@ -15,6 +15,7 @@ import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.page.DictionaryPage;
 import org.apache.parquet.format.*;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
+import org.apache.parquet.io.ParquetDecodingException;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
@@ -27,6 +28,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
@@ -98,7 +100,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @Override
-    public ColumnPageReaderIterator getPageIterator() {
+    public Iterator<ColumnPageReader> getPageIterator() {
         final long dataPageOffset = columnChunk.meta_data.getData_page_offset();
         if (offsetIndex == null) {
             return new ColumnPageReaderIteratorImpl(dataPageOffset, columnChunk.getMeta_data().getNum_values());
@@ -214,7 +216,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         return dictionaryPage.getEncoding().initDictionary(path, dictionaryPage);
     }
 
-    private final class ColumnPageReaderIteratorImpl implements ColumnPageReaderIterator {
+    private final class ColumnPageReaderIteratorImpl implements Iterator<ColumnPageReader> {
         private long currentOffset;
         private long remainingValues;
 
@@ -231,7 +233,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         @Override
         public ColumnPageReader next() {
             if (!hasNext()) {
-                throw new RuntimeException("No next element");
+                throw new NoSuchElementException("No next element");
             }
             // NB: The channels provider typically caches channels; this avoids maintaining a handle per column chunk
             try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(getFilePath())) {
@@ -264,24 +266,21 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                         throw new UncheckedDeephavenException(
                                 "Unknown parquet data page header type " + pageHeader.type);
                 }
-                final Supplier<Dictionary> pageDictionarySupplier =
-                        (encoding == PLAIN_DICTIONARY || encoding == RLE_DICTIONARY)
-                                ? dictionarySupplier
-                                : () -> NULL_DICTIONARY;
-                return new ColumnPageReaderImpl(
-                        channelsProvider, decompressor, pageDictionarySupplier,
+                if ((encoding == PLAIN_DICTIONARY || encoding == RLE_DICTIONARY)
+                        && dictionarySupplier.get() == NULL_DICTIONARY) {
+                    throw new ParquetDecodingException("Error in decoding page because dictionary data not found for " +
+                            " column " + path + " with encoding " + encoding);
+                }
+                return new ColumnPageReaderImpl(channelsProvider, decompressor, dictionarySupplier,
                         nullMaterializerFactory, path, getFilePath(), fieldTypes, readChannel.position(), pageHeader,
-                        -1);
+                        ColumnPageReaderImpl.NULL_NUM_VALUES);
             } catch (IOException e) {
-                throw new RuntimeException("Error reading page header", e);
+                throw new UncheckedDeephavenException("Error reading page header", e);
             }
         }
-
-        @Override
-        public void close() {}
     }
 
-    private final class ColumnPageReaderIteratorIndexImpl implements ColumnPageReaderIterator {
+    private final class ColumnPageReaderIteratorIndexImpl implements Iterator<ColumnPageReader> {
         private int pos;
 
         ColumnPageReaderIteratorIndexImpl() {
@@ -311,9 +310,6 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
             pos++;
             return columnPageReader;
         }
-
-        @Override
-        public void close() {}
     }
 
     private final class ColumnPageDirectAccessorImpl implements ColumnPageDirectAccessor {
@@ -326,9 +322,10 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                 throw new IndexOutOfBoundsException(
                         "pageNum=" + pageNum + ", offsetIndex.getPageCount()=" + offsetIndex.getPageCount());
             }
-            final int numValues = -1; // Will be populated properly when we read the page header
+            // Page header and number of values will be populated later when we read the page header from the file
             return new ColumnPageReaderImpl(channelsProvider, decompressor, dictionarySupplier, nullMaterializerFactory,
-                    path, getFilePath(), fieldTypes, offsetIndex.getOffset(pageNum), null, numValues);
+                    path, getFilePath(), fieldTypes, offsetIndex.getOffset(pageNum), null,
+                    ColumnPageReaderImpl.NULL_NUM_VALUES);
         }
     }
 }

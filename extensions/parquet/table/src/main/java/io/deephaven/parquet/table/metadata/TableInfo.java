@@ -68,7 +68,7 @@ public abstract class TableInfo {
         final String version = TableInfo.class.getPackage().getImplementationVersion();
         if (version == null) {
             // For unit tests
-            return "0.dev.0";
+            return "unknown";
         }
         return version;
     }

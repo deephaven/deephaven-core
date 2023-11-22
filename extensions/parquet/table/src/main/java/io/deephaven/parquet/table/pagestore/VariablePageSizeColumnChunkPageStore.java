@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
+import java.util.Iterator;
 
 final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
 
@@ -27,7 +28,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
     private volatile int numPages = 0;
     private volatile long[] pageRowOffsets;
     private volatile ColumnPageReader[] columnPageReaders;
-    private final ColumnChunkReader.ColumnPageReaderIterator columnPageReaderIterator;
+    private final Iterator<ColumnPageReader> columnPageReaderIterator;
     private volatile WeakReference<PageCache.IntrusivePage<ATTR>>[] pages;
 
     VariablePageSizeColumnChunkPageStore(@NotNull final PageCache<ATTR> pageCache,
@@ -159,10 +160,5 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         }
 
         return getPage(pageNum);
-    }
-
-    @Override
-    public void close() {
-        columnPageReaderIterator.close();
     }
 }

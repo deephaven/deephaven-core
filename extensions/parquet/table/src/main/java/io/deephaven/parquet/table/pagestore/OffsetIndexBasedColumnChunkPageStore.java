@@ -53,9 +53,9 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
         super(pageCache, columnChunkReader, mask, toPage);
         offsetIndex = columnChunkReader.getOffsetIndex();
-        Assert.assertion(offsetIndex != null, "offsetIndex != null");
+        Assert.neqNull(offsetIndex, "offsetIndex");
         numPages = offsetIndex.getPageCount();
-        Assert.assertion(numPages > 0, "numPages > 0");
+        Assert.gtZero(numPages, "numPages");
         pageStates = new AtomicReferenceArray<>(numPages);
         columnPageDirectAccessor = columnChunkReader.getPageAccessor();
 
@@ -85,13 +85,13 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         while (low <= high) {
             final int mid = (low + high) >>> 1;
             final long midVal = offsetIndex.getFirstRowIndex(mid);
-
-            if (midVal < row)
+            if (midVal < row) {
                 low = mid + 1;
-            else if (midVal > row)
+            } else if (midVal > row) {
                 high = mid - 1;
-            else
+            } else {
                 return mid; // 'row' is the first row of page
+            }
         }
         return (low - 1); // 'row' is somewhere in the middle of page
     }
@@ -141,8 +141,8 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             if (pageNum >= numPages) {
                 // This can happen if the last page is larger than rest of the pages, which are all the same size.
                 // We have already checked that row is less than numRows.
-                Assert.assertion(row >= offsetIndex.getFirstRowIndex(numPages - 1),
-                        "row >= offsetIndex.getFirstRowIndex(numPages - 1)");
+                Assert.geq(row, "row", offsetIndex.getFirstRowIndex(numPages - 1),
+                        "offsetIndex.getFirstRowIndex(numPages - 1)");
                 pageNum = (numPages - 1);
             }
         }

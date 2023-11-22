@@ -682,19 +682,15 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void testVersionChecks() {
-        assertFalse(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.0.0"));
-        assertFalse(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.4.0"));
-        try {
-            ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.3");
-            TestCase.fail("Exception expected for invalid version string");
-        } catch (IllegalArgumentException expected) {
-        }
-        assertTrue(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.31.0"));
-        assertTrue(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.31.1"));
-        assertTrue(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.32.0"));
-        assertTrue(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("1.3.0"));
-        assertTrue(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.dev.0"));
-        assertTrue(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.31.0-SNAPSHOT"));
+        assertFalse(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.0.0"));
+        assertFalse(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.4.0"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.3"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.31.0"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.31.1"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.32.0"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("1.3.0"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("unknown"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.31.0-SNAPSHOT"));
     }
 
 

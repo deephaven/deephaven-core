@@ -65,7 +65,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         // part of deephaven-core#4844
         final Class<?> columnType = columnDefinition.getDataType();
         if (columnType.isArray() || Vector.class.isAssignableFrom(columnType)) {
-            return satisfiesMinimumVersionRequirements(version);
+            return hasCorrectVectorOffsetIndexes(version);
         }
         return true;
     }
@@ -76,7 +76,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
      * Check if the version is greater than or equal to 0.31.0, or it doesn't follow the versioning schema X.Y.Z
      */
     @VisibleForTesting
-    public static boolean satisfiesMinimumVersionRequirements(@NotNull final String version) {
+    public static boolean hasCorrectVectorOffsetIndexes(@NotNull final String version) {
         final Matcher matcher = VERSION_PATTERN.matcher(version);
         if (!matcher.matches()) {
             // Could be unit tests or some other versioning scheme
