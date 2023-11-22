@@ -429,22 +429,22 @@ public class ParquetTools {
     /**
      * Helper function for building grouping column info for writing and deleting any backup grouping column files
      *
-     * @param groupingColumnNameArr Names of grouping columns
-     * @param parquetColumnNameArr Names of grouping columns for the parquet file
+     * @param indexColumnNameArr Names of index columns, stored as String[] for each index
+     * @param parquetColumnNameArr Names of index columns for the parquet file, stored as String[] for each index
      * @param destFile The destination path for the main table containing these grouping columns
      */
     private static List<ParquetTableWriter.IndexWritingInfo> indexInfoBuilderHelper(
-            @NotNull final String[][] groupingColumnNameArr,
+            @NotNull final String[][] indexColumnNameArr,
             @NotNull final String[][] parquetColumnNameArr,
             @NotNull final File destFile) {
-            Require.eq(groupingColumnNameArr.length, "groupingColumnNameArr.length", parquetColumnNameArr.length,
+            Require.eq(indexColumnNameArr.length, "indexColumnNameArr.length", parquetColumnNameArr.length,
                 "parquetColumnNameArr.length");
-        final List<ParquetTableWriter.IndexWritingInfo> gcwim = new ArrayList<>();
-        for (int gci = 0; gci < groupingColumnNameArr.length; gci++) {
-            final String[] groupingColumnNames = groupingColumnNameArr[gci];
+        final List<ParquetTableWriter.IndexWritingInfo> indexInfoList = new ArrayList<>();
+        for (int gci = 0; gci < indexColumnNameArr.length; gci++) {
+            final String[] groupingColumnNames = indexColumnNameArr[gci];
             final String[] parquetColumnNames = parquetColumnNameArr[gci];
-            final String groupingFilePath = getRelativeIndexFilePath(destFile, parquetColumnNames);
-            final File groupingFile = new File(groupingFilePath);
+            final String indexFilePath = getRelativeIndexFilePath(destFile, parquetColumnNames);
+            final File groupingFile = new File(indexFilePath);
             deleteBackupFile(groupingFile);
             final File shadowGroupingFile = getShadowFile(groupingFile);
 
@@ -454,9 +454,9 @@ public class ParquetTools {
                     groupingFile,
                     shadowGroupingFile);
 
-            gcwim.add(info);
+            indexInfoList.add(info);
         }
-        return gcwim;
+        return indexInfoList;
     }
 
     /**
@@ -543,10 +543,10 @@ public class ParquetTools {
                 if (indexInfoLists != null) {
                     final List<ParquetTableWriter.IndexWritingInfo> indexInfoList = indexInfoLists.get(tableIdx);
                     for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
-                        final File groupingDestFile = info.metadataFilePath;
-                        final File shadowGroupingFile = info.destFile;
-                        destFiles.add(groupingDestFile);
-                        installShadowFile(groupingDestFile, shadowGroupingFile);
+                        final File indexDestFile = info.metadataFilePath;
+                        final File shadowIndexFile = info.destFile;
+                        destFiles.add(indexDestFile);
+                        installShadowFile(indexDestFile, shadowIndexFile);
                     }
                 }
             }

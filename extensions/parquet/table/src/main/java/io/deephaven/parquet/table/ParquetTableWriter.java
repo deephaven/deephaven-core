@@ -145,14 +145,14 @@ public class ParquetTableWriter {
 
                     final String[] parquetColumnNames = info.parquetColumnNames;
                     final File metadataFilePath = info.metadataFilePath;
-                    final File groupingDestFile = info.destFile;
-                    cleanupFiles.add(groupingDestFile);
+                    final File indexDestFile = info.destFile;
+                    cleanupFiles.add(indexDestFile);
 
                     tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
                             destDirPath.relativize(metadataFilePath.toPath()).toString(),
                             parquetColumnNames));
                     write(indexTable, indexTable.getDefinition(), writeInstructions,
-                            groupingDestFile.getAbsolutePath(), Collections.emptyMap(), TableInfo.builder());
+                            indexDestFile.getAbsolutePath(), Collections.emptyMap(), TableInfo.builder());
                 }
             }
             write(t, definition, writeInstructions, destPathName, incomingMeta, tableInfoBuilder);
