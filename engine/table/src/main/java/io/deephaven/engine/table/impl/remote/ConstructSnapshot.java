@@ -1173,6 +1173,18 @@ public class ConstructSnapshot {
      * Invokes the snapshot function in a loop until it succeeds with provably consistent results, or until
      * {@code MAX_CONCURRENT_ATTEMPTS} or {@code MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS} are exceeded. Falls back to
      * acquiring a shared update graph lock for a final attempt.
+     * <p>
+     * The supplied {@link SnapshotControl}'s {@link SnapshotControl#usePreviousValues usePreviousValues} will be
+     * invoked at the start of any snapshot attempt, and its {@link SnapshotControl#snapshotCompletedConsistently
+     * snapshotCompletedConsistently} will be invoked at the end of any snapshot attempt that is not provably
+     * inconsistent.
+     * <p>
+     * If the supplied {@link SnapshotControl} provides a null {@link SnapshotControl#getUpdateGraph UpdateGraph}, then
+     * this method will perform a static snapshot without locks or retrying. In this case, the {@link SnapshotControl}'s
+     * {@link SnapshotControl#usePreviousValues usePreviousValues} must return {@code false},
+     * {@link SnapshotControl#snapshotCompletedConsistently snapshotCompletedConsistently} must return {@code true}, and
+     * the {@link LogicalClock#NULL_CLOCK_VALUE NULL_CLOCK_VALUE} will be supplied to {@code usePreviousValues} and
+     * {@code snapshotCompletedConsistently}.
      *
      * @param logPrefix A prefix for our log messages
      * @param control A {@link SnapshotControl} to define the parameters and consistency for this snapshot
@@ -1190,12 +1202,26 @@ public class ConstructSnapshot {
 
         if (updateGraph == null) {
             // This is a snapshot of static data. Just call the function with no frippery.
+            final boolean controlUsePrev = control.usePreviousValues(LogicalClock.NULL_CLOCK_VALUE);
+            if (controlUsePrev) {
+                throw new SnapshotUnsuccessfulException("Static snapshot requested previous values");
+            }
+
             final boolean functionSuccessful = function.call(false, LogicalClock.NULL_CLOCK_VALUE);
-            Assert.assertion(functionSuccessful, "functionSuccessful");
+            if (!functionSuccessful) {
+                throw new SnapshotUnsuccessfulException("Static snapshot failed to execute snapshot function");
+            }
             if (log.isDebugEnabled()) {
                 final long duration = System.currentTimeMillis() - overallStart;
                 log.debug().append(logPrefix)
                         .append(" Static snapshot function elapsed time ").append(duration).append(" ms").endl();
+            }
+
+            // notify control of successful snapshot
+            final boolean controlSuccessful =
+                    control.snapshotCompletedConsistently(LogicalClock.NULL_CLOCK_VALUE, false);
+            if (!controlSuccessful) {
+                throw new SnapshotUnsuccessfulException("Static snapshot function succeeded but control failed");
             }
             return LogicalClock.NULL_CLOCK_VALUE;
         }
