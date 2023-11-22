@@ -34,7 +34,6 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ParquetTableLocation extends AbstractTableLocation {
@@ -186,11 +185,25 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     @NotNull
     public List<String[]> getDataIndexColumns() {
-        return dataIndexes.stream().map(di -> di.columns().toArray(String[]::new)).collect(Collectors.toList());
+        List<String[]> dataIndexColumns = new ArrayList<>();
+        // Add the data indexes to the list.
+        dataIndexes.stream().map(di -> di.columns().toArray(String[]::new)).forEach(dataIndexColumns::add);
+        // Add grouping columns to the list.
+        groupingColumns.keySet().stream().map(colName -> new String[] {colName}).forEach(dataIndexColumns::add);
+        return dataIndexColumns;
     }
 
     @Override
     public boolean hasDataIndex(@NotNull final String... columns) {
+        // Check if the column name matches any of the grouping columns
+        if (columns.length == 1 && groupingColumns.containsKey(columns[0])) {
+            // Validate the index file exists (without loading and parsing it).
+            ParquetTools.IndexFileMetaData metaData = ParquetTools.getIndexFileMetaData(
+                    getParquetFile(),
+                    tableInfo,
+                    columns);
+            return metaData != null && Files.exists(Path.of(metaData.filename));
+        }
         // Check if the column names match any of the data indexes
         for (final DataIndexInfo dataIndex : dataIndexes) {
             if (dataIndex.matchesColumns(columns)) {
