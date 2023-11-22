@@ -266,12 +266,11 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                         throw new UncheckedDeephavenException(
                                 "Unknown parquet data page header type " + pageHeader.type);
                 }
-                if ((encoding == PLAIN_DICTIONARY || encoding == RLE_DICTIONARY)
-                        && dictionarySupplier.get() == NULL_DICTIONARY) {
-                    throw new ParquetDecodingException("Error in decoding page because dictionary data not found for " +
-                            " column " + path + " with encoding " + encoding);
-                }
-                return new ColumnPageReaderImpl(channelsProvider, decompressor, dictionarySupplier,
+                final Supplier<Dictionary> pageDictionarySupplier =
+                        (encoding == PLAIN_DICTIONARY || encoding == RLE_DICTIONARY)
+                                ? dictionarySupplier
+                                : () -> NULL_DICTIONARY;
+                return new ColumnPageReaderImpl(channelsProvider, decompressor, pageDictionarySupplier,
                         nullMaterializerFactory, path, getFilePath(), fieldTypes, readChannel.position(), pageHeader,
                         ColumnPageReaderImpl.NULL_NUM_VALUES);
             } catch (IOException e) {
