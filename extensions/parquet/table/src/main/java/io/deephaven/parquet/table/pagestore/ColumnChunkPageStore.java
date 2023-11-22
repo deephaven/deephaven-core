@@ -73,13 +73,14 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     private static final Pattern VERSION_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)");
 
     /**
-     * Check if the version is greater than or equal to 0.31.0
+     * Check if the version is greater than or equal to 0.31.0, or it doesn't follow the versioning schema X.Y.Z
      */
     @VisibleForTesting
     public static boolean satisfiesMinimumVersionRequirements(@NotNull final String version) {
         final Matcher matcher = VERSION_PATTERN.matcher(version);
         if (!matcher.matches()) {
-            throw new IllegalArgumentException("Malformed version:" + version);
+            // Could be unit tests or some other versioning scheme
+            return true;
         }
         final int major = Integer.parseInt(matcher.group(1));
         final int minor = Integer.parseInt(matcher.group(2));
@@ -93,6 +94,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             @NotNull final ToPage<ATTR, ?> toPage,
             @NotNull final ColumnDefinition<?> columnDefinition) throws IOException {
         final boolean canUseOffsetIndex = canUseOffsetIndexBasedPageStore(columnChunkReader, columnDefinition);
+        // TODO(deephaven-core#4879): Rather than this fall back logic for supporting incorrect offset index, we should
+        // instead log an error and explain to user how to fix the parquet file
         final ColumnChunkPageStore<ATTR> columnChunkPageStore = canUseOffsetIndex
                 ? new OffsetIndexBasedColumnChunkPageStore<>(pageCache, columnChunkReader, mask, toPage)
                 : new VariablePageSizeColumnChunkPageStore<>(pageCache, columnChunkReader, mask, toPage);

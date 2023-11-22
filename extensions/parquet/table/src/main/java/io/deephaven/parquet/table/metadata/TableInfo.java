@@ -61,11 +61,16 @@ public abstract class TableInfo {
     }
 
     /**
-     * @return The Deephaven release version when this metadata format was updated
+     * @return The Deephaven release version used to write the parquet file
      */
     @Value.Default
     public String version() {
-        return "0.31.0";
+        final String version = TableInfo.class.getPackage().getImplementationVersion();
+        if (version == null) {
+            // For unit tests
+            return "0.dev.0";
+        }
+        return version;
     }
 
     /**

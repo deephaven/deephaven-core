@@ -693,6 +693,8 @@ public final class ParquetTableReadWriteTest {
         assertTrue(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.31.1"));
         assertTrue(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.32.0"));
         assertTrue(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("1.3.0"));
+        assertTrue(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.dev.0"));
+        assertTrue(ColumnChunkPageStore.satisfiesMinimumVersionRequirements("0.31.0-SNAPSHOT"));
     }
 
 
