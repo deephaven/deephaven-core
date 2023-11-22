@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextlib
 import inspect
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from enum import auto
@@ -687,6 +688,11 @@ def _py_udf(fn: Callable):
     return wrapper
 
 
+def _encode_signature(fn: Callable) -> str:
+    p_sig = _parse_signature(fn)
+    return re.sub("[\[N,]", "", p_sig.encoded)
+
+
 def dh_vectorize(fn):
     """A decorator to vectorize a Python function used in Deephaven query formulas and invoked on a row basis.
 
@@ -705,7 +711,7 @@ def dh_vectorize(fn):
     # sig_str = _encode_signature(fn)
     # ret_dtype = _udf_return_dtype(fn, signature=fn_signature)
     p_sig = _parse_signature(fn)
-    sig_str = p_sig.encoded
+    sig_str = re.sub("[\[N,]", "", p_sig.encoded)
     ret_dtype = dtypes.from_np_dtype(np.dtype(list(p_sig.ret_annotation.encoded_types)[0][-1]))
 
     @wraps(fn)
