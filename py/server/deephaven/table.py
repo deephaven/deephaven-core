@@ -689,6 +689,8 @@ def _py_udf(fn: Callable):
 
 
 def _encode_signature(fn: Callable) -> str:
+    """Encode the signature of a function into a string for backwards compatibility with the vectorization implementation
+    in the server."""
     p_sig = _parse_signature(fn)
     return re.sub("[\[N,]", "", p_sig.encoded)
 

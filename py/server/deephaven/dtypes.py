@@ -341,17 +341,6 @@ _NUMPY_INT_TYPE_CODES = ["i", "l", "h", "b"]
 _NUMPY_FLOATING_TYPE_CODES = ["f", "d"]
 
 
-def _is_py_null(x: Any) -> bool:
-    """Checks if the value is a Python null value, i.e. None or NaN, or Pandas.NA."""
-    if x is None:
-        return True
-
-    try:
-        return pd.isna(x)
-    except ValueError:
-        return False
-
-
 def _scalar(x: Any, dtype: DType) -> Any:
     """Converts a Python value to a Java scalar value. It converts the numpy primitive types, string to
     their Python equivalents so that JPY can handle them. For datetime values, it converts them to Java Instant.
@@ -359,7 +348,7 @@ def _scalar(x: Any, dtype: DType) -> Any:
 
     # NULL_BOOL will appear in Java as a byte value which causes a cast error. We just let JPY converts it to Java null
     # and the engine has casting logic to handle it.
-    if x is None and dtype not in (bool_, char) and _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
+    if x is None and dtype != bool_ and _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
         return _PRIMITIVE_DTYPE_NULL_MAP[dtype]
 
     try:
