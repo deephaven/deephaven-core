@@ -934,13 +934,29 @@ public class PeriodicUpdateGraph implements UpdateGraph {
      */
     @TestUseOnly
     public void completeCycleForUnitTests() {
+        completeCycleForUnitTests(false);
+    }
+
+    /**
+     * Do the second half of the update cycle, including flushing notifications, and completing the
+     * {@link LogicalClockImpl#completeUpdateCycle() LogicalClock} update cycle. Note that this happens on a simulated
+     * UpdateGraph run thread, rather than this thread.
+     *
+     * @param errorCaughtAndInFinallyBlock Whether an error was caught, and we are in a {@code finally} block
+     */
+    @TestUseOnly
+    public void completeCycleForUnitTests(boolean errorCaughtAndInFinallyBlock) {
         Assert.assertion(unitTestMode, "unitTestMode");
-        Assert.eq(sourcesLastSatisfiedStep, "sourcesLastSatisfiedStep", logicalClock.currentStep(),
-                "logicalClock.currentStep()");
+        if (!errorCaughtAndInFinallyBlock) {
+            Assert.eq(sourcesLastSatisfiedStep, "sourcesLastSatisfiedStep", logicalClock.currentStep(),
+                    "logicalClock.currentStep()");
+        }
         try {
             unitTestRefreshThreadPool.submit(this::completeCycleForUnitTestsInternal).get();
         } catch (InterruptedException | ExecutionException e) {
-            throw new UncheckedDeephavenException(e);
+            if (!errorCaughtAndInFinallyBlock) {
+                throw new UncheckedDeephavenException(e);
+            }
         }
     }
 
@@ -986,10 +1002,14 @@ public class PeriodicUpdateGraph implements UpdateGraph {
             final boolean sourcesSatisfied)
             throws T {
         startCycleForUnitTests(sourcesSatisfied);
+        boolean errorCaught = false;
         try {
             runnable.run();
+        } catch (final Throwable err) {
+            errorCaught = true;
+            throw err;
         } finally {
-            completeCycleForUnitTests();
+            completeCycleForUnitTests(errorCaught);
         }
     }
 

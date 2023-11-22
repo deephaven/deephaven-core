@@ -227,7 +227,10 @@ public class ServerStateTracker {
                 intervalUGPCyclesSafePointTimeMicros);
     }
 
+    /** Allow memoization of the blink-to-append-only result; which provides a more user-friendly experience. */
+    private static final Object INTERNAL_MEMO_KEY = new Object();
+
     public QueryTable getQueryTable() {
-        return (QueryTable) BlinkTableTools.blinkToAppendOnly(blink);
+        return (QueryTable) BlinkTableTools.blinkToAppendOnly(blink, INTERNAL_MEMO_KEY);
     }
 }

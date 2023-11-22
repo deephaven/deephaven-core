@@ -116,7 +116,7 @@ public class QueryTable extends BaseTable<QueryTable> {
          */
         class Result<T extends DynamicNode & NotificationStepReceiver> {
             public final T resultNode;
-            public final TableUpdateListener resultListener; // may be null if parent is non-ticking
+            public final TableUpdateListener resultListener; // may be null if parent or result are non-refreshing
 
             public Result(@NotNull final T resultNode) {
                 this(resultNode, null);
@@ -3537,8 +3537,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                 resultTable.setValue(result.resultNode);
                 if (snapshotControl != null) {
-                    snapshotControl.setListenerAndResult(Require.neqNull(result.resultListener, "resultListener"),
-                            result.resultNode);
+                    snapshotControl.setListenerAndResult(result.resultListener, result.resultNode);
                 }
 
                 return true;
