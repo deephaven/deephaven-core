@@ -12,8 +12,7 @@ import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.primitive.function.FloatConsumer;
 import io.deephaven.engine.primitive.function.ShortConsumer;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -32,8 +31,6 @@ import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.transfer.StringDictionary;
 import io.deephaven.stringset.ArrayStringSet;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -41,7 +38,6 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -648,8 +644,7 @@ public final class ParquetTableReadWriteTest {
 
 
     // Following is used for testing both writing APIs for parquet tables
-    private interface
-    TestParquetTableWriter {
+    private interface TestParquetTableWriter {
         void writeTable(final Table table, final File destFile);
     }
 
@@ -896,6 +891,18 @@ public final class ParquetTableReadWriteTest {
                 TableDefinition.of(ColumnDefinition.ofInt(groupingColName));
         final Table table = newTable(tableDefinition, TableTools.col(groupingColName, data));
         assertTableEquals(fromDisk, table);
+
+        // Read the legacy grouping table.
+        final DataIndex fromDiskIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(fromDisk, groupingColName);
+        final Table fromDiskIndexTable = fromDiskIndex.table();
+
+        // Create a dynamic index from the table.
+        DataIndexer.of(table.getRowSet()).createDataIndex(table, groupingColName);
+        final DataIndex tableIndex = DataIndexer.of(table.getRowSet()).getDataIndex(table, groupingColName);
+        final Table tableIndexTable = tableIndex.table();
+
+        // Validate the loaded and created index match.
+        assertTableEquals(fromDiskIndexTable, tableIndexTable);
     }
 
     @Test

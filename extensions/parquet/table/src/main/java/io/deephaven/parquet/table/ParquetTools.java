@@ -438,7 +438,7 @@ public class ParquetTools {
             @NotNull final String[][] indexColumnNameArr,
             @NotNull final String[][] parquetColumnNameArr,
             @NotNull final File destFile) {
-            Require.eq(indexColumnNameArr.length, "indexColumnNameArr.length", parquetColumnNameArr.length,
+        Require.eq(indexColumnNameArr.length, "indexColumnNameArr.length", parquetColumnNameArr.length,
                 "parquetColumnNameArr.length");
         final List<ParquetTableWriter.IndexWritingInfo> indexInfoList = new ArrayList<>();
         for (int gci = 0; gci < indexColumnNameArr.length; gci++) {

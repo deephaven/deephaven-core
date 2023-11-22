@@ -77,8 +77,8 @@ public class ParquetTableWriter {
         public final File metadataFilePath;
 
         /**
-         * Destination path for writing the index file. The two filenames can differ because we write index files
-         * to shadow file paths first and then place them at the final path once the write is complete. But the metadata
+         * Destination path for writing the index file. The two filenames can differ because we write index files to
+         * shadow file paths first and then place them at the final path once the write is complete. But the metadata
          * should always hold the accurate path.
          */
         public final File destFile;
