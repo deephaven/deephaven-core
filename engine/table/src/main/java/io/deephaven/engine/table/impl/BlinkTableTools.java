@@ -15,7 +15,6 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -148,8 +147,8 @@ public class BlinkTableTools {
 
         @Override
         public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-            final Map<String, WritableColumnSource<?>> resultColumns = new LinkedHashMap<>();
-            final Map<String, ? extends ColumnSource<?>> columnSourceMap = parent.getColumnSourceMap();
+            final Map<String, ? extends ColumnSource<?>> sourceColumns = parent.getColumnSourceMap();
+            final Map<String, WritableColumnSource<?>> resultColumns = new LinkedHashMap<>(sourceColumns.size());
 
             // note that we do not need to enable prev tracking for an add-only table
             int colIdx = 0;
@@ -171,7 +170,6 @@ public class BlinkTableTools {
             resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
             resultTable.setFlat();
 
-            // statistically a blink table is likely to be empty; but let's copy whatever we can
             appendRows(usePrev ? parent.getRowSet().prev() : parent.getRowSet(), usePrev).close();
             rowSet.initializePreviousValue();
             Assert.leq(rowSet.size(), "rowSet.size()", sizeLimit, "sizeLimit");
@@ -194,8 +192,7 @@ public class BlinkTableTools {
             if (upstream.modified().isNonempty() || upstream.shifted().nonempty()) {
                 throw new IllegalStateException("Blink tables should not modify or shift!");
             }
-            long newRowsSize = upstream.added().size();
-            if (newRowsSize == 0) {
+            if (upstream.added().isEmpty()) {
                 return;
             }
 

@@ -944,8 +944,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
      *
      * @param errorCaughtAndInFinallyBlock Whether an error was caught, and we are in a {@code finally} block
      */
-    @TestUseOnly
-    public void completeCycleForUnitTests(boolean errorCaughtAndInFinallyBlock) {
+    private void completeCycleForUnitTests(boolean errorCaughtAndInFinallyBlock) {
         Assert.assertion(unitTestMode, "unitTestMode");
         if (!errorCaughtAndInFinallyBlock) {
             Assert.eq(sourcesLastSatisfiedStep, "sourcesLastSatisfiedStep", logicalClock.currentStep(),
