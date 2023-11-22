@@ -1181,8 +1181,9 @@ public class ConstructSnapshot {
      * <p>
      * If the supplied {@link SnapshotControl} provides a null {@link SnapshotControl#getUpdateGraph UpdateGraph}, then
      * this method will perform a static snapshot without locks or retrying. In this case, the {@link SnapshotControl}'s
-     * {@link SnapshotControl#usePreviousValues usePreviousValues} must return {@code false}, and
-     * {@link SnapshotControl#snapshotCompletedConsistently snapshotCompletedConsistently} must return {@code true}.
+     * {@link SnapshotControl#usePreviousValues usePreviousValues} must return {@code false},
+     * {@link SnapshotControl#snapshotCompletedConsistently snapshotCompletedConsistently} must return {@code true}, and
+     * the clock step returned by this method will be the {@link LogicalClock#NULL_CLOCK_VALUE NULL_CLOCK_VALUE}.
      *
      *
      * @param logPrefix A prefix for our log messages
@@ -1202,10 +1203,14 @@ public class ConstructSnapshot {
         if (updateGraph == null) {
             // This is a snapshot of static data. Just call the function with no frippery.
             final boolean controlUsePrev = control.usePreviousValues(LogicalClock.NULL_CLOCK_VALUE);
-            Assert.eqFalse(controlUsePrev, "controlUsePrev");
+            if (controlUsePrev) {
+                throw new SnapshotUnsuccessfulException("Static snapshot requested previous values");
+            }
 
             final boolean functionSuccessful = function.call(false, LogicalClock.NULL_CLOCK_VALUE);
-            Assert.assertion(functionSuccessful, "functionSuccessful");
+            if (!functionSuccessful) {
+                throw new SnapshotUnsuccessfulException("Static snapshot failed to execute snapshot function");
+            }
             if (log.isDebugEnabled()) {
                 final long duration = System.currentTimeMillis() - overallStart;
                 log.debug().append(logPrefix)
@@ -1215,7 +1220,9 @@ public class ConstructSnapshot {
             // notify control of successful snapshot
             final boolean controlSuccessful =
                     control.snapshotCompletedConsistently(LogicalClock.NULL_CLOCK_VALUE, false);
-            Assert.assertion(controlSuccessful, "controlSuccessful");
+            if (!controlSuccessful) {
+                throw new SnapshotUnsuccessfulException("Static snapshot function succeeded but control failed");
+            }
             return LogicalClock.NULL_CLOCK_VALUE;
         }
 

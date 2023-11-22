@@ -1506,7 +1506,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         .append(" growing subscriptions; scheduling next snapshot immediately.").endl();
             }
             updatePropagationJob.scheduleImmediately();
-            updatePropagationJob.scheduleImmediately();
         }
 
         lastUpdateTime = scheduler.currentTimeMillis();
@@ -2043,8 +2042,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     || isBlinkTable;
 
             if (log.isDebugEnabled()) {
-                log.debug().append(logPrefix).append("finalizing snapshot for subscription: ")
-                        .append(subscription.toString()).append(", isComplete=").append(isComplete).endl();
+                log.debug().append(logPrefix).append("finalizing snapshot for subscription=")
+                        .append(subscription.logPrefix).append(", isComplete=").append(isComplete).endl();
             }
 
             if (isComplete) {
