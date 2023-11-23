@@ -29,6 +29,7 @@ import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.parquet.table.transfer.StringDictionary;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.engine.table.Table;
@@ -627,6 +628,117 @@ public final class ParquetTableReadWriteTest {
                 .dropColumns("bdColE");
     }
 
+    private static Table readParquetFileFromGitLFS(final File dest) {
+        try {
+            return readSingleFileTable(dest, EMPTY);
+        } catch (final RuntimeException e) {
+            if (e.getCause() instanceof InvalidParquetFileException) {
+                final String InvalidParquetFileErrorMsgString = "Invalid parquet file detected, please ensure the " +
+                        "file is fetched properly from Git LFS. Run commands 'git lfs install; git lfs pull' inside " +
+                        "the repo to pull the files from LFS. Check cause of exception for more details.";
+                throw new UncheckedDeephavenException(InvalidParquetFileErrorMsgString, e.getCause());
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * Test if the current code can read the parquet data written by the old code. There is logic in
+     * {@link ColumnChunkPageStore#create} that decides page store based on the version of the parquet file. The old
+     * data is generated using following logic:
+     * 
+     * <pre>
+     *  // Enforce a smaller page size to write multiple pages
+     *  final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+     *        .setTargetPageSize(ParquetInstructions.MIN_TARGET_PAGE_SIZE)
+     *        .build();
+     *
+     *  final Table table = getTableFlat(5000, true, false);
+     *  ParquetTools.writeTable(table, new File("ReferenceParquetData.parquet"), writeInstructions);
+     *
+     *  Table vectorTable = table.groupBy().select();
+     *  vectorTable = vectorTable.join(TableTools.emptyTable(100)).select();
+     *  ParquetTools.writeTable(vectorTable, new File("ReferenceParquetVectorData.parquet"), writeInstructions);
+     *
+     *  final Table arrayTable = vectorTable.updateView(vectorTable.getColumnSourceMap().keySet().stream()
+     *         .map(name -> name + " = " + name + ".toArray()")
+     *         .toArray(String[]::new));
+     *  ParquetTools.writeTable(arrayTable, new File("ReferenceParquetArrayData.parquet"), writeInstructions);
+     * </pre>
+     */
+    @Test
+    public void testReadOldParquetData() {
+        String path = ParquetTableReadWriteTest.class.getResource("/ReferenceParquetData.parquet").getFile();
+        readParquetFileFromGitLFS(new File(path)).select();
+        final ParquetMetadata metadata = new ParquetTableLocationKey(new File(path), 0, null).getMetadata();
+        assertTrue(metadata.getFileMetaData().getKeyValueMetaData().get("deephaven").contains("\"version\":\"0.4.0\""));
+
+        path = ParquetTableReadWriteTest.class.getResource("/ReferenceParquetVectorData.parquet").getFile();
+        readParquetFileFromGitLFS(new File(path)).select();
+
+        path = ParquetTableReadWriteTest.class.getResource("/ReferenceParquetArrayData.parquet").getFile();
+        readParquetFileFromGitLFS(new File(path)).select();
+    }
+
+    @Test
+    public void testVersionChecks() {
+        assertFalse(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.0.0"));
+        assertFalse(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.4.0"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.3"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.31.0"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.31.1"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.32.0"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("1.3.0"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("unknown"));
+        assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.31.0-SNAPSHOT"));
+    }
+
+
+    /**
+     * Test if the parquet reading code can read pre-generated parquet files which have different number of rows in each
+     * page. Following is how these files are generated.
+     *
+     * <pre>
+     * Table arrayTable = TableTools.emptyTable(100).update(
+     *         "intArrays = java.util.stream.IntStream.range(0, i).toArray()").reverse();
+     * File dest = new File(rootFile, "ReferenceParquetFileWithDifferentPageSizes1.parquet");
+     * final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+     *         .setTargetPageSize(ParquetInstructions.MIN_TARGET_PAGE_SIZE)
+     *         .build();
+     * ParquetTools.writeTable(arrayTable, dest, writeInstructions);
+     *
+     * arrayTable = TableTools.emptyTable(1000).update(
+     *         "intArrays = (i <= 900) ? java.util.stream.IntStream.range(i, i+50).toArray() : " +
+     *                 "java.util.stream.IntStream.range(i, i+2).toArray()");
+     * dest = new File(rootFile, "ReferenceParquetFileWithDifferentPageSizes2.parquet");
+     * ParquetTools.writeTable(arrayTable, dest, writeInstructions);
+     * </pre>
+     */
+    @Test
+    public void testReadingParquetFilesWithDifferentPageSizes() {
+        Table expected = TableTools.emptyTable(100).update(
+                "intArrays = java.util.stream.IntStream.range(0, i).toArray()").reverse();
+        String path = ParquetTableReadWriteTest.class
+                .getResource("/ReferenceParquetFileWithDifferentPageSizes1.parquet").getFile();
+        Table fromDisk = readParquetFileFromGitLFS(new File(path));
+        assertTableEquals(expected, fromDisk);
+
+        path = ParquetTableReadWriteTest.class
+                .getResource("/ReferenceParquetFileWithDifferentPageSizes2.parquet").getFile();
+        fromDisk = readParquetFileFromGitLFS(new File(path));
+
+        // Access something on the last page to make sure we can read it
+        final int[] data = (int[]) fromDisk.getColumnSource("intArrays").get(998);
+        assertNotNull(data);
+        assertEquals(2, data.length);
+        assertEquals(998, data[0]);
+        assertEquals(999, data[1]);
+
+        expected = TableTools.emptyTable(1000).update(
+                "intArrays = (i <= 900) ? java.util.stream.IntStream.range(i, i+50).toArray() : " +
+                        "java.util.stream.IntStream.range(i, i+2).toArray()");
+        assertTableEquals(expected, fromDisk);
+    }
 
     // Following is used for testing both writing APIs for parquet tables
     private interface TestParquetTableWriter {
@@ -842,18 +954,7 @@ public final class ParquetTableReadWriteTest {
         final File destFile = new File(path);
 
         // Read the legacy file and verify that grouping column is read correctly
-        final Table fromDisk;
-        try {
-            fromDisk = readSingleFileTable(destFile, EMPTY);
-        } catch (RuntimeException e) {
-            if (e.getCause() instanceof InvalidParquetFileException) {
-                final String InvalidParquetFileErrorMsgString = "Invalid parquet file detected, please ensure the " +
-                        "file is fetched properly from Git LFS. Run commands 'git lfs install; git lfs pull' inside " +
-                        "the repo to pull the files from LFS. Check cause of exception for more details.";
-                throw new UncheckedDeephavenException(InvalidParquetFileErrorMsgString, e.getCause());
-            }
-            throw e;
-        }
+        final Table fromDisk = readParquetFileFromGitLFS(destFile);
         final String groupingColName = "gcol";
         assertTrue(fromDisk.getDefinition().getColumn(groupingColName).isGrouping());
 
@@ -1346,18 +1447,8 @@ public final class ParquetTableReadWriteTest {
     public void verifyPyArrowStatistics() {
         final String path = ParquetTableReadWriteTest.class.getResource("/e0/pyarrow_stats.parquet").getFile();
         final File pyarrowDest = new File(path);
-        final Table pyarrowFromDisk;
-        try {
-            pyarrowFromDisk = readSingleFileTable(pyarrowDest, EMPTY);
-        } catch (RuntimeException e) {
-            if (e.getCause() instanceof InvalidParquetFileException) {
-                final String InvalidParquetFileErrorMsgString = "Invalid parquet file detected, please ensure the " +
-                        "file is fetched properly from Git LFS. Run commands 'git lfs install; git lfs pull' inside " +
-                        "the repo to pull the files from LFS. Check cause of exception for more details.";
-                throw new UncheckedDeephavenException(InvalidParquetFileErrorMsgString, e.getCause());
-            }
-            throw e;
-        }
+        final Table pyarrowFromDisk = readParquetFileFromGitLFS(pyarrowDest);
+
         // Verify that our verification code works for a pyarrow generated table.
         assertTableStatistics(pyarrowFromDisk, pyarrowDest);
 

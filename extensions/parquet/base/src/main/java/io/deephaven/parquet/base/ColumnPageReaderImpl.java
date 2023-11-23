@@ -45,6 +45,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     private static final int MAX_HEADER = 8192;
     private static final int START_HEADER = 128;
     public static final int NULL_OFFSET = -1;
+    static final int NULL_NUM_VALUES = -1;
 
     private final SeekableChannelsProvider channelsProvider;
     private final CompressorAdapter compressorAdapter;
@@ -54,11 +55,32 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     private final Path filePath;
     private final List<Type> fieldTypes;
 
+    /**
+     * Stores the offset from where the next byte should be read. Can be the offset of page header if
+     * {@link #pageHeader} is {@code null}, else will be the offset of data.
+     */
     private long offset;
     private PageHeader pageHeader;
     private int numValues;
     private int rowCount = -1;
 
+    /**
+     * Returns a {@link ColumnPageReader} object for reading the column page data from the file.
+     *
+     * @param channelsProvider The provider for {@link SeekableByteChannel} for reading the file.
+     * @param compressorAdapter The adapter for decompressing the data.
+     * @param dictionarySupplier The supplier for dictionary data, set as {@link ColumnChunkReader#NULL_DICTIONARY} if
+     *        page isn't dictionary encoded
+     * @param materializerFactory The factory for creating {@link PageMaterializer}.
+     * @param path The path of the column.
+     * @param filePath The path of the file.
+     * @param fieldTypes The types of the fields in the column.
+     * @param offset The offset for page header if supplied {@code pageHeader} is {@code null}. Else, the offset of data
+     *        following the header in the page.
+     * @param pageHeader The page header if it is already read from the file. Else, {@code null}.
+     * @param numValues The number of values in the page if it is already read from the file. Else,
+     *        {@value #NULL_NUM_VALUES}
+     */
     ColumnPageReaderImpl(SeekableChannelsProvider channelsProvider,
             CompressorAdapter compressorAdapter,
             Supplier<Dictionary> dictionarySupplier,
@@ -84,7 +106,6 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     @Override
     public Object materialize(Object nullValue) throws IOException {
         try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
-            readChannel.position(offset);
             ensurePageHeader(readChannel);
             return readDataPage(nullValue, readChannel);
         }
@@ -92,7 +113,6 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     public int readRowCount() throws IOException {
         try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
-            readChannel.position(offset);
             ensurePageHeader(readChannel);
             return readRowCountFromDataPage(readChannel);
         }
@@ -102,38 +122,66 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     @Override
     public IntBuffer readKeyValues(IntBuffer keyDest, int nullPlaceholder) throws IOException {
         try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
-            readChannel.position(offset);
             ensurePageHeader(readChannel);
             return readKeyFromDataPage(keyDest, nullPlaceholder, readChannel);
         }
     }
 
-    private synchronized void ensurePageHeader(SeekableByteChannel file) throws IOException {
-        if (pageHeader == null) {
-            offset = file.position();
-            int maxHeader = START_HEADER;
-            boolean success;
-            do {
-                ByteBuffer headerBuffer = ByteBuffer.allocate(maxHeader);
-                file.read(headerBuffer);
-                headerBuffer.flip();
-                ByteBufferInputStream bufferedIS = ByteBufferInputStream.wrap(headerBuffer);
-                try {
-                    pageHeader = Util.readPageHeader(bufferedIS);
-                    offset += bufferedIS.position();
-                    success = true;
-                } catch (IOException e) {
-                    success = false;
-                    if (maxHeader > MAX_HEADER) {
-                        throw e;
+    /**
+     * If {@link #pageHeader} is {@code null}, read it from the file, and increment the {@link #offset} by the length of
+     * page header. Channel position would be set to the end of page header or beginning of data before returning.
+     */
+    private void ensurePageHeader(final SeekableByteChannel file) throws IOException {
+        // Set this channel's position to appropriate offset for reading. If pageHeader is null, this offset would be
+        // the offset of page header, else it would be the offset of data.
+        file.position(offset);
+        synchronized (this) {
+            if (pageHeader == null) {
+                int maxHeader = START_HEADER;
+                boolean success;
+                do {
+                    final ByteBuffer headerBuffer = ByteBuffer.allocate(maxHeader);
+                    file.read(headerBuffer);
+                    headerBuffer.flip();
+                    final ByteBufferInputStream bufferedIS = ByteBufferInputStream.wrap(headerBuffer);
+                    try {
+                        pageHeader = Util.readPageHeader(bufferedIS);
+                        offset += bufferedIS.position();
+                        success = true;
+                    } catch (IOException e) {
+                        success = false;
+                        if (maxHeader > MAX_HEADER) {
+                            throw e;
+                        }
+                        maxHeader <<= 1;
+                        file.position(offset);
                     }
-                    maxHeader *= 2;
-                    file.position(offset);
+                } while (!success);
+                file.position(offset);
+                if (numValues >= 0) {
+                    final int numValuesFromHeader = readNumValuesFromPageHeader(pageHeader);
+                    if (numValues != numValuesFromHeader) {
+                        throw new IllegalStateException(
+                                "numValues = " + numValues + " different from number of values " +
+                                        "read from the page header = " + numValuesFromHeader + " for column " + path);
+                    }
                 }
-            } while (!success);
-            file.position(offset);
+            }
+            if (numValues == NULL_NUM_VALUES) {
+                numValues = readNumValuesFromPageHeader(pageHeader);
+            }
         }
-        ensureNumValues();
+    }
+
+    private static int readNumValuesFromPageHeader(@NotNull final PageHeader header) throws IOException {
+        switch (header.type) {
+            case DATA_PAGE:
+                return header.getData_page_header().getNum_values();
+            case DATA_PAGE_V2:
+                return header.getData_page_header_v2().getNum_values();
+            default:
+                throw new IOException(String.format("Unexpected page of type {%s}", header.getType()));
+        }
     }
 
     private int readRowCountFromDataPage(ReadableByteChannel file) throws IOException {
@@ -550,9 +598,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         if (dataEncoding.usesDictionary()) {
             final Dictionary dictionary = dictionarySupplier.get();
             if (dictionary == ColumnChunkReader.NULL_DICTIONARY) {
-                throw new ParquetDecodingException(
-                        "Could not read page in col " + path
-                                + " as the dictionary was missing for encoding " + dataEncoding);
+                throw new ParquetDecodingException("Could not read page in col " + path + " as the dictionary was " +
+                        "missing for encoding " + dataEncoding);
             }
             dataReader = new DictionaryValuesReader(dictionary);
         } else {
@@ -569,25 +616,14 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     @Override
     public int numValues() throws IOException {
-        ensureNumValues();
-        return numValues;
-    }
-
-    private void ensureNumValues() throws IOException {
         if (numValues >= 0) {
-            return;
+            return numValues;
         }
-        Assert.neqNull(pageHeader, "pageHeader");
-        switch (pageHeader.type) {
-            case DATA_PAGE:
-                numValues = pageHeader.getData_page_header().getNum_values();
-                break;
-            case DATA_PAGE_V2:
-                numValues = pageHeader.getData_page_header_v2().getNum_values();
-                break;
-            default:
-                throw new IOException(
-                        String.format("Unexpected page of type {%s}", pageHeader.getType()));
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+            ensurePageHeader(readChannel);
+            // Above will block till it populates numValues
+            Assert.geqZero(numValues, "numValues");
+            return numValues;
         }
     }
 
