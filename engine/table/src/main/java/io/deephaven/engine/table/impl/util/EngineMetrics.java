@@ -30,9 +30,6 @@ public class EngineMetrics {
     private static final boolean STATS_LOGGING_ENABLED = Configuration.getInstance().getBooleanWithDefault(
             "statsLoggingEnabled", true);
 
-    /** Allow memoization of the blink-to-append-only result; which provides a more user-friendly experience. */
-    private static final Object INTERNAL_MEMO_KEY = new Object();
-
     private static volatile ProcessInfo PROCESS_INFO;
     private static volatile EngineMetrics ENGINE_METRICS;
 
@@ -89,11 +86,11 @@ public class EngineMetrics {
     }
 
     public QueryTable getQplLoggerQueryTable() {
-        return (QueryTable) BlinkTableTools.blinkToAppendOnly(qpImpl.blinkTable(), INTERNAL_MEMO_KEY);
+        return (QueryTable) BlinkTableTools.blinkToAppendOnly(qpImpl.blinkTable());
     }
 
     public QueryTable getQoplLoggerQueryTable() {
-        return (QueryTable) BlinkTableTools.blinkToAppendOnly(qoplImpl.blinkTable(), INTERNAL_MEMO_KEY);
+        return (QueryTable) BlinkTableTools.blinkToAppendOnly(qoplImpl.blinkTable());
     }
 
     public QueryPerformanceLogLogger getQplLogger() {
@@ -111,7 +108,7 @@ public class EngineMetrics {
     public QueryTable getProcessMetricsQueryTable() {
         return statsImpl == null
                 ? null
-                : (QueryTable) BlinkTableTools.blinkToAppendOnly(statsImpl.blinkTable(), INTERNAL_MEMO_KEY);
+                : (QueryTable) BlinkTableTools.blinkToAppendOnly(statsImpl.blinkTable());
     }
 
     private StatsIntradayLogger getStatsLogger() {

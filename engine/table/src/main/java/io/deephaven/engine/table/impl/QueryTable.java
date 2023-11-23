@@ -116,15 +116,19 @@ public class QueryTable extends BaseTable<QueryTable> {
          */
         class Result<T extends DynamicNode & NotificationStepReceiver> {
             public final T resultNode;
-            public final TableUpdateListener resultListener; // may be null if parent or result are non-refreshing
+            /**
+             * The listener that should be attached to the parent. The listener may be null if the table does not need
+             * to respond to ticks from other sources (e.g. the parent is non-refreshing).
+             */
+            public final TableUpdateListener resultListener;
 
             public Result(@NotNull final T resultNode) {
                 this(resultNode, null);
             }
 
             /**
-             * Construct the result of an operation. The listener may be null if the parent is non-ticking and the table
-             * does not need to respond to ticks from other sources.
+             * Construct the result of an operation. The listener may be null if the table does not need to respond to
+             * ticks from other sources (e.g. the parent is non-refreshing).
              *
              * @param resultNode the result of the operation
              * @param resultListener the listener that should be attached to the parent (or null)

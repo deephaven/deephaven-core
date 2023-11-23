@@ -198,35 +198,50 @@ public class TestBlinkTableTools {
 
         final Table r1;
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            r1 = BlinkTableTools.blinkToAppendOnly(blinkSource, memoKey);
-            final Table r2 = BlinkTableTools.blinkToAppendOnly(blinkSource, memoKey);
+            r1 = BlinkTableTools.blinkToAppendOnly(blinkSource);
+            final Table r2 = BlinkTableTools.blinkToAppendOnly(blinkSource);
             Assert.assertSame(r1, r2);
 
-            // test other memo key
-            final Table r3 = BlinkTableTools.blinkToAppendOnly(blinkSource, otherMemoKey);
-            Assert.assertNotSame(r1, r3);
+            // test memo key
+            final Table r_memo = BlinkTableTools.blinkToAppendOnly(blinkSource, memoKey);
+            Assert.assertNotSame(r1, r_memo);
 
-            // test same memo key, different size limit
-            final Table r4 = BlinkTableTools.blinkToAppendOnly(blinkSource, 32, memoKey);
-            Assert.assertNotSame(r1, r4);
+            // test another memo key
+            final Table r_other_memo = BlinkTableTools.blinkToAppendOnly(blinkSource, otherMemoKey);
+            Assert.assertNotSame(r1, r_other_memo);
+            Assert.assertNotSame(r_memo, r_other_memo);
 
-            // test same memo key, reuse different size limit
-            final Table r5 = BlinkTableTools.blinkToAppendOnly(blinkSource, 32, memoKey);
-            Assert.assertSame(r4, r5);
+            // test different size limit
+            final Table r_sz = BlinkTableTools.blinkToAppendOnly(blinkSource, 32);
+            Assert.assertNotSame(r1, r_sz);
+
+            // test reuse different size limit
+            final Table r_sz_2 = BlinkTableTools.blinkToAppendOnly(blinkSource, 32);
+            Assert.assertSame(r_sz, r_sz_2);
+
+            // test memo key different size limit
+            final Table r_sz_memo = BlinkTableTools.blinkToAppendOnly(blinkSource, 32, memoKey);
+            Assert.assertNotSame(r_sz, r_sz_memo);
+
+            // test another memo key
+            final Table r_sz_other_memo = BlinkTableTools.blinkToAppendOnly(blinkSource, 32, otherMemoKey);
+            Assert.assertNotSame(r_sz, r_sz_other_memo);
+            Assert.assertNotSame(r_sz_memo, r_sz_other_memo);
 
             // test null memo key
-            final Table r6 = BlinkTableTools.blinkToAppendOnly(blinkSource);
-            Assert.assertNotSame(r1, r6);
+            final Table r_null = BlinkTableTools.blinkToAppendOnly(blinkSource, null);
+            Assert.assertNotSame(r1, r_null);
 
             // test that null memo key is not memoized
-            final Table r7 = BlinkTableTools.blinkToAppendOnly(blinkSource);
-            Assert.assertNotSame(r6, r7);
+            final Table r_null_2 = BlinkTableTools.blinkToAppendOnly(blinkSource, null);
+            Assert.assertNotSame(r1, r_null);
+            Assert.assertNotSame(r_null, r_null_2);
         }
 
         // test that it was memoized only until the end of the liveness scope
         Assert.assertFalse(r1.tryRetainReference());
-        final Table r8 = BlinkTableTools.blinkToAppendOnly(blinkSource, memoKey);
-        Assert.assertNotSame(r1, r8);
+        final Table r2 = BlinkTableTools.blinkToAppendOnly(blinkSource);
+        Assert.assertNotSame(r1, r2);
     }
 
     private static QueryTable createBlinkTableForConcurrentInstantiationTests() {

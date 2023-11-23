@@ -683,7 +683,7 @@ public abstract class MemoizedOperationKey {
 
         private BlinkToAppendOnly(final long sizeLimit, @NotNull final Object key) {
             this.sizeLimit = sizeLimit;
-            this.key = key;
+            this.key = Objects.requireNonNull(key);
         }
 
         @Override
@@ -697,7 +697,7 @@ public abstract class MemoizedOperationKey {
 
             final BlinkToAppendOnly blinkToAppendOnly = (BlinkToAppendOnly) other;
 
-            return key.equals(blinkToAppendOnly.key);
+            return sizeLimit == blinkToAppendOnly.sizeLimit && key.equals(blinkToAppendOnly.key);
         }
 
         @Override
