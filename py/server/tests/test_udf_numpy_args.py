@@ -5,7 +5,6 @@ import typing
 from typing import Optional, Union, Any
 import unittest
 
-
 import numpy as np
 import numpy.typing as npt
 
@@ -183,37 +182,44 @@ def test_udf(col: Optional[{np_type}]) -> bool:
     def test_weird_cases(self):
         def f(p1: Union[np.ndarray[typing.Any], None]) -> bool:
             return bool(p1)
+
         with self.assertRaises(DHError) as cm:
             t = empty_table(10).update(["X1 = f(i)"])
 
         def f1(p1: Union[np.int16, np.int32]) -> bool:
             return bool(p1)
+
         with self.assertRaises(DHError) as cm:
             t = empty_table(10).update(["X1 = f1(i)"])
 
         def f11(p1: Union[float, np.float32]) -> bool:
             return bool(p1)
+
         with self.assertRaises(DHError) as cm:
             t = empty_table(10).update(["X1 = f11(i)"])
 
         def f2(p1: Union[np.int16, np.float64]) -> Union[Optional[bool]]:
             return bool(p1)
+
         t = empty_table(10).update(["X1 = f2(i)"])
         self.assertEqual(t.columns[0].data_type, dtypes.bool_)
         self.assertEqual(9, t.to_string().count("true"))
 
         def f21(p1: Union[np.int16, np.float64]) -> Union[Optional[bool], int]:
             return bool(p1)
+
         with self.assertRaises(DHError) as cm:
             t = empty_table(10).update(["X1 = f21(i)"])
 
         def f3(p1: Union[np.int16, np.float64], p2=None) -> bool:
             return bool(p1)
+
         t = empty_table(10).update(["X1 = f3(i)"])
         self.assertEqual(t.columns[0].data_type, dtypes.bool_)
 
         def f4(p1: Union[np.int16, np.float64], p2=None) -> bool:
             return bool(p1)
+
         t = empty_table(10).update(["X1 = f4((double)i)"])
         self.assertEqual(t.columns[0].data_type, dtypes.bool_)
         with self.assertRaises(DHError) as cm:
@@ -221,17 +227,20 @@ def test_udf(col: Optional[{np_type}]) -> bool:
 
         def f41(p1: Union[np.int16, np.float64, Union[Any]], p2=None) -> bool:
             return bool(p1)
+
         t = empty_table(10).update(["X1 = f41(now())"])
         self.assertEqual(t.columns[0].data_type, dtypes.bool_)
 
         def f42(p1: Union[np.int16, np.float64, np.datetime64], p2=None) -> bool:
             return p1.dtype.char == "M"
+
         t = empty_table(10).update(["X1 = f42(now())"])
         self.assertEqual(t.columns[0].data_type, dtypes.bool_)
         self.assertEqual(10, t.to_string().count("true"))
 
         def f5(col1, col2: np.ndarray[np.int32]) -> bool:
             return np.nanmean(col2) == np.mean(col2)
+
         t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
         t = t.update(["X1 = f5(X, Y)"])
         with self.assertRaises(DHError) as cm:
@@ -239,10 +248,61 @@ def test_udf(col: Optional[{np_type}]) -> bool:
 
         def f51(col1, col2: Optional[np.ndarray[np.int32]]) -> bool:
             return np.nanmean(col2) == np.mean(col2)
+
         t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
         t = t.update(["X1 = f51(X, Y)"])
         with self.assertRaises(DHError) as cm:
             t = t.update(["X1 = f51(X, null)"])
+
+    def test_str_bool_datetime(self):
+        with self.subTest("str"):
+            def f1(p1: np.ndarray[str], p2=None) -> bool:
+                return bool(len(p1))
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"]).group_by("X")
+            t1 = t.update(["X1 = f1(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            with self.assertRaises(DHError) as cm:
+                t2 = t.update(["X1 = f1(null, Y )"])
+
+            def f11(p1: Union[np.ndarray[str], None], p2=None) -> bool:
+                return bool(len(p1)) if p1 is not None else False
+            t2 = t.update(["X1 = f11(null, Y)"])
+            self.assertEqual(3, t2.to_string().count("false"))
+
+        with self.subTest("datetime"):
+            def f2(p1: np.ndarray[np.datetime64], p2=None) -> bool:
+                return bool(len(p1))
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"]).group_by("X")
+            t1 = t.update(["X1 = f2(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            with self.assertRaises(DHError) as cm:
+                t2 = t.update(["X1 = f2(null, Y )"])
+
+            def f21(p1: Union[np.ndarray[np.datetime64], None], p2=None) -> bool:
+                return bool(len(p1)) if p1 is not None else False
+            t2 = t.update(["X1 = f21(null, Y)"])
+            self.assertEqual(3, t2.to_string().count("false"))
+
+        with self.subTest("boolean"):
+            def f3(p1: np.ndarray[np.bool_], p2=None) -> bool:
+                return bool(len(p1))
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"]).group_by("X")
+            with self.assertRaises(DHError) as cm:
+                t1 = t.update(["X1 = f3(Y)"])
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"]).group_by("X")
+            t1 = t.update(["X1 = f3(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            with self.assertRaises(DHError) as cm:
+                t2 = t.update(["X1 = f3(null, Y )"])
+
+            def f31(p1: Optional[np.ndarray[bool]], p2=None) -> bool:
+                return bool(len(p1)) if p1 is not None else False
+            t2 = t.update(["X1 = f31(null, Y)"])
+            self.assertEqual(3, t2.to_string("X1").count("false"))
 
 
 if __name__ == "__main__":

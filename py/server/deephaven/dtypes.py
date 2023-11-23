@@ -196,7 +196,9 @@ _J_ARRAY_NP_TYPE_MAP = {
     int32_array.j_type: np.dtype("i"),
     long_array.j_type: np.dtype("l"),
     float32_array.j_type: np.dtype("f"),
-    double_array.j_type: np.dtype("d")
+    double_array.j_type: np.dtype("d"),
+    string_array.j_type: np.dtype("U"),
+    instant_array.j_type: np.dtype("datetime64[ns]"),
 }
 
 
