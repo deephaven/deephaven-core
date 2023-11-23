@@ -100,7 +100,8 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
         return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
-    static boolean addIndex(ImmutableObjectArraySource<RowSetBuilderSequential> source, int location, long keyToAdd) {
+    static boolean addKeyToSlot(ImmutableObjectArraySource<RowSetBuilderSequential> source, int location,
+            long keyToAdd) {
         boolean addedSlot = false;
         RowSetBuilderSequential builder = source.getUnsafe(location);
         if (builder == null) {
@@ -114,13 +115,13 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     /**
      * Returns true if this is the first left row key added to this slot.
      */
-    protected boolean addLeftIndex(int tableLocation, long keyToAdd) {
-        return addIndex(leftRowSetSource, tableLocation, keyToAdd);
+    protected boolean addLeftKey(int tableLocation, long keyToAdd) {
+        return addKeyToSlot(leftRowSetSource, tableLocation, keyToAdd);
     }
 
-    protected void addRightIndex(int tableLocation, long keyToAdd) {
+    protected void addRightKey(int tableLocation, long keyToAdd) {
         // noinspection unchecked
-        addIndex((ImmutableObjectArraySource) rightRowSetSource, tableLocation, keyToAdd);
+        addKeyToSlot((ImmutableObjectArraySource) rightRowSetSource, tableLocation, keyToAdd);
     }
 
     protected void buildTable(
@@ -301,7 +302,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
      * @return the RowSet for this slot
      */
     @Override
-    public RowSet getLeftIndex(int slot) {
+    public RowSet getLeftRowSet(int slot) {
         RowSetBuilderSequential builder = (RowSetBuilderSequential) leftRowSetSource.getAndSetUnsafe(slot, null);
         if (builder == null) {
             return null;
@@ -310,16 +311,16 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     }
 
     @Override
-    public RowSet getRightIndex(int slot) {
+    public RowSet getRightRowset(int slot) {
         if (rightBuildersConverted) {
             return (RowSet) rightRowSetSource.getUnsafe(slot);
         }
         throw new IllegalStateException(
-                "getRightIndex() may not be called before convertRightBuildersToIndex() or convertRightGrouping()");
+                "getRightRowset() may not be called before convertRightBuildersToRowSet() or populateRightRowSetsFromIndex()");
     }
 
     @Override
-    public void convertRightBuildersToIndex(IntegerArraySource slots, int slotCount) {
+    public void convertRightBuildersToRowSet(IntegerArraySource slots, int slotCount) {
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final int slot = slots.getInt(slotIndex);
             // this might be empty, if so then set null
@@ -339,7 +340,8 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     }
 
     @Override
-    public void convertRightIndexTable(IntegerArraySource slots, int slotCount, ColumnSource<RowSet> rowSetSource) {
+    public void populateRightRowSetsFromIndexTable(IntegerArraySource slots, int slotCount,
+            ColumnSource<RowSet> rowSetSource) {
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final int slot = slots.getInt(slotIndex);
 
@@ -356,7 +358,9 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
                         throw new IllegalStateException(
                                 "Grouped rowSet should have exactly one value: " + groupedRowSet);
                     }
-                    rightRowSetSource.set(slot, rowSetSource.get(groupedRowSet.firstRowKey()));
+                    // Set a copy of the RowSet into the row set source to protect the original from being closed
+                    // when/if this table is closed.
+                    rightRowSetSource.set(slot, rowSetSource.get(groupedRowSet.firstRowKey()).copy());
                 }
             }
         }
