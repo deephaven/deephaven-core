@@ -24,7 +24,7 @@ import java.util.Map;
  * @see Table#BLINK_TABLE_ATTRIBUTE
  */
 public class BlinkTableTools {
-    private static final Object DEFAULT_MEMO_KEY = new Object() {
+    public static final Object DEFAULT_MEMO_KEY = new Object() {
         @Override
         public String toString() {
             return "DEFAULT_MEMOIZATION_KEY";
