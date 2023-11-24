@@ -261,18 +261,9 @@ mention the version explicitly. These files are listed below:
 
 ```
 #
-# Edit files for version change, updating from 0.31.0 to 0.32.0
+# Edit files for version change
 #
-authorization-codegen/protoc-gen-contextual-auth-wiring
-authorization-codegen/protoc-gen-service-auth-wiring
-buildSrc/src/main/groovy/io.deephaven.common-conventions.gradle
-py/client-ticking/README.md
-py/client-ticking/setup.py
-py/client/README.md
-py/client/pydeephaven/__init__.py
-py/client/setup.py
-py/embedded-server/deephaven_server/__init__.py
-py/server/deephaven/__init__.py
+gradle.properties
 R/rdeephaven/DESCRIPTION
 ```
 
