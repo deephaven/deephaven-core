@@ -14,7 +14,7 @@ def _get_readme() -> str:
     # The directory containing this file
     HERE = pathlib.Path(__file__).parent
     # The text of the README file
-    return (HERE / "README.md").read_text()
+    return (HERE / "README.md").read_text(encoding="utf-8")
 
 def _normalize_version(java_version) -> str:
     partitions = java_version.partition("-")
