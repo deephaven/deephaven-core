@@ -24,7 +24,7 @@ import java.util.Map;
  * @see Table#BLINK_TABLE_ATTRIBUTE
  */
 public class BlinkTableTools {
-    public static final Object DEFAULT_MEMO_KEY = new Object() {
+    private static final Object DEFAULT_MEMO_KEY = new Object() {
         @Override
         public String toString() {
             return "DEFAULT_MEMOIZATION_KEY";
@@ -64,8 +64,7 @@ public class BlinkTableTools {
      * Convert a Blink Table to an in-memory append only table with a limit on maximum size. Any updates beyond that
      * limit won't be appended to the table.
      * <p>
-     * Note, this table will grow without bound as new blink table rows are encountered. The result is memoized under
-     * {@link #DEFAULT_MEMO_KEY}.
+     * The result is memoized under {@link #DEFAULT_MEMO_KEY}.
      *
      * @param blinkTable The input blink table
      * @param sizeLimit The maximum number of rows in the append-only table
@@ -142,8 +141,8 @@ public class BlinkTableTools {
 
         @Override
         public String getDescription() {
-            final String sizeLimitStr = sizeLimit == Long.MAX_VALUE ? "Long.MAX_VALUE" : Long.toString(sizeLimit);
-            final String memoKeyStr = memoKey == null ? "NO_MEMOIZATION_KEY" : memoKey.toString();
+            final String sizeLimitStr = sizeLimit == Long.MAX_VALUE ? "unbounded" : Long.toString(sizeLimit);
+            final String memoKeyStr = memoKey == null ? "none" : memoKey.toString();
             return String.format("BlinkTableTools.blinkToAppendOnly(%s, %s)", sizeLimitStr, memoKeyStr);
         }
 
@@ -159,12 +158,12 @@ public class BlinkTableTools {
 
         @Override
         public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-            final Map<String, ? extends ColumnSource<?>> sourceColumns = parent.getColumnSourceMap();
-            final Map<String, WritableColumnSource<?>> resultColumns = new LinkedHashMap<>(sourceColumns.size());
+            final Map<String, ? extends ColumnSource<?>> parentColumns = parent.getColumnSourceMap();
+            final Map<String, WritableColumnSource<?>> resultColumns = new LinkedHashMap<>(parentColumns.size());
 
             // note that we do not need to enable prev tracking for an add-only table
             int colIdx = 0;
-            for (Map.Entry<String, ? extends ColumnSource<?>> sourceEntry : sourceColumns
+            for (Map.Entry<String, ? extends ColumnSource<?>> sourceEntry : parentColumns
                     .entrySet()) {
                 final ColumnSource<?> sourceColumn = sourceEntry.getValue();
                 final WritableColumnSource<?> newColumn = ArrayBackedColumnSource.getMemoryColumnSource(
@@ -172,7 +171,7 @@ public class BlinkTableTools {
                 resultColumns.put(sourceEntry.getKey(), newColumn);
 
                 // read and write primitives whenever possible
-                this.sourceColumns[colIdx] = ReinterpretUtils.maybeConvertToPrimitive(sourceColumn);
+                sourceColumns[colIdx] = ReinterpretUtils.maybeConvertToPrimitive(sourceColumn);
                 destColumns[colIdx++] = ReinterpretUtils.maybeConvertToWritablePrimitive(newColumn);
             }
 
@@ -209,6 +208,8 @@ public class BlinkTableTools {
             final TableUpdateImpl downstream = new TableUpdateImpl();
             downstream.added = appendRows(resultTable.size(), upstream.added(), false);
             Assert.eqTrue(downstream.added.isNonempty(), "downstream.added.isNonempty()");
+            resultTable.getRowSet().writableCast().insertRange(
+                    downstream.added.firstRowKey(), downstream.added.lastRowKey());
             downstream.modified = RowSetFactory.empty();
             downstream.removed = RowSetFactory.empty();
             downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
@@ -238,9 +239,6 @@ public class BlinkTableTools {
                     rowsToAdd = newRows;
                 }
                 ChunkUtils.copyData(sourceColumns, rowsToAdd, destColumns, newRange, usePrev);
-            }
-            if (resultTable != null) {
-                resultTable.getRowSet().writableCast().insertRange(newRange.firstRowKey(), newRange.lastRowKey());
             }
             Assert.leq(totalSize, "totalSize", sizeLimit, "sizeLimit");
 
