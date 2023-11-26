@@ -8,11 +8,16 @@
 #include <string>
 #include <vector>
 
+#include "deephaven/third_party/fmt/chrono.h"
+#include "deephaven/third_party/fmt/core.h"
+
 #ifdef __GNUG__
 #include <cstdlib>
 #include <memory>
 #include <cxxabi.h>
 #endif
+
+static_assert(FMT_VERSION >= 100000);
 
 namespace deephaven::dhcore::utility {
 
@@ -196,20 +201,16 @@ void dumpTillPercentOrEnd(std::ostream &result, const char **fmt) {
 }  // namespace
 
 std::string EpochMillisToStr(int64_t epoch_millis) {
-  time_t time_secs = epoch_millis / 1000;
-  auto millis = epoch_millis % 1000;
-  struct tm tm = {};
-  localtime_r(&time_secs, &tm);
-  char date_buffer[32];  // ample
-  char millis_buffer[32];  // ample
-  char tz_buffer[32];  // ample
-  strftime(date_buffer, sizeof(date_buffer), "%FT%T", &tm);
-  snprintf(millis_buffer, sizeof(millis_buffer), ".%03zd", millis);
-  strftime(tz_buffer, sizeof(tz_buffer), "%z", &tm);
-
-  SimpleOstringstream s;
-  s << date_buffer << millis_buffer << tz_buffer;
-  return std::move(s.str());
+  std::chrono::milliseconds ms(epoch_millis);
+  // Make a system_clock with a resolution of milliseconds so that the date is formatted with 3
+  // digits of fractional precision in the seconds field. Note also that system_clock is assumed by
+  // fmt to be UTC (this is what we want).
+  auto tp = std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>(ms);
+  // %F - Equivalent to %Y-%m-%d, e.g. “1955-11-12”.
+  // T - literal 'T'
+  // %T - Equivalent to %H:%M:%S
+  // Z - literal 'Z'
+  return fmt::format("{:%FT%TZ}", tp);
 }
 
 std::int64_t
@@ -242,9 +243,7 @@ std::string demangle(const char* name) {
 #endif
 
 std::string ObjectId(const std::string &class_short_name, void *this_ptr) {
-  SimpleOstringstream s;
-  s << class_short_name << '(' << this_ptr << ')';
-  return std::move(s.str());
+  return fmt::format("{}({})", class_short_name, this_ptr);
 }
 
 std::string
