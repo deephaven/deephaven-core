@@ -283,34 +283,3 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
         s = pd.Series(data=np_array, copy=False)
 
     return s
-
-
-def _convert_udf_args(args: Tuple[Any], fn_signature: str, null_value: Literal[np.nan, pd.NA, None]) -> List[Any]:
-    converted_args = []
-    for arg, np_dtype_char in zip(args, fn_signature):
-        if np_dtype_char == 'O':
-            converted_args.append(arg)
-        elif src_np_dtype := _J_ARRAY_NP_TYPE_MAP.get(type(arg)):
-            # array types
-            np_dtype = np.dtype(np_dtype_char)
-            if src_np_dtype != np_dtype and np_dtype != np.object_:
-                raise DHError(f"Cannot convert Java array of type {src_np_dtype} to numpy array of type {np_dtype}")
-            dtype = dtypes.from_np_dtype(np_dtype)
-            if null_value is pd.NA:
-                converted_args.append(_j_array_to_series(dtype, arg, conv_null=True))
-            else:  # np.nan or None
-                converted_args.append(_j_array_to_numpy_array(dtype, arg, conv_null=bool(null_value)))
-        else:  # scalar type or array types that don't need conversion
-            try:
-                np_dtype = np.dtype(np_dtype_char)
-            except TypeError:
-                converted_args.append(arg)
-            else:
-                dtype = dtypes.from_np_dtype(np_dtype)
-                if dtype is dtypes.bool_:
-                    converted_args.append(null_value if arg is None else arg)
-                elif dh_null := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
-                    converted_args.append(null_value if arg == dh_null else arg)
-                else:
-                    converted_args.append(arg)
-    return converted_args

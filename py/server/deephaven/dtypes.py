@@ -102,6 +102,8 @@ float_ = float64
 """Double-precision floating-point number type"""
 string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType(), np_type=np.str_)
 """String type"""
+Character = DType(j_name="java.lang.Character")
+"""Character type"""
 BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
@@ -339,8 +341,19 @@ def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -
     return PyObject
 
 
-_NUMPY_INT_TYPE_CODES = ["i", "l", "h", "b"]
-_NUMPY_FLOATING_TYPE_CODES = ["f", "d"]
+_NUMPY_INT_TYPE_CODES = {"b", "h", "H", "i", "l"}
+_NUMPY_FLOATING_TYPE_CODES = {"f", "d"}
+
+
+def _is_py_null(x: Any) -> bool:
+    """Checks if the value is a Python null value, i.e. None or NaN, or Pandas.NA."""
+    if x is None:
+        return True
+
+    try:
+        return bool(pd.isna(x))
+    except (TypeError, ValueError):
+        return False
 
 
 def _scalar(x: Any, dtype: DType) -> Any:
@@ -350,12 +363,14 @@ def _scalar(x: Any, dtype: DType) -> Any:
 
     # NULL_BOOL will appear in Java as a byte value which causes a cast error. We just let JPY converts it to Java null
     # and the engine has casting logic to handle it.
-    if x is None and dtype != bool_ and _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
+    if _is_py_null(x) and dtype not in (bool_, char) and _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
         return _PRIMITIVE_DTYPE_NULL_MAP[dtype]
 
     try:
         if hasattr(x, "dtype"):
-            if x.dtype.char in _NUMPY_INT_TYPE_CODES:
+            if x.dtype.char == 'H':  # np.uint16 maps to Java char
+                return Character(int(x))
+            elif x.dtype.char in _NUMPY_INT_TYPE_CODES:
                 return int(x)
             elif x.dtype.char in _NUMPY_FLOATING_TYPE_CODES:
                 return float(x)
@@ -368,8 +383,6 @@ def _scalar(x: Any, dtype: DType) -> Any:
             elif x.dtype.char == 'M':
                 from deephaven.time import to_j_instant
                 return to_j_instant(x)
-            elif x.dtype.char == 'H':  # np.uint16
-                return jpy.get_type("java.lang.Character")(int(x))
         elif isinstance(x, (datetime.datetime, pd.Timestamp)):
                 from deephaven.time import to_j_instant
                 return to_j_instant(x)

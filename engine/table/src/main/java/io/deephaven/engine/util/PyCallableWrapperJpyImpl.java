@@ -29,12 +29,13 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     private static final Map<Character, Class<?>> numpyType2JavaClass = new HashMap<>();
 
     static {
+        numpyType2JavaClass.put('b', byte.class);
+        numpyType2JavaClass.put('h', short.class);
+        numpyType2JavaClass.put('H', char.class);
         numpyType2JavaClass.put('i', int.class);
         numpyType2JavaClass.put('l', long.class);
-        numpyType2JavaClass.put('h', short.class);
         numpyType2JavaClass.put('f', float.class);
         numpyType2JavaClass.put('d', double.class);
-        numpyType2JavaClass.put('b', byte.class);
         numpyType2JavaClass.put('?', boolean.class);
         numpyType2JavaClass.put('U', String.class);
         numpyType2JavaClass.put('M', Instant.class);

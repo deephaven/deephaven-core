@@ -14,30 +14,33 @@ from deephaven.dtypes import double_array, int32_array, long_array, int16_array,
 from tests.testbase import BaseTestCase
 
 _J_TYPE_NULL_MAP = {
-    "double": "NULL_DOUBLE",
-    "float": "NULL_FLOAT",
+    "byte": "NULL_BYTE",
+    "short": "NULL_SHORT",
+    "char": "NULL_CHAR",
     "int": "NULL_INT",
     "long": "NULL_LONG",
-    "short": "NULL_SHORT",
-    "byte": "NULL_BYTE",
+    "float": "NULL_FLOAT",
+    "double": "NULL_DOUBLE",
 }
 
 _J_TYPE_NP_DTYPE_MAP = {
-    "double": "np.float64",
-    "float": "np.float32",
+    "byte": "np.int8",
+    "short": "np.int16",
+    "char": "np.uint16",
     "int": "np.int32",
     "long": "np.int64",
-    "short": "np.int16",
-    "byte": "np.int8",
+    "float": "np.float32",
+    "double": "np.float64",
 }
 
 _J_TYPE_J_ARRAY_TYPE_MAP = {
-    "double": double_array,
-    "float": float32_array,
+    "byte": int8_array,
+    "short": int16_array,
+    "char": char_array,
     "int": int32_array,
     "long": long_array,
-    "short": int16_array,
-    "byte": int8_array,
+    "float": float32_array,
+    "double": double_array,
 }
 
 
@@ -254,7 +257,19 @@ def test_udf(col: Optional[{np_type}]) -> bool:
         with self.assertRaises(DHError) as cm:
             t = t.update(["X1 = f51(X, null)"])
 
-    def test_str_bool_datetime(self):
+        t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
+
+        def f6(*args: np.int32, col2: np.ndarray[np.int32]) -> bool:
+            return np.nanmean(col2) == np.mean(col2)
+        with self.assertRaises(DHError) as cm:
+            t1 = t.update(["X1 = f6(X, Y)"])
+        self.assertIn("missing 1 required keyword-only argument", str(cm.exception))
+
+        with self.assertRaises(DHError) as cm:
+            t1 = t.update(["X1 = f6(X, Y=null)"])
+        self.assertIn("not compatible with annotation", str(cm.exception))
+
+    def test_str_bool_datetime_array(self):
         with self.subTest("str"):
             def f1(p1: np.ndarray[str], p2=None) -> bool:
                 return bool(len(p1))
@@ -303,6 +318,54 @@ def test_udf(col: Optional[{np_type}]) -> bool:
                 return bool(len(p1)) if p1 is not None else False
             t2 = t.update(["X1 = f31(null, Y)"])
             self.assertEqual(3, t2.to_string("X1").count("false"))
+
+    def test_str_bool_datetime_scalar(self):
+        with self.subTest("str"):
+            def f1(p1: str, p2=None) -> bool:
+                return p1 is None
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"])
+            t1 = t.update(["X1 = f1(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            self.assertEqual(5, t1.to_string().count("true"))
+
+            def f11(p1: Union[str, None], p2=None) -> bool:
+                return p1 is None
+            t2 = t.update(["X1 = f11(Y)"])
+            self.assertEqual(5, t2.to_string().count("false"))
+
+        with self.subTest("datetime"):
+            def f2(p1: np.datetime64, p2=None) -> bool:
+                return p1 is None
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
+            t1 = t.update(["X1 = f2(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            self.assertEqual(5, t1.to_string().count("true"))
+
+            def f21(p1: Union[np.datetime64, None], p2=None) -> bool:
+                return p1 is None
+            t2 = t.update(["X1 = f21(Y)"])
+            self.assertEqual(5, t2.to_string().count("false"))
+
+        with self.subTest("boolean"):
+            def f3(p1: np.bool_, p2=None) -> bool:
+                return p1 is None
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"])
+            t1 = t.update(["X1 = f3(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            self.assertEqual(5, t1.to_string("X1").count("false"))
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"])
+            t1 = t.update(["X1 = f3(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            self.assertEqual(0, t1.to_string("X1").count("true"))
+
+            def f31(p1: Optional[np.bool_], p2=None) -> bool:
+                return p1 is None
+            t2 = t.update(["X1 = f31(null, Y)"])
+            self.assertEqual(10, t2.to_string("X1").count("true"))
 
 
 if __name__ == "__main__":

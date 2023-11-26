@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from enum import auto
 from functools import wraps
-from typing import Any, Optional, Callable, Dict, _GenericAlias, Set, Tuple
+from typing import Any, Optional, Callable, Dict, _GenericAlias, Tuple
 from typing import Sequence, List, Union, Protocol
 
 import jpy
@@ -30,14 +30,14 @@ from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter, and_, or_
-from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap, _convert_udf_args, \
-    _j_array_to_numpy_array
+from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap, _j_array_to_numpy_array
 from deephaven.jcompat import to_sequence, j_array_list
 from deephaven.time import to_np_datetime64
 from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
 from deephaven.dtypes import _BUILDABLE_ARRAY_DTYPE_MAP, _scalar, _np_dtype_char, _component_np_dtype_char, DType, \
-    _np_ndarray_component_type, _J_ARRAY_NP_TYPE_MAP, _PRIMITIVE_DTYPE_NULL_MAP
+    _np_ndarray_component_type, _J_ARRAY_NP_TYPE_MAP, _PRIMITIVE_DTYPE_NULL_MAP, _NUMPY_INT_TYPE_CODES, \
+    _NUMPY_FLOATING_TYPE_CODES
 
 # Table
 _J_Table = jpy.get_type("io.deephaven.engine.table.Table")
@@ -368,7 +368,7 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return None
 
 
-_SUPPORTED_NP_TYPE_CODES = {"b", "h", "i", "l", "f", "d", "?", "U", "M", "O"}
+_SUPPORTED_NP_TYPE_CODES = {"b", "h", "H", "i", "l", "f", "d", "?", "U", "M", "O"}
 
 
 @dataclass
@@ -444,11 +444,11 @@ def _parse_type_no_nested(annotation, p_annotation, t):
         p_annotation.is_array = True
     if tc in {"N", "O", "?", "U", "M"}:
         p_annotation.is_none_legal = True
-    if tc in {"b", "h", "i", "l"}:
+    if tc in _NUMPY_INT_TYPE_CODES:
         if p_annotation.int_char and p_annotation.int_char != tc:
             raise DHError(message=f"ambiguity detected: multiple integer types in annotation: {annotation}")
         p_annotation.int_char = tc
-    if tc in {"f", "d"}:
+    if tc in _NUMPY_FLOATING_TYPE_CODES:
         if p_annotation.floating_char and p_annotation.floating_char != tc:
             raise DHError(message=f"ambiguity detected: multiple floating types in annotation: {annotation}")
         p_annotation.floating_char = tc
@@ -499,9 +499,9 @@ def _parse_numba_signature(fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufun
             for p in params:
                 pa = ParsedAnnotation()
                 pa.encoded_types.add(p)
-                if p in {"b", "h", "i", "l"}:
+                if p in _NUMPY_INT_TYPE_CODES:
                     pa.int_char = p
-                if p in {"f", "d"}:
+                if p in _NUMPY_FLOATING_TYPE_CODES:
                     pa.floating_char = p
                 p_annotations.append(pa)
         else:  # GUFunc
@@ -517,9 +517,9 @@ def _parse_numba_signature(fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufun
                     pa.is_array = True
                 else:
                     pa.encoded_types.add(p)
-                    if p in {"b", "h", "i", "l"}:
+                    if p in _NUMPY_INT_TYPE_CODES:
                         pa.int_char = p
-                    if p in {"f", "d"}:
+                    if p in _NUMPY_FLOATING_TYPE_CODES:
                         pa.floating_char = p
                 p_annotations.append(pa)
 
@@ -718,9 +718,9 @@ def dh_vectorize(fn):
 
     @wraps(fn)
     def wrapper(*args):
-        if len(args) != len(p_sig.params) + 2:
-            raise ValueError(
-                f"The number of arguments doesn't match the function signature. {len(args) - 2}, {sig_str}")
+        # if len(args) != len(p_sig.params) + 2:
+        #     raise ValueError(
+        #         f"The number of arguments doesn't match the function signature. {len(args) - 2}, {sig_str}")
         if args[0] <= 0:
             raise ValueError(f"The chunk size argument must be a positive integer. {args[0]}")
 

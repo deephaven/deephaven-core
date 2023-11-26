@@ -4,7 +4,6 @@
 
 """ This module supports the conversion between Deephaven tables and numpy arrays. """
 import re
-from functools import wraps
 from typing import List
 
 import jpy
@@ -13,8 +12,8 @@ import numpy as np
 from deephaven import DHError, dtypes, new_table
 from deephaven.column import Column, InputColumn
 from deephaven.dtypes import DType
-from deephaven.jcompat import _j_array_to_numpy_array, _convert_udf_args
-from deephaven.table import Table, _encode_signature
+from deephaven.jcompat import _j_array_to_numpy_array
+from deephaven.table import Table
 
 _JDataAccessHelpers = jpy.get_type("io.deephaven.engine.table.impl.DataAccessHelpers")
 
