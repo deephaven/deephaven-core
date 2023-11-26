@@ -7,7 +7,6 @@
 
 using deephaven::dhcore::DateTime;
 using deephaven::dhcore::utility::Base64Encode;
-using deephaven::dhcore::utility::EpochMillisToStr;
 using deephaven::dhcore::utility::ObjectId;
 
 namespace deephaven::client::tests {

@@ -27,7 +27,7 @@ set(ALL_FILES
     src/ticking/shift_processor.cc
     src/ticking/space_mapper.cc
     src/ticking/ticking.cc
-        src/utility/cython_support.cc
+    src/utility/cython_support.cc
     src/utility/utility.cc
 
     include/private/deephaven/dhcore/ticking/immer_table_state.h
@@ -49,7 +49,7 @@ set(ALL_FILES
     include/public/deephaven/dhcore/container/row_sequence.h
     include/public/deephaven/dhcore/ticking/barrage_processor.h
     include/public/deephaven/dhcore/ticking/ticking.h
-        include/public/deephaven/dhcore/utility/cython_support.h
+    include/public/deephaven/dhcore/utility/cython_support.h
     include/public/deephaven/dhcore/utility/utility.h
 
     flatbuf/deephaven/flatbuf/Barrage_generated.h
@@ -73,7 +73,21 @@ set(ALL_FILES
     third_party/flatbuffers/include/flatbuffers/verifier.h
 
     third_party/roaring/include/roaring/roaring.c
-    )
+
+    third_party/fmt/include/fmt/args.h
+    third_party/fmt/include/fmt/chrono.h
+    third_party/fmt/include/fmt/color.h
+    third_party/fmt/include/fmt/compile.h
+    third_party/fmt/include/fmt/core.h
+    third_party/fmt/include/fmt/format-inl.h
+    third_party/fmt/include/fmt/format.h
+    third_party/fmt/include/fmt/os.h
+    third_party/fmt/include/fmt/ostream.h
+    third_party/fmt/include/fmt/printf.h
+    third_party/fmt/include/fmt/ranges.h
+    third_party/fmt/include/fmt/std.h
+    third_party/fmt/include/fmt/xchar.h
+)
 
 add_library(dhcore_objlib OBJECT ${ALL_FILES})
 # In order to make a shared library suitable for Cython.
@@ -83,6 +97,7 @@ target_compile_options(dhcore_objlib PRIVATE -Wall -Werror -Wno-deprecated-decla
 
 target_include_directories(dhcore_objlib PRIVATE include/private)
 target_include_directories(dhcore_objlib PRIVATE third_party/flatbuffers/include)
+target_include_directories(dhcore_objlib PRIVATE third_party/fmt/include)
 target_include_directories(dhcore_objlib PRIVATE third_party/roaring/include)
 target_include_directories(dhcore_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 
@@ -104,6 +119,7 @@ add_library(dhcore SHARED $<TARGET_OBJECTS:dhcore_objlib>)
 # TODO: How to avoid repetition here for target_include_directories?
 target_include_directories(dhcore PRIVATE include/private)
 target_include_directories(dhcore PRIVATE third_party/flatbuffers/include)
+target_include_directories(dhcore PRIVATE third_party/fmt/include)
 target_include_directories(dhcore PRIVATE third_party/roaring/include)
 target_include_directories(dhcore PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 target_link_libraries(dhcore PUBLIC ${object_link_libs})
