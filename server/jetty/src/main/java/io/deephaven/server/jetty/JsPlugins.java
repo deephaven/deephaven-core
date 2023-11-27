@@ -6,6 +6,7 @@ package io.deephaven.server.jetty;
 import io.deephaven.plugin.js.JsPlugin;
 import io.deephaven.plugin.js.JsPluginManifestPath;
 import io.deephaven.plugin.js.JsPluginPackagePath;
+import io.deephaven.plugin.js.JsPluginRegistration;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,7 +18,11 @@ import java.util.function.Consumer;
 
 import static io.deephaven.server.jetty.Json.OBJECT_MAPPER;
 
-class JsPlugins implements Consumer<JsPlugin> {
+/**
+ * Jetty-specific implementation of {@link JsPluginRegistration} to collect plugins and advertise their contents to
+ * connecting client.
+ */
+class JsPlugins implements JsPluginRegistration {
     static final String JS_PLUGINS = "js-plugins";
 
     static JsPlugins create() throws IOException {
@@ -35,7 +40,7 @@ class JsPlugins implements Consumer<JsPlugin> {
     }
 
     @Override
-    public void accept(JsPlugin jsPlugin) {
+    public void register(JsPlugin jsPlugin) {
         try {
             if (jsPlugin instanceof JsPluginPackagePath) {
                 copy((JsPluginPackagePath) jsPlugin, zipFs);
