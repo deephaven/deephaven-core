@@ -19,11 +19,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Predicate;
 
 import static io.deephaven.server.jetty.Json.OBJECT_MAPPER;
 
 class JsPluginsZipFilesystem {
     private static final String ZIP_ROOT = "/";
+    private static final Set<String> PACKAGE_JSON_IGNORED_NAMES = Set.of(".git", "CVS", ".svn", ".hg", ".lock-wscript",
+            ".wafpickle-N", ".DS_Store", "npm-debug.log", ".npmrc", "node_modules", "config.gypi", "package-lock.json");
 
     /**
      * Creates a new js plugins instance with a temporary zip filesystem.
@@ -69,7 +73,20 @@ class JsPluginsZipFilesystem {
     }
 
     private static void copyRecursive(JsPluginPackagePath src, JsPluginPackagePath dst) throws IOException {
-        CopyHelper.copyRecursive(src.path(), dst.path());
+        CopyHelper.copyRecursive(src.path(), dst.path(),
+                Predicate.not(JsPluginsZipFilesystem::isPackageJsonIgnored),
+                Predicate.not(JsPluginsZipFilesystem::isPackageJsonIgnored));
+    }
+
+
+    /**
+     * @see <a href="https://docs.npmjs.com/cli/v6/configuring-npm/package-json#files">package-json#files</a>
+     * @param path the path
+     * @return if it is ignored
+     */
+    private static boolean isPackageJsonIgnored(Path path) {
+        final String fileName = path.getFileName().toString();
+        return PACKAGE_JSON_IGNORED_NAMES.contains(fileName) || fileName.contains("*");
     }
 
     private void checkExisting(JsPluginManifestEntry info) {
