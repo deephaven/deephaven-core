@@ -55,7 +55,7 @@ class UDFNumpyTest(BaseTestCase):
                 func_str = f"""
 def test_udf(col1, col2) -> bool:
     j_array_type = _J_TYPE_J_ARRAY_TYPE_MAP[{j_dtype!r}].j_type
-    return (isinstance(col1, int) or isinstance(col1, float)) and isinstance(col2, j_array_type)
+    return isinstance(col1, int) and isinstance(col2, j_array_type)
                         """
                 exec(func_str, globals())
                 res = tbl.update("Col3 = test_udf(Col1, Col2)")
@@ -71,8 +71,7 @@ def test_udf(col1, col2) -> bool:
                 func_str = f"""
 def test_udf(col1, col2) -> bool:
     j_array_type = _J_TYPE_J_ARRAY_TYPE_MAP[{j_dtype!r}].j_type
-    return ((isinstance(col1, int) or isinstance(col1, float)) and isinstance(col2, j_array_type)
-        and np.any(np.array(col2) == {null_name}))
+    return (isinstance(col1, int) and isinstance(col2, j_array_type) and np.any(np.array(col2) == {null_name}))
                         """
                 exec(f"from deephaven.constants import {null_name}", globals())
                 exec(func_str, globals())
@@ -89,7 +88,7 @@ def test_udf(col1, col2) -> bool:
 
                 func_str = f"""
 def test_udf(col1, col2: np.ndarray[{np_dtype}]) -> bool:
-    return np.nanmean(col2) == np.mean(col2)
+    return (isinstance(col1, int) and isinstance(col2, np.ndarray) and np.nanmean(col2) == np.mean(col2))
                 """
                 exec(func_str, globals())
                 res = tbl.update("Col3 = test_udf(Col1, Col2)")
@@ -104,9 +103,12 @@ def test_udf(col1, col2: np.ndarray[{np_dtype}]) -> bool:
 
                 func_str = f"""
 def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
-    return np.nanmean(col2) != np.mean(col2)
+    return (isinstance(col1, int) and isinstance(col2, np.ndarray) and np.nanmean(col2) != np.mean(col2))
                 """
                 exec(func_str, globals())
+
+                # for floating point types, DH nulls are auto converted to np.nan
+                # for integer types, DH nulls in the array raise exceptions
                 if j_dtype in ("float", "double"):
                     res = tbl.update("Col3 = test_udf(Col1, Col2)")
                     self.assertEqual(10, res.to_string().count("true"))
@@ -122,6 +124,8 @@ def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
                 np_type = _J_TYPE_NP_DTYPE_MAP[j_dtype]
                 func = f"""
 def test_udf(col: {np_type}) -> bool:
+    if not isinstance(col, {np_type}):
+        return False
     if np.isnan(col):
         return True
     else:
@@ -135,6 +139,8 @@ def test_udf(col: {np_type}) -> bool:
 
                 func = f"""
 def test_udf(col: Optional[{np_type}]) -> bool:
+    if not isinstance(col, {np_type}):
+        return False
     if col is None:
         return True
     else:
@@ -157,11 +163,15 @@ def test_udf(col: {np_type}) -> bool:
     if np.isnan(col):
         return True
     else:
+        if not isinstance(col, {np_type}):
+            return True
         return False
 """
                 exec(func, globals())
                 with self.subTest(data_type):
                     tbl = empty_table(100).update([col1_formula, col2_formula])
+                    # for floating point types, DH nulls are auto converted to np.nan
+                    # for integer types, DH nulls in the array raise exceptions
                     if data_type in ("float", "double"):
                         res = tbl.update("Col3 = test_udf(Col2)")
                         self.assertEqual(4, res.to_string().count("true"))
@@ -174,6 +184,8 @@ def test_udf(col: Optional[{np_type}]) -> bool:
     if col is None:
         return True
     else:
+        if not isinstance(col, {np_type}):
+            return True
         return False
 """
                 exec(func, globals())

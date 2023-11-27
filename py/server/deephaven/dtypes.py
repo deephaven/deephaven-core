@@ -420,7 +420,7 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
         return None
 
 
-def _np_ndarray_component_type(t):
+def _np_ndarray_component_type(t: type) -> Optional[type]:
     """Returns the numpy ndarray component type if the type is a numpy ndarray, otherwise return None."""
 
     # Py3.8: npt.NDArray can be used in Py 3.8 as a generic alias, but a specific alias (e.g. npt.NDArray[np.int64])
@@ -428,7 +428,7 @@ def _np_ndarray_component_type(t):
     # the 1st argument is typing.Any, the 2nd argument is another generic alias of which the 1st argument is the
     # component type
     component_type = None
-    if sys.version_info.minor == 8:
+    if sys.version_info.major == 3 and sys.version_info.minor == 8:
         if isinstance(t, np._typing._generic_alias._GenericAlias) and t.__origin__ == np.ndarray:
             component_type = t.__args__[1].__args__[0]
     # Py3.9+, np.ndarray as a generic alias is only supported in Python 3.9+, also npt.NDArray is still available but a
@@ -436,7 +436,7 @@ def _np_ndarray_component_type(t):
     # when npt.NDArray is used, the 1st argument is typing.Any, the 2nd argument is another generic alias of which
     # the 1st argument is the component type
     # when np.ndarray is used, the 1st argument is the component type
-    if not component_type and sys.version_info.minor > 8:
+    if not component_type and sys.version_info.major == 3 and sys.version_info.minor > 8:
         import types
         if isinstance(t, types.GenericAlias) and (issubclass(t.__origin__, Sequence) or t.__origin__ == np.ndarray):
             nargs = len(t.__args__)

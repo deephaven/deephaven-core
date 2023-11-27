@@ -208,9 +208,26 @@ def to_sequence(v: Union[T, Sequence[T]] = None, wrapped: bool = False) -> Seque
         return tuple((unwrap(o) for o in v))
 
 
-def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool = False, no_promotion: bool = False) -> \
+def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool = False, type_promotion: bool = True) -> \
         np.ndarray:
-    """ Produces a numpy array from the DType and given Java array."""
+    """ Produces a numpy array from the DType and given Java array.
+
+    Args:
+        dtype (DType): The dtype of the array
+        j_array (jpy.JType): The Java array to convert
+        conv_null (bool): If True, convert nulls to the default value for the dtype
+        type_promotion (bool): when conv_null is True, whether to promote the dtype to np.float64 for Java integer
+            arrays if the array contains Deephaven nulls.  When True, Java integer arrays will be promoted to
+            np.float64 if the Java array contains deephaven nulls and these nulls will be converted to np.nan. When
+            False, an exception will be thrown if the Java array contains deephaven nulls. Defaults to True.
+            Note, this option has no effect on Java floating point arrays.
+
+    Returns:
+        np.ndarray: The numpy array
+
+    Raises:
+        DHError
+    """
     if dtype.is_primitive:
         np_array = np.frombuffer(j_array, dtype.np_type)
     elif dtype == dtypes.Instant:
@@ -221,7 +238,7 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool = 
         bytes_ = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(j_array)
         np_array = np.frombuffer(bytes_, dtype.np_type)
     elif dtype == dtypes.string:
-        np_array = np.array([s for s in j_array], dtypes.string.np_type)
+        np_array = np.array(j_array, dtypes.string.np_type)
     elif dtype.np_type is not np.object_:
         try:
             np_array = np.frombuffer(j_array, dtype.np_type)
@@ -231,21 +248,22 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool = 
         np_array = np.array(j_array, np.object_)
 
     if conv_null:
-        dh_null = _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)
-        if dh_null:
+        if dh_null := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
             if dtype in (dtypes.float32, dtypes.float64):
                 np_array = np.copy(np_array)
                 np_array[np_array == dh_null] = np.nan
             else:
                 if dtype is dtypes.bool_:  # promote boolean to float64
                     np_array = np.frombuffer(np_array, np.byte)
+
                 if any(np_array[np_array == dh_null]):
-                    if no_promotion:
-                        raise DHError(f"Java array contains Deephaven nulls for dtype {dtype}")
+                    if not type_promotion:
+                        raise DHError(f"Java array contains Deephaven nulls for dtype {dtype} that numpy array of the "
+                                      f"equivalent type doesn't support")
                     np_array = np_array.astype(np.float64)
                     np_array[np_array == dh_null] = np.nan
                 else:
-                    if dtype is dtypes.bool_:  # promote boolean to float64
+                    if dtype is dtypes.bool_:
                         np_array = np.frombuffer(np_array, np.bool_)
                     return np_array
 
@@ -256,8 +274,8 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
     """Produce a copy of the specified Java array as a pandas.Series object.
 
     Args:
-        j_array (jpy.JType): the Java array
         dtype (DType): the data type of the Java array
+        j_array (jpy.JType): the Java array
         conv_null (bool): whether to check for Deephaven nulls in the data and automatically replace them with
             pd.NA.
 

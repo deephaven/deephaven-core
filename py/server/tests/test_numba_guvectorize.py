@@ -22,7 +22,7 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
             for xi in x:
                 res[0] += xi
 
-        t = empty_table(10).update(["X=i%3", "Y=(long)i"]).group_by("X").update("Z=g(Y)")
+        t = empty_table(10).update(["X=i%3", "Y=ii"]).group_by("X").update("Z=g(Y)")
         m = t.meta_table
         self.assertEqual(t.columns[2].data_type, dtypes.int64)
 
@@ -78,7 +78,7 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
             res[0] = np.min(x)
             res[1] = np.max(x)
 
-        t = empty_table(10).update(["X=i%3", "Y=(long)i"]).group_by("X").update("Z=g(Y,dummy)")
+        t = empty_table(10).update(["X=i%3", "Y=ii"]).group_by("X").update("Z=g(Y,dummy)")
         self.assertEqual(t.columns[2].data_type, dtypes.long_array)
 
     def test_np_on_java_array2(self):
@@ -86,7 +86,7 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
         def g(x, res):
             res[:] = x + 5
 
-        t = empty_table(10).update(["X=i%3", "Y=(long)i"]).group_by("X").update("Z=g(Y)")
+        t = empty_table(10).update(["X=i%3", "Y=ii"]).group_by("X").update("Z=g(Y)")
         self.assertEqual(t.columns[2].data_type, dtypes.long_array)
 
 

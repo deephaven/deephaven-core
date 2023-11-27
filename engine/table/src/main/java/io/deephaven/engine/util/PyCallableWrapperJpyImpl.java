@@ -134,23 +134,21 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                         pyCallable
                                 + " has multiple signatures; this is not currently supported for numba vectorized/guvectorized functions");
             }
-            signature = params.get(0).getStringValue();
             unwrapped = pyCallable;
             // since vectorization doesn't support array type parameters, don't flag numba guvectorized as vectorized
             numbaVectorized = isNumbaVectorized;
             vectorized = isNumbaVectorized;
         } else if (pyCallable.hasAttribute("dh_vectorized")) {
-            signature = pyCallable.getAttribute("signature").toString();
             unwrapped = pyCallable.getAttribute("callable");
             numbaVectorized = false;
             vectorized = true;
         } else {
-            signature = dh_table_module.call("_encode_signature", pyCallable).toString();
             unwrapped = pyCallable;
             numbaVectorized = false;
             vectorized = false;
         }
         pyUdfDecoratedCallable = dh_table_module.call("_py_udf", unwrapped);
+        signature = pyUdfDecoratedCallable.getAttribute("signature").toString();
     }
 
     @Override
