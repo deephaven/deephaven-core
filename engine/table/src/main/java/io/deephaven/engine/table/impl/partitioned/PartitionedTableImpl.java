@@ -29,8 +29,10 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
+import io.deephaven.engine.updategraph.NotificationQueue.Dependency;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -64,10 +66,11 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private volatile WeakReference<QueryTable> memoizedMerge;
 
     /**
+     * @apiNote Only engine-internal tools should call this constructor directly
      * @see PartitionedTableFactory#of(Table, Collection, boolean, String, TableDefinition, boolean) Factory method that
      *      delegates to this method
-     * @apiNote Only engine-internal tools should call this constructor directly
      */
+    @InternalUseOnly
     public PartitionedTableImpl(
             @NotNull final Table table,
             @NotNull final Collection<String> keyColumnNames,
@@ -239,14 +242,17 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             throw new IllegalArgumentException("Unsupported filter against constituent column " + constituentColumnName
                     + " found in filters: " + filters);
         }
-        return new PartitionedTableImpl(
-                table.where(Filter.and(whereFilters)),
-                keyColumnNames,
-                uniqueKeys,
-                constituentColumnName,
-                constituentDefinition,
-                constituentChangesPermitted || table.isRefreshing(),
-                false);
+        return LivenessScopeStack.computeEnclosed(
+                () -> new PartitionedTableImpl(
+                        table.where(Filter.and(whereFilters)),
+                        keyColumnNames,
+                        uniqueKeys,
+                        constituentColumnName,
+                        constituentDefinition,
+                        constituentChangesPermitted || table.isRefreshing(),
+                        false),
+                table::isRefreshing,
+                pt -> pt.table().isRefreshing());
     }
 
     @ConcurrentMethod
@@ -259,59 +265,66 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             throw new IllegalArgumentException("Unsupported sort on constituent column " + constituentColumnName
                     + " found in sort columns: " + sortColumns);
         }
-        return new PartitionedTableImpl(
-                table.sort(sortColumns),
-                keyColumnNames,
-                uniqueKeys,
-                constituentColumnName,
-                constituentDefinition,
-                constituentChangesPermitted || table.isRefreshing(),
-                false);
+        return LivenessScopeStack.computeEnclosed(
+                () -> new PartitionedTableImpl(
+                        table.sort(sortColumns),
+                        keyColumnNames,
+                        uniqueKeys,
+                        constituentColumnName,
+                        constituentDefinition,
+                        constituentChangesPermitted || table.isRefreshing(),
+                        false),
+                table::isRefreshing,
+                pt -> pt.table().isRefreshing());
     }
 
     @ConcurrentMethod
     @Override
-    public PartitionedTableImpl transform(
+    public PartitionedTable transform(
             @Nullable final ExecutionContext executionContext,
             @NotNull final UnaryOperator<Table> transformer,
-            final boolean expectRefreshingResults) {
-        final Table resultTable;
+            final boolean expectRefreshingResults,
+            @NotNull final Dependency... dependencies) {
+        final PartitionedTable resultPartitionedTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();
         try (final SafeCloseable ignored1 = executionContext == null ? null : executionContext.open();
                 final SafeCloseable ignored2 = LivenessScopeStack.open()) {
 
-            final Table asRefreshingIfNeeded = maybeCopyAsRefreshing(table, expectRefreshingResults);
+            final Table prepared = prepareForTransform(table, expectRefreshingResults, dependencies);
 
             // Perform the transformation
-            resultTable = asRefreshingIfNeeded.update(List.of(new TableTransformationColumn(
-                    constituentColumnName, executionContext,
-                    asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer))));
-            enclosingScope.manage(resultTable);
+            final Table resultTable = prepared.update(List.of(new TableTransformationColumn(
+                    constituentColumnName,
+                    executionContext,
+                    prepared.isRefreshing() ? transformer : assertResultsStatic(transformer))));
 
             // Make sure we have a valid result constituent definition
             final Table emptyConstituent = emptyConstituent(constituentDefinition);
             final Table resultEmptyConstituent = transformer.apply(emptyConstituent);
             resultConstituentDefinition = resultEmptyConstituent.getDefinition();
-        }
 
-        // Build the result partitioned table
-        return new PartitionedTableImpl(
-                resultTable,
-                keyColumnNames,
-                uniqueKeys,
-                constituentColumnName,
-                resultConstituentDefinition,
-                constituentChangesPermitted,
-                true);
+            // Build the result partitioned table
+            resultPartitionedTable = new PartitionedTableImpl(
+                    resultTable,
+                    keyColumnNames,
+                    uniqueKeys,
+                    constituentColumnName,
+                    resultConstituentDefinition,
+                    constituentChangesPermitted,
+                    true);
+            enclosingScope.manage(resultPartitionedTable);
+        }
+        return resultPartitionedTable;
     }
 
     @Override
-    public PartitionedTableImpl partitionedTransform(
+    public PartitionedTable partitionedTransform(
             @NotNull final PartitionedTable other,
             @Nullable final ExecutionContext executionContext,
             @NotNull final BinaryOperator<Table> transformer,
-            final boolean expectRefreshingResults) {
+            final boolean expectRefreshingResults,
+            @NotNull final Dependency... dependencies) {
         // Check safety before doing any extra work
         final UpdateGraph updateGraph = table.getUpdateGraph(other.table());
         if (table.isRefreshing() || other.table().isRefreshing()) {
@@ -321,7 +334,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         // Validate join compatibility
         final MatchPair[] joinPairs = matchKeyColumns(this, other);
 
-        final Table resultTable;
+        final PartitionedTable resultPartitionedTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();
         try (final SafeCloseable ignored1 = executionContext == null ? null : executionContext.open();
@@ -334,39 +347,55 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                             .where(new MatchFilter(Inverted, RHS_CONSTITUENT, (Object) null))
                     : table.join(other.table(), Arrays.asList(joinPairs), Arrays.asList(joinAdditions));
 
-            final Table asRefreshingIfNeeded = maybeCopyAsRefreshing(joined, expectRefreshingResults);
+            final Table prepared = prepareForTransform(joined, expectRefreshingResults, dependencies);
 
-            resultTable = asRefreshingIfNeeded
-                    .update(List.of(new BiTableTransformationColumn(constituentColumnName, RHS_CONSTITUENT,
+            final Table resultTable = prepared
+                    .update(List.of(new BiTableTransformationColumn(
+                            constituentColumnName,
+                            RHS_CONSTITUENT,
                             executionContext,
-                            asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer))))
+                            prepared.isRefreshing() ? transformer : assertResultsStatic(transformer))))
                     .dropColumns(RHS_CONSTITUENT);
-            enclosingScope.manage(resultTable);
 
             // Make sure we have a valid result constituent definition
             final Table emptyConstituent1 = emptyConstituent(constituentDefinition);
             final Table emptyConstituent2 = emptyConstituent(other.constituentDefinition());
             final Table resultEmptyConstituent = transformer.apply(emptyConstituent1, emptyConstituent2);
             resultConstituentDefinition = resultEmptyConstituent.getDefinition();
-        }
 
-        // Build the result partitioned table
-        return new PartitionedTableImpl(
-                resultTable,
-                keyColumnNames,
-                uniqueKeys,
-                constituentColumnName,
-                resultConstituentDefinition,
-                constituentChangesPermitted || other.constituentChangesPermitted(),
-                true);
+            // Build the result partitioned table
+            resultPartitionedTable = new PartitionedTableImpl(
+                    resultTable,
+                    keyColumnNames,
+                    uniqueKeys,
+                    constituentColumnName,
+                    resultConstituentDefinition,
+                    constituentChangesPermitted || other.constituentChangesPermitted(),
+                    true);
+            enclosingScope.manage(resultPartitionedTable);
+        }
+        return resultPartitionedTable;
     }
 
-    private Table maybeCopyAsRefreshing(Table table, boolean expectRefreshingResults) {
-        if (!expectRefreshingResults || table.isRefreshing()) {
+    private static Table prepareForTransform(
+            @NotNull final Table table,
+            final boolean expectRefreshingResults,
+            @Nullable final Dependency[] dependencies) {
+
+        final boolean addDependencies = dependencies != null && dependencies.length > 0;
+        final boolean setRefreshing = (expectRefreshingResults || addDependencies) && !table.isRefreshing();
+
+        if (!addDependencies && !setRefreshing) {
             return table;
         }
+
         final Table copied = ((QueryTable) table.coalesce()).copy();
-        copied.setRefreshing(true);
+        if (setRefreshing) {
+            copied.setRefreshing(true);
+        }
+        if (addDependencies) {
+            Arrays.stream(dependencies).forEach(copied::addParentReference);
+        }
         return copied;
     }
 
@@ -468,7 +497,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     /**
      * Validate that {@code lhs} and {@code rhs} have compatible key columns, allowing
-     * {@link #partitionedTransform(PartitionedTable, BinaryOperator)}. Compute the matching pairs of key column names.
+     * {@link PartitionedTable#partitionedTransform partitionedTransform}. Compute the matching pairs of key column
+     * names.
      *
      * @param lhs The first partitioned table
      * @param rhs The second partitioned table

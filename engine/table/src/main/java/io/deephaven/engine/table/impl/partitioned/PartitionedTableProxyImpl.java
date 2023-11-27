@@ -13,20 +13,18 @@ import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
-import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
+import io.deephaven.engine.updategraph.NotificationQueue.Dependency;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -182,12 +180,20 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             if (refreshingResults && joinMatches != null) {
                 updateGraph.checkInitiateSerialTableOperation();
             }
-            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-                return new PartitionedTableProxyImpl(
-                        target.transform(context, ct -> transformer.apply(ct, otherTable), refreshingResults),
-                        requireMatchingKeys,
-                        sanityCheckJoins);
-            }
+
+            final Dependency[] dependencies = otherTable.isRefreshing()
+                    ? new Dependency[] {otherTable}
+                    : new Dependency[0];
+
+            return ExecutionContext.getContext().withUpdateGraph(updateGraph).apply(
+                    () -> new PartitionedTableProxyImpl(
+                            target.transform(
+                                    context,
+                                    ct -> transformer.apply(ct, otherTable),
+                                    refreshingResults,
+                                    dependencies),
+                            requireMatchingKeys,
+                            sanityCheckJoins));
         }
         if (other instanceof PartitionedTable.Proxy) {
             final PartitionedTable.Proxy otherProxy = (PartitionedTable.Proxy) other;
@@ -197,32 +203,45 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             if (refreshingResults) {
                 updateGraph.checkInitiateSerialTableOperation();
             }
-            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return ExecutionContext.getContext().withUpdateGraph(updateGraph)
+                    .apply(() -> LivenessScopeStack.computeEnclosed(
+                            () -> {
+                                final MatchPair[] keyColumnNamePairs =
+                                        PartitionedTableImpl.matchKeyColumns(target, otherTarget);
+                                final DependentValidation uniqueKeys = requireMatchingKeys
+                                        ? matchingKeysValidation(target, otherTarget, keyColumnNamePairs)
+                                        : null;
+                                final DependentValidation overlappingLhsJoinKeys =
+                                        sanityCheckJoins && joinMatches != null
+                                                ? overlappingLhsJoinKeysValidation(target, joinMatches)
+                                                : null;
+                                final DependentValidation overlappingRhsJoinKeys =
+                                        sanityCheckJoins && joinMatches != null
+                                                ? overlappingRhsJoinKeysValidation(otherTarget, joinMatches)
+                                                : null;
 
-                final MatchPair[] keyColumnNamePairs = PartitionedTableImpl.matchKeyColumns(target, otherTarget);
-                final DependentValidation uniqueKeys = requireMatchingKeys
-                        ? matchingKeysValidation(target, otherTarget, keyColumnNamePairs)
-                        : null;
-                final DependentValidation overlappingLhsJoinKeys = sanityCheckJoins && joinMatches != null
-                        ? overlappingLhsJoinKeysValidation(target, joinMatches)
-                        : null;
-                final DependentValidation overlappingRhsJoinKeys = sanityCheckJoins && joinMatches != null
-                        ? overlappingRhsJoinKeysValidation(otherTarget, joinMatches)
-                        : null;
+                                final Table validatedLhsTable =
+                                        validated(target.table(), uniqueKeys, overlappingLhsJoinKeys);
+                                final Table validatedRhsTable =
+                                        validated(otherTarget.table(), uniqueKeys, overlappingRhsJoinKeys);
+                                final PartitionedTable lhsToUse = maybeRewrap(validatedLhsTable, target);
+                                final PartitionedTable rhsToUse = maybeRewrap(validatedRhsTable, otherTarget);
 
-                final Table validatedLhsTable = validated(target.table(), uniqueKeys, overlappingLhsJoinKeys);
-                final Table validatedRhsTable = validated(otherTarget.table(), uniqueKeys, overlappingRhsJoinKeys);
-                final PartitionedTable lhsToUse = maybeRewrap(validatedLhsTable, target);
-                final PartitionedTable rhsToUse = maybeRewrap(validatedRhsTable, otherTarget);
-
-                return new PartitionedTableProxyImpl(
-                        lhsToUse.partitionedTransform(rhsToUse, context, transformer, refreshingResults),
-                        requireMatchingKeys,
-                        sanityCheckJoins);
-            }
+                                return new PartitionedTableProxyImpl(
+                                        lhsToUse.partitionedTransform(rhsToUse, context, transformer,
+                                                refreshingResults),
+                                        requireMatchingKeys,
+                                        sanityCheckJoins);
+                            },
+                            () -> refreshingResults,
+                            ptp -> refreshingResults));
         }
-        throw new IllegalArgumentException("Unexpected TableOperations input " + other
-                + ", expected Table or PartitionedTable.Proxy");
+        throw onUnexpectedTableOperations(other);
+    }
+
+    private static IllegalArgumentException onUnexpectedTableOperations(@NotNull TableOperations<?, ?> other) {
+        return new IllegalArgumentException(String.format(
+                "Unexpected TableOperations input %s, expected Table or PartitionedTable.Proxy", other));
     }
 
     /**
@@ -246,7 +265,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     private static Table validated(
             @NotNull final Table parent,
-            @NotNull final DependentValidation... dependentValidationsIn) {
+            final DependentValidation... dependentValidationsIn) {
         if (dependentValidationsIn.length == 0 || !parent.isRefreshing()) {
             return parent;
         }
@@ -389,7 +408,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         }
     }
 
-    private static PartitionedTable maybeRewrap(@NotNull final Table table, @NotNull final PartitionedTable existing) {
+    private static PartitionedTable maybeRewrap(@NotNull final Table table,
+            @NotNull final PartitionedTable existing) {
         return table == existing.table()
                 ? existing
                 : new PartitionedTableImpl(table, existing.keyColumnNames(), existing.uniqueKeys(),
@@ -553,11 +573,28 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
             TableOperations<?, ?> initialGroups, Collection<? extends ColumnName> groupByColumns) {
         if (initialGroups == null) {
-            return basicTransform(true, ct -> ct.aggBy(aggregations, preserveEmpty, null, groupByColumns));
+            return basicTransform(
+                    true,
+                    ct -> ct.aggBy(aggregations, preserveEmpty, null, groupByColumns));
         }
-        return complexTransform(true, initialGroups,
-                (ct, ot) -> ct.aggBy(aggregations, preserveEmpty, ot, groupByColumns),
-                null);
+        if (initialGroups instanceof Table) {
+            // Force a consistent view of initial groups table to be used for all current and future constituents
+            final Table initialGroupsTable = LivenessScopeStack.computeEnclosed(
+                    () -> ((Table) initialGroups).selectDistinct(groupByColumns).snapshot(),
+                    () -> ((Table) initialGroups).isRefreshing(),
+                    Table::isRefreshing);
+            return basicTransform(
+                    true,
+                    ct -> ct.aggBy(aggregations, preserveEmpty, initialGroupsTable, groupByColumns));
+        }
+        if (initialGroups instanceof PartitionedTable.Proxy) {
+            return complexTransform(
+                    true,
+                    initialGroups,
+                    (ct, ot) -> ct.aggBy(aggregations, preserveEmpty, ot, groupByColumns),
+                    null);
+        }
+        throw onUnexpectedTableOperations(initialGroups);
     }
 
     @Override
