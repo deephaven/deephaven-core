@@ -22,10 +22,10 @@ import static io.deephaven.server.jetty.Json.OBJECT_MAPPER;
  * Jetty-specific implementation of {@link JsPluginRegistration} to collect plugins and advertise their contents to
  * connecting client.
  */
-class JsPlugins implements JsPluginRegistration {
+public class JsPlugins implements JsPluginRegistration {
     static final String JS_PLUGINS = "js-plugins";
 
-    static JsPlugins create() throws IOException {
+    public static JsPlugins create() throws IOException {
         return new JsPlugins(JsPluginsZipFilesystem.create());
     }
 
