@@ -6,6 +6,7 @@ package io.deephaven.plugin.js;
 public interface JsPluginRegistration {
     /**
      * Handles registration of a {@link JsPlugin} instance.
+     * 
      * @param plugin the registered plugin
      */
     void register(JsPlugin plugin);

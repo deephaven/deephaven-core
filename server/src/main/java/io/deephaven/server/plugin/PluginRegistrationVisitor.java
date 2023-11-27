@@ -14,8 +14,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * Plugin {@link io.deephaven.plugin.Registration.Callback} implementation that forwards registered plugins
- * to a {@link ObjectTypeRegistration} or {@link JsPluginRegistration}.
+ * Plugin {@link io.deephaven.plugin.Registration.Callback} implementation that forwards registered plugins to a
+ * {@link ObjectTypeRegistration} or {@link JsPluginRegistration}.
  */
 final class PluginRegistrationVisitor
         implements io.deephaven.plugin.Registration.Callback, Plugin.Visitor<PluginRegistrationVisitor> {
