@@ -240,11 +240,26 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
         return buildRowRedirection(leftTable, exactMatch, leftRedirections::getUnsafe, redirectionType);
     }
 
-    public WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch,
-            long groupingSize, IntegerArraySource leftHashSlots, ColumnSource<RowSet> leftIndices,
+    public WritableRowRedirection buildGroupedRowRedirectionFromRedirections(
+            QueryTable leftTable,
+            boolean exactMatch,
+            RowSet indexTableRowSet,
+            LongArraySource leftRedirections,
+            ColumnSource<RowSet> indexRowSets,
             JoinControl.RedirectionType redirectionType) {
-        return buildGroupedRowRedirection(leftTable, exactMatch, groupingSize,
-                (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), leftIndices,
+        return buildGroupedRowRedirection(leftTable, exactMatch, indexTableRowSet,
+                leftRedirections::getUnsafe, indexRowSets, redirectionType);
+    }
+
+    public WritableRowRedirection buildGroupedRowRedirectionFromHashSlots(
+            QueryTable leftTable,
+            boolean exactMatch,
+            RowSet indexTableRowSet,
+            IntegerArraySource leftHashSlots,
+            ColumnSource<RowSet> indexRowSets,
+            JoinControl.RedirectionType redirectionType) {
+        return buildGroupedRowRedirection(leftTable, exactMatch, indexTableRowSet,
+                (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), indexRowSets,
                 redirectionType);
     }
 

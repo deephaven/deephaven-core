@@ -29,9 +29,11 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
 
     public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch, IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType);
     public abstract WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType);
-    public abstract WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, long groupingSize, IntegerArraySource leftHashSlots, ColumnSource<RowSet> leftIndices, JoinControl.RedirectionType redirectionType);
+    public abstract WritableRowRedirection buildGroupedRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, RowSet indexTableRowSet, LongArraySource leftRedirections, ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
+    public abstract WritableRowRedirection buildGroupedRowRedirectionFromHashSlots(QueryTable leftTable, boolean exactMatch, RowSet indexTableRowSet, IntegerArraySource leftHashSlots, ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
 
-    protected WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, long groupingSize, LongUnaryOperator groupPositionToRightSide, ColumnSource<RowSet> leftIndices, JoinControl.RedirectionType redirectionType) {
+    protected WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, RowSet indexTableRowSet, LongUnaryOperator groupPositionToRightSide, ColumnSource<RowSet> leftRowSets, JoinControl.RedirectionType redirectionType) {
+        final int rowSetCount = indexTableRowSet.intSize();
         switch (redirectionType) {
             case Contiguous: {
                 if (!leftTable.isFlat()) {
@@ -39,10 +41,10 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
                 }
                 // we can use an array, which is perfect for a small enough flat table
                 final long[] innerIndex = new long[leftTable.intSize("contiguous redirection build")];
-                for (int ii = 0; ii < groupingSize; ++ii) {
+                for (int ii = 0; ii < rowSetCount; ++ii) {
                     final long rightSide = groupPositionToRightSide.applyAsLong(ii);
                     checkExactMatch(exactMatch, ii, rightSide);
-                    final RowSet leftRowSetForKey = leftIndices.get(ii);
+                    final RowSet leftRowSetForKey = leftRowSets.get(indexTableRowSet.get(ii));
                     leftRowSetForKey.forAllRowKeys((long ll) -> innerIndex[(int) ll] = rightSide);
                 }
                 return new ContiguousWritableRowRedirection(innerIndex);
@@ -50,12 +52,12 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
             case Sparse: {
                 final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
 
-                for (int ii = 0; ii < groupingSize; ++ii) {
+                for (int ii = 0; ii < rowSetCount; ++ii) {
                     final long rightSide = groupPositionToRightSide.applyAsLong(ii);
 
                     checkExactMatch(exactMatch, ii, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
-                        final RowSet leftRowSetForKey = leftIndices.get(ii);
+                        final RowSet leftRowSetForKey = leftRowSets.get(indexTableRowSet.get(ii));
                         leftRowSetForKey.forAllRowKeys((long ll) -> sparseRedirections.set(ll, rightSide));
                     }
                 }
@@ -64,12 +66,12 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
             case Hash: {
                 final WritableRowRedirection rowRedirection = WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
 
-                for (int ii = 0; ii < groupingSize; ++ii) {
+                for (int ii = 0; ii < rowSetCount; ++ii) {
                     final long rightSide = groupPositionToRightSide.applyAsLong(ii);
 
                     checkExactMatch(exactMatch, ii, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
-                        final RowSet leftRowSetForKey = leftIndices.get(ii);
+                        final RowSet leftRowSetForKey = leftRowSets.get(indexTableRowSet.get(ii));
                         leftRowSetForKey.forAllRowKeys((long ll) -> rowRedirection.put(ll, rightSide));
                     }
                 }

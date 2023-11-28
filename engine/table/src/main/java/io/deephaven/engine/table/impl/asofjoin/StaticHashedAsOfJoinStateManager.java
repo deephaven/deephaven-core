@@ -24,9 +24,9 @@ public abstract class StaticHashedAsOfJoinStateManager extends StaticAsOfJoinSta
     public abstract void probeRight(RowSequence rightRowSet, ColumnSource<?>[] rightSources);
 
     public abstract int getTableSize();
-    public abstract RowSet getLeftIndex(int slot);
-    public abstract RowSet getRightIndex(int slot);
+    public abstract RowSet getLeftRowSet(int slot);
+    public abstract RowSet getRightRowset(int slot);
 
-    public abstract void convertRightBuildersToIndex(IntegerArraySource slots, int slotCount);
-    public abstract void convertRightIndexTable(IntegerArraySource slots, int slotCount, ColumnSource<RowSet> rowSetSource);
+    public abstract void convertRightBuildersToRowSet(IntegerArraySource slots, int slotCount);
+    public abstract void populateRightRowSetsFromIndexTable(IntegerArraySource slots, int slotCount, ColumnSource<RowSet> rowSetSource);
 }

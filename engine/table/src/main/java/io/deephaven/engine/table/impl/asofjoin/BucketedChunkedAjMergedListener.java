@@ -193,7 +193,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
                     rowRedirection.removeAll(leftRemoved);
 
-                    final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsaOrIndex(slot, leftIndexOutput);
+                    final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsaOrRowSet(slot, leftIndexOutput);
                     if (leftSsa == null) {
                         leftIndexOutput.getValue().remove(leftRemoved);
                         leftIndexOutput.setValue(null);
@@ -239,7 +239,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                             sequentialBuilders.ensureCapacity(relevantShift.size());
                             slots.ensureCapacity(relevantShift.size());
 
-                            final int shiftedSlotCount = asOfJoinStateManager.gatherShiftIndex(relevantShift,
+                            final int shiftedSlotCount = asOfJoinStateManager.gatherShiftRowSet(relevantShift,
                                     leftKeySources, slots, sequentialBuilders);
 
                             for (int slotIndex = 0; slotIndex < shiftedSlotCount; ++slotIndex) {
@@ -252,7 +252,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                 if ((state & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_EMPTY) {
                                     // if the left is empty, we should be a RowSet entry rather than an SSA, and we can
                                     // not be empty, because we are responsive
-                                    final WritableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
+                                    final WritableRowSet leftRowSet = asOfJoinStateManager.getLeftRowSet(slot);
                                     shiftDataForSlot.apply(leftRowSet);
                                     shiftedRowSet.close();
                                     leftRowSet.compact();
@@ -322,7 +322,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
                     try (final RowSet rightRemoved = indexFromBuilder(slotIndex)) {
                         final SegmentedSortedArray rightSsa =
-                                asOfJoinStateManager.getRightSsaOrIndex(slot, rowSetOutput);
+                                asOfJoinStateManager.getRightSsaOrRowSet(slot, rowSetOutput);
                         if (rightSsa == null) {
                             rowSetOutput.getValue().remove(rightRemoved);
                             continue;
@@ -372,7 +372,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                             sequentialBuilders.ensureCapacity(relevantShift.size());
                             slots.ensureCapacity(relevantShift.size());
 
-                            final int shiftedSlotCount = asOfJoinStateManager.gatherShiftIndex(relevantShift,
+                            final int shiftedSlotCount = asOfJoinStateManager.gatherShiftRowSet(relevantShift,
                                     rightKeySources, slots, sequentialBuilders);
 
                             for (int slotIndex = 0; slotIndex < shiftedSlotCount; ++slotIndex) {
@@ -392,7 +392,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                 if (leftSsa == null) {
                                     // if the left is empty, we should be a RowSet entry rather than an SSA, and we can
                                     // not be empty, because we are responsive
-                                    final WritableRowSet rightRowSet = asOfJoinStateManager.getRightIndex(slot);
+                                    final WritableRowSet rightRowSet = asOfJoinStateManager.getRightRowSet(slot);
                                     shiftDataForSlot.apply(rightRowSet);
                                     shiftedRowSet.close();
                                     rightRowSet.compact();
@@ -478,26 +478,26 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                             makeRightIndex = true;
                             break;
 
-                        case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_INDEX:
+                        case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_ROWSET:
                         case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_BUILDER:
                             updateRightIndex = true;
                             break;
 
                         case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_EMPTY:
-                        case ENTRY_LEFT_IS_INDEX | ENTRY_RIGHT_IS_EMPTY:
+                        case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_EMPTY:
                         case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_EMPTY:
                             processInitial = true;
                             break;
 
-                        case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_INDEX:
-                        case ENTRY_LEFT_IS_INDEX | ENTRY_RIGHT_IS_INDEX:
-                        case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_INDEX:
+                        case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_ROWSET:
+                        case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_ROWSET:
+                        case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_ROWSET:
                         case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_BUILDER:
-                        case ENTRY_LEFT_IS_INDEX | ENTRY_RIGHT_IS_BUILDER:
+                        case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_BUILDER:
                         case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_BUILDER:
                         case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_SSA:
                         case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_SSA:
-                        case ENTRY_LEFT_IS_INDEX | ENTRY_RIGHT_IS_SSA:
+                        case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_SSA:
                             throw new IllegalStateException();
 
                         case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_SSA:
@@ -505,11 +505,11 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     }
 
                     if (makeRightIndex) {
-                        asOfJoinStateManager.setRightIndex(slot, rightAdded);
+                        asOfJoinStateManager.setRightRowSet(slot, rightAdded);
                         continue;
                     }
                     if (updateRightIndex) {
-                        asOfJoinStateManager.getRightIndex(slot).insert(rightAdded);
+                        asOfJoinStateManager.getRightRowSet(slot).insert(rightAdded);
                         rightAdded.close();
                         continue;
                     }
@@ -645,26 +645,26 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         break;
 
                     case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_EMPTY:
-                    case ENTRY_LEFT_IS_INDEX | ENTRY_RIGHT_IS_EMPTY:
+                    case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_EMPTY:
                         updateLeftIndex = true;
                         break;
                     case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_EMPTY:
                         throw new IllegalStateException();
 
                     case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_BUILDER:
-                    case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_INDEX:
+                    case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_ROWSET:
                         processInitial = true;
                         break;
 
                     case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_BUILDER:
-                    case ENTRY_LEFT_IS_INDEX | ENTRY_RIGHT_IS_BUILDER:
+                    case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_BUILDER:
                     case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_BUILDER:
-                    case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_INDEX:
-                    case ENTRY_LEFT_IS_INDEX | ENTRY_RIGHT_IS_INDEX:
-                    case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_INDEX:
+                    case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_ROWSET:
+                    case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_ROWSET:
+                    case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_ROWSET:
                     case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_SSA:
                     case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_SSA:
-                    case ENTRY_LEFT_IS_INDEX | ENTRY_RIGHT_IS_SSA:
+                    case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_SSA:
                         throw new IllegalStateException(
                                 "Bad state: " + state + ", slot=" + slot + ", slotIndex=" + slotIndex);
 
@@ -675,11 +675,11 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 final RowSet leftAdded = indexFromBuilder(slotIndex);
 
                 if (makeLeftIndex) {
-                    asOfJoinStateManager.setLeftIndex(slot, leftAdded);
+                    asOfJoinStateManager.setLeftRowSet(slot, leftAdded);
                     continue;
                 }
                 if (updateLeftIndex) {
-                    final WritableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
+                    final WritableRowSet leftRowSet = asOfJoinStateManager.getLeftRowSet(slot);
                     leftRowSet.insert(leftAdded);
                     leftAdded.close();
                     leftRowSet.compact();

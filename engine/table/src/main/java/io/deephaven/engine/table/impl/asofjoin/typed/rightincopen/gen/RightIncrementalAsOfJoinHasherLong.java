@@ -66,7 +66,7 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
                             if (sequentialBuilders != null) {
                                 addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
                             } else {
-                                addAlternateLeftIndex(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState);
+                                addAlternateLeftKey(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState);
                             }
                             break MAIN_SEARCH;
                         } else {
@@ -82,7 +82,7 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
                         addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
                         stateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY));
                     } else {
-                        addLeftIndex(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0);
+                        addLeftKey(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0);
                     }
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
@@ -92,7 +92,7 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
                     if (sequentialBuilders != null) {
                         addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
                     } else {
-                        addLeftIndex(tableLocation, rowKeyChunk.get(chunkPosition), rowState);
+                        addLeftKey(tableLocation, rowKeyChunk.get(chunkPosition), rowState);
                     }
                     break;
                 } else {
@@ -128,7 +128,7 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
                             if (sequentialBuilders != null) {
                                 addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
                             } else {
-                                addAlternateRightIndex(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState);
+                                addAlternateRightKey(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState);
                             }
                             break MAIN_SEARCH;
                         } else {
@@ -144,7 +144,7 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
                         addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
                         stateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY));
                     } else {
-                        addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0);
+                        addRightKey(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0);
                     }
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
@@ -153,7 +153,7 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
                     if (sequentialBuilders != null) {
                         addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
                     } else {
-                        addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition), rowState);
+                        addRightKey(tableLocation, rowKeyChunk.get(chunkPosition), rowState);
                     }
                     break;
                 } else {
@@ -183,7 +183,7 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
                         hashSlots.set(cookie, tableLocation | mainInsertMask);
                         addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
                     } else {
-                        addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition), rowState);
+                        addRightKey(tableLocation, rowKeyChunk.get(chunkPosition), rowState);
                     }
                     found = true;
                     break;
@@ -202,7 +202,7 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
                                 hashSlots.set(cookie, alternateTableLocation | alternateInsertMask);
                                 addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
                             } else {
-                                addAlternateRightIndex(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState);
+                                addAlternateRightKey(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState);
                             }
                             break;
                         }

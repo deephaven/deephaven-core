@@ -19,6 +19,7 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
     void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, InitialBuildContext ibc);
     void compactAll();
 
+    WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, InitialBuildContext ibc, ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
     WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, InitialBuildContext ibc, JoinControl.RedirectionType redirectionType);
 
     Context makeProbeContext(ColumnSource<?>[] probeSources, long maxSize);
