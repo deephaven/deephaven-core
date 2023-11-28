@@ -34,6 +34,7 @@ class BucketingContext implements SafeCloseable {
     final ColumnSource<?>[] leftSources;
     final ColumnSource<?>[] rightSources;
     final ColumnSource<?>[] originalLeftSources;
+    final ColumnSource<?>[] originalRightSources;
 
     ToIntFunctor<Values> uniqueFunctor = null;
     boolean uniqueValues = false;
@@ -59,13 +60,14 @@ class BucketingContext implements SafeCloseable {
         rightSources = Arrays.stream(columnsToMatch).map(mp -> rightTable.getColumnSource(mp.rightColumn))
                 .toArray(ColumnSource[]::new);
         originalLeftSources = Arrays.copyOf(leftSources, leftSources.length);
+        originalRightSources = Arrays.copyOf(rightSources, rightSources.length);
 
         keyColumnCount = leftSources.length;
-        useLeftIndex = control.useDataIndex(leftTable, leftSources);
+        useLeftIndex = control.useDataIndex(leftTable, originalLeftSources);
         // note that the naturalJoin operation ignores this field, because there is never any point to reading or
         // processing grouping information when we have a single row on the right side. Cross join just doesn't support
         // grouping at all (yuck).
-        useRightIndex = control.useDataIndex(rightTable, rightSources);
+        useRightIndex = control.useDataIndex(rightTable, originalRightSources);
 
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             final Class<?> leftType = TypeUtils.getUnboxedTypeIfBoxed(leftSources[ii].getType());

@@ -54,7 +54,7 @@ public class JoinControl {
     }
 
     boolean buildLeft(QueryTable leftTable, Table rightTable) {
-        return !leftTable.isRefreshing() && leftTable.size() <= rightTable.size();
+        return leftTable.size() <= rightTable.size();
     }
 
     boolean considerSymbolTables(QueryTable leftTable, @SuppressWarnings("unused") QueryTable rightTable,
