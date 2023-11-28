@@ -64,7 +64,11 @@ and are published as the following:
 * [C++ Client API](https://deephaven.io/core/client-api/cpp/)
 * [C++ Examples](https://deephaven.io/core/client-api/cpp-examples/)
 * [R Client API](https://deephaven.io/core/client-api/r/)
-* [TypeScript Client API](https://deephaven.io/core/client-api/javascript/)
+* [JavaScript/TypeScript Client API](https://deephaven.io/core/client-api/javascript/)
+
+### Deephaven JS API types
+The npm package `@deephaven/jsapi-types` allow TypeScript clients to use their IDE's autocomplete and compiler's typechecks.
+It is released to [npm](https://www.npmjs.com/package/@deephaven/jsapi-types).
 
 ## Release process
 
@@ -265,6 +269,7 @@ mention the version explicitly. These files are listed below:
 #
 gradle.properties
 R/rdeephaven/DESCRIPTION
+web/client-api/types/package.json
 ```
 
 This leaves the files "ready" for the next regular release, and also ensures any build done from
