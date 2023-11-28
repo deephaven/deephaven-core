@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
  * success. This is useful anytime an operation needs to listen to and snapshot one data source while also snapshotting
  * another.
  */
-public final class OperationSnapshotControlEx extends OperationSnapshotControl {
+public class OperationSnapshotControlEx extends OperationSnapshotControl {
 
     private static final Logger log = LoggerFactory.getLogger(OperationSnapshotControlEx.class);
 

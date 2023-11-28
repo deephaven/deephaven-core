@@ -224,7 +224,8 @@ public class SortListener extends BaseTable.ListenerImpl {
             final RowSet addedAndModified =
                     modifiedNeedsSorting ? closer.add(upstream.added().union(upstream.modified())) : upstream.added();
             final long[] addedInputKeys =
-                    SortHelpers.getSortedKeys(order, columnsToSortBy, addedAndModified, false, false).getArrayMapping();
+                    SortHelpers.getSortedKeys(order, columnsToSortBy, null, addedAndModified, false, false)
+                            .getArrayMapping();
             final long[] addedOutputKeys = new long[addedInputKeys.length];
             final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified().intSize()]
                     : CollectionUtil.ZERO_LENGTH_LONG_ARRAY;
