@@ -96,7 +96,7 @@ We also separate out the release branch from `upstream/main` with an empty commi
 ```shell
 $ git fetch upstream
 $ git checkout upstream/main
-$ ./gradlew printVersion -q
+$ ./gradlew printVersion -PdeephavenBaseQualifier= -q
 $ git checkout -b release/vX.Y.Z
 $ git commit --allow-empty -m "Cut for X.Y.Z"
 ```

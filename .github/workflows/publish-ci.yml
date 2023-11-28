@@ -63,7 +63,6 @@ jobs:
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.CI_AT_DEEPHAVEN_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.CI_AT_DEEPHAVEN_PASSWORD }}
           ORG_GRADLE_PROJECT_signingRequired: true
-          ORG_GRADLE_PROJECT_deephavenBaseQualifier: ""
 
       - name: Upload Artifacts
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}

@@ -48,3 +48,9 @@ org.gradle.java.installations.auto-detect=false
 org.gradle.workers.max=${MAX_WORKERS}
 org.gradle.java.installations.paths=${JAVA_INSTALL_PATHS}
 EOF
+
+# Ensure we remove the -SNAPSHOT qualifier for release branch workflows
+if [[ "${GITHUB_REF}" == refs/heads/release/v* ]];
+then
+  echo "deephavenBaseQualifier="
+fi
