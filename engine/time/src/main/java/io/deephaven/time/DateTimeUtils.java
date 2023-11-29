@@ -433,7 +433,7 @@ public class DateTimeUtils {
             date = toLocalDate(epochMillisToInstant(currentTimeMillis), timeZone);
             str = formatDate(date);
             valueExpirationTimeMillis =
-                    epochMillis(atMidnight(epochNanosToInstant(millisToNanos(currentTimeMillis) + DAY), timeZone));
+                    epochMillis(atMidnight(epochMillisToZonedDateTime(currentTimeMillis, timeZone)).plusDays(1));
         }
     }
 
