@@ -33,6 +33,7 @@ cdef extern from *:
     void assign_shared_ptr(std::shared_ptr<T1> &lhs, const std::shared_ptr<T2> &rhs) {
          lhs = rhs;
     }
+break+++++++++fail++++++++++WRONG
     """
     void assign_shared_ptr[T1, T2](shared_ptr[T1] &lhs, shared_ptr[T2] &rhs)
 
