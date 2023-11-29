@@ -1705,6 +1705,10 @@ public class ChunkedOperatorAggregationHelper {
         outputPosition.setValue(0);
         final OperatorAggregationStateManager stateManager = stateManagerSupplier.get();
 
+        if (initialKeys.isEmpty()) {
+            return stateManager;
+        }
+
         final ColumnSource<?>[] keyColumnsToInsert;
         final boolean closeRowsToInsert;
         final RowSequence rowsToInsert;
