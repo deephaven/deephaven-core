@@ -13,10 +13,9 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.*;
@@ -223,8 +222,8 @@ public class SortHelpers {
      * need to call copyPrev.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-            RowSet rowSetToSort, boolean usePrev) {
-        return getSortedKeys(order, columnsToSortBy, rowSetToSort, usePrev, sortBySymbolTable);
+            DataIndex dataIndex, RowSet rowSetToSort, boolean usePrev) {
+        return getSortedKeys(order, columnsToSortBy, dataIndex, rowSetToSort, usePrev, sortBySymbolTable);
     }
 
     /**
@@ -232,38 +231,26 @@ public class SortHelpers {
      * need to call copyPrev.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-            RowSet rowSetToSort, boolean usePrev, boolean allowSymbolTable) {
+            DataIndex dataIndex, RowSet rowSetToSort, boolean usePrev, boolean allowSymbolTable) {
         if (rowSetToSort.size() == 0) {
             return EMPTY_SORT_MAPPING;
         }
 
+        // If the index has the same number of columns, we have a full index.
+        if (dataIndex != null && dataIndex.keyColumnNames().length == columnsToSortBy.length) {
+            return getSortMappingIndexed(order, columnsToSortBy, dataIndex, rowSetToSort, usePrev);
+        }
+
         if (columnsToSortBy.length == 1) {
-            if (rowSetToSort.isTracking()
-                    && DataIndexer.of(rowSetToSort.trackingCast()).hasDataIndex(columnsToSortBy)) {
-                if (!usePrev || columnsToSortBy[0].isImmutable()) {
-                    return getSortMappingIndexed(order, columnsToSortBy, rowSetToSort.trackingCast());
-                } else {
-                    return getSortMappingOne(order[0], columnsToSortBy[0], rowSetToSort, usePrev);
-                }
+            if (allowSymbolTable && columnsToSortBy[0] instanceof SymbolTableSource
+                    && ((SymbolTableSource<Comparable<?>>) columnsToSortBy[0]).hasSymbolTable(rowSetToSort)) {
+                return doSymbolTableMapping(order[0], columnsToSortBy[0], rowSetToSort, usePrev);
             } else {
-                if (allowSymbolTable && columnsToSortBy[0] instanceof SymbolTableSource
-                        && ((SymbolTableSource<Comparable<?>>) columnsToSortBy[0]).hasSymbolTable(rowSetToSort)) {
-                    return doSymbolTableMapping(order[0], columnsToSortBy[0], rowSetToSort, usePrev);
-                } else {
-                    return getSortMappingOne(order[0], columnsToSortBy[0], rowSetToSort, usePrev);
-                }
-            }
-        } else {
-            // Multi-column data indexes that cover the full column set.
-            if (rowSetToSort.isTracking()) {
-                final DataIndexer dataIndexer = DataIndexer.of(rowSetToSort.trackingCast());
-                if (dataIndexer.hasDataIndex(columnsToSortBy)) {
-                    return getSortMappingIndexed(order, columnsToSortBy, rowSetToSort.trackingCast());
-                }
+                return getSortMappingOne(order[0], columnsToSortBy[0], rowSetToSort, usePrev);
             }
         }
 
-        return getSortMappingMulti(order, columnsToSortBy, rowSetToSort, usePrev);
+        return getSortMappingMulti(order, columnsToSortBy, dataIndex, rowSetToSort, usePrev);
     }
 
     private static class SparseSymbolMapping {
@@ -515,12 +502,14 @@ public class SortHelpers {
     }
 
     private static SortMapping getSortMappingIndexed(SortingOrder order[], ColumnSource<Comparable<?>>[] columnSources,
-            TrackingRowSet rowSet) {
-        final DataIndex index = DataIndexer.of(rowSet).getDataIndex(columnSources);
-        final Table indexTable = index.table();
-        final Map<ColumnSource<?>, String> map = index.keyColumnMap();
+            DataIndex dataIndex, RowSet rowSet, boolean usePrev) {
+        Assert.neqNull(dataIndex, "dataIndex");
+
+        final Map<ColumnSource<?>, String> map = dataIndex.keyColumnMap();
         final String[] keyColumnNames = Arrays.stream(columnSources).map(col -> map.get(col)).toArray(String[]::new);
-        final String rowSetColumnName = index.rowSetColumnName();
+        final String rowSetColumnName = dataIndex.rowSetColumnName();
+
+        final Table indexTable = usePrev ? ((BaseDataIndex) dataIndex).prevTable() : dataIndex.table();
 
         // Sort the index table incrementally by the reverse column order.
         Table sortedIndexTable = indexTable;
@@ -570,7 +559,7 @@ public class SortHelpers {
     }
 
     private static SortMapping getSortMappingMulti(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnSources,
-            RowSet rowSet, boolean usePrev) {
+            DataIndex dataIndex, RowSet rowSet, boolean usePrev) {
         Assert.gt(columnSources.length, "columnSources.length", 1);
         final int sortSize = rowSet.intSize();
 
@@ -582,19 +571,18 @@ public class SortHelpers {
 
         ColumnSource<Comparable<?>> columnSource = columnSources[0];
 
-        // Can we utilize existing index on the first column
-        if (rowSet.isTracking() && DataIndexer.of(rowSet.trackingCast()).hasDataIndex(columnSources[0])) {
-            final DataIndex dataIndex = DataIndexer.of(rowSet.trackingCast()).getDataIndex(columnSources[0])
-                    .transform(DataIndexTransformer.builder()
-                            .intersectRowSet(rowSet)
-                            .build());
-            Table indexTable = dataIndex.table();
+        // Can we utilize an existing index on the first column?
+        if (dataIndex != null
+                && dataIndex.keyColumnNames().length == 1
+                && dataIndex.keyColumnNames()[0].equals(columnSources[0])) {
+            final Table indexTable = usePrev ? ((BaseDataIndex) dataIndex).prevTable() : dataIndex.table();
+
             final String firstColumnName = dataIndex.keyColumnNames()[0];
 
-            indexTable = order[0] == SortingOrder.Ascending
+            Table sortedIndexTable = order[0] == SortingOrder.Ascending
                     ? indexTable.sort(firstColumnName)
                     : indexTable.sortDescending(firstColumnName);
-            indexTable = indexTable.flatten();
+            sortedIndexTable = sortedIndexTable.flatten();
 
             offsetsOut.setSize(0);
             lengthsOut.setSize(0);
@@ -602,7 +590,7 @@ public class SortHelpers {
             final WritableIntChunk<ChunkPositions> finalOffOut = offsetsOut;
             WritableIntChunk<ChunkLengths> finalLengthsOut = lengthsOut;
             final MutableInt outputIdx = new MutableInt(0);
-            processWithGroupingChunk(indexTable, dataIndex.rowSetColumnName(), (indexChunk, nextKeys) -> {
+            processWithIndexChunk(sortedIndexTable, dataIndex.rowSetColumnName(), (indexChunk, nextKeys) -> {
                 for (int ii = 0; ii < nextKeys.size(); ii++) {
                     final RowSet group = indexChunk.get(ii);
                     if (group.size() > 1) {
@@ -709,26 +697,26 @@ public class SortHelpers {
     }
 
     /**
-     * Execute the supplied consumer on the entire grouping table. Be careful about internal state in the consumer, it
-     * will be invoked once per chunk of input.
+     * Execute the supplied consumer on the entire index table. Be careful about internal state in the consumer, it will
+     * be invoked once per chunk of input.
      *
-     * @param groupingTable the grouping table
+     * @param indexTable the index table
      * @param indexColumnName the name of the index column
-     * @param groupingConsumer the consumer to process each chunk.
+     * @param chunkConsumer the consumer to process each chunk.
      */
-    private static void processWithGroupingChunk(final Table groupingTable,
+    private static void processWithIndexChunk(final Table indexTable,
             String indexColumnName,
-            BiConsumer<ObjectChunk<RowSet, ? extends Values>, RowSequence> groupingConsumer) {
+            BiConsumer<ObjectChunk<RowSet, ? extends Values>, RowSequence> chunkConsumer) {
         // noinspection unchecked
-        final ColumnSource<RowSet> indexSource = groupingTable.getColumnSource(indexColumnName);
-        final int chunkSize = Math.min(CHUNK_SIZE, groupingTable.intSize());
+        final ColumnSource<RowSet> indexSource = indexTable.getColumnSource(indexColumnName);
+        final int chunkSize = Math.min(CHUNK_SIZE, indexTable.intSize());
         try (final ChunkSource.GetContext indexContext = indexSource.makeGetContext(chunkSize);
-                final RowSequence.Iterator okIt = groupingTable.getRowSet().getRowSequenceIterator()) {
+                final RowSequence.Iterator okIt = indexTable.getRowSet().getRowSequenceIterator()) {
             while (okIt.hasMore()) {
                 final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(chunkSize);
                 final ObjectChunk<RowSet, ? extends Values> indexChunk =
                         indexSource.getChunk(indexContext, nextKeys).asObjectChunk();
-                groupingConsumer.accept(indexChunk, nextKeys);
+                chunkConsumer.accept(indexChunk, nextKeys);
             }
         }
     }

@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * This class provides a data index for a table. The index is itself a table with columns corresponding to the indexed
@@ -155,5 +156,20 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
                 return result.getValue();
             });
         }
+    }
+
+    /**
+     * Return the previous version of the index table, created by returning previous column sources for all columns and
+     * using the previous row set of the index table.
+     */
+    public Table prevTable() {
+        final Table inputTable = table();
+        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+        for (Map.Entry<String, ? extends ColumnSource<?>> entry : inputTable.getColumnSourceMap().entrySet()) {
+            final String columnName = entry.getKey();
+            final ColumnSource<?> columnSource = entry.getValue().getPrevSource();
+            columnSourceMap.put(columnName, columnSource);
+        }
+        return new QueryTable(inputTable.getRowSet().prev().writableCast().toTracking(), columnSourceMap);
     }
 }

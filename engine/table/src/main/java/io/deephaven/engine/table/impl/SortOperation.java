@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
@@ -42,6 +43,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     private final String[] sortColumnNames;
     private final ColumnSource<Comparable<?>>[] sortColumns;
 
+    private final DataIndex dataIndex;
+
     public SortOperation(QueryTable parent, SortPair[] sortPairs) {
         this.parent = parent;
         this.sortPairs = sortPairs;
@@ -64,6 +67,19 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         }
 
         parent.assertSortable(sortColumnNames);
+
+        // This sort operation might leverage a data index. Make sure to include it in the snapshot.
+        final DataIndexer dataIndexer = DataIndexer.of(parent.getRowSet());
+
+        if (dataIndexer.hasDataIndex(parent, sortColumnNames)) {
+            // We have an index for all sort columns.
+            dataIndex = dataIndexer.getDataIndex(parent, sortColumnNames);
+        } else if (dataIndexer.hasDataIndex(parent, sortColumnNames[0])) {
+            // We have an index for the first column.
+            dataIndex = dataIndexer.getDataIndex(parent, sortColumnNames[0]);
+        } else {
+            dataIndex = null;
+        }
     }
 
     @Override
@@ -83,21 +99,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
     @Override
     public OperationSnapshotControl newSnapshotControl(QueryTable queryTable) {
-        return new OperationSnapshotControl(queryTable) {
-            @Override
-            public synchronized boolean snapshotCompletedConsistently(
-                    final long afterClockValue,
-                    final boolean usedPreviousValues) {
-                final boolean success = super.snapshotCompletedConsistently(afterClockValue, usedPreviousValues);
-                if (success) {
-                    QueryTable.startTrackingPrev(resultTable.getColumnSources());
-                    if (sortMapping.isWritable()) {
-                        sortMapping.writableCast().startTrackingPrevValues();
-                    }
-                }
-                return success;
-            }
-        };
+        return dataIndex != null
+                ? new OperationSnapshotControlEx(queryTable, (QueryTable) dataIndex.table())
+                : new OperationSnapshotControl(queryTable);
     }
 
     private static boolean alreadySorted(final QueryTable parent, @NotNull final SortHelpers.SortMapping sortedKeys) {
@@ -160,6 +164,11 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         resultTable.setFlat();
         setSorted(resultTable);
 
+        QueryTable.startTrackingPrev(resultTable.getColumnSources());
+        if (sortMapping.isWritable()) {
+            sortMapping.writableCast().startTrackingPrevValues();
+        }
+
         final TableUpdateListener resultListener =
                 new BaseTable.ListenerImpl("Stream sort listener", parent, resultTable) {
                     @Override
@@ -173,7 +182,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                         }
 
                         final SortHelpers.SortMapping updateSortedKeys =
-                                SortHelpers.getSortedKeys(sortOrder, sortColumns, upstream.added(), false);
+                                SortHelpers.getSortedKeys(sortOrder, sortColumns, null, upstream.added(), false);
                         final LongChunkColumnSource recycled = recycledInnerRedirectionSource.getValue();
                         recycledInnerRedirectionSource.setValue(null);
                         final LongChunkColumnSource updateInnerRedirectSource =
@@ -212,14 +221,14 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         if (!parent.isRefreshing()) {
             final SortHelpers.SortMapping sortedKeys =
-                    SortHelpers.getSortedKeys(sortOrder, sortColumns, parent.getRowSet(), false);
+                    SortHelpers.getSortedKeys(sortOrder, sortColumns, dataIndex, parent.getRowSet(), false);
             return new Result<>(historicalSort(sortedKeys));
         }
         if (parent.isBlink()) {
-            try (final RowSet prevIndex = usePrev ? parent.getRowSet().copyPrev() : null) {
-                final RowSet indexToUse = usePrev ? prevIndex : parent.getRowSet();
+            try (final RowSet prevRowSet = usePrev ? parent.getRowSet().copyPrev() : null) {
+                final RowSet rowSetToUse = usePrev ? prevRowSet : parent.getRowSet();
                 final SortHelpers.SortMapping sortedKeys =
-                        SortHelpers.getSortedKeys(sortOrder, sortColumns, indexToUse, usePrev);
+                        SortHelpers.getSortedKeys(sortOrder, sortColumns, dataIndex, rowSetToUse, usePrev);
                 return streamSort(sortedKeys);
             }
         }
@@ -236,7 +245,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             }
 
             final long[] sortedKeys =
-                    SortHelpers.getSortedKeys(sortOrder, sortColumns, rowSetToSort, usePrev).getArrayMapping();
+                    SortHelpers.getSortedKeys(sortOrder, sortColumns, dataIndex, rowSetToSort, usePrev)
+                            .getArrayMapping();
 
             final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortedKeys.length, .75f, -3);
             sortMapping = SortHelpers.createSortRowRedirection();
@@ -287,6 +297,11 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                     parent.newModifiedColumnSet(sortColumnNames));
 
             setSorted(resultTable);
+
+            QueryTable.startTrackingPrev(resultTable.getColumnSources());
+            if (sortMapping.isWritable()) {
+                sortMapping.writableCast().startTrackingPrevValues();
+            }
 
             return new Result<>(resultTable, listener);
         }

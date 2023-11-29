@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.time.DateTimeUtils;
@@ -247,6 +248,19 @@ public class QueryTableSortTest extends QueryTableTestBase {
                         "Apple"),
                 col("Secondary", "A", "B", "C", "A", "B", "C", "A", "B", "C"),
                 col("Sentinel", 7, 8, 6, 4, 5, 3, 1, 2, 0)), sorted2);
+
+        // Add a new index covering both columns.
+        DataIndexer.of(table.getRowSet()).createDataIndex(table, "A", "Secondary");
+
+        final QueryTable sorted3 = (QueryTable) table.sort(List.of(
+                SortColumn.desc(ColumnName.of("A")),
+                SortColumn.asc(ColumnName.of("Secondary"))));
+        show(sorted3);
+        assertTableEquals(newTable(
+                col("A", "Canteloupe", "Canteloupe", "Canteloupe", "Banana", "Banana", "Banana", "Apple", "Apple",
+                        "Apple"),
+                col("Secondary", "A", "B", "C", "A", "B", "C", "A", "B", "C"),
+                col("Sentinel", 7, 8, 6, 4, 5, 3, 1, 2, 0)), sorted3);
     }
 
     public void testGroupedSortHistorical() {
@@ -256,23 +270,61 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
     private void testGroupedSortHistorical(int size) {
         final String[] choices = new String[] {"Hornigold", "Jennings", "Vane", "Bellamy"};
+        final String[] letters = new String[] {"D", "C", "A", "B"};
 
         assertEquals(0, size % choices.length);
+        assertEquals(0, size % letters.length);
 
         final String[] values = new String[size];
+        final String[] letterValues = new String[size];
         for (int ii = 0; ii < values.length; ++ii) {
             values[ii] = choices[ii % choices.length];
+            letterValues[ii] = letters[ii % letters.length];
         }
 
-        final Table grouped = testTable(RowSetFactory.flat(values.length).toTracking(),
-                colGrouped("Captain", values)).update("Sentinel=i");
-        final Table nogroups = testTable(RowSetFactory.flat(values.length).toTracking(),
-                col("Captain", values)).update("Sentinel=i");
+        // Single column index on "Captain"
+        Table grouped = testTable(RowSetFactory.flat(values.length).toTracking(),
+                colGrouped("Captain", values),
+                col("Secondary", values)).update("Sentinel=i");
+        Table nogroups = testTable(RowSetFactory.flat(values.length).toTracking(),
+                col("Captain", values),
+                col("Secondary", values)).update("Sentinel=i");
 
-        final Table sortedGrouped = grouped.sortDescending("Captain");
-        final Table sortedNoGroups = nogroups.sortDescending("Captain");
+        Table sortedGrouped = grouped.sortDescending("Captain");
+        Table sortedNoGroups = nogroups.sortDescending("Captain");
         show(sortedGrouped);
+        assertTableEquals(sortedNoGroups, sortedGrouped);
 
+        // Single column indexes on both "Captain" and "Secondary"
+        grouped = testTable(RowSetFactory.flat(values.length).toTracking(),
+                colGrouped("Captain", values),
+                colGrouped("Secondary", values)).update("Sentinel=i");
+        nogroups = testTable(RowSetFactory.flat(values.length).toTracking(),
+                col("Captain", values),
+                col("Secondary", values)).update("Sentinel=i");
+
+        sortedGrouped = grouped.sortDescending("Captain", "Secondary");
+        sortedNoGroups = nogroups.sortDescending("Captain", "Secondary");
+        show(sortedGrouped);
+        assertTableEquals(sortedNoGroups, sortedGrouped);
+
+        sortedGrouped = grouped.sortDescending("Secondary", "Captain");
+        sortedNoGroups = nogroups.sortDescending("Secondary", "Captain");
+        show(sortedGrouped);
+        assertTableEquals(sortedNoGroups, sortedGrouped);
+
+        // Multi-column indexes on "Captain" and "Secondary"
+        grouped = testTable(RowSetFactory.flat(values.length).toTracking(),
+                col("Captain", values),
+                col("Secondary", values)).update("Sentinel=i");
+        DataIndexer.of(grouped.getRowSet()).createDataIndex(grouped, "Captain", "Secondary");
+        nogroups = testTable(RowSetFactory.flat(values.length).toTracking(),
+                col("Captain", values),
+                col("Secondary", values)).update("Sentinel=i");
+
+        sortedGrouped = grouped.sortDescending("Captain", "Secondary");
+        sortedNoGroups = nogroups.sortDescending("Captain", "Secondary");
+        show(sortedGrouped);
         assertTableEquals(sortedNoGroups, sortedGrouped);
     }
 
