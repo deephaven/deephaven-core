@@ -60,7 +60,7 @@ public class BusinessCalendar extends Calendar {
     private void populateSchedules() {
         LocalDate date = firstValidDate;
 
-        while (date.compareTo(lastValidDate) <= 0) {
+        while (!date.isAfter(lastValidDate)) {
 
             final BusinessDay<Instant> s = holidays.get(date);
 
