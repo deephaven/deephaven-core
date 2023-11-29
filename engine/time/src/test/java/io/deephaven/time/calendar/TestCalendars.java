@@ -48,7 +48,7 @@ public class TestCalendars extends BaseArrayTestCase {
     public void testAdd() throws URISyntaxException {
 
         final String path = Paths
-                .get(Objects.requireNonNull(TestBusinessCalendarParser.class.getResource("/PARSER-TEST.calendar"))
+                .get(Objects.requireNonNull(TestBusinessCalendarXMLParser.class.getResource("/PARSER-TEST.calendar"))
                         .toURI())
                 .toString();
         final String calName = "PARSER_TEST_CAL";
@@ -63,7 +63,7 @@ public class TestCalendars extends BaseArrayTestCase {
         Calendars.addCalendarFromFile(path);
 
         final BusinessCalendar cal = Calendars.calendar(calName);
-        TestBusinessCalendarParser.assertParserTestCal(cal);
+        TestBusinessCalendarXMLParser.assertParserTestCal(cal);
 
         Calendars.removeCalendar(calName);
 

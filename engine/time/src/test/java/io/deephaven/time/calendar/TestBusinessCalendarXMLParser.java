@@ -11,7 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Objects;
 
-public class TestBusinessCalendarParser extends BaseArrayTestCase {
+public class TestBusinessCalendarXMLParser extends BaseArrayTestCase {
 
     public static void assertParserTestCal(final BusinessCalendar cal) {
         assertEquals("PARSER_TEST_CAL", cal.name());
@@ -36,11 +36,11 @@ public class TestBusinessCalendarParser extends BaseArrayTestCase {
 
     public void testLoad() throws URISyntaxException {
         final String path = Paths
-                .get(Objects.requireNonNull(TestBusinessCalendarParser.class.getResource("/PARSER-TEST.calendar"))
+                .get(Objects.requireNonNull(TestBusinessCalendarXMLParser.class.getResource("/PARSER-TEST.calendar"))
                         .toURI())
                 .toString();
         final File f = new File(path);
-        final BusinessCalendar cal = BusinessCalendarParser.loadBusinessCalendar(f);
+        final BusinessCalendar cal = BusinessCalendarXMLParser.loadBusinessCalendar(f);
         assertParserTestCal(cal);
     }
 }

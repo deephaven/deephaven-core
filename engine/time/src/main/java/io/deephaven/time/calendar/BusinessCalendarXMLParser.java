@@ -22,18 +22,35 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A parser for reading business calendar files.
+ * A parser for reading business calendar XML files.
  *
- * Business calendar files should be formatted as:
+ * Business calendar XML files should be formatted as:
  *
- * <calendar> <name>USNYSE</name> <description>New York Stock Exchange Calendar</description>
- * <timeZone>America/New_York</timeZone> <default>
- * <businessPeriod><open>09:30</open><close>16:00</close></businessPeriod> <weekend>Saturday</weekend>
- * <weekend>Sunday</weekend> </default> <firstValidDate>1999-01-01</firstValidDate>
- * <lastValidDate>2003-12-31</lastValidDate> <holiday> <date>19990101</date> </holiday> <holiday> <date>20020705</date>
- * <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod> </holiday> </calendar>
+ * <pre>
+ * {@code
+ * <calendar>
+ *     <name>USNYSE</name>
+ *     <description>New York Stock Exchange Calendar</description>
+ *     <timeZone>America/New_York</timeZone>
+ *     <default>
+ *          <businessPeriod><open>09:30</open><close>16:00</close></businessPeriod>
+ *          <weekend>Saturday</weekend>
+ *          <weekend>Sunday</weekend>
+ *      </default>
+ *      <firstValidDate>1999-01-01</firstValidDate>
+ *      <lastValidDate>2003-12-31</lastValidDate>
+ *      <holiday>
+ *          <date>19990101</date>
+ *      </holiday>
+ *      <holiday>
+ *          <date>20020705</date>
+ *          <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+ *      </holiday>
+ * </calendar>
+ * }
+ * </pre>
  */
-public class BusinessCalendarParser {
+public class BusinessCalendarXMLParser {
 
     private static class BusinessCalendarInputs {
         private String calendarName;
@@ -47,9 +64,9 @@ public class BusinessCalendarParser {
     }
 
     /**
-     * Loads a business calendar from a file.
+     * Loads a business calendar from an XML file.
      *
-     * @param file file
+     * @param file XML file
      * @return business calendar.
      */
     public static BusinessCalendar loadBusinessCalendar(@NotNull final String file) {
@@ -57,9 +74,9 @@ public class BusinessCalendarParser {
     }
 
     /**
-     * Loads a business calendar from a file.
+     * Loads a business calendar from an XML file.
      *
-     * @param file file
+     * @param file XML file
      * @return business calendar.
      */
     public static BusinessCalendar loadBusinessCalendar(@NotNull final File file) {

@@ -67,7 +67,7 @@ public class Calendars {
                 final InputStream inputStream = Calendars.class.getResourceAsStream(filePath);
                 if (inputStream != null) {
                     final File calendarFile = inputStreamToFile(inputStream);
-                    final BusinessCalendar businessCalendar = BusinessCalendarParser.loadBusinessCalendar(calendarFile);
+                    final BusinessCalendar businessCalendar = BusinessCalendarXMLParser.loadBusinessCalendar(calendarFile);
                     addCalendar(businessCalendar);
                     // noinspection ResultOfMethodCallIgnored
                     calendarFile.delete();
@@ -144,7 +144,7 @@ public class Calendars {
      */
     public static void addCalendarFromFile(final File file) {
         if (file.getAbsolutePath().endsWith(".calendar")) {
-            final BusinessCalendar cal = BusinessCalendarParser.loadBusinessCalendar(file);
+            final BusinessCalendar cal = BusinessCalendarXMLParser.loadBusinessCalendar(file);
             addCalendar(cal);
         } else {
             throw new UnsupportedOperationException("Calendar file must be in .calendar format");
