@@ -2657,13 +2657,18 @@ class PartitionedTable(JObjectWrapper):
         """Returns all the current constituent tables."""
         return list(map(Table, self.j_partitioned_table.constituents()))
 
-    def transform(self, func: Callable[[Table], Table]) -> PartitionedTable:
+    def transform(self, func: Callable[[Table], Table],
+                  dependencies: Optional[Sequence[Union[Table, PartitionedTable]]] = None) -> PartitionedTable:
         """Apply the provided function to all constituent Tables and produce a new PartitionedTable with the results
         as its constituents, with the same data for all other columns in the underlying partitioned Table. Note that
         if the Table underlying this PartitionedTable changes, a corresponding change will propagate to the result.
 
         Args:
             func (Callable[[Table], Table]): a function which takes a Table as input and returns a new Table
+            dependencies (Optional[Sequence[Union[Table, PartitionedTable]]]): additional dependencies that must be
+                satisfied before applying the provided transform function to added or modified constituents during
+                update processing. If the transform function uses any other refreshing Table or refreshing Partitioned
+                Table, they must be included in this argument. Defaults to None.
 
         Returns:
             a PartitionedTable
@@ -2673,13 +2678,18 @@ class PartitionedTable(JObjectWrapper):
         """
         try:
             j_operator = j_unary_operator(func, dtypes.from_jtype(Table.j_object_type.jclass))
-            with auto_locking_ctx(self):
-                j_pt = self.j_partitioned_table.transform(j_operator)
+            dependencies = to_sequence(dependencies, wrapped=True)
+            j_dependencies = [d.j_table for d in dependencies if isinstance(d, Table) and d.is_refreshing]
+            j_dependencies.extend([d.table.j_table for d in dependencies if isinstance(d, PartitionedTable) and d.is_refreshing])
+            with auto_locking_ctx(self, *dependencies):
+                j_pt = self.j_partitioned_table.transform(j_operator, j_dependencies)
                 return PartitionedTable(j_partitioned_table=j_pt)
         except Exception as e:
             raise DHError(e, "failed to transform the PartitionedTable.") from e
 
-    def partitioned_transform(self, other: PartitionedTable, func: Callable[[Table, Table], Table]) -> PartitionedTable:
+    def partitioned_transform(self, other: PartitionedTable, func: Callable[[Table, Table], Table],
+                              dependencies: Optional[Sequence[Union[Table, PartitionedTable]]] = None) -> \
+            PartitionedTable:
         """Join the underlying partitioned Tables from this PartitionedTable and other on the key columns, then apply
         the provided function to all pairs of constituent Tables with the same keys in order to produce a new
         PartitionedTable with the results as its constituents, with the same data for all other columns in the
@@ -2692,6 +2702,10 @@ class PartitionedTable(JObjectWrapper):
             other (PartitionedTable): the other Partitioned table whose constituent tables will be passed in as the 2nd
                 argument to the provided function
             func (Callable[[Table, Table], Table]): a function which takes two Tables as input and returns a new Table
+            dependencies (Optional[Sequence[Union[Table, PartitionedTable]]]): additional dependencies that must be
+                satisfied before applying the provided transform function to added, modified, or newly-matched
+                constituents during update processing. If the transform function uses any other refreshing Table or
+                refreshing Partitioned Table, they must be included in this argument. Defaults to None.
 
         Returns:
             a PartitionedTable
@@ -2701,8 +2715,12 @@ class PartitionedTable(JObjectWrapper):
         """
         try:
             j_operator = j_binary_operator(func, dtypes.from_jtype(Table.j_object_type.jclass))
-            with auto_locking_ctx(self, other):
-                j_pt = self.j_partitioned_table.partitionedTransform(other.j_partitioned_table, j_operator)
+            dependencies = to_sequence(dependencies, wrapped=True)
+            j_dependencies = [d.j_table for d in dependencies if isinstance(d, Table) and d.is_refreshing]
+            j_dependencies.extend([d.table.j_table for d in dependencies if isinstance(d, PartitionedTable) and d.is_refreshing])
+            with auto_locking_ctx(self, other, *dependencies):
+                j_pt = self.j_partitioned_table.partitionedTransform(other.j_partitioned_table, j_operator,
+                                                                     j_dependencies)
                 return PartitionedTable(j_partitioned_table=j_pt)
         except Exception as e:
             raise DHError(e, "failed to transform the PartitionedTable with another PartitionedTable.") from e
