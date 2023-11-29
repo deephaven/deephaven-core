@@ -215,12 +215,8 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool = 
     Args:
         dtype (DType): The dtype of the array
         j_array (jpy.JType): The Java array to convert
-        conv_null (bool): If True, convert nulls to the default value for the dtype
-        type_promotion (bool): when conv_null is True, whether to promote the dtype to np.float64 for Java integer
-            arrays if the array contains Deephaven nulls.  When True, Java integer arrays will be promoted to
-            np.float64 if the Java array contains deephaven nulls and these nulls will be converted to np.nan. When
-            False, an exception will be thrown if the Java array contains deephaven nulls. Defaults to True.
-            Note, this option has no effect on Java floating point arrays.
+        conv_null (bool): If True, convert nulls to the null value for the dtype
+        type_promotion (bool): Ignored when conv_null is False.  When type_promotion is False, (1) input Java integer, boolean, or character arrays containing Deephaven nulls yield an exception, (2) input Java float or double arrays containing Deephaven nulls have null values converted to np.nan, and (3) input Java arrays without Deephaven nulls are converted to the target type.  When type_promotion is True, (1) input Java integer, boolean, or character arrays containing Deephaven nulls are converted to np.float64 arrays and Deephaven null values are converted to np.nan, (2) input Java float or double arrays containing Deephaven nulls have null values converted to np.nan, and (3) input Java arrays without Deephaven nulls are converted to the target type.  Defaults to True. 
 
     Returns:
         np.ndarray: The numpy array
@@ -258,8 +254,7 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool = 
 
                 if any(np_array[np_array == dh_null]):
                     if not type_promotion:
-                        raise DHError(f"Java array contains Deephaven nulls for dtype {dtype} that numpy array of the "
-                                      f"equivalent type doesn't support")
+                        raise DHError(f"Problem creating numpy array.  Java {dtype} array contains Deephaven null values, but numpy {np_array.dtype} array does not support null values")
                     np_array = np_array.astype(np.float64)
                     np_array[np_array == dh_null] = np.nan
                 else:

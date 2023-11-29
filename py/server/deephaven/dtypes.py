@@ -363,8 +363,8 @@ def _scalar(x: Any, dtype: DType) -> Any:
 
     # NULL_BOOL will appear in Java as a byte value which causes a cast error. We just let JPY converts it to Java null
     # and the engine has casting logic to handle it.
-    if _is_py_null(x) and dtype not in (bool_, char) and _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
-        return _PRIMITIVE_DTYPE_NULL_MAP[dtype]
+    if _is_py_null(x) and dtype not in (bool_, char) and dt:=_PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
+        return dt
 
     try:
         if hasattr(x, "dtype"):

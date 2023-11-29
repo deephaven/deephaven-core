@@ -435,8 +435,8 @@ def _parse_param_annotation(annotation: Any) -> _ParsedAnnotation:
     return p_annotation
 
 
-def _parse_type_no_nested(annotation: Any, p_annotation: _ParsedAnnotation, t: type):
-    """ Parse a specific type (top level or nested in a top-level Union annotation) , without handling nested types
+def _parse_type_no_nested(annotation: Any, p_annotation: _ParsedAnnotation, t: type) -> None:
+    """ Parse a specific type (top level or nested in a top-level Union annotation) without handling nested types
     (e.g. a nested Union). The result is stored in the given _ParsedAnnotation object.
     """
     p_annotation.orig_types.add(t)
