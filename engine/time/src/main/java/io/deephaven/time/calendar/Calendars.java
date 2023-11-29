@@ -13,9 +13,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.nio.file.NoSuchFileException;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
 /**
@@ -28,8 +27,7 @@ public class Calendars {
     private static final String BUSINESS_CALENDAR_PROP_USER = "Calendar.userImportPath";
     private static String defaultName = Configuration.getInstance().getProperty("Calendar.default");
 
-    private static final Map<String, BusinessCalendar> map = new HashMap<>();
-    private static String[] names = new String[0];
+    private static final Map<String, BusinessCalendar> map = new TreeMap<>();
 
     private Calendars() {}
 
@@ -100,8 +98,6 @@ public class Calendars {
      */
     public synchronized static void removeCalendar(final String name) {
         map.remove(name);
-        names = map.keySet().toArray(String[]::new);
-        Arrays.sort(names);
     }
 
     /**
@@ -124,9 +120,6 @@ public class Calendars {
         }
 
         map.put(name, cal);
-
-        names = map.keySet().toArray(String[]::new);
-        Arrays.sort(names);
     }
 
     /**
@@ -234,7 +227,7 @@ public class Calendars {
      * @return names of all available calendars
      */
     public synchronized static String[] calendarNames() {
-        return names.clone();
+        return map.keySet().toArray(String[]::new);
     }
 
     // endregion
