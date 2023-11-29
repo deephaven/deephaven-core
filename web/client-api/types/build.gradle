@@ -18,6 +18,7 @@ Docker.registerDockerTask(project, 'typedoc') {
         from 'tsconfig.json'
         from 'package.json'
         from 'package-lock.json'
+        from '.npmrc'
 
         from('src/main/docker') {
             include 'theme.css'
