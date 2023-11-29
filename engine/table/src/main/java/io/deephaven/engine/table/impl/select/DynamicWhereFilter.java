@@ -267,15 +267,13 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             }
 
             // Do we have any indexes that partially match the key columns?
-            final ColumnSource<?>[] indexedSources = Arrays.stream(keyColumns)
-                    .filter(dataIndexer::hasDataIndex).toArray(ColumnSource[]::new);
-            final ColumnSource<?>[] notIndexedSources = Arrays.stream(keyColumns)
-                    .filter(col -> !dataIndexer.hasDataIndex(col)).toArray(ColumnSource[]::new);
+            final OptionalInt minDataIndexSize = Arrays.stream(keyColumns)
+                    .map(dataIndexer::getDataIndex)
+                    .filter(Objects::nonNull)
+                    .mapToInt(di -> di.table().intSize())
+                    .min();
 
-            final OptionalInt minCount = Arrays.stream(indexedSources)
-                    .mapToInt(x -> dataIndexer.getDataIndex(x).table().intSize()).min();
-
-            if (minCount.isPresent() && (minCount.getAsInt() * 4L) < selection.size()) {
+            if (minDataIndexSize.isPresent() && (minDataIndexSize.getAsInt() * 4L) < selection.size()) {
                 return filterPartialIndexes(trackingSelection, dataIndexer, tupleSource);
             }
         }
@@ -283,7 +281,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     }
 
     @NotNull
-    private WritableRowSet filterFullIndex(@NotNull final RowSet selection, final DataIndex dataIndex) {
+    private WritableRowSet filterFullIndex(@NotNull final RowSet selection, @NotNull final DataIndex dataIndex) {
         // Use the RowSetLookup to create a combined row set of matching rows.
         final RowSetBuilderRandom rowSetBuilder = RowSetFactory.builderRandom();
         final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup();
@@ -301,7 +299,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
     @NotNull
     private WritableRowSet filterPartialIndexes(
-            @NotNull final RowSet selection,
+            @NotNull final RowSet selection, // TODO-LAB: Why aren't we using selection?
             final DataIndexer dataIndexer,
             final TupleSource<?> tupleSource) {
 
@@ -337,7 +335,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         if (indexedSourceIndices.size() == 1) {
             // Only one indexed source, so we can use the RowSetLookup directly and return the row set.
             liveValues.forEach(key -> {
-                final RowSet rowSet = indexLookupArr[0].apply(key, false);
+                final RowSet rowSet = indexLookupArr[0].apply(key, false); // TODO-LAB: Should apply to one sub-key
                 if (rowSet != null) {
                     // Make a copy of the row set.
                     indexKeyRowSetMap.put(key, rowSet.copy());
@@ -350,7 +348,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                 for (int ii = 0; ii < indexedSourceIndices.size(); ++ii) {
                     final int tupleIndex = indexedSourceIndices.get(ii);
                     // noinspection unchecked
-                    final Object singleKey = indexedTupleSource.exportElementReinterpreted(key, tupleIndex);
+                    final Object singleKey = indexedTupleSource.exportElement(key, tupleIndex);
                     final RowSet rowSet = indexLookupArr[ii].apply(singleKey, false);
                     if (rowSet != null) {
                         result = result == null ? rowSet.copy() : result.intersect(rowSet);
