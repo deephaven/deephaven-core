@@ -568,7 +568,7 @@ public class FigureWidgetTranslator {
             final DayOfWeek day = DayOfWeek.valueOf(dayOfWeek.name());
             return businessCalendar.isBusinessDay(day);
         }).forEach(businessCalendarDescriptor::addBusinessDays);
-        Arrays.stream(businessCalendar.standardBusinessDay().periods()).map(period -> {
+        businessCalendar.standardBusinessDay().periods().stream().map(period -> {
             // noinspection ConstantConditions
             final String open = TIME_FORMATTER.withZone(businessCalendar.timeZone())
                     .format(period.start());
@@ -588,7 +588,7 @@ public class FigureWidgetTranslator {
                     localDate.setMonth(entry.getKey().getMonthValue());
                     localDate.setDay(entry.getKey().getDayOfMonth());
                     final Holiday.Builder holiday = Holiday.newBuilder();
-                    Arrays.stream(entry.getValue().periods()).map(bp -> {
+                    entry.getValue().periods().stream().map(bp -> {
                         // noinspection ConstantConditions
                         final String open = TIME_FORMATTER.withZone(businessCalendar.timeZone())
                                 .format(bp.start());

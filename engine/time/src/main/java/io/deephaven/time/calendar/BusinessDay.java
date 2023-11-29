@@ -13,8 +13,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 
 /**
  * Schedule for a single business day.
@@ -31,7 +30,7 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
      */
     public static final BusinessDay<LocalTime> HOLIDAY = new BusinessDay<>();
 
-    private final BusinessPeriod<T>[] openPeriods;
+    private final List<BusinessPeriod<T>> openPeriods;
 
     /**
      * Creates a BusinessDay instance.
@@ -47,20 +46,22 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
             Require.neqNull(businessPeriods[i], "businessPeriods[" + i + "]");
         }
 
-        this.openPeriods = businessPeriods.clone();
+        final BusinessPeriod<T>[] periods = businessPeriods.clone();
 
         // Sort the periods
-        Arrays.sort(this.openPeriods, Comparator.comparing(BusinessPeriod::start));
+        Arrays.sort(periods, Comparator.comparing(BusinessPeriod::start));
 
         // make sure the periods don't overlap
-        for (int i = 1; i < this.openPeriods.length; i++) {
-            final BusinessPeriod<T> p0 = this.openPeriods[i - 1];
-            final BusinessPeriod<T> p1 = this.openPeriods[i];
+        for (int i = 1; i < periods.length; i++) {
+            final BusinessPeriod<T> p0 = periods[i - 1];
+            final BusinessPeriod<T> p1 = periods[i];
 
             if (p1.start().compareTo(p0.end()) < 0) {
                 throw new IllegalArgumentException("Periods overlap.");
             }
         }
+
+        this.openPeriods = List.of(periods);
     }
 
     /**
@@ -76,7 +77,7 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
      *
      * @return business periods for the day
      */
-    public BusinessPeriod<T>[] periods() {
+    public List<BusinessPeriod<T>> periods() {
         return openPeriods;
     }
 
@@ -86,7 +87,7 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
      * @return start of the business day, or null for a holiday schedule
      */
     public T businessStart() {
-        return openPeriods.length > 0 ? openPeriods[0].start() : null;
+        return !openPeriods.isEmpty() ? openPeriods.get(0).start() : null;
     }
 
     /**
@@ -95,7 +96,7 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
      * @return end of the business day, or null for a holiday schedule
      */
     public T businessEnd() {
-        return openPeriods.length > 0 ? openPeriods[openPeriods.length - 1].end() : null;
+        return !openPeriods.isEmpty() ? openPeriods.get(openPeriods.size()-1).end() : null;
     }
 
     /**
@@ -105,7 +106,7 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
      * @return length of the day in nanoseconds
      */
     public long businessNanos() {
-        return Arrays.stream(openPeriods).map(BusinessPeriod::nanos).reduce(0L, Long::sum);
+        return openPeriods.stream().map(BusinessPeriod::nanos).reduce(0L, Long::sum);
     }
 
     /**
@@ -173,18 +174,18 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
         if (this == o) return true;
         if (!(o instanceof BusinessDay)) return false;
         BusinessDay<?> that = (BusinessDay<?>) o;
-        return Arrays.equals(openPeriods, that.openPeriods);
+        return Objects.equals(openPeriods, that.openPeriods);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(openPeriods);
+        return Objects.hash(openPeriods);
     }
 
     @Override
     public String toString() {
         return "BusinessDay{" +
-                "openPeriods=" + Arrays.toString(openPeriods) +
+                "openPeriods=" + Arrays.toString(openPeriods.toArray()) +
                 '}';
     }
 
@@ -199,7 +200,7 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
     public static BusinessDay<Instant> toInstant(final BusinessDay<LocalTime> s, final LocalDate date,
             final ZoneId timeZone) {
         // noinspection unchecked
-        return new BusinessDay<>(Arrays.stream(s.periods()).map(p -> BusinessPeriod.toInstant(p, date, timeZone))
+        return new BusinessDay<>(s.periods().stream().map(p -> BusinessPeriod.toInstant(p, date, timeZone))
                 .toArray(BusinessPeriod[]::new));
     }
 }

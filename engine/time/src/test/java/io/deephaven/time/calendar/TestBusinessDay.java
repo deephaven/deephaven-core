@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import static org.junit.Assert.assertNotEquals;
@@ -26,7 +26,7 @@ public class TestBusinessDay extends BaseArrayTestCase {
 
     public void testEmpty() {
         final BusinessDay<Instant> empty = new BusinessDay<>();
-        assertEquals(new BusinessPeriod[0], empty.periods());
+        assertEquals(List.of(), empty.periods());
         assertNull(empty.businessStart());
         assertNull(empty.businessStart());
         assertNull(empty.businessEnd());
@@ -44,7 +44,7 @@ public class TestBusinessDay extends BaseArrayTestCase {
 
     public void testSinglePeriod() {
         final BusinessDay<Instant> single = new BusinessDay<>(new BusinessPeriod[] {period1});
-        assertEquals(new BusinessPeriod[] {period1}, single.periods());
+        assertEquals(List.of(period1), single.periods());
         assertEquals(open1, single.businessStart());
         assertEquals(open1, single.businessStart());
         assertEquals(close1, single.businessEnd());
@@ -69,7 +69,7 @@ public class TestBusinessDay extends BaseArrayTestCase {
 
     public void testMultiPeriod() {
         final BusinessDay<Instant> multi = new BusinessDay<>(new BusinessPeriod[] {period1, period2});
-        assertEquals(new BusinessPeriod[] {period1, period2}, multi.periods());
+        assertEquals(List.of(period1, period2), multi.periods());
         assertEquals(open1, multi.businessStart());
         assertEquals(open1, multi.businessStart());
         assertEquals(close2, multi.businessEnd());
@@ -98,7 +98,7 @@ public class TestBusinessDay extends BaseArrayTestCase {
 
 
         final BusinessDay<Instant> multi2 = new BusinessDay<>(new BusinessPeriod[] {period2, period1});
-        assertEquals(new BusinessPeriod[] {period1, period2}, multi2.periods());
+        assertEquals(List.of(period1, period2), multi2.periods());
         assertEquals(open1, multi2.businessStart());
         assertEquals(open1, multi2.businessStart());
         assertEquals(close2, multi2.businessEnd());
@@ -145,9 +145,9 @@ public class TestBusinessDay extends BaseArrayTestCase {
 
     public void testEqualsHash() {
         final BusinessDay<Instant> multi = new BusinessDay<>(new BusinessPeriod[] {period1, period2});
-        assertEquals(new BusinessPeriod[] {period1, period2}, multi.periods());
+        assertEquals(List.of(period1, period2), multi.periods());
 
-        int hashTarget = Arrays.hashCode(multi.periods());
+        int hashTarget = Objects.hash(multi.periods());
         assertEquals(hashTarget, multi.hashCode());
 
         final BusinessDay<Instant> multi2 = new BusinessDay<>(new BusinessPeriod[] {period1, period2});
