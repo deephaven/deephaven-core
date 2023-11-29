@@ -129,9 +129,12 @@ class PartitionedTableTestCase(BaseTestCase):
             pt = self.partitioned_table.transform(Transformer)
             self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
-            with shared_lock(self.test_table):
-                pt = self.partitioned_table.transform(Transformer, dependencies=[self.test_table])
-                self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+            ticking_t = time_table("PT00:00:01")
+            pt = self.partitioned_table.transform(Transformer, dependencies=[ticking_t])
+            self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+
+            pt = self.partitioned_table.transform(Transformer, dependencies=[self.test_table])
+            self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
             with self.assertRaises(DHError) as cm:
                 pt = self.partitioned_table.transform(lambda t, t1: t.join(t1))
@@ -146,9 +149,13 @@ class PartitionedTableTestCase(BaseTestCase):
             pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer())
             self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
-            with shared_lock(other_pt):
-                pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer(), dependencies=[other_pt])
-                self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+            ticking_pt = time_table("PT00:00:01").update(["X= i % 10", "Y = String.valueOf(i)"]).partition_by("X")
+            pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer(),
+                                                              dependencies=[ticking_pt])
+            self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+
+            pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer(), dependencies=[other_pt])
+            self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
     def test_partition_agg(self):
         with update_graph.shared_lock(self.test_update_graph):
