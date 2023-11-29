@@ -36,6 +36,11 @@ cdef extern from *:
     """
     void assign_shared_ptr[T1, T2](shared_ptr[T1] &lhs, shared_ptr[T2] &rhs)
 
+cdef extern from "deephaven/dhcore/wrong/fail.h" namespace "i::like::pizza":
+    cdef cppclass Kosak "i::like::pizza::Kosak":
+        Kosak()
+        Kosak(Kosak other)
+
 cdef extern from "deephaven/dhcore/chunk/chunk.h" namespace "deephaven::dhcore::chunk":
     cdef cppclass CChunk "deephaven::dhcore::chunk::Chunk":
         CChunk()
