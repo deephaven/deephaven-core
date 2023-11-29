@@ -49,6 +49,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
@@ -78,6 +80,7 @@ import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
+import io.deephaven.web.client.api.impl.TicketAndPromise;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.parse.JsDataHandler;
 import io.deephaven.web.client.api.state.StateCache;
@@ -701,11 +704,12 @@ public class WorkerConnection {
             @Override
             public void accept(JsVariableChanges changes) {
                 JsVariableDefinition foundField = changes.getCreated()
-                        .find((field, p1, p2) -> field.getTitle().equals(name) && field.getType().equals(type));
+                        .find((field, p1, p2) -> field.getTitle().equals(name)
+                                && field.getType().equalsIgnoreCase(type));
 
                 if (foundField == null) {
                     foundField = changes.getUpdated().find((field, p1, p2) -> field.getTitle().equals(name)
-                            && field.getType().equals(type));
+                            && field.getType().equalsIgnoreCase(type));
                 }
 
                 if (foundField != null) {
@@ -756,23 +760,23 @@ public class WorkerConnection {
     }
 
     public Promise<?> getObject(JsVariableDefinition definition) {
-        if (JsVariableType.TABLE.equals(definition.getType())) {
+        if (JsVariableType.TABLE.equalsIgnoreCase(definition.getType())) {
             return getTable(definition, null);
-        } else if (JsVariableType.FIGURE.equals(definition.getType())) {
+        } else if (JsVariableType.FIGURE.equalsIgnoreCase(definition.getType())) {
             return getFigure(definition);
-        } else if (JsVariableType.PANDAS.equals(definition.getType())) {
+        } else if (JsVariableType.PANDAS.equalsIgnoreCase(definition.getType())) {
             return getWidget(definition)
                     .then(widget -> widget.getExportedObjects()[0].fetch());
-        } else if (JsVariableType.PARTITIONEDTABLE.equals(definition.getType())) {
+        } else if (JsVariableType.PARTITIONEDTABLE.equalsIgnoreCase(definition.getType())) {
             return getPartitionedTable(definition);
-        } else if (JsVariableType.HIERARCHICALTABLE.equals(definition.getType())) {
+        } else if (JsVariableType.HIERARCHICALTABLE.equalsIgnoreCase(definition.getType())) {
             return getHierarchicalTable(definition);
         } else {
-            if (JsVariableType.TABLEMAP.equals(definition.getType())) {
+            if (JsVariableType.TABLEMAP.equalsIgnoreCase(definition.getType())) {
                 JsLog.warn(
                         "TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
             }
-            if (JsVariableType.TREETABLE.equals(definition.getType())) {
+            if (JsVariableType.TREETABLE.equalsIgnoreCase(definition.getType())) {
                 JsLog.warn(
                         "TreeTable is now HierarchicalTable, fetching as a plain widget. To fetch as a HierarchicalTable use that as this type.");
             }
@@ -886,15 +890,25 @@ public class WorkerConnection {
                 return Promise.resolve(this);
             default:
                 // not possible, means null state
-                // noinspection unchecked
-                return (Promise) Promise.reject("Can't " + operationName + " while connection is in state " + state);
+                return Promise.reject("Can't " + operationName + " while connection is in state " + state);
         }
+    }
+
+    private TicketAndPromise<?> exportScopeTicket(JsVariableDefinition varDef) {
+        Ticket ticket = getConfig().newTicket();
+        return new TicketAndPromise<>(ticket, whenServerReady("exportScopeTicket").then(server -> {
+            ExportRequest req = new ExportRequest();
+            req.setSourceId(createTypedTicket(varDef).getTicket());
+            req.setResultId(ticket);
+            return Callbacks.<ExportResponse, Object>grpcUnaryPromise(
+                    c -> sessionServiceClient().exportFromTicket(req, metadata(), c::apply));
+        }), this);
     }
 
     public Promise<JsPartitionedTable> getPartitionedTable(JsVariableDefinition varDef) {
         return whenServerReady("get a partitioned table")
-                .then(server -> new JsPartitionedTable(this, new JsWidget(this, createTypedTicket(varDef)))
-                        .refetch());
+                .then(server -> getWidget(varDef))
+                .then(widget -> new JsPartitionedTable(this, widget).refetch());
     }
 
     public Promise<JsTreeTable> getTreeTable(JsVariableDefinition varDef) {
@@ -906,7 +920,7 @@ public class WorkerConnection {
     }
 
     public Promise<JsFigure> getFigure(JsVariableDefinition varDef) {
-        if (!varDef.getType().equals("Figure")) {
+        if (!varDef.getType().equalsIgnoreCase("Figure")) {
             throw new IllegalArgumentException("Can't load as a figure: " + varDef.getType());
         }
         return whenServerReady("get a figure")
@@ -935,7 +949,13 @@ public class WorkerConnection {
     }
 
     public Promise<JsWidget> getWidget(JsVariableDefinition varDef) {
-        return getWidget(createTypedTicket(varDef));
+        return exportScopeTicket(varDef)
+                .race(ticket -> {
+                    TypedTicket typedTicket = new TypedTicket();
+                    typedTicket.setType(varDef.getType());
+                    typedTicket.setTicket(ticket);
+                    return getWidget(typedTicket);
+                }).promise();
     }
 
     public Promise<JsWidget> getWidget(TypedTicket typedTicket) {

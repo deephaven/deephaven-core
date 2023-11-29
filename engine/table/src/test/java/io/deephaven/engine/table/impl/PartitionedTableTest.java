@@ -7,8 +7,8 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Partition;
 import io.deephaven.base.SleepUtil;
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
@@ -25,13 +25,14 @@ import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.generator.SortedLongGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.process.ProcessEnvironment;
 import junit.framework.TestCase;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.experimental.categories.Category;
 
@@ -43,6 +44,8 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
+import static io.deephaven.api.agg.Aggregation.AggLast;
+import static io.deephaven.api.agg.Aggregation.AggSum;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -215,6 +218,9 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 rightTable.partitionedAggBy(List.of(), true, testTable(col("Sym", "aa", "bb", "cc", "dd")), "Sym");
         final PartitionedTable.Proxy rightProxy = rightPT.proxy(false, false);
 
+        final Table initialKeys = newTable(col("Sym", "cc", "dd", "aa", "bb"), intCol("intCol", 0, 2, 3, 4));
+        final PartitionedTable.Proxy initialKeysProxy = initialKeys.partitionBy("Sym").proxy();
+
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
@@ -232,8 +238,21 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                         leftProxy.naturalJoin(rightTable.lastBy("Sym"), "Sym").target().merge().sort("K", "Sym")),
                 new QueryTableTest.TableComparator(withK.naturalJoin(rightTable.lastBy("Sym"), "Sym").sort("K", "Sym"),
                         leftProxy.naturalJoin(rightProxy.lastBy(), "Sym").target().merge().sort("K", "Sym")),
+                new QueryTableTest.TableComparator(
+                        withK.aggBy(List.of(AggLast("K"), AggSum("doubleCol")), "Sym", "intCol").sort("Sym", "intCol"),
+                        leftProxy.aggBy(List.of(AggLast("Sym", "K"), AggSum("doubleCol")), "intCol").target().merge()
+                                .moveColumnsUp("Sym").sort("Sym", "intCol")),
+                new QueryTableTest.TableComparator(
+                        withK.aggBy(List.of(AggLast("K"), AggSum("doubleCol")), false, initialKeys,
+                                ColumnName.from("Sym", "intCol")).sort("Sym", "intCol"),
+                        leftProxy.aggBy(List.of(AggLast("K"), AggSum("doubleCol")), false, initialKeys,
+                                ColumnName.from("Sym", "intCol")).target().merge().sort("Sym", "intCol")),
+                new QueryTableTest.TableComparator(
+                        withK.aggBy(List.of(AggLast("K"), AggSum("doubleCol")), false, initialKeys,
+                                ColumnName.from("Sym", "intCol")).sort("Sym", "intCol"),
+                        leftProxy.aggBy(List.of(AggLast("K"), AggSum("doubleCol")), false, initialKeysProxy,
+                                ColumnName.from("Sym", "intCol")).target().merge().sort("Sym", "intCol")),
         };
-
         for (int i = 0; i < 100; i++) {
             simulateShiftAwareStep(size, random, table, columnInfo, en);
         }
@@ -404,6 +423,71 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             final boolean flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
             TestCase.assertTrue(aa2.satisfied(updateGraph.clock().currentStep()));
+        });
+    }
+
+    public void testTransformDependencies() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final QueryTable sourceTable = testRefreshingTable(i(1, 2, 4, 6).toTracking(),
+                col("USym", "aa", "bb", "aa", "bb"),
+                col("Sentinel", 10, 20, 40, 60));
+
+        final QueryTable extraTable = testRefreshingTable(i(0).toTracking(),
+                col("Value", "0.2"));
+        final MutableBoolean extraParentSatisfied = new MutableBoolean(false);
+        final NotificationQueue.Dependency extraParentDependency = new NotificationQueue.Dependency() {
+            @Override
+            public boolean satisfied(long step) {
+                return extraParentSatisfied.booleanValue();
+            }
+
+            @Override
+            public UpdateGraph getUpdateGraph() {
+                return updateGraph;
+            }
+
+            @Override
+            public LogOutput append(LogOutput logOutput) {
+                return logOutput.append("extra dependency");
+            }
+        };
+        extraTable.addParentReference(extraParentDependency);
+
+        final PartitionedTable partitioned = sourceTable.partitionBy("USym");
+        final PartitionedTable transformed = partitioned.transform(t -> t.join(extraTable), extraTable);
+
+        // We need to flush one notification: one for the source table because we do not require an intermediate
+        // view table in this case
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // Add "dd" to source
+            addToTable(sourceTable, i(8), col("USym", "dd"), col("Sentinel", 80));
+            sourceTable.notifyListeners(i(8), i(), i());
+            TestCase.assertTrue(updateGraph.flushOneNotificationForUnitTests());
+
+            // PartitionBy has processed "dd"
+            TestCase.assertTrue(partitioned.table().satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertNotNull(partitioned.constituentFor("dd"));
+
+            // Transform has not processed "dd" yet
+            TestCase.assertFalse(transformed.table().satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertNull(transformed.constituentFor("dd"));
+
+            // Flush the notification for transform's internal copy() of partitioned.table()
+            TestCase.assertTrue(updateGraph.flushOneNotificationForUnitTests());
+
+            // Add a row to extra
+            addToTable(extraTable, i(1), col("Value", "0.3"));
+            extraTable.notifyListeners(i(1), i(), i());
+            TestCase.assertFalse(updateGraph.flushOneNotificationForUnitTests(true)); // Fail to update anything
+
+            extraParentSatisfied.setTrue(); // Allow updates to propagate
+            updateGraph.flushAllNormalNotificationsForUnitTests();
+
+            TestCase.assertTrue(transformed.table().satisfied(updateGraph.clock().currentStep()));
+            final Table transformedDD = transformed.constituentFor("dd");
+            TestCase.assertTrue(transformedDD.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertEquals(2, transformedDD.size());
         });
     }
 

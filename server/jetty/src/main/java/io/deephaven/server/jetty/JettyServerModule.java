@@ -6,9 +6,8 @@ package io.deephaven.server.jetty;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
-import io.deephaven.plugin.js.JsPlugin;
+import io.deephaven.plugin.js.JsPluginRegistration;
 import io.deephaven.server.config.ServerConfig;
-import io.deephaven.server.plugin.PluginsModule;
 import io.deephaven.server.runner.GrpcServer;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
@@ -16,11 +15,12 @@ import io.grpc.servlet.jakarta.ServletAdapter;
 import io.grpc.servlet.jakarta.ServletServerBuilder;
 
 import javax.inject.Named;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.function.Consumer;
 
 import static io.grpc.internal.GrpcUtil.getThreadFactory;
 
@@ -67,9 +67,15 @@ public interface JettyServerModule {
         return serverBuilder.buildServletAdapter();
     }
 
+    @Binds
+    JsPluginRegistration bindJsPlugins(JsPlugins plugins);
+
     @Provides
-    @Named(PluginsModule.JS_PLUGIN_CONSUMER_NAME)
-    static Consumer<JsPlugin> providesJsPluginConsumer(JettyBackedGrpcServer server) {
-        return server.jsPluginConsumer();
+    static JsPlugins providesJsPluginRegistration() {
+        try {
+            return JsPlugins.create();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

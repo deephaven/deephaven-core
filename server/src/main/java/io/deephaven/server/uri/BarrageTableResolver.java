@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.uri;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.client.impl.*;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.configuration.Configuration;
@@ -31,6 +32,7 @@ import javax.inject.Singleton;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -103,11 +105,13 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     @Override
-    public Future<Table> resolve(URI uri) throws InterruptedException {
+    public Table resolve(URI uri) throws InterruptedException {
         try {
-            return subscribe(RemoteUri.of(uri));
+            return subscribe(RemoteUri.of(uri)).get();
         } catch (TableHandleException e) {
             throw e.asUnchecked();
+        } catch (ExecutionException e) {
+            throw new UncheckedDeephavenException(e);
         }
     }
 

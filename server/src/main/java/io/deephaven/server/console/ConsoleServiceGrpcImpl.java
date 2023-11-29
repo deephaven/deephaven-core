@@ -8,6 +8,8 @@ import com.google.rpc.Code;
 import io.deephaven.base.LockFreeArrayQueue;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.table.impl.util.RuntimeMemory.Sample;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -35,6 +37,7 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.util.Scheduler;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
@@ -164,29 +167,38 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
         }
 
-        SessionState.ExportObject<ScriptSession> exportedConsole =
-                ticketRouter.resolve(session, consoleId, "consoleId");
-        session.nonExport()
-                .requiresSerialQueue()
-                .require(exportedConsole)
-                .onError(responseObserver)
-                .submit(() -> {
-                    ScriptSession scriptSession = exportedConsole.get();
-                    ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
-                    ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
-                    FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
-                    changes.created.entrySet()
-                            .forEach(entry -> fieldChanges.addCreated(makeVariableDefinition(entry)));
-                    changes.updated.entrySet()
-                            .forEach(entry -> fieldChanges.addUpdated(makeVariableDefinition(entry)));
-                    changes.removed.entrySet()
-                            .forEach(entry -> fieldChanges.addRemoved(makeVariableDefinition(entry)));
-                    if (changes.error != null) {
-                        diff.setErrorMessage(Throwables.getStackTraceAsString(changes.error));
-                        log.error().append("Error running script: ").append(changes.error).endl();
-                    }
-                    safelyComplete(responseObserver, diff.setChanges(fieldChanges).build());
-                });
+        final String description = "ConsoleService#executeCommand(console="
+                + ticketRouter.getLogNameFor(consoleId, "consoleId") + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
+
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<ScriptSession> exportedConsole =
+                    ticketRouter.resolve(session, consoleId, "consoleId");
+
+            session.nonExport()
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
+                    .requiresSerialQueue()
+                    .require(exportedConsole)
+                    .onError(responseObserver)
+                    .submit(() -> {
+                        ScriptSession scriptSession = exportedConsole.get();
+                        ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
+                        ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
+                        FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
+                        changes.created.entrySet()
+                                .forEach(entry -> fieldChanges.addCreated(makeVariableDefinition(entry)));
+                        changes.updated.entrySet()
+                                .forEach(entry -> fieldChanges.addUpdated(makeVariableDefinition(entry)));
+                        changes.removed.entrySet()
+                                .forEach(entry -> fieldChanges.addRemoved(makeVariableDefinition(entry)));
+                        if (changes.error != null) {
+                            diff.setErrorMessage(Throwables.getStackTraceAsString(changes.error));
+                            log.error().append("Error running script: ").append(changes.error).endl();
+                        }
+                        safelyComplete(responseObserver, diff.setChanges(fieldChanges).build());
+                    });
+        }
     }
 
     @Override
@@ -236,36 +248,48 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             @NotNull final StreamObserver<BindTableToVariableResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
 
-        Ticket tableId = request.getTableId();
+        final Ticket tableId = request.getTableId();
         if (tableId.getTicket().isEmpty()) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No source tableId supplied");
         }
-        final SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, tableId, "tableId");
-        final SessionState.ExportObject<ScriptSession> exportedConsole;
 
-        ExportBuilder<?> exportBuilder = session.nonExport()
-                .requiresSerialQueue()
-                .onError(responseObserver);
+        final String description = "ConsoleService#bindTableToVariable(table="
+                + ticketRouter.getLogNameFor(tableId, "tableId") + ", variableName=" + request.getVariableName()
+                + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        if (request.hasConsoleId()) {
-            exportedConsole = ticketRouter.resolve(session, request.getConsoleId(), "consoleId");
-            exportBuilder.require(exportedTable, exportedConsole);
-        } else {
-            exportedConsole = null;
-            exportBuilder.require(exportedTable);
-        }
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Table> exportedTable =
+                    ticketRouter.resolve(session, tableId, "tableId");
 
-        exportBuilder.submit(() -> {
-            ScriptSession scriptSession =
-                    exportedConsole != null ? exportedConsole.get() : scriptSessionProvider.get();
-            Table table = exportedTable.get();
-            scriptSession.setVariable(request.getVariableName(), table);
-            if (DynamicNode.notDynamicOrIsRefreshing(table)) {
-                scriptSession.manage(table);
+            final SessionState.ExportObject<ScriptSession> exportedConsole;
+
+            ExportBuilder<?> exportBuilder = session.nonExport()
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
+                    .requiresSerialQueue()
+                    .onError(responseObserver);
+
+            if (request.hasConsoleId()) {
+                exportedConsole = ticketRouter.resolve(session, request.getConsoleId(), "consoleId");
+                exportBuilder.require(exportedTable, exportedConsole);
+            } else {
+                exportedConsole = null;
+                exportBuilder.require(exportedTable);
             }
-            responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
-            responseObserver.onCompleted();
-        });
+
+            exportBuilder.submit(() -> {
+                ScriptSession scriptSession =
+                        exportedConsole != null ? exportedConsole.get() : scriptSessionProvider.get();
+                Table table = exportedTable.get();
+                scriptSession.setVariable(request.getVariableName(), table);
+                if (DynamicNode.notDynamicOrIsRefreshing(table)) {
+                    scriptSession.manage(table);
+                }
+                responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
+                responseObserver.onCompleted();
+            });
+        }
     }
 
     @Override

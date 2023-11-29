@@ -715,7 +715,7 @@ std::shared_ptr<Schema> TableHandleImpl::Schema() {
   std::unique_lock guard(mutex_);
   if (schema_request_sent_) {
     // Schema request already sent by someone else. So wait for the successful result or error.
-    mutex_.unlock();
+    guard.unlock();
     return schema_future_.get();
   }
 
@@ -737,15 +737,13 @@ std::shared_ptr<Schema> TableHandleImpl::Schema() {
     );
 
     auto fd = ConvertTicketToFlightDescriptor(ticket_.ticket());
-    std::unique_ptr<arrow::flight::SchemaResult> schema_result;
-    auto gs_result = server->FlightClient()->GetSchema(options, fd, &schema_result);
+    auto gs_result = server->FlightClient()->GetSchema(options, fd);
     OkOrThrow(DEEPHAVEN_LOCATION_EXPR(gs_result));
 
-    std::shared_ptr<arrow::Schema> arrow_schema;
-    auto schema_res = schema_result->GetSchema(nullptr, &arrow_schema);
-    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(schema_res));
+    auto schema_result = (*gs_result)->GetSchema(nullptr);
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(schema_result));
 
-    const auto &fields = arrow_schema->fields();
+    const auto &fields = (*schema_result)->fields();
     auto names = MakeReservedVector<std::string>(fields.size());
     auto types = MakeReservedVector<ElementTypeId::Enum>(fields.size());
     for (const auto &f: fields) {

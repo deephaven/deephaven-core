@@ -116,15 +116,19 @@ public class QueryTable extends BaseTable<QueryTable> {
          */
         class Result<T extends DynamicNode & NotificationStepReceiver> {
             public final T resultNode;
-            public final TableUpdateListener resultListener; // may be null if parent is non-ticking
+            /**
+             * The listener that should be attached to the parent. The listener may be null if the table does not need
+             * to respond to ticks from other sources (e.g. the parent is non-refreshing).
+             */
+            public final TableUpdateListener resultListener;
 
             public Result(@NotNull final T resultNode) {
                 this(resultNode, null);
             }
 
             /**
-             * Construct the result of an operation. The listener may be null if the parent is non-ticking and the table
-             * does not need to respond to ticks from other sources.
+             * Construct the result of an operation. The listener may be null if the table does not need to respond to
+             * ticks from other sources (e.g. the parent is non-refreshing).
              *
              * @param resultNode the result of the operation
              * @param resultListener the listener that should be attached to the parent (or null)
@@ -355,7 +359,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     public <T> ColumnSource<T> getColumnSource(String sourceName) {
         final ColumnSource<?> columnSource = columns.get(sourceName);
         if (columnSource == null) {
-            throw new NoSuchColumnException(columns.keySet(), Collections.singletonList(sourceName));
+            throw new NoSuchColumnException(columns.keySet(), sourceName);
         }
         // noinspection unchecked
         return (ColumnSource<T>) columnSource;
@@ -1268,11 +1272,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         final BasePerformanceEntry basePerformanceEntry =
                                                 initialFilterExecution.getBasePerformanceEntry();
                                         if (basePerformanceEntry != null) {
-                                            final QueryPerformanceNugget outerNugget =
-                                                    QueryPerformanceRecorder.getInstance().getOuterNugget();
-                                            if (outerNugget != null) {
-                                                outerNugget.addBaseEntry(basePerformanceEntry);
-                                            }
+                                            QueryPerformanceRecorder.getInstance().getEnclosingNugget()
+                                                    .accumulate(basePerformanceEntry);
                                         }
                                     }
                                     currentMapping.initializePreviousValue();
@@ -1516,11 +1517,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             } finally {
                                 final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
                                 if (baseEntry != null) {
-                                    final QueryPerformanceNugget outerNugget =
-                                            QueryPerformanceRecorder.getInstance().getOuterNugget();
-                                    if (outerNugget != null) {
-                                        outerNugget.addBaseEntry(baseEntry);
-                                    }
+                                    QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(baseEntry);
                                 }
                             }
                         }
@@ -1772,14 +1769,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             return memoizeResult(MemoizedOperationKey.dropColumns(columnNames), () -> QueryPerformanceRecorder
                     .withNugget("dropColumns(" + Arrays.toString(columnNames) + ")", sizeForInstrumentation(), () -> {
                         final Mutable<Table> result = new MutableObject<>();
-
-                        final Set<String> existingColumns = new HashSet<>(definition.getColumnNames());
-                        final Set<String> columnNamesToDrop = new HashSet<>(Arrays.asList(columnNames));
-                        if (!existingColumns.containsAll(columnNamesToDrop)) {
-                            columnNamesToDrop.removeAll(existingColumns);
-                            throw new RuntimeException("Unknown columns: " + columnNamesToDrop
-                                    + ", available columns = " + getColumnSourceMap().keySet());
-                        }
+                        definition.checkHasColumns(Arrays.asList(columnNames));
                         final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(columns);
                         for (String columnName : columnNames) {
                             newColumns.remove(columnName);
@@ -1794,14 +1784,13 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                             copyAttributes(resultTable, CopyAttributeOperation.DropColumns);
                             copySortableColumns(resultTable,
-                                    resultTable.getDefinition().getColumnNameMap()::containsKey);
+                                    resultTable.getDefinition().getColumnNameSet()::contains);
                             maybeCopyColumnDescriptions(resultTable);
 
                             if (snapshotControl != null) {
                                 final ModifiedColumnSet.Transformer mcsTransformer =
                                         newModifiedColumnSetTransformer(resultTable,
-                                                resultTable.getColumnSourceMap().keySet()
-                                                        .toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                                                resultTable.getDefinition().getColumnNamesArray());
                                 final ListenerImpl listener = new ListenerImpl(
                                         "dropColumns(" + Arrays.deepToString(columnNames) + ')', this, resultTable) {
                                     @Override
@@ -2400,7 +2389,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         // Use the given columns (if specified); otherwise an empty array means all of my columns
         final String[] useStampColumns = stampColumns.length == 0
-                ? getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)
+                ? definition.getColumnNamesArray()
                 : stampColumns;
 
         final Map<String, ColumnSource<?>> triggerColumns = new LinkedHashMap<>();
@@ -3552,8 +3541,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                 resultTable.setValue(result.resultNode);
                 if (snapshotControl != null) {
-                    snapshotControl.setListenerAndResult(Require.neqNull(result.resultListener, "resultListener"),
-                            result.resultNode);
+                    snapshotControl.setListenerAndResult(result.resultListener, result.resultNode);
                 }
 
                 return true;
@@ -3580,12 +3568,9 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private <R> R applyInternal(@NotNull final Function<Table, R> function) {
-        final QueryPerformanceNugget nugget =
-                QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")");
-        try {
+        try (final SafeCloseable ignored =
+                QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")")) {
             return function.apply(this);
-        } finally {
-            nugget.done();
         }
     }
 

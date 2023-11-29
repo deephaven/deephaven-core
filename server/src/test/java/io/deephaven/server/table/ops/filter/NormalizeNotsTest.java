@@ -90,6 +90,14 @@ public class NormalizeNotsTest extends AbstractNormalizingFilterTest {
                                 CaseSensitivity.MATCH_CASE, MatchType.INVERTED)));
     }
 
+    @Test
+    public void testNormalizeNotsInCondition() {
+        final Condition aInB = in(reference("ColumnA"), reference("ColumnB"));
+        final Condition aNotInB = notIn(reference("ColumnA"), reference("ColumnB"));
+        assertFilterEquals("not(REGULAR) == INVERTED", not(aInB), aNotInB);
+        assertFilterEquals("not(INVERTED) == REGULAR", not(aNotInB), aInB);
+    }
+
     @Override
     protected Condition execute(Condition f) {
         return NormalizeNots.exec(f);

@@ -118,6 +118,10 @@ public abstract class MemoizedOperationKey {
                 includeConstituents);
     }
 
+    public static MemoizedOperationKey blinkToAppendOnly(final long sizeLimit, @NotNull final Object key) {
+        return new BlinkToAppendOnly(sizeLimit, key);
+    }
+
     private static boolean isMemoizable(SelectColumn[] selectColumn) {
         return Arrays.stream(selectColumn)
                 .allMatch(sc -> sc instanceof SourceColumn || sc instanceof ReinterpretedColumn);
@@ -540,7 +544,7 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    public static WouldMatch wouldMatch(WouldMatchPair... pairs) {
+    public static MemoizedOperationKey wouldMatch(WouldMatchPair... pairs) {
         return new WouldMatch(pairs);
     }
 
@@ -592,7 +596,7 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    public static CrossJoin crossJoin(final Table rightTable, final MatchPair[] columnsToMatch,
+    public static MemoizedOperationKey crossJoin(final Table rightTable, final MatchPair[] columnsToMatch,
             final MatchPair[] columnsToAdd, final int numRightBitsToReserve) {
         return new CrossJoin(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve);
     }
@@ -650,7 +654,7 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    public static RangeJoin rangeJoin(
+    public static MemoizedOperationKey rangeJoin(
             @NotNull final Table rightTable,
             @NotNull final Collection<? extends JoinMatch> exactMatches,
             @NotNull final RangeJoinMatch rangeMatch,
@@ -671,5 +675,39 @@ public abstract class MemoizedOperationKey {
             return false;
         }
         return t1 == t2;
+    }
+
+    private static class BlinkToAppendOnly extends AttributeAgnosticMemoizedOperationKey {
+        private final long sizeLimit;
+        private final Object key;
+
+        private BlinkToAppendOnly(final long sizeLimit, @NotNull final Object key) {
+            this.sizeLimit = sizeLimit;
+            this.key = Objects.requireNonNull(key);
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other == null || getClass() != other.getClass()) {
+                return false;
+            }
+
+            final BlinkToAppendOnly blinkToAppendOnly = (BlinkToAppendOnly) other;
+
+            return sizeLimit == blinkToAppendOnly.sizeLimit && key.equals(blinkToAppendOnly.key);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * key.hashCode() + Long.hashCode(sizeLimit);
+        }
+
+        @Override
+        BaseTable.CopyAttributeOperation copyType() {
+            return BaseTable.CopyAttributeOperation.None;
+        }
     }
 }

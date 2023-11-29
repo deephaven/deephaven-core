@@ -38,11 +38,11 @@ def buildRClient = Docker.registerDockerTask(project, 'rClient') {
             include 'rdeephaven/NAMESPACE'
             include 'rdeephaven/README.md'
             include 'rdeephaven/inst/**'
-            include 'rdeephaven/man/**'
             include 'rdeephaven/etc/**'
             include 'rdeephaven/R/**'
             include 'rdeephaven/src/*.cpp'
             include 'rdeephaven/src/Makevars'
+            include 'rdeephaven/vignettes/*.Rmd'
         }
     }
     dockerfile {
@@ -54,18 +54,18 @@ def buildRClient = Docker.registerDockerTask(project, 'rClient') {
                         /out \\
                         ${prefix}/log \\
                         ${prefix}/bin/rdeephaven \\
-                        ${prefix}/src/rdeephaven/{inst,man,etc,src,R,bin}
+                        ${prefix}/src/rdeephaven/{inst,etc,src,R,bin}
                    """)
         copyFile('rdeephaven/DESCRIPTION',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/LICENSE',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/NAMESPACE',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/README.md',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/inst/',  "${prefix}/src/rdeephaven/inst/")
-        copyFile('rdeephaven/man/', "${prefix}/src/rdeephaven/man/")
         copyFile('rdeephaven/etc/', "${prefix}/src/rdeephaven/etc/")
         copyFile('rdeephaven/R/', "${prefix}/src/rdeephaven/R/")
         copyFile('rdeephaven/src/*.cpp', "${prefix}/src/rdeephaven/src/")
         copyFile('rdeephaven/src/Makevars', "${prefix}/src/rdeephaven/src/")
+        copyFile('rdeephaven/vignettes/*.Rmd', "${prefix}/src/rdeephaven/vignettes/")
         copyFile('r-build.sh', "${prefix}/bin/rdeephaven")
         runCommand("PREFIX=${prefix}; " +
                   '''set -eux ; \
@@ -115,7 +115,7 @@ def rClientDoc = Docker.registerDockerTask(project, 'rClientDoc') {
         }
     }
     copyOut {
-        into layout.buildDirectory.dir('man')
+        into layout.projectDirectory.dir('rdeephaven/man')
     }
     dockerfile {
         from('deephaven/r-client:local-build')
@@ -153,18 +153,48 @@ def rClientDoc = Docker.registerDockerTask(project, 'rClientDoc') {
         copyFile('r-doc.sh', "${prefix}/bin/rdeephaven")
     }
     parentContainers = [ project.tasks.getByName('rClient') ]
-    entrypoint = ["${prefix}/bin/rdeephaven/r-doc.sh", '/out']
+    entrypoint = ["${prefix}/bin/rdeephaven/r-doc.sh"]
+    containerOutPath = "${prefix}/src/rdeephaven/man"
 }
 
-task updateRClientDoc {
-    dependsOn rClientDoc
-    doLast {
-        exec {
-            workingDir '.'
-            commandLine 'rm', '-f', 'man/*'
-            commandLine 'tar', '-C', 'rdeephaven', '-zxvf', 'build/man/man.tgz'
+def rClientSite = Docker.registerDockerTask(project, 'rClientSite') {
+    // Only tested on x86-64, and we only build dependencies for x86-64
+    platform = 'linux/amd64'
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'r-site.sh'
+            include 'rdeephaven/man/**'
+            include 'rdeephaven/pkgdown/**'
         }
     }
+    copyOut {
+        into layout.projectDirectory.dir('rdeephaven/docs')
+    }
+    dockerfile {
+        from('deephaven/r-client-doc:local-build')
+        // We need the contents of 'man' to build the docsite
+        copyFile('rdeephaven/man/**', "${prefix}/src/rdeephaven/man/")
+        copyFile('rdeephaven/pkgdown/**', "${prefix}/src/rdeephaven/pkgdown/")
+        runCommand("mkdir -p ${prefix}/src/rdeephaven/docs")
+        runCommand('''echo "status = tryCatch(" \
+                           "   {" \
+                           "      install.packages('pkgdown', repos='http://cran.us.r-project.org'); " \
+                           "      0" \
+                           "   }," \
+                           "  error=function(e) 1," \
+                           "  warning=function(w) 2" \
+                           ");" \
+                           "print(paste0('status=', status));" \
+                           "quit(save='no', status=status)" | \
+                        MAKE="make -j`getconf _NPROCESSORS_ONLN`" R --no-save --no-restore
+                   ''')
+        // Keep this after the package installs above;
+        // it is likely it changes more frequently.
+        copyFile('r-site.sh', "${prefix}/bin/rdeephaven")
+    }
+    parentContainers = [ project.tasks.getByName('rClientDoc') ]
+    entrypoint = ["${prefix}/bin/rdeephaven/r-site.sh"]
+    containerOutPath = "${prefix}/src/rdeephaven/docs"
 }
 
 deephavenDocker.shouldLogIfTaskFails testRClient

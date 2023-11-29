@@ -36,7 +36,6 @@ _JSupplier = jpy.get_type('java.util.function.Supplier')
 _JFunctionGeneratedTableFactory = jpy.get_type("io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory")
 
 
-
 def empty_table(size: int) -> Table:
     """Creates a table with rows but no columns.
 
@@ -64,7 +63,7 @@ def time_table(period: Union[Duration, int, str, datetime.timedelta, np.timedelt
         period (Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
             time interval between new row additions, can be expressed as an integer in nanoseconds,
             a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time duration types.
-        start_time (Union[None, str, datetime.datetime, np.datetime64], optional):
+        start_time (Union[None, Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp], optional):
             start time for adding new rows, defaults to None which means use the current time
             as the start time.
         blink_table (bool, optional): if the time table should be a blink table, defaults to False
@@ -394,7 +393,6 @@ def function_generated_table(table_generator: Callable[..., Table],
         exec_ctx = execution_context.get_exec_ctx()
         if exec_ctx is None:
             raise ValueError("No execution context is available and exec_ctx was not provided! ")
-
 
     def table_generator_function():
         with exec_ctx:

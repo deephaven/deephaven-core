@@ -41,7 +41,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.InMemoryTable;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.BooleanArraySource;
 import io.deephaven.engine.table.impl.sources.ByteArraySource;
@@ -59,6 +58,7 @@ import io.deephaven.io.streams.BzipFileOutputStream;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.Nullable;
 
@@ -917,9 +917,8 @@ public class CsvTools {
             final boolean nullsAsEmpty,
             final char separator,
             @Nullable final BiConsumer<Long, Long> progress) throws IOException {
-        final QueryPerformanceNugget nugget =
-                QueryPerformanceRecorder.getInstance().getNugget("CsvTools.writeCsvContentsSeq()");
-        try {
+        try (final SafeCloseable ignored =
+                QueryPerformanceRecorder.getInstance().getNugget("CsvTools.writeCsvContentsSeq()")) {
             String separatorStr = String.valueOf(separator);
             for (long i = 0; i < size; i++) {
                 for (int j = 0; j < cols.length; j++) {
@@ -945,8 +944,6 @@ public class CsvTools {
                     progress.accept(i, size);
                 }
             }
-        } finally {
-            nugget.done();
         }
     }
 

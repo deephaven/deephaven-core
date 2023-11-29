@@ -115,8 +115,8 @@ TableHandle TableHandleManager::EmptyTable(int64_t size) const {
   return TableHandle(std::move(qs_impl));
 }
 
-TableHandle TableHandleManager::FetchTable(std::string tableName) const {
-  auto qs_impl = impl_->FetchTable(std::move(tableName));
+TableHandle TableHandleManager::FetchTable(std::string table_name) const {
+  auto qs_impl = impl_->FetchTable(std::move(table_name));
   return TableHandle(std::move(qs_impl));
 }
 
@@ -185,8 +185,8 @@ Aggregate::~Aggregate() = default;
 Aggregate::Aggregate(std::shared_ptr<impl::AggregateImpl> impl) : impl_(std::move(impl)) {
 }
 
-Aggregate Aggregate::AbsSum(std::vector<std::string> columnSpecs) {
-  return createAggForMatchPairs(ComboAggregateRequest::ABS_SUM, std::move(columnSpecs));
+Aggregate Aggregate::AbsSum(std::vector<std::string> column_specs) {
+  return createAggForMatchPairs(ComboAggregateRequest::ABS_SUM, std::move(column_specs));
 }
 
 Aggregate Aggregate::Avg(std::vector<std::string> column_specs) {
@@ -211,8 +211,8 @@ Aggregate Aggregate::Last(std::vector<std::string> column_specs) {
   return createAggForMatchPairs(ComboAggregateRequest::LAST, std::move(column_specs));
 }
 
-Aggregate Aggregate::Max(std::vector<std::string> columnSpecs) {
-  return createAggForMatchPairs(ComboAggregateRequest::MAX, std::move(columnSpecs));
+Aggregate Aggregate::Max(std::vector<std::string> column_specs) {
+  return createAggForMatchPairs(ComboAggregateRequest::MAX, std::move(column_specs));
 }
 
 Aggregate Aggregate::Med(std::vector<std::string> column_specs) {
@@ -306,124 +306,126 @@ TableHandle TableHandle::Sort(std::vector<SortPair> sortPairs) const {
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::Select(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->Select(std::move(columnSpecs));
+TableHandle TableHandle::Select(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->Select(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::Update(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->Update(std::move(columnSpecs));
+TableHandle TableHandle::Update(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->Update(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::LazyUpdate(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->LazyUpdate(std::move(columnSpecs));
+TableHandle TableHandle::LazyUpdate(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->LazyUpdate(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::View(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->View(std::move(columnSpecs));
+TableHandle TableHandle::View(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->View(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::DropColumns(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->DropColumns(std::move(columnSpecs));
+TableHandle TableHandle::DropColumns(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->DropColumns(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::UpdateView(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->UpdateView(std::move(columnSpecs));
+TableHandle TableHandle::UpdateView(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->UpdateView(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::By(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->By(std::move(columnSpecs));
+TableHandle TableHandle::By(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->By(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::By(AggregateCombo combo, std::vector<std::string> groupByColumns) const {
-  auto qt_impl = impl_->By(combo.Impl()->Aggregates(), std::move(groupByColumns));
+TableHandle TableHandle::By(AggregateCombo combo, std::vector<std::string> group_by_columns) const {
+  auto qt_impl = impl_->By(combo.Impl()->Aggregates(), std::move(group_by_columns));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::MinBy(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->MinBy(std::move(columnSpecs));
+TableHandle TableHandle::MinBy(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->MinBy(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::MaxBy(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->MaxBy(std::move(columnSpecs));
+TableHandle TableHandle::MaxBy(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->MaxBy(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::SumBy(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->SumBy(std::move(columnSpecs));
+TableHandle TableHandle::SumBy(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->SumBy(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::AbsSumBy(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->AbsSumBy(std::move(columnSpecs));
+TableHandle TableHandle::AbsSumBy(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->AbsSumBy(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::VarBy(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->VarBy(std::move(columnSpecs));
+TableHandle TableHandle::VarBy(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->VarBy(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::StdBy(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->StdBy(std::move(columnSpecs));
+TableHandle TableHandle::StdBy(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->StdBy(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::AvgBy(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->AvgBy(std::move(columnSpecs));
+TableHandle TableHandle::AvgBy(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->AvgBy(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::LastBy(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->LastBy(std::move(columnSpecs));
+TableHandle TableHandle::LastBy(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->LastBy(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::FirstBy(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->FirstBy(std::move(columnSpecs));
+TableHandle TableHandle::FirstBy(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->FirstBy(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::MedianBy(std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->MedianBy(std::move(columnSpecs));
+TableHandle TableHandle::MedianBy(std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->MedianBy(std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::PercentileBy(double percentile, bool avgMedian,
-    std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->PercentileBy(percentile, avgMedian, std::move(columnSpecs));
+TableHandle TableHandle::PercentileBy(double percentile, bool avg_median,
+    std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->PercentileBy(percentile, avg_median, std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::PercentileBy(double percentile, std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->PercentileBy(percentile, std::move(columnSpecs));
+TableHandle TableHandle::PercentileBy(double percentile, std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->PercentileBy(percentile, std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::CountBy(std::string countByColumn, std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->CountBy(std::move(countByColumn), std::move(columnSpecs));
+TableHandle TableHandle::CountBy(std::string count_by_column,
+    std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->CountBy(std::move(count_by_column), std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::WAvgBy(std::string weightColumn, std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->WavgBy(std::move(weightColumn), std::move(columnSpecs));
+TableHandle TableHandle::WAvgBy(std::string weight_column,
+    std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->WavgBy(std::move(weight_column), std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::TailBy(int64_t n, std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->TailBy(n, std::move(columnSpecs));
+TableHandle TableHandle::TailBy(int64_t n, std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->TailBy(n, std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::HeadBy(int64_t n, std::vector<std::string> columnSpecs) const {
-  auto qt_impl = impl_->HeadBy(n, std::move(columnSpecs));
+TableHandle TableHandle::HeadBy(int64_t n, std::vector<std::string> column_specs) const {
+  auto qt_impl = impl_->HeadBy(n, std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
@@ -437,40 +439,40 @@ TableHandle TableHandle::Tail(int64_t n) const {
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::Ungroup(bool nullFill, std::vector<std::string> groupByColumns) const {
-  auto qt_impl = impl_->Ungroup(nullFill, std::move(groupByColumns));
+TableHandle TableHandle::Ungroup(bool null_fill, std::vector<std::string> group_by_columns) const {
+  auto qt_impl = impl_->Ungroup(null_fill, std::move(group_by_columns));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::Merge(std::string keyColumn, std::vector<TableHandle> sources) const {
+TableHandle TableHandle::Merge(std::string key_columns, std::vector<TableHandle> sources) const {
   std::vector<Ticket> source_handles;
   source_handles.reserve(sources.size() + 1);
   source_handles.push_back(impl_->Ticket());
   for (const auto &s : sources) {
     source_handles.push_back(s.Impl()->Ticket());
   }
-  auto qt_impl = impl_->Merge(std::move(keyColumn), std::move(source_handles));
+  auto qt_impl = impl_->Merge(std::move(key_columns), std::move(source_handles));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::CrossJoin(const TableHandle &rightSide,
-    std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const {
-  auto qt_impl = impl_->CrossJoin(*rightSide.impl_, std::move(columnsToMatch),
-      std::move(columnsToAdd));
+TableHandle TableHandle::CrossJoin(const TableHandle &right_side,
+    std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add) const {
+  auto qt_impl = impl_->CrossJoin(*right_side.impl_, std::move(columns_to_match),
+      std::move(columns_to_add));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::NaturalJoin(const TableHandle &rightSide,
-    std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const {
-  auto qt_impl = impl_->NaturalJoin(*rightSide.impl_, std::move(columnsToMatch),
-      std::move(columnsToAdd));
+TableHandle TableHandle::NaturalJoin(const TableHandle &right_side,
+    std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add) const {
+  auto qt_impl = impl_->NaturalJoin(*right_side.impl_, std::move(columns_to_match),
+      std::move(columns_to_add));
   return TableHandle(std::move(qt_impl));
 }
 
-TableHandle TableHandle::ExactJoin(const TableHandle &rightSide,
-    std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const {
-  auto qt_impl = impl_->ExactJoin(*rightSide.impl_, std::move(columnsToMatch),
-      std::move(columnsToAdd));
+TableHandle TableHandle::ExactJoin(const TableHandle &right_side,
+    std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add) const {
+  auto qt_impl = impl_->ExactJoin(*right_side.impl_, std::move(columns_to_match),
+      std::move(columns_to_add));
   return TableHandle(std::move(qt_impl));
 }
 
@@ -550,9 +552,9 @@ std::shared_ptr<SubscriptionHandle> TableHandle::Subscribe(
 }
 
 std::shared_ptr<SubscriptionHandle>
-TableHandle::Subscribe(onTickCallback_t onTick, void *onTickUserData,
-    onErrorCallback_t onError, void *onErrorUserData) {
-  return impl_->Subscribe(onTick, onTickUserData, onError, onErrorUserData);
+TableHandle::Subscribe(onTickCallback_t on_tick, void *on_tick_user_data,
+    onErrorCallback_t on_error, void *on_error_user_data) {
+  return impl_->Subscribe(on_tick, on_tick_user_data, on_error, on_error_user_data);
 }
 
 void TableHandle::Unsubscribe(std::shared_ptr<SubscriptionHandle> callback) {
@@ -563,9 +565,9 @@ const std::string &TableHandle::GetTicketAsString() const {
   return impl_->Ticket().ticket();
 }
 
-std::string TableHandle::ToString(bool wantHeaders) const {
+std::string TableHandle::ToString(bool want_headers) const {
   SimpleOstringstream oss;
-  oss << Stream(wantHeaders);
+  oss << Stream(want_headers);
   return std::move(oss.str());
 }
 
@@ -590,12 +592,12 @@ void PrintTableData(std::ostream &s, const TableHandle &table_handle, bool want_
   }
 
   while (true) {
-    arrow::flight::FlightStreamChunk chunk;
-    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr->Next(&chunk)));
-    if (chunk.data == nullptr) {
+    auto chunk = fsr->Next();
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(chunk));
+    if (chunk->data == nullptr) {
       break;
     }
-    const auto *data = chunk.data.get();
+    const auto *data = chunk->data.get();
     const auto &columns = data->columns();
     for (int64_t row_num = 0; row_num < data->num_rows(); ++row_num) {
       if (row_num != 0) {

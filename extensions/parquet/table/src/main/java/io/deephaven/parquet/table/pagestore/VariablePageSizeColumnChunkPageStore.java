@@ -16,19 +16,19 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
+import java.util.Iterator;
 
-class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
+final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
 
     // We will set numPages after changing all of these arrays in place and/or setting additional
-    // elements to the
-    // end of the array. Thus, for i < numPages, array[i] will always have the same value, and be
-    // valid to use, as
-    // long as we fetch numPages before accessing the arrays. This is the thread-safe pattern used
+    // elements to the end of the array. Thus, for i < numPages, array[i] will always have the same value, and be
+    // valid to use, as long as we fetch numPages before accessing the arrays. This is the thread-safe pattern used
     // throughout.
 
     private volatile int numPages = 0;
     private volatile long[] pageRowOffsets;
     private volatile ColumnPageReader[] columnPageReaders;
+    private final Iterator<ColumnPageReader> columnPageReaderIterator;
     private volatile WeakReference<PageCache.IntrusivePage<ATTR>>[] pages;
 
     VariablePageSizeColumnChunkPageStore(@NotNull final PageCache<ATTR> pageCache,
@@ -41,6 +41,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
         pageRowOffsets = new long[INIT_ARRAY_SIZE + 1];
         pageRowOffsets[0] = 0;
         columnPageReaders = new ColumnPageReader[INIT_ARRAY_SIZE];
+        columnPageReaderIterator = columnChunkReader.getPageIterator();
 
         // noinspection unchecked
         pages = (WeakReference<PageCache.IntrusivePage<ATTR>>[]) new WeakReference[INIT_ARRAY_SIZE];
@@ -139,7 +140,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
     @Override
     public ChunkPage<ATTR> getPageContaining(@NotNull final FillContext fillContext, long row) {
         row &= mask();
-        Require.inRange(row - pageRowOffsets[0], "row", size(), "numRows");
+        Require.inRange(row - pageRowOffsets[0], "row", numRows(), "numRows");
 
         int localNumPages = numPages;
         int pageNum = Arrays.binarySearch(pageRowOffsets, 1, localNumPages + 1, row);

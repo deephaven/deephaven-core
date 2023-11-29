@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.function.BinaryOperator;
 
 /**
- * {@link SelectColumn} implementation to wrap transformer functions for
- * {@link PartitionedTable#partitionedTransform(PartitionedTable, BinaryOperator) partitioned transformations}.
+ * {@link SelectColumn} implementation to wrap transformer functions for {@link PartitionedTable#partitionedTransform
+ * partitioned transformations}.
  */
 class BiTableTransformationColumn extends BaseTableTransformationColumn {
 

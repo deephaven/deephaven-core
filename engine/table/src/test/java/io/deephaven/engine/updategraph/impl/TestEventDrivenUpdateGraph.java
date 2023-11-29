@@ -187,23 +187,23 @@ public class TestEventDrivenUpdateGraph {
                 .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
         try (final SafeCloseable ignored = context.open()) {
             final Table uptAgged = upt.where("!isNull(EntryId)").aggBy(
-                    Aggregation.AggSum("EntryIntervalUsage", "EntryIntervalInvocationCount", "EntryIntervalModified"),
+                    Aggregation.AggSum("UsageNanos", "InvocationCount", "RowsModified"),
                     "UpdateGraph", "EntryId");
             assertEquals(defaultUpdateGraph, uptAgged.getUpdateGraph());
             inRange = defaultUpdateGraph.sharedLock().computeLocked(() -> uptAgged.update(
                     "EIUExpectedMillis = UpdateGraph==`TestEDUG1` ? " + time1 + " : " + time2,
-                    "TotalExpectedTime=EntryIntervalInvocationCount * EIUExpectedMillis * 1_000_000L",
-                    "InRange=(EntryIntervalUsage > 0.9 * TotalExpectedTime) && (EntryIntervalUsage < 1.5 * TotalExpectedTime)"));
+                    "TotalExpectedTime=InvocationCount * EIUExpectedMillis * 1_000_000L",
+                    "InRange=(UsageNanos > 0.9 * TotalExpectedTime) && (UsageNanos < 1.5 * TotalExpectedTime)"));
         }
         TableTools.show(inRange);
 
         final Table compare =
-                inRange.dropColumns("EntryId", "EntryIntervalUsage", "EIUExpectedMillis", "TotalExpectedTime");
+                inRange.dropColumns("EntryId", "UsageNanos", "EIUExpectedMillis", "TotalExpectedTime");
         TableTools.show(compare);
 
         final Table expect = TableTools.newTable(stringCol("UpdateGraph", "TestEDUG1", "TestEDUG2"),
-                longCol("EntryIntervalInvocationCount", count1, count2),
-                longCol("EntryIntervalModified", count1, count2), booleanCol("InRange", true, true));
+                longCol("InvocationCount", count1, count2),
+                longCol("RowsModified", count1, count2), booleanCol("InRange", true, true));
         TstUtils.assertTableEquals(expect, compare);
     }
 

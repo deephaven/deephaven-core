@@ -4,74 +4,79 @@
 #include "deephaven/dhcore/types.h"
 
 #include <limits>
+#include <sstream>
 
+#include "date/date.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/chrono.h"
+#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/ostream.h"
 
-using deephaven::dhcore::utility::Stringf;
-
+static_assert(FMT_VERSION >= 100000);
 
 namespace deephaven::dhcore {
-const char16_t DeephavenConstants::kNullChar;
+constexpr const char16_t DeephavenConstants::kNullChar;
 
-const float DeephavenConstants::kNullFloat;
-const float DeephavenConstants::kNanFloat;
-const float DeephavenConstants::kNegInfinityFloat;
-const float DeephavenConstants::kPosInfinityFloat;
-const float DeephavenConstants::kMinFloat;
-const float DeephavenConstants::kMaxFloat;
-const float DeephavenConstants::kMinFiniteFloat =
+constexpr const float DeephavenConstants::kNullFloat;
+constexpr const float DeephavenConstants::kNanFloat;
+constexpr const float DeephavenConstants::kNegInfinityFloat;
+constexpr const float DeephavenConstants::kPosInfinityFloat;
+constexpr const float DeephavenConstants::kMinFloat;
+constexpr const float DeephavenConstants::kMaxFloat;
+/* constexpr clang dislikes */ const float DeephavenConstants::kMinFiniteFloat =
   std::nextafter(-std::numeric_limits<float>::max(), 0.0F);
-const float DeephavenConstants::kMaxFiniteFloat;
-const float DeephavenConstants::kMinPosFloat;
+constexpr const float DeephavenConstants::kMaxFiniteFloat;
+constexpr const float DeephavenConstants::kMinPosFloat;
 
-const double DeephavenConstants::kNullDouble;
-const double DeephavenConstants::kNanDouble;
-const double DeephavenConstants::kNegInfinityDouble;
-const double DeephavenConstants::kPosInfinityDouble;
-const double DeephavenConstants::kMinDouble;
-const double DeephavenConstants::kMaxDouble;
-const double DeephavenConstants::kMinFiniteDouble =
+constexpr const double DeephavenConstants::kNullDouble;
+constexpr const double DeephavenConstants::kNanDouble;
+constexpr const double DeephavenConstants::kNegInfinityDouble;
+constexpr const double DeephavenConstants::kPosInfinityDouble;
+constexpr const double DeephavenConstants::kMinDouble;
+constexpr const double DeephavenConstants::kMaxDouble;
+/* constexpr clang dislikes */ const double DeephavenConstants::kMinFiniteDouble =
   std::nextafter(-std::numeric_limits<double>::max(), 0.0);
-const double DeephavenConstants::kMaxFiniteDouble;
-const double DeephavenConstants::kMinPosDouble;
+constexpr const double DeephavenConstants::kMaxFiniteDouble;
+constexpr const double DeephavenConstants::kMinPosDouble;
 
-const int8_t DeephavenConstants::kNullByte;
-const int8_t DeephavenConstants::kMinByte;
-const int8_t DeephavenConstants::kMaxByte;
+constexpr const int8_t DeephavenConstants::kNullByte;
+constexpr const int8_t DeephavenConstants::kMinByte;
+constexpr const int8_t DeephavenConstants::kMaxByte;
 
-const int16_t DeephavenConstants::kNullShort;
-const int16_t DeephavenConstants::kMinShort;
-const int16_t DeephavenConstants::kMaxShort;
+constexpr const int16_t DeephavenConstants::kNullShort;
+constexpr const int16_t DeephavenConstants::kMinShort;
+constexpr const int16_t DeephavenConstants::kMaxShort;
 
-const int32_t DeephavenConstants::kNullInt;
-const int32_t DeephavenConstants::kMinInt;
-const int32_t DeephavenConstants::kMaxInt;
+constexpr const int32_t DeephavenConstants::kNullInt;
+constexpr const int32_t DeephavenConstants::kMinInt;
+constexpr const int32_t DeephavenConstants::kMaxInt;
 
-const int64_t DeephavenConstants::kNullLong;
-const int64_t DeephavenConstants::kMinLong;
-const int64_t DeephavenConstants::kMaxLong;
+constexpr const int64_t DeephavenConstants::kNullLong;
+constexpr const int64_t DeephavenConstants::kMinLong;
+constexpr const int64_t DeephavenConstants::kMaxLong;
 
 DateTime DateTime::Parse(std::string_view iso_8601_timestamp) {
-  constexpr const char *kFormatToUse = "%Y-%m-%dT%H:%M:%S%z";
-  constexpr const int64_t kOneBillion = 1'000'000'000;
-
-  struct tm tm;
-  memset(&tm, 0, sizeof(struct tm));
-  const char *result = strptime(iso_8601_timestamp.data(), "%Y-%m-%dT%H:%M:%S%z", &tm);
-  if (result == nullptr) {
-    auto message = Stringf(R"x(Can't parse "%o" as ISO 8601 timestamp (using format string "%o"))x",
-        iso_8601_timestamp, kFormatToUse);
-    throw std::runtime_error(message);
-  }
-  if (result != iso_8601_timestamp.end()) {
-    auto message = Stringf(R"x(Input string "%o" had extra trailing characters "%o" (using format string "%o"))x",
-        iso_8601_timestamp, result, kFormatToUse);
+  // Special handling for "Z" timezone
+  const char *format_to_use = !iso_8601_timestamp.empty() && iso_8601_timestamp.back() == 'Z' ?
+    "%FT%TZ" : "%FT%T%z";
+  std::istringstream istream((std::string(iso_8601_timestamp)));
+  std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> tp;
+  istream >> date::parse(format_to_use, tp);
+  if (istream.fail()) {
+    auto message = fmt::format(R"x(Can't parse "{}" as ISO 8601 timestamp (using format string "{}"))x",
+        iso_8601_timestamp, format_to_use);
     throw std::runtime_error(message);
   }
 
-  auto tz_offset_secs = tm.tm_gmtoff;
-  auto time_secs = timegm(&tm) - tz_offset_secs;
-  return DateTime::FromNanos(time_secs * kOneBillion);
+  auto probe = istream.peek();
+  if (probe != std::istringstream::traits_type::eof()) {
+    auto message = fmt::format(R"x(Input string "{}" had extra trailing characters (using format string "{}"))x",
+        iso_8601_timestamp, format_to_use);
+    throw std::runtime_error(message);
+  }
+
+  auto nanos = tp.time_since_epoch().count();
+  return DateTime::FromNanos(nanos);
 }
 
 DateTime::DateTime(int year, int month, int day) : DateTime(year, month, day, 0, 0, 0, 0) {}
@@ -81,28 +86,23 @@ DateTime::DateTime(int year, int month, int day, int hour, int minute, int secon
 
 DateTime::DateTime(int year, int month, int day, int hour, int minute, int second,
     int64_t nanos) {
-  struct tm tm = {};
-  tm.tm_year = year;
-  tm.tm_mon = month;
-  tm.tm_mday = day;
-  tm.tm_hour = hour;
-  tm.tm_min = minute;
-  tm.tm_sec = second;
-  tm.tm_isdst = 0;
-  time_t time = mktime(&tm);
-  nanos_ = static_cast<int64_t>(time) + nanos;
+  // First arg needs double parentheses; otherwise it looks like a function declaration.
+  date::year_month_day ymd((date::year(year)), date::month(month), date::day(day));
+  date::sys_days day_part(ymd);
+  auto time_part = std::chrono::hours(hour) + std::chrono::minutes(minute)
+      + std::chrono::seconds(second);
+
+  auto tp = day_part + time_part;
+  auto base_nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(tp.time_since_epoch());
+  nanos_ = base_nanos.count() + nanos;
 }
 
-void DateTime::StreamIrisRepresentation(std::ostream &s) const {
-  size_t oneBillion = 1000000000;
-  time_t timeSecs = nanos_ / oneBillion;
-  auto nanos = nanos_ % oneBillion;
-  struct tm tm = {};
-  gmtime_r(&timeSecs, &tm);
-  char dateBuffer[32];  // ample
-  char nanosBuffer[32];  // ample
-  strftime(dateBuffer, sizeof(dateBuffer), "%FT%T", &tm);
-  snprintf(nanosBuffer, sizeof(nanosBuffer), "%09zd", nanos);
-  s << dateBuffer << '.' << nanosBuffer << " UTC";
+std::ostream &operator<<(std::ostream &s, const DateTime &o) {
+  std::chrono::nanoseconds ns(o.nanos_);
+  // Make a time point with nanosecond precision so we can print 9 digits of fractional second
+  // precision.
+  std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> tp(ns);
+  fmt::print(s, "{:%FT%TZ}", tp);
+  return s;
 }
 }  // namespace deephaven::client

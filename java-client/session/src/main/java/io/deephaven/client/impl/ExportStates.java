@@ -30,8 +30,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
-final class ExportStates {
+final class ExportStates implements ExportService {
 
     private final SessionImpl session;
     private final SessionServiceStub sessionStub;
@@ -39,8 +41,7 @@ final class ExportStates {
 
     private final Map<TableSpec, State> exports;
     private final ExportTicketCreator exportTicketCreator;
-    private long batchCount;
-    private long releaseCount;
+    private final Lock lock;
 
     ExportStates(SessionImpl session, SessionServiceStub sessionStub, TableServiceStub tableStub,
             ExportTicketCreator exportTicketCreator) {
@@ -49,6 +50,7 @@ final class ExportStates {
         this.tableStub = Objects.requireNonNull(tableStub);
         this.exportTicketCreator = Objects.requireNonNull(exportTicketCreator);
         this.exports = new HashMap<>();
+        this.lock = new ReentrantLock();
     }
 
     @VisibleForTesting
@@ -58,14 +60,7 @@ final class ExportStates {
         this.tableStub = Objects.requireNonNull(tableStub);
         this.exportTicketCreator = Objects.requireNonNull(exportTicketCreator);
         this.exports = new HashMap<>();
-    }
-
-    long batchCount() {
-        return batchCount;
-    }
-
-    long releaseCount() {
-        return releaseCount;
+        this.lock = new ReentrantLock();
     }
 
     /**
@@ -88,11 +83,18 @@ final class ExportStates {
                 unreferenceableTables::contains);
     }
 
-    synchronized boolean hasUnreferenceableTable(ExportsRequest request) {
-        return searchUnreferenceableTable(request).isPresent();
+    @Override
+    public ExportServiceRequest exportRequest(ExportsRequest requests) {
+        lock.lock();
+        try {
+            return exportRequestImpl(requests);
+        } catch (Throwable t) {
+            lock.unlock();
+            throw t;
+        }
     }
 
-    synchronized List<Export> export(ExportsRequest requests) {
+    private ExportServiceRequest exportRequestImpl(ExportsRequest requests) {
         ensureNoUnreferenceableTables(requests);
 
         final Set<TableSpec> oldExports = new HashSet<>(exports.keySet());
@@ -122,7 +124,7 @@ final class ExportStates {
             newStates.put(exportId, state);
             results.add(newExport);
         }
-
+        final Runnable send;
         if (!newSpecs.isEmpty()) {
             final List<TableSpec> postOrder = postOrderNewDependencies(oldExports, newSpecs);
             if (postOrder.isEmpty()) {
@@ -133,17 +135,74 @@ final class ExportStates {
             if (request.getOpsCount() == 0) {
                 throw new IllegalStateException();
             }
-
-            // log.info("Sending batch: {}", request);
-
-            tableStub.batch(request, new BatchHandler(newStates));
-            ++batchCount;
+            final BatchHandler batchHandler = new BatchHandler(newStates);
+            send = () -> tableStub.batch(request, batchHandler);
+        } else {
+            send = () -> {
+            };
         }
+        return new ExportServiceRequest() {
+            boolean sent;
+            boolean closed;
 
-        return results;
+            @Override
+            public List<Export> exports() {
+                return results;
+            }
+
+            @Override
+            public void send() {
+                if (closed || sent) {
+                    return;
+                }
+                sent = true;
+                // After the user has called send, all handling of state needs to be handled by the respective
+                // io.deephaven.client.impl.ExportRequest.listener
+                send.run();
+
+            }
+
+            @Override
+            public void close() {
+                if (closed) {
+                    return;
+                }
+                closed = true;
+                try {
+                    if (!sent) {
+                        cleanupUnsent();
+                    }
+                } finally {
+                    lock.unlock();
+                }
+            }
+
+            private void cleanupUnsent() {
+                for (Export result : results) {
+                    final State state = result.state();
+                    if (newStates.containsKey(state.exportId())) {
+                        // On brand new states that we didn't even send, we can simply remove them. We aren't
+                        // leaking anything, but we have incremented our export id creator state.
+                        removeImpl(state);
+                        continue;
+                    }
+                    result.release();
+                }
+            }
+        };
     }
 
-    private synchronized void release(State state) {
+
+    private void remove(State state) {
+        lock.lock();
+        try {
+            removeImpl(state);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private void removeImpl(State state) {
         if (!exports.remove(state.table(), state)) {
             throw new IllegalStateException("Unable to remove state");
         }
@@ -174,11 +233,15 @@ final class ExportStates {
     private void ensureNoUnreferenceableTables(ExportsRequest requests) {
         final Optional<TableSpec> unreferenceable = searchUnreferenceableTable(requests);
         if (unreferenceable.isPresent()) {
-            // todo: potentially extend engine Table api and Ticket resolver to be able to take an
-            // existing export and a list of parent indices to rehydrate an "unreferenceable" table?
-            // Alternatively, our impl could export everything.
+            // TODO(deephaven-core#4733): Add RPC to export a Table's parent(s)
+            // Alternatively, we could have an implementation that exports everything along the chain.
             throw new IllegalArgumentException(String.format(
-                    "Unable to complete request, contains an unreferenceable table: %s",
+                    "Unable to complete request, contains an unreferenceable table: %s. This is an indication that the"
+                            + " query is trying to export a strict sub-DAG of the existing exports; this is problematic"
+                            + " because there isn't (currently) a way to construct a query that guarantees the returned"
+                            + " export would refer to the same physical table that the existing exports are based on."
+                            + " See https://github.com/deephaven/deephaven-core/issues/4733 for future improvements in"
+                            + " this regard.",
                     unreferenceable.get()));
         }
     }
@@ -213,6 +276,10 @@ final class ExportStates {
             return exportId;
         }
 
+        ExportStates exportStates() {
+            return ExportStates.this;
+        }
+
         synchronized Export newReference(Listener listener) {
             if (released) {
                 throw new IllegalStateException(
@@ -228,12 +295,11 @@ final class ExportStates {
                 throw new IllegalStateException("Unable to remove child");
             }
             if (children.isEmpty()) {
-                ExportStates.this.release(this);
+                ExportStates.this.remove(this);
                 released = true;
                 sessionStub.release(
                         ReleaseRequest.newBuilder().setId(ExportTicketHelper.wrapExportIdInTicket(exportId)).build(),
                         new TicketReleaseHandler(exportId));
-                ++releaseCount;
             }
         }
 
@@ -312,10 +378,14 @@ final class ExportStates {
     private static final class BatchHandler
             implements StreamObserver<ExportedTableCreationResponse> {
 
+        private static final Logger log = LoggerFactory.getLogger(BatchHandler.class);
+
         private final Map<Integer, State> newStates;
+        private final Set<State> handled;
 
         private BatchHandler(Map<Integer, State> newStates) {
             this.newStates = Objects.requireNonNull(newStates);
+            this.handled = new HashSet<>(newStates.size());
         }
 
         @Override
@@ -332,24 +402,41 @@ final class ExportStates {
                         "Not expecting export creation responses for empty tickets");
             }
             final int exportId = ExportTicketHelper.ticketToExportId(value.getResultId().getTicket(), "export");
-            final State state = newStates.remove(exportId);
+            final State state = newStates.get(exportId);
             if (state == null) {
                 throw new IllegalStateException("Unable to find state for creation response");
             }
-            state.onCreationResponse(value);
+            if (!handled.add(state)) {
+                throw new IllegalStateException(
+                        String.format("Server misbehaving, already received response for export id %d", exportId));
+            }
+            try {
+                state.onCreationResponse(value);
+            } catch (RuntimeException e) {
+                log.error("state.onCreationResponse had unexpected exception", e);
+                state.onCreationError(e);
+            }
         }
 
         @Override
         public void onError(Throwable t) {
             for (State state : newStates.values()) {
-                state.onCreationError(t);
+                try {
+                    state.onCreationError(t);
+                } catch (RuntimeException e) {
+                    log.error("state.onCreationError had unexpected exception, ignoring", e);
+                }
             }
         }
 
         @Override
         public void onCompleted() {
             for (State state : newStates.values()) {
-                state.onCreationCompleted();
+                try {
+                    state.onCreationCompleted();
+                } catch (RuntimeException e) {
+                    log.error("state.onCreationCompleted had unexpected exception, ignoring", e);
+                }
             }
         }
     }
