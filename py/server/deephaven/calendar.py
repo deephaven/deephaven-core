@@ -41,7 +41,7 @@ def add_calendar(cal: Union[BusinessCalendar, str]) -> None:
     """
 
     if cal is None:
-        raise DHError("cal must be specified")
+        raise DHError(message="cal must be specified")
     elif isinstance(cal, str):
         try:
             _JCalendars.addCalendarFromFile(cal)
