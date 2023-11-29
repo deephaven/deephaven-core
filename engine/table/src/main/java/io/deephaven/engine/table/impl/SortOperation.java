@@ -99,39 +99,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
     @Override
     public OperationSnapshotControl newSnapshotControl(QueryTable queryTable) {
-        if (dataIndex != null) {
-            return new OperationSnapshotControlEx(queryTable, (QueryTable) dataIndex.table()) {
-                @Override
-                public synchronized boolean snapshotCompletedConsistently(
-                        final long afterClockValue,
-                        final boolean usedPreviousValues) {
-                    final boolean success = super.snapshotCompletedConsistently(afterClockValue, usedPreviousValues);
-                    if (success) {
-                        QueryTable.startTrackingPrev(resultTable.getColumnSources());
-                        if (sortMapping.isWritable()) {
-                            sortMapping.writableCast().startTrackingPrevValues();
-                        }
-                    }
-                    return success;
-                }
-            };
-        }
-
-        return new OperationSnapshotControl(queryTable) {
-            @Override
-            public synchronized boolean snapshotCompletedConsistently(
-                    final long afterClockValue,
-                    final boolean usedPreviousValues) {
-                final boolean success = super.snapshotCompletedConsistently(afterClockValue, usedPreviousValues);
-                if (success) {
-                    QueryTable.startTrackingPrev(resultTable.getColumnSources());
-                    if (sortMapping.isWritable()) {
-                        sortMapping.writableCast().startTrackingPrevValues();
-                    }
-                }
-                return success;
-            }
-        };
+        return dataIndex != null
+                ? new OperationSnapshotControlEx(queryTable, (QueryTable) dataIndex.table())
+                : new OperationSnapshotControl(queryTable);
     }
 
     private static boolean alreadySorted(final QueryTable parent, @NotNull final SortHelpers.SortMapping sortedKeys) {
@@ -193,6 +163,11 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
         resultTable.setFlat();
         setSorted(resultTable);
+
+        QueryTable.startTrackingPrev(resultTable.getColumnSources());
+        if (sortMapping.isWritable()) {
+            sortMapping.writableCast().startTrackingPrevValues();
+        }
 
         final TableUpdateListener resultListener =
                 new BaseTable.ListenerImpl("Stream sort listener", parent, resultTable) {
@@ -322,6 +297,11 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                     parent.newModifiedColumnSet(sortColumnNames));
 
             setSorted(resultTable);
+
+            QueryTable.startTrackingPrev(resultTable.getColumnSources());
+            if (sortMapping.isWritable()) {
+                sortMapping.writableCast().startTrackingPrevValues();
+            }
 
             return new Result<>(resultTable, listener);
         }
