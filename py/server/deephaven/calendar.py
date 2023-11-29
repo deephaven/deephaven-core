@@ -73,7 +73,7 @@ def calendar_names() -> List[str]:
     """ Returns the names of all available calendar names.
 
     Returns:
-        a list of names of all available calendar names
+        a list of all available calendar names
 
     Raises:
         DHError
