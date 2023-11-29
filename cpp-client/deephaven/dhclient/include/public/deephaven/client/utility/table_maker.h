@@ -20,6 +20,7 @@
 #include "deephaven/client/client.h"
 #include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/format.h"
 
 namespace deephaven::client::utility {
 namespace internal {
@@ -209,7 +210,6 @@ const char * const TypeConverterTraits<std::optional<T>>::kDeephavenTypeName =
 template<typename T>
 TypeConverter TypeConverter::CreateNew(const std::vector<T> &values) {
   using deephaven::client::utility::OkOrThrow;
-  using deephaven::dhcore::utility::Stringf;
 
   typedef TypeConverterTraits<T> traits_t;
 
@@ -227,7 +227,7 @@ TypeConverter TypeConverter::CreateNew(const std::vector<T> &values) {
   }
   auto builder_res = builder.Finish();
   if (!builder_res.ok()) {
-    auto message = Stringf("Error building array of type %o: %o", traits_t::kDeephavenTypeName,
+    auto message = fmt::format("Error building array of type {}: {}", traits_t::kDeephavenTypeName,
         builder_res.status().ToString());
   }
   auto array = builder_res.ValueUnsafe();
@@ -237,7 +237,6 @@ TypeConverter TypeConverter::CreateNew(const std::vector<T> &values) {
 template<>
 inline TypeConverter TypeConverter::CreateNew(const std::vector<deephaven::dhcore::DateTime> &values) {
   using deephaven::client::utility::OkOrThrow;
-  using deephaven::dhcore::utility::Stringf;
 
   // TODO(kosak): put somewhere
   constexpr const char *kDeephavenTypeName = "java.time.ZonedDateTime";
@@ -255,7 +254,7 @@ inline TypeConverter TypeConverter::CreateNew(const std::vector<deephaven::dhcor
   }
   auto builder_res = builder.Finish();
   if (!builder_res.ok()) {
-    auto message = Stringf("Error building array of type %o: %o",
+    auto message = fmt::format("Error building array of type {}: {}",
         kDeephavenTypeName, builder_res.status().ToString());
   }
   auto array = builder_res.ValueUnsafe();

@@ -3,14 +3,12 @@
  */
 
 #include "deephaven/dhcore/column/column_source_utils.h"
-#include "deephaven/dhcore/utility/utility.h"
-
-using deephaven::dhcore::utility::Stringf;
+#include "deephaven/third_party/fmt/format.h"
 
 namespace deephaven::dhcore::column {
 void ColumnSourceImpls::AssertRangeValid(size_t begin, size_t end, size_t size) {
   if (begin > end || (end - begin) > size) {
-    auto message = Stringf("range [%o,%o) with size %o is invalid", begin, end, size);
+    auto message = fmt::format("range [{},{}) with size {} is invalid", begin, end, size);
     throw std::runtime_error(message);
   }
 }
