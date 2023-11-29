@@ -1035,13 +1035,26 @@ public class PeriodicUpdateGraph implements UpdateGraph {
      */
     @TestUseOnly
     public boolean flushOneNotificationForUnitTests() {
+        return flushOneNotificationForUnitTests(false);
+    }
+
+    /**
+     * Flush a single notification from the UpdateGraph queue. Note that this happens on a simulated UpdateGraph run
+     * thread, rather than this thread.
+     *
+     * @param expectOnlyUnsatisfiedNotifications Whether we expect there to be only unsatisfied notifications pending
+     * @return whether a notification was found in the queue
+     */
+    @TestUseOnly
+    public boolean flushOneNotificationForUnitTests(final boolean expectOnlyUnsatisfiedNotifications) {
         Assert.assertion(unitTestMode, "unitTestMode");
 
         final NotificationProcessor existingNotificationProcessor = notificationProcessor;
         try {
             this.notificationProcessor = new ControlledNotificationProcessor();
             // noinspection AutoUnboxing,AutoBoxing
-            return unitTestRefreshThreadPool.submit(this::flushOneNotificationForUnitTestsInternal).get();
+            return unitTestRefreshThreadPool.submit(
+                    () -> flushOneNotificationForUnitTestsInternal(expectOnlyUnsatisfiedNotifications)).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new UncheckedDeephavenException(e);
         } finally {
@@ -1050,7 +1063,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     }
 
     @TestUseOnly
-    public boolean flushOneNotificationForUnitTestsInternal() {
+    private boolean flushOneNotificationForUnitTestsInternal(final boolean expectOnlyUnsatisfiedNotifications) {
         final IntrusiveDoublyLinkedQueue<Notification> pendingToEvaluate =
                 new IntrusiveDoublyLinkedQueue<>(IntrusiveDoublyLinkedNode.Adapter.<Notification>getInstance());
         notificationProcessor.beforeNotificationsDrained();
@@ -1077,7 +1090,12 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         }
         if (satisfied != null) {
             notificationProcessor.submit(satisfied);
-        } else if (somethingWasPending) {
+            if (expectOnlyUnsatisfiedNotifications) {
+                // noinspection ThrowableNotThrown
+                Assert.statementNeverExecuted(
+                        "Flushed a notification in unit test mode, but expected only unsatisfied pending notifications");
+            }
+        } else if (somethingWasPending && !expectOnlyUnsatisfiedNotifications) {
             // noinspection ThrowableNotThrown
             Assert.statementNeverExecuted(
                     "Did not flush any notifications in unit test mode, yet there were outstanding notifications");
@@ -1113,7 +1131,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         final Future<?> flushJobFuture = unitTestRefreshThreadPool.submit(() -> {
             final long deadlineNanoTime = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
             boolean flushed;
-            while ((flushed = flushOneNotificationForUnitTestsInternal()) || !done.getAsBoolean()) {
+            while ((flushed = flushOneNotificationForUnitTestsInternal(false)) || !done.getAsBoolean()) {
                 if (!flushed) {
                     final long remainingNanos = deadlineNanoTime - System.nanoTime();
                     if (!controlledNotificationProcessor.blockUntilNotificationAdded(remainingNanos)) {
