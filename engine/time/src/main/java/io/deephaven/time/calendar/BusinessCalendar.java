@@ -620,7 +620,7 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the ratio of the business day length and the standard business day length. For example, a holiday has
      * zero business time and will therefore return 0.0. A normal business day will be of the standard length and will
-     * therefore return 1.0. A half day holiday will return 0.5.
+     * therefore return 1.0. A NYSE half day holiday will return 0.538 (3.5 hours open, over a standard 6.5 hour day).
      *
      * @param date date
      * @return ratio of the business day length and the standard business day length for the date
