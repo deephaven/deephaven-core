@@ -147,8 +147,7 @@ public class TestBusinessDay extends BaseArrayTestCase {
         final BusinessDay<Instant> multi = new BusinessDay<>(new BusinessPeriod[] {period1, period2});
         assertEquals(new BusinessPeriod[] {period1, period2}, multi.periods());
 
-        int hashTarget = 31 * Objects.hash(multi.businessStart(), multi.businessEnd(), multi.businessNanos())
-                + Arrays.hashCode(multi.periods());
+        int hashTarget = Arrays.hashCode(multi.periods());
         assertEquals(hashTarget, multi.hashCode());
 
         final BusinessDay<Instant> multi2 = new BusinessDay<>(new BusinessPeriod[] {period1, period2});

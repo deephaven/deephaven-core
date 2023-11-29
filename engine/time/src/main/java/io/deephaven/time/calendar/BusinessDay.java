@@ -15,7 +15,6 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Objects;
 
 /**
  * Schedule for a single business day.
@@ -33,9 +32,6 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
     public static final BusinessDay<LocalTime> HOLIDAY = new BusinessDay<>();
 
     private final BusinessPeriod<T>[] openPeriods;
-    private final T businessStart;
-    private final T businessEnd;
-    private final long businessNanos;
 
     /**
      * Creates a BusinessDay instance.
@@ -51,20 +47,10 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
             Require.neqNull(businessPeriods[i], "businessPeriods[" + i + "]");
         }
 
-        this.openPeriods = businessPeriods;
+        this.openPeriods = businessPeriods.clone();
 
         // Sort the periods
         Arrays.sort(this.openPeriods, Comparator.comparing(BusinessPeriod::start));
-
-        if (businessPeriods.length > 0) {
-            this.businessStart = openPeriods[0].start();
-            this.businessEnd = openPeriods[openPeriods.length - 1].end();
-        } else {
-            this.businessStart = null;
-            this.businessEnd = null;
-        }
-
-        this.businessNanos = Arrays.stream(businessPeriods).map(BusinessPeriod::nanos).reduce(0L, Long::sum);
 
         // make sure the periods don't overlap
         for (int i = 1; i < this.openPeriods.length; i++) {
@@ -100,7 +86,7 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
      * @return start of the business day, or null for a holiday schedule
      */
     public T businessStart() {
-        return businessStart;
+        return openPeriods.length > 0 ? openPeriods[0].start() : null;
     }
 
     /**
@@ -109,7 +95,7 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
      * @return end of the business day, or null for a holiday schedule
      */
     public T businessEnd() {
-        return businessEnd;
+        return openPeriods.length > 0 ? openPeriods[openPeriods.length - 1].end() : null;
     }
 
     /**
@@ -119,7 +105,7 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
      * @return length of the day in nanoseconds
      */
     public long businessNanos() {
-        return businessNanos;
+        return Arrays.stream(openPeriods).map(BusinessPeriod::nanos).reduce(0L, Long::sum);
     }
 
     /**
@@ -154,7 +140,7 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
      */
     public long businessNanosRemaining(final T time) {
         Require.neqNull(time, "time");
-        return businessNanos - businessNanosElapsed(time);
+        return businessNanos() - businessNanosElapsed(time);
     }
 
     /**
@@ -163,7 +149,7 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
      * @return true if it is a business day; false otherwise.
      */
     public boolean isBusinessDay() {
-        return businessNanos > 0;
+        return businessNanos() > 0;
     }
 
     /**
@@ -184,20 +170,15 @@ public class BusinessDay<T extends Comparable<T> & Temporal> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof BusinessDay))
-            return false;
+        if (this == o) return true;
+        if (!(o instanceof BusinessDay)) return false;
         BusinessDay<?> that = (BusinessDay<?>) o;
-        return businessNanos == that.businessNanos && Arrays.equals(openPeriods, that.openPeriods)
-                && Objects.equals(businessStart, that.businessStart) && Objects.equals(businessEnd, that.businessEnd);
+        return Arrays.equals(openPeriods, that.openPeriods);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(businessStart, businessEnd, businessNanos);
-        result = 31 * result + Arrays.hashCode(openPeriods);
-        return result;
+        return Arrays.hashCode(openPeriods);
     }
 
     @Override
