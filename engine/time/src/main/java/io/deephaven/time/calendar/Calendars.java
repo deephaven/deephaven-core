@@ -67,7 +67,8 @@ public class Calendars {
                 final InputStream inputStream = Calendars.class.getResourceAsStream(filePath);
                 if (inputStream != null) {
                     final File calendarFile = inputStreamToFile(inputStream);
-                    final BusinessCalendar businessCalendar = BusinessCalendarXMLParser.loadBusinessCalendar(calendarFile);
+                    final BusinessCalendar businessCalendar =
+                            BusinessCalendarXMLParser.loadBusinessCalendar(calendarFile);
                     addCalendar(businessCalendar);
                     // noinspection ResultOfMethodCallIgnored
                     calendarFile.delete();

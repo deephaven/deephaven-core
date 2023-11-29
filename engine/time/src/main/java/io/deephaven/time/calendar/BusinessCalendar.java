@@ -150,8 +150,8 @@ public class BusinessCalendar extends Calendar {
         this.firstValidDate = firstValidDate;
         this.lastValidDate = lastValidDate;
         this.standardBusinessDay = standardBusinessDay;
-        this.weekendDays = weekendDays;
-        this.holidays = holidays;
+        this.weekendDays = Set.copyOf(weekendDays);
+        this.holidays = Map.copyOf(holidays);
         populateSchedules();
         populateCachedYearData();
     }
