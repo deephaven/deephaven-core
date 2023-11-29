@@ -11,6 +11,7 @@ from deephaven.table import Table, PartitionedTable
 from deephaven.filters import Filter
 
 from deephaven import read_csv, DHError, new_table, update_graph, time_table, empty_table
+from deephaven.update_graph import shared_lock
 from tests.testbase import BaseTestCase
 from deephaven.execution_context import get_exec_ctx
 
@@ -128,6 +129,10 @@ class PartitionedTableTestCase(BaseTestCase):
             pt = self.partitioned_table.transform(Transformer)
             self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
+            with shared_lock(self.test_table):
+                pt = self.partitioned_table.transform(Transformer, dependencies=[self.test_table])
+                self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+
             with self.assertRaises(DHError) as cm:
                 pt = self.partitioned_table.transform(lambda t, t1: t.join(t1))
             self.assertRegex(str(cm.exception), r"missing .* argument")
@@ -140,6 +145,10 @@ class PartitionedTableTestCase(BaseTestCase):
 
             pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer())
             self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+
+            with shared_lock(other_pt):
+                pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer(), dependencies=[other_pt])
+                self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
     def test_partition_agg(self):
         with update_graph.shared_lock(self.test_update_graph):
