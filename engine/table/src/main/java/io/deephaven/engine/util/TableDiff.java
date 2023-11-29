@@ -59,8 +59,8 @@ public class TableDiff {
             }
         }
 
-        final Map<String, ? extends ColumnSource> actualNameToColumnSource = actualResult.getColumnSourceMap();
-        final Map<String, ? extends ColumnSource> expectedNameToColumnSource = expectedResult.getColumnSourceMap();
+        final Map<String, ? extends ColumnSource<?>> actualNameToColumnSource = actualResult.getColumnSourceMap();
+        final Map<String, ? extends ColumnSource<?>> expectedNameToColumnSource = expectedResult.getColumnSourceMap();
         final String[] actualColumnNames =
                 actualResult.getDefinition().getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         final String[] expectedColumnNames =
@@ -78,8 +78,8 @@ public class TableDiff {
         final Set<String> columnNamesForDiff = new LinkedHashSet<>();
         for (int ci = 0; ci < expectedColumnNames.length; ci++) {
             final String expectedColumnName = expectedColumnNames[ci];
-            final ColumnSource expectedColumnSource = expectedNameToColumnSource.get(expectedColumnName);
-            final ColumnSource actualColumnSource = actualNameToColumnSource.get(expectedColumnName);
+            final ColumnSource<?> expectedColumnSource = expectedNameToColumnSource.get(expectedColumnName);
+            final ColumnSource<?> actualColumnSource = actualNameToColumnSource.get(expectedColumnName);
             if (actualColumnSource == null) {
                 issues.add("Expected column " + expectedColumnName + " not found");
             } else {
@@ -114,7 +114,7 @@ public class TableDiff {
         try (final SafeCloseableList safeCloseables = new SafeCloseableList();
                 final SharedContext expectedSharedContext = SharedContext.makeSharedContext();
                 final SharedContext actualSharedContext = SharedContext.makeSharedContext();
-                final WritableBooleanChunk equalValues = WritableBooleanChunk.makeWritableChunk(chunkSize)) {
+                final WritableBooleanChunk<?> equalValues = WritableBooleanChunk.makeWritableChunk(chunkSize)) {
 
             final ColumnDiffContext[] columnContexts = columnNamesForDiff.stream()
                     .map(name -> safeCloseables.add(new ColumnDiffContext(name, expectedNameToColumnSource.get(name),
@@ -231,7 +231,7 @@ public class TableDiff {
          */
         private long diffChunk(@NotNull final RowSequence expectedChunkOk,
                 @NotNull final RowSequence actualChunkOk,
-                @NotNull final WritableBooleanChunk equalValues,
+                @NotNull final WritableBooleanChunk<?> equalValues,
                 @NotNull final Set<DiffItems> itemsToSkip,
                 @NotNull final List<String> issues,
                 long position) {
@@ -267,6 +267,13 @@ public class TableDiff {
                 } else if (chunkType == ChunkType.Float) {
                     final float expectedValue = expectedValues.asFloatChunk().get(ii);
                     final float actualValue = actualValues.asFloatChunk().get(ii);
+                    if (Float.isNaN(expectedValue) || Float.isNaN(actualValue)) {
+                        final String actualString = Float.isNaN(actualValue) ? "NaN" : Float.toString(actualValue);
+                        final String expectString = Float.isNaN(expectedValue) ? "NaN" : Float.toString(expectedValue);
+                        issues.add("Column " + name + " different from the expected set, first difference at row " +
+                                position + " encountered " + actualString + " expected " + expectString);
+                        return position;
+                    }
                     if (expectedValue == io.deephaven.util.QueryConstants.NULL_FLOAT
                             || actualValue == io.deephaven.util.QueryConstants.NULL_FLOAT) {
                         final String actualString = actualValue == io.deephaven.util.QueryConstants.NULL_FLOAT ? "null"
@@ -297,6 +304,14 @@ public class TableDiff {
                 } else if (chunkType == ChunkType.Double) {
                     final double expectedValue = expectedValues.asDoubleChunk().get(ii);
                     final double actualValue = actualValues.asDoubleChunk().get(ii);
+                    if (Double.isNaN(expectedValue) || Double.isNaN(actualValue)) {
+                        final String actualString = Double.isNaN(actualValue) ? "NaN" : Double.toString(actualValue);
+                        final String expectString =
+                                Double.isNaN(expectedValue) ? "NaN" : Double.toString(expectedValue);
+                        issues.add("Column " + name + " different from the expected set, first difference at row " +
+                                position + " encountered " + actualString + " expected " + expectString);
+                        return position;
+                    }
                     if (expectedValue == io.deephaven.util.QueryConstants.NULL_DOUBLE
                             || actualValue == io.deephaven.util.QueryConstants.NULL_DOUBLE) {
                         final String actualString = actualValue == io.deephaven.util.QueryConstants.NULL_DOUBLE ? "null"

@@ -162,7 +162,7 @@ public class JsNumberFormat {
         } else if (number.isBigInteger()) {
             return wrapped.format(number.asBigInteger().getWrapped());
         } else if (number.isLongWrapper()) {
-            return wrapped.format(number.asLongWrapper().getWrapped());
+            return wrapped.format((Long) number.asLongWrapper().getWrapped());
         }
         throw new IllegalStateException("Can't format non-number object of type " + Js.typeof(number));
     }

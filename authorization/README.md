@@ -27,11 +27,12 @@ Here is a sample bash script to generate the provided authorizing wiring if you 
 ```bash
 ./gradlew :authorization-codegen:shadowJar
 
+DEEPHAVEN_VERSION="$(./gradlew printVersion -q)"
 OUT_DIR=authorization/src/main/java/
 PROTO_DIR=proto/proto-backplane-grpc/src/main/proto/
 ROOT_DIR=$PROTO_DIR/deephaven/proto
 
-PATH=authorization-codegen:$PATH protoc --service-auth-wiring_out=$OUT_DIR -I $PROTO_DIR    \
+DEEPHAVEN_VERSION=${DEEPHAVEN_VERSION} PATH=authorization-codegen:$PATH protoc --service-auth-wiring_out=$OUT_DIR -I $PROTO_DIR    \
      $ROOT_DIR/application.proto                                        \
      $ROOT_DIR/console.proto                                            \
      $ROOT_DIR/config.proto                                             \
@@ -41,7 +42,7 @@ PATH=authorization-codegen:$PATH protoc --service-auth-wiring_out=$OUT_DIR -I $P
      $ROOT_DIR/storage.proto                                            \
      $ROOT_DIR/ticket.proto
 
-PATH=authorization-codegen:$PATH protoc --contextual-auth-wiring_out=$OUT_DIR -I $PROTO_DIR \
+DEEPHAVEN_VERSION=${DEEPHAVEN_VERSION} PATH=authorization-codegen:$PATH protoc --contextual-auth-wiring_out=$OUT_DIR -I $PROTO_DIR \
      $ROOT_DIR/table.proto                                              \
      $ROOT_DIR/inputtable.proto                                         \
      $ROOT_DIR/partitionedtable.proto                                   \
@@ -51,6 +52,8 @@ OUT_DIR=authorization/src/main/java/
 PROTO_DIR=../grpc/src/proto/grpc/health/v1/
 ROOT_DIR=$PROTO_DIR
 
-PATH=authorization-codegen:$PATH protoc --service-auth-wiring_out=$OUT_DIR -I $PROTO_DIR    \
+DEEPHAVEN_VERSION=${DEEPHAVEN_VERSION}  PATH=authorization-codegen:$PATH protoc --service-auth-wiring_out=$OUT_DIR -I $PROTO_DIR    \
      $ROOT_DIR/health.proto
+
+./gradlew :authorization:spotlessApply
 ```

@@ -235,7 +235,7 @@ def _instant_array(data: Sequence) -> jpy.JType:
     return jpy.array(Instant.j_type, data)
 
 
-def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jpy.JType:
+def array(dtype: DType, seq: Optional[Sequence], remap: Callable[[Any], Any] = None) -> Optional[jpy.JType]:
     """ Creates a Java array of the specified data type populated with values from a sequence.
 
     Note:
@@ -253,6 +253,9 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
     Raises:
         DHError
     """
+    if seq is None:
+        return None
+
     if isinstance(seq, np.ndarray) and seq.ndim > 1:
         raise ValueError("array() does not support multi-dimensional arrays")
 
@@ -326,30 +329,36 @@ _NUMPY_INT_TYPE_CODES = ["i", "l", "h", "b"]
 _NUMPY_FLOATING_TYPE_CODES = ["f", "d"]
 
 
-def _scalar(x):
+def _scalar(x: Any, dtype: DType) -> Any:
     """Converts a Python value to a Java scalar value. It converts the numpy primitive types, string to
     their Python equivalents so that JPY can handle them. For datetime values, it converts them to Java Instant.
     Otherwise, it returns the value as is."""
-    if hasattr(x, "dtype"):
-        if x.dtype.char in _NUMPY_INT_TYPE_CODES:
-            return int(x)
-        elif x.dtype.char in _NUMPY_FLOATING_TYPE_CODES:
-            return float(x)
-        elif x.dtype.char == '?':
-            return bool(x)
-        elif x.dtype.char == 'U':
-            return str(x)
-        elif x.dtype.char == 'O':
-            return x
-        elif x.dtype.char == 'M':
-            from deephaven.time import to_j_instant
-            return to_j_instant(x)
-        else:
-            raise TypeError(f"Unsupported dtype: {x.dtype}")
-    else:
-        if isinstance(x, (datetime.datetime, pd.Timestamp)):
-            from deephaven.time import to_j_instant
-            return to_j_instant(x)
+
+    # NULL_BOOL will appear in Java as a byte value which causes a cast error. We just let JPY converts it to Java null
+    # and the engine has casting logic to handle it.
+    if x is None and dtype != bool_ and _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
+        return _PRIMITIVE_DTYPE_NULL_MAP[dtype]
+
+    try:
+        if hasattr(x, "dtype"):
+            if x.dtype.char in _NUMPY_INT_TYPE_CODES:
+                return int(x)
+            elif x.dtype.char in _NUMPY_FLOATING_TYPE_CODES:
+                return float(x)
+            elif x.dtype.char == '?':
+                return bool(x)
+            elif x.dtype.char == 'U':
+                return str(x)
+            elif x.dtype.char == 'O':
+                return x
+            elif x.dtype.char == 'M':
+                from deephaven.time import to_j_instant
+                return to_j_instant(x)
+        elif isinstance(x, (datetime.datetime, pd.Timestamp)):
+                from deephaven.time import to_j_instant
+                return to_j_instant(x)
+        return x
+    except:
         return x
 
 

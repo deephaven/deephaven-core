@@ -5,3 +5,7 @@ lib/cpp-dependencies/src
 lib/cpp-dependencies/env.sh
 *.o
 *.so
+docs
+inst/doc
+/doc/
+/Meta/

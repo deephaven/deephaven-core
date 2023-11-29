@@ -3,33 +3,35 @@
 #
 import os
 import pathlib
-from setuptools.extern import packaging
+
+# Note: pkg_resources is deprecated https://setuptools.pypa.io/en/latest/pkg_resources.html, and it is suggested
+# to use an external library `packaging`. From the context of building a wheel though, we'd prefer to not have to
+# install extra dependencies, at least until we can more properly manage the build environment (pyproject.toml).
+# TODO(deephaven-core#2233): upgrade setup.py to pyproject.toml
+from pkg_resources import parse_version
 from setuptools import find_namespace_packages, setup
 
-# The directory containing this file
-HERE = pathlib.Path(__file__).parent
+def _get_readme() -> str:
+    # The directory containing this file
+    HERE = pathlib.Path(__file__).parent
+    # The text of the README file
+    return (HERE / "README.md").read_text(encoding="utf-8")
 
-# The text of the README file
-README = (HERE / "README.md").read_text()
+def _normalize_version(java_version) -> str:
+    partitions = java_version.partition("-")
+    regular_version = partitions[0]
+    local_segment = partitions[2]
+    python_version = f"{regular_version}+{local_segment}" if local_segment else regular_version
+    return str(parse_version(python_version))
 
-
-# Versions should comply with PEP440.  For a discussion on single-sourcing
-# the version across setup.py and the project code, see
-# https://packaging.python.org/en/latest/single_source_version.html
-# todo: does DH versions align w/ PEP440?
-# see https://github.com/pypa/setuptools/blob/v40.8.0/setuptools/dist.py#L470
-def normalize_version(version):
-    return str(packaging.version.Version(version))
-
-
-__deephaven_version__ = os.environ['DEEPHAVEN_VERSION']
-__normalized_version__ = normalize_version(__deephaven_version__)
+def _compute_version():
+    return _normalize_version(os.environ['DEEPHAVEN_VERSION'])
 
 setup(
     name='deephaven-core',
-    version=__normalized_version__,
+    version=_compute_version(),
     description='Deephaven Engine Python Package',
-    long_description=README,
+    long_description=_get_readme(),
     long_description_content_type='text/markdown',
     packages=find_namespace_packages(exclude=("tests", "tests.*", "integration-tests", "test_helper")),
     url='https://deephaven.io/',

@@ -3,7 +3,6 @@
  */
 package io.deephaven.server.jetty;
 
-import io.deephaven.plugin.js.JsPlugin;
 import io.deephaven.server.browserstreaming.BrowserStreamInterceptor;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.ssl.config.CiphersIntermediate;
@@ -59,6 +58,7 @@ import org.eclipse.jetty.websocket.jakarta.common.SessionTracker;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
@@ -73,7 +73,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static io.grpc.servlet.web.websocket.MultiplexedWebSocketServerStream.GRPC_WEBSOCKETS_MULTIPLEX_PROTOCOL;
@@ -85,24 +84,15 @@ public class JettyBackedGrpcServer implements GrpcServer {
     private static final String JS_PLUGINS_PATH_SPEC = "/" + JsPlugins.JS_PLUGINS + "/*";
 
     private final Server jetty;
-    private final JsPlugins jsPlugins;
     private final boolean websocketsEnabled;
 
     @Inject
     public JettyBackedGrpcServer(
             final JettyConfig config,
-            final GrpcFilter filter) {
+            final GrpcFilter filter,
+            final JsPlugins jsPlugins) {
         jetty = new Server();
         jetty.addConnector(createConnector(jetty, config));
-        if (config.jsPluginsOrDefault()) {
-            try {
-                jsPlugins = JsPlugins.create();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        } else {
-            jsPlugins = null;
-        }
 
         final WebAppContext context =
                 new WebAppContext(null, "/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
@@ -186,7 +176,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // Wire up the provided grpc filter
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
 
-        if (jsPlugins != null) {
+        if (config.jsPluginsOrDefault()) {
             // Wire up /js-plugins/*
             // TODO(deephaven-core#4620): Add js-plugins version-aware caching
             context.addFilter(NoCacheFilter.class, JS_PLUGINS_PATH_SPEC, EnumSet.noneOf(DispatcherType.class));
@@ -250,13 +240,6 @@ public class JettyBackedGrpcServer implements GrpcServer {
             handler = handlers;
         }
         jetty.setHandler(handler);
-    }
-
-    public Consumer<JsPlugin> jsPluginConsumer() {
-        return jsPlugins == null
-                ? jsPlugin -> {
-                }
-                : jsPlugins;
     }
 
     @Override

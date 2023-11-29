@@ -126,10 +126,10 @@ Client TableMakerForTests::CreateClient(const ClientOptions &options) {
 }
 
 TableMakerForTests::TableMakerForTests(TableMakerForTests::ClientType &&client,
-    TableHandle &&test_table, ColumnNamesForTests &&column_names, ColumnDataForTests &&columnData) :
+    TableHandle &&test_table, ColumnNamesForTests &&column_names, ColumnDataForTests &&column_data) :
     client_(std::move(client)),
     testTable_(std::move(test_table)), columnNames_(std::move(column_names)),
-    columnData_(std::move(columnData)) {}
+    columnData_(std::move(column_data)) {}
 
 TableMakerForTests::TableMakerForTests(TableMakerForTests &&) noexcept = default;
 TableMakerForTests &TableMakerForTests::operator=(TableMakerForTests &&) noexcept = default;
@@ -191,7 +191,7 @@ void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
     const auto l_item = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(l_chunk->GetScalar(l_chunk_index)));
     const auto r_item = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(r_chunk->GetScalar(r_chunk_index)));
 
-    if (!l_item->Equals(r_item)) {
+    if (!l_item->Equals(*r_item)) {
       auto message = Stringf("Column %o: Columns differ at element %o: %o vs %o",
           depth, element_index, l_item->ToString(), r_item->ToString());
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
@@ -208,16 +208,17 @@ void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
 
 std::shared_ptr<arrow::Table> BasicValidate(const deephaven::client::TableHandle &table, int expected_columns) {
   auto fsr = table.GetFlightStreamReader();
-  std::shared_ptr<arrow::Table> arrow_table;
-  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr->ReadAll(&arrow_table)));
+  auto table_res = fsr->ToTable();
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(table_res));
 
+  auto &arrow_table = *table_res;
   if (expected_columns != arrow_table->num_columns()) {
     auto message = Stringf("Expected %o columns, but Table actually has %o columns",
         expected_columns, arrow_table->num_columns());
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
-  return arrow_table;
+  return std::move(arrow_table);
 }
 }  // namespace internal
 }  // namespace deephaven::client::tests

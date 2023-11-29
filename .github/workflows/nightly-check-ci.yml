@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         gradle-task: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
-        test-jvm-version: ['11', '17', '18']
+        test-jvm-version: ['11', '17', '21']
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-22.04
     concurrency:
@@ -41,12 +41,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup JDK 18
-        id: setup-java-18
+      - name: Setup JDK 21
+        id: setup-java-21
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '18'
+          java-version: '21'
 
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV

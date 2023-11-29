@@ -456,6 +456,17 @@ class TableService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> PrepareAsyncMetaTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(PrepareAsyncMetaTableRaw(context, request, cq));
     }
+    // *
+    // Returns a new table representing statistics about a single column of the provided table. This
+    // result table will be static - use Aggregation() instead for updating results. Presently, the
+    // primary use case for this is the Deephaven Web UI.
+    virtual ::grpc::Status ComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> AsyncComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(AsyncComputeColumnStatisticsRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> PrepareAsyncComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(PrepareAsyncComputeColumnStatisticsRaw(context, request, cq));
+    }
     class async_interface {
      public:
       virtual ~async_interface() {}
@@ -652,6 +663,12 @@ class TableService final {
       // Returns the meta table of a table.
       virtual void MetaTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void MetaTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // *
+      // Returns a new table representing statistics about a single column of the provided table. This
+      // result table will be static - use Aggregation() instead for updating results. Presently, the
+      // primary use case for this is the Deephaven Web UI.
+      virtual void ComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void ComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
     typedef class async_interface experimental_async_interface;
     virtual class async_interface* async() { return nullptr; }
@@ -745,6 +762,8 @@ class TableService final {
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::SeekRowResponse>* PrepareAsyncSeekRowRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* AsyncMetaTableRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* PrepareAsyncMetaTableRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* AsyncComputeColumnStatisticsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* PrepareAsyncComputeColumnStatisticsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
@@ -1054,6 +1073,13 @@ class TableService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> PrepareAsyncMetaTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(PrepareAsyncMetaTableRaw(context, request, cq));
     }
+    ::grpc::Status ComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> AsyncComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(AsyncComputeColumnStatisticsRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> PrepareAsyncComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(PrepareAsyncComputeColumnStatisticsRaw(context, request, cq));
+    }
     class async final :
       public StubInterface::async_interface {
      public:
@@ -1141,6 +1167,8 @@ class TableService final {
       void SeekRow(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest* request, ::io::deephaven::proto::backplane::grpc::SeekRowResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void MetaTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)>) override;
       void MetaTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void ComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)>) override;
+      void ComputeColumnStatistics(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
      private:
       friend class Stub;
       explicit async(Stub* stub): stub_(stub) { }
@@ -1240,6 +1268,8 @@ class TableService final {
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::SeekRowResponse>* PrepareAsyncSeekRowRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* AsyncMetaTableRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* PrepareAsyncMetaTableRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* AsyncComputeColumnStatisticsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* PrepareAsyncComputeColumnStatisticsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_GetExportedTableCreationResponse_;
     const ::grpc::internal::RpcMethod rpcmethod_FetchTable_;
     const ::grpc::internal::RpcMethod rpcmethod_ApplyPreviewColumns_;
@@ -1283,6 +1313,7 @@ class TableService final {
     const ::grpc::internal::RpcMethod rpcmethod_ExportedTableUpdates_;
     const ::grpc::internal::RpcMethod rpcmethod_SeekRow_;
     const ::grpc::internal::RpcMethod rpcmethod_MetaTable_;
+    const ::grpc::internal::RpcMethod rpcmethod_ComputeColumnStatistics_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
 
@@ -1442,6 +1473,11 @@ class TableService final {
     //
     // Returns the meta table of a table.
     virtual ::grpc::Status MetaTable(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response);
+    // *
+    // Returns a new table representing statistics about a single column of the provided table. This
+    // result table will be static - use Aggregation() instead for updating results. Presently, the
+    // primary use case for this is the Deephaven Web UI.
+    virtual ::grpc::Status ComputeColumnStatistics(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response);
   };
   template <class BaseClass>
   class WithAsyncMethod_GetExportedTableCreationResponse : public BaseClass {
@@ -2303,7 +2339,27 @@ class TableService final {
       ::grpc::Service::RequestAsyncUnary(42, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_GetExportedTableCreationResponse<WithAsyncMethod_FetchTable<WithAsyncMethod_ApplyPreviewColumns<WithAsyncMethod_EmptyTable<WithAsyncMethod_TimeTable<WithAsyncMethod_DropColumns<WithAsyncMethod_Update<WithAsyncMethod_LazyUpdate<WithAsyncMethod_View<WithAsyncMethod_UpdateView<WithAsyncMethod_Select<WithAsyncMethod_UpdateBy<WithAsyncMethod_SelectDistinct<WithAsyncMethod_Filter<WithAsyncMethod_UnstructuredFilter<WithAsyncMethod_Sort<WithAsyncMethod_Head<WithAsyncMethod_Tail<WithAsyncMethod_HeadBy<WithAsyncMethod_TailBy<WithAsyncMethod_Ungroup<WithAsyncMethod_MergeTables<WithAsyncMethod_CrossJoinTables<WithAsyncMethod_NaturalJoinTables<WithAsyncMethod_ExactJoinTables<WithAsyncMethod_LeftJoinTables<WithAsyncMethod_AsOfJoinTables<WithAsyncMethod_AjTables<WithAsyncMethod_RajTables<WithAsyncMethod_RangeJoinTables<WithAsyncMethod_ComboAggregate<WithAsyncMethod_AggregateAll<WithAsyncMethod_Aggregate<WithAsyncMethod_Snapshot<WithAsyncMethod_SnapshotWhen<WithAsyncMethod_Flatten<WithAsyncMethod_RunChartDownsample<WithAsyncMethod_CreateInputTable<WithAsyncMethod_WhereIn<WithAsyncMethod_Batch<WithAsyncMethod_ExportedTableUpdates<WithAsyncMethod_SeekRow<WithAsyncMethod_MetaTable<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > AsyncService;
+  template <class BaseClass>
+  class WithAsyncMethod_ComputeColumnStatistics : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_ComputeColumnStatistics() {
+      ::grpc::Service::MarkMethodAsync(43);
+    }
+    ~WithAsyncMethod_ComputeColumnStatistics() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ComputeColumnStatistics(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestComputeColumnStatistics(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(43, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  typedef WithAsyncMethod_GetExportedTableCreationResponse<WithAsyncMethod_FetchTable<WithAsyncMethod_ApplyPreviewColumns<WithAsyncMethod_EmptyTable<WithAsyncMethod_TimeTable<WithAsyncMethod_DropColumns<WithAsyncMethod_Update<WithAsyncMethod_LazyUpdate<WithAsyncMethod_View<WithAsyncMethod_UpdateView<WithAsyncMethod_Select<WithAsyncMethod_UpdateBy<WithAsyncMethod_SelectDistinct<WithAsyncMethod_Filter<WithAsyncMethod_UnstructuredFilter<WithAsyncMethod_Sort<WithAsyncMethod_Head<WithAsyncMethod_Tail<WithAsyncMethod_HeadBy<WithAsyncMethod_TailBy<WithAsyncMethod_Ungroup<WithAsyncMethod_MergeTables<WithAsyncMethod_CrossJoinTables<WithAsyncMethod_NaturalJoinTables<WithAsyncMethod_ExactJoinTables<WithAsyncMethod_LeftJoinTables<WithAsyncMethod_AsOfJoinTables<WithAsyncMethod_AjTables<WithAsyncMethod_RajTables<WithAsyncMethod_RangeJoinTables<WithAsyncMethod_ComboAggregate<WithAsyncMethod_AggregateAll<WithAsyncMethod_Aggregate<WithAsyncMethod_Snapshot<WithAsyncMethod_SnapshotWhen<WithAsyncMethod_Flatten<WithAsyncMethod_RunChartDownsample<WithAsyncMethod_CreateInputTable<WithAsyncMethod_WhereIn<WithAsyncMethod_Batch<WithAsyncMethod_ExportedTableUpdates<WithAsyncMethod_SeekRow<WithAsyncMethod_MetaTable<WithAsyncMethod_ComputeColumnStatistics<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_GetExportedTableCreationResponse : public BaseClass {
    private:
@@ -3455,7 +3511,34 @@ class TableService final {
     virtual ::grpc::ServerUnaryReactor* MetaTable(
       ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_GetExportedTableCreationResponse<WithCallbackMethod_FetchTable<WithCallbackMethod_ApplyPreviewColumns<WithCallbackMethod_EmptyTable<WithCallbackMethod_TimeTable<WithCallbackMethod_DropColumns<WithCallbackMethod_Update<WithCallbackMethod_LazyUpdate<WithCallbackMethod_View<WithCallbackMethod_UpdateView<WithCallbackMethod_Select<WithCallbackMethod_UpdateBy<WithCallbackMethod_SelectDistinct<WithCallbackMethod_Filter<WithCallbackMethod_UnstructuredFilter<WithCallbackMethod_Sort<WithCallbackMethod_Head<WithCallbackMethod_Tail<WithCallbackMethod_HeadBy<WithCallbackMethod_TailBy<WithCallbackMethod_Ungroup<WithCallbackMethod_MergeTables<WithCallbackMethod_CrossJoinTables<WithCallbackMethod_NaturalJoinTables<WithCallbackMethod_ExactJoinTables<WithCallbackMethod_LeftJoinTables<WithCallbackMethod_AsOfJoinTables<WithCallbackMethod_AjTables<WithCallbackMethod_RajTables<WithCallbackMethod_RangeJoinTables<WithCallbackMethod_ComboAggregate<WithCallbackMethod_AggregateAll<WithCallbackMethod_Aggregate<WithCallbackMethod_Snapshot<WithCallbackMethod_SnapshotWhen<WithCallbackMethod_Flatten<WithCallbackMethod_RunChartDownsample<WithCallbackMethod_CreateInputTable<WithCallbackMethod_WhereIn<WithCallbackMethod_Batch<WithCallbackMethod_ExportedTableUpdates<WithCallbackMethod_SeekRow<WithCallbackMethod_MetaTable<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > CallbackService;
+  template <class BaseClass>
+  class WithCallbackMethod_ComputeColumnStatistics : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_ComputeColumnStatistics() {
+      ::grpc::Service::MarkMethodCallback(43,
+          new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) { return this->ComputeColumnStatistics(context, request, response); }));}
+    void SetMessageAllocatorFor_ComputeColumnStatistics(
+        ::grpc::MessageAllocator< ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(43);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_ComputeColumnStatistics() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ComputeColumnStatistics(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ComputeColumnStatistics(
+      ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/)  { return nullptr; }
+  };
+  typedef WithCallbackMethod_GetExportedTableCreationResponse<WithCallbackMethod_FetchTable<WithCallbackMethod_ApplyPreviewColumns<WithCallbackMethod_EmptyTable<WithCallbackMethod_TimeTable<WithCallbackMethod_DropColumns<WithCallbackMethod_Update<WithCallbackMethod_LazyUpdate<WithCallbackMethod_View<WithCallbackMethod_UpdateView<WithCallbackMethod_Select<WithCallbackMethod_UpdateBy<WithCallbackMethod_SelectDistinct<WithCallbackMethod_Filter<WithCallbackMethod_UnstructuredFilter<WithCallbackMethod_Sort<WithCallbackMethod_Head<WithCallbackMethod_Tail<WithCallbackMethod_HeadBy<WithCallbackMethod_TailBy<WithCallbackMethod_Ungroup<WithCallbackMethod_MergeTables<WithCallbackMethod_CrossJoinTables<WithCallbackMethod_NaturalJoinTables<WithCallbackMethod_ExactJoinTables<WithCallbackMethod_LeftJoinTables<WithCallbackMethod_AsOfJoinTables<WithCallbackMethod_AjTables<WithCallbackMethod_RajTables<WithCallbackMethod_RangeJoinTables<WithCallbackMethod_ComboAggregate<WithCallbackMethod_AggregateAll<WithCallbackMethod_Aggregate<WithCallbackMethod_Snapshot<WithCallbackMethod_SnapshotWhen<WithCallbackMethod_Flatten<WithCallbackMethod_RunChartDownsample<WithCallbackMethod_CreateInputTable<WithCallbackMethod_WhereIn<WithCallbackMethod_Batch<WithCallbackMethod_ExportedTableUpdates<WithCallbackMethod_SeekRow<WithCallbackMethod_MetaTable<WithCallbackMethod_ComputeColumnStatistics<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_GetExportedTableCreationResponse : public BaseClass {
@@ -4184,6 +4267,23 @@ class TableService final {
     }
     // disable synchronous version of this method
     ::grpc::Status MetaTable(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MetaTableRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_ComputeColumnStatistics : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_ComputeColumnStatistics() {
+      ::grpc::Service::MarkMethodGeneric(43);
+    }
+    ~WithGenericMethod_ComputeColumnStatistics() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ComputeColumnStatistics(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -5046,6 +5146,26 @@ class TableService final {
     }
     void RequestMetaTable(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncUnary(42, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_ComputeColumnStatistics : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_ComputeColumnStatistics() {
+      ::grpc::Service::MarkMethodRaw(43);
+    }
+    ~WithRawMethod_ComputeColumnStatistics() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ComputeColumnStatistics(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestComputeColumnStatistics(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(43, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -5992,6 +6112,28 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     virtual ::grpc::ServerUnaryReactor* MetaTable(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_ComputeColumnStatistics : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_ComputeColumnStatistics() {
+      ::grpc::Service::MarkMethodRawCallback(43,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->ComputeColumnStatistics(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_ComputeColumnStatistics() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ComputeColumnStatistics(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ComputeColumnStatistics(
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
@@ -7101,7 +7243,34 @@ class TableService final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedMetaTable(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::io::deephaven::proto::backplane::grpc::MetaTableRequest,::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_GetExportedTableCreationResponse<WithStreamedUnaryMethod_FetchTable<WithStreamedUnaryMethod_ApplyPreviewColumns<WithStreamedUnaryMethod_EmptyTable<WithStreamedUnaryMethod_TimeTable<WithStreamedUnaryMethod_DropColumns<WithStreamedUnaryMethod_Update<WithStreamedUnaryMethod_LazyUpdate<WithStreamedUnaryMethod_View<WithStreamedUnaryMethod_UpdateView<WithStreamedUnaryMethod_Select<WithStreamedUnaryMethod_UpdateBy<WithStreamedUnaryMethod_SelectDistinct<WithStreamedUnaryMethod_Filter<WithStreamedUnaryMethod_UnstructuredFilter<WithStreamedUnaryMethod_Sort<WithStreamedUnaryMethod_Head<WithStreamedUnaryMethod_Tail<WithStreamedUnaryMethod_HeadBy<WithStreamedUnaryMethod_TailBy<WithStreamedUnaryMethod_Ungroup<WithStreamedUnaryMethod_MergeTables<WithStreamedUnaryMethod_CrossJoinTables<WithStreamedUnaryMethod_NaturalJoinTables<WithStreamedUnaryMethod_ExactJoinTables<WithStreamedUnaryMethod_LeftJoinTables<WithStreamedUnaryMethod_AsOfJoinTables<WithStreamedUnaryMethod_AjTables<WithStreamedUnaryMethod_RajTables<WithStreamedUnaryMethod_RangeJoinTables<WithStreamedUnaryMethod_ComboAggregate<WithStreamedUnaryMethod_AggregateAll<WithStreamedUnaryMethod_Aggregate<WithStreamedUnaryMethod_Snapshot<WithStreamedUnaryMethod_SnapshotWhen<WithStreamedUnaryMethod_Flatten<WithStreamedUnaryMethod_RunChartDownsample<WithStreamedUnaryMethod_CreateInputTable<WithStreamedUnaryMethod_WhereIn<WithStreamedUnaryMethod_SeekRow<WithStreamedUnaryMethod_MetaTable<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > StreamedUnaryService;
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_ComputeColumnStatistics : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_ComputeColumnStatistics() {
+      ::grpc::Service::MarkMethodStreamed(43,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* streamer) {
+                       return this->StreamedComputeColumnStatistics(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_ComputeColumnStatistics() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status ComputeColumnStatistics(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedComputeColumnStatistics(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest,::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* server_unary_streamer) = 0;
+  };
+  typedef WithStreamedUnaryMethod_GetExportedTableCreationResponse<WithStreamedUnaryMethod_FetchTable<WithStreamedUnaryMethod_ApplyPreviewColumns<WithStreamedUnaryMethod_EmptyTable<WithStreamedUnaryMethod_TimeTable<WithStreamedUnaryMethod_DropColumns<WithStreamedUnaryMethod_Update<WithStreamedUnaryMethod_LazyUpdate<WithStreamedUnaryMethod_View<WithStreamedUnaryMethod_UpdateView<WithStreamedUnaryMethod_Select<WithStreamedUnaryMethod_UpdateBy<WithStreamedUnaryMethod_SelectDistinct<WithStreamedUnaryMethod_Filter<WithStreamedUnaryMethod_UnstructuredFilter<WithStreamedUnaryMethod_Sort<WithStreamedUnaryMethod_Head<WithStreamedUnaryMethod_Tail<WithStreamedUnaryMethod_HeadBy<WithStreamedUnaryMethod_TailBy<WithStreamedUnaryMethod_Ungroup<WithStreamedUnaryMethod_MergeTables<WithStreamedUnaryMethod_CrossJoinTables<WithStreamedUnaryMethod_NaturalJoinTables<WithStreamedUnaryMethod_ExactJoinTables<WithStreamedUnaryMethod_LeftJoinTables<WithStreamedUnaryMethod_AsOfJoinTables<WithStreamedUnaryMethod_AjTables<WithStreamedUnaryMethod_RajTables<WithStreamedUnaryMethod_RangeJoinTables<WithStreamedUnaryMethod_ComboAggregate<WithStreamedUnaryMethod_AggregateAll<WithStreamedUnaryMethod_Aggregate<WithStreamedUnaryMethod_Snapshot<WithStreamedUnaryMethod_SnapshotWhen<WithStreamedUnaryMethod_Flatten<WithStreamedUnaryMethod_RunChartDownsample<WithStreamedUnaryMethod_CreateInputTable<WithStreamedUnaryMethod_WhereIn<WithStreamedUnaryMethod_SeekRow<WithStreamedUnaryMethod_MetaTable<WithStreamedUnaryMethod_ComputeColumnStatistics<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > StreamedUnaryService;
   template <class BaseClass>
   class WithSplitStreamingMethod_Batch : public BaseClass {
    private:
@@ -7157,7 +7326,7 @@ class TableService final {
     virtual ::grpc::Status StreamedExportedTableUpdates(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::io::deephaven::proto::backplane::grpc::ExportedTableUpdatesRequest,::io::deephaven::proto::backplane::grpc::ExportedTableUpdateMessage>* server_split_streamer) = 0;
   };
   typedef WithSplitStreamingMethod_Batch<WithSplitStreamingMethod_ExportedTableUpdates<Service > > SplitStreamedService;
-  typedef WithStreamedUnaryMethod_GetExportedTableCreationResponse<WithStreamedUnaryMethod_FetchTable<WithStreamedUnaryMethod_ApplyPreviewColumns<WithStreamedUnaryMethod_EmptyTable<WithStreamedUnaryMethod_TimeTable<WithStreamedUnaryMethod_DropColumns<WithStreamedUnaryMethod_Update<WithStreamedUnaryMethod_LazyUpdate<WithStreamedUnaryMethod_View<WithStreamedUnaryMethod_UpdateView<WithStreamedUnaryMethod_Select<WithStreamedUnaryMethod_UpdateBy<WithStreamedUnaryMethod_SelectDistinct<WithStreamedUnaryMethod_Filter<WithStreamedUnaryMethod_UnstructuredFilter<WithStreamedUnaryMethod_Sort<WithStreamedUnaryMethod_Head<WithStreamedUnaryMethod_Tail<WithStreamedUnaryMethod_HeadBy<WithStreamedUnaryMethod_TailBy<WithStreamedUnaryMethod_Ungroup<WithStreamedUnaryMethod_MergeTables<WithStreamedUnaryMethod_CrossJoinTables<WithStreamedUnaryMethod_NaturalJoinTables<WithStreamedUnaryMethod_ExactJoinTables<WithStreamedUnaryMethod_LeftJoinTables<WithStreamedUnaryMethod_AsOfJoinTables<WithStreamedUnaryMethod_AjTables<WithStreamedUnaryMethod_RajTables<WithStreamedUnaryMethod_RangeJoinTables<WithStreamedUnaryMethod_ComboAggregate<WithStreamedUnaryMethod_AggregateAll<WithStreamedUnaryMethod_Aggregate<WithStreamedUnaryMethod_Snapshot<WithStreamedUnaryMethod_SnapshotWhen<WithStreamedUnaryMethod_Flatten<WithStreamedUnaryMethod_RunChartDownsample<WithStreamedUnaryMethod_CreateInputTable<WithStreamedUnaryMethod_WhereIn<WithSplitStreamingMethod_Batch<WithSplitStreamingMethod_ExportedTableUpdates<WithStreamedUnaryMethod_SeekRow<WithStreamedUnaryMethod_MetaTable<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_GetExportedTableCreationResponse<WithStreamedUnaryMethod_FetchTable<WithStreamedUnaryMethod_ApplyPreviewColumns<WithStreamedUnaryMethod_EmptyTable<WithStreamedUnaryMethod_TimeTable<WithStreamedUnaryMethod_DropColumns<WithStreamedUnaryMethod_Update<WithStreamedUnaryMethod_LazyUpdate<WithStreamedUnaryMethod_View<WithStreamedUnaryMethod_UpdateView<WithStreamedUnaryMethod_Select<WithStreamedUnaryMethod_UpdateBy<WithStreamedUnaryMethod_SelectDistinct<WithStreamedUnaryMethod_Filter<WithStreamedUnaryMethod_UnstructuredFilter<WithStreamedUnaryMethod_Sort<WithStreamedUnaryMethod_Head<WithStreamedUnaryMethod_Tail<WithStreamedUnaryMethod_HeadBy<WithStreamedUnaryMethod_TailBy<WithStreamedUnaryMethod_Ungroup<WithStreamedUnaryMethod_MergeTables<WithStreamedUnaryMethod_CrossJoinTables<WithStreamedUnaryMethod_NaturalJoinTables<WithStreamedUnaryMethod_ExactJoinTables<WithStreamedUnaryMethod_LeftJoinTables<WithStreamedUnaryMethod_AsOfJoinTables<WithStreamedUnaryMethod_AjTables<WithStreamedUnaryMethod_RajTables<WithStreamedUnaryMethod_RangeJoinTables<WithStreamedUnaryMethod_ComboAggregate<WithStreamedUnaryMethod_AggregateAll<WithStreamedUnaryMethod_Aggregate<WithStreamedUnaryMethod_Snapshot<WithStreamedUnaryMethod_SnapshotWhen<WithStreamedUnaryMethod_Flatten<WithStreamedUnaryMethod_RunChartDownsample<WithStreamedUnaryMethod_CreateInputTable<WithStreamedUnaryMethod_WhereIn<WithSplitStreamingMethod_Batch<WithSplitStreamingMethod_ExportedTableUpdates<WithStreamedUnaryMethod_SeekRow<WithStreamedUnaryMethod_MetaTable<WithStreamedUnaryMethod_ComputeColumnStatistics<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > StreamedService;
 };
 
 }  // namespace grpc

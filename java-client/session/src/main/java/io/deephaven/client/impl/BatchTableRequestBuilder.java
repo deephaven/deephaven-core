@@ -49,6 +49,7 @@ import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
+import io.deephaven.proto.backplane.grpc.InCondition;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
@@ -807,9 +808,19 @@ class BatchTableRequestBuilder {
         @Override
         public Condition visit(FilterComparison comparison) {
             FilterComparison preferred = comparison.maybeTranspose();
+            Operator operator = preferred.operator();
+            // Processing as single FilterIn is currently the more efficient server impl.
+            // See FilterTableGrpcImpl
+            // See io.deephaven.server.table.ops.filter.FilterFactory
+            switch (operator) {
+                case EQUALS:
+                    return visit(FilterIn.of(preferred.lhs(), preferred.rhs()));
+                case NOT_EQUALS:
+                    return visit(Filter.not(FilterIn.of(preferred.lhs(), preferred.rhs())));
+            }
             return Condition.newBuilder()
                     .setCompare(CompareCondition.newBuilder()
-                            .setOperation(adapt(preferred.operator()))
+                            .setOperation(adapt(operator))
                             .setLhs(ExpressionAdapter.adapt(preferred.lhs()))
                             .setRhs(ExpressionAdapter.adapt(preferred.rhs()))
                             .build())
@@ -818,8 +829,12 @@ class BatchTableRequestBuilder {
 
         @Override
         public Condition visit(FilterIn in) {
-            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
-            throw new UnsupportedOperationException("Can't build Condition with FilterIn");
+            final InCondition.Builder builder = InCondition.newBuilder()
+                    .setTarget(ExpressionAdapter.adapt(in.expression()));
+            for (Expression value : in.values()) {
+                builder.addCandidates(ExpressionAdapter.adapt(value));
+            }
+            return Condition.newBuilder().setIn(builder).build();
         }
 
         @Override

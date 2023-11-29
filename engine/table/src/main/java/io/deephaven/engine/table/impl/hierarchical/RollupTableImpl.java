@@ -465,7 +465,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 source.getAttributes(ak -> shouldCopyAttribute(ak, CopyAttributeOperation.Rollup)),
                 source, aggregations, includeConstituents, groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources, null, null, null, null, null);
-        source.copySortableColumns(result, baseLevel.getDefinition().getColumnNameMap()::containsKey);
+        source.copySortableColumns(result, baseLevel.getDefinition().getColumnNameSet()::contains);
         result.setColumnDescriptions(AggregationDescriptions.of(aggregations));
         return result;
     }
