@@ -37,11 +37,13 @@ public class BusinessPeriod<T extends Comparable<T> & Temporal> {
             throw new IllegalArgumentException("Null argument: startTime=" + startTime + " endTime=" + endTime);
         }
 
-        if (startTime.compareTo(endTime) > 0) {
+        final int cmp = startTime.compareTo(endTime);
+
+        if (cmp > 0) {
             throw new IllegalArgumentException("Start is after end: startTime=" + startTime + " endTime=" + endTime);
         }
 
-        if (startTime.compareTo(endTime) == 0) {
+        if (cmp == 0) {
             throw new IllegalArgumentException(
                     "Start is the same as end: startTime=" + startTime + " endTime=" + endTime);
         }
