@@ -234,7 +234,7 @@ public class Calendars {
      * @return names of all available calendars
      */
     public synchronized static String[] calendarNames() {
-        return names;
+        return names.clone();
     }
 
     // endregion
