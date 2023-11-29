@@ -58,7 +58,6 @@ import org.eclipse.jetty.websocket.jakarta.common.SessionTracker;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
