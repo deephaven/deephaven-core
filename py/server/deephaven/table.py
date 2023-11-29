@@ -2686,7 +2686,7 @@ class PartitionedTable(JObjectWrapper):
             j_operator = j_unary_operator(func, dtypes.from_jtype(Table.j_object_type.jclass))
             dependencies = to_sequence(dependencies, wrapped=True)
             j_dependencies = [d.j_table for d in dependencies if isinstance(d, Table)]
-            j_dependencies.extend([d.table for d in dependencies if isinstance(d, PartitionedTable)])
+            j_dependencies.extend([d.table.j_table for d in dependencies if isinstance(d, PartitionedTable)])
             with auto_locking_ctx(self, *dependencies):
                 j_pt = self.j_partitioned_table.transform(j_operator, j_dependencies)
                 return PartitionedTable(j_partitioned_table=j_pt)
