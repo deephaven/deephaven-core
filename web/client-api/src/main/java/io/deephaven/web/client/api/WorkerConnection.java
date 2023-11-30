@@ -759,6 +759,11 @@ public class WorkerConnection {
         });
     }
 
+    public Promise<?> getObject(TypedTicket typedTicket) {
+        return getObject(
+                new JsVariableDefinition(typedTicket.getType(), null, typedTicket.getTicket().getTicket_asB64(), null));
+    }
+
     public Promise<?> getObject(JsVariableDefinition definition) {
         if (JsVariableType.TABLE.equalsIgnoreCase(definition.getType())) {
             return getTable(definition, null);
@@ -766,7 +771,15 @@ public class WorkerConnection {
             return getFigure(definition);
         } else if (JsVariableType.PANDAS.equalsIgnoreCase(definition.getType())) {
             return getWidget(definition)
-                    .then(widget -> widget.getExportedObjects()[0].fetch());
+                    .then(widget -> {
+                        Promise<?> promise = widget.getExportedObjects()[0].fetch();
+                        promise.then(ignore -> {
+                            // We only need to keep the widget open long enough to get the exported objects
+                            widget.close();
+                            return null;
+                        });
+                        return promise;
+                    });
         } else if (JsVariableType.PARTITIONEDTABLE.equalsIgnoreCase(definition.getType())) {
             return getPartitionedTable(definition);
         } else if (JsVariableType.HIERARCHICALTABLE.equalsIgnoreCase(definition.getType())) {

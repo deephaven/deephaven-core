@@ -979,8 +979,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         connection.unregisterSimpleReconnectable(this);
 
-        // Presently it is never necessary to release widget tickets, since they can't be export tickets.
-        // connection.releaseTicket(widget.getTicket());
+        connection.releaseTicket(widget.getTicket());
 
         if (filteredTable != null) {
             filteredTable.release();

@@ -6,15 +6,10 @@ package io.deephaven.web.client.api.widget;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
-import io.deephaven.web.client.api.Callbacks;
-import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
-import io.deephaven.web.client.api.console.JsVariableType;
-import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
@@ -47,24 +42,15 @@ public class JsWidgetExportedObject implements ServerObject {
         return typedTicket;
     }
 
+    /**
+     * Fetches the object from the server. Note that the returned object has it's own ticket and must be closed, and you
+     * must call {@link #close()} on this object as well whether you fetch the exported object or not.
+     *
+     * @return a promise that resolves to the object
+     */
     @JsMethod
     public Promise<?> fetch() {
-        if (getType().equals(JsVariableType.TABLE)) {
-            return Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
-                connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
-                        connection.metadata(),
-                        c::apply);
-            }).then(etcr -> {
-                ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for widget");
-                JsTable table = new JsTable(connection, cts);
-                // never attempt a reconnect, since we might have a different widget schema entirely
-                table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
-                return Promise.resolve(table);
-            });
-        } else {
-            return this.connection.getObject(
-                    new JsVariableDefinition(ticket.getType(), null, ticket.getTicket().getTicket_asB64(), null));
-        }
+        return this.connection.getObject(ticket);
     }
 
     /**
