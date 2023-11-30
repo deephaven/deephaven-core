@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main ]
   push:
-    branches: [ '**', 'release/v*' ]
+    branches: [ 'main', 'release/v*' ]
 
 env:
   version-path: ${{ startsWith(github.ref, 'refs/heads/release/v') && github.ref_name || 'next' }}
