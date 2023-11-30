@@ -30,7 +30,7 @@ _SUPPORTED_NP_TYPE_CODES = {"b", "h", "H", "i", "l", "f", "d", "?", "U", "M", "O
 
 
 @dataclass
-class _ParsedAnnotation:
+class _ParsedParamAnnotation:
     orig_types: set[type] = field(default_factory=set)
     encoded_types: set[str] = field(default_factory=set)
     none_allowed: bool = False
@@ -40,10 +40,18 @@ class _ParsedAnnotation:
 
 
 @dataclass
+class _ParsedReturnAnnotation:
+    orig_type: type = None
+    encoded_type: str = None
+    none_allowed: bool = False
+    has_array: bool = False
+
+
+@dataclass
 class _ParsedSignature:
     fn: Callable = None
-    params: List[_ParsedAnnotation] = field(default_factory=list)
-    ret_annotation: _ParsedAnnotation = None
+    params: List[_ParsedParamAnnotation] = field(default_factory=list)
+    ret_annotation: _ParsedReturnAnnotation = None
 
     @property
     def encoded(self) -> str:
@@ -56,7 +64,7 @@ class _ParsedSignature:
         param_str = ",".join(["".join(p.encoded_types) for p in self.params])
         # ret_annotation has only one parsed annotation, and it might be Optional which means it contains 'N' in the
         # encoded type. We need to remove it.
-        return_type_code = list(self.ret_annotation.encoded_types)[0].strip("N")
+        return_type_code = re.sub(r"[N]", "", self.ret_annotation.encoded_type)
         return param_str + "->" + return_type_code
 
 
@@ -81,9 +89,9 @@ def _encode_param_type(t: type) -> str:
     return tc
 
 
-def _parse_param_annotation(annotation: Any) -> _ParsedAnnotation:
+def _parse_param_annotation(annotation: Any) -> _ParsedParamAnnotation:
     """ Parse a parameter annotation in a function's signature """
-    p_annotation = _ParsedAnnotation()
+    p_annotation = _ParsedParamAnnotation()
 
     if annotation is inspect._empty:
         p_annotation.encoded_types.add("O")
@@ -96,7 +104,7 @@ def _parse_param_annotation(annotation: Any) -> _ParsedAnnotation:
     return p_annotation
 
 
-def _parse_type_no_nested(annotation: Any, p_annotation: _ParsedAnnotation, t: type) -> None:
+def _parse_type_no_nested(annotation: Any, p_annotation: _ParsedParamAnnotation, t: type) -> None:
     """ Parse a specific type (top level or nested in a top-level Union annotation) without handling nested types
     (e.g. a nested Union). The result is stored in the given _ParsedAnnotation object.
     """
@@ -121,7 +129,7 @@ def _parse_type_no_nested(annotation: Any, p_annotation: _ParsedAnnotation, t: t
     p_annotation.encoded_types.add(tc)
 
 
-def _parse_return_annotation(annotation: Any) -> _ParsedAnnotation:
+def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
     """ Parse a function's return annotation
 
     The return annotation is treated differently from the parameter annotations. We don't apply the same check and are
@@ -129,10 +137,10 @@ def _parse_return_annotation(annotation: Any) -> _ParsedAnnotation:
     This definitely can be improved in the future.
     """
 
-    pa = _ParsedAnnotation()
+    pra = _ParsedReturnAnnotation()
 
     t = annotation
-    pa.orig_types.add(t)
+    pra.orig_type = t
     if isinstance(annotation, _GenericAlias) and annotation.__origin__ == Union and len(annotation.__args__) == 2:
         # if the annotation is a Union of two types, we'll use the non-None type
         if annotation.__args__[1] == type(None):  # noqa: E721
@@ -141,11 +149,11 @@ def _parse_return_annotation(annotation: Any) -> _ParsedAnnotation:
             t = annotation.__args__[1]
     component_char = _component_np_dtype_char(t)
     if component_char:
-        pa.encoded_types.add("[" + component_char)
-        pa.has_array = True
+        pra.encoded_type = "[" + component_char
+        pra.has_array = True
     else:
-        pa.encoded_types.add(_np_dtype_char(t))
-    return pa
+        pra.encoded_type = _np_dtype_char(t)
+    return pra
 
 
 def _parse_numba_signature(fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc]) -> _ParsedSignature:
@@ -160,12 +168,12 @@ def _parse_numba_signature(fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufun
         params, rt_char = sig.split("->")
 
         p_sig.params = []
-        p_sig.ret_annotation = _ParsedAnnotation()
-        p_sig.ret_annotation.encoded_types.add(rt_char)
+        p_sig.ret_annotation = _ParsedReturnAnnotation()
+        p_sig.ret_annotation.encoded_type = rt_char
 
         if isinstance(fn, numba.np.ufunc.dufunc.DUFunc):
             for p in params:
-                pa = _ParsedAnnotation()
+                pa = _ParsedParamAnnotation()
                 pa.encoded_types.add(p)
                 if p in _NUMPY_INT_TYPE_CODES:
                     pa.int_char = p
@@ -181,7 +189,7 @@ def _parse_numba_signature(fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufun
             output_decl = re.sub("[()]", "", output_decl)
 
             for p, d in zip(params, input_decl):
-                pa = _ParsedAnnotation()
+                pa = _ParsedParamAnnotation()
                 if d:
                     pa.encoded_types.add("[" + p)
                     pa.has_array = True
@@ -207,11 +215,11 @@ def _parse_np_ufunc_signature(fn: numpy.ufunc) -> _ParsedSignature:
     # them in the future (https://github.com/deephaven/deephaven-core/issues/4762)
     p_sig = _ParsedSignature(fn)
     if fn.nin > 0:
-        pa = _ParsedAnnotation()
+        pa = _ParsedParamAnnotation()
         pa.encoded_types.add("O")
         p_sig.params = [pa] * fn.nin
-    p_sig.ret_annotation = _ParsedAnnotation()
-    p_sig.ret_annotation.encoded_types.add("O")
+    p_sig.ret_annotation = _ParsedReturnAnnotation()
+    p_sig.ret_annotation.encoded_type = "O"
     return p_sig
 
 
@@ -229,12 +237,10 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
             p_sig.params.append(_parse_param_annotation(p.annotation))
 
         p_sig.ret_annotation = _parse_return_annotation(sig.return_annotation)
-        if len(p_sig.ret_annotation.orig_types) > 1:
-            raise DHError(message="only single return type is supported for a Python UDF.")
         return p_sig
 
 
-def _convert_arg(param: _ParsedAnnotation, arg: Any) -> Any:
+def _convert_arg(param: _ParsedParamAnnotation, arg: Any) -> Any:
     """ Convert a single argument to the type specified by the annotation """
     if arg is None:
         if not param.none_allowed:
@@ -259,7 +265,7 @@ def _convert_arg(param: _ParsedAnnotation, arg: Any) -> Any:
         if specific_types:
             for t in specific_types:
                 if t.startswith("["):
-                    if isinstance(arg, np.ndarray):
+                    if isinstance(arg, np.ndarray) and arg.dtype.char == t[1]:
                         return arg
                     continue
 
@@ -336,7 +342,7 @@ def _py_udf(fn: Callable):
     # signature (e.g. Union with more than 1 non-NoneType) will be rejected by the vectorizer.
     sig_str_vectorization = re.sub(r"[\[N,]", "", p_sig.encoded)
     return_array = p_sig.ret_annotation.has_array
-    ret_dtype = dtypes.from_np_dtype(np.dtype(list(p_sig.ret_annotation.encoded_types)[0][-1]))
+    ret_dtype = dtypes.from_np_dtype(np.dtype(p_sig.ret_annotation.encoded_type[-1]))
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -380,7 +386,7 @@ def _dh_vectorize(fn):
     and (3) the input arrays.
     """
     p_sig = _parse_signature(fn)
-    ret_dtype = dtypes.from_np_dtype(np.dtype(list(p_sig.ret_annotation.encoded_types)[0][-1]))
+    ret_dtype = dtypes.from_np_dtype(np.dtype(p_sig.ret_annotation.encoded_type[-1]))
 
     @wraps(fn)
     def wrapper(*args):
