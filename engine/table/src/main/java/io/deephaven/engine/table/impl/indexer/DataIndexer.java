@@ -137,6 +137,11 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         final Collection<ColumnSource<?>> keyColumns = Arrays.stream(keyColumnNames)
                 .map(columnSourceMap::get).collect(Collectors.toList());
 
+        // If we don't have an index, return null.
+        if (!hasDataIndex(keyColumns)) {
+            return null;
+        }
+
         // Return an index if one exists.
         final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = root;
         // noinspection SynchronizationOnLocalVariableOrMethodParameter

@@ -1350,7 +1350,14 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     final Table distinctValues;
                     final boolean setRefreshing = rightTable.isRefreshing();
-                    if (setRefreshing) {
+
+                    final String[] columnNames = MatchPair.getRightColumns(columnsToMatch);
+                    final DataIndex rightIndex =
+                            DataIndexer.of(rightTable.getRowSet()).getDataIndex(rightTable, columnNames);
+                    if (rightIndex != null) {
+                        // We have a distinct index table, let's use it.
+                        distinctValues = rightIndex.table();
+                    } else if (setRefreshing) {
                         distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
                     } else {
                         distinctValues = rightTable;
