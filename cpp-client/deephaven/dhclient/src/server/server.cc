@@ -17,12 +17,12 @@
 
 #include "deephaven/client/impl/util.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/format.h"
 
 using arrow::flight::FlightClient;
 using deephaven::client::impl::MoveVectorData;
 using deephaven::dhcore::utility::Bit_cast;
 using deephaven::dhcore::utility::GetWhat;
-using deephaven::dhcore::utility::Stringf;
 using io::deephaven::proto::backplane::grpc::AddTableRequest;
 using io::deephaven::proto::backplane::grpc::AddTableResponse;
 using io::deephaven::proto::backplane::grpc::AjRajTablesRequest;
@@ -149,8 +149,8 @@ std::shared_ptr<Server> Server::CreateFromTarget(
 
   auto location_res = arrow::flight::Location::Parse(flight_target);
   if (!location_res.ok()) {
-    auto message = Stringf("Location::Parse(%o) failed, error = %o",
-        flight_target, location_res.status());
+    auto message = fmt::format("Location::Parse({}) failed, error = {}",
+        flight_target, location_res.status().ToString());
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
@@ -166,7 +166,7 @@ std::shared_ptr<Server> Server::CreateFromTarget(
 
   auto client_res = arrow::flight::FlightClient::Connect(*location_res, options);
   if (!client_res.ok()) {
-    auto message = Stringf("FlightClient::Connect() failed, error = %o", client_res.status());
+    auto message = fmt::format("FlightClient::Connect() failed, error = {}", client_res.status().ToString());
     throw std::runtime_error(message);
   }
   gpr_log(GPR_DEBUG,
@@ -192,8 +192,8 @@ std::shared_ptr<Server> Server::CreateFromTarget(
     auto result = cfs->GetConfigurationConstants(&ctx, cc_req, &cc_resp);
 
     if (!result.ok()) {
-      auto message = Stringf("Can't get configuration constants. Error %o: %o",
-          result.error_code(), result.error_message());
+      auto message = fmt::format("Can't get configuration constants. Error {}: {}",
+          static_cast<int>(result.error_code()), result.error_message());
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
 
@@ -364,7 +364,8 @@ void Server::SendRpc(const std::function<grpc::Status(grpc::ClientContext *)> &c
 
   auto status = callback(&ctx);
   if (!status.ok()) {
-    auto message = Stringf("Error %o. Message: %o", status.error_code(), status.error_message());
+    auto message = fmt::format("Error {}. Message: {}", static_cast<int>(status.error_code()),
+        status.error_message());
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
@@ -469,7 +470,7 @@ std::optional<std::chrono::milliseconds> ExtractExpirationInterval(
   const auto *end = begin + target_value.size();
   auto [ptr, ec] = std::from_chars(begin, end, millis);
   if (ec != std::errc() || ptr != end) {
-    auto message = Stringf("Failed to parse %o as an integer", target_value);
+    auto message = fmt::format("Failed to parse {} as an integer", target_value);
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
   // As a matter of policy we use half of whatever the server tells us is the expiration time.

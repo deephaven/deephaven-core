@@ -14,6 +14,7 @@
 #include "deephaven/dhcore/ticking/shift_processor.h"
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/format.h"
 
 using deephaven::dhcore::ElementTypeId;
 using deephaven::dhcore::VisitElementTypeId;
@@ -33,8 +34,6 @@ using deephaven::dhcore::immerutil::NumericAbstractFlexVector;
 using deephaven::dhcore::clienttable::Schema;
 using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::utility::MakeReservedVector;
-using deephaven::dhcore::utility::Streamf;
-using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::dhcore::ticking {
 namespace {
@@ -98,9 +97,9 @@ void ImmerTableState::AddData(const std::vector<std::shared_ptr<ColumnSource>> &
   auto ncols = src.size();
   auto nrows = rows_to_add_index_space.Size();
     AssertAllSame(src.size(), begins.size(), ends.size());
-    AssertLeq(ncols, flexVectors_.size(), "More columns provided than was expected (%o vs %o)");
+    AssertLeq(ncols, flexVectors_.size(), "More columns provided than was expected ({} vs {})");
   for (size_t i = 0; i != ncols; ++i) {
-      AssertLeq(nrows, ends[i] - begins[i], "Sources contain insufficient data (%o vs %o)");
+      AssertLeq(nrows, ends[i] - begins[i], "Sources contain insufficient data ({} vs {})");
   }
   auto added_data = MakeReservedVector<std::unique_ptr<AbstractFlexVectorBase>>(ncols);
   for (size_t i = 0; i != ncols; ++i) {
@@ -158,7 +157,7 @@ void ImmerTableState::ModifyData(size_t col_num, const ColumnSource &src, size_t
     const RowSequence &rows_to_modify) {
   auto nrows = rows_to_modify.Size();
   auto source_size = end - begin;
-    AssertLeq(nrows, source_size, "Insufficient data in source");
+    AssertLeq(nrows, source_size, "Insufficient data in source ({} vs {})");
   auto modified_data = MakeFlexVectorFromColumnSource(src, begin, begin + nrows);
 
   auto &fv = flexVectors_[col_num];
@@ -289,7 +288,7 @@ std::unique_ptr<AbstractFlexVectorBase> MakeFlexVectorFromColumnSource(const Col
 
 void AssertAllSame(size_t val0, size_t val1, size_t val2) {
   if (val0 != val1 || val0 != val2) {
-    auto message = Stringf("Sizes differ: %o vs %o vs %o", val0, val1, val2);
+    auto message = fmt::format("Sizes differ: {} vs {} vs {}", val0, val1, val2);
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 }
@@ -298,7 +297,7 @@ void AssertLeq(size_t lhs, size_t rhs, const char *format) {
   if (lhs <= rhs) {
     return;
   }
-  auto message = Stringf(format, lhs, rhs);
+  auto message = fmt::format(format, lhs, rhs);
   throw std::runtime_error(message);
 }
 }  // namespace

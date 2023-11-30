@@ -4,9 +4,7 @@
 #include "deephaven/client/utility/arrow_util.h"
 
 #include <ostream>
-#include <vector>
 #include <arrow/status.h>
-#include <arrow/type.h>
 #include <arrow/flight/types.h>
 #include "deephaven/dhcore/utility/utility.h"
 
@@ -17,7 +15,7 @@ void OkOrThrow(const deephaven::dhcore::utility::DebugInfo &debug_info,
     return;
   }
 
-  auto msg = Stringf("Status: %o. Caller: %o", status, debug_info);
+  auto msg = fmt::format("Status: {}. Caller: {}", status.ToString(), debug_info);
   throw std::runtime_error(msg);
 }
 

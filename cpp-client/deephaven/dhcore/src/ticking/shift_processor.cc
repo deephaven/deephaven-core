@@ -3,6 +3,8 @@
  */
 #include "deephaven/dhcore/ticking/shift_processor.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/ostream.h"
 
 namespace deephaven::dhcore::subscription {
 void ShiftProcessor::ApplyShiftData(const RowSequence &first_index, const RowSequence &last_index,
@@ -20,8 +22,11 @@ void ShiftProcessor::ApplyShiftData(const RowSequence &first_index, const RowSeq
   auto end_iter = last_index.GetRowSequenceIterator();
   auto dest_iter = dest_index.GetRowSequenceIterator();
   auto show_message = [](size_t first, size_t last, size_t dest) {
-//    const char *which = dest >= last ? "positive" : "negative";
-//    streamf(std::cerr, "Processing %o shift src [%o..%o] dest %o\n", which, first, last, dest);
+    // Disabled because it's too verbose
+    if (false) {
+      const char *which = dest >= last ? "positive" : "negative";
+      fmt::print(std::cerr, "Processing {} shift src [{}..{}] dest {}\n", which, first, last, dest);
+    }
   };
   {
     uint64_t first;

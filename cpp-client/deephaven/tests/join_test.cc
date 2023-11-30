@@ -3,12 +3,12 @@
  */
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
+#include "deephaven/third_party/fmt/format.h"
 
 using deephaven::client::TableHandleManager;
 using deephaven::client::TableHandle;
 using deephaven::client::utility::TableMaker;
 using deephaven::dhcore::DateTime;
-using deephaven::dhcore::utility::Streamf;
 
 namespace deephaven::client::tests {
 TEST_CASE("Join", "[join]") {
@@ -101,7 +101,7 @@ TEST_CASE("Aj", "[join]") {
         DateTime::Parse("2021-04-05T16:30:00-0500")
     };
     for (const auto &ts : timestamp_data) {
-      Streamf(std::cout, "%o - %o\n", ts, ts.Nanos());
+      fmt::print(std::cout, "{} - {}\n", ts, ts.Nanos());
 
     }
     std::vector<double> price_data = {2.5, 3.7, 3.0, 100.50, 110};
@@ -197,7 +197,7 @@ TEST_CASE("Raj", "[join]") {
         DateTime::Parse("2021-04-05T16:30:00-0500")
     };
     for (const auto &ts : timestamp_data) {
-      Streamf(std::cout, "%o - %o\n", ts, ts.Nanos());
+      fmt::print(std::cout, "{} - {}\n", ts, ts.Nanos());
 
     }
     std::vector<double> price_data = {2.5, 3.7, 3.0, 100.50, 110};

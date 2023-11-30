@@ -5,11 +5,11 @@
 #include "deephaven/client/utility/table_maker.h"
 #include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/format.h"
 
 using deephaven::client::TableHandle;
 using deephaven::client::utility::OkOrThrow;
 using deephaven::client::utility::ValueOrThrow;
-using deephaven::dhcore::utility::Stringf;
 
 #include <memory>
 
@@ -29,7 +29,7 @@ void TableMaker::FinishAddColumn(std::string name, internal::TypeConverter info)
     numRows_ = info.Column()->length();
   } else if (numRows_ != info.Column()->length()) {
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(
-        Stringf("Column sizes not consistent: expected %o, have %o", numRows_,
+        fmt::format("Column sizes not consistent: expected {}, have {}", numRows_,
             info.Column()->length())));
   }
 
