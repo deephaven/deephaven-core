@@ -47,10 +47,10 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     public static final String EVENT_KEYADDED = "keyadded",
             EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT,
             EVENT_RECONNECT = JsTable.EVENT_RECONNECT,
-    /**
-     * Indicates that an error has occurred while communicating with the server.
-     */
-    EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
+            /**
+             * Indicates that an error has occurred while communicating with the server.
+             */
+            EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
 
     private final WorkerConnection connection;
     private final JsWidget widget;
@@ -169,26 +169,26 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         tables.put(key, JsLazy.of(() -> {
             // If we've entered this lambda, the JsLazy is being used, so we need to go ahead and get the tablehandle
             final ClientTableState entry = connection.newState((c, cts, metadata) -> {
-                        // TODO deephaven-core#2529 parallelize this
-                        connection.newTable(
-                                        descriptor.getKeyColumnNamesList().asArray(new String[0]),
-                                        keyColumnTypes.toArray(new String[0]),
-                                        key.stream().map(item -> new Object[]{item}).toArray(Object[][]::new),
-                                        null,
-                                        this)
-                                .then(table -> {
-                                    GetTableRequest getTableRequest = new GetTableRequest();
-                                    getTableRequest.setPartitionedTable(widget.getTicket());
-                                    getTableRequest.setKeyTableTicket(table.getHandle().makeTicket());
-                                    getTableRequest.setResultId(cts.getHandle().makeTicket());
-                                    connection.partitionedTableServiceClient().getTable(getTableRequest, connection.metadata(),
-                                            (error, success) -> {
-                                                table.close();
-                                                c.apply(error, success);
-                                            });
-                                    return null;
-                                });
-                    },
+                // TODO deephaven-core#2529 parallelize this
+                connection.newTable(
+                        descriptor.getKeyColumnNamesList().asArray(new String[0]),
+                        keyColumnTypes.toArray(new String[0]),
+                        key.stream().map(item -> new Object[] {item}).toArray(Object[][]::new),
+                        null,
+                        this)
+                        .then(table -> {
+                            GetTableRequest getTableRequest = new GetTableRequest();
+                            getTableRequest.setPartitionedTable(widget.getTicket());
+                            getTableRequest.setKeyTableTicket(table.getHandle().makeTicket());
+                            getTableRequest.setResultId(cts.getHandle().makeTicket());
+                            connection.partitionedTableServiceClient().getTable(getTableRequest, connection.metadata(),
+                                    (error, success) -> {
+                                        table.close();
+                                        c.apply(error, success);
+                                    });
+                            return null;
+                        });
+            },
                     "partitioned table key " + key);
 
             // later, when the CTS is released, remove this "table" from the map and replace with an unresolved JsLazy
@@ -232,11 +232,11 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      */
     public Promise<JsTable> getMergedTable() {
         return connection.newState((c, cts, metadata) -> {
-                    MergeRequest requestMessage = new MergeRequest();
-                    requestMessage.setPartitionedTable(widget.getTicket());
-                    requestMessage.setResultId(cts.getHandle().makeTicket());
-                    connection.partitionedTableServiceClient().merge(requestMessage, connection.metadata(), c::apply);
-                }, "partitioned table merged table")
+            MergeRequest requestMessage = new MergeRequest();
+            requestMessage.setPartitionedTable(widget.getTicket());
+            requestMessage.setResultId(cts.getHandle().makeTicket());
+            connection.partitionedTableServiceClient().merge(requestMessage, connection.metadata(), c::apply);
+        }, "partitioned table merged table")
                 .refetch(this, connection.metadata())
                 .then(cts -> Promise.resolve(new JsTable(cts.getConnection(), cts)));
     }
@@ -293,12 +293,12 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     @JsMethod
     public Promise<JsTable> getKeyTable() {
         return connection.newState((c, state, metadata) -> {
-                    DropColumnsRequest drop = new DropColumnsRequest();
-                    drop.setColumnNamesList(new String[]{descriptor.getConstituentColumnName()});
-                    drop.setSourceId(keys.state().getHandle().makeTableReference());
-                    drop.setResultId(state.getHandle().makeTicket());
-                    connection.tableServiceClient().dropColumns(drop, metadata, c::apply);
-                }, "drop constituent column")
+            DropColumnsRequest drop = new DropColumnsRequest();
+            drop.setColumnNamesList(new String[] {descriptor.getConstituentColumnName()});
+            drop.setSourceId(keys.state().getHandle().makeTableReference());
+            drop.setResultId(state.getHandle().makeTicket());
+            connection.tableServiceClient().dropColumns(drop, metadata, c::apply);
+        }, "drop constituent column")
                 .refetch(this, connection.metadata())
                 .then(state -> Promise.resolve(new JsTable(connection, state)));
     }
