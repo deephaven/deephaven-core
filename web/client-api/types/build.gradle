@@ -10,6 +10,9 @@ dependencies {
     dts project(path: ':web-client-api', configuration: 'dts')
 }
 
+// Apply our temporary convention until dhc hits 1.0.0
+def npmVersion = '1.0.0-dev' + project.property('deephavenBaseVersion').toString().trim()
+
 Docker.registerDockerTask(project, 'typedoc') {
     copyIn {
         from(configurations.dts) {
@@ -29,7 +32,7 @@ Docker.registerDockerTask(project, 'typedoc') {
         from 'deephaven/node:local-build'
 
         copyFile('.', '/project')
-        environmentVariable('VERSION', project.property('deephavenBaseVersion').toString().trim())
+        environmentVariable('VERSION', npmVersion)
 
         runCommand('''set -eux; \\
                       cd /project/; \\
@@ -62,16 +65,16 @@ Docker.registerDockerTask(project, 'versionBump') {
     dockerfile {
         from 'deephaven/node:local-build'
         copyFile('.', '/project')
-        environmentVariable('VERSION', project.property('deephavenBaseVersion').toString().trim())
+        environmentVariable('VERSION', npmVersion)
         runCommand('''set -eux; \\
                       cd /project; \\
                       npm version $VERSION; \\''')
     }
     parentContainers = [ Docker.registryTask(project, 'node') ] // deephaven/node
-    containerOutPath = '/package'
+    containerOutPath = '/project'
     copyOut {
-        from 'package.json'
-        from 'package-lock.json'
+        include 'package.json'
+        include 'package-lock.json'
 
         into layout.projectDirectory
         preserve {
