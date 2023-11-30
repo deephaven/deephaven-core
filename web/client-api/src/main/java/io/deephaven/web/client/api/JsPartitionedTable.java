@@ -1,6 +1,7 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
+import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
@@ -9,9 +10,11 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.GetTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.MergeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionedTableDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
+import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.subscription.SubscriptionTableData;
 import io.deephaven.web.client.api.subscription.TableSubscription;
@@ -21,6 +24,7 @@ import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.fu.JsConsumer;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
@@ -64,6 +68,10 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      */
     private final Map<List<Object>, JsLazy<Promise<ClientTableState>>> tables = new HashMap<>();
 
+    private Column[] keyColumns;
+
+    private Column[] columns;
+
 
     @JsIgnore
     public JsPartitionedTable(WorkerConnection connection, JsWidget widget) {
@@ -83,14 +91,22 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             descriptor = PartitionedTableDescriptor.deserializeBinary(w.getDataAsU8());
 
             keyColumnTypes = new ArrayList<>();
-            ColumnDefinition[] columnDefinitions = WebBarrageUtils.readColumnDefinitions(
+            InitialTableDefinition tableDefinition = WebBarrageUtils.readTableDefinition(
                     WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
+            ColumnDefinition[] columnDefinitions = tableDefinition.getColumns();
+            Column[] columns = new Column[0];
+            Column[] keyColumns = new Column[0];
             for (int i = 0; i < columnDefinitions.length; i++) {
                 ColumnDefinition columnDefinition = columnDefinitions[i];
+                Column column = columnDefinition.makeJsColumn(columns.length, tableDefinition.getColumnsByName());
+                columns[columns.length] = column;
                 if (descriptor.getKeyColumnNamesList().indexOf(columnDefinition.getName()) != -1) {
                     keyColumnTypes.add(columnDefinition.getType());
+                    keyColumns[keyColumns.length] = column;
                 }
             }
+            this.columns = JsObject.freeze(columns);
+            this.keyColumns = JsObject.freeze(keyColumns);
 
             return w.getExportedObjects()[0].fetch();
         }).then(result -> {
@@ -188,7 +204,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
 
     /**
      * Fetch the table with the given key.
-     * 
+     *
      * @param key The key to fetch. An array of values for each key column, in the same order as the key columns are.
      * @return Promise of dh.Table
      */
@@ -211,7 +227,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     /**
      * Open a new table that is the result of merging all constituent tables. See
      * {@link io.deephaven.engine.table.PartitionedTable#merge()} for details.
-     * 
+     *
      * @return A merged representation of the constituent tables.
      */
     public Promise<JsTable> getMergedTable() {
@@ -228,7 +244,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     /**
      * The set of all currently known keys. This is kept up to date, so getting the list after adding an event listener
      * for <b>keyadded</b> will ensure no keys are missed.
-     * 
+     *
      * @return Set of Object
      */
     public JsSet<Object> getKeys() {
@@ -240,12 +256,51 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
 
     /**
      * The count of known keys.
-     * 
+     *
      * @return int
      */
     @JsProperty(name = "size")
     public int size() {
         return tables.size();
+    }
+
+    /**
+     * An array of all the key columns that the tables are partitioned by.
+     *
+     * @return Array of Column
+     */
+    @JsProperty
+    public Column[] getKeyColumns() {
+        return keyColumns;
+    }
+
+    /**
+     * An array of the columns in the tables that can be retrieved from this partitioned table, including both key and
+     * non-key columns.
+     *
+     * @return Array of Column
+     */
+    @JsProperty
+    public Column[] getColumns() {
+        return columns;
+    }
+
+    /**
+     * Fetch a table containing all the valid keys of the partitioned table.
+     *
+     * @return Promise of a Table
+     */
+    @JsMethod
+    public Promise<JsTable> getKeyTable() {
+        return connection.newState((c, state, metadata) -> {
+            DropColumnsRequest drop = new DropColumnsRequest();
+            drop.setColumnNamesList(new String[] {descriptor.getConstituentColumnName()});
+            drop.setSourceId(keys.state().getHandle().makeTableReference());
+            drop.setResultId(state.getHandle().makeTicket());
+            connection.tableServiceClient().dropColumns(drop, metadata, c::apply);
+        }, "drop constituent column")
+                .refetch(this, connection.metadata())
+                .then(state -> Promise.resolve(new JsTable(connection, state)));
     }
 
     /**
