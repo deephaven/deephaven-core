@@ -104,7 +104,7 @@ def _parse_type_no_nested(annotation: Any, p_annotation: _ParsedAnnotation, t: t
     tc = _encode_param_type(t)
     if "[" in tc:
         p_annotation.has_array = True
-    if tc in {"N", "O", "U", "M"}:
+    if tc in {"N", "O"}:
         p_annotation.none_allowed = True
     if tc in _NUMPY_INT_TYPE_CODES:
         if p_annotation.int_char and p_annotation.int_char != tc:
@@ -334,7 +334,7 @@ def _py_udf(fn: Callable):
     # build a signature string for vectorization by removing NoneType, array char '[', and comma from the encoded types
     # since vectorization only supports UDFs with a single signature and enforces an exact match, any non-compliant
     # signature (e.g. Union with more than 1 non-NoneType) will be rejected by the vectorizer.
-    sig_str_vectorization = re.sub("[\[N,]", "", p_sig.encoded)
+    sig_str_vectorization = re.sub(r"[\[N,]", "", p_sig.encoded)
     return_array = p_sig.ret_annotation.has_array
     ret_dtype = dtypes.from_np_dtype(np.dtype(list(p_sig.ret_annotation.encoded_types)[0][-1]))
 

@@ -88,7 +88,8 @@ def test_udf(col1, col2) -> bool:
 
                 func_str = f"""
 def test_udf(col1, col2: np.ndarray[{np_dtype}]) -> bool:
-    return (isinstance(col1, int) and isinstance(col2, np.ndarray) and np.nanmean(col2) == np.mean(col2))
+    return (isinstance(col1, int) and isinstance(col2, np.ndarray) and col2.dtype.type == {np_dtype} and np.nanmean(
+    col2) == np.mean( col2))
                 """
                 exec(func_str, globals())
                 res = tbl.update("Col3 = test_udf(Col1, Col2)")
@@ -103,7 +104,8 @@ def test_udf(col1, col2: np.ndarray[{np_dtype}]) -> bool:
 
                 func_str = f"""
 def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
-    return (isinstance(col1, int) and isinstance(col2, np.ndarray) and np.nanmean(col2) != np.mean(col2))
+    return (isinstance(col1, int) and isinstance(col2, np.ndarray) and col2.dtype.type == 
+    {_J_TYPE_NP_DTYPE_MAP[j_dtype]} and np.nanmean(col2) != np.mean( col2))
                 """
                 exec(func_str, globals())
 
@@ -115,6 +117,8 @@ def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
                 else:
                     with self.assertRaises(DHError) as cm:
                         tbl.update("Col3 = test_udf(Col1, Col2)")
+                    self.assertRegex(str(cm.exception), "Java .* array contains Deephaven null values, but numpy .* "
+                                                        "array does not support ")
 
     def test_j_scalar_to_py_no_null(self):
         col1_formula = "Col1 = i % 10"
@@ -127,30 +131,30 @@ def test_udf(col: {np_type}) -> bool:
     if not isinstance(col, {np_type}):
         return False
     if np.isnan(col):
-        return True
-    else:
         return False
+    else:
+        return True
         """
                 exec(func, globals())
                 with self.subTest(j_dtype):
                     tbl = empty_table(100).update([col1_formula, col2_formula])
                     res = tbl.update("Col3 = test_udf(Col2)")
-                    self.assertEqual(0, res.to_string().count("true"))
+                    self.assertEqual(10, res.to_string().count("true"))
 
                 func = f"""
 def test_udf(col: Optional[{np_type}]) -> bool:
     if not isinstance(col, {np_type}):
         return False
     if col is None:
-        return True
-    else:
         return False
+    else:
+        return True
         """
                 exec(func, globals())
                 with self.subTest(j_dtype):
                     tbl = empty_table(100).update([col1_formula, col2_formula])
                     res = tbl.update("Col3 = test_udf(Col2)")
-                    self.assertEqual(0, res.to_string().count("true"))
+                    self.assertEqual(10, res.to_string().count("true"))
 
     def test_j_scalar_to_py_null(self):
         col1_formula = "Col1 = i % 10"
@@ -178,6 +182,7 @@ def test_udf(col: {np_type}) -> bool:
                     else:
                         with self.assertRaises(DHError) as cm:
                             res = tbl.update("Col3 = test_udf(Col2)")
+                        self.assertRegex(str(cm.exception), "Argument .* is not compatible with annotation*")
 
                 func = f"""
 def test_udf(col: Optional[{np_type}]) -> bool:
@@ -239,6 +244,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
         self.assertEqual(t.columns[0].data_type, dtypes.bool_)
         with self.assertRaises(DHError) as cm:
             t = empty_table(10).update(["X1 = f4(now())"])
+        self.assertRegex(str(cm.exception), "Argument .* is not compatible with annotation*")
 
         def f41(p1: Union[np.int16, np.float64, Union[Any]], p2=None) -> bool:
             return bool(p1)
@@ -260,6 +266,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
         t = t.update(["X1 = f5(X, Y)"])
         with self.assertRaises(DHError) as cm:
             t = t.update(["X1 = f5(X, null)"])
+        self.assertRegex(str(cm.exception), "Argument .* is not compatible with annotation*")
 
         def f51(col1, col2: Optional[np.ndarray[np.int32]]) -> bool:
             return np.nanmean(col2) == np.mean(col2)
@@ -292,6 +299,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             with self.assertRaises(DHError) as cm:
                 t2 = t.update(["X1 = f1(null, Y )"])
+            self.assertRegex(str(cm.exception), "Argument .* is not compatible with annotation*")
 
             def f11(p1: Union[np.ndarray[str], None], p2=None) -> bool:
                 return bool(len(p1)) if p1 is not None else False
@@ -307,6 +315,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             with self.assertRaises(DHError) as cm:
                 t2 = t.update(["X1 = f2(null, Y )"])
+            self.assertRegex(str(cm.exception), "Argument .* is not compatible with annotation*")
 
             def f21(p1: Union[np.ndarray[np.datetime64], None], p2=None) -> bool:
                 return bool(len(p1)) if p1 is not None else False
@@ -320,12 +329,15 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"]).group_by("X")
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(["X1 = f3(Y)"])
+            self.assertRegex(str(cm.exception), "Java .* array contains Deephaven null values, but numpy .* "
+                                                "array does not support ")
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"]).group_by("X")
             t1 = t.update(["X1 = f3(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             with self.assertRaises(DHError) as cm:
                 t2 = t.update(["X1 = f3(null, Y )"])
+            self.assertRegex(str(cm.exception), "Argument None is not compatible with annotation")
 
             def f31(p1: Optional[np.ndarray[bool]], p2=None) -> bool:
                 return bool(len(p1)) if p1 is not None else False
@@ -338,9 +350,9 @@ def test_udf(col: Optional[{np_type}]) -> bool:
                 return p1 is None
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"])
-            t1 = t.update(["X1 = f1(Y)"])
-            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
-            self.assertEqual(5, t1.to_string().count("true"))
+            with self.assertRaises(DHError) as cm:
+                t1 = t.update(["X1 = f1(Y)"])
+            self.assertRegex(str(cm.exception), "Argument None is not compatible with annotation")
 
             def f11(p1: Union[str, None], p2=None) -> bool:
                 return p1 is None
@@ -352,9 +364,9 @@ def test_udf(col: Optional[{np_type}]) -> bool:
                 return p1 is None
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
-            t1 = t.update(["X1 = f2(Y)"])
-            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
-            self.assertEqual(5, t1.to_string().count("true"))
+            with self.assertRaises(DHError) as cm:
+                t1 = t.update(["X1 = f2(Y)"])
+            self.assertRegex(str(cm.exception), "Argument None is not compatible with annotation")
 
             def f21(p1: Union[np.datetime64, None], p2=None) -> bool:
                 return p1 is None
@@ -368,6 +380,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"])
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(["X1 = f3(Y)"])
+            self.assertRegex(str(cm.exception), "Argument None is not compatible with annotation")
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"])
             t1 = t.update(["X1 = f3(Y)"])
