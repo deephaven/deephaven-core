@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 deephaven/proto-backplane-grpc:local-build AS proto-backplane-grpc
+FROM deephaven/proto-backplane-grpc:local-build AS proto-backplane-grpc
 
 FROM deephaven/node:local-build
 WORKDIR /usr/src/app
