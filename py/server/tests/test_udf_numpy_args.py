@@ -268,6 +268,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
         t = t.update(["X1 = f51(X, Y)"])
         with self.assertRaises(DHError) as cm:
             t = t.update(["X1 = f51(X, null)"])
+        self.assertRegex(str(cm.exception), "unsupported operand type.*NoneType")
 
         t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
 
@@ -365,9 +366,8 @@ def test_udf(col: Optional[{np_type}]) -> bool:
                 return p1 is None
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"])
-            t1 = t.update(["X1 = f3(Y)"])
-            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
-            self.assertEqual(5, t1.to_string("X1").count("false"))
+            with self.assertRaises(DHError) as cm:
+                t1 = t.update(["X1 = f3(Y)"])
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"])
             t1 = t.update(["X1 = f3(Y)"])

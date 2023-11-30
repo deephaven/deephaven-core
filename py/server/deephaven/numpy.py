@@ -27,7 +27,7 @@ def _to_column_name(name: str) -> str:
 def column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
     """ Produces a numpy array from the given Java array and the Table column definition."""
     try:
-        return _j_array_to_numpy_array(col_def.data_type, j_array)
+        return _j_array_to_numpy_array(col_def.data_type, j_array, conv_null=False, type_promotion=False)
     except DHError:
         raise
     except Exception as e:

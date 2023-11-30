@@ -24,7 +24,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     private static final PyObject NUMBA_VECTORIZED_FUNC_TYPE = getNumbaVectorizedFuncType();
     private static final PyObject NUMBA_GUVECTORIZED_FUNC_TYPE = getNumbaGUVectorizedFuncType();
 
-    private static final PyModule dh_table_module = PyModule.importModule("deephaven.table");
+    private static final PyModule dh_udf_module = PyModule.importModule("deephaven._udf");
 
     private static final Map<Character, Class<?>> numpyType2JavaClass = new HashMap<>();
 
@@ -147,7 +147,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             numbaVectorized = false;
             vectorized = false;
         }
-        pyUdfDecoratedCallable = dh_table_module.call("_py_udf", unwrapped);
+        pyUdfDecoratedCallable = dh_udf_module.call("_py_udf", unwrapped);
         signature = pyUdfDecoratedCallable.getAttribute("signature").toString();
     }
 
@@ -198,7 +198,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         if (numbaVectorized || vectorized) {
             return pyCallable;
         } else {
-            return dh_table_module.call("dh_vectorize", unwrapped);
+            return dh_udf_module.call("_dh_vectorize", unwrapped);
         }
     }
 

@@ -208,15 +208,22 @@ def to_sequence(v: Union[T, Sequence[T]] = None, wrapped: bool = False) -> Seque
         return tuple((unwrap(o) for o in v))
 
 
-def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool = False, type_promotion: bool = True) -> \
+def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool, type_promotion: bool = False) -> \
         np.ndarray:
     """ Produces a numpy array from the DType and given Java array.
 
     Args:
-        dtype (DType): The dtype of the array
+        dtype (DType): The dtype of the Java array
         j_array (jpy.JType): The Java array to convert
         conv_null (bool): If True, convert nulls to the null value for the dtype
-        type_promotion (bool): Ignored when conv_null is False.  When type_promotion is False, (1) input Java integer, boolean, or character arrays containing Deephaven nulls yield an exception, (2) input Java float or double arrays containing Deephaven nulls have null values converted to np.nan, and (3) input Java arrays without Deephaven nulls are converted to the target type.  When type_promotion is True, (1) input Java integer, boolean, or character arrays containing Deephaven nulls are converted to np.float64 arrays and Deephaven null values are converted to np.nan, (2) input Java float or double arrays containing Deephaven nulls have null values converted to np.nan, and (3) input Java arrays without Deephaven nulls are converted to the target type.  Defaults to True. 
+        type_promotion (bool): Ignored when conv_null is False.  When type_promotion is False, (1) input Java integer,
+            boolean, or character arrays containing Deephaven nulls yield an exception, (2) input Java float or double
+            arrays containing Deephaven nulls have null values converted to np.nan, and (3) input Java arrays without
+            Deephaven nulls are converted to the target type.  When type_promotion is True, (1) input Java integer,
+            boolean, or character arrays containing Deephaven nulls are converted to np.float64 arrays and Deephaven
+            null values are converted to np.nan, (2) input Java float or double arrays containing Deephaven nulls have
+            null values converted to np.nan, and (3) input Java arrays without Deephaven nulls are converted to the
+            target type.  Defaults to False.
 
     Returns:
         np.ndarray: The numpy array
@@ -269,7 +276,7 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
     """Produce a copy of the specified Java array as a pandas.Series object.
 
     Args:
-        dtype (DType): the data type of the Java array
+        dtype (DType): the dtype of the Java array
         j_array (jpy.JType): the Java array
         conv_null (bool): whether to check for Deephaven nulls in the data and automatically replace them with
             pd.NA.
