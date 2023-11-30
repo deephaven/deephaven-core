@@ -67,6 +67,14 @@ Docker.registerDockerTask(project, 'versionBump') {
                       npm version $VERSION; \\''')
     }
     copyOut {
+        from 'package.json'
+        from 'package-lock.json'
+
         into layout.projectDirectory
+        preserve {
+            include '**'
+            exclude 'package.json'
+            exclude 'package-lock.json'
+        }
     }
 }
