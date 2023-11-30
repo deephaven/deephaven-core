@@ -9,8 +9,8 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.threads.ThreadDump;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.util.thread.ThreadDump;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

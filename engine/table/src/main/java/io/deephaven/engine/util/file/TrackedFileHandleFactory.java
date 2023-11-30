@@ -3,13 +3,12 @@
  */
 package io.deephaven.engine.util.file;
 
-import io.deephaven.net.CommBase;
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.io.sched.Scheduler;
-import io.deephaven.io.sched.TimedJob;
+import io.deephaven.util.thread.NamingThreadFactory;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,8 +16,13 @@ import java.lang.ref.WeakReference;
 import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -26,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Simple least-recently-opened "cache" for FileHandles, to avoid running up against ulimits. Will probably not achieve
  * satisfactory results if the number of file handles concurrently in active use exceeds capacity. Note that returned
  * FileHandles may be closed asynchronously by the factory.
- *
+ * <p>
  * TODO: Consider adding a lookup to enable handle sharing. Not necessary for current usage.
  */
 public class TrackedFileHandleFactory implements FileHandleFactory {
@@ -38,9 +42,16 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
             synchronized (TrackedFileHandleFactory.class) {
                 if (instance == null) {
                     instance = new TrackedFileHandleFactory(
-                            CommBase.singleThreadedScheduler("TrackedFileHandleFactory.CleanupScheduler", Logger.NULL)
-                                    .start(),
-                            Configuration.getInstance().getInteger("TrackedFileHandleFactory.maxOpenFiles"));
+                            Executors.newSingleThreadScheduledExecutor(
+                                    new NamingThreadFactory(TrackedFileHandleFactory.class, "cleanupScheduler", true)),
+                            Configuration.getInstance().getInteger("TrackedFileHandleFactory.maxOpenFiles")) {
+
+                        @Override
+                        public void shutdown() {
+                            super.shutdown();
+                            getScheduler().shutdown();
+                        }
+                    };
                 }
             }
         }
@@ -50,11 +61,12 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
     private final static double DEFAULT_TARGET_USAGE_RATIO = 0.9;
     private final static long DEFAULT_CLEANUP_INTERVAL_MILLIS = 60_000;
 
-    private final Scheduler scheduler;
+    private final ScheduledExecutorService scheduler;
     private final int capacity;
     private final double targetUsageRatio;
 
     private final int targetUsageThreshold;
+    private final ScheduledFuture<?> cleanupJobFuture;
 
     private final AtomicInteger size = new AtomicInteger(0);
     private final Queue<HandleReference> handleReferences = new ConcurrentLinkedQueue<>();
@@ -70,32 +82,39 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
     /**
      * Full constructor.
      * 
-     * @param scheduler The scheduler to use for cleanup
+     * @param scheduler The {@link ScheduledExecutorService} to use for cleanup
      * @param capacity The total number of file handles to allow outstanding
      * @param targetUsageRatio The target usage threshold as a ratio of capacity, in [0.1, 0.9]
      * @param cleanupIntervalMillis The interval for asynchronous cleanup attempts
      */
-    public TrackedFileHandleFactory(@NotNull final Scheduler scheduler, final int capacity,
-            final double targetUsageRatio, final long cleanupIntervalMillis) {
+    @VisibleForTesting
+    TrackedFileHandleFactory(
+            @NotNull final ScheduledExecutorService scheduler,
+            final int capacity,
+            final double targetUsageRatio,
+            final long cleanupIntervalMillis) {
         this.scheduler = scheduler;
         this.capacity = Require.gtZero(capacity, "capacity");
         this.targetUsageRatio = Require.inRange(targetUsageRatio, 0.1, 0.9, "targetUsageRatio");
         targetUsageThreshold = Require.gtZero((int) (capacity * targetUsageRatio), "targetUsageThreshold");
 
-        new CleanupJob(cleanupIntervalMillis).schedule();
+        cleanupJobFuture = scheduler.scheduleAtFixedRate(
+                new CleanupJob(), cleanupIntervalMillis, cleanupIntervalMillis, TimeUnit.MILLISECONDS);
     }
 
     /**
      * Constructor with default target usage ratio of 0.9 (90%) and cleanup attempts every 60 seconds.
-     * 
-     * @param scheduler The scheduler to use for cleanup
+     *
+     * @param scheduler The {@link ScheduledExecutorService} to use for cleanup
      * @param capacity The total number of file handles to allow outstanding
      */
-    public TrackedFileHandleFactory(@NotNull final Scheduler scheduler, final int capacity) {
+    @VisibleForTesting
+    TrackedFileHandleFactory(@NotNull final ScheduledExecutorService scheduler, final int capacity) {
         this(scheduler, capacity, DEFAULT_TARGET_USAGE_RATIO, DEFAULT_CLEANUP_INTERVAL_MILLIS);
     }
 
-    public Scheduler getScheduler() {
+    @VisibleForTesting
+    ScheduledExecutorService getScheduler() {
         return scheduler;
     }
 
@@ -160,26 +179,18 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
         }
     }
 
-    private class CleanupJob extends TimedJob {
+    public void shutdown() {
+        cleanupJobFuture.cancel(true);
+    }
 
-        private final long intervalMills;
+    private class CleanupJob implements Runnable {
 
-        private CleanupJob(final long intervalMills) {
-            this.intervalMills = intervalMills;
-        }
-
-        private void schedule() {
-            scheduler.installJob(this, scheduler.currentTimeMillis() + intervalMills);
-        }
-
-        @Override
-        public void timedOut() {
+        public void run() {
             try {
                 cleanup();
             } catch (Exception e) {
-                throw new RuntimeException("TrackedFileHandleFactory.CleanupJob: Unexpected exception", e);
+                throw new UncheckedDeephavenException("TrackedFileHandleFactory.CleanupJob: Unexpected exception", e);
             }
-            schedule();
         }
     }
 
