@@ -29,10 +29,12 @@ Docker.registerDockerTask(project, 'typedoc') {
         from 'deephaven/node:local-build'
 
         copyFile('.', '/project')
+        environmentVariable('VERSION', project.property('deephavenBaseVersion').toString().trim())
 
         runCommand('''set -eux; \\
                       cd /project/; \\
                       mv dist/types.d.ts dist/index.d.ts; \\
+                      npm version $VERSION; \\
                       npm ci; \\
                       npm pack; \\
                       mkdir /out; \\
@@ -49,5 +51,22 @@ Docker.registerDockerTask(project, 'typedoc') {
     containerOutPath = '/out'
     copyOut {
         into "$buildDir/"
+    }
+}
+
+Docker.registerDockerTask(project, 'versionBump') {
+    copyIn {
+        from 'package.json'
+        from 'package-lock.json'
+    }
+    dockerfile {
+        from 'deephaven/node:local-build'
+        copyFile('.', '/project')
+        environmentVariable('VERSION', project.property('deephavenBaseVersion').toString().trim())
+        runCommand('''set -eux; \\
+                      npm version $VERSION; \\''')
+    }
+    copyOut {
+        into layout.projectDirectory
     }
 }
