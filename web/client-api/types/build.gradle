@@ -64,8 +64,11 @@ Docker.registerDockerTask(project, 'versionBump') {
         copyFile('.', '/project')
         environmentVariable('VERSION', project.property('deephavenBaseVersion').toString().trim())
         runCommand('''set -eux; \\
+                      cd /project; \\
                       npm version $VERSION; \\''')
     }
+    parentContainers = [ Docker.registryTask(project, 'node') ] // deephaven/node
+    containerOutPath = '/package'
     copyOut {
         from 'package.json'
         from 'package-lock.json'
