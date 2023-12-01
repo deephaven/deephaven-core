@@ -4,13 +4,14 @@ on:
   pull_request:
     branches: [ main ]
   push:
-    branches: [ 'main', 'release/v*' ]
+    branches: [ '**', 'release/v*' ]
 
 env:
   version-path: ${{ startsWith(github.ref, 'refs/heads/release/v') && github.ref_name || 'next' }}
 
 jobs:
   symlink:
+    needs: [javadoc, typedoc, pydoc, cppdoc, rdoc]
     runs-on: ubuntu-22.04
     concurrency:
       group: symlink-${{ github.workflow }}-${{ github.ref }}
@@ -23,17 +24,19 @@ jobs:
       - name: Make Version Symlinks
         if: ${{ startsWith(env.version-path, 'release/v') && github.event_name == 'push' }}
         run: |
-          mkdir tmp-deephaven-core; cd tmp-deephaven-core
+          mkdir tmp-deephaven-core;
+          cd tmp-deephaven-core
           ln -s ${{ env.version-path }} latest
           # Make symlinks to preserve old bookmarks
-          ln -s next/javadoc/ javadoc; ln -s next/pydoc/ pydoc
-          ln -s next/client-api/ client-api; ln -s next/r/ r
+          ln -s next/javadoc/ javadoc;
+          ln -s next/pydoc/ pydoc
+          ln -s next/client-api/ client-api
           
       - name: Deploy Symlinks
         if: ${{ startsWith(env.version-path, 'release/v') && github.event_name == 'push' }}
         uses: burnett01/rsync-deployments@5.2
         with:
-          switches: -rlptDvz --force --mkpath
+          switches: -rlptDvz --force
           path: tmp-deephaven-core/
           remote_path: deephaven-core/
           remote_host: ${{ secrets.DOCS_HOST }}
@@ -371,7 +374,7 @@ jobs:
         with:
           switches: -rlptDvz --mkpath --delete
           path: R/rdeephaven/docs/
-          remote_path: deephaven-core/${{ env.version-path }}/r/
+          remote_path: deephaven-core/${{ env.version-path }}/client-api/r/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
