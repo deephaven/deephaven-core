@@ -292,9 +292,9 @@ def _convert_arg(param: _ParsedParamAnnotation, arg: Any) -> Any:
                     try:
                         return to_np_datetime64(arg)
                     except Exception as e:
-                        if len(specific_types) == 1:
-                            raise DHError(f"Argument {arg} is not compatible with annotation {param.orig_types}") \
-                                from e
+                        # don't raise an error, if this is the only annotation, the else block of the for loop will
+                        # catch it and raise a TypeError
+                        pass
                 elif t == "U" and isinstance(arg, str):
                     return arg
             else:  # didn't return from inside the for loop
