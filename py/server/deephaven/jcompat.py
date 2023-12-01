@@ -238,6 +238,7 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool, t
         np_long_array = np.frombuffer(longs, np.int64)
         np_array = np_long_array.view(dtype.np_type)
     elif dtype == dtypes.bool_:
+        # dh nulls will be preserved and show up as True b/c the underlying byte array isn't modified
         bytes_ = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(j_array)
         np_array = np.frombuffer(bytes_, dtype.np_type)
     elif dtype == dtypes.string:
@@ -256,7 +257,7 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool, t
                 np_array = np.copy(np_array)
                 np_array[np_array == dh_null] = np.nan
             else:
-                if dtype is dtypes.bool_:  # promote boolean to float64
+                if dtype is dtypes.bool_:  # needs to change its type to byte for dh null detection
                     np_array = np.frombuffer(np_array, np.byte)
 
                 if any(np_array[np_array == dh_null]):
@@ -265,7 +266,7 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool, t
                     np_array = np_array.astype(np.float64)
                     np_array[np_array == dh_null] = np.nan
                 else:
-                    if dtype is dtypes.bool_:
+                    if dtype is dtypes.bool_:  # needs to change its type back to bool
                         np_array = np.frombuffer(np_array, np.bool_)
                     return np_array
 
