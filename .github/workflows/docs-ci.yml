@@ -7,7 +7,7 @@ on:
     branches: [ '**', 'release/v*' ]
 
 env:
-  version-path: ${{ startsWith(github.ref, 'refs/heads/release/v') && github.ref_name || 'next' }}
+  version-path: ${{ startsWith(github.ref, 'refs/heads/release/v') && github.ref_name || 'release/v0.30.0' }}
 
 jobs:
   symlink:
