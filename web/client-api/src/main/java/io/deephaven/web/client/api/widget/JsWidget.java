@@ -86,12 +86,25 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
     }
 
     /**
+     * Also closes all the exported objects that the widget still owns
+     */
+    private void closeExportedObjects() {
+        for (int i = 0; i < exportedObjects.length; i++) {
+            JsWidgetExportedObject exportedObject = exportedObjects.getAt(i);
+            if (exportedObject.isTicketOwner()) {
+                exportedObject.close();
+            }
+        }
+    }
+
+    /**
      * Ends the client connection to the server.
      */
     @JsMethod
     public void close() {
         suppressEvents();
         closeStream();
+        closeExportedObjects();
         connection.releaseTicket(getTicket());
     }
 

@@ -11,6 +11,7 @@ import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 
 /**
@@ -23,6 +24,9 @@ public class JsWidgetExportedObject implements ServerObject {
     private final WorkerConnection connection;
 
     private final TypedTicket ticket;
+
+    /** Whether this exported object instance is the owner of the ticket or not. */
+    private final boolean isTicketOwner = true;
 
     public JsWidgetExportedObject(WorkerConnection connection, TypedTicket ticket) {
         this.connection = connection;
@@ -42,14 +46,30 @@ public class JsWidgetExportedObject implements ServerObject {
         return typedTicket;
     }
 
+    public boolean isTicketOwner() {
+        return isTicketOwner;
+    }
+
+    public Promise<?> fetch() {
+        return fetch(false);
+    }
+
     /**
-     * Fetches the object from the server. Note that the returned object has it's own ticket and must be closed, and you
-     * must call {@link #close()} on this object as well whether you fetch the exported object or not.
+     * Fetches the object from the server.
+     * @param takeOwnership Whether to take ownership of the object. Defaults to false.
      *
      * @return a promise that resolves to the object
      */
     @JsMethod
-    public Promise<?> fetch() {
+    public Promise<?> fetch(@JsOptional Boolean takeOwnership) {
+        if (takeOwnership == null) {
+            takeOwnership = false;
+        }
+        if (takeOwnership) {
+            // TODO: if takeOwnership, don't want to create a new exportScopeTicket...
+            isTicketOwner = false;
+            throw new RuntimeException("Haven't implemented this yet");
+        }
         return this.connection.getObject(ticket);
     }
 
@@ -59,6 +79,9 @@ public class JsWidgetExportedObject implements ServerObject {
      */
     @JsMethod
     public void close() {
+        if (!isTicketOwner) {
+            throw new IllegalStateException("Exported object is no longer the owner of this ticket.");
+        }
         connection.releaseTicket(ticket.getTicket());
     }
 }

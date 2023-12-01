@@ -759,7 +759,7 @@ public class WorkerConnection {
         });
     }
 
-    public Promise<?> getObject(TypedTicket typedTicket) {
+    public Promise<?> getObject(TypedTicket typedTicket, boolean exportNew) {
         return getObject(
                 new JsVariableDefinition(typedTicket.getType(), null, typedTicket.getTicket().getTicket_asB64(), null));
     }
