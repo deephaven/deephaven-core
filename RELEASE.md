@@ -269,7 +269,6 @@ mention the version explicitly. These files are listed below:
 #
 gradle.properties
 R/rdeephaven/DESCRIPTION
-web/client-api/types/package.json
 ```
 
 This leaves the files "ready" for the next regular release, and also ensures any build done from

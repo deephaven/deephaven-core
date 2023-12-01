@@ -12,6 +12,10 @@ dependencies {
 
 // Apply our temporary convention until dhc hits 1.0.0
 def npmVersion = '1.0.0-dev' + project.property('deephavenBaseVersion').toString().trim()
+def preId = project.findProperty('npmPreid')// i.e. 'nightly'
+if (preId) {
+    npmVersion += preId + new Date().format("yyyyMMdd")
+}
 
 Docker.registerDockerTask(project, 'typedoc') {
     copyIn {
@@ -54,33 +58,5 @@ Docker.registerDockerTask(project, 'typedoc') {
     containerOutPath = '/out'
     copyOut {
         into "$buildDir/"
-    }
-}
-
-Docker.registerDockerTask(project, 'versionBump') {
-    copyIn {
-        from 'package.json'
-        from 'package-lock.json'
-    }
-    dockerfile {
-        from 'deephaven/node:local-build'
-        copyFile('.', '/project')
-        environmentVariable('VERSION', npmVersion)
-        runCommand('''set -eux; \\
-                      cd /project; \\
-                      npm version $VERSION; \\''')
-    }
-    parentContainers = [ Docker.registryTask(project, 'node') ] // deephaven/node
-    containerOutPath = '/project'
-    copyOut {
-        include 'package.json'
-        include 'package-lock.json'
-
-        into layout.projectDirectory
-        preserve {
-            include '**'
-            exclude 'package.json'
-            exclude 'package-lock.json'
-        }
     }
 }
