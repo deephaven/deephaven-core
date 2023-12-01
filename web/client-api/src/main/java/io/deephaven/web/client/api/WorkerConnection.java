@@ -770,16 +770,7 @@ public class WorkerConnection {
         } else if (JsVariableType.FIGURE.equalsIgnoreCase(definition.getType())) {
             return getFigure(definition);
         } else if (JsVariableType.PANDAS.equalsIgnoreCase(definition.getType())) {
-            return getWidget(definition)
-                    .then(widget -> {
-                        Promise<?> promise = widget.getExportedObjects()[0].fetch();
-                        promise.then(ignore -> {
-                            // We only need to keep the widget open long enough to get the exported objects
-                            widget.close();
-                            return null;
-                        });
-                        return promise;
-                    });
+            return getPandasTable(definition);
         } else if (JsVariableType.PARTITIONEDTABLE.equalsIgnoreCase(definition.getType())) {
             return getPartitionedTable(definition);
         } else if (JsVariableType.HIERARCHICALTABLE.equalsIgnoreCase(definition.getType())) {
@@ -953,6 +944,25 @@ public class WorkerConnection {
                                 return null;
                             });
                         }).refetch());
+    }
+
+    public Promise<JsTable> getPandasTable(JsVariableDefinition definition) {
+        return getWidget(definition)
+                .then(widget -> {
+                    return Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
+                        tableServiceClient().getExportedTableCreationResponse(widget.getExportedObjects()[0].typedTicket().getTicket(), metadata(), c::apply);
+                    }).then(etcr -> {
+                        ClientTableState cts = newStateFromUnsolicitedTable(etcr, "table for pandas");
+                        JsTable table = new JsTable(this, cts);
+                        // TODO(deephaven-core#3604) if using a new session don't attempt a reconnect
+                        // never attempt a reconnect, since we might have a different widget schema entirely
+                        table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
+                        return Promise.resolve(table);
+                    }).then(table -> {
+                        widget.close();
+                        return Promise.resolve(table);
+                    });
+                });
     }
 
     private TypedTicket createTypedTicket(JsVariableDefinition varDef) {
