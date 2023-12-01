@@ -1482,9 +1482,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
                     final JobScheduler jobScheduler;
                     if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE)
-                            && OperationInitializationThreadPool.canParallelize()
+                            && ExecutionContext.getContext().getInitializer().canParallelize()
                             && analyzer.allowCrossColumnParallelization()) {
-                        jobScheduler = new OperationInitializationPoolJobScheduler();
+                        jobScheduler = new OperationInitializationPoolJobScheduler(
+                                ExecutionContext.getContext().getInitializer());
                     } else {
                         jobScheduler = ImmediateJobScheduler.INSTANCE;
                     }

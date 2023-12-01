@@ -2,7 +2,6 @@ package io.deephaven.engine.context;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.LogicalClockImpl;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.util.ExecutionContextRegistrationException;

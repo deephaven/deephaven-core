@@ -2,6 +2,7 @@ package io.deephaven.server.runner.scheduler;
 
 import dagger.Module;
 import dagger.Provides;
+import dagger.multibindings.ElementsIntoSet;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.engine.context.ExecutionContext;
@@ -16,6 +17,8 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -31,13 +34,25 @@ import java.util.concurrent.TimeUnit;
  */
 @Module
 public class SchedulerModule {
+    @Provides
+    @ElementsIntoSet
+    static Set<ThreadInitializationFactory> primeThreadInitializers() {
+        return Collections.emptySet();
+    }
+
+    @Provides
+    static ThreadInitializationFactory provideThreadInitializationFactory(Set<ThreadInitializationFactory> factories) {
+        return ThreadInitializationFactory.of(factories);
+    }
 
     @Provides
     @Singleton
     public static Scheduler provideScheduler(
             final @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) UpdateGraph updateGraph,
-            final @Named("scheduler.poolSize") int poolSize) {
-        final ThreadFactory concurrentThreadFactory = new ThreadFactory("Scheduler-Concurrent", updateGraph);
+            final @Named("scheduler.poolSize") int poolSize,
+            final ThreadInitializationFactory initializationFactory) {
+        final ThreadFactory concurrentThreadFactory =
+                new ThreadFactory("Scheduler-Concurrent", updateGraph, initializationFactory);
         final ScheduledExecutorService concurrentExecutor =
                 new ScheduledThreadPoolExecutor(poolSize, concurrentThreadFactory) {
                     @Override
@@ -47,7 +62,8 @@ public class SchedulerModule {
                     }
                 };
 
-        final ThreadFactory serialThreadFactory = new ThreadFactory("Scheduler-Serial", updateGraph);
+        final ThreadFactory serialThreadFactory =
+                new ThreadFactory("Scheduler-Serial", updateGraph, initializationFactory);
         final ExecutorService serialExecutor = new ThreadPoolExecutor(1, 1, 0L,
                 TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), serialThreadFactory) {
 
@@ -63,15 +79,18 @@ public class SchedulerModule {
 
     private static class ThreadFactory extends NamingThreadFactory {
         private final UpdateGraph updateGraph;
+        private final ThreadInitializationFactory initializationFactory;
 
-        public ThreadFactory(final String name, final UpdateGraph updateGraph) {
+        public ThreadFactory(final String name, final UpdateGraph updateGraph,
+                ThreadInitializationFactory initializationFactory) {
             super(DeephavenApiServer.class, name);
             this.updateGraph = updateGraph;
+            this.initializationFactory = initializationFactory;
         }
 
         @Override
         public Thread newThread(@NotNull final Runnable r) {
-            return super.newThread(ThreadInitializationFactory.wrapRunnable(() -> {
+            return super.newThread(initializationFactory.createInitializer(() -> {
                 MultiChunkPool.enableDedicatedPoolForThisThread();
                 // noinspection resource
                 ExecutionContext.getContext().withUpdateGraph(updateGraph).open();

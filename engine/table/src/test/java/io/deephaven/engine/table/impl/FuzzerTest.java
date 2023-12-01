@@ -20,7 +20,6 @@ import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.GroovyDeephavenSession;
-import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
 import io.deephaven.test.types.SerialTest;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
@@ -75,7 +74,7 @@ public class FuzzerTest {
 
     private GroovyDeephavenSession getGroovySession(@Nullable Clock clock) throws IOException {
         final GroovyDeephavenSession session = new GroovyDeephavenSession(
-                ExecutionContext.getContext().getUpdateGraph(), NoOp.INSTANCE, RunScripts.serviceLoader());
+                ExecutionContext.getContext().getUpdateGraph(), NoOp.INSTANCE, GroovyDeephavenSession.RunScripts.serviceLoader());
         session.getExecutionContext().open();
         return session;
     }

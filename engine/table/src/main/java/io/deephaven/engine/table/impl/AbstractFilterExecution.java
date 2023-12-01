@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -325,10 +326,10 @@ abstract class AbstractFilterExecution extends AbstractNotification {
      */
     abstract boolean doParallelization(long numberOfRows);
 
-    static boolean doParallelizationBase(long numberOfRows) {
+    boolean doParallelizationBase(long numberOfRows) {
         return !QueryTable.DISABLE_PARALLEL_WHERE && numberOfRows != 0
                 && (QueryTable.FORCE_PARALLEL_WHERE || numberOfRows / 2 > QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT)
-                && OperationInitializationThreadPool.canParallelize();
+                && ExecutionContext.getContext().getInitializer().canParallelize();
     }
 
     /**

@@ -63,4 +63,4 @@ client.version.list=deephaven=io.deephaven.engine.table.Table,barrage=io.deephav
 
 
 # Specifies additional setup to run on threads that can perform table operations with user code. Comma-separated list, instances must be of type io.deephaven.util.thread.ThreadInitializationFactory
-thread.initialization=io.deephaven.server.console.python.DebuggingInitializer
+thread.initialization=

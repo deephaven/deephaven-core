@@ -26,7 +26,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MemoizedOperationKey;
-import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.OperationSnapshotControl;
@@ -253,8 +252,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         final JobScheduler jobScheduler;
-        if (OperationInitializationThreadPool.canParallelize()) {
-            jobScheduler = new OperationInitializationPoolJobScheduler();
+        if (ExecutionContext.getContext().getInitializer().canParallelize()) {
+            jobScheduler = new OperationInitializationPoolJobScheduler(ExecutionContext.getContext().getInitializer());
         } else {
             jobScheduler = ImmediateJobScheduler.INSTANCE;
         }
