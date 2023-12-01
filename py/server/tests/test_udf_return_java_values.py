@@ -23,7 +23,7 @@ _J_TYPE_NP_DTYPE_MAP = {
     dtypes.byte: "np.int8",
     dtypes.bool_: "np.bool_",
     dtypes.string: "np.str_",
-    # dtypes.char: "np.uint16",
+    dtypes.char: "np.uint16",
 }
 
 
@@ -52,7 +52,7 @@ def fn(col) -> {np_dtype}:
             "np.float64": dtypes.double_array,
             "bool": dtypes.boolean_array,
             "np.str_": dtypes.string_array,
-            # "np.uint16": dtypes.char_array,
+            "np.uint16": dtypes.char_array,
         }
         container_types = ["List", "Tuple", "list", "tuple", "Sequence", "np.ndarray"]
         for component_type, dh_dtype in component_types.items():
@@ -189,7 +189,7 @@ foo = Foo()
             return np.array(x) + y
 
         # Testing https://github.com/deephaven/deephaven-core/issues/4562
-        @nb.guvectorize([(nb.int64[:], nb.int64, nb.int64[:])], "(m),()->(m)", nopython=True)
+        @nb.guvectorize([(nb.int32[:], nb.int32, nb.int32[:])], "(m),()->(m)", nopython=True)
         def f4562_1(x, y, res):
             res[:] = x + y
 
@@ -198,11 +198,11 @@ foo = Foo()
             "Y = f4562_1(B,3)"
         ])
         self.assertEqual(t2.columns[2].data_type, dtypes.long_array)
-        self.assertEqual(t2.columns[3].data_type, dtypes.long_array)
+        self.assertEqual(t2.columns[3].data_type, dtypes.int32_array)
 
         t3 = t2.ungroup()
         self.assertEqual(t3.columns[2].data_type, dtypes.int64)
-        self.assertEqual(t3.columns[3].data_type, dtypes.int64)
+        self.assertEqual(t3.columns[3].data_type, dtypes.int32)
 
     def test_ndim_nparray_return_type(self):
         def f() -> np.ndarray[np.int64]:
@@ -222,26 +222,27 @@ foo = Foo()
     def test_ndarray_weird_cases(self):
         def f() -> np.ndarray[typing.Any]:
             return np.array([1, 2], dtype=np.int64)
-
         t = empty_table(10).update(["X1 = f()"])
         self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
 
         def f1() -> npt.NDArray[typing.Any]:
             return np.array([1, 2], dtype=np.int64)
-
         t = empty_table(10).update(["X1 = f1()"])
         self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
 
         def f2() -> np.ndarray[typing.Any, np.int64]:
             return np.array([1, 2], dtype=np.int64)
-
         t = empty_table(10).update(["X1 = f2()"])
         self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
 
         def f3() -> Union[None, None]:
             return np.array([1, 2], dtype=np.int64)
-
         t = empty_table(10).update(["X1 = f3()"])
+        self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
+
+        def f4() -> None:
+            return np.array([1, 2], dtype=np.int64)
+        t = empty_table(10).update(["X1 = f4()"])
         self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
 
     def test_optional_scalar_return(self):
