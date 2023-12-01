@@ -946,6 +946,7 @@ public class WorkerConnection {
                                 legacyResponse.setTypedExportIdsList(Arrays.stream(widget.getExportedObjects())
                                         .map(JsWidgetExportedObject::typedTicket).toArray(TypedTicket[]::new));
                                 c.apply(null, legacyResponse);
+                                widget.close();
                                 return null;
                             }, error -> {
                                 c.apply(error, null);
