@@ -91,7 +91,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
     private void closeExportedObjects() {
         for (int i = 0; i < exportedObjects.length; i++) {
             JsWidgetExportedObject exportedObject = exportedObjects.getAt(i);
-            if (exportedObject.isTicketOwner()) {
+            if (exportedObject.isOwner()) {
                 exportedObject.close();
             }
         }
@@ -115,7 +115,6 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
 
             messageStream = streamFactory.get();
             messageStream.onData(res -> {
-
                 JsArray<JsWidgetExportedObject> responseObjects = res.getData().getExportedReferencesList()
                         .map((p0, p1, p2) -> new JsWidgetExportedObject(connection, p0));
                 if (!hasFetched) {

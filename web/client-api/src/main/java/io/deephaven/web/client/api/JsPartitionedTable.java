@@ -109,7 +109,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             this.keyColumns = JsObject.freeze(keyColumns);
 
 
-            Promise<?> promise = w.getExportedObjects()[0].fetch();
+            Promise<?> promise = w.getExportedObjects()[0].fetch(true);
             promise.then(ignore -> {
                 // We only need to keep the widget open long enough to get the exported objects
                 w.close();

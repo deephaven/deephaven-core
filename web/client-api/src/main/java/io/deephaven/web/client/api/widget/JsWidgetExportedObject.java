@@ -26,7 +26,7 @@ public class JsWidgetExportedObject implements ServerObject {
     private final TypedTicket ticket;
 
     /** Whether this exported object instance is the owner of the ticket or not. */
-    private final boolean isTicketOwner = true;
+    private boolean isOwner = true;
 
     public JsWidgetExportedObject(WorkerConnection connection, TypedTicket ticket) {
         this.connection = connection;
@@ -46,16 +46,32 @@ public class JsWidgetExportedObject implements ServerObject {
         return typedTicket;
     }
 
-    public boolean isTicketOwner() {
-        return isTicketOwner;
+    public boolean isOwner() {
+        return isOwner;
     }
 
     public Promise<?> fetch() {
         return fetch(false);
     }
 
+    private void verifyIsOwner() {
+        if (!isOwner) {
+            throw new IllegalStateException("Exported object is no longer the owner of this ticket.");
+        }
+    }
+
+    /**
+     * Takes ownership of this exported object. Returns the ticket for this object.
+     */
+    public TypedTicket takeTicket() {
+        verifyIsOwner();
+        isOwner = false;
+        return typedTicket();
+    }
+
     /**
      * Fetches the object from the server.
+     * 
      * @param takeOwnership Whether to take ownership of the object. Defaults to false.
      *
      * @return a promise that resolves to the object
@@ -66,11 +82,10 @@ public class JsWidgetExportedObject implements ServerObject {
             takeOwnership = false;
         }
         if (takeOwnership) {
-            // TODO: if takeOwnership, don't want to create a new exportScopeTicket...
-            isTicketOwner = false;
-            throw new RuntimeException("Haven't implemented this yet");
+            return this.connection.getObject(takeTicket());
         }
-        return this.connection.getObject(ticket);
+        return this.connection.getObject(
+                new JsVariableDefinition(ticket.getType(), null, ticket.getTicket().getTicket_asB64(), null));
     }
 
     /**
@@ -79,9 +94,7 @@ public class JsWidgetExportedObject implements ServerObject {
      */
     @JsMethod
     public void close() {
-        if (!isTicketOwner) {
-            throw new IllegalStateException("Exported object is no longer the owner of this ticket.");
-        }
+        verifyIsOwner();
         connection.releaseTicket(ticket.getTicket());
     }
 }
