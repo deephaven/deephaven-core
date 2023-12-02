@@ -108,14 +108,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             this.columns = JsObject.freeze(columns);
             this.keyColumns = JsObject.freeze(keyColumns);
 
-
-            Promise<?> promise = w.getExportedObjects()[0].fetch(true);
-            promise.then(ignore -> {
-                // We only need to keep the widget open long enough to get the exported objects
-                w.close();
-                return null;
-            });
-            return promise;
+            return w.getExportedObjects()[0].fetch(true);
         }).then(result -> {
             keys = (JsTable) result;
             // TODO(deephaven-core#3604) in case of a new session, we should do a full refetch

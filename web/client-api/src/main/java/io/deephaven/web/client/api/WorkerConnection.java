@@ -767,8 +767,6 @@ public class WorkerConnection {
      * @return Promise for the table
      */
     public Promise<JsTable> getTable(TypedTicket ticket, String fetchSummary) {
-        // Note that creating a CTS like this means we can't actually refetch it, but that's okay, we can't
-        // reconnect in this way without refetching the entire figure anyway.
         return Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
             tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
                     metadata(),
@@ -984,42 +982,34 @@ public class WorkerConnection {
                 .then(widget -> Promise.resolve(new JsTreeTable(this, widget)));
     }
 
+    private JsFigure.FigureFetch getWidgetFigureFetch(Promise<JsWidget> widgetPromise) {
+        return c -> widgetPromise.then(widget -> {
+            FetchObjectResponse legacyResponse = new FetchObjectResponse();
+            legacyResponse.setData(widget.getDataAsU8());
+            legacyResponse.setType(widget.getType());
+            legacyResponse.setTypedExportIdsList(
+                    Arrays.stream(widget.getExportedObjects()).map(JsWidgetExportedObject::takeTicket)
+                            .toArray(TypedTicket[]::new));
+            c.apply(null, legacyResponse);
+            widget.close();
+            return null;
+        }, error -> {
+            c.apply(error, null);
+            return null;
+        });
+    }
+
+    private Promise<JsFigure> getFigure(Promise<JsWidget> widgetPromise) {
+        return whenServerReady("get a figure").then(server -> new JsFigure(this, getWidgetFigureFetch(widgetPromise)).refetch());
+
+    }
+
     public Promise<JsFigure> getFigure(JsVariableDefinition varDef) {
-        return whenServerReady("get a figure")
-                .then(server -> new JsFigure(this,
-                        c -> getWidget(varDef).then(widget -> {
-                            FetchObjectResponse legacyResponse = new FetchObjectResponse();
-                            legacyResponse.setData(widget.getDataAsU8());
-                            legacyResponse.setType(widget.getType());
-                            legacyResponse.setTypedExportIdsList(
-                                    Arrays.stream(widget.getExportedObjects()).map(JsWidgetExportedObject::takeTicket)
-                                            .toArray(TypedTicket[]::new));
-                            c.apply(null, legacyResponse);
-                            widget.close();
-                            return null;
-                        }, error -> {
-                            c.apply(error, null);
-                            return null;
-                        })).refetch());
+        return getFigure(getWidget(varDef));
     }
 
     public Promise<JsFigure> getFigure(TypedTicket ticket) {
-        return whenServerReady("get a figure")
-                .then(ignore -> new JsFigure(this,
-                        c -> getWidget(ticket, true).then(widget -> {
-                            FetchObjectResponse legacyResponse = new FetchObjectResponse();
-                            legacyResponse.setData(widget.getDataAsU8());
-                            legacyResponse.setType(widget.getType());
-                            legacyResponse.setTypedExportIdsList(
-                                    Arrays.stream(widget.getExportedObjects()).map(JsWidgetExportedObject::takeTicket)
-                                            .toArray(TypedTicket[]::new));
-                            c.apply(null, legacyResponse);
-                            widget.close();
-                            return null;
-                        }, error -> {
-                            c.apply(error, null);
-                            return null;
-                        })).refetch());
+        return getFigure(getWidget(ticket, true));
     }
 
     /**
