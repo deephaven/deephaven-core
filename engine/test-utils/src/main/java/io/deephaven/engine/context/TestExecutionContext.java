@@ -1,6 +1,7 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.auth.AuthContext;
+import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 
 public class TestExecutionContext {
@@ -12,6 +13,7 @@ public class TestExecutionContext {
                 .newQueryLibrary()
                 .setQueryCompiler(QueryCompiler.createForUnitTests())
                 .setUpdateGraph(ControlledUpdateGraph.INSTANCE)
+                .setOperationInitializer(new OperationInitializationThreadPool(i -> i))
                 .build();
     }
 }

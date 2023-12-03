@@ -92,14 +92,15 @@ public class ExecutionContext {
             final QueryLibrary queryLibrary,
             final QueryScope queryScope,
             final QueryCompiler queryCompiler,
-            final UpdateGraph updateGraph, OperationInitializer operationInitializer) {
+            final UpdateGraph updateGraph,
+            OperationInitializer operationInitializer) {
         this.isSystemic = isSystemic;
         this.authContext = authContext;
         this.queryLibrary = Objects.requireNonNull(queryLibrary);
         this.queryScope = Objects.requireNonNull(queryScope);
         this.queryCompiler = Objects.requireNonNull(queryCompiler);
-        this.updateGraph = updateGraph;
-        this.operationInitializer = operationInitializer;
+        this.updateGraph = Objects.requireNonNull(updateGraph);
+        this.operationInitializer = Objects.requireNonNull(operationInitializer);
     }
 
     /**
@@ -218,7 +219,7 @@ public class ExecutionContext {
         private QueryScope queryScope = PoisonedQueryScope.INSTANCE;
         private QueryCompiler queryCompiler = PoisonedQueryCompiler.INSTANCE;
         private UpdateGraph updateGraph = PoisonedUpdateGraph.INSTANCE;
-        private OperationInitializer operationInitializer = null;
+        private OperationInitializer operationInitializer = PoisonedOperationInitializer.INSTANCE;
 
         private Builder() {
             // why automatically propagate this, but not other things?

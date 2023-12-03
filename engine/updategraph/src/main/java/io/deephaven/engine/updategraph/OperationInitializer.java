@@ -24,4 +24,9 @@ public interface OperationInitializer {
      * @return
      */
     int parallelismFactor();
+
+    /**
+     *
+     */
+    void start();
 }

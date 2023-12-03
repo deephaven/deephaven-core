@@ -631,6 +631,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
                 refreshThread.start();
             }
         }
+        threadPool.start();
     }
 
     /**

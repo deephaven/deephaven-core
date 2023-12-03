@@ -8,6 +8,6 @@ public class ControlledUpdateGraph extends PeriodicUpdateGraph {
     public static final ControlledUpdateGraph INSTANCE = new ControlledUpdateGraph();
 
     private ControlledUpdateGraph() {
-        super("TEST", true, 1000, 25, -1);
+        super("TEST", true, 1000, 25, -1, i -> i);
     }
 }
