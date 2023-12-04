@@ -1088,8 +1088,8 @@ public class WorkerConnection {
      */
     public Promise<JsWidget> getWidget(TypedTicket typedTicket, boolean refetch) {
         return whenServerReady("get a widget")
-                .then(response -> Promise.resolve(new JsWidget(this, typedTicket)))
-                .then(widget -> {
+                .then(response -> {
+                    JsWidget widget = new JsWidget(this, typedTicket);
                     if (refetch) {
                         return widget.refetch();
                     }
