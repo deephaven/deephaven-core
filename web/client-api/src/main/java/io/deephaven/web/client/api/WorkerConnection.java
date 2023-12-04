@@ -1000,7 +1000,8 @@ public class WorkerConnection {
     }
 
     private Promise<JsFigure> getFigure(Promise<JsWidget> widgetPromise) {
-        return whenServerReady("get a figure").then(server -> new JsFigure(this, getWidgetFigureFetch(widgetPromise)).refetch());
+        return whenServerReady("get a figure")
+                .then(server -> new JsFigure(this, getWidgetFigureFetch(widgetPromise)).refetch());
 
     }
 
