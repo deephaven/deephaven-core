@@ -390,6 +390,12 @@ public class ExecutionContext {
             return this;
         }
 
+        @ScriptApi
+        public Builder captureOperationInitializer() {
+            this.operationInitializer = getContext().getInitializer();
+            return this;
+        }
+
         /**
          * @return the newly instantiated ExecutionContext
          */
