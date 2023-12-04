@@ -760,7 +760,7 @@ public class WorkerConnection {
     }
 
     /**
-     * Export a table from the provided ticket.
+     * Export a table from the provided ticket. Intended for server-side exports only.
      * 
      * @param ticket Ticket of the table to export
      * @param fetchSummary Description for the fetch. Used for logging and errors.

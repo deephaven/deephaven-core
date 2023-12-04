@@ -80,6 +80,7 @@ public class JsWidgetExportedObject implements ServerObject {
         if (takeOwnership == null) {
             takeOwnership = false;
         }
+        verifyIsOwner();
         if (takeOwnership) {
             return this.connection.getObject(takeTicket());
         }
