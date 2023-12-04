@@ -998,6 +998,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 .newQueryLibrary()
                 .captureUpdateGraph()
                 .captureQueryCompiler()
+                .captureOperationInitializer()
                 .build();
         final PartitionedTable transformed = partitioned.transform(executionContext, tableIn -> {
             final QueryTable tableOut = (QueryTable) tableIn.getSubTable(tableIn.getRowSet());
