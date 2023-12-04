@@ -73,7 +73,6 @@ public class JsWidgetExportedObject implements ServerObject {
      * Fetches the object from the server.
      * 
      * @param takeOwnership Whether to take ownership of the object. Defaults to false.
-     *
      * @return a promise that resolves to the object
      */
     @JsMethod
