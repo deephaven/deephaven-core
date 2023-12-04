@@ -148,6 +148,14 @@ public class ExecutionContext {
                 operationInitializer);
     }
 
+    public ExecutionContext withOperationInitializer(final OperationInitializer operationInitializer) {
+        if (operationInitializer == this.operationInitializer) {
+            return this;
+        }
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
+                operationInitializer);
+    }
+
     /**
      * Execute runnable within this execution context.
      */

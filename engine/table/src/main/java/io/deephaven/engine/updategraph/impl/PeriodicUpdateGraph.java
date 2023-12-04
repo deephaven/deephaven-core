@@ -166,7 +166,6 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     private volatile long targetCycleDurationMillis;
     private final long minimumCycleDurationToLogNanos;
     private final ThreadInitializationFactory threadInitializationFactory;
-    private final OperationInitializer threadPool;
 
     /** when to next flush the performance tracker; initializes to zero to force a flush on start */
     private long nextUpdatePerformanceTrackerFlushTimeNanos;
@@ -321,7 +320,6 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         this.targetCycleDurationMillis = targetCycleDurationMillis;
         this.minimumCycleDurationToLogNanos = minimumCycleDurationToLogNanos;
         this.threadInitializationFactory = threadInitializationFactory;
-        this.threadPool = new OperationInitializationThreadPool(threadInitializationFactory);
         this.lock = UpdateGraphLock.create(this, this.allowUnitTestMode);
 
         if (numUpdateThreads <= 0) {
@@ -631,7 +629,6 @@ public class PeriodicUpdateGraph implements UpdateGraph {
                 refreshThread.start();
             }
         }
-        threadPool.start();
     }
 
     /**

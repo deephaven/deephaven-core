@@ -24,6 +24,7 @@ import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jpy.KeyError;
@@ -76,11 +77,12 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      */
     public PythonDeephavenSession(
             final UpdateGraph updateGraph,
+            final ThreadInitializationFactory threadInitializationFactory,
             final ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener listener,
             final boolean runInitScripts,
             final PythonEvaluatorJpy pythonEvaluator) throws IOException {
-        super(updateGraph, objectTypeLookup, listener);
+        super(updateGraph, threadInitializationFactory, objectTypeLookup, listener);
 
         evaluator = pythonEvaluator;
         scope = pythonEvaluator.getScope();
@@ -108,9 +110,9 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * Creates a Python "{@link ScriptSession}", for use where we should only be reading from the scope, such as an
      * IPython kernel session.
      */
-    public PythonDeephavenSession(
-            final UpdateGraph updateGraph, final PythonScope<?> scope) {
-        super(updateGraph, NoOp.INSTANCE, null);
+    public PythonDeephavenSession(final UpdateGraph updateGraph,
+            final ThreadInitializationFactory threadInitializationFactory, final PythonScope<?> scope) {
+        super(updateGraph, threadInitializationFactory, NoOp.INSTANCE, null);
 
         evaluator = null;
         this.scope = (PythonScope<PyObject>) scope;

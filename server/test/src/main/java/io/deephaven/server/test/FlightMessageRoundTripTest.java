@@ -55,6 +55,7 @@ import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.grpc.*;
 import io.grpc.CallOptions;
 import io.grpc.stub.ClientCalls;
@@ -110,7 +111,7 @@ public abstract class FlightMessageRoundTripTest {
         @Singleton
         @Provides
         AbstractScriptSession<?> provideAbstractScriptSession(final UpdateGraph updateGraph) {
-            return new NoLanguageDeephavenSession(updateGraph, "non-script-session");
+            return new NoLanguageDeephavenSession(updateGraph, ThreadInitializationFactory.NO_OP, "non-script-session");
         }
 
         @Provides

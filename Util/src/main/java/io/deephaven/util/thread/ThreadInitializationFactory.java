@@ -6,6 +6,7 @@ import java.util.Collection;
  * Extension point to allow threads that will run user code from within the platform to be controlled by configuration.
  */
 public interface ThreadInitializationFactory {
+    ThreadInitializationFactory NO_OP = r -> r;
 
     static ThreadInitializationFactory of(Collection<ThreadInitializationFactory> factories) {
         return runnable -> {
