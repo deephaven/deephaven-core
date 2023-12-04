@@ -779,7 +779,7 @@ public class WorkerConnection {
     }
 
     /**
-     * Get an object from it's ticket
+     * Get an object from its ticket.
      * 
      * @param typedTicket Ticket to get the object for
      * @return The object requested
