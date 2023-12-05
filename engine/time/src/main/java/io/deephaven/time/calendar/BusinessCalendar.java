@@ -215,7 +215,7 @@ public class BusinessCalendar extends Calendar {
      * Business day schedules for all holidays. A holiday is a date that has a schedule that is different from the
      * schedule for a standard business day or weekend.
      *
-     * @return a map of holiday dates and their business periods
+     * @return a map of holiday dates and their calendar days
      */
     public Map<LocalDate, CalendarDay<Instant>> holidays() {
         return Collections.unmodifiableMap(holidays);
@@ -325,6 +325,10 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the time on a business day?
      *
+     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * within the business day schedule.  To determine if a time is within the business day schedule, use
+     * {@link #isBusinessTime(ZonedDateTime)}.
+     *
      * @param time time
      * @return true if the date is a business day; false otherwise
      * @throws RequirementFailure if the input is null
@@ -336,6 +340,10 @@ public class BusinessCalendar extends Calendar {
 
     /**
      * Is the time on a business day?
+     *
+     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * within the business day schedule.  To determine if a time is within the business day schedule, use
+     * {@link #isBusinessTime(Instant)}.
      *
      * @param time time
      * @return true if the date is a business day; false otherwise
@@ -359,7 +367,8 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Is the current day a business day?
+     * Is the current day a business day?  As long as the current time occurs on a business day, it is considered a
+     * business day.  The time does not have to be within the business day schedule.
      *
      * @return true if the current day is a business day; false otherwise
      */
@@ -390,6 +399,9 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the time on the last business day of the month?
      *
+     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * within the business day schedule.
+     *
      * @param time time
      * @return true if {@code time} is on the last business day of the month; false otherwise
      * @throws RequirementFailure if the input is null
@@ -402,6 +414,9 @@ public class BusinessCalendar extends Calendar {
 
     /**
      * Is the time on the last business day of the month?
+     *
+     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * within the business day schedule.
      *
      * @param time time
      * @return true if {@code time} is on the last business day of the month; false otherwise
@@ -459,6 +474,9 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the time on the last business day of the week?
      *
+     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * within the business day schedule.
+     *
      * @param time time
      * @return true if {@code time} is on the last business day of the week; false otherwise
      * @throws RequirementFailure if the input is null
@@ -471,6 +489,9 @@ public class BusinessCalendar extends Calendar {
 
     /**
      * Is the time on the last business day of the week?
+     *
+     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * within the business day schedule.
      *
      * @param time time
      * @return true if {@code time} is on the last business day of the week; false otherwise
@@ -528,6 +549,9 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the time on the last business day of the year?
      *
+     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * within the business day schedule.
+     *
      * @param time time
      * @return true if {@code time} is on the last business day of the year; false otherwise
      * @throws RequirementFailure if the input is null
@@ -540,6 +564,9 @@ public class BusinessCalendar extends Calendar {
 
     /**
      * Is the time on the last business day of the year?
+     *
+     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * within the business day schedule.
      *
      * @param time time
      * @return true if {@code time} is on the last business day of the year; false otherwise
@@ -568,6 +595,9 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the current date the last business day of the year?
      *
+     * As long as the current time occurs on a business day, it is considered a business day.  The time does not have
+     * to be within the business day schedule.
+     *
      * @return true if the current date is the last business day of the year; false otherwise.
      */
     public boolean isLastBusinessDayOfYear() {
@@ -579,7 +609,7 @@ public class BusinessCalendar extends Calendar {
     // region Business Time
 
     /**
-     * Determines if the specified time is a business time. Business times fall within business periods of the day's
+     * Determines if the specified time is a business time. Business times fall within business time ranges of the day's
      * business schedule.
      *
      * @param time time
@@ -593,7 +623,7 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Determines if the specified time is a business time. Business times fall within business periods of the day's
+     * Determines if the specified time is a business time. Business times fall within business time ranges of the day's
      * business schedule.
      *
      * @param time time
@@ -607,7 +637,7 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Determines if the current time is a business time. Business times fall within business periods of the day's
+     * Determines if the specified time is a business time. Business times fall within business time ranges of the day's
      * business schedule.
      *
      * @return true if the specified time is a business time; otherwise, false
