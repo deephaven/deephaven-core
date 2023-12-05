@@ -384,9 +384,9 @@ public class DateTimeUtils {
     private abstract static class CachedDate {
 
         final ZoneId timeZone;
-        LocalDate date;
-        String str;
-        long valueExpirationTimeMillis;
+        volatile LocalDate date;
+        volatile String str;
+        volatile long valueExpirationTimeMillis;
 
         private CachedDate(@NotNull final ZoneId timeZone) {
             this.timeZone = timeZone;
@@ -401,7 +401,7 @@ public class DateTimeUtils {
             return getLocalDate(currentClock().currentTimeMillis());
         }
 
-        public synchronized LocalDate getLocalDate(final long currentTimeMillis) {
+        public LocalDate getLocalDate(final long currentTimeMillis) {
             if (currentTimeMillis >= valueExpirationTimeMillis) {
                 update(currentTimeMillis);
             }
@@ -419,6 +419,7 @@ public class DateTimeUtils {
             return str;
         }
 
+        // Update methods should be synchronized!
         abstract void update(long currentTimeMillis);
     }
 
@@ -429,7 +430,7 @@ public class DateTimeUtils {
         }
 
         @Override
-        void update(final long currentTimeMillis) {
+        synchronized void update(final long currentTimeMillis) {
             date = toLocalDate(epochMillisToInstant(currentTimeMillis), timeZone);
             str = formatDate(date);
             valueExpirationTimeMillis =
