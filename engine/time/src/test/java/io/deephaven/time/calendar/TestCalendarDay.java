@@ -16,17 +16,17 @@ import java.util.Objects;
 import static org.junit.Assert.assertNotEquals;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class TestBusinessDay extends BaseArrayTestCase {
+public class TestCalendarDay extends BaseArrayTestCase {
     private final Instant open1 = DateTimeUtils.parseInstant("2017-03-11T10:00:00.000000000 NY");
     private final Instant close1 = DateTimeUtils.parseInstant("2017-03-11T11:00:00.000000000 NY");
-    private final BusinessPeriod<Instant> period1 = new BusinessPeriod<>(open1, close1);
+    private final TimeRange<Instant> period1 = new TimeRange<>(open1, close1);
     private final Instant open2 = DateTimeUtils.parseInstant("2017-03-11T12:00:00.000000000 NY");
     private final Instant close2 = DateTimeUtils.parseInstant("2017-03-11T17:00:00.000000000 NY");
-    private final BusinessPeriod<Instant> period2 = new BusinessPeriod<>(open2, close2);
+    private final TimeRange<Instant> period2 = new TimeRange<>(open2, close2);
 
     public void testEmpty() {
-        final BusinessDay<Instant> empty = new BusinessDay<>();
-        assertEquals(List.of(), empty.periods());
+        final CalendarDay<Instant> empty = new CalendarDay<>();
+        assertEquals(List.of(), empty.businessTimeRanges());
         assertNull(empty.businessStart());
         assertNull(empty.businessStart());
         assertNull(empty.businessEnd());
@@ -43,8 +43,8 @@ public class TestBusinessDay extends BaseArrayTestCase {
     }
 
     public void testSinglePeriod() {
-        final BusinessDay<Instant> single = new BusinessDay<>(new BusinessPeriod[] {period1});
-        assertEquals(List.of(period1), single.periods());
+        final CalendarDay<Instant> single = new CalendarDay<>(new TimeRange[] {period1});
+        assertEquals(List.of(period1), single.businessTimeRanges());
         assertEquals(open1, single.businessStart());
         assertEquals(open1, single.businessStart());
         assertEquals(close1, single.businessEnd());
@@ -68,8 +68,8 @@ public class TestBusinessDay extends BaseArrayTestCase {
     }
 
     public void testMultiPeriod() {
-        final BusinessDay<Instant> multi = new BusinessDay<>(new BusinessPeriod[] {period1, period2});
-        assertEquals(List.of(period1, period2), multi.periods());
+        final CalendarDay<Instant> multi = new CalendarDay<>(new TimeRange[] {period1, period2});
+        assertEquals(List.of(period1, period2), multi.businessTimeRanges());
         assertEquals(open1, multi.businessStart());
         assertEquals(open1, multi.businessStart());
         assertEquals(close2, multi.businessEnd());
@@ -97,8 +97,8 @@ public class TestBusinessDay extends BaseArrayTestCase {
                 multi.businessNanosRemaining(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
 
 
-        final BusinessDay<Instant> multi2 = new BusinessDay<>(new BusinessPeriod[] {period2, period1});
-        assertEquals(List.of(period1, period2), multi2.periods());
+        final CalendarDay<Instant> multi2 = new CalendarDay<>(new TimeRange[] {period2, period1});
+        assertEquals(List.of(period1, period2), multi2.businessTimeRanges());
         assertEquals(open1, multi2.businessStart());
         assertEquals(open1, multi2.businessStart());
         assertEquals(close2, multi2.businessEnd());
@@ -122,7 +122,7 @@ public class TestBusinessDay extends BaseArrayTestCase {
 
     public void testPeriodsOverlap() {
         try {
-            new BusinessDay<>(new BusinessPeriod[] {period1, period1});
+            new CalendarDay<>(new TimeRange[] {period1, period1});
             fail("Should have thrown an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("overlap"));
@@ -130,29 +130,29 @@ public class TestBusinessDay extends BaseArrayTestCase {
     }
 
     public void testToInstant() {
-        final BusinessPeriod<LocalTime> p1 = new BusinessPeriod<>(LocalTime.of(1, 2), LocalTime.of(3, 4));
-        final BusinessPeriod<LocalTime> p2 = new BusinessPeriod<>(LocalTime.of(5, 6), LocalTime.of(7, 8));
+        final TimeRange<LocalTime> p1 = new TimeRange<>(LocalTime.of(1, 2), LocalTime.of(3, 4));
+        final TimeRange<LocalTime> p2 = new TimeRange<>(LocalTime.of(5, 6), LocalTime.of(7, 8));
 
-        final BusinessDay<LocalTime> local = new BusinessDay<>(new BusinessPeriod[] {p1, p2});
+        final CalendarDay<LocalTime> local = new CalendarDay<>(new TimeRange[] {p1, p2});
         final LocalDate date = LocalDate.of(2017, 3, 11);
         final ZoneId timeZone = ZoneId.of("America/Los_Angeles");
 
-        final BusinessDay<Instant> target = new BusinessDay<>(new BusinessPeriod[] {
-                BusinessPeriod.toInstant(p1, date, timeZone), BusinessPeriod.toInstant(p2, date, timeZone)});
-        final BusinessDay<Instant> actual = BusinessDay.toInstant(local, date, timeZone);
+        final CalendarDay<Instant> target = new CalendarDay<>(new TimeRange[] {
+                TimeRange.toInstant(p1, date, timeZone), TimeRange.toInstant(p2, date, timeZone)});
+        final CalendarDay<Instant> actual = CalendarDay.toInstant(local, date, timeZone);
         assertEquals(target, actual);
     }
 
     public void testEqualsHash() {
-        final BusinessDay<Instant> multi = new BusinessDay<>(new BusinessPeriod[] {period1, period2});
-        assertEquals(List.of(period1, period2), multi.periods());
+        final CalendarDay<Instant> multi = new CalendarDay<>(new TimeRange[] {period1, period2});
+        assertEquals(List.of(period1, period2), multi.businessTimeRanges());
 
-        int hashTarget = Objects.hash(multi.periods());
+        int hashTarget = Objects.hash(multi.businessTimeRanges());
         assertEquals(hashTarget, multi.hashCode());
 
-        final BusinessDay<Instant> multi2 = new BusinessDay<>(new BusinessPeriod[] {period1, period2});
-        final BusinessDay<Instant> multi3 = new BusinessDay<>(new BusinessPeriod[] {period1,
-                new BusinessPeriod<>(open2, DateTimeUtils.parseInstant("2017-03-11T17:01:00.000000000 NY"))});
+        final CalendarDay<Instant> multi2 = new CalendarDay<>(new TimeRange[] {period1, period2});
+        final CalendarDay<Instant> multi3 = new CalendarDay<>(new TimeRange[] {period1,
+                new TimeRange<>(open2, DateTimeUtils.parseInstant("2017-03-11T17:01:00.000000000 NY"))});
         assertEquals(multi, multi);
         assertEquals(multi, multi2);
         assertNotEquals(multi, multi3);
@@ -160,7 +160,7 @@ public class TestBusinessDay extends BaseArrayTestCase {
     }
 
     public void testToString() {
-        final BusinessDay<Instant> multi = new BusinessDay<>(new BusinessPeriod[] {period1, period2});
+        final CalendarDay<Instant> multi = new CalendarDay<>(new TimeRange[] {period1, period2});
         assertEquals(
                 "BusinessDay{openPeriods=[BusinessPeriod{start=2017-03-11T15:00:00Z, end=2017-03-11T16:00:00Z}, BusinessPeriod{start=2017-03-11T17:00:00Z, end=2017-03-11T22:00:00Z}]}",
                 multi.toString());

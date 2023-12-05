@@ -58,9 +58,9 @@ public class BusinessCalendarXMLParser {
         private ZoneId timeZone;
         private LocalDate firstValidDate;
         private LocalDate lastValidDate;
-        private BusinessDay<LocalTime> standardBusinessDay;
+        private CalendarDay<LocalTime> standardBusinessDay;
         private Set<DayOfWeek> weekendDays;
-        private Map<LocalDate, BusinessDay<Instant>> holidays;
+        private Map<LocalDate, CalendarDay<Instant>> holidays;
     }
 
     /**
@@ -105,7 +105,7 @@ public class BusinessCalendarXMLParser {
             // Set the default values
             final Element defaultElement = getRequiredChild(root, "default");
             calendarElements.weekendDays = parseWeekendDays(defaultElement);
-            calendarElements.standardBusinessDay = parseBusinessDaySchedule(defaultElement);
+            calendarElements.standardBusinessDay = parseCalendarDaySchedule(defaultElement);
 
             return calendarElements;
         } catch (Exception e) {
@@ -141,38 +141,38 @@ public class BusinessCalendarXMLParser {
         return element == null ? null : element.getTextTrim();
     }
 
-    private static BusinessDay<LocalTime> parseBusinessDaySchedule(final Element element) throws Exception {
+    private static CalendarDay<LocalTime> parseCalendarDaySchedule(final Element element) throws Exception {
         final List<Element> businessPeriods = element.getChildren("businessPeriod");
-        return businessPeriods.isEmpty() ? BusinessDay.HOLIDAY
-                : new BusinessDay<>(parseBusinessPeriods(businessPeriods));
+        return businessPeriods.isEmpty() ? CalendarDay.HOLIDAY
+                : new CalendarDay<>(parseBusinessRanges(businessPeriods));
     }
 
-    private static BusinessPeriod<LocalTime>[] parseBusinessPeriods(final List<Element> businessPeriods)
+    private static TimeRange<LocalTime>[] parseBusinessRanges(final List<Element> businessRanges)
             throws Exception {
         // noinspection unchecked
-        final BusinessPeriod<LocalTime>[] rst = new BusinessPeriod[businessPeriods.size()];
+        final TimeRange<LocalTime>[] rst = new TimeRange[businessRanges.size()];
 
-        for (int i = 0; i < businessPeriods.size(); i++) {
+        for (int i = 0; i < businessRanges.size(); i++) {
             final LocalTime open =
-                    DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessPeriods.get(i), "open")));
+                    DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessRanges.get(i), "open")));
             final LocalTime close =
-                    DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessPeriods.get(i), "close")));
-            rst[i] = new BusinessPeriod<>(open, close);
+                    DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessRanges.get(i), "close")));
+            rst[i] = new TimeRange<>(open, close);
         }
 
         return rst;
     }
 
-    private static Map<LocalDate, BusinessDay<Instant>> parseHolidays(final Element root, final ZoneId timeZone)
+    private static Map<LocalDate, CalendarDay<Instant>> parseHolidays(final Element root, final ZoneId timeZone)
             throws Exception {
-        final Map<LocalDate, BusinessDay<Instant>> holidays = new ConcurrentHashMap<>();
+        final Map<LocalDate, CalendarDay<Instant>> holidays = new ConcurrentHashMap<>();
         final List<Element> holidayElements = root.getChildren("holiday");
 
         for (Element holidayElement : holidayElements) {
             final Element dateElement = getRequiredChild(holidayElement, "date");
             final LocalDate date = DateTimeUtils.parseLocalDate(getText(dateElement));
-            final BusinessDay<LocalTime> schedule = parseBusinessDaySchedule(holidayElement);
-            holidays.put(date, BusinessDay.toInstant(schedule, date, timeZone));
+            final CalendarDay<LocalTime> schedule = parseCalendarDaySchedule(holidayElement);
+            holidays.put(date, CalendarDay.toInstant(schedule, date, timeZone));
         }
 
         return holidays;

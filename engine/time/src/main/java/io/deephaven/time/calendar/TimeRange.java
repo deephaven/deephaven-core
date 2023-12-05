@@ -14,22 +14,22 @@ import java.time.temporal.Temporal;
 import java.util.Objects;
 
 /**
- * A period of business time during a business day.
+ * A range of time.
  *
  * @param <T> time type
  */
-public class BusinessPeriod<T extends Comparable<T> & Temporal> {
+public class TimeRange<T extends Comparable<T> & Temporal> {
     private final T start;
     private final T end;
     private final long nanos;
 
     /**
-     * Create a new business period.
+     * Create a new time range.
      *
-     * @param startTime start of the business period.
-     * @param endTime end of the business period.
+     * @param startTime start of the time range.
+     * @param endTime end of the time range.
      */
-    BusinessPeriod(final T startTime, final T endTime) {
+    TimeRange(final T startTime, final T endTime) {
         this.start = startTime;
         this.end = endTime;
 
@@ -52,37 +52,37 @@ public class BusinessPeriod<T extends Comparable<T> & Temporal> {
     }
 
     /**
-     * Start of the period.
+     * Start of the range.
      *
-     * @return start of the period
+     * @return start of the range
      */
     public T start() {
         return start;
     }
 
     /**
-     * End of the period.
+     * End of the range.
      *
-     * @return End of the period
+     * @return End of the range
      */
     public T end() {
         return end;
     }
 
     /**
-     * Length of the period in nanoseconds.
+     * Length of the range in nanoseconds.
      *
-     * @return length of the period in nanoseconds
+     * @return length of the range in nanoseconds
      */
     public long nanos() {
         return nanos;
     }
 
     /**
-     * Determines if the specified time is within the business period.
+     * Determines if the specified time is within the time range.
      *
      * @param time time.
-     * @return true if the time is in this period; otherwise, false.
+     * @return true if the time is in this range; otherwise, false.
      */
     public boolean contains(final T time) {
         return time != null
@@ -94,9 +94,9 @@ public class BusinessPeriod<T extends Comparable<T> & Temporal> {
     public boolean equals(Object o) {
         if (this == o)
             return true;
-        if (!(o instanceof BusinessPeriod))
+        if (!(o instanceof TimeRange))
             return false;
-        BusinessPeriod<?> that = (BusinessPeriod<?>) o;
+        TimeRange<?> that = (TimeRange<?>) o;
         return nanos == that.nanos && start.equals(that.start) && end.equals(that.end);
     }
 
@@ -107,23 +107,23 @@ public class BusinessPeriod<T extends Comparable<T> & Temporal> {
 
     @Override
     public String toString() {
-        return "BusinessPeriod{" +
+        return "TimeRange{" +
                 "start=" + start +
                 ", end=" + end +
                 '}';
     }
 
     /**
-     * Converts a business period in local time to a specific date and time zone.
+     * Converts a time range in local time to a specific date and time zone.
      *
-     * @param p business period in local time
-     * @param date date for the new business period
-     * @param timeZone time zone for the new business period
-     * @return new business period in the specified date and time zone
+     * @param p time range in local time
+     * @param date date for the new time range
+     * @param timeZone time zone for the new time range
+     * @return new time range in the specified date and time zone
      */
-    public static BusinessPeriod<Instant> toInstant(final BusinessPeriod<LocalTime> p, final LocalDate date,
-            final ZoneId timeZone) {
-        return new BusinessPeriod<>(DateTimeUtils.toInstant(date, p.start, timeZone),
+    public static TimeRange<Instant> toInstant(final TimeRange<LocalTime> p, final LocalDate date,
+                                               final ZoneId timeZone) {
+        return new TimeRange<>(DateTimeUtils.toInstant(date, p.start, timeZone),
                 DateTimeUtils.toInstant(date, p.end, timeZone));
     }
 
