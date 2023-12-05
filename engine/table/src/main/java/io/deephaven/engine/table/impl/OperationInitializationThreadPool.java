@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.util.thread.NamingThreadFactory;
 import io.deephaven.util.thread.ThreadInitializationFactory;
@@ -36,8 +37,6 @@ public class OperationInitializationThreadPool implements OperationInitializer {
         }
     }
 
-    private final ThreadLocal<Boolean> isInitializationThread = ThreadLocal.withInitial(() -> false);
-
     private final ThreadPoolExecutor executorService;
 
     public OperationInitializationThreadPool(ThreadInitializationFactory factory) {
@@ -47,9 +46,8 @@ public class OperationInitializationThreadPool implements OperationInitializer {
             @Override
             public Thread newThread(@NotNull final Runnable r) {
                 return super.newThread(factory.createInitializer(() -> {
-                    isInitializationThread.set(true);
                     MultiChunkPool.enableDedicatedPoolForThisThread();
-                    r.run();
+                    ExecutionContext.newBuilder().setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE).build().apply(r);
                 }));
             }
         };
@@ -57,16 +55,9 @@ public class OperationInitializationThreadPool implements OperationInitializer {
                 NUM_THREADS, NUM_THREADS, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
     }
 
-    /**
-     * @return Whether the current thread was started by this instance.
-     */
-    protected boolean isInitializationThread() {
-        return isInitializationThread.get();
-    }
-
     @Override
     public boolean canParallelize() {
-        return NUM_THREADS > 1 && !isInitializationThread();
+        return NUM_THREADS > 1;
     }
 
     @Override
