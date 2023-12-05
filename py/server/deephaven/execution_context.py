@@ -79,6 +79,7 @@ def make_user_exec_ctx(freeze_vars: Union[str, Sequence[str]] = None) -> Executi
                           .captureQueryLibrary()
                           .captureQueryScopeVars(*freeze_vars)
                           .captureUpdateGraph()
+                          .captureOperationInitializer()
                           .build())
             return ExecutionContext(j_exec_ctx=j_exec_ctx)
         except Exception as e:
