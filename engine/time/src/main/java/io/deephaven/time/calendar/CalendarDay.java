@@ -16,8 +16,8 @@ import java.time.temporal.Temporal;
 import java.util.*;
 
 /**
- * Schedule for a single calendar day.  The schedule contains a list of business time ranges, which are the ranges of time
- * during which businesses are open.
+ * Schedule for a single calendar day. The schedule contains a list of business time ranges, which are the ranges of
+ * time during which businesses are open.
  *
  * A business day may contain multiple business time ranges. For example, some financial exchanges have a morning and an
  * afternoon trading session. This would be represented by a business day with two business time ranges.
@@ -97,12 +97,12 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * @return end of the business day, or null for a holiday schedule
      */
     public T businessEnd() {
-        return !businessTimeRanges.isEmpty() ? businessTimeRanges.get(businessTimeRanges.size()-1).end() : null;
+        return !businessTimeRanges.isEmpty() ? businessTimeRanges.get(businessTimeRanges.size() - 1).end() : null;
     }
 
     /**
-     * Gets the length of the business day in nanoseconds. If the business day has multiple business time ranges,
-     * only the time during the ranges is counted.
+     * Gets the length of the business day in nanoseconds. If the business day has multiple business time ranges, only
+     * the time during the ranges is counted.
      *
      * @return length of the day in nanoseconds
      */
@@ -172,8 +172,10 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof CalendarDay)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof CalendarDay))
+            return false;
         CalendarDay<?> that = (CalendarDay<?>) o;
         return Objects.equals(businessTimeRanges, that.businessTimeRanges);
     }
@@ -199,7 +201,7 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * @return new business schedule in the specified date and time zone
      */
     public static CalendarDay<Instant> toInstant(final CalendarDay<LocalTime> s, final LocalDate date,
-                                                 final ZoneId timeZone) {
+            final ZoneId timeZone) {
         // noinspection unchecked
         return new CalendarDay<>(s.businessTimeRanges().stream().map(p -> TimeRange.toInstant(p, date, timeZone))
                 .toArray(TimeRange[]::new));

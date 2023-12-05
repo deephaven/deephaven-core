@@ -122,7 +122,7 @@ public class TimeRange<T extends Comparable<T> & Temporal> {
      * @return new time range in the specified date and time zone
      */
     public static TimeRange<Instant> toInstant(final TimeRange<LocalTime> p, final LocalDate date,
-                                               final ZoneId timeZone) {
+            final ZoneId timeZone) {
         return new TimeRange<>(DateTimeUtils.toInstant(date, p.start, timeZone),
                 DateTimeUtils.toInstant(date, p.end, timeZone));
     }
