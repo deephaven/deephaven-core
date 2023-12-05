@@ -122,10 +122,6 @@ public class UpdatePerformanceTracker {
                 }
             }
         }
-
-        public void flush() {
-            publisher.flush();
-        }
     }
 
     private static final AtomicLong entryIdCounter = new AtomicLong(1);
@@ -170,10 +166,13 @@ public class UpdatePerformanceTracker {
         // This happens on the primary refresh thread of this UPT's UpdateGraph. It should already have that UG
         // installed in the ExecutionContext. If we need another UG, that's the responsibility of the publish callbacks.
         try {
-            finishInterval(
-                    getInternalState(),
-                    intervalStartTimeEpochNanos,
-                    intervalEndTimeEpochNanos);
+            // TODO: IS THIS NECESSARY (maybe wrong)
+//            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+                finishInterval(
+                        getInternalState(),
+                        intervalStartTimeEpochNanos,
+                        intervalEndTimeEpochNanos);
+//            }
         } finally {
             intervalStartTimeEpochNanos = intervalEndTimeEpochNanos;
         }
@@ -264,7 +263,6 @@ public class UpdatePerformanceTracker {
         }
         aggregatedSmallUpdatesEntry.reset();
 
-        internalState.flush();
         flushEntry.onUpdateEnd();
     }
 

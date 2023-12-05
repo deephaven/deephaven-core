@@ -13,7 +13,7 @@ final class PoisonedNotificationProcessor implements BaseUpdateGraph.Notificatio
     static final BaseUpdateGraph.NotificationProcessor INSTANCE = new PoisonedNotificationProcessor();
 
     private static RuntimeException notYetStarted() {
-        return new IllegalStateException("PeriodicUpdateGraph has not been started yet");
+        return new IllegalStateException("UpdateGraph has not been started yet");
     }
 
     private PoisonedNotificationProcessor() {}

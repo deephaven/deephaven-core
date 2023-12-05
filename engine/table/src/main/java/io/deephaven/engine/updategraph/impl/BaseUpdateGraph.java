@@ -9,7 +9,6 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -37,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -49,12 +48,12 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     public static final String DEFAULT_UPDATE_GRAPH_NAME = "DEFAULT";
 
     /**
-     * If the provided update graph is a {@link PeriodicUpdateGraph} then create a PerformanceEntry using the given
+     * If the provided update graph is a {@link BaseUpdateGraph} then create a PerformanceEntry using the given
      * description. Otherwise, return null.
      *
      * @param updateGraph The update graph to create a performance entry for.
      * @param description The description for the performance entry.
-     * @return The performance entry, or null if the update graph is not a {@link PeriodicUpdateGraph}.
+     * @return The performance entry, or null if the update graph is not a {@link BaseUpdateGraph}.
      */
     @Nullable
     public static PerformanceEntry createUpdatePerformanceEntry(
@@ -65,7 +64,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             if (bug.updatePerformanceTracker != null) {
                 return bug.updatePerformanceTracker.getEntry(description);
             }
-            throw new IllegalStateException("Cannot create a performance entry for a PeriodicUpdateGraph that has "
+            throw new IllegalStateException("Cannot create a performance entry for a BaseUpdateGraph that has "
                     + "not been completely constructed.");
         }
         return null;
@@ -77,7 +76,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     private final Logger log;
 
     /**
-     * Update sources that are part of this PeriodicUpdateGraph.
+     * Update sources that are part of this BaseUpdateGraph.
      */
     private final SimpleReferenceManager<Runnable, UpdateSourceRefreshNotification> sources =
             new SimpleReferenceManager<>(UpdateSourceRefreshNotification::new);
@@ -102,7 +101,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     volatile boolean running = true;
 
     public static final String MINIMUM_CYCLE_DURATION_TO_LOG_MILLIS_PROP =
-            "PeriodicUpdateGraph.minimumCycleDurationToLogMillis";
+            "UpdateGraph.minimumCycleDurationToLogMillis";
     public static final long DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS = TimeUnit.MILLISECONDS.toNanos(
             Configuration.getInstance().getIntegerWithDefault(MINIMUM_CYCLE_DURATION_TO_LOG_MILLIS_PROP, 25));
     private final long minimumCycleDurationToLogNanos;
@@ -217,19 +216,24 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     private final UpdateGraphLock lock;
 
     /**
-     * When PeriodicUpdateGraph.printDependencyInformation is set to true, the PeriodicUpdateGraph will print debug
+     * When UpdateGraph.printDependencyInformation is set to true, the UpdateGraph will print debug
      * information for each notification that has dependency information; as well as which notifications have been
      * completed and are outstanding.
      */
     private final boolean printDependencyInformation =
-            Configuration.getInstance().getBooleanWithDefault("PeriodicUpdateGraph.printDependencyInformation", false);
+            Configuration.getInstance().getBooleanWithDefault("UpdateGraph.printDependencyInformation", false);
 
     private final String name;
 
     final UpdatePerformanceTracker updatePerformanceTracker;
 
-
-
+    /**
+     * TODO: ADD JAVADOC ANYWAY
+     * @param name
+     * @param allowUnitTestMode
+     * @param log
+     * @param minimumCycleDurationToLogNanos
+     */
     public BaseUpdateGraph(
             final String name,
             final boolean allowUnitTestMode,
@@ -265,7 +269,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
 
     /**
      * <p>
-     * Get the shared lock for this {@link PeriodicUpdateGraph}.
+     * Get the shared lock for this {@link UpdateGraph}.
      * <p>
      * Using this lock will prevent run processing from proceeding concurrently, but will allow other read-only
      * processing to proceed.
@@ -275,7 +279,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
      * This lock does <em>not</em> support {@link java.util.concurrent.locks.Lock#newCondition()}. Use the exclusive
      * lock if you need to wait on events that are driven by run processing.
      *
-     * @return The shared lock for this {@link PeriodicUpdateGraph}
+     * @return The shared lock for this {@link UpdateGraph}
      */
     public AwareFunctionalLock sharedLock() {
         return lock.sharedLock();
@@ -283,7 +287,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
 
     /**
      * <p>
-     * Get the exclusive lock for this {@link PeriodicUpdateGraph}.
+     * Get the exclusive lock for this {@link UpdateGraph}.
      * <p>
      * Using this lock will prevent run or read-only processing from proceeding concurrently.
      * <p>
@@ -294,7 +298,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
      * <p>
      * This lock does support {@link java.util.concurrent.locks.Lock#newCondition()}.
      *
-     * @return The exclusive lock for this {@link PeriodicUpdateGraph}
+     * @return The exclusive lock for this {@link UpdateGraph}
      */
     public AwareFunctionalLock exclusiveLock() {
         return lock.exclusiveLock();
@@ -334,7 +338,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     @Override
     public void addSource(@NotNull final Runnable updateSource) {
         if (!running) {
-            throw new IllegalStateException("PeriodicUpdateGraph is no longer running");
+            throw new IllegalStateException("UpdateGraph is no longer running");
         }
 
         if (updateSource instanceof DynamicNode) {
@@ -452,6 +456,12 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
         return true;
     }
 
+    /**
+     * Reset state at the beginning or end of a unit test.
+     *
+     * @param after if this is done after a test, in which case the liveness scope is popped
+     * @param errors the list of errors generated during reset
+     */
     @TestUseOnly
     void resetForUnitTests(final boolean after, final List<String> errors) {
         sources.clear();
@@ -487,7 +497,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
      * Flush all non-terminal notifications, complete the logical clock update cycle, then flush all terminal
      * notifications.
      *
-     * @param check that update sources have not yet been satisfied (false in unit test mode)
+     * @param check whether to check that update sources have not yet been satisfied (false in unit test mode)
      */
     void flushNotificationsAndCompleteCycle(boolean check) {
         // We cannot proceed with normal notifications, nor are we satisfied, until all update source refresh
@@ -691,10 +701,10 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
                     .endl();
         } catch (final Exception e) {
             log.error().append(Thread.currentThread().getName())
-                    .append(": Exception while executing PeriodicUpdateGraph notification: ").append(notification)
+                    .append(": Exception while executing UpdateGraph notification: ").append(notification)
                     .append(": ").append(e).endl();
             ProcessEnvironment.getGlobalFatalErrorReporter()
-                    .report("Exception while processing PeriodicUpdateGraph notification", e);
+                    .report("Exception while processing UpdateGraph notification", e);
         }
     }
 
@@ -824,6 +834,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
      * @return The target cycle duration
      */
     public long getTargetCycleDurationMillis() {
+        // TODO: REMOVE THIS FROM THE BASE AND KEEP ONLY IN THE MAIN
         return 0;
     }
 
@@ -847,14 +858,12 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     }
 
 
-    void checkUpdatePerformanceFlush(long nowNanos, long checkTime) {
+    void mabyeFlushUpdatePerformance(final long nowNanos, final long checkTime) {
         if (checkTime >= nextUpdatePerformanceTrackerFlushTimeNanos) {
             nextUpdatePerformanceTrackerFlushTimeNanos =
                     nowNanos + MILLISECONDS.toNanos(UpdatePerformanceTracker.REPORT_INTERVAL_MILLIS);
             try {
-                try (final SafeCloseable ignored = openContextForUpdatePerformanceTracker()) {
-                    updatePerformanceTracker.flush();
-                }
+                updatePerformanceTracker.flush();
             } catch (Exception err) {
                 log.error().append("Error flushing UpdatePerformanceTracker: ").append(err).endl();
             }
@@ -868,16 +877,6 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     @TestUseOnly
     public void resetNextFlushTime() {
         nextUpdatePerformanceTrackerFlushTimeNanos = 0;
-    }
-
-    /**
-     * The UpdatePerformanceTracker requires a common update graph for all operations, to avoid spanning update graphs.
-     * 
-     * @return a context suitable for operating on the updatePerformanceTracker.
-     */
-    static SafeCloseable openContextForUpdatePerformanceTracker() {
-        return ExecutionContext.getContext()
-                .withUpdateGraph(BaseUpdateGraph.getInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)).open();
     }
 
     /**
@@ -900,7 +899,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
         final long lockStartTimeNanos = System.nanoTime();
         exclusiveLock().doLocked(() -> {
             currentCycleLockWaitTotalNanos += System.nanoTime() - lockStartTimeNanos;
-            if (!preRefresh()) {
+            if (!running) {
                 return;
             }
             synchronized (pendingNormalNotifications) {
@@ -909,7 +908,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             Assert.eqNull(refreshScope, "refreshScope");
             refreshScope = new LivenessScope();
             final long updatingCycleValue = logicalClock.startUpdateCycle();
-            logDependencies().append("Beginning PeriodicUpdateGraph cycle step=")
+            logDependencies().append("Beginning UpdateGraph cycle step=")
                     .append(logicalClock.currentStep()).endl();
             try (final SafeCloseable ignored = LivenessScopeStack.open(refreshScope, true)) {
                 refreshFunction.run();
@@ -918,22 +917,9 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
                 logicalClock.ensureUpdateCycleCompleted(updatingCycleValue);
                 refreshScope = null;
             }
-            logDependencies().append("Completed PeriodicUpdateGraph cycle step=")
+            logDependencies().append("Completed UpdateGraph cycle step=")
                     .append(logicalClock.currentStep()).endl();
         });
-    }
-
-    /**
-     * Pre-refresh is called after the lock is taken, but before refresh processing is initiated.
-     *
-     * <p>
-     * If this update graph is no longer running, returns false to prevent further processing.
-     * </p>
-     *
-     * @return true if the refresh cycle should be processed, if false, the refresh cycle is not executed.
-     */
-    boolean preRefresh() {
-        return running;
     }
 
     /**
@@ -989,6 +975,12 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
         }
     }
 
+    /**
+     * Ensure the lock is not held by the current thread.
+     *
+     * @param callerDescription the description of the caller
+     * @param errors an optional list to populate with errors when the lock is held.
+     */
     @TestUseOnly
     void ensureUnlocked(@NotNull final String callerDescription, @Nullable final List<String> errors) {
         if (exclusiveLock().isHeldByCurrentThread()) {
@@ -1020,16 +1012,16 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
 
 
     /**
-     * Clear a named instance of an update graph.
+     * Remove a named UpdateGraph.
      *
      * <p>
-     * In addition to removing the update graph from the instances, an attempt is made to shut it down.
+     * In addition to removing the UpdateGraph from the instances, an attempt is made to {@link #stop()} it.
      * </p>
      *
-     * @param name the name of the update graph to clear
+     * @param name the name of the UpdateGraph to remove
      * @return true if the update graph was found
      */
-    public static boolean clearInstance(final String name) {
+    public static boolean removeInstance(final String name) {
         final UpdateGraph graph;
         synchronized (INSTANCES) {
             graph = INSTANCES.removeKey(name);
@@ -1045,28 +1037,33 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
      * Inserts the given UpdateGraph into the INSTANCES array. It is an error to do so if instance already exists with
      * the name provided to this builder.
      *
-     * @param updateGraph the update graph to insert into INSTANCES
+     * @param name the name of the new update graph
+     * @param construct a {@link Supplier} that constructs an UpdateGraph if no update graph with the name already exists. The Supplier must provide an update graph with the given name.
      *
-     * @throws IllegalStateException if a PeriodicUpdateGraph with the provided name already exists
+     * @throws IllegalStateException if an UpdateGraph with the provided name already exists
      */
-    public static void insertInstance(UpdateGraph updateGraph) {
-        final String name = updateGraph.getName();
+    public static <T extends UpdateGraph> T buildOrThrow(final String name, final Supplier<T> construct) {
         synchronized (INSTANCES) {
             if (INSTANCES.containsKey(name)) {
                 throw new IllegalStateException(
                         String.format("UpdateGraph with name %s already exists", name));
             }
-            INSTANCES.put(name, updateGraph);
+            final T newGraph = construct.get();
+            Assert.equals(newGraph.getName(), "newGraph.getName()", name, "name");
+            INSTANCES.put(name, newGraph);
+            return newGraph;
         }
     }
 
     /**
-     * Returns an existing PeriodicUpdateGraph with the name provided to this Builder, if one exists, else returns a new
-     * PeriodicUpdateGraph.
+     * Returns an existing UpdateGraph with the name provided to this Builder, if one exists, else returns a new
+     * UpdateGraph.
      *
-     * @return the PeriodicUpdateGraph
+     * @param construct a {@link Supplier} that constructs an UpdateGraph if no update graph with the name already exists. The Supplier must provide an update graph with the given name.
+     *
+     * @return the UpdateGraph
      */
-    public static UpdateGraph existingOrBuild(final String name, Function<String, UpdateGraph> construct) {
-        return INSTANCES.putIfAbsent(name, construct::apply);
+    public static <T extends UpdateGraph> T existingOrBuild(final String name, Supplier<T> construct) {
+        return INSTANCES.putIfAbsent(name, construct.get()).cast();
     }
 }

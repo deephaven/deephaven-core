@@ -179,7 +179,7 @@ public interface UpdateGraph extends UpdateSourceRegistrar, NotificationQueue, N
             return;
         }
         throw new IllegalStateException(String.format(
-                "May not initiate serial table operations for %s: exclusiveLockHeld=%s, sharedLockHeld=%s, currentThreadProcessesUpdates=%s",
+                "May not initiate serial table operations for update graph %s: exclusiveLockHeld=%s, sharedLockHeld=%s, currentThreadProcessesUpdates=%s",
                 getName(),
                 exclusiveLock().isHeldByCurrentThread(),
                 sharedLock().isHeldByCurrentThread(),

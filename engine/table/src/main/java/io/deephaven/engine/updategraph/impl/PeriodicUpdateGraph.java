@@ -12,11 +12,8 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.hash.KeyedObjectHashMap;
-import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
@@ -29,7 +26,10 @@ import io.deephaven.util.thread.NamingThreadFactory;
 import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -95,14 +95,14 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
     private boolean unitTestMode;
     private ExecutorService unitTestRefreshThreadPool;
 
-    public static final String DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP =
-            "PeriodicUpdateGraph.targetCycleDurationMillis";
+    public static final String DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP = "PeriodicUpdateGraph.targetCycleDurationMillis";
     private final long defaultTargetCycleDurationMillis;
     private volatile long targetCycleDurationMillis;
 
     /**
      * Accumulated delays due to intracycle yields for the current cycle (or previous, if idle).
      */
+    // TODO: WHY UNUSED?
     private long currentCycleYieldTotalNanos;
     /**
      * Accumulated delays due to intracycle sleeps for the current cycle (or previous, if idle).
@@ -359,6 +359,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
      * Begins the process to stop all processing threads and forces ReferenceCounted sources to a reference count of
      * zero.
      */
+    @Override
     public void stop() {
         running = false;
         notificationProcessor.shutdown();
@@ -1058,7 +1059,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
             expectedEndTimeNanos =
                     Math.max(expectedEndTimeNanos, nowNanos + MILLISECONDS.toNanos(minimumInterCycleSleep));
         }
-        checkUpdatePerformanceFlush(nowNanos, expectedEndTimeNanos);
+        mabyeFlushUpdatePerformance(nowNanos, expectedEndTimeNanos);
         waitForEndTime(expectedEndTimeNanos);
     }
 
@@ -1171,8 +1172,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
                 Configuration.getInstance().getBooleanWithDefault(ALLOW_UNIT_TEST_MODE_PROP, false);
         private long targetCycleDurationMillis =
                 Configuration.getInstance().getIntegerWithDefault(DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP, 1000);
-        private long minimumCycleDurationToLogNanos = MILLISECONDS.toNanos(
-                Configuration.getInstance().getIntegerWithDefault(MINIMUM_CYCLE_DURATION_TO_LOG_MILLIS_PROP, 25));
+        private long minimumCycleDurationToLogNanos = DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS;
 
         private String name;
         private int numUpdateThreads = -1;
@@ -1223,12 +1223,10 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
          * name provided to this builder.
          *
          * @return the new PeriodicUpdateGraph
-         * @throws IllegalStateException if a UpdateGraph with the provided name already exists
+         * @throws IllegalStateException if an UpdateGraph with the provided name already exists
          */
         public PeriodicUpdateGraph build() {
-            final PeriodicUpdateGraph newUpdateGraph = construct(name);
-            BaseUpdateGraph.insertInstance(newUpdateGraph);
-            return newUpdateGraph;
+            return BaseUpdateGraph.buildOrThrow(name, this::construct);
         }
 
         /**
@@ -1242,9 +1240,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
             return BaseUpdateGraph.existingOrBuild(name, this::construct).cast();
         }
 
-        private PeriodicUpdateGraph construct(String name) {
-            // we are passing the object through, so it should be identical
-            Assert.eq(name, "name", this.name, "this.name");
+        private PeriodicUpdateGraph construct() {
             return new PeriodicUpdateGraph(
                     name,
                     allowUnitTestMode,

@@ -1,7 +1,6 @@
 package io.deephaven.engine.updategraph.impl;
 
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
@@ -14,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>
  * As with a {@link PeriodicUpdateGraph}, the EventDrivenUpdateGraph contains a set of sources, but it is refreshed only
- * when a call to {@link #requestRefresh()} is made. All sources are synchronously refreshed on that thread; and then
+ * when a call to {@link #requestRefresh()} is made. All sources are synchronously refreshed on that thread, and then
  * the resultant notifications are also synchronously processed.
  * </p>
  */
@@ -53,12 +52,7 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * <p>
-     * When a refresh is requested, the EventDrivenUpdateGraph refreshes all source tables and then executes the
-     * resulting notifications synchronously on this thread.
-     * </p>
+     * Refresh all sources and execute the resulting notifications synchronously on this thread.
      */
     @Override
     public void requestRefresh() {
@@ -71,7 +65,9 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
             isUpdateThread.remove();
         }
         final long nowNanos = System.nanoTime();
-        checkUpdatePerformanceFlush(nowNanos, nowNanos);
+        synchronized (this) {
+            mabyeFlushUpdatePerformance(nowNanos, nowNanos);
+        }
     }
 
     /**
@@ -79,13 +75,11 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
      * graph used for UPT publishing, as the UPT requires the publication graph to be in the BaseUpdateGraph map, which
      * is not done until after our constructor completes.
      */
-    private void maybeStart() {
+    private synchronized void maybeStart() {
         if (started) {
             return;
         }
-        try (final SafeCloseable ignored = openContextForUpdatePerformanceTracker()) {
-            updatePerformanceTracker.start();
-        }
+        updatePerformanceTracker.start();
         started = true;
     }
 
@@ -120,16 +114,14 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
         }
 
         /**
-         * Constructs and returns a EventDrivenUpdateGraph. It is an error to do so an instance already exists with the
-         * name provided to this builder.
+         * Constructs and returns an EventDrivenUpdateGraph. It is an error to do so if an UpdateGraph already exists
+         * with the name provided to this builder.
          *
          * @return the new EventDrivenUpdateGraph
-         * @throws IllegalStateException if a UpdateGraph with the provided name already exists
+         * @throws IllegalStateException if an UpdateGraph with the provided name already exists
          */
         public EventDrivenUpdateGraph build() {
-            final EventDrivenUpdateGraph newUpdateGraph = construct(name);
-            BaseUpdateGraph.insertInstance(newUpdateGraph);
-            return newUpdateGraph;
+            return BaseUpdateGraph.buildOrThrow(name, this::construct);
         }
 
         /**
@@ -145,12 +137,10 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
          * @throws ClassCastException if the existing graph is not an EventDrivenUpdateGraph
          */
         public EventDrivenUpdateGraph existingOrBuild() {
-            return BaseUpdateGraph.existingOrBuild(name, this::construct).cast();
+            return BaseUpdateGraph.existingOrBuild(name, this::construct);
         }
 
-        private EventDrivenUpdateGraph construct(String name) {
-            // we are passing the object through, so it should be identical
-            Assert.eq(name, "name", this.name, "this.name");
+        private EventDrivenUpdateGraph construct() {
             return new EventDrivenUpdateGraph(
                     name,
                     minimumCycleDurationToLogNanos);

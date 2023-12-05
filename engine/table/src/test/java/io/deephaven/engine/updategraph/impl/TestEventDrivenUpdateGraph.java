@@ -1,7 +1,6 @@
 package io.deephaven.engine.updategraph.impl;
 
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.base.SleepUtil;
 import io.deephaven.configuration.DataDir;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
@@ -45,10 +44,10 @@ public class TestEventDrivenUpdateGraph {
     }
 
     private static void clearUpdateGraphInstances() {
-        BaseUpdateGraph.clearInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME);
-        BaseUpdateGraph.clearInstance("TestEDUG");
-        BaseUpdateGraph.clearInstance("TestEDUG1");
-        BaseUpdateGraph.clearInstance("TestEDUG2");
+        BaseUpdateGraph.removeInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME);
+        BaseUpdateGraph.removeInstance("TestEDUG");
+        BaseUpdateGraph.removeInstance("TestEDUG1");
+        BaseUpdateGraph.removeInstance("TestEDUG2");
     }
 
     /**
