@@ -334,12 +334,11 @@ class Session:
             self._keep_alive_timer.start()
 
     def _refresh_token(self):
-        with self._r_lock:
-            try:
-                self._flight_client.authenticate(self._auth_handler)
-            except Exception as e:
-                self.is_connected = False
-                raise DHError("failed to refresh auth token") from e
+        try:
+            self._flight_client.authenticate(self._auth_handler)
+        except Exception as e:
+            self.is_connected = False
+            raise DHError("failed to refresh auth token") from e
 
     @property
     def is_alive(self) -> bool:
@@ -385,10 +384,9 @@ class Session:
         Raises:
             DHError
         """
-        with self._r_lock:
-            response = self.console_service.run_script(script)
-            if response.error_message != '':
-                raise DHError("could not run script: " + response.error_message)
+        response = self.console_service.run_script(script)
+        if response.error_message != '':
+            raise DHError("could not run script: " + response.error_message)
 
     def open_table(self, name: str) -> Table:
         """Opens a table in the global scope with the given name on the server.

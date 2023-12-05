@@ -3,7 +3,7 @@
 #
 
 """ This module supports the conversion between Deephaven tables and pandas DataFrames. """
-from typing import List, Dict, Tuple, Literal
+from typing import List, Literal
 
 import jpy
 import numpy as np
@@ -13,25 +13,13 @@ import pyarrow as pa
 from deephaven import DHError, new_table, dtypes, arrow
 from deephaven.column import Column
 from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE, NULL_CHAR
-from deephaven.dtypes import DType
-from deephaven.numpy import column_to_numpy_array, _make_input_column
+from deephaven.jcompat import _j_array_to_series
+from deephaven.numpy import _make_input_column
 from deephaven.table import Table
 
 _NULL_BOOLEAN_AS_BYTE = jpy.get_type("io.deephaven.util.BooleanUtils").NULL_BOOLEAN_AS_BYTE
-_JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
 _JDataAccessHelpers = jpy.get_type("io.deephaven.engine.table.impl.DataAccessHelpers")
 _is_dtype_backend_supported = pd.__version__ >= "2.0.0"
-
-_DTYPE_NULL_MAPPING: Dict[DType, Tuple] = {
-    dtypes.bool_: (_NULL_BOOLEAN_AS_BYTE, pd.BooleanDtype),
-    dtypes.byte: (NULL_BYTE, pd.Int8Dtype),
-    dtypes.short: (NULL_SHORT, pd.Int16Dtype),
-    dtypes.char: (NULL_CHAR, pd.UInt16Dtype),
-    dtypes.int32: (NULL_INT, pd.Int32Dtype),
-    dtypes.int64: (NULL_LONG, pd.Int64Dtype),
-    dtypes.float32: (NULL_FLOAT, pd.Float32Dtype),
-    dtypes.float64: (NULL_DOUBLE, pd.Float64Dtype),
-}
 
 
 def _column_to_series(table: Table, col_def: Column, conv_null: bool) -> pd.Series:
@@ -51,29 +39,15 @@ def _column_to_series(table: Table, col_def: Column, conv_null: bool) -> pd.Seri
     """
     try:
         data_col = _JDataAccessHelpers.getColumn(table.j_table, col_def.name)
-        if conv_null and col_def.data_type == dtypes.bool_:
-            j_array = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(data_col.getDirect())
-            np_array = np.frombuffer(j_array, dtype=np.byte)
-            s = pd.Series(data=np_array, dtype=pd.Int8Dtype(), copy=False)
-            s.mask(s == _NULL_BOOLEAN_AS_BYTE, inplace=True)
-            return s.astype(pd.BooleanDtype(), copy=False)
-
-        np_array = column_to_numpy_array(col_def, data_col.getDirect())
-        if conv_null and (null_pair := _DTYPE_NULL_MAPPING.get(col_def.data_type)) is not None:
-            nv = null_pair[0]
-            pd_ex_dtype = null_pair[1]
-            s = pd.Series(data=np_array, dtype=pd_ex_dtype(), copy=False)
-            s.mask(s == nv, inplace=True)
-        else:
-            s = pd.Series(data=np_array, copy=False)
-        return s
+        j_array = data_col.getDirect()
+        return _j_array_to_series(col_def.data_type, j_array, conv_null)
     except DHError:
         raise
     except Exception as e:
         raise DHError(e, message="failed to create a pandas Series for {col}") from e
 
 
-_DTYPE_MAPPING_PYARROW = {
+_PANDAS_ARROW_TYPE_MAP = {
     pa.int8(): pd.ArrowDtype(pa.int8()),
     pa.int16(): pd.ArrowDtype(pa.int16()),
     pa.int32(): pd.ArrowDtype(pa.int32()),
@@ -90,7 +64,7 @@ _DTYPE_MAPPING_PYARROW = {
     pa.timestamp('ns', tz='UTC'): pd.ArrowDtype(pa.timestamp('ns', tz='UTC')),
 }
 
-_DTYPE_MAPPING_NUMPY_NULLABLE = {
+_PANDAS_NULLABLE_TYPE_MAP = {
     pa.int8(): pd.Int8Dtype(),
     pa.int16(): pd.Int16Dtype(),
     pa.uint16(): pd.UInt16Dtype(),
@@ -107,8 +81,8 @@ _DTYPE_MAPPING_NUMPY_NULLABLE = {
 }
 
 _PYARROW_TO_PANDAS_TYPE_MAPPERS = {
-    "pyarrow": _DTYPE_MAPPING_PYARROW.get,
-    "numpy_nullable": _DTYPE_MAPPING_NUMPY_NULLABLE.get,
+    "pyarrow": _PANDAS_ARROW_TYPE_MAP.get,
+    "numpy_nullable": _PANDAS_NULLABLE_TYPE_MAP.get,
 }
 
 
@@ -180,7 +154,7 @@ def to_pandas(table: Table, cols: List[str] = None,
         raise DHError(e, "failed to create a pandas DataFrame from table.") from e
 
 
-_EX_DTYPE_NULL_MAP = {
+_PANDAS_EXTYPE_DH_NULL_MAP = {
     # This reflects the fact that in the server we use NULL_BOOLEAN_AS_BYTE - the byte encoding of null boolean to
     # translate boxed Boolean to/from primitive bytes
     pd.BooleanDtype: _NULL_BOOLEAN_AS_BYTE,
@@ -209,7 +183,7 @@ def _map_na(array: [np.ndarray, pd.api.extensions.ExtensionArray]):
     if not isinstance(pd_dtype, pd.api.extensions.ExtensionDtype):
         return array
 
-    dh_null = _EX_DTYPE_NULL_MAP.get(type(pd_dtype)) or _EX_DTYPE_NULL_MAP.get(pd_dtype)
+    dh_null = _PANDAS_EXTYPE_DH_NULL_MAP.get(type(pd_dtype)) or _PANDAS_EXTYPE_DH_NULL_MAP.get(pd_dtype)
     # To preserve NaNs in floating point arrays, Pandas doesn't distinguish NaN/Null as far as NA testing is
     # concerned, thus its fillna() method will replace both NaN/Null in the data.
     if isinstance(pd_dtype, (pd.Float32Dtype, pd.Float64Dtype)) and isinstance(getattr(array, "_data"), np.ndarray):
@@ -276,3 +250,4 @@ def to_table(df: pd.DataFrame, cols: List[str] = None) -> Table:
         raise
     except Exception as e:
         raise DHError(e, "failed to create a Deephaven Table from a pandas DataFrame.") from e
+

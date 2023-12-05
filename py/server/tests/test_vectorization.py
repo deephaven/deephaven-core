@@ -7,24 +7,24 @@ import unittest
 from typing import Optional
 import numpy as np
 
-import deephaven
 from deephaven import DHError, empty_table, dtypes
 from deephaven import new_table
 from deephaven.column import int_col
 from deephaven.filters import Filter, and_
-from deephaven.table import dh_vectorize
+import deephaven._udf as _udf
+from deephaven._udf import _dh_vectorize as dh_vectorize
 from tests.testbase import BaseTestCase
 
 
 class VectorizationTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
-        deephaven.table._test_vectorization = True
-        deephaven.table._vectorized_count = 0
+        _udf.test_vectorization = True
+        _udf.vectorized_count = 0
 
     def tearDown(self) -> None:
-        deephaven.table._test_vectorization = False
-        deephaven.table._vectorized_count = 0
+        _udf.test_vectorization = False
+        _udf.vectorized_count = 0
         super().tearDown()
 
     def test_vectorization_exceptions(self):
@@ -66,7 +66,7 @@ class VectorizationTestCase(BaseTestCase):
 
         t = empty_table(1).update("X = py_plus(ii, ii)")
 
-        self.assertEqual(deephaven.table._vectorized_count, 1)
+        self.assertEqual(_udf.vectorized_count, 1)
 
     def test_vectorized_no_arg(self):
         def py_random() -> int:
@@ -74,7 +74,7 @@ class VectorizationTestCase(BaseTestCase):
 
         t = empty_table(1).update("X = py_random()")
 
-        self.assertEqual(deephaven.table._vectorized_count, 1)
+        self.assertEqual(_udf.vectorized_count, 1)
 
     def test_vectorized_const_arg(self):
         def py_const(seed) -> int:
@@ -84,27 +84,27 @@ class VectorizationTestCase(BaseTestCase):
         expected_count = 0
         t = empty_table(10).update("X = py_const(3)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         seed = 10
         t = empty_table(10).update("X = py_const(seed)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = empty_table(10).update("X = py_const(30*1024*1024*1024)")
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = empty_table(10).update("X = py_const(30000000000L)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = empty_table(10).update("X = py_const(100.01)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = empty_table(10).update("X = py_const(100.01f)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         with self.assertRaises(DHError) as cm:
             t = empty_table(1).update("X = py_const(NULL_INT)")
@@ -115,26 +115,26 @@ class VectorizationTestCase(BaseTestCase):
 
         t = empty_table(10).update("X = py_const_str(`Deephaven`)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = empty_table(10).update("X = py_const_str(null)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = empty_table(10).update("X = py_const_str(true)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = t.update("Y = py_const_str(X)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
     def test_multiple_formulas(self):
         def pyfunc(p1, p2, p3) -> int:
             return p1 + p2 + p3
 
         t = empty_table(1).update("X = i").update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
-        self.assertEqual(deephaven.table._vectorized_count, 2)
+        self.assertEqual(_udf.vectorized_count, 2)
         self.assertIn("33", t.to_string(cols=["Y"]))
         self.assertIn("66", t.to_string(cols=["Z"]))
 
@@ -144,7 +144,7 @@ class VectorizationTestCase(BaseTestCase):
             return p1 + p2 + p3
 
         t = empty_table(1).update("X = i").update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
-        self.assertEqual(deephaven.table._vectorized_count, 1)
+        self.assertEqual(_udf.vectorized_count, 1)
         self.assertIn("33", t.to_string(cols=["Y"]))
         self.assertIn("66", t.to_string(cols=["Z"]))
 
@@ -157,11 +157,11 @@ class VectorizationTestCase(BaseTestCase):
 
         with self.assertRaises(DHError) as cm:
             t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where("pyfunc_int(I, 3, J)")
-        self.assertEqual(deephaven.table._vectorized_count, 0)
+        self.assertEqual(_udf.vectorized_count, 0)
         self.assertIn("boolean required", str(cm.exception))
 
         t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where("pyfunc_bool(I, 3, J)")
-        self.assertEqual(deephaven.table._vectorized_count, 1)
+        self.assertEqual(_udf.vectorized_count, 1)
         self.assertGreater(t.size, 1)
 
     def test_multiple_filters(self):
@@ -171,11 +171,11 @@ class VectorizationTestCase(BaseTestCase):
         conditions = ["pyfunc_bool(I, 3, J)", "pyfunc_bool(i, 10, ii)"]
         filters = Filter.from_(conditions)
         t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where(filters)
-        self.assertEqual(2, deephaven.table._vectorized_count)
+        self.assertEqual(2, _udf.vectorized_count)
 
         filter_and = and_(filters)
         t1 = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where(filter_and)
-        self.assertEqual(4, deephaven.table._vectorized_count)
+        self.assertEqual(4, _udf.vectorized_count)
         self.assertEqual(t1.size, t.size)
         self.assertEqual(9, t.size)
 
@@ -187,11 +187,11 @@ class VectorizationTestCase(BaseTestCase):
         conditions = ["pyfunc_bool(I, 3, J)", "pyfunc_bool(i, 10, ii)"]
         filters = Filter.from_(conditions)
         t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where(filters)
-        self.assertEqual(1, deephaven.table._vectorized_count)
+        self.assertEqual(1, _udf.vectorized_count)
 
         filter_and = and_(filters)
         t1 = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where(filter_and)
-        self.assertEqual(1, deephaven.table._vectorized_count)
+        self.assertEqual(1, _udf.vectorized_count)
         self.assertEqual(t1.size, t.size)
         self.assertEqual(9, t.size)
 
@@ -258,7 +258,7 @@ class VectorizationTestCase(BaseTestCase):
 
         t = empty_table(100).update(["X = 0.1 * i", "SincXS=((sinc(X)))"])
         self.assertEqual(t.columns[1].data_type, dtypes.double)
-        self.assertEqual(deephaven.table._vectorized_count, 1)
+        self.assertEqual(_udf.vectorized_count, 1)
 
         def sinc2(x):
             return np.sinc(x)
@@ -272,7 +272,7 @@ class VectorizationTestCase(BaseTestCase):
             return None if total % 3 == 0 else total
 
         t = empty_table(10).update("X = i").update(["Y = pyfunc(X, i, 13)", "Z = pyfunc(X, ii, 66)"])
-        self.assertEqual(deephaven.table._vectorized_count, 2)
+        self.assertEqual(_udf.vectorized_count, 2)
         self.assertIn("13", t.to_string(cols=["Y"]))
         self.assertIn("null", t.to_string())
         self.assertEqual(t.columns[1].data_type, dtypes.long)
