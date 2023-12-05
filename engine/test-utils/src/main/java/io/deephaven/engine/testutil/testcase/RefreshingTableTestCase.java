@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
@@ -61,7 +62,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         // initialize the unit test's execution context
         executionContext = TestExecutionContext.createForUnitTests().open();
 
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final PeriodicUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.enableUnitTestMode();
         updateGraph.resetForUnitTests(false);
         SystemicObjectTracker.markThreadSystemic();
@@ -79,7 +80,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     @Override
     public void tearDown() throws Exception {
         ChunkPoolReleaseTracking.checkAndDisable();
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final PeriodicUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.setSerialTableOperationsSafe(oldSerialSafe);
         QueryCompiler.setLogEnabled(oldLogEnabled);
 
@@ -163,7 +164,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     protected static void simulateShiftAwareStep(final GenerateTableUpdates.SimulationProfile simulationProfile,
             final String ctxt, int targetUpdateSize, Random random, QueryTable table, ColumnInfo[] columnInfo,
             EvalNuggetInterface[] en) {
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final PeriodicUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates
                 .generateShiftAwareTableUpdates(simulationProfile, targetUpdateSize, random, table, columnInfo));
         TstUtils.validate(ctxt, en);

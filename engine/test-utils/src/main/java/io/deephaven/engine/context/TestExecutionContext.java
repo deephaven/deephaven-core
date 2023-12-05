@@ -2,7 +2,6 @@ package io.deephaven.engine.context;
 
 import io.deephaven.auth.AuthContext;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.util.thread.ThreadInitializationFactory;
 

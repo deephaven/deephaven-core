@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListenerAdapter;
 import io.deephaven.engine.table.impl.util.ShiftObliviousUpdateCoalescer;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -118,7 +119,7 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random) {
-            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            final PeriodicUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             updateGraph.runWithinUnitTestCycle(() -> {
                 GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, leftSize,
                         random, leftTable, leftColumnInfo);
