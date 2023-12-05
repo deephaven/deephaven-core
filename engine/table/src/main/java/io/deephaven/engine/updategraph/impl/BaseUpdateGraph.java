@@ -216,9 +216,9 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     private final UpdateGraphLock lock;
 
     /**
-     * When UpdateGraph.printDependencyInformation is set to true, the UpdateGraph will print debug
-     * information for each notification that has dependency information; as well as which notifications have been
-     * completed and are outstanding.
+     * When UpdateGraph.printDependencyInformation is set to true, the UpdateGraph will print debug information for each
+     * notification that has dependency information; as well as which notifications have been completed and are
+     * outstanding.
      */
     private final boolean printDependencyInformation =
             Configuration.getInstance().getBooleanWithDefault("UpdateGraph.printDependencyInformation", false);
@@ -229,6 +229,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
 
     /**
      * TODO: ADD JAVADOC ANYWAY
+     * 
      * @param name
      * @param allowUnitTestMode
      * @param log
@@ -1038,7 +1039,8 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
      * the name provided to this builder.
      *
      * @param name the name of the new update graph
-     * @param construct a {@link Supplier} that constructs an UpdateGraph if no update graph with the name already exists. The Supplier must provide an update graph with the given name.
+     * @param construct a {@link Supplier} that constructs an UpdateGraph if no update graph with the name already
+     *        exists. The Supplier must provide an update graph with the given name.
      *
      * @throws IllegalStateException if an UpdateGraph with the provided name already exists
      */
@@ -1059,7 +1061,8 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
      * Returns an existing UpdateGraph with the name provided to this Builder, if one exists, else returns a new
      * UpdateGraph.
      *
-     * @param construct a {@link Supplier} that constructs an UpdateGraph if no update graph with the name already exists. The Supplier must provide an update graph with the given name.
+     * @param construct a {@link Supplier} that constructs an UpdateGraph if no update graph with the name already
+     *        exists. The Supplier must provide an update graph with the given name.
      *
      * @return the UpdateGraph
      */

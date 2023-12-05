@@ -95,7 +95,8 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
     private boolean unitTestMode;
     private ExecutorService unitTestRefreshThreadPool;
 
-    public static final String DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP = "PeriodicUpdateGraph.targetCycleDurationMillis";
+    public static final String DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP =
+            "PeriodicUpdateGraph.targetCycleDurationMillis";
     private final long defaultTargetCycleDurationMillis;
     private volatile long targetCycleDurationMillis;
 

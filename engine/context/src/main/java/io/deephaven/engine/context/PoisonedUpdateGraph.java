@@ -120,6 +120,5 @@ public class PoisonedUpdateGraph implements UpdateGraph {
     }
 
     @Override
-    public void stop() {
-    }
+    public void stop() {}
 }
