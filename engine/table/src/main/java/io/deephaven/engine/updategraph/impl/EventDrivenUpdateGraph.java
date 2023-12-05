@@ -3,7 +3,6 @@ package io.deephaven.engine.updategraph.impl;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -61,7 +60,7 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
         }
         final long nowNanos = System.nanoTime();
         synchronized (this) {
-            mabyeFlushUpdatePerformance(nowNanos, nowNanos);
+            maybeFlushUpdatePerformance(nowNanos, nowNanos);
         }
     }
 

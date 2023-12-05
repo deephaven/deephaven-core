@@ -1043,7 +1043,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
             expectedEndTimeNanos =
                     Math.max(expectedEndTimeNanos, nowNanos + MILLISECONDS.toNanos(minimumInterCycleSleep));
         }
-        mabyeFlushUpdatePerformance(nowNanos, expectedEndTimeNanos);
+        maybeFlushUpdatePerformance(nowNanos, expectedEndTimeNanos);
         waitForEndTime(expectedEndTimeNanos);
     }
 

@@ -858,7 +858,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     }
 
 
-    void mabyeFlushUpdatePerformance(final long nowNanos, final long checkTime) {
+    void maybeFlushUpdatePerformance(final long nowNanos, final long checkTime) {
         if (checkTime >= nextUpdatePerformanceTrackerFlushTimeNanos) {
             nextUpdatePerformanceTrackerFlushTimeNanos =
                     nowNanos + MILLISECONDS.toNanos(UpdatePerformanceTracker.REPORT_INTERVAL_MILLIS);
