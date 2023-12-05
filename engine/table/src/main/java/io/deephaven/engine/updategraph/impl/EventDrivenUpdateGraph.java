@@ -42,11 +42,6 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
     }
 
     @Override
-    protected LogEntry logCycleExtra(LogEntry entry) {
-        return entry;
-    }
-
-    @Override
     public int parallelismFactor() {
         return 1;
     }

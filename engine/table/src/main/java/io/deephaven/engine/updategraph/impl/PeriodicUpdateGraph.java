@@ -15,7 +15,6 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -99,17 +98,6 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
             "PeriodicUpdateGraph.targetCycleDurationMillis";
     private final long defaultTargetCycleDurationMillis;
     private volatile long targetCycleDurationMillis;
-
-    /**
-     * Accumulated delays due to intracycle yields for the current cycle (or previous, if idle).
-     */
-    // TODO: WHY UNUSED?
-    private long currentCycleYieldTotalNanos;
-    /**
-     * Accumulated delays due to intracycle sleeps for the current cycle (or previous, if idle).
-     */
-    private long currentCycleSleepTotalNanos;
-
 
     /**
      * The number of threads in our executor service for dispatching notifications. If 1, then we don't actually use the
@@ -259,6 +247,11 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
      */
     public long getTargetCycleDurationMillis() {
         return targetCycleDurationMillis;
+    }
+
+    @Override
+    public boolean isCycleOnBudget(long cycleTimeNanos) {
+        return cycleTimeNanos <= MILLISECONDS.toNanos(targetCycleDurationMillis);
     }
 
     /**
@@ -928,16 +921,6 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
             return updateThreads.length;
         }
     }
-
-    @Override
-    protected LogEntry logCycleExtra(LogEntry entry) {
-        entry.append("ms, yieldTime=");
-        entry = appendAsMillisFromNanos(entry, currentCycleYieldTotalNanos);
-        entry = entry.append("ms, sleepTime=");
-        entry = appendAsMillisFromNanos(entry, currentCycleSleepTotalNanos);
-        return entry;
-    }
-
 
     @TestUseOnly
     private class ControlledNotificationProcessor implements NotificationProcessor {

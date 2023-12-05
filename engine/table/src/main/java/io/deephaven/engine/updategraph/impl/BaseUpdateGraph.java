@@ -143,11 +143,10 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
         public static final int MAX_DOUBLING_LEN = 1024;
 
         synchronized void accumulate(
-                final long targetCycleDurationMillis,
+                final boolean onBudget,
                 final long cycleTimeNanos,
                 final long safePoints,
                 final long safePointPauseTimeMillis) {
-            final boolean onBudget = targetCycleDurationMillis * 1000 * 1000 >= cycleTimeNanos;
             if (onBudget) {
                 ++cyclesOnBudget;
             }
@@ -788,7 +787,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     private void computeStatsAndLogCycle(final long cycleTimeNanos) {
         final long safePointPauseTimeMillis = jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
         accumulatedCycleStats.accumulate(
-                getTargetCycleDurationMillis(),
+                isCycleOnBudget(cycleTimeNanos),
                 cycleTimeNanos,
                 jvmIntrospectionContext.deltaSafePointPausesCount(),
                 safePointPauseTimeMillis);
@@ -815,7 +814,6 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             }
             entry = entry.append("ms, lockWaitTime=");
             entry = appendAsMillisFromNanos(entry, currentCycleLockWaitTotalNanos);
-            entry = logCycleExtra(entry);
             entry.append("ms").endl();
             return;
         }
@@ -829,17 +827,15 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
         }
     }
 
-    protected abstract LogEntry logCycleExtra(LogEntry entry);
-
     /**
-     * Get the target duration of an update cycle, including the updating phase and the idle phase. This is also the
-     * target interval between the start of one cycle and the start of the next.
+     * Is the provided cycle time on budget?
      *
-     * @return The target cycle duration
+     * @param cycleTimeNanos the cycle time, in nanoseconds
+     *
+     * @return true if the cycle time is within the desired budget
      */
-    public long getTargetCycleDurationMillis() {
-        // TODO: REMOVE THIS FROM THE BASE AND KEEP ONLY IN THE MAIN
-        return 0;
+    public boolean isCycleOnBudget(long cycleTimeNanos) {
+        return true;
     }
 
     private void logSuppressedCycles() {
