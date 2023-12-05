@@ -181,7 +181,7 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
         private FillContext(
                 final int chunkCapacity,
                 @NotNull final ColumnSource<Integer> depthSource,
-                @NotNull final ColumnSource[] groupByValueSources,
+                @NotNull final ColumnSource<?>[] groupByValueSources,
                 final SharedContext sharedContext) {
             depthContext = depthSource.makeGetContext(chunkCapacity, sharedContext);
             groupByValueContexts = Stream.of(groupByValueSources)
@@ -201,7 +201,7 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
     }
 
     @Override
-    public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+    public ChunkSource.FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
         return new FillContext(chunkCapacity, depthSource, groupByValueSources, sharedContext);
     }
 }
