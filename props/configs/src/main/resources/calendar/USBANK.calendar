@@ -15,7 +15,7 @@
         Last updated 11/10/2023
     </description>
     <default>
-        <businessPeriod><open>09:00</open><close>17:00</close></businessPeriod>
+        <businessTime><open>09:00</open><close>17:00</close></businessTime>
         <weekend>Saturday</weekend>
         <weekend>Sunday</weekend>
     </default>

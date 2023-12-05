@@ -9,6 +9,6 @@
     <firstValidDate>1500-01-01</firstValidDate>
     <lastValidDate>2500-12-31</lastValidDate>
     <default>
-        <businessPeriod><open>00:00</open><close>23:59:59.999999999</close></businessPeriod>
+        <businessTime><open>00:00</open><close>23:59:59.999999999</close></businessTime>
     </default>
 </calendar>

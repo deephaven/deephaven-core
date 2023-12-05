@@ -162,7 +162,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
     public void testToString() {
         final CalendarDay<Instant> multi = new CalendarDay<>(new TimeRange[] {period1, period2});
         assertEquals(
-                "BusinessDay{openPeriods=[BusinessPeriod{start=2017-03-11T15:00:00Z, end=2017-03-11T16:00:00Z}, BusinessPeriod{start=2017-03-11T17:00:00Z, end=2017-03-11T22:00:00Z}]}",
+                "CalendarDay{businessTimeRanges=[TimeRange{start=2017-03-11T15:00:00Z, end=2017-03-11T16:00:00Z}, TimeRange{start=2017-03-11T17:00:00Z, end=2017-03-11T22:00:00Z}]}",
                 multi.toString());
     }
 }

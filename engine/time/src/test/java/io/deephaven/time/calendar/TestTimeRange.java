@@ -17,7 +17,7 @@ import static org.junit.Assert.assertNotEquals;
 
 public class TestTimeRange extends BaseArrayTestCase {
 
-    public void testBusinessPeriod() {
+    public void testTimeRange() {
         final Instant open1 = DateTimeUtils.parseInstant("2017-03-11T10:00:00.000000000 NY");
         final Instant close1 = DateTimeUtils.parseInstant("2017-03-11T11:00:00.000000000 NY");
 
@@ -101,6 +101,6 @@ public class TestTimeRange extends BaseArrayTestCase {
         final LocalTime start = LocalTime.of(1, 2, 3);
         final LocalTime end = LocalTime.of(7, 8, 9);
         final TimeRange<LocalTime> p1 = new TimeRange<>(start, end);
-        assertEquals("BusinessPeriod{start=01:02:03, end=07:08:09}", p1.toString());
+        assertEquals("TimeRange{start=01:02:03, end=07:08:09}", p1.toString());
     }
 }

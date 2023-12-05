@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *     <description>New York Stock Exchange Calendar</description>
  *     <timeZone>America/New_York</timeZone>
  *     <default>
- *          <businessPeriod><open>09:30</open><close>16:00</close></businessPeriod>
+ *          <businessTime><open>09:30</open><close>16:00</close></businessTime>
  *          <weekend>Saturday</weekend>
  *          <weekend>Sunday</weekend>
  *      </default>
@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *      </holiday>
  *      <holiday>
  *          <date>20020705</date>
- *          <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+ *          <businessTime><open>09:30</open><close>13:00</close></businessTime>
  *      </holiday>
  * </calendar>
  * }
@@ -142,7 +142,7 @@ public class BusinessCalendarXMLParser {
     }
 
     private static CalendarDay<LocalTime> parseCalendarDaySchedule(final Element element) throws Exception {
-        final List<Element> businessPeriods = element.getChildren("businessPeriod");
+        final List<Element> businessPeriods = element.getChildren("businessTime");
         return businessPeriods.isEmpty() ? CalendarDay.HOLIDAY
                 : new CalendarDay<>(parseBusinessRanges(businessPeriods));
     }

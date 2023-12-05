@@ -11,8 +11,8 @@
         JPOSE - Tokyo Stock Exchange Business Calendar for tests.
     </description>
     <default>
-        <businessPeriod><open>09:00</open><close>11:30</close></businessPeriod>
-        <businessPeriod><open>12:30</open><close>15:00</close></businessPeriod>
+        <businessTime><open>09:00</open><close>11:30</close></businessTime>
+        <businessTime><open>12:30</open><close>15:00</close></businessTime>
         <weekend>Saturday</weekend>
         <weekend>Sunday</weekend>
     </default>

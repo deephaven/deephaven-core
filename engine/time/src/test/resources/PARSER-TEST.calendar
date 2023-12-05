@@ -9,7 +9,7 @@
     <firstValidDate>2000-01-02</firstValidDate>
     <lastValidDate>2030-11-12</lastValidDate>
     <default>
-        <businessPeriod><open>06:14</open><close>12:34</close></businessPeriod>
+        <businessTime><open>06:14</open><close>12:34</close></businessTime>
         <weekend>Monday</weekend>
         <weekend>Wednesday</weekend>
     </default>
@@ -18,6 +18,6 @@
     </holiday>
     <holiday>
         <date>2015-04-06</date>
-        <businessPeriod><open>14:15</open><close>16:46</close></businessPeriod>
+        <businessTime><open>14:15</open><close>16:46</close></businessTime>
     </holiday>
 </calendar>

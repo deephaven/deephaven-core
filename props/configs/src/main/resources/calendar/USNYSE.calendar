@@ -16,7 +16,7 @@
         Last updated 11/10/2023
     </description>
     <default>
-        <businessPeriod><open>09:30</open><close>16:00</close></businessPeriod>
+        <businessTime><open>09:30</open><close>16:00</close></businessTime>
         <weekend>Saturday</weekend>
         <weekend>Sunday</weekend>
     </default>
@@ -130,7 +130,7 @@
     </holiday>
     <holiday>
         <date>2002-07-05</date>
-        <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2002-09-02</date>
@@ -140,11 +140,11 @@
     </holiday>
     <holiday>
     	<date>2002-11-29</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2002-12-24</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2002-12-25</date>
@@ -166,7 +166,7 @@
     </holiday>
     <holiday>
     	<date>2003-07-03</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2003-07-04</date>
@@ -179,18 +179,18 @@
     </holiday>
     <holiday>
     	<date>2003-11-28</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2003-12-24</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2003-12-25</date>
     </holiday>
     <holiday>
     	<date>2003-12-26</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2004-01-01</date>
@@ -221,7 +221,7 @@
     </holiday>
     <holiday>
     	<date>2004-11-26</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2004-12-24</date>
@@ -249,7 +249,7 @@
     </holiday>
     <holiday>
     	<date>2005-11-25</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2005-12-26</date>
@@ -271,7 +271,7 @@
     </holiday>
     <holiday>
     	<date>2006-07-03</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2006-07-04</date>
@@ -284,7 +284,7 @@
     </holiday>
     <holiday>
     	<date>2006-11-24</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2006-12-25</date>
@@ -309,7 +309,7 @@
     </holiday>
     <holiday>
     	<date>2007-07-03</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2007-07-04</date>
@@ -322,11 +322,11 @@
     </holiday>
     <holiday>
     	<date>2007-11-23</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2007-12-24</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2007-12-25</date>
@@ -348,7 +348,7 @@
     </holiday>
     <holiday>
     	<date>2008-07-03</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2008-07-04</date>
@@ -361,11 +361,11 @@
     </holiday>
     <holiday>
     	<date>2008-11-28</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2008-12-24</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2008-12-25</date>
@@ -396,11 +396,11 @@
     </holiday>
     <holiday>
     	<date>2009-11-27</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2009-12-24</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2009-12-25</date>
@@ -431,7 +431,7 @@
     </holiday>
     <holiday>
     	<date>2010-11-26</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2010-12-24</date>
@@ -459,7 +459,7 @@
     </holiday>
     <holiday>
     	<date>2011-11-25</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2011-12-26</date>
@@ -481,7 +481,7 @@
     </holiday>
     <holiday>
     	<date>2012-07-03</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2012-07-04</date>
@@ -500,11 +500,11 @@
     </holiday>
     <holiday>
     	<date>2012-11-23</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2012-12-24</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2012-12-25</date>
@@ -526,7 +526,7 @@
     </holiday>
     <holiday>
     	<date>2013-07-03</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2013-07-04</date>
@@ -539,11 +539,11 @@
     </holiday>
     <holiday>
     	<date>2013-11-29</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2013-12-24</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2013-12-25</date>
@@ -565,7 +565,7 @@
     </holiday>
     <holiday>
     	<date>2014-07-03</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2014-07-04</date>
@@ -578,11 +578,11 @@
     </holiday>
     <holiday>
     	<date>2014-11-28</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2014-12-24</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2014-12-25</date>
@@ -613,11 +613,11 @@
     </holiday>
     <holiday>
     	<date>2015-11-27</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2015-12-24</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2015-12-25</date>
@@ -648,7 +648,7 @@
     </holiday>
     <holiday>
     	<date>2016-11-25</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2016-12-26</date>
@@ -670,7 +670,7 @@
     </holiday>
     <holiday>
     	<date>2017-07-03</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2017-07-04</date>
@@ -683,7 +683,7 @@
     </holiday>
     <holiday>
     	<date>2017-11-24</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2017-12-25</date>
@@ -705,7 +705,7 @@
     </holiday>
     <holiday>
     	<date>2018-07-03</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2018-07-04</date>
@@ -718,14 +718,14 @@
     </holiday>
     <holiday>
     	<date>2018-11-23</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
         <date>2018-12-05</date>
     </holiday>
     <holiday>
     	<date>2018-12-24</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2018-12-25</date>
@@ -747,7 +747,7 @@
     </holiday>
     <holiday>
     	<date>2019-07-03</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2019-07-04</date>
@@ -760,11 +760,11 @@
     </holiday>
     <holiday>
     	<date>2019-11-29</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2019-12-24</date>
-    	<businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+    	<businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
     	<date>2019-12-25</date>
@@ -795,11 +795,11 @@
     </holiday>
     <holiday>
         <date>2020-11-27</date>
-        <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
         <date>2020-12-24</date>
-        <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
         <date>2020-12-25</date>
@@ -830,7 +830,7 @@
     </holiday>
     <holiday>
         <date>2021-11-26</date>
-        <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
         <date>2021-12-24</date>
@@ -858,7 +858,7 @@
     </holiday>
     <holiday>
         <date>2022-11-25</date>
-        <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
         <date>2022-12-26</date>
@@ -883,7 +883,7 @@
     </holiday>
     <holiday>
         <date>2023-07-03</date>
-        <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
         <date>2023-07-04</date>
@@ -896,7 +896,7 @@
     </holiday>
     <holiday>
         <date>2023-11-24</date>
-        <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
         <date>2023-12-25</date>
@@ -921,7 +921,7 @@
     </holiday>
     <holiday>
         <date>2024-07-03</date>
-        <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
         <date>2024-07-04</date>
@@ -934,11 +934,11 @@
     </holiday>
     <holiday>
         <date>2024-11-29</date>
-        <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
         <date>2024-12-24</date>
-        <businessPeriod><open>10:30</open><close>14:00</close></businessPeriod>
+        <businessTime><open>10:30</open><close>14:00</close></businessTime>
     </holiday>
     <holiday>
         <date>2024-12-25</date>
@@ -963,7 +963,7 @@
     </holiday>
     <holiday>
         <date>2025-07-03</date>
-        <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
         <date>2025-07-04</date>
@@ -976,11 +976,11 @@
     </holiday>
     <holiday>
         <date>2025-11-28</date>
-        <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
     </holiday>
     <holiday>
         <date>2025-12-24</date>
-        <businessPeriod><open>10:30</open><close>14:00</close></businessPeriod>
+        <businessTime><open>10:30</open><close>14:00</close></businessTime>
     </holiday>
     <holiday>
         <date>2025-12-25</date>
