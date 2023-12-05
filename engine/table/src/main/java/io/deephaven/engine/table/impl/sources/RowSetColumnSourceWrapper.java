@@ -10,10 +10,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import org.apache.commons.lang3.NotImplementedException;
@@ -142,7 +139,11 @@ public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet> {
     }
 
     @Override
-    public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, @NotNull RowSet fullSet,
+    public WritableRowSet match(
+            boolean invertMatch,
+            boolean usePrev,
+            boolean caseInsensitive,
+            @Nullable final DataIndex dataIndex,
             @NotNull RowSet mapper, Object... keys) {
         throw new NotImplementedException("RowSetColumnSourceWrapper.match");
     }

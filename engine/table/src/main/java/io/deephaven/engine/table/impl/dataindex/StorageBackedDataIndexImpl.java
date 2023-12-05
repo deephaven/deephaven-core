@@ -290,7 +290,7 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
                         final Table mergedOutput = transformed.merge();
 
                         final QueryTable result =
-                                wrappedRowSetTable((QueryTable) mergedOutput.select(), INDEX_COL_NAME);
+                                indexTableWrapper((QueryTable) mergedOutput.select(), INDEX_COL_NAME);
                         result.setRefreshing(columnSourceManager.locationTable().isRefreshing());
 
                         return result;

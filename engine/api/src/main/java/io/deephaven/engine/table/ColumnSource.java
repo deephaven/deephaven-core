@@ -39,11 +39,24 @@ public interface ColumnSource<T>
         return ChunkType.fromElementType(dataType);
     }
 
+    /**
+     * Return a {@link RowSet row set} where the values in the column source match the given keys.
+     *
+     * @param invertMatch Whether to invert the match, i.e. return the rows where the values do not match the given keys
+     * @param usePrev Whether to use the previous values for the ColumnSource
+     * @param caseInsensitive Whether to perform a case insensitive match
+     * @param dataIndex An optional data index that can be used to accelerate the match (the index table must be
+     *        included in snapshot controls or otherwise guaranteed to be current)
+     * @param mapper Restrict results to this row set
+     * @param keys The keys to match in the column
+     *
+     * @return The rows that match the given keys
+     */
     WritableRowSet match(
             boolean invertMatch,
             boolean usePrev,
             boolean caseInsensitive,
-            @NotNull final RowSet fullSet,
+            @Nullable final DataIndex dataIndex,
             @NotNull RowSet mapper,
             Object... keys);
 

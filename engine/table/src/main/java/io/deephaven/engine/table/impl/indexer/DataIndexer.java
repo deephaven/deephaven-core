@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.indexer;
 
+import com.google.common.collect.Sets;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -106,14 +107,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @return the DataIndex, or null if one does not exist
      */
     public DataIndex getDataIndex(final ColumnSource<?>... keyColumns) {
-        final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = root;
-        if (localRoot == EMPTY_ROOT) {
-            return null;
-        }
-        // noinspection SynchronizationOnLocalVariableOrMethodParameter
-        synchronized (localRoot) {
-            return findIndex(localRoot, Arrays.asList(keyColumns));
-        }
+        return getDataIndexInternal(Arrays.asList(keyColumns));
     }
 
     /**
@@ -137,17 +131,98 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         final Collection<ColumnSource<?>> keyColumns = Arrays.stream(keyColumnNames)
                 .map(columnSourceMap::get).collect(Collectors.toList());
 
-        // If we don't have an index, return null.
-        if (!hasDataIndex(keyColumns)) {
+        return getDataIndexInternal(keyColumns);
+    }
+
+    @Nullable
+    private DataIndex getDataIndexInternal(final Collection<ColumnSource<?>> keyColumns) {
+        // Return null if there are no indexes.
+        final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = root;
+        if (keyColumns.isEmpty() || localRoot == EMPTY_ROOT) {
             return null;
         }
 
-        // Return an index if one exists.
-        final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = root;
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (localRoot) {
-            return findIndex(ensureRoot(), keyColumns);
+            // Only return a valid index.
+            final DataIndex dataIndex = findIndex(localRoot, keyColumns);
+            if (dataIndex == null || !((BaseDataIndex) dataIndex).validate()) {
+                return null;
+            }
+            // Add this index to the current liveness scope so it isn't released while in use.
+            ((BaseDataIndex) dataIndex).manageWithCurrentScope();
+            return dataIndex;
         }
+    }
+
+    /**
+     * Return a {@link DataIndex} for a strict subset of the given key columns, or null if no such index exists. Will
+     * choose the data index that results in the largest index table, following the assumption that the largest index
+     * table will divide the source table into the most specific partitions.
+     *
+     * @param sourceTable The table that is indexed
+     * @param keyColumnNames The column names to use for the index
+     *
+     * @return The optimal partial index, or null if no such index exists
+     */
+    @Nullable
+    public DataIndex getOptimalPartialIndex(final Table sourceTable, final String... keyColumnNames) {
+        final Map<String, ? extends ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
+        // Verify all the key columns belong to the source table.
+        final Collection<String> missingKeys = Arrays.stream(keyColumnNames)
+                .filter(key -> !columnSourceMap.containsKey(key)).collect(Collectors.toList());
+        if (!missingKeys.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "The following columns were not found in the provide table: " + missingKeys);
+        }
+
+        // Create a collection of the table key columns.
+        final Collection<ColumnSource<?>> keyColumns = Arrays.stream(keyColumnNames)
+                .map(columnSourceMap::get).collect(Collectors.toList());
+
+        return getOptimalPartialIndex(keyColumns);
+    }
+
+    /**
+     * Return a {@link DataIndex} for a strict subset of the given key columns, or null if no such index exists. Will
+     * choose the data index that results in the largest index table, following the assumption that the largest index
+     * table will divide the source table into the most specific partitions.
+     *
+     * @param keyColumns The column sources to consider for the index
+     * @return The optimal partial index, or null if no such index exists
+     */
+    @Nullable
+    public DataIndex getOptimalPartialIndex(final Collection<ColumnSource<?>> keyColumns) {
+        // Return null if there are no indexes.
+        final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = root;
+        if (keyColumns.isEmpty() || localRoot == EMPTY_ROOT) {
+            return null;
+        }
+
+        // Create a power set of the key columns.
+        final Set<ColumnSource<?>> keyColumnSet = new HashSet<>(keyColumns);
+        Set<Set<ColumnSource<?>>> keyColumnPowerSet = Sets.powerSet(keyColumnSet);
+
+        DataIndex optimalIndex = null;
+
+        for (Set<ColumnSource<?>> keyColumnSubset : keyColumnPowerSet) {
+            if (keyColumnSubset.isEmpty() || keyColumnSubset.size() == keyColumnSet.size()) {
+                // Won't consider the empty or full set.
+                continue;
+            }
+
+            // noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized (localRoot) {
+                final DataIndex partialIndex = findIndex(localRoot, keyColumnSubset);
+                // The winner is index with the most rows.
+                if (optimalIndex == null ||
+                        (partialIndex != null && partialIndex.table().size() > optimalIndex.table().size())) {
+                    optimalIndex = partialIndex;
+                }
+            }
+        }
+
+        return optimalIndex;
     }
 
     /**

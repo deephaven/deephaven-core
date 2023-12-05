@@ -8,6 +8,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
@@ -115,6 +116,15 @@ public interface WhereFilter extends Filter {
     }
 
     /**
+     * Get all the {@link DataIndex data indexes} that will be used by this filter when executed.
+     *
+     * @param sourceTable the table to filter
+     */
+    default List<DataIndex> getDataIndexes(final Table sourceTable) {
+        return List.of();
+    }
+
+    /**
      * Filter selection to only matching rows.
      *
      * @param selection the indices that should be filtered. The selection must be a subset of fullSet, and may include
@@ -131,7 +141,10 @@ public interface WhereFilter extends Filter {
      */
     @NotNull
     WritableRowSet filter(
-            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev);
+            @NotNull RowSet selection,
+            @NotNull RowSet fullSet,
+            @NotNull Table table,
+            boolean usePrev);
 
     /**
      * Filter selection to only non-matching rows.
@@ -164,7 +177,10 @@ public interface WhereFilter extends Filter {
      */
     @NotNull
     default WritableRowSet filterInverse(
-            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
+            @NotNull RowSet selection,
+            @NotNull RowSet fullSet,
+            @NotNull Table table,
+            boolean usePrev) {
         try (final WritableRowSet regular = filter(selection, fullSet, table, usePrev)) {
             return selection.minus(regular);
         }

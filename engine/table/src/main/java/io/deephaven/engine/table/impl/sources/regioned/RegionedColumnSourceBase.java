@@ -8,8 +8,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.impl.ColumnSourceManager;
-import io.deephaven.engine.table.impl.dataindex.PartitioningIndexProvider;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

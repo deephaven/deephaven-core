@@ -1220,8 +1220,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
 
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
-                        final OperationSnapshotControl snapshotControl =
-                                createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
+                        // Request the data indexes from the filters so we can include any index tables in the
+                        // snapshot control.
+                        final List<DataIndex> dataIndexList = new ArrayList<>();
+                        Arrays.stream(filters).forEach(filter -> dataIndexList.addAll(filter.getDataIndexes(this)));
+                        final NotificationStepSource[] dataIndexTables = dataIndexList.stream()
+                                .map(di -> (NotificationStepSource) di.table())
+                                .toArray(NotificationStepSource[]::new);
+
+                        final OperationSnapshotControl snapshotControl = createSnapshotControlIfRefreshing(
+                                (final BaseTable<?> parent) -> dataIndexTables.length > 0
+                                        ? new OperationSnapshotControlEx(parent, dataIndexTables)
+                                        : new OperationSnapshotControl(parent));
 
                         final Mutable<QueryTable> result = new MutableObject<>();
                         initializeWithSnapshot("where", snapshotControl,
