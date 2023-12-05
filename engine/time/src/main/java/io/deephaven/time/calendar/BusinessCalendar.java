@@ -140,7 +140,8 @@ public class BusinessCalendar extends Calendar {
      * @param lastValidDate last valid date for the business calendar.
      * @param standardBusinessDay business day schedule for a standard business day
      * @param weekendDays weekend days
-     * @param holidays holidays
+     * @param holidays holidays.  Business day schedules for all holidays. A holiday is a date that has a schedule
+     *                 that is different from the schedule for a standard business day or weekend.
      */
     public BusinessCalendar(final String name, final String description, final ZoneId timeZone,
             final LocalDate firstValidDate, final LocalDate lastValidDate,
