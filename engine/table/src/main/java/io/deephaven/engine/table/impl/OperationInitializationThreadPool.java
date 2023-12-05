@@ -47,7 +47,8 @@ public class OperationInitializationThreadPool implements OperationInitializer {
             public Thread newThread(@NotNull final Runnable r) {
                 return super.newThread(factory.createInitializer(() -> {
                     MultiChunkPool.enableDedicatedPoolForThisThread();
-                    ExecutionContext.newBuilder().setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE).build().apply(r);
+                    ExecutionContext.newBuilder().setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
+                            .build().apply(r);
                 }));
             }
         };
