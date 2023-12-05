@@ -228,12 +228,15 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     final UpdatePerformanceTracker updatePerformanceTracker;
 
     /**
-     * TODO: ADD JAVADOC ANYWAY
+     * The BaseUpdateGraph is an abstract class that is suitable for extension by UpdateGraphs that process a set of
+     * sources and then the resulting {@link io.deephaven.engine.updategraph.NotificationQueue.Notification
+     * Notifications} using a {@link NotificationProcessor}.
      * 
-     * @param name
-     * @param allowUnitTestMode
-     * @param log
-     * @param minimumCycleDurationToLogNanos
+     * @param name the name of the update graph, which must be unique
+     * @param allowUnitTestMode is unit test mode allowed, used for configuring the lock
+     * @param log the logger for this update graph
+     * @param minimumCycleDurationToLogNanos the minimum cycle time, in nanoseconds, that results in cycle times being
+     *        logged to at an INFO level
      */
     public BaseUpdateGraph(
             final String name,
