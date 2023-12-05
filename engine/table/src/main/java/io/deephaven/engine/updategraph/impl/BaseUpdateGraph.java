@@ -1034,11 +1034,10 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     }
 
     /**
-     * Inserts the given UpdateGraph into the INSTANCES array. It is an error to do so if instance already exists with
-     * the name provided to this builder.
+     * Builds and caches a new UpdateGraph named {@code name} and provided by {@code construct}. It is an error if there is already an UpdateGraph with the same name.
      *
      * @param name the name of the new update graph
-     * @param construct a {@link Supplier} that constructs an UpdateGraph if no update graph with the name already
+     * @param construct A {@link Supplier} to construct an UpdateGraph if no update graph with the name already
      *        exists. The Supplier must provide an update graph with the given name.
      *
      * @throws IllegalStateException if an UpdateGraph with the provided name already exists
@@ -1057,10 +1056,10 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     }
 
     /**
-     * Returns an existing UpdateGraph with the name provided to this Builder, if one exists, else returns a new
-     * UpdateGraph.
+     * Returns an existing UpdateGraph with the provided {@code name} if one exists, else returns a new
+     * named UpdateGraph supplied by {@code construct}.
      *
-     * @param construct a {@link Supplier} that constructs an UpdateGraph if no update graph with the name already
+     * @param construct A {@link Supplier} to construct an UpdateGraph if no update graph with the name already
      *        exists. The Supplier must provide an update graph with the given name.
      *
      * @return the UpdateGraph
