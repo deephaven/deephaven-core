@@ -1066,6 +1066,10 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
      * @return the UpdateGraph
      */
     public static <T extends UpdateGraph> T existingOrBuild(final String name, Supplier<T> construct) {
-        return INSTANCES.putIfAbsent(name, construct.get()).cast();
+        return INSTANCES.putIfAbsent(name, (nameToInsert) -> {
+            final T newGraph = construct.get();
+            Assert.equals(newGraph.getName(), "newGraph.getName()", nameToInsert, "name");
+            return newGraph;
+        }).cast();
     }
 }
