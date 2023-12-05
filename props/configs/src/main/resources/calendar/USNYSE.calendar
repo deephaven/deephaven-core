@@ -11,7 +11,7 @@
     <lastValidDate>2025-12-31</lastValidDate>
     <description>
         New York Stock Exchange Business Calendar.
-        Sources: https://www.tradinghours.com/markets/nyse, https://www.nyse.com/markets/hours-calendars, https://www.public-holidays.us/mobile_US_PD_2027_New%20York%20Stock%20Exchange 
+        Sources: https://www.nyse.com/markets/hours-calendars
         Historical reference: https://www.thestreet.com/markets/stock-market-open-or-closed-fourth-of-july
         Last updated 11/10/2023
     </description>
