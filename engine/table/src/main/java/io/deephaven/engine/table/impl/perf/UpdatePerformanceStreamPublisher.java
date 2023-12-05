@@ -54,6 +54,7 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
     public UpdatePerformanceStreamPublisher() {
         chunks = StreamChunkUtils.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
     }
+
     @Override
     public void register(@NotNull StreamConsumer consumer) {
         if (this.consumer != null) {
