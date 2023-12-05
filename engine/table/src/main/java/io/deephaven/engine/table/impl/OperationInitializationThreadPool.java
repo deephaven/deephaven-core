@@ -36,6 +36,7 @@ public class OperationInitializationThreadPool implements OperationInitializer {
             NUM_THREADS = numThreads;
         }
     }
+    private final ThreadLocal<Boolean> isInitializationThread = ThreadLocal.withInitial(() -> false);
 
     private final ThreadPoolExecutor executorService;
 
@@ -46,6 +47,7 @@ public class OperationInitializationThreadPool implements OperationInitializer {
             @Override
             public Thread newThread(@NotNull final Runnable r) {
                 return super.newThread(factory.createInitializer(() -> {
+                    isInitializationThread.set(true);
                     MultiChunkPool.enableDedicatedPoolForThisThread();
                     ExecutionContext.newBuilder().setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
                             .build().apply(r);
@@ -58,7 +60,7 @@ public class OperationInitializationThreadPool implements OperationInitializer {
 
     @Override
     public boolean canParallelize() {
-        return NUM_THREADS > 1;
+        return NUM_THREADS > 1 && !isInitializationThread.get();
     }
 
     @Override
