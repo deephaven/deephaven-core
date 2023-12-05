@@ -23,8 +23,6 @@ using deephaven::dhcore::ticking::BarrageProcessor;
 using deephaven::dhcore::ticking::TickingCallback;
 using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::dhcore::utility::separatedList;
-using deephaven::dhcore::utility::Streamf;
-using deephaven::dhcore::utility::Stringf;
 using deephaven::dhcore::utility::VerboseCast;
 using deephaven::client::arrowutil::ArrowInt8ColumnSource;
 using deephaven::client::arrowutil::ArrowInt16ColumnSource;
@@ -302,7 +300,7 @@ ColumnSourceAndSize ArrayToColumnSource(const arrow::Array &array) {
   const auto *list_array = VerboseCast<const arrow::ListArray *>(DEEPHAVEN_LOCATION_EXPR(&array));
 
   if (list_array->length() != 1) {
-    auto message = Stringf("Expected array of length 1, got %o", array.length());
+    auto message = fmt::format("Expected array of length 1, got {}", array.length());
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 

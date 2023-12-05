@@ -15,6 +15,7 @@ import io.grpc.servlet.jakarta.ServletAdapter;
 import io.grpc.servlet.jakarta.ServletServerBuilder;
 
 import javax.inject.Named;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Set;
@@ -71,6 +72,7 @@ public interface JettyServerModule {
     JsPluginRegistration bindJsPlugins(JsPlugins plugins);
 
     @Provides
+    @Singleton
     static JsPlugins providesJsPluginRegistration() {
         try {
             return JsPlugins.create();

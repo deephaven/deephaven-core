@@ -39,6 +39,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 /**
  * The BaseUpdateGraph contains common code for other UpdateGraph implementations and a map of named UpdateGraph
  * instances.
@@ -106,19 +108,19 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     private final long minimumCycleDurationToLogNanos;
 
     /** when to next flush the performance tracker; initializes to zero to force a flush on start */
-    private long nextUpdatePerformanceTrackerFlushTime = 0;
+    private long nextUpdatePerformanceTrackerFlushTimeNanos;
 
     /**
      * How many cycles we have not logged, but were non-zero.
      */
-    long suppressedCycles = 0;
-    long suppressedCyclesTotalNanos = 0;
-    long suppressedCyclesTotalSafePointTimeMillis = 0;
+    long suppressedCycles;
+    long suppressedCyclesTotalNanos;
+    long suppressedCyclesTotalSafePointTimeMillis;
 
     /**
      * Accumulated UpdateGraph exclusive lock waits for the current cycle (or previous, if idle).
      */
-    private long currentCycleLockWaitTotalNanos = 0;
+    private long currentCycleLockWaitTotalNanos;
 
     public static class AccumulatedCycleStats {
         /**
@@ -762,7 +764,6 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             exclusiveLock().doLocked(this::flushTerminalNotifications);
         } else {
             refreshAllTables();
-
         }
 
         jvmIntrospectionContext.endSample();
@@ -846,9 +847,10 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     }
 
 
-    void checkUpdatePerformanceFlush(long now, long checkTime) {
-        if (checkTime >= nextUpdatePerformanceTrackerFlushTime) {
-            nextUpdatePerformanceTrackerFlushTime = now + UpdatePerformanceTracker.REPORT_INTERVAL_MILLIS;
+    void checkUpdatePerformanceFlush(long nowNanos, long checkTime) {
+        if (checkTime >= nextUpdatePerformanceTrackerFlushTimeNanos) {
+            nextUpdatePerformanceTrackerFlushTimeNanos =
+                    nowNanos + MILLISECONDS.toNanos(UpdatePerformanceTracker.REPORT_INTERVAL_MILLIS);
             try {
                 try (final SafeCloseable ignored = openContextForUpdatePerformanceTracker()) {
                     updatePerformanceTracker.flush();
@@ -865,7 +867,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
      */
     @TestUseOnly
     public void resetNextFlushTime() {
-        nextUpdatePerformanceTrackerFlushTime = 0;
+        nextUpdatePerformanceTrackerFlushTimeNanos = 0;
     }
 
     /**

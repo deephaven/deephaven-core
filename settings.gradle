@@ -137,10 +137,6 @@ include(':DataStructures')
 
 include(':Configuration')
 
-include(':FishUtil')
-
-include(':Net')
-
 include(':Stats')
 
 include(':Container')

@@ -69,8 +69,7 @@ void VisitElementTypeId(ElementTypeId::Enum type_id, T *visitor) {
       break;
     }
     default: {
-      auto message = deephaven::dhcore::utility::Stringf("Unrecognized ElementTypeId %o",
-          static_cast<int>(type_id));
+      auto message = fmt::format("Unrecognized ElementTypeId {}", static_cast<int>(type_id));
       throw std::runtime_error(message);
     }
   }

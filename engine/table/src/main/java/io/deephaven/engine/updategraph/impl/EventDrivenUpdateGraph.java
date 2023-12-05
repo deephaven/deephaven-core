@@ -6,7 +6,6 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.net.CommBase;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
@@ -71,8 +70,8 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
         } finally {
             isUpdateThread.remove();
         }
-        final long now = CommBase.getScheduler().currentTimeMillis();
-        checkUpdatePerformanceFlush(now, now);
+        final long nowNanos = System.nanoTime();
+        checkUpdatePerformanceFlush(nowNanos, nowNanos);
     }
 
     /**

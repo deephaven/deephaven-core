@@ -1,20 +1,22 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.util;
+package io.deephaven.stats.util;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.function.Predicate;
 
-@SuppressWarnings("WeakerAccess")
 public class OSUtil {
 
     public enum OSFamily {
-
-        LINUX(name -> name.startsWith("Linux")), WINDOWS(name -> name.contains("Windows")), MAC_OS(
-                name -> name.startsWith("Mac OS")), SOLARIS(name -> name.startsWith("SunOs"));
+        // @formatter:off
+        LINUX(name -> name.startsWith("Linux")),
+        WINDOWS(name -> name.contains("Windows")),
+        MAC_OS(name -> name.startsWith("Mac OS")),
+        SOLARIS(name -> name.startsWith("SunOs"));
+        // @formatter:on
 
         private final Predicate<String> nameMatcher;
 

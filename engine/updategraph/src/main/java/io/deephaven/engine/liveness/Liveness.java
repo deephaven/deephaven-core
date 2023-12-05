@@ -5,14 +5,15 @@ package io.deephaven.engine.liveness;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.io.sched.Scheduler;
-import io.deephaven.io.sched.TimedJob;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.util.HeapDump;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Utility class for liveness-related instrumentation.
@@ -77,14 +78,18 @@ public final class Liveness {
         intervalLastOutstandingCount = intervalMinOutstandingCount = intervalMaxOutstandingCount = outstandingCount;
     }
 
-    public static void scheduleCountReport(@NotNull final Scheduler scheduler) {
-        scheduler.installJob(new TimedJob() {
-            @Override
-            public final void timedOut() {
-                maybeLogOutstandingCount();
-                scheduler.installJob(this, scheduler.currentTimeMillis() + OUTSTANDING_COUNT_LOG_INTERVAL_MILLIS);
-            }
-        }, 0L);
+    /**
+     * Schedule a job to log the count of known outstanding {@link LivenessReferent LivenessReferents}.
+     *
+     * @param scheduler The {@link ScheduledExecutorService} to use
+     * @return The {@link ScheduledFuture} for the scheduled job
+     */
+    public static ScheduledFuture<?> scheduleCountReport(@NotNull final ScheduledExecutorService scheduler) {
+        return scheduler.scheduleAtFixedRate(
+                Liveness::maybeLogOutstandingCount,
+                0L,
+                OUTSTANDING_COUNT_LOG_INTERVAL_MILLIS,
+                TimeUnit.MILLISECONDS);
     }
 
     private Liveness() {}
