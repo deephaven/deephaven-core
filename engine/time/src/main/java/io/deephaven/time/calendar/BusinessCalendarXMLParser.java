@@ -156,10 +156,15 @@ public class BusinessCalendarXMLParser {
         final TimeRange<LocalTime>[] rst = new TimeRange[businessRanges.size()];
 
         for (int i = 0; i < businessRanges.size(); i++) {
-            final LocalTime open =
-                    DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessRanges.get(i), "open")));
-            final LocalTime close =
-                    DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessRanges.get(i), "close")));
+            final String openTxt = getText(getRequiredChild(businessRanges.get(i), "open"));
+            final String closeTxt = getText(getRequiredChild(businessRanges.get(i), "close"));
+
+            if(closeTxt.startsWith("24:00")) {
+                throw new RuntimeException("Close time (" + closeTxt + ") is on the next day.  '23:59:59.999999999' is the maximum close time.");
+            }
+
+            final LocalTime open = DateTimeUtils.parseLocalTime(openTxt);
+            final LocalTime close = DateTimeUtils.parseLocalTime(closeTxt);
             rst[i] = new TimeRange<>(open, close, true);
         }
 
