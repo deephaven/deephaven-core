@@ -1994,8 +1994,9 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
         @Override
         public Thread newThread(@NotNull final Runnable r) {
+            OperationInitializer captured = ExecutionContext.getContext().getInitializer();
             return super.newThread(() -> {
-                configureUnitTestRefreshThread();
+                configureUnitTestRefreshThread(captured);
                 r.run();
             });
         }
@@ -2016,7 +2017,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     /**
      * Configure threads to be used for unit test processing.
      */
-    private void configureUnitTestRefreshThread() {
+    private void configureUnitTestRefreshThread(OperationInitializer captured) {
         final Thread currentThread = Thread.currentThread();
         final Thread.UncaughtExceptionHandler existing = currentThread.getUncaughtExceptionHandler();
         currentThread.setUncaughtExceptionHandler((final Thread errorThread, final Throwable throwable) -> {
@@ -2026,7 +2027,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         isUpdateThread.set(true);
         // Install this UpdateGraph and share operation initializer pool via ExecutionContext for refresh threads
         // noinspection resource
-        ExecutionContext.newBuilder().setUpdateGraph(this).captureOperationInitializer().build().open();
+        ExecutionContext.newBuilder().setUpdateGraph(this).setOperationInitializer(captured).build().open();
     }
 
     public void takeAccumulatedCycleStats(AccumulatedCycleStats updateGraphAccumCycleStats) {
