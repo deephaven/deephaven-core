@@ -5,10 +5,7 @@ package io.deephaven.time.calendar;
 
 import io.deephaven.time.DateTimeUtils;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.util.Objects;
@@ -21,7 +18,6 @@ import java.util.Objects;
 public class TimeRange<T extends Comparable<T> & Temporal> {
     private final T start;
     private final T end;
-    private final long nanos;
 
     /**
      * Create a new time range.
@@ -47,8 +43,6 @@ public class TimeRange<T extends Comparable<T> & Temporal> {
             throw new IllegalArgumentException(
                     "Start is the same as end: startTime=" + startTime + " endTime=" + endTime);
         }
-
-        this.nanos = start.until(end, ChronoUnit.NANOS);
     }
 
     /**
@@ -75,7 +69,16 @@ public class TimeRange<T extends Comparable<T> & Temporal> {
      * @return length of the range in nanoseconds
      */
     public long nanos() {
-        return nanos;
+        return start.until(end, ChronoUnit.NANOS);
+    }
+
+    /**
+     * Duration of the range.
+     *
+     * @return duration of the range
+     */
+    public Duration duration() {
+        return Duration.ofNanos(nanos());
     }
 
     /**
@@ -97,12 +100,12 @@ public class TimeRange<T extends Comparable<T> & Temporal> {
         if (!(o instanceof TimeRange))
             return false;
         TimeRange<?> that = (TimeRange<?>) o;
-        return nanos == that.nanos && start.equals(that.start) && end.equals(that.end);
+        return start.equals(that.start) && end.equals(that.end);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(start, end, nanos);
+        return Objects.hash(start, end);
     }
 
     @Override

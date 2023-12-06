@@ -7,10 +7,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
 import junit.framework.TestCase;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.Objects;
 
 import static org.junit.Assert.assertNotEquals;
@@ -53,6 +50,7 @@ public class TestTimeRange extends BaseArrayTestCase {
         assertEquals(open1, period.start());
         assertEquals(close1, period.end());
         assertEquals(DateTimeUtils.HOUR, period.nanos());
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR), period.duration());
 
         assertTrue(period.contains(open1));
         assertTrue(period
