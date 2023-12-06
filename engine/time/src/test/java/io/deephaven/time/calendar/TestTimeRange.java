@@ -101,8 +101,8 @@ public class TestTimeRange extends BaseArrayTestCase {
         assertEquals(open1, period.start());
         assertEquals(close1, period.end());
         assertFalse(period.isInclusiveEnd());
-        assertEquals(DateTimeUtils.HOUR-1, period.nanos());
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR-1), period.duration());
+        assertEquals(DateTimeUtils.HOUR - 1, period.nanos());
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR - 1), period.duration());
 
         assertTrue(period.contains(open1));
         assertTrue(period

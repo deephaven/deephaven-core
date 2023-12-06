@@ -140,8 +140,8 @@ public class BusinessCalendar extends Calendar {
      * @param lastValidDate last valid date for the business calendar.
      * @param standardBusinessDay business day schedule for a standard business day
      * @param weekendDays weekend days
-     * @param holidays holidays.  Business day schedules for all holidays. A holiday is a date that has a schedule
-     *                 that is different from the schedule for a standard business day or weekend.
+     * @param holidays holidays. Business day schedules for all holidays. A holiday is a date that has a schedule that
+     *        is different from the schedule for a standard business day or weekend.
      */
     public BusinessCalendar(final String name, final String description, final ZoneId timeZone,
             final LocalDate firstValidDate, final LocalDate lastValidDate,
@@ -325,8 +325,8 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the time on a business day?
      *
-     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
-     * within the business day schedule.  To determine if a time is within the business day schedule, use
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
+     * within the business day schedule. To determine if a time is within the business day schedule, use
      * {@link #isBusinessTime(ZonedDateTime)}.
      *
      * @param time time
@@ -341,8 +341,8 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the time on a business day?
      *
-     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
-     * within the business day schedule.  To determine if a time is within the business day schedule, use
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
+     * within the business day schedule. To determine if a time is within the business day schedule, use
      * {@link #isBusinessTime(Instant)}.
      *
      * @param time time
@@ -367,8 +367,8 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Is the current day a business day?  As long as the current time occurs on a business day, it is considered a
-     * business day.  The time does not have to be within the business day schedule.
+     * Is the current day a business day? As long as the current time occurs on a business day, it is considered a
+     * business day. The time does not have to be within the business day schedule.
      *
      * @return true if the current day is a business day; false otherwise
      */
@@ -399,7 +399,7 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the time on the last business day of the month?
      *
-     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule.
      *
      * @param time time
@@ -415,7 +415,7 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the time on the last business day of the month?
      *
-     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule.
      *
      * @param time time
@@ -474,7 +474,7 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the time on the last business day of the week?
      *
-     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule.
      *
      * @param time time
@@ -490,7 +490,7 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the time on the last business day of the week?
      *
-     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule.
      *
      * @param time time
@@ -549,7 +549,7 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the time on the last business day of the year?
      *
-     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule.
      *
      * @param time time
@@ -565,7 +565,7 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the time on the last business day of the year?
      *
-     * As long as the time occurs on a business day, it is considered a business day.  The time does not have to be
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule.
      *
      * @param time time
@@ -595,8 +595,8 @@ public class BusinessCalendar extends Calendar {
     /**
      * Is the current date the last business day of the year?
      *
-     * As long as the current time occurs on a business day, it is considered a business day.  The time does not have
-     * to be within the business day schedule.
+     * As long as the current time occurs on a business day, it is considered a business day. The time does not have to
+     * be within the business day schedule.
      *
      * @return true if the current date is the last business day of the year; false otherwise.
      */

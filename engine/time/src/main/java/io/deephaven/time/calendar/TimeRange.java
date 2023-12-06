@@ -100,11 +100,11 @@ public class TimeRange<T extends Comparable<T> & Temporal> {
      * @return true if the time is in this range; otherwise, false.
      */
     public boolean contains(final T time) {
-        if(inclusiveEnd) {
+        if (inclusiveEnd) {
             return time != null
                     && start.compareTo(time) <= 0
                     && time.compareTo(end) <= 0;
-        }else {
+        } else {
             return time != null
                     && start.compareTo(time) <= 0
                     && time.compareTo(end) < 0;
