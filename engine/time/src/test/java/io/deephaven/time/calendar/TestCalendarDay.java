@@ -19,10 +19,10 @@ import static org.junit.Assert.assertNotEquals;
 public class TestCalendarDay extends BaseArrayTestCase {
     private final Instant open1 = DateTimeUtils.parseInstant("2017-03-11T10:00:00.000000000 NY");
     private final Instant close1 = DateTimeUtils.parseInstant("2017-03-11T11:00:00.000000000 NY");
-    private final TimeRange<Instant> period1 = new TimeRange<>(open1, close1);
+    private final TimeRange<Instant> period1 = new TimeRange<>(open1, close1, true);
     private final Instant open2 = DateTimeUtils.parseInstant("2017-03-11T12:00:00.000000000 NY");
     private final Instant close2 = DateTimeUtils.parseInstant("2017-03-11T17:00:00.000000000 NY");
-    private final TimeRange<Instant> period2 = new TimeRange<>(open2, close2);
+    private final TimeRange<Instant> period2 = new TimeRange<>(open2, close2, true);
 
     public void testEmpty() {
         final CalendarDay<Instant> empty = new CalendarDay<>();
@@ -130,8 +130,8 @@ public class TestCalendarDay extends BaseArrayTestCase {
     }
 
     public void testToInstant() {
-        final TimeRange<LocalTime> p1 = new TimeRange<>(LocalTime.of(1, 2), LocalTime.of(3, 4));
-        final TimeRange<LocalTime> p2 = new TimeRange<>(LocalTime.of(5, 6), LocalTime.of(7, 8));
+        final TimeRange<LocalTime> p1 = new TimeRange<>(LocalTime.of(1, 2), LocalTime.of(3, 4), true);
+        final TimeRange<LocalTime> p2 = new TimeRange<>(LocalTime.of(5, 6), LocalTime.of(7, 8), true);
 
         final CalendarDay<LocalTime> local = new CalendarDay<>(new TimeRange[] {p1, p2});
         final LocalDate date = LocalDate.of(2017, 3, 11);
@@ -152,7 +152,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
 
         final CalendarDay<Instant> multi2 = new CalendarDay<>(new TimeRange[] {period1, period2});
         final CalendarDay<Instant> multi3 = new CalendarDay<>(new TimeRange[] {period1,
-                new TimeRange<>(open2, DateTimeUtils.parseInstant("2017-03-11T17:01:00.000000000 NY"))});
+                new TimeRange<>(open2, DateTimeUtils.parseInstant("2017-03-11T17:01:00.000000000 NY"), true)});
         assertEquals(multi, multi);
         assertEquals(multi, multi2);
         assertNotEquals(multi, multi3);
@@ -162,7 +162,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
     public void testToString() {
         final CalendarDay<Instant> multi = new CalendarDay<>(new TimeRange[] {period1, period2});
         assertEquals(
-                "CalendarDay{businessTimeRanges=[TimeRange{start=2017-03-11T15:00:00Z, end=2017-03-11T16:00:00Z}, TimeRange{start=2017-03-11T17:00:00Z, end=2017-03-11T22:00:00Z}]}",
+                "CalendarDay{businessTimeRanges=[TimeRange{start=2017-03-11T15:00:00Z, end=2017-03-11T16:00:00Z, inclusiveEnd=true}, TimeRange{start=2017-03-11T17:00:00Z, end=2017-03-11T22:00:00Z, inclusiveEnd=true}]}",
                 multi.toString());
     }
 }

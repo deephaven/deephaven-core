@@ -17,8 +17,8 @@ import java.util.Set;
 public class TestBusinessCalendar extends TestCalendar {
     private final LocalDate firstValidDate = LocalDate.of(2000, 1, 1);
     private final LocalDate lastValidDate = LocalDate.of(2050, 12, 31);
-    private final TimeRange<LocalTime> period = new TimeRange<>(LocalTime.of(9, 0), LocalTime.of(12, 15));
-    private final TimeRange<LocalTime> periodHalf = new TimeRange<>(LocalTime.of(9, 0), LocalTime.of(11, 7));
+    private final TimeRange<LocalTime> period = new TimeRange<>(LocalTime.of(9, 0), LocalTime.of(12, 15), true);
+    private final TimeRange<LocalTime> periodHalf = new TimeRange<>(LocalTime.of(9, 0), LocalTime.of(11, 7), true);
     private final CalendarDay<LocalTime> schedule = new CalendarDay<>(new TimeRange[] {period});
     private final Set<DayOfWeek> weekendDays = Set.of(DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY);
     private final LocalDate holidayDate1 = LocalDate.of(2023, 7, 4);

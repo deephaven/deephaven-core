@@ -157,7 +157,7 @@ public class BusinessCalendarXMLParser {
                     DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessRanges.get(i), "open")));
             final LocalTime close =
                     DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessRanges.get(i), "close")));
-            rst[i] = new TimeRange<>(open, close);
+            rst[i] = new TimeRange<>(open, close, true);
         }
 
         return rst;

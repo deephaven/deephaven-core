@@ -56,8 +56,9 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
         for (int i = 1; i < ranges.length; i++) {
             final TimeRange<T> p0 = ranges[i - 1];
             final TimeRange<T> p1 = ranges[i];
+            final int cmp = p1.start().compareTo(p0.end());
 
-            if (p1.start().compareTo(p0.end()) < 0) {
+            if (cmp < 0 || (cmp == 0 && p0.isInclusiveEnd())) {
                 throw new IllegalArgumentException("Business time ranges overlap.");
             }
         }
