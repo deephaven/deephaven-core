@@ -94,7 +94,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         if (!metadataFile.exists()) {
             throw new TableDataException(String.format("Parquet metadata file %s does not exist", metadataFile));
         }
-        final ParquetFileReader metadataFileReader = ParquetTools.getParquetFileReader(metadataFile);
+        final ParquetFileReader metadataFileReader = ParquetTools.getParquetFileReader(metadataFile, inputInstructions);
 
         final ParquetMetadataConverter converter = new ParquetMetadataConverter();
         final ParquetMetadata metadataFileMetadata = convertMetadata(metadataFile, metadataFileReader, converter);
@@ -104,7 +104,8 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                 inputInstructions);
 
         if (commonMetadataFile != null && commonMetadataFile.exists()) {
-            final ParquetFileReader commonMetadataFileReader = ParquetTools.getParquetFileReader(commonMetadataFile);
+            final ParquetFileReader commonMetadataFileReader =
+                    ParquetTools.getParquetFileReader(commonMetadataFile, inputInstructions);
             final Pair<List<ColumnDefinition<?>>, ParquetInstructions> fullSchemaInfo = ParquetTools.convertSchema(
                     commonMetadataFileReader.getSchema(),
                     convertMetadata(commonMetadataFile, commonMetadataFileReader, converter).getFileMetaData()
@@ -196,7 +197,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                 }
             }
             final ParquetTableLocationKey tlk = new ParquetTableLocationKey(new File(directory, filePathString),
-                    partitionOrder.getAndIncrement(), partitions);
+                    partitionOrder.getAndIncrement(), partitions, inputInstructions);
             tlk.setFileReader(metadataFileReader);
             tlk.setMetadata(metadataFileMetadata);
             tlk.setRowGroupIndices(rowGroupIndices);

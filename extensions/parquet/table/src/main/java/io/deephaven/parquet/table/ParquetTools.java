@@ -14,6 +14,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.parquet.table.util.S3BackedSeekableChannelProvider;
 import io.deephaven.vector.*;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
@@ -90,6 +91,11 @@ public class ParquetTools {
      * @see ParquetFlatPartitionedLayout
      */
     public static Table readTable(@NotNull final String sourceFilePath) {
+        if (sourceFilePath.startsWith("s3:") && sourceFilePath.endsWith(PARQUET_FILE_EXTENSION)) {
+            // TODO This is hacky, because here URI is getting converted to a file path and // will change to /
+            // We need to keep this as a URI and internally check if its a file or S3 backed URI
+            return readSingleFileTable(new File(sourceFilePath), ParquetInstructions.EMPTY);
+        }
         return readTableInternal(new File(sourceFilePath), ParquetInstructions.EMPTY);
     }
 
@@ -119,6 +125,11 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final String sourceFilePath,
             @NotNull final ParquetInstructions readInstructions) {
+        if (sourceFilePath.startsWith("s3:") && sourceFilePath.endsWith(PARQUET_FILE_EXTENSION)) {
+            // TODO This is hacky, because here URI is getting converted to a file path and // will change to /
+            // We need to keep this as a URI and internally check if its a file or S3 backed URI
+            return readSingleFileTable(new File(sourceFilePath), readInstructions);
+        }
         return readTableInternal(new File(sourceFilePath), readInstructions);
     }
 
@@ -846,13 +857,14 @@ public class ParquetTools {
      * @param directory the source of {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions the instructions for customizations while reading
      * @return the table
-     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(File, int)
+     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(File, int, ParquetInstructions)
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
      */
     public static Table readKeyValuePartitionedTable(
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions) {
-        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(directory, MAX_PARTITIONING_LEVELS_INFERENCE),
+        return readPartitionedTable(
+                new ParquetKeyValuePartitionedLayout(directory, MAX_PARTITIONING_LEVELS_INFERENCE, readInstructions),
                 readInstructions);
     }
 
@@ -864,7 +876,8 @@ public class ParquetTools {
      * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
-     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(File, TableDefinition)
+     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(File, TableDefinition,
+     *      ParquetInstructions)
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions, TableDefinition)
      */
     public static Table readKeyValuePartitionedTable(
@@ -874,8 +887,8 @@ public class ParquetTools {
         if (tableDefinition.getColumnStream().noneMatch(ColumnDefinition::isPartitioning)) {
             throw new IllegalArgumentException("No partitioning columns");
         }
-        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(directory, tableDefinition), readInstructions,
-                tableDefinition);
+        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(directory, tableDefinition, readInstructions),
+                readInstructions, tableDefinition);
     }
 
     /**
@@ -890,12 +903,12 @@ public class ParquetTools {
      * @param readInstructions the instructions for customizations while reading
      * @return the table
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
-     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(File)
+     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(File, ParquetInstructions)
      */
     public static Table readFlatPartitionedTable(
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions) {
-        return readPartitionedTable(new ParquetFlatPartitionedLayout(directory), readInstructions);
+        return readPartitionedTable(new ParquetFlatPartitionedLayout(directory, readInstructions), readInstructions);
     }
 
     /**
@@ -907,13 +920,14 @@ public class ParquetTools {
      * @param tableDefinition the table definition
      * @return the table
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions, TableDefinition)
-     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(File)
+     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(File, ParquetInstructions)
      */
     public static Table readFlatPartitionedTable(
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        return readPartitionedTable(new ParquetFlatPartitionedLayout(directory), readInstructions, tableDefinition);
+        return readPartitionedTable(new ParquetFlatPartitionedLayout(directory, readInstructions), readInstructions,
+                tableDefinition);
     }
 
     /**
@@ -932,7 +946,7 @@ public class ParquetTools {
     public static Table readSingleFileTable(
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions) {
-        final ParquetSingleFileLayout keyFinder = new ParquetSingleFileLayout(file);
+        final ParquetSingleFileLayout keyFinder = new ParquetSingleFileLayout(file, readInstructions);
         final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys = toKnownKeys(keyFinder);
         final Pair<TableDefinition, ParquetInstructions> inference = infer(inferenceKeys, readInstructions);
         return readSingleFileTable(inferenceKeys.getFirstKey().orElseThrow(), inference.getSecond(),
@@ -953,7 +967,8 @@ public class ParquetTools {
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        return readSingleFileTable(new ParquetTableLocationKey(file, 0, null), readInstructions, tableDefinition);
+        return readSingleFileTable(new ParquetTableLocationKey(file, 0, null, readInstructions), readInstructions,
+                tableDefinition);
     }
 
     private static final SimpleTypeMap<Class<?>> VECTOR_TYPE_MAP = SimpleTypeMap.create(
@@ -1026,11 +1041,13 @@ public class ParquetTools {
      * {@link TableDataException}.
      *
      * @param parquetFile The {@link File} to read
+     * @param readInstructions the instructions for customizations while reading
      * @return The new {@link ParquetFileReader}
      */
-    public static ParquetFileReader getParquetFileReader(@NotNull final File parquetFile) {
+    public static ParquetFileReader getParquetFileReader(@NotNull final File parquetFile,
+            @NotNull final ParquetInstructions readInstructions) {
         try {
-            return getParquetFileReaderChecked(parquetFile);
+            return getParquetFileReaderChecked(parquetFile, readInstructions);
         } catch (IOException e) {
             throw new TableDataException("Failed to create Parquet file reader: " + parquetFile, e);
         }
@@ -1043,7 +1060,18 @@ public class ParquetTools {
      * @return The new {@link ParquetFileReader}
      * @throws IOException if an IO exception occurs
      */
-    public static ParquetFileReader getParquetFileReaderChecked(@NotNull File parquetFile) throws IOException {
+    public static ParquetFileReader getParquetFileReaderChecked(
+            @NotNull final File parquetFile,
+            @NotNull final ParquetInstructions readInstructions) throws IOException {
+        final String absolutePath = parquetFile.getAbsolutePath();
+        final String S3_MARKER = "s3:/";
+        if (absolutePath.contains(S3_MARKER)) {
+            // TODO I am creating S3 URI back from the file path which is incorrect, should have passed URI only
+            final int index = absolutePath.indexOf(S3_MARKER);
+            final String s3uri = S3_MARKER + absolutePath.substring(index + S3_MARKER.length() - 1);
+            return new ParquetFileReader(absolutePath,
+                    new S3BackedSeekableChannelProvider(readInstructions.getAwsRegionName(), s3uri));
+        }
         return new ParquetFileReader(
                 parquetFile.getAbsolutePath(),
                 new CachedChannelProvider(
@@ -1054,7 +1082,8 @@ public class ParquetTools {
     public static Table readParquetSchemaAndTable(
             @NotNull final File source, @NotNull final ParquetInstructions readInstructionsIn,
             MutableObject<ParquetInstructions> instructionsOut) {
-        final ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(source, 0, null);
+        final ParquetTableLocationKey tableLocationKey =
+                new ParquetTableLocationKey(source, 0, null, readInstructionsIn);
         final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = convertSchema(
                 tableLocationKey.getFileReader().getSchema(),
                 tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),

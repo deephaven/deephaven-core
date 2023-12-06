@@ -78,6 +78,10 @@ public class RowGroupReaderImpl implements RowGroupReader {
         if (columnChunk.isSetOffset_index_offset()) {
             try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(rootPath)) {
                 readChannel.position(columnChunk.getOffset_index_offset());
+                // TODO Think if we need to reduce the buffer size.
+                // We read BUFFER_SIZE (=65536) number of bytes from the channel, which leads to a big read request to
+                // aws, even if the offset index is much smaller. Same thing happens for non aws parquet files too but
+                // reads are less expensive there.
                 offsetIndex = ParquetMetadataConverter.fromParquetOffsetIndex(Util.readOffsetIndex(
                         new BufferedInputStream(Channels.newInputStream(readChannel), BUFFER_SIZE)));
             } catch (IOException e) {

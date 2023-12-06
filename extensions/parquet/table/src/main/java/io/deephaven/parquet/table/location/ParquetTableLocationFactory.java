@@ -31,7 +31,8 @@ public final class ParquetTableLocationFactory implements TableLocationFactory<T
             @NotNull final ParquetTableLocationKey locationKey,
             @Nullable final TableDataRefreshService refreshService) {
         final File parquetFile = locationKey.getFile();
-        if (parquetFile.exists()) {
+        // TODO Again hacky, need to keep a URI and check if its a file or not and then do existence check
+        if (parquetFile.getAbsolutePath().contains("s3:/") || parquetFile.exists()) {
             return new ParquetTableLocation(tableKey, locationKey, readInstructions);
         } else {
             return new NonexistentTableLocation(tableKey, locationKey);

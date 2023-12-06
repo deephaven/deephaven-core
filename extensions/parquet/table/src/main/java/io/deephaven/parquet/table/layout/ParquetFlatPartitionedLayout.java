@@ -5,6 +5,7 @@ package io.deephaven.parquet.table.layout;
 
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.jetbrains.annotations.NotNull;
 
@@ -22,19 +23,23 @@ import java.util.function.Consumer;
  */
 public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
-    private static ParquetTableLocationKey locationKey(Path path) {
-        return new ParquetTableLocationKey(path.toFile(), 0, null);
+    private static ParquetTableLocationKey locationKey(Path path, @NotNull final ParquetInstructions readInstructions) {
+        return new ParquetTableLocationKey(path.toFile(), 0, null, readInstructions);
     }
 
     private final File tableRootDirectory;
     private final Map<Path, ParquetTableLocationKey> cache;
+    private final ParquetInstructions readInstructions;
 
     /**
      * @param tableRootDirectory The directory to search for .parquet files.
+     * @param readInstructions the instructions for customizations while reading
      */
-    public ParquetFlatPartitionedLayout(@NotNull final File tableRootDirectory) {
+    public ParquetFlatPartitionedLayout(@NotNull final File tableRootDirectory,
+            @NotNull final ParquetInstructions readInstructions) {
         this.tableRootDirectory = tableRootDirectory;
-        cache = new HashMap<>();
+        this.cache = new HashMap<>();
+        this.readInstructions = readInstructions;
     }
 
     public String toString() {
@@ -48,7 +53,7 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
             for (final Path parquetFilePath : parquetFileStream) {
                 ParquetTableLocationKey locationKey = cache.get(parquetFilePath);
                 if (locationKey == null) {
-                    locationKey = locationKey(parquetFilePath);
+                    locationKey = locationKey(parquetFilePath, readInstructions);
                     if (!locationKey.verifyFileReader()) {
                         continue;
                     }

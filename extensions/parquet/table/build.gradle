@@ -27,6 +27,9 @@ dependencies {
     implementation project(':log-factory')
     implementation project(':Configuration')
     implementation depCommonsLang3
+    implementation platform('com.amazonaws:aws-java-sdk-bom:1.12.529')
+    implementation 'com.amazonaws:aws-java-sdk-s3'
+
 
     Classpaths.inheritCommonsText(project, 'implementation')
 

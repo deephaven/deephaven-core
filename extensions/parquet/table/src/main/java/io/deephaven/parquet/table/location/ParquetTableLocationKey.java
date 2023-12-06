@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
@@ -31,6 +32,7 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
     private ParquetFileReader fileReader;
     private ParquetMetadata metadata;
     private int[] rowGroupIndices;
+    private final ParquetInstructions readInstructions;
 
     /**
      * Construct a new ParquetTableLocationKey for the supplied {@code file} and {@code partitions}.
@@ -40,10 +42,13 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
      * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
      *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
      *        be made, so the calling code is free to mutate the map after this call
+     * @param readInstructions the instructions for customizations while reading
      */
     public ParquetTableLocationKey(@NotNull final File file, final int order,
-            @Nullable final Map<String, Comparable<?>> partitions) {
+            @Nullable final Map<String, Comparable<?>> partitions,
+            @NotNull final ParquetInstructions readInstructions) {
         super(validateParquetFile(file), order, partitions);
+        this.readInstructions = readInstructions;
     }
 
     private static File validateParquetFile(@NotNull final File file) {
@@ -72,7 +77,7 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
      * </ol>
      *
      * Callers wishing to handle these cases more explicit may call
-     * {@link ParquetTools#getParquetFileReaderChecked(File)}.
+     * {@link ParquetTools#getParquetFileReaderChecked(File, ParquetInstructions)}.
      *
      * @return true if the file reader exists or was successfully created
      */
@@ -81,7 +86,7 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
             return true;
         }
         try {
-            fileReader = ParquetTools.getParquetFileReaderChecked(file);
+            fileReader = ParquetTools.getParquetFileReaderChecked(file, readInstructions);
         } catch (IOException e) {
             return false;
         }
@@ -98,7 +103,7 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
         if (fileReader != null) {
             return fileReader;
         }
-        return fileReader = ParquetTools.getParquetFileReader(file);
+        return fileReader = ParquetTools.getParquetFileReader(file, readInstructions);
     }
 
     /**

@@ -42,6 +42,7 @@ def _build_parquet_instructions(
     is_refreshing: bool = False,
     for_read: bool = True,
     force_build: bool = False,
+    aws_region_name: str = None,
 ):
     if not any(
         [
@@ -53,6 +54,7 @@ def _build_parquet_instructions(
             is_legacy_parquet,
             target_page_size is not None,
             is_refreshing,
+            aws_region_name,
         ]
     ):
         return None
@@ -88,6 +90,9 @@ def _build_parquet_instructions(
 
     if is_refreshing:
         builder.setIsRefreshing(is_refreshing)
+
+    if aws_region_name:
+        builder.setAwsRegionName(aws_region_name)
 
     return builder.build()
 
@@ -131,6 +136,7 @@ def read(
     is_refreshing: bool = False,
     file_layout: Optional[ParquetFileLayout] = None,
     table_definition: Union[Dict[str, DType], List[Column], None] = None,
+    aws_region_name: str = None,
 ) -> Table:
     """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
@@ -147,6 +153,7 @@ def read(
             have that definition. This is useful for bootstrapping purposes when the initial partitioned directory is
             empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition. When set,
             file_layout must also be set.
+        aws_region_name (str): the AWS region name for reading parquet files stored in AWS S3, by default None
     Returns:
         a table
 
@@ -161,6 +168,7 @@ def read(
             is_refreshing=is_refreshing,
             for_read=True,
             force_build=True,
+            aws_region_name=aws_region_name,
         )
         j_table_definition = _j_table_definition(table_definition)
         if j_table_definition is not None:
