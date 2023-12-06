@@ -7,10 +7,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.RequirementFailure;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.util.*;
@@ -112,6 +109,16 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
     }
 
     /**
+     * Gets the length of the business day. If the business day has multiple business time ranges, only the time during
+     * the ranges is counted.
+     *
+     * @return length of the day
+     */
+    public Duration businessDuration() {
+        return Duration.ofNanos(businessNanos());
+    }
+
+    /**
      * Amount of business time in nanoseconds that has elapsed on the given day by the specified time.
      *
      * @param time time
@@ -136,6 +143,16 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
     }
 
     /**
+     * Amount of business time that has elapsed on the given day by the specified time.
+     *
+     * @param time time
+     * @return business time that has elapsed on the given day by the specified time
+     */
+    public Duration businessDurationElapsed(final T time) {
+        return Duration.ofNanos(businessNanosElapsed(time));
+    }
+
+    /**
      * Amount of business time in nanoseconds that remains until the end of the day.
      *
      * @param time time
@@ -144,6 +161,16 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
     public long businessNanosRemaining(final T time) {
         Require.neqNull(time, "time");
         return businessNanos() - businessNanosElapsed(time);
+    }
+
+    /**
+     * Amount of business time that remains until the end of the day.
+     *
+     * @param time time
+     * @return business time that remains until the end of the day
+     */
+    public Duration businessDurationRemaining(final T time) {
+        return Duration.ofNanos(businessNanosRemaining(time));
     }
 
     /**

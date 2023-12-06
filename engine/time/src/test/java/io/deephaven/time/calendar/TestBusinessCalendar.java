@@ -48,6 +48,7 @@ public class TestBusinessCalendar extends TestCalendar {
     public void testBusinessGetters() {
         assertEquals(schedule, bCalendar.standardBusinessDay());
         assertEquals(schedule.businessNanos(), bCalendar.standardBusinessNanos());
+        assertEquals(schedule.businessDuration(), bCalendar.standardBusinessDuration());
         assertEquals(holidays, bCalendar.holidays());
         assertEquals(firstValidDate, bCalendar.firstValidDate());
         assertEquals(lastValidDate, bCalendar.lastValidDate());
@@ -1055,6 +1056,60 @@ public class TestBusinessCalendar extends TestCalendar {
                 bCalendar.diffNonBusinessNanos(zdt1.toInstant(), zdt3.toInstant()));
         assertEquals(-bCalendar.diffNonBusinessNanos(zdt1, zdt3),
                 bCalendar.diffNonBusinessNanos(zdt3.toInstant(), zdt1.toInstant()));
+    }
+
+    public void testDiffBusinessDuration() {
+        // Same day
+        final ZonedDateTime zdt1 = LocalDate.of(2023, 7, 3).atTime(9, 27).atZone(timeZone);
+        final ZonedDateTime zdt2 = LocalDate.of(2023, 7, 3).atTime(12, 10).atZone(timeZone);
+
+        assertEquals(Duration.ofNanos(zdt1.until(zdt2, ChronoUnit.NANOS)), bCalendar.diffBusinessDuration(zdt1, zdt2));
+        assertEquals(Duration.ofNanos(-zdt1.until(zdt2, ChronoUnit.NANOS)), bCalendar.diffBusinessDuration(zdt2, zdt1));
+        assertEquals(Duration.ofNanos(zdt1.until(zdt2, ChronoUnit.NANOS)),
+                bCalendar.diffBusinessDuration(zdt1.toInstant(), zdt2.toInstant()));
+        assertEquals(Duration.ofNanos(-zdt1.until(zdt2, ChronoUnit.NANOS)),
+                bCalendar.diffBusinessDuration(zdt2.toInstant(), zdt1.toInstant()));
+
+        // Multiple holidays
+        final ZonedDateTime zdt3 = LocalDate.of(2023, 7, 8).atTime(12, 54).atZone(timeZone);
+        final long target = schedule.businessNanosRemaining(zdt1.toLocalTime()) // 2023-07-03
+                // 2023-07-04 holiday
+                // 2023-07-05 weekend WED
+                + halfDay.businessNanos() // 2023-07-06 half day
+                + schedule.businessNanos() // normal day
+                + schedule.businessNanosElapsed(zdt3.toLocalTime());
+
+        assertEquals(Duration.ofNanos(target), bCalendar.diffBusinessDuration(zdt1, zdt3));
+        assertEquals(Duration.ofNanos(-target), bCalendar.diffBusinessDuration(zdt3, zdt1));
+        assertEquals(Duration.ofNanos(target), bCalendar.diffBusinessDuration(zdt1.toInstant(), zdt3.toInstant()));
+        assertEquals(Duration.ofNanos(-target), bCalendar.diffBusinessDuration(zdt3.toInstant(), zdt1.toInstant()));
+    }
+
+    public void testDiffNonBusinessDuration() {
+        // Same day
+        final ZonedDateTime zdt1 = LocalDate.of(2023, 7, 3).atTime(6, 27).atZone(timeZone);
+        final ZonedDateTime zdt2 = LocalDate.of(2023, 7, 3).atTime(15, 10).atZone(timeZone);
+
+        assertEquals(Duration.ofNanos(DateTimeUtils.diffNanos(zdt1, zdt2) - bCalendar.diffBusinessNanos(zdt1, zdt2)),
+                bCalendar.diffNonBusinessDuration(zdt1, zdt2));
+        assertEquals(Duration.ofNanos(-bCalendar.diffNonBusinessNanos(zdt1, zdt2)),
+                bCalendar.diffNonBusinessDuration(zdt2, zdt1));
+        assertEquals(Duration.ofNanos(DateTimeUtils.diffNanos(zdt1, zdt2) - bCalendar.diffBusinessNanos(zdt1, zdt2)),
+                bCalendar.diffNonBusinessDuration(zdt1.toInstant(), zdt2.toInstant()));
+        assertEquals(Duration.ofNanos(-bCalendar.diffNonBusinessNanos(zdt1, zdt2)),
+                bCalendar.diffNonBusinessDuration(zdt2.toInstant(), zdt1.toInstant()));
+
+        // Multiple holidays
+        final ZonedDateTime zdt3 = LocalDate.of(2023, 7, 8).atTime(12, 54).atZone(timeZone);
+
+        assertEquals(Duration.ofNanos(DateTimeUtils.diffNanos(zdt1, zdt3) - bCalendar.diffBusinessNanos(zdt1, zdt3)),
+                bCalendar.diffNonBusinessDuration(zdt1, zdt3));
+        assertEquals(Duration.ofNanos(-bCalendar.diffNonBusinessNanos(zdt1, zdt3)),
+                bCalendar.diffNonBusinessDuration(zdt3, zdt1));
+        assertEquals(Duration.ofNanos(DateTimeUtils.diffNanos(zdt1, zdt3) - bCalendar.diffBusinessNanos(zdt1, zdt3)),
+                bCalendar.diffNonBusinessDuration(zdt1.toInstant(), zdt3.toInstant()));
+        assertEquals(Duration.ofNanos(-bCalendar.diffNonBusinessNanos(zdt1, zdt3)),
+                bCalendar.diffNonBusinessDuration(zdt3.toInstant(), zdt1.toInstant()));
     }
 
     public void testDiffBusinessDays() {

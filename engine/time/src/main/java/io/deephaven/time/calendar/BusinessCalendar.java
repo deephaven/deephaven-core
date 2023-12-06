@@ -212,13 +212,22 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
+     * Length of a standard business day.
+     *
+     * @return length of a standard business day
+     */
+    public Duration standardBusinessDuration() {
+        return standardBusinessDay.businessDuration();
+    }
+
+    /**
      * Business day schedules for all holidays. A holiday is a date that has a schedule that is different from the
      * schedule for a standard business day or weekend.
      *
      * @return a map of holiday dates and their calendar days
      */
     public Map<LocalDate, CalendarDay<Instant>> holidays() {
-        return Collections.unmodifiableMap(holidays);
+        return holidays;
     }
 
     /**
@@ -1449,6 +1458,58 @@ public class BusinessCalendar extends Calendar {
         Require.neqNull(start, "start");
         Require.neqNull(end, "end");
         return diffNonBusinessNanos(start.toInstant(), end.toInstant());
+    }
+
+    /**
+     * Returns the amount of business time between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of business time between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public Duration diffBusinessDuration(final Instant start, final Instant end) {
+        return Duration.ofNanos(diffBusinessNanos(start, end));
+    }
+
+    /**
+     * Returns the amount of business time between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of business time between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public Duration diffBusinessDuration(final ZonedDateTime start, final ZonedDateTime end) {
+        return Duration.ofNanos(diffBusinessNanos(start, end));
+    }
+
+    /**
+     * Returns the amount of non-business time between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of non-business time between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public Duration diffNonBusinessDuration(final Instant start, final Instant end) {
+        return Duration.ofNanos(diffNonBusinessNanos(start, end));
+    }
+
+    /**
+     * Returns the amount of non-business time between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of non-business time between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public Duration diffNonBusinessDuration(final ZonedDateTime start, final ZonedDateTime end) {
+        return Duration.ofNanos(diffNonBusinessNanos(start, end));
     }
 
     /**
