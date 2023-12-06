@@ -56,6 +56,8 @@ public class OperationInitializationThreadPool implements OperationInitializer {
         };
         executorService = new ThreadPoolExecutor(
                 NUM_THREADS, NUM_THREADS, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
+
+        executorService.prestartAllCoreThreads();
     }
 
     @Override
@@ -71,12 +73,5 @@ public class OperationInitializationThreadPool implements OperationInitializer {
     @Override
     public int parallelismFactor() {
         return NUM_THREADS;
-    }
-
-    /**
-     * Start the OperationInitializationThreadPool. In practice, this just pre-starts all threads.
-     */
-    public void start() {
-        executorService.prestartAllCoreThreads();
     }
 }

@@ -21,12 +21,7 @@ public interface OperationInitializer {
 
         @Override
         public int parallelismFactor() {
-            return 0;
-        }
-
-        @Override
-        public void start() {
-            // no-op
+            return 1;
         }
     };
 
@@ -48,9 +43,4 @@ public interface OperationInitializer {
      * @return
      */
     int parallelismFactor();
-
-    /**
-     *
-     */
-    void start();
 }

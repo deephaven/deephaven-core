@@ -230,7 +230,6 @@ public class ExecutionContext {
         private OperationInitializer operationInitializer = PoisonedOperationInitializer.INSTANCE;
 
         private Builder() {
-            // why automatically propagate this, but not other things?
             // propagate the auth context from the current context
             this(getContext().authContext);
         }
