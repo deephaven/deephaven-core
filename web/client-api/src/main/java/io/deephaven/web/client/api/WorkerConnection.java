@@ -691,7 +691,7 @@ public class WorkerConnection {
         info.failureHandled(throwable.toString());
     }
 
-    public Promise<JsVariableDefinition> getVariableDefinition(String name, String type) {
+    public Promise<JsVariableDefinition> getVariableDefinition(String name, @Nullable String type) {
         LazyPromise<JsVariableDefinition> promise = new LazyPromise<>();
 
         final class Listener implements Consumer<JsVariableChanges> {
@@ -705,11 +705,11 @@ public class WorkerConnection {
             public void accept(JsVariableChanges changes) {
                 JsVariableDefinition foundField = changes.getCreated()
                         .find((field, p1, p2) -> field.getTitle().equals(name)
-                                && field.getType().equalsIgnoreCase(type));
+                                && (type == null || field.getType().equalsIgnoreCase(type)));
 
                 if (foundField == null) {
                     foundField = changes.getUpdated().find((field, p1, p2) -> field.getTitle().equals(name)
-                            && field.getType().equalsIgnoreCase(type));
+                            && (type == null || field.getType().equalsIgnoreCase(type)));
                 }
 
                 if (foundField != null) {
@@ -789,20 +789,15 @@ public class WorkerConnection {
             return getObject((JsVariableDefinition) definitionObject);
         }
 
-        if (!definitionObject.has("type")) {
-            throw new IllegalArgumentException("no type field; could not getObject");
-        }
-        String type = definitionObject.getAsAny("type").asString();
-
+        String type = definitionObject.has("type") ? definitionObject.getAsAny("type").asString() : null;
         boolean hasName = definitionObject.has("name");
         boolean hasId = definitionObject.has("id");
         if (hasName && hasId) {
             throw new IllegalArgumentException("has both name and id field; could not getObject");
         } else if (hasName) {
             String name = definitionObject.getAsAny("name").asString();
-            return getVariableDefinition(name, type)
-                    .then(this::getObject);
-        } else if (hasId) {
+            return getVariableDefinition(name, type).then(this::getObject);
+        } else if (hasId && type != null) {
             String id = definitionObject.getAsAny("id").asString();
             return getObject(new JsVariableDefinition(type, null, id, null));
         } else {

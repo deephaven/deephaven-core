@@ -16,6 +16,7 @@ import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.console.JsCommandResult;
 import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableDescriptor;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.tree.JsTreeTable;
@@ -136,6 +137,10 @@ public class IdeSession extends HasEventHandling {
     public Promise<JsTreeTable> getHierarchicalTable(String name) {
         return connection.getVariableDefinition(name, JsVariableType.HIERARCHICALTABLE)
                 .then(connection::getTreeTable);
+    }
+
+    public Promise<JsVariableDefinition> getVariableDefinition(String name) {
+        return connection.getVariableDefinition(name, null);
     }
 
     public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
