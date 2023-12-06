@@ -11,7 +11,6 @@ import io.deephaven.plugin.type.ObjectTypeRegistration;
 
 import javax.inject.Inject;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * Plugin {@link io.deephaven.plugin.Registration.Callback} implementation that forwards registered plugins to a

@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.plugin.js;
+package io.deephaven.server.plugin.js;
 
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
@@ -14,7 +14,7 @@ import java.nio.file.Path;
  */
 @Immutable
 @SimpleStyle
-public abstract class JsPluginPackagePath extends JsPluginBase {
+public abstract class JsPluginPackagePath {
     public static final String PACKAGE_JSON = "package.json";
 
     /**
