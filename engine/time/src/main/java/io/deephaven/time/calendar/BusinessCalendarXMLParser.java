@@ -44,7 +44,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *      </holiday>
  *      <holiday>
  *          <date>20020705</date>
- *          <businessTime><open>09:30</open><close>13:00</close></businessTime>
+ *          <businessTime>
+ *              <open>09:30</open>
+ *              <close>13:00</close>
+ *          </businessTime>
  *      </holiday>
  * </calendar>
  * }
