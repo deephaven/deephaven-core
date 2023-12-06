@@ -117,4 +117,7 @@ public class PoisonedUpdateGraph implements UpdateGraph {
     public void requestRefresh() {
         fail();
     }
+
+    @Override
+    public void stop() {}
 }
