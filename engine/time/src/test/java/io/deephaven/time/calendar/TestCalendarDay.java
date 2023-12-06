@@ -28,6 +28,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertNull(empty.businessStart());
         assertNull(empty.businessEnd());
         assertNull(empty.businessEnd());
+        assertTrue(empty.isInclusiveEnd());
         assertEquals(0L, empty.businessNanos());
         assertEquals(Duration.ofNanos(0), empty.businessDuration());
         assertEquals(0L, empty.businessNanos());
@@ -52,6 +53,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertEquals(open1, single.businessStart());
         assertEquals(close1, single.businessEnd());
         assertEquals(close1, single.businessEnd());
+        assertTrue(single.isInclusiveEnd());
         assertEquals(DateTimeUtils.HOUR, single.businessNanos());
         assertEquals(Duration.ofNanos(DateTimeUtils.HOUR), single.businessDuration());
         assertEquals(DateTimeUtils.HOUR, single.businessNanos());
@@ -89,6 +91,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertEquals(open1, multi.businessStart());
         assertEquals(close2, multi.businessEnd());
         assertEquals(close2, multi.businessEnd());
+        assertTrue(multi.isInclusiveEnd());
         assertEquals(DateTimeUtils.HOUR * 6, multi.businessNanos());
         assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 6), multi.businessDuration());
         assertEquals(DateTimeUtils.HOUR * 6, multi.businessNanos());
@@ -134,6 +137,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertEquals(open1, multi2.businessStart());
         assertEquals(close2, multi2.businessEnd());
         assertEquals(close2, multi2.businessEnd());
+        assertTrue(multi2.isInclusiveEnd());
         assertEquals(DateTimeUtils.HOUR * 6, multi2.businessNanos());
         assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 6), multi2.businessDuration());
         assertEquals(DateTimeUtils.HOUR * 6, multi2.businessNanos());

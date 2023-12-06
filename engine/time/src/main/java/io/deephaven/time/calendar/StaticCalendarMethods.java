@@ -12,6 +12,7 @@ import io.deephaven.time.calendar.Calendar;
 import io.deephaven.time.calendar.CalendarDay;
 import java.lang.String;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -116,6 +117,12 @@ public class StaticCalendarMethods {
     /** @see io.deephaven.time.calendar.BusinessCalendar#diffBusinessDays(java.time.ZonedDateTime,java.time.ZonedDateTime) */
     public static  double diffBusinessDays( java.time.ZonedDateTime start, java.time.ZonedDateTime end ) {return Calendars.calendar().diffBusinessDays( start, end );}
 
+    /** @see io.deephaven.time.calendar.BusinessCalendar#diffBusinessDuration(java.time.Instant,java.time.Instant) */
+    public static  java.time.Duration diffBusinessDuration( java.time.Instant start, java.time.Instant end ) {return Calendars.calendar().diffBusinessDuration( start, end );}
+
+    /** @see io.deephaven.time.calendar.BusinessCalendar#diffBusinessDuration(java.time.ZonedDateTime,java.time.ZonedDateTime) */
+    public static  java.time.Duration diffBusinessDuration( java.time.ZonedDateTime start, java.time.ZonedDateTime end ) {return Calendars.calendar().diffBusinessDuration( start, end );}
+
     /** @see io.deephaven.time.calendar.BusinessCalendar#diffBusinessNanos(java.time.Instant,java.time.Instant) */
     public static  long diffBusinessNanos( java.time.Instant start, java.time.Instant end ) {return Calendars.calendar().diffBusinessNanos( start, end );}
 
@@ -127,6 +134,12 @@ public class StaticCalendarMethods {
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#diffBusinessYears(java.time.ZonedDateTime,java.time.ZonedDateTime) */
     public static  double diffBusinessYears( java.time.ZonedDateTime start, java.time.ZonedDateTime end ) {return Calendars.calendar().diffBusinessYears( start, end );}
+
+    /** @see io.deephaven.time.calendar.BusinessCalendar#diffNonBusinessDuration(java.time.Instant,java.time.Instant) */
+    public static  java.time.Duration diffNonBusinessDuration( java.time.Instant start, java.time.Instant end ) {return Calendars.calendar().diffNonBusinessDuration( start, end );}
+
+    /** @see io.deephaven.time.calendar.BusinessCalendar#diffNonBusinessDuration(java.time.ZonedDateTime,java.time.ZonedDateTime) */
+    public static  java.time.Duration diffNonBusinessDuration( java.time.ZonedDateTime start, java.time.ZonedDateTime end ) {return Calendars.calendar().diffNonBusinessDuration( start, end );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#diffNonBusinessNanos(java.time.Instant,java.time.Instant) */
     public static  long diffNonBusinessNanos( java.time.Instant start, java.time.Instant end ) {return Calendars.calendar().diffNonBusinessNanos( start, end );}
@@ -421,6 +434,9 @@ public class StaticCalendarMethods {
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#standardBusinessDay() */
     public static  io.deephaven.time.calendar.CalendarDay<java.time.LocalTime> standardBusinessDay( ) {return Calendars.calendar().standardBusinessDay( );}
+
+    /** @see io.deephaven.time.calendar.BusinessCalendar#standardBusinessDuration() */
+    public static  java.time.Duration standardBusinessDuration( ) {return Calendars.calendar().standardBusinessDuration( );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#standardBusinessNanos() */
     public static  long standardBusinessNanos( ) {return Calendars.calendar().standardBusinessNanos( );}

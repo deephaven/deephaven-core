@@ -99,6 +99,15 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
     }
 
     /**
+     * Is the end of the business day inclusive?  Equivalent to the end of the last business time range.
+     *
+     * @return is the end of the business day inclusive?
+     */
+    public boolean isInclusiveEnd() {
+        return businessTimeRanges.isEmpty() || businessTimeRanges.get(businessTimeRanges.size() - 1).isInclusiveEnd();
+    }
+
+    /**
      * Gets the length of the business day in nanoseconds. If the business day has multiple business time ranges, only
      * the time during the ranges is counted.
      *
@@ -174,7 +183,7 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
     }
 
     /**
-     * Is this day a business day?
+     * Is this day a business day?  A business day is a day that contains at least some business time.
      *
      * @return true if it is a business day; false otherwise.
      */
