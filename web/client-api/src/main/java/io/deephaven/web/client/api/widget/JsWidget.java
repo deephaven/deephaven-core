@@ -132,9 +132,10 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
             messageStream.onStatus(status -> {
                 if (!status.isOk()) {
                     reject.onInvoke(status.getDetails());
-                    fireEvent(EVENT_CLOSE);
-                    closeStream();
                 }
+                fireEvent(EVENT_CLOSE);
+                closeStream();
+                connection.releaseTicket(getTicket());
             });
             messageStream.onEnd(status -> {
                 closeStream();
