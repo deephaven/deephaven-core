@@ -149,7 +149,8 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
                 parent.getColumnSourceMap().forEach((columnName, columnSource) -> {
                     if (columnName.equals(rowSetColumn)) {
                         resultColumnSourceMap.put(
-                                renamedRowSetColumn, RowSetColumnSourceWrapper.from(parent.getColumnSource(rowSetColumn)));
+                                renamedRowSetColumn,
+                                RowSetColumnSourceWrapper.from(parent.getColumnSource(rowSetColumn)));
                     } else {
                         // Convert the key columns to primitive column sources.
                         resultColumnSourceMap.put(columnName, ReinterpretUtils.maybeConvertToPrimitive(columnSource));
@@ -188,6 +189,6 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
             final ColumnSource<?> columnSource = entry.getValue().getPrevSource();
             columnSourceMap.put(columnName, columnSource);
         }
-        return new QueryTable(inputTable.getRowSet().prev().writableCast().toTracking(), columnSourceMap);
+        return new QueryTable(inputTable.getRowSet().copyPrev().toTracking(), columnSourceMap);
     }
 }

@@ -221,24 +221,36 @@ public class SortHelpers {
      * Note that if usePrev is true, then rowSetToSort is the previous RowSet; not the current RowSet, and we should not
      * need to call copyPrev.
      */
-    static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-            DataIndex dataIndex, RowSet rowSetToSort, boolean usePrev) {
-        return getSortedKeys(order, columnsToSortBy, dataIndex, rowSetToSort, usePrev, sortBySymbolTable);
+    static SortMapping getSortedKeys(
+            final SortingOrder[] order,
+            final ColumnSource<Comparable<?>>[] originalColumnsToSortBy,
+            final ColumnSource<Comparable<?>>[] columnsToSortBy,
+            final DataIndex dataIndex,
+            final RowSet rowSetToSort,
+            final boolean usePrev) {
+        return getSortedKeys(order, originalColumnsToSortBy, columnsToSortBy, dataIndex, rowSetToSort, usePrev,
+                sortBySymbolTable);
     }
 
     /**
      * Note that if usePrev is true, then rowSetToSort is the previous RowSet; not the current RowSet, and we should not
      * need to call copyPrev.
      */
-    static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-            DataIndex dataIndex, RowSet rowSetToSort, boolean usePrev, boolean allowSymbolTable) {
+    static SortMapping getSortedKeys(
+            final SortingOrder[] order,
+            final ColumnSource<Comparable<?>>[] originalColumnsToSortBy,
+            final ColumnSource<Comparable<?>>[] columnsToSortBy,
+            final DataIndex dataIndex,
+            final RowSet rowSetToSort,
+            final boolean usePrev,
+            final boolean allowSymbolTable) {
         if (rowSetToSort.size() == 0) {
             return EMPTY_SORT_MAPPING;
         }
 
         // If the index has the same number of columns, we have a full index.
         if (dataIndex != null && dataIndex.keyColumnNames().length == columnsToSortBy.length) {
-            return getSortMappingIndexed(order, columnsToSortBy, dataIndex, rowSetToSort, usePrev);
+            return getSortMappingIndexed(order, originalColumnsToSortBy, dataIndex, rowSetToSort, usePrev);
         }
 
         if (columnsToSortBy.length == 1) {
@@ -250,7 +262,7 @@ public class SortHelpers {
             }
         }
 
-        return getSortMappingMulti(order, columnsToSortBy, dataIndex, rowSetToSort, usePrev);
+        return getSortMappingMulti(order, originalColumnsToSortBy, columnsToSortBy, dataIndex, rowSetToSort, usePrev);
     }
 
     private static class SparseSymbolMapping {
@@ -558,8 +570,13 @@ public class SortHelpers {
         }
     }
 
-    private static SortMapping getSortMappingMulti(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnSources,
-            DataIndex dataIndex, RowSet rowSet, boolean usePrev) {
+    private static SortMapping getSortMappingMulti(
+            final SortingOrder[] order,
+            final ColumnSource<Comparable<?>>[] originalColumnSources,
+            final ColumnSource<Comparable<?>>[] columnSources,
+            final DataIndex dataIndex,
+            final RowSet rowSet,
+            boolean usePrev) {
         Assert.gt(columnSources.length, "columnSources.length", 1);
         final int sortSize = rowSet.intSize();
 
@@ -574,7 +591,7 @@ public class SortHelpers {
         // Can we utilize an existing index on the first column?
         if (dataIndex != null
                 && dataIndex.keyColumnNames().length == 1
-                && dataIndex.keyColumnNames()[0].equals(columnSources[0])) {
+                && dataIndex.keyColumnMap().containsKey(originalColumnSources[0])) {
             final Table indexTable = usePrev ? ((BaseDataIndex) dataIndex).prevTable() : dataIndex.table();
 
             final String firstColumnName = dataIndex.keyColumnNames()[0];

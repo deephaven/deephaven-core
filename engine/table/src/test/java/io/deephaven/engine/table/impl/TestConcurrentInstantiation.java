@@ -17,6 +17,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -55,8 +56,8 @@ import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class TestConcurrentInstantiation extends QueryTableTestBase {
-    private static final int TIMEOUT_LENGTH = 5;
-    private static final TimeUnit TIMEOUT_UNIT = TimeUnit.MINUTES;
+    private static final int TIMEOUT_LENGTH = 10;
+    private static final TimeUnit TIMEOUT_UNIT = TimeUnit.SECONDS;
 
     private ExecutorService pool;
     private ExecutorService dualPool;
@@ -296,8 +297,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testWhere() throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereInternal(false);
+    }
+
+    public void testWhereIndexed() throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereInternal(true);
+    }
+
+    private void testWhereInternal(final boolean indexed)
+            throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
+        if (indexed) {
+            DataIndexer.of(table.getRowSet()).createDataIndex(table, "z");
+        }
         final Table tableStart =
                 TstUtils.testRefreshingTable(i(2, 6).toTracking(),
                         col("x", 1, 3), col("y", "a", "c"), col("z", true, true));
@@ -374,14 +387,36 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testWhereDynamic() throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereDynamicInternal(false, false);
+    }
 
+    public void testWhereDynamicIndexedSource() throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereDynamicInternal(true, false);
+    }
+
+    public void testWhereDynamicIndexedSet() throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereDynamicInternal(false, true);
+    }
+
+    public void testWhereDynamicIndexedBoth() throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereDynamicInternal(true, true);
+    }
+
+    private void testWhereDynamicInternal(final boolean sourceIndexed, final boolean setIndexed)
+            throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
+        if (sourceIndexed) {
+            DataIndexer.of(table.getRowSet()).createDataIndex(table, "z");
+        }
         final Table tableStart = TstUtils.testRefreshingTable(i(2, 6).toTracking(),
                 col("x", 1, 3), col("y", "a", "c"), col("z", true, true));
         final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6).toTracking(),
                 col("x", 4, 3), col("y", "d", "c"), col("z", true, true));
         final QueryTable whereTable = TstUtils.testRefreshingTable(i(0).toTracking(), col("z", true));
+        if (setIndexed) {
+            DataIndexer.of(whereTable.getRowSet()).createDataIndex(whereTable, "z");
+        }
 
         final DynamicWhereFilter filter = updateGraph.exclusiveLock().computeLocked(
                 () -> new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z")));
@@ -410,8 +445,21 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testSort() throws ExecutionException, InterruptedException, TimeoutException {
+        testSortInternal(false);
+    }
+
+    public void testSortIndexed() throws ExecutionException, InterruptedException, TimeoutException {
+        testSortInternal(true);
+    }
+
+    public void testSortInternal(final boolean indexed)
+            throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"));
+        if (indexed) {
+            DataIndexer.of(table.getRowSet()).createDataIndex(table, "x");
+        }
+
         final Table tableStart = TstUtils.testRefreshingTable(i(1, 2, 3).toTracking(),
                 col("x", 3, 2, 1), col("y", "c", "b", "a"));
         final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 3, 4).toTracking(),
@@ -432,6 +480,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         table.notifyListeners(i(3), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
+
+        updateGraph.flushAllNormalNotificationsForUnitTests();
 
         final Table sort3 = pool.submit(() -> table.sortDescending("x")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 

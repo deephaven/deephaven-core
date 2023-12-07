@@ -3,10 +3,12 @@
  */
 package io.deephaven.engine.table.impl;
 
+import com.google.common.collect.Sets;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.SerialTest;
@@ -26,6 +28,10 @@ import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 @Category(SerialTest.class)
 public class MultiColumnSortTest {
+    private enum IndexType {
+        NONE, FULL, PARTIAL
+    }
+
     @Rule
     public EngineCleanup framework = new EngineCleanup();
 
@@ -34,12 +40,32 @@ public class MultiColumnSortTest {
         for (int size = 10; size <= 100_000; size *= 10) {
             for (int seed = 0; seed < 1; ++seed) {
                 System.out.println("Seed: " + seed);
-                testMultiColumnSort(seed, size);
+                testMultiColumnSort(seed, size, IndexType.NONE);
             }
         }
     }
 
-    private void testMultiColumnSort(int seed, int size) {
+    @Test
+    public void testMultiColumnSortFullIndex() {
+        for (int size = 10; size <= 100_000; size *= 10) {
+            for (int seed = 0; seed < 1; ++seed) {
+                System.out.println("Seed: " + seed);
+                testMultiColumnSort(seed, size, IndexType.FULL);
+            }
+        }
+    }
+
+    @Test
+    public void testMultiColumnSortPartialIndex() {
+        for (int size = 10; size <= 100_000; size *= 10) {
+            for (int seed = 0; seed < 1; ++seed) {
+                System.out.println("Seed: " + seed);
+                testMultiColumnSort(seed, size, IndexType.PARTIAL);
+            }
+        }
+    }
+
+    private void testMultiColumnSort(int seed, int size, IndexType indexType) {
         final Random random = new Random(seed);
 
         final Table table = getTable(size, random,
@@ -59,6 +85,26 @@ public class MultiColumnSortTest {
                         new BigDecimalGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100))));
 
         final List<String> columnNames = table.getDefinition().getColumnNames();
+
+        Set<Set<String>> keyColumnPowerSet = Sets.powerSet(new HashSet<>(columnNames));
+
+        if (indexType == IndexType.FULL) {
+            // Create full indexes for every possible column subset.
+            final DataIndexer dataIndexer = DataIndexer.of(table.getRowSet());
+            for (Set<String> keyColumnSubset : keyColumnPowerSet) {
+                if (keyColumnSubset.isEmpty() || keyColumnSubset.size() == columnNames.size()) {
+                    // Won't consider the empty or full set.
+                    continue;
+                }
+                dataIndexer.createDataIndex(table, keyColumnSubset.toArray(String[]::new));
+            }
+        } else if (indexType == IndexType.PARTIAL) {
+            // Only create single-column indexes
+            final DataIndexer dataIndexer = DataIndexer.of(table.getRowSet());
+            for (String keyColumn : columnNames) {
+                dataIndexer.createDataIndex(table, keyColumn);
+            }
+        }
 
         doMultiColumnTest(table, SortColumn.asc(ColumnName.of("boolCol")), SortColumn.desc(ColumnName.of("Sym")));
 
