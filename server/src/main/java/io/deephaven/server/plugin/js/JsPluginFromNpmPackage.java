@@ -12,9 +12,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.deephaven.server.plugin.js.JsPluginPackagePath.PACKAGE_JSON;
-
 class JsPluginFromNpmPackage {
+    public static final String PACKAGE_JSON = "package.json";
 
     // https://docs.npmjs.com/cli/v6/configuring-npm/package-json#files
     private static final List<String> INCLUDED = List.of(
@@ -33,7 +32,6 @@ class JsPluginFromNpmPackage {
             "HISTORY.md",
             "NOTICE",
             "NOTICE.md");
-
 
     static JsPlugin of(Path packageRoot) throws IOException {
         final Path packageJsonPath = packageRoot.resolve(PACKAGE_JSON);

@@ -50,6 +50,6 @@ abstract class NpmPackage {
     @JsonProperty(MAIN)
     public abstract String main();
 
-    // todo: files?
-    // todo: deephaven object?
+    // Note: do we want "files" here, and actually try to parse it? Or, "deephaven" object that more closely matches
+    // JsPlugin / Paths structure?
 }
