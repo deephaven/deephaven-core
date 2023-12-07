@@ -111,6 +111,7 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORIT
 PROTOBUF_CONSTEXPR HierarchicalTableDescriptor::HierarchicalTableDescriptor(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.snapshot_schema_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.is_static_)*/false
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct HierarchicalTableDescriptorDefaultTypeInternal {
   PROTOBUF_CONSTEXPR HierarchicalTableDescriptorDefaultTypeInternal()
@@ -244,6 +245,7 @@ const uint32_t TableStruct_deephaven_2fproto_2fhierarchicaltable_2eproto::offset
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor, _impl_.snapshot_schema_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor, _impl_.is_static_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -288,10 +290,10 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 34, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest)},
   { 44, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyResponse)},
   { 50, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor)},
-  { 57, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest)},
-  { 68, 76, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor)},
-  { 78, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewResponse)},
-  { 84, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest)},
+  { 58, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest)},
+  { 69, 77, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor)},
+  { 79, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewResponse)},
+  { 85, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -335,46 +337,47 @@ const char descriptor_table_protodef_deephaven_2fproto_2fhierarchicaltable_2epro
   "phaven.proto.backplane.grpc.Condition\022@\n"
   "\005sorts\030\004 \003(\01321.io.deephaven.proto.backpl"
   "ane.grpc.SortDescriptor\" \n\036HierarchicalT"
-  "ableApplyResponse\"6\n\033HierarchicalTableDe"
-  "scriptor\022\027\n\017snapshot_schema\030\001 \001(\014\"\336\002\n\034Hi"
-  "erarchicalTableViewRequest\022A\n\016result_vie"
-  "w_id\030\001 \001(\0132).io.deephaven.proto.backplan"
-  "e.grpc.Ticket\022J\n\025hierarchical_table_id\030\002"
-  " \001(\0132).io.deephaven.proto.backplane.grpc"
-  ".TicketH\000\022E\n\020existing_view_id\030\003 \001(\0132).io"
-  ".deephaven.proto.backplane.grpc.TicketH\000"
-  "\022^\n\nexpansions\030\004 \001(\0132J.io.deephaven.prot"
-  "o.backplane.grpc.HierarchicalTableViewKe"
-  "yTableDescriptorB\010\n\006target\"\254\001\n\'Hierarchi"
-  "calTableViewKeyTableDescriptor\022\?\n\014key_ta"
-  "ble_id\030\001 \001(\0132).io.deephaven.proto.backpl"
-  "ane.grpc.Ticket\022$\n\027key_table_action_colu"
-  "mn\030\002 \001(\tH\000\210\001\001B\032\n\030_key_table_action_colum"
-  "n\"\037\n\035HierarchicalTableViewResponse\"\264\001\n$H"
-  "ierarchicalTableSourceExportRequest\022B\n\017r"
-  "esult_table_id\030\001 \001(\0132).io.deephaven.prot"
-  "o.backplane.grpc.Ticket\022H\n\025hierarchical_"
-  "table_id\030\002 \001(\0132).io.deephaven.proto.back"
-  "plane.grpc.Ticket2\251\005\n\030HierarchicalTableS"
-  "ervice\022m\n\006Rollup\0220.io.deephaven.proto.ba"
-  "ckplane.grpc.RollupRequest\0321.io.deephave"
-  "n.proto.backplane.grpc.RollupResponse\022g\n"
-  "\004Tree\022..io.deephaven.proto.backplane.grp"
-  "c.TreeRequest\032/.io.deephaven.proto.backp"
-  "lane.grpc.TreeResponse\022\214\001\n\005Apply\022@.io.de"
-  "ephaven.proto.backplane.grpc.Hierarchica"
-  "lTableApplyRequest\032A.io.deephaven.proto."
-  "backplane.grpc.HierarchicalTableApplyRes"
-  "ponse\022\211\001\n\004View\022\?.io.deephaven.proto.back"
-  "plane.grpc.HierarchicalTableViewRequest\032"
-  "@.io.deephaven.proto.backplane.grpc.Hier"
-  "archicalTableViewResponse\022\231\001\n\014ExportSour"
-  "ce\022G.io.deephaven.proto.backplane.grpc.H"
-  "ierarchicalTableSourceExportRequest\032@.io"
-  ".deephaven.proto.backplane.grpc.Exported"
-  "TableCreationResponseBMH\001P\001ZGgithub.com/"
-  "deephaven/deephaven-core/go/internal/pro"
-  "to/hierarchicaltableb\006proto3"
+  "ableApplyResponse\"I\n\033HierarchicalTableDe"
+  "scriptor\022\027\n\017snapshot_schema\030\001 \001(\014\022\021\n\tis_"
+  "static\030\002 \001(\010\"\336\002\n\034HierarchicalTableViewRe"
+  "quest\022A\n\016result_view_id\030\001 \001(\0132).io.deeph"
+  "aven.proto.backplane.grpc.Ticket\022J\n\025hier"
+  "archical_table_id\030\002 \001(\0132).io.deephaven.p"
+  "roto.backplane.grpc.TicketH\000\022E\n\020existing"
+  "_view_id\030\003 \001(\0132).io.deephaven.proto.back"
+  "plane.grpc.TicketH\000\022^\n\nexpansions\030\004 \001(\0132"
+  "J.io.deephaven.proto.backplane.grpc.Hier"
+  "archicalTableViewKeyTableDescriptorB\010\n\006t"
+  "arget\"\254\001\n\'HierarchicalTableViewKeyTableD"
+  "escriptor\022\?\n\014key_table_id\030\001 \001(\0132).io.dee"
+  "phaven.proto.backplane.grpc.Ticket\022$\n\027ke"
+  "y_table_action_column\030\002 \001(\tH\000\210\001\001B\032\n\030_key"
+  "_table_action_column\"\037\n\035HierarchicalTabl"
+  "eViewResponse\"\264\001\n$HierarchicalTableSourc"
+  "eExportRequest\022B\n\017result_table_id\030\001 \001(\0132"
+  ").io.deephaven.proto.backplane.grpc.Tick"
+  "et\022H\n\025hierarchical_table_id\030\002 \001(\0132).io.d"
+  "eephaven.proto.backplane.grpc.Ticket2\251\005\n"
+  "\030HierarchicalTableService\022m\n\006Rollup\0220.io"
+  ".deephaven.proto.backplane.grpc.RollupRe"
+  "quest\0321.io.deephaven.proto.backplane.grp"
+  "c.RollupResponse\022g\n\004Tree\022..io.deephaven."
+  "proto.backplane.grpc.TreeRequest\032/.io.de"
+  "ephaven.proto.backplane.grpc.TreeRespons"
+  "e\022\214\001\n\005Apply\022@.io.deephaven.proto.backpla"
+  "ne.grpc.HierarchicalTableApplyRequest\032A."
+  "io.deephaven.proto.backplane.grpc.Hierar"
+  "chicalTableApplyResponse\022\211\001\n\004View\022\?.io.d"
+  "eephaven.proto.backplane.grpc.Hierarchic"
+  "alTableViewRequest\032@.io.deephaven.proto."
+  "backplane.grpc.HierarchicalTableViewResp"
+  "onse\022\231\001\n\014ExportSource\022G.io.deephaven.pro"
+  "to.backplane.grpc.HierarchicalTableSourc"
+  "eExportRequest\032@.io.deephaven.proto.back"
+  "plane.grpc.ExportedTableCreationResponse"
+  "BMH\001P\001ZGgithub.com/deephaven/deephaven-c"
+  "ore/go/internal/proto/hierarchicaltableb"
+  "\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_deps[2] = {
   &::descriptor_table_deephaven_2fproto_2ftable_2eproto,
@@ -382,7 +385,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2
 };
 static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto = {
-    false, false, 2628, descriptor_table_protodef_deephaven_2fproto_2fhierarchicaltable_2eproto,
+    false, false, 2647, descriptor_table_protodef_deephaven_2fproto_2fhierarchicaltable_2eproto,
     "deephaven/proto/hierarchicaltable.proto",
     &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once, descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_deps, 2, 11,
     schemas, file_default_instances, TableStruct_deephaven_2fproto_2fhierarchicaltable_2eproto::offsets,
@@ -1595,6 +1598,7 @@ HierarchicalTableDescriptor::HierarchicalTableDescriptor(const HierarchicalTable
   HierarchicalTableDescriptor* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.snapshot_schema_){}
+    , decltype(_impl_.is_static_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -1606,6 +1610,7 @@ HierarchicalTableDescriptor::HierarchicalTableDescriptor(const HierarchicalTable
     _this->_impl_.snapshot_schema_.Set(from._internal_snapshot_schema(), 
       _this->GetArenaForAllocation());
   }
+  _this->_impl_.is_static_ = from._impl_.is_static_;
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor)
 }
 
@@ -1615,6 +1620,7 @@ inline void HierarchicalTableDescriptor::SharedCtor(
   (void)is_message_owned;
   new (&_impl_) Impl_{
       decltype(_impl_.snapshot_schema_){}
+    , decltype(_impl_.is_static_){false}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.snapshot_schema_.InitDefault();
@@ -1648,6 +1654,7 @@ void HierarchicalTableDescriptor::Clear() {
   (void) cached_has_bits;
 
   _impl_.snapshot_schema_.ClearToEmpty();
+  _impl_.is_static_ = false;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1662,6 +1669,14 @@ const char* HierarchicalTableDescriptor::_InternalParse(const char* ptr, ::_pbi:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           auto str = _internal_mutable_snapshot_schema();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // bool is_static = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          _impl_.is_static_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -1701,6 +1716,12 @@ uint8_t* HierarchicalTableDescriptor::_InternalSerialize(
         1, this->_internal_snapshot_schema(), target);
   }
 
+  // bool is_static = 2;
+  if (this->_internal_is_static() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(2, this->_internal_is_static(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -1724,6 +1745,11 @@ size_t HierarchicalTableDescriptor::ByteSizeLong() const {
         this->_internal_snapshot_schema());
   }
 
+  // bool is_static = 2;
+  if (this->_internal_is_static() != 0) {
+    total_size += 1 + 1;
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -1744,6 +1770,9 @@ void HierarchicalTableDescriptor::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to
 
   if (!from._internal_snapshot_schema().empty()) {
     _this->_internal_set_snapshot_schema(from._internal_snapshot_schema());
+  }
+  if (from._internal_is_static() != 0) {
+    _this->_internal_set_is_static(from._internal_is_static());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -1768,6 +1797,7 @@ void HierarchicalTableDescriptor::InternalSwap(HierarchicalTableDescriptor* othe
       &_impl_.snapshot_schema_, lhs_arena,
       &other->_impl_.snapshot_schema_, rhs_arena
   );
+  swap(_impl_.is_static_, other->_impl_.is_static_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata HierarchicalTableDescriptor::GetMetadata() const {
