@@ -7,14 +7,12 @@ import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -43,6 +41,10 @@ public class MatchFilter extends WhereFilterImpl {
     private final String[] strValues;
     private final boolean invertMatch;
     private final boolean caseInsensitive;
+
+    /** The data index for the source table, if any. */
+    @Nullable
+    private DataIndex sourceDataIndex;
     private boolean initialized = false;
 
     public enum MatchType {
@@ -133,6 +135,19 @@ public class MatchFilter extends WhereFilterImpl {
     }
 
     @Override
+    public List<DataIndex> getDataIndexes(final Table sourceTable) {
+        if (sourceDataIndex == null) {
+            // The outside world knows we would like to use this index, we can rely on it being in the correct state
+            // for this cycle only.
+            sourceDataIndex = DataIndexer.of(sourceTable.getRowSet()).getDataIndex(sourceTable, columnName);
+        }
+        if (sourceDataIndex == null) {
+            return Collections.emptyList();
+        }
+        return List.of(sourceDataIndex);
+    }
+
+    @Override
     public synchronized void init(TableDefinition tableDefinition) {
         if (initialized) {
             return;
@@ -186,7 +201,11 @@ public class MatchFilter extends WhereFilterImpl {
     public WritableRowSet filter(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        return columnSource.match(invertMatch, usePrev, caseInsensitive, fullSet, selection, values);
+        final WritableRowSet result =
+                columnSource.match(invertMatch, usePrev, caseInsensitive, sourceDataIndex, selection, values);
+        // We cannot rely on the data index being in the correct state for the next cycle, so we clear it.
+        sourceDataIndex = null;
+        return result;
     }
 
     @NotNull
@@ -194,7 +213,11 @@ public class MatchFilter extends WhereFilterImpl {
     public WritableRowSet filterInverse(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        return columnSource.match(!invertMatch, usePrev, caseInsensitive, fullSet, selection, values);
+        final WritableRowSet result =
+                columnSource.match(!invertMatch, usePrev, caseInsensitive, sourceDataIndex, selection, values);
+        // We cannot rely on the data index being in the correct state for the next cycle, so we clear it.
+        sourceDataIndex = null;
+        return result;
     }
 
     @Override

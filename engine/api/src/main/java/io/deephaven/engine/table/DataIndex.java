@@ -15,7 +15,8 @@ import java.util.*;
  */
 public interface DataIndex extends LivenessReferent {
     /**
-     * Provides a lookup function from {@code key} to the position in the index table. Keys are specified as follows:
+     * Provides a lookup function from {@code key} to the position in the index table. Keys consist of reinterpreted
+     * values and are specified as follows:
      * <dl>
      * <dt>No key columns</dt>
      * <dd>"Empty" keys are signified by any zero-length {@code Object[]}</dd>
@@ -37,8 +38,8 @@ public interface DataIndex extends LivenessReferent {
     }
 
     /**
-     * Provides a lookup function from {@code key} to the {@link RowSet} containing the matching table rows. Keys are
-     * specified as follows:
+     * Provides a lookup function from {@code key} to the {@link RowSet} containing the matching table rows. Keys
+     * consist of reinterpreted values and are specified as follows:
      * <dl>
      * <dt>No key columns</dt>
      * <dd>"Empty" keys are signified by any zero-length {@code Object[]}</dd>
@@ -68,6 +69,14 @@ public interface DataIndex extends LivenessReferent {
     /** Get the output row set column name for this index. */
     String rowSetColumnName();
 
+    /** Return the index table key sources in the order of the index table. **/
+    @FinalDefault
+    default ColumnSource<?>[] indexKeyColumns() {
+        final ColumnSource<?>[] columnSources = keyColumnMap().keySet().toArray(new ColumnSource[0]);
+        return indexKeyColumns(columnSources);
+        // TODO-RWC: Should this be in a static helper instead of the interface?
+    }
+
     /** Return the index table key sources in the relative order of the indexed sources supplied. **/
     @FinalDefault
     default ColumnSource<?>[] indexKeyColumns(@NotNull final ColumnSource<?>[] columnSources) {
@@ -96,13 +105,68 @@ public interface DataIndex extends LivenessReferent {
     Table table();
 
     /**
-     * Build a {@link RowSetLookup lookup} function of index row sets for this index. If {@link #isRefreshing()} is
+     * Return a {@link RowSetLookup lookup} function of index row sets for this index. If {@link #isRefreshing()} is
      * true, this lookup function is guaranteed to be accurate only for the current cycle.
      *
      * @return a function that provides map-like lookup of matching rows from an index key.
      */
     @NotNull
     RowSetLookup rowSetLookup();
+
+    /**
+     * Return a {@link RowSetLookup lookup} function of index row sets for this index. If {@link #isRefreshing()} is
+     * true, this lookup function is guaranteed to be accurate only for the current cycle. The keys provided must be in
+     * the order of the {@code lookupSources}.
+     *
+     * @return a function that provides map-like lookup of matching rows from an index key.
+     */
+    @NotNull
+    @FinalDefault
+    default RowSetLookup rowSetLookup(@NotNull final ColumnSource<?>[] lookupSources) {
+        if (lookupSources.length == 1) {
+            // Trivially ordered.
+            return rowSetLookup();
+        }
+
+        final ColumnSource<?>[] indexSourceColumns = keyColumnMap().keySet().toArray(ColumnSource[]::new);
+        if (Arrays.equals(lookupSources, indexSourceColumns)) {
+            // Order matches, so we can use the default lookup function.
+            return rowSetLookup();
+        }
+
+        // We need to wrap the lookup function with a key remapping function.
+
+        // Maps index keys -> user-supplied keys
+        final int[] indexToUserMapping = new int[lookupSources.length];
+
+        // Build an intermediate map (N^2 loop but N is small and this is called rarely).
+        for (int ii = 0; ii < indexSourceColumns.length; ++ii) {
+            boolean found = false;
+            for (int jj = 0; jj < lookupSources.length; ++jj) {
+                if (indexSourceColumns[ii] == lookupSources[jj]) {
+                    indexToUserMapping[ii] = jj;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new IllegalArgumentException("The provided columns must match the data index key columns");
+            }
+        }
+
+        return (key, usePrev) -> {
+            // This is the key provided by the caller.
+            final Object[] keys = (Object[]) key;
+            // This is the key we need to provide to the lookup function.
+            final Object[] remappedKey = new Object[keys.length];
+
+            for (int ii = 0; ii < remappedKey.length; ++ii) {
+                remappedKey[ii] = keys[indexToUserMapping[ii]];
+            }
+
+            return rowSetLookup().apply(remappedKey, usePrev);
+        };
+    }
 
     /**
      * Build a {@link PositionLookup lookup} of positions for this index. If {@link #isRefreshing()} is true, this

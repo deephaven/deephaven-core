@@ -9,32 +9,36 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 /**
- * Variant of {@link OperationSnapshotControl} that considers an "extra" {@link NotificationStepSource} in addition to
- * the source {@link BaseTable} when determining whether to use previous values during initialization or evaluating
+ * Variant of {@link OperationSnapshotControl} that considers "extra" {@link NotificationStepSource sources} in addition
+ * to the source {@link BaseTable} when determining whether to use previous values during initialization or evaluating
  * success. This is useful anytime an operation needs to listen to and snapshot one data source while also snapshotting
- * another.
+ * others.
  */
 public final class OperationSnapshotControlEx extends OperationSnapshotControl {
 
     private static final Logger log = LoggerFactory.getLogger(OperationSnapshotControlEx.class);
 
-    private final NotificationStepSource extra;
+    private final NotificationStepSource[] extras;
 
-    private long extraLastNotificationStep;
+    private long extraLastNotificationStep[];
 
     public OperationSnapshotControlEx(
             @NotNull final BaseTable<?> sourceTable,
-            @NotNull final NotificationStepSource extra) {
+            @NotNull final NotificationStepSource... extras) {
         super(sourceTable);
-        this.extra = extra;
+        this.extras = extras;
+        extraLastNotificationStep = new long[extras.length];
     }
 
     @Override
     @SuppressWarnings("AutoBoxing")
     public synchronized Boolean usePreviousValues(final long beforeClockValue) {
         lastNotificationStep = sourceTable.getLastNotificationStep();
-        extraLastNotificationStep = extra.getLastNotificationStep();
 
         final long beforeStep = LogicalClock.getStep(beforeClockValue);
         final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
@@ -42,22 +46,34 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
         final boolean idle = beforeState == LogicalClock.State.Idle;
         final boolean sourceUpdatedOnThisStep = lastNotificationStep == beforeStep;
         final boolean sourceSatisfied;
-        final boolean extraUpdatedOnThisStep = extraLastNotificationStep == beforeStep;
-        final boolean extraSatisfied;
+
+        final boolean[] extraUpdatedOnThisStep = new boolean[extras.length];
+        final boolean[] extraSatisfied = new boolean[extras.length];
+
+        boolean extraSatisfiedAll = true;
 
         try {
             sourceSatisfied = idle || sourceUpdatedOnThisStep || sourceTable.satisfied(beforeStep);
-            extraSatisfied = idle || extraUpdatedOnThisStep || extra.satisfied(beforeStep);
+            for (int ii = 0; ii < extras.length; ++ii) {
+                extraLastNotificationStep[ii] = extras[ii].getLastNotificationStep();
+                extraUpdatedOnThisStep[ii] = extraLastNotificationStep[ii] == beforeStep;
+                extraSatisfied[ii] = idle || extraUpdatedOnThisStep[ii] || extras[ii].satisfied(beforeStep);
+
+                // Clear the satisfied flag if this extra is not satisfied.
+                extraSatisfiedAll &= extraSatisfied[ii];
+            }
         } catch (ClockInconsistencyException e) {
             return null;
         }
 
         final Boolean usePrev;
-        if (sourceSatisfied == extraSatisfied) {
+        if (sourceSatisfied == extraSatisfiedAll) {
             usePrev = !sourceSatisfied;
         } else if (sourceSatisfied) {
-            WaitNotification.waitForSatisfaction(beforeStep, extra);
-            extraLastNotificationStep = extra.getLastNotificationStep();
+            WaitNotification.waitForSatisfaction(beforeStep, extras);
+            for (int ii = 0; ii < extras.length; ++ii) {
+                extraLastNotificationStep[ii] = extras[ii].getLastNotificationStep();
+            }
             final long postWaitStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
             usePrev = postWaitStep == beforeStep ? false : null;
         } else {
@@ -68,15 +84,18 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
         }
 
         if (DEBUG) {
+            final String extraHashCodes = Arrays.stream(extras).map(e -> Integer.toString(System.identityHashCode(e)))
+                    .collect(Collectors.joining(","));
+
             log.info().append("OperationSnapshotControlEx {source=").append(System.identityHashCode(sourceTable))
-                    .append(", extra=").append(System.identityHashCode(extra))
+                    .append(", extra=").append(extraHashCodes)
                     .append(", control=").append(System.identityHashCode(this))
                     .append("} usePreviousValues: beforeStep=").append(beforeStep)
                     .append(", beforeState=").append(beforeState.name())
                     .append(", sourceLastNotificationStep=").append(lastNotificationStep)
                     .append(", sourceSatisfied=").append(sourceSatisfied)
-                    .append(", extraLastNotificationStep=").append(extraLastNotificationStep)
-                    .append(", extraSatisfied=").append(extraSatisfied)
+                    .append(", extraLastNotificationStep=").append(Arrays.toString(extraLastNotificationStep))
+                    .append(", extraSatisfied=").append(Arrays.toString(extraSatisfied))
                     .append(", usePrev=").append(usePrev)
                     .endl();
         }
@@ -86,17 +105,21 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
     @Override
     public synchronized boolean snapshotCompletedConsistently(long afterClockValue, boolean usedPreviousValues) {
         if (DEBUG) {
+            final long[] extraLastNotificationSteps = Arrays.stream(extras)
+                    .mapToLong(NotificationStepSource::getLastNotificationStep)
+                    .toArray();
             log.info().append("OperationSnapshotControlEx snapshotCompletedConsistently: control=")
                     .append(System.identityHashCode(this))
                     .append(", end={").append(LogicalClock.getStep(afterClockValue)).append(",")
                     .append(LogicalClock.getState(afterClockValue).toString())
                     .append("}, usedPreviousValues=").append(usedPreviousValues)
                     .append(", last=").append(sourceTable.getLastNotificationStep())
-                    .append(", extraLast=").append(extra.getLastNotificationStep())
+                    .append(", extraLast=").append(Arrays.toString(extraLastNotificationSteps))
                     .endl();
         }
-        return extra.getLastNotificationStep() == extraLastNotificationStep
-                && super.snapshotCompletedConsistently(afterClockValue, usedPreviousValues);
+        boolean extrasConsistent = IntStream.range(0, extras.length)
+                .allMatch(ii -> extras[ii].getLastNotificationStep() == extraLastNotificationStep[ii]);
+        return extrasConsistent && super.snapshotCompletedConsistently(afterClockValue, usedPreviousValues);
     }
 
     @Override
@@ -112,6 +135,8 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
 
     @Override
     protected boolean isInInitialNotificationWindow() {
-        return extra.getLastNotificationStep() == extraLastNotificationStep && super.isInInitialNotificationWindow();
+        boolean extrasConsistent = IntStream.range(0, extras.length)
+                .allMatch(ii -> extras[ii].getLastNotificationStep() == extraLastNotificationStep[ii]);
+        return extrasConsistent && super.isInInitialNotificationWindow();
     }
 }

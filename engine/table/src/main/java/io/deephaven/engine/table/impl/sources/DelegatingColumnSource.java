@@ -10,9 +10,11 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
@@ -29,10 +31,10 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
             boolean invertMatch,
             boolean usePrev,
             boolean caseInsensitive,
-            @NotNull RowSet fullSet,
+            @Nullable final DataIndex dataIndex,
             @NotNull RowSet mapper,
             Object... keys) {
-        return delegate.match(invertMatch, usePrev, caseInsensitive, fullSet, mapper, keys);
+        return delegate.match(invertMatch, usePrev, caseInsensitive, dataIndex, mapper, keys);
     }
 
     @Override

@@ -17,7 +17,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
-import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -125,14 +124,11 @@ public abstract class AbstractColumnSource<T> implements
             final boolean invertMatch,
             final boolean usePrev,
             final boolean caseInsensitive,
-            @NotNull final RowSet fullSet,
+            @Nullable final DataIndex dataIndex,
             @NotNull final RowSet mapper,
             final Object... keys) {
 
-        final DataIndexer dataIndexer = fullSet.isTracking() ? DataIndexer.of(fullSet.trackingCast()) : null;
-        if (dataIndexer != null && dataIndexer.hasDataIndex(this)) {
-            final DataIndex dataIndex = dataIndexer.getDataIndex(this);
-
+        if (dataIndex != null) {
             final RowSetBuilderRandom allInMatchingGroups = RowSetFactory.builderRandom();
 
             if (caseInsensitive && (type == String.class)) {
@@ -162,10 +158,10 @@ public abstract class AbstractColumnSource<T> implements
                     }
                 }
             } else {
-                // Use the lookup function
+                // Use the lookup function to get the matching RowSets intersected with the mapper
                 final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup();
                 for (Object key : keys) {
-                    RowSet range = rowSetLookup.apply(key, usePrev);
+                    final RowSet range = rowSetLookup.apply(key, usePrev);
                     if (range != null) {
                         allInMatchingGroups.addRowSet(range);
                     }

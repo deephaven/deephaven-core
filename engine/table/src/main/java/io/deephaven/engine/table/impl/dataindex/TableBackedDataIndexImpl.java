@@ -102,7 +102,7 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
                                 Collections
                                         .singleton(Pair.of(EXPOSED_GROUP_ROW_SETS, ColumnName.of(INDEX_COL_NAME))));
 
-                        return wrappedRowSetTable(renamed, INDEX_COL_NAME);
+                        return indexTableWrapper(renamed, INDEX_COL_NAME);
                     });
         }
         return indexTable;
@@ -112,17 +112,17 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
     public @Nullable RowSetLookup rowSetLookup() {
         final ColumnSource<RowSet> rowSetColumnSource = rowSetColumn();
         return (Object key, boolean usePrev) -> {
-            // Pass the object to the position lookup, then return the row set at that position.
+            // Pass the object to the position lookup and get the resulting position.
             final int position = lookupFunction.get(key);
             if (position == AggregationRowLookup.DEFAULT_UNKNOWN_ROW) {
                 return null;
             }
+
+            // Aggregations return a dense result, so this position can be used directly as a row key.
             if (usePrev) {
-                final long prevRowKey = table().getRowSet().prev().get(position);
-                return rowSetColumnSource.getPrev(prevRowKey);
+                return rowSetColumnSource.getPrev(position);
             } else {
-                final long rowKey = table().getRowSet().get(position);
-                return rowSetColumnSource.get(rowKey);
+                return rowSetColumnSource.get(position);
             }
         };
     }
