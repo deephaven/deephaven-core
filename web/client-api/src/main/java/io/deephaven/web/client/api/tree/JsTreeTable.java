@@ -961,9 +961,25 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return promise.asPromise();
     }
 
+    /**
+     * True if this table has been closed.
+     *
+     * @return boolean
+     */
     @JsProperty(name = "isClosed")
     public boolean isClosed() {
         return closed;
+    }
+
+    /**
+     * True if this table may receive updates from the server, including size changed events, updated events after
+     * initial snapshot.
+     * 
+     * @return boolean
+     */
+    @JsProperty(name = "isRefreshing")
+    public boolean isRefreshing() {
+        return false;// state().isStatic();
     }
 
     /**

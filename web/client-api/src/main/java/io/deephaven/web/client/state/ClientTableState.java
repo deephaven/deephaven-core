@@ -138,6 +138,8 @@ public final class ClientTableState extends TableConfig {
     private long size;
     private InitialTableDefinition tableDef;
     private Column rowFormatColumn;
+    private boolean isStatic;
+
 
     /**
      * We maintain back-links to our source state.
@@ -1008,6 +1010,8 @@ public final class ClientTableState extends TableConfig {
         handle.setConnected(true);
 
         Uint8Array flightSchemaMessage = def.getSchemaHeader_asU8();
+        isStatic = def.getIsStatic();
+
         Schema schema = WebBarrageUtils.readSchemaMessage(flightSchemaMessage);
 
         setTableDef(WebBarrageUtils.readTableDefinition(schema));
@@ -1044,5 +1048,9 @@ public final class ClientTableState extends TableConfig {
 
     public String getFetchSummary() {
         return fetchSummary;
+    }
+
+    public boolean isStatic() {
+        return isStatic;
     }
 }
