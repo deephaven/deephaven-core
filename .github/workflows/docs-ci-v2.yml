@@ -1,4 +1,4 @@
-name: Docs CI
+name: Docs CI V2
 
 on:
   pull_request:
@@ -19,11 +19,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Make Version Symlinks
+      - name: Make Symlinks
         run: |
           mkdir -p tmp-deephaven-core-v2/symlinks;
           cd tmp-deephaven-core-v2/symlinks
           ln -s ../${{ github.ref_name }} latest
+          ln -s ../main next
           
       - name: Deploy Symlinks
         uses: burnett01/rsync-deployments@5.2
