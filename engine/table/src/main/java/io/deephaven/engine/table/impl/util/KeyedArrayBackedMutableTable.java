@@ -110,7 +110,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
             final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
         // noinspection resource
         super(RowSetFactory.empty().toTracking(), makeColumnSourceMap(definition),
-                enumValues, processPendingUpdater);
+                processPendingUpdater);
         final List<String> missingKeyColumns = new ArrayList<>(Arrays.asList(keyColumnNames));
         missingKeyColumns.removeAll(definition.getColumnNames());
         if (!missingKeyColumns.isEmpty()) {

@@ -9,7 +9,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.ChunkSink;
@@ -88,7 +87,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
             final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
         // noinspection resource
         super(RowSetFactory.empty().toTracking(), makeColumnSourceMap(definition),
-                enumValues, processPendingUpdater);
+                processPendingUpdater);
     }
 
     @Override
@@ -140,23 +139,10 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
     }
 
     private class AppendOnlyArrayBackedMutableInputTable extends ArrayBackedMutableInputTable {
-        @Override
-        public void setRows(@NotNull Table defaultValues, int[] rowArray, Map<String, Object>[] valueArray,
-                InputTableStatusListener listener) {
-            throw new UnsupportedOperationException();
-        }
 
         @Override
         public void validateDelete(Table tableToDelete) {
             throw new UnsupportedOperationException("Table doesn't support delete operation");
-        }
-
-        @Override
-        public void addRows(Map<String, Object>[] valueArray, boolean allowEdits, InputTableStatusListener listener) {
-            if (allowEdits) {
-                throw new UnsupportedOperationException();
-            }
-            super.addRows(valueArray, allowEdits, listener);
         }
     }
 }

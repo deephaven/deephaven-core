@@ -4,9 +4,6 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
-import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -17,7 +14,6 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.util.config.MutableInputTable;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdatableTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -29,8 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 abstract class BaseArrayBackedMutableTable extends UpdatableTable {
-
-    private static final Object[] BOOLEAN_ENUM_ARRAY = new Object[] {true, false, null};
 
     /**
      * Queue of pending changes. Only synchronized access is permitted.
@@ -45,8 +39,6 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
      */
     private long processedSequence = 0L;
 
-    private final Map<String, Object[]> enumValues;
-
     private String description = getDefaultDescription();
     private Runnable onPendingChange = updateGraph::requestRefresh;
 
@@ -54,9 +46,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     private long pendingProcessed = -1L;
 
     public BaseArrayBackedMutableTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
-            Map<String, Object[]> enumValues, ProcessPendingUpdater processPendingUpdater) {
+                                       ProcessPendingUpdater processPendingUpdater) {
         super(rowSet, nameToColumnSource, processPendingUpdater);
-        this.enumValues = enumValues;
         MutableInputTable mutableInputTable = makeHandler();
         setAttribute(Table.INPUT_TABLE_ATTRIBUTE, mutableInputTable);
         setRefreshing(true);
@@ -350,84 +341,6 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             }
         }
 
-        @Override
-        public void setRows(@NotNull Table defaultValues, int[] rowArray, Map<String, Object>[] valueArray,
-                InputTableStatusListener listener) {
-            Assert.neqNull(defaultValues, "defaultValues");
-            if (defaultValues.isRefreshing()) {
-                updateGraph.checkInitiateSerialTableOperation();
-            }
-
-            final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumns();
-            final Map<String, WritableColumnSource<Object>> sources =
-                    buildSourcesMap(valueArray.length, columnDefinitions);
-            final String[] kabmtColumns =
-                    getTableDefinition().getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            // noinspection unchecked
-            final WritableColumnSource<Object>[] sourcesByPosition =
-                    Arrays.stream(kabmtColumns).map(sources::get).toArray(WritableColumnSource[]::new);
-
-            final Set<String> missingColumns = new HashSet<>(getTableDefinition().getColumnNames());
-
-            for (final Map.Entry<String, ? extends ColumnSource<?>> entry : defaultValues.getColumnSourceMap()
-                    .entrySet()) {
-                final String colName = entry.getKey();
-                if (!sources.containsKey(colName)) {
-                    continue;
-                }
-                final ColumnSource<?> cs = Require.neqNull(entry.getValue(), "defaultValue column source: " + colName);
-                final WritableColumnSource<Object> dest =
-                        Require.neqNull(sources.get(colName), "destination column source: " + colName);
-
-                final RowSet defaultValuesRowSet = defaultValues.getRowSet();
-                for (int rr = 0; rr < rowArray.length; ++rr) {
-                    final long key = defaultValuesRowSet.get(rowArray[rr]);
-                    dest.set(rr, cs.get(key));
-                }
-
-                missingColumns.remove(colName);
-            }
-
-            for (int ii = 0; ii < valueArray.length; ++ii) {
-                final Map<String, Object> passedInValues = valueArray[ii];
-
-                for (int cc = 0; cc < sourcesByPosition.length; cc++) {
-                    final String colName = kabmtColumns[cc];
-                    if (passedInValues.containsKey(colName)) {
-                        sourcesByPosition[cc].set(ii, passedInValues.get(colName));
-                    } else if (missingColumns.contains(colName)) {
-                        throw new IllegalArgumentException("No value specified for " + colName + " row " + ii);
-                    }
-                }
-            }
-
-            // noinspection resource
-            final QueryTable newData = new QueryTable(getTableDefinition(),
-                    RowSetFactory.flat(valueArray.length).toTracking(), sources);
-            addAsync(newData, true, listener);
-        }
-
-        @Override
-        public void addRows(Map<String, Object>[] valueArray, boolean allowEdits, InputTableStatusListener listener) {
-            final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumns();
-            final Map<String, WritableColumnSource<Object>> sources =
-                    buildSourcesMap(valueArray.length, columnDefinitions);
-
-            for (int rowNumber = 0; rowNumber < valueArray.length; rowNumber++) {
-                final Map<String, Object> values = valueArray[rowNumber];
-                for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
-                    sources.get(columnDefinition.getName()).set(rowNumber, values.get(columnDefinition.getName()));
-                }
-
-            }
-
-            // noinspection resource
-            final QueryTable newData = new QueryTable(getTableDefinition(),
-                    RowSetFactory.flat(valueArray.length).toTracking(), sources);
-
-            addAsync(newData, allowEdits, listener);
-        }
-
         @NotNull
         private Map<String, WritableColumnSource<Object>> buildSourcesMap(int capacity,
                 List<ColumnDefinition<?>> columnDefinitions) {
@@ -441,14 +354,6 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 sources.put(columnDefinition.getName(), memoryColumnSource);
             }
             return sources;
-        }
-
-        @Override
-        public Object[] getEnumsForColumn(String columnName) {
-            if (getTableDefinition().getColumn(columnName).getDataType().equals(Boolean.class)) {
-                return BOOLEAN_ENUM_ARRAY;
-            }
-            return enumValues.get(columnName);
         }
 
         @Override

@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  * Implementations of this interface will make their own guarantees about how atomically changes will be applied and
  * what operations they support.
  */
-public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGetter {
+public interface MutableInputTable {
 
     /**
      * Gets the names of the key columns.
