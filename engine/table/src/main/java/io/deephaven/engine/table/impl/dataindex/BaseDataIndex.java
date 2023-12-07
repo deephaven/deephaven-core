@@ -123,6 +123,22 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
     protected static QueryTable indexTableWrapper(
             @NotNull final QueryTable parent,
             @NotNull final String rowSetColumn) {
+        return indexTableWrapper(parent, rowSetColumn, rowSetColumn);
+    }
+
+    /**
+     * Return a copy of {@code parent} with the row set column replaced with a {@link RowSetColumnSourceWrapper wrapper}
+     * column that adds {@link TrackingRowSet#prev() prev} calls on access to previous values.
+     *
+     * @param parent The table to copy
+     * @param rowSetColumn The name of the row set column to wrap
+     * @param renamedRowSetColumn The name of the row set column in the output table
+     * @return The copied table
+     */
+    protected static QueryTable indexTableWrapper(
+            @NotNull final QueryTable parent,
+            @NotNull final String rowSetColumn,
+            @NotNull final String renamedRowSetColumn) {
         // TODO-RWC/LAB: Use new assertions to assert that parent has a RowSet ColumnSource of name rowSetColumn.
         final UpdateGraph updateGraph = parent.getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
@@ -133,7 +149,7 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
                 parent.getColumnSourceMap().forEach((columnName, columnSource) -> {
                     if (columnName.equals(rowSetColumn)) {
                         resultColumnSourceMap.put(
-                                columnName, RowSetColumnSourceWrapper.from(parent.getColumnSource(rowSetColumn)));
+                                renamedRowSetColumn, RowSetColumnSourceWrapper.from(parent.getColumnSource(rowSetColumn)));
                     } else {
                         // Convert the key columns to primitive column sources.
                         resultColumnSourceMap.put(columnName, ReinterpretUtils.maybeConvertToPrimitive(columnSource));

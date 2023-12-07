@@ -83,12 +83,14 @@ public class TestGroupingProviders {
                 "Sym=(char)('A' + ii % 26)", "Other=ii");
         final Table[] partitions = raw.partitionBy("Part")
                 .transform(null, rp -> {
-                    final Table t = rp.groupBy("Sym").ungroup();
-                    // Create a local index for each partition
-                    DataIndexer.of(t.getRowSet()).createDataIndex(t, "Sym");
-                    return t;
+                    return rp.groupBy("Sym").ungroup();
                 }, false)
                 .constituents();
+
+        // Create a local index for each partition
+        for (final Table t : partitions) {
+            DataIndexer.of(t.getRowSet()).createDataIndex(t, "Sym");
+        }
 
         if (missingGroups) {
             // Create a pair of partitions without the grouping column

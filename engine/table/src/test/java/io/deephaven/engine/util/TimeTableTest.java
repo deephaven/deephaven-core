@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.ReinterpretedColumn;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
@@ -262,14 +263,17 @@ public class TimeTableTest extends RefreshingTableTestCase {
                                 .build());
         final Table indexTable = dataIndex.table();
 
+        final ColumnSource<Long> reinterpretedColumn =
+                (ColumnSource<Long>) ReinterpretUtils.maybeConvertToPrimitive(dtColumn);
+
         Assert.assertEquals(indexTable.size(), 10);
-        try (final CloseableIterator<Instant> keyIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0]);
+        try (final CloseableIterator<Long> keyIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0]);
                 final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(dataIndex.rowSetColumnName())) {
             while (keyIt.hasNext()) {
-                final Instant key = keyIt.next();
+                final Long key = keyIt.next();
                 final RowSet rs = rsIt.next();
                 Assert.assertEquals(rs.size(), 1);
-                Assert.assertEquals(dtColumn.get(rs.firstRowKey()), key);
+                Assert.assertEquals(reinterpretedColumn.get(rs.firstRowKey()), key);
             }
         }
 

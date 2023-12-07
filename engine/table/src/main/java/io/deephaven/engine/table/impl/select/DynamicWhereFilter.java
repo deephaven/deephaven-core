@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.dataindex.DataIndexKeySet;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -269,8 +270,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                 liveValuesArray = liveValues.toArray();
                 liveValuesArrayValid = true;
             }
-            return table.getColumnSource(matchPairs[0].leftColumn())
-                    .match(!inclusion, false, false, sourceDataIndex, selection, liveValuesArray);
+            // Our keys are reinterpreted, so we need to reinterpret the column source for correct matching.
+            final ColumnSource<?> source =
+                    ReinterpretUtils.maybeConvertToPrimitive(table.getColumnSource(matchPairs[0].leftColumn()));
+            return source.match(!inclusion, false, false, sourceDataIndex, selection, liveValuesArray);
         }
 
         final ColumnSource<?>[] keyColumns = Arrays.stream(matchPairs)

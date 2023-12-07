@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl.dataindex;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -98,11 +97,7 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
                         lookupFunction = AggregationProcessor.getRowLookup(groupedTable);
                         Assert.neqNull(lookupFunction, "AggregationRowLookup lookupFunction should never be null");
 
-                        final QueryTable renamed = (QueryTable) groupedTable.renameColumns(
-                                Collections
-                                        .singleton(Pair.of(EXPOSED_GROUP_ROW_SETS, ColumnName.of(INDEX_COL_NAME))));
-
-                        return indexTableWrapper(renamed, INDEX_COL_NAME);
+                        return indexTableWrapper(groupedTable, EXPOSED_GROUP_ROW_SETS.name(), INDEX_COL_NAME);
                     });
         }
         return indexTable;
