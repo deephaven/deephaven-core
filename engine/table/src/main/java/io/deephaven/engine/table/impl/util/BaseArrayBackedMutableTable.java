@@ -46,7 +46,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     private long pendingProcessed = -1L;
 
     public BaseArrayBackedMutableTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
-                                       ProcessPendingUpdater processPendingUpdater) {
+            ProcessPendingUpdater processPendingUpdater) {
         super(rowSet, nameToColumnSource, processPendingUpdater);
         MutableInputTable mutableInputTable = makeHandler();
         setAttribute(Table.INPUT_TABLE_ATTRIBUTE, mutableInputTable);
