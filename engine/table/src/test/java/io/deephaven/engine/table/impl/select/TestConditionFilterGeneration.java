@@ -30,8 +30,6 @@ public class TestConditionFilterGeneration {
                 .newQueryLibrary("DEFAULT")
                 .captureQueryCompiler()
                 .captureQueryScope()
-                .captureUpdateGraph()
-                .captureOperationInitializer()
                 .build().open();
     }
 

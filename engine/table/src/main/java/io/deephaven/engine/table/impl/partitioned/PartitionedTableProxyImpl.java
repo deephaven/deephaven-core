@@ -134,8 +134,6 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         if (context == null) {
             final ExecutionContext.Builder builder = ExecutionContext.newBuilder()
                     .captureQueryCompiler()
-                    .captureUpdateGraph()
-                    .captureOperationInitializer()
                     .markSystemic();
             if (requiresFullContext) {
                 builder.newQueryLibrary();

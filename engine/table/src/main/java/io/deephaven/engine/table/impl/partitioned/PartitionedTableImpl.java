@@ -297,8 +297,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             // Perform the transformation
             final Table resultTable = prepared.update(List.of(new TableTransformationColumn(
                     constituentColumnName,
-                    maybeReplaceExecContext(executionContext), // THIS ONE MUST NOT HAVE THE SAME OT AS THIS CURRENT THREAD's EXEC CONTEXT,
-                                      // UNLESS NON_PARALLELIZABLE
+                    maybeReplaceExecContext(executionContext), // THIS ONE MUST NOT HAVE THE SAME OT AS THIS CURRENT
+                                                               // THREAD's EXEC CONTEXT,
+                    // UNLESS NON_PARALLELIZABLE
                     prepared.isRefreshing() ? transformer : assertResultsStatic(transformer))));
 
             // Make sure we have a valid result constituent definition
@@ -320,7 +321,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         return resultPartitionedTable;
     }
 
-    private ExecutionContext maybeReplaceExecContext(ExecutionContext provided) {
+    private static ExecutionContext maybeReplaceExecContext(ExecutionContext provided) {
         if (provided == null) {
             return null;
         }
@@ -369,8 +370,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     .update(List.of(new BiTableTransformationColumn(
                             constituentColumnName,
                             RHS_CONSTITUENT,
-                            maybeReplaceExecContext(executionContext), // THIS ONE MUST NOT HAVE THE SAME OT AS THIS CURRENT THREAD's EXEC
-                                              // CONTEXT, UNLESS NON_PARALLELIZABLE
+                            maybeReplaceExecContext(executionContext), // THIS ONE MUST NOT HAVE THE SAME OT AS THIS
+                                                                       // CURRENT THREAD's EXEC
+                            // CONTEXT, UNLESS NON_PARALLELIZABLE
                             prepared.isRefreshing() ? transformer : assertResultsStatic(transformer))))
                     .dropColumns(RHS_CONSTITUENT);
 

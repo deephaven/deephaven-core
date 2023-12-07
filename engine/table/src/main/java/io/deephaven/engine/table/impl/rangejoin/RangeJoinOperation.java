@@ -259,7 +259,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         }
 
         final ExecutionContext executionContext = ExecutionContext.newBuilder()
-                .captureUpdateGraph()
                 .markSystemic().build();
 
         return new Result<>(staticRangeJoin(jobScheduler, executionContext));

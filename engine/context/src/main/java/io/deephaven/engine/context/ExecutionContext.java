@@ -14,10 +14,26 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+/**
+ * Container for context-specific objects, that can be activated on a thread or passed to certain operations.
+ * ExecutionContexts are immutable, and support a builder pattern to create new instances and "with" methods to
+ * customize existing ones. Any thread that interacts with the Deephaven engine will need to have an active
+ * ExecutionContext.
+ */
 public class ExecutionContext {
 
+    /**
+     * Creates a new builder for an ExecutionContext, capturing the current thread's auth context, update graph, and
+     * operation initializer. Typically, this method should be called on a thread that already has an active
+     * ExecutionContext, to more easily reuse those.
+     *
+     * @return a new builder to create an ExecutionContext
+     */
     public static Builder newBuilder() {
-        return new Builder();
+        ExecutionContext existing = getContext();
+        return new Builder()
+                .setUpdateGraph(existing.getUpdateGraph())
+                .setOperationInitializer(existing.getInitializer());
     }
 
     public static ExecutionContext makeExecutionContext(boolean isSystemic) {
@@ -376,22 +392,22 @@ public class ExecutionContext {
 
         /**
          * Use the current ExecutionContext's UpdateGraph instance.
+         *
+         * @deprecated The update graph is automatically captured, this method should no longer be needed.
          */
         @ScriptApi
+        @Deprecated(forRemoval = true, since = "0.31")
         public Builder captureUpdateGraph() {
             this.updateGraph = getContext().getUpdateGraph();
             return this;
         }
 
+        /**
+         * Use the specified operation initializer instead of the captured instance.
+         */
         @ScriptApi
         public Builder setOperationInitializer(OperationInitializer operationInitializer) {
             this.operationInitializer = operationInitializer;
-            return this;
-        }
-
-        @ScriptApi
-        public Builder captureOperationInitializer() {
-            this.operationInitializer = getContext().getInitializer();
             return this;
         }
 

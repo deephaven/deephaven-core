@@ -307,7 +307,6 @@ public abstract class UpdateBy {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;
                 }
                 executionContext = ExecutionContext.newBuilder()
-                        .captureUpdateGraph()
                         .markSystemic().build();
             } else {
                 // Determine which windows need to be computed.
