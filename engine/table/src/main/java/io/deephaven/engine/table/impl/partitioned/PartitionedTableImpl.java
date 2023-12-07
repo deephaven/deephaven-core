@@ -30,6 +30,7 @@ import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.updategraph.NotificationQueue.Dependency;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.InternalUseOnly;
@@ -296,7 +297,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             // Perform the transformation
             final Table resultTable = prepared.update(List.of(new TableTransformationColumn(
                     constituentColumnName,
-                    executionContext,
+                    maybeReplaceExecContext(executionContext), // THIS ONE MUST NOT HAVE THE SAME OT AS THIS CURRENT THREAD's EXEC CONTEXT,
+                                      // UNLESS NON_PARALLELIZABLE
                     prepared.isRefreshing() ? transformer : assertResultsStatic(transformer))));
 
             // Make sure we have a valid result constituent definition
@@ -316,6 +318,20 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             enclosingScope.manage(resultPartitionedTable);
         }
         return resultPartitionedTable;
+    }
+
+    private ExecutionContext maybeReplaceExecContext(ExecutionContext provided) {
+        if (provided == null) {
+            return null;
+        }
+        ExecutionContext current = ExecutionContext.getContext();
+        if (!provided.getInitializer().canParallelize()) {
+            return provided;
+        }
+        if (current.getInitializer() != provided.getInitializer()) {
+            return provided;
+        }
+        return provided.withOperationInitializer(OperationInitializer.NON_PARALLELIZABLE);
     }
 
     @Override
@@ -353,7 +369,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     .update(List.of(new BiTableTransformationColumn(
                             constituentColumnName,
                             RHS_CONSTITUENT,
-                            executionContext,
+                            maybeReplaceExecContext(executionContext), // THIS ONE MUST NOT HAVE THE SAME OT AS THIS CURRENT THREAD's EXEC
+                                              // CONTEXT, UNLESS NON_PARALLELIZABLE
                             prepared.isRefreshing() ? transformer : assertResultsStatic(transformer))))
                     .dropColumns(RHS_CONSTITUENT);
 
