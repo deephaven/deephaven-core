@@ -22,16 +22,16 @@ import org.jetbrains.annotations.NotNull;
  * keys from a single {@link ColumnSource source}. This can be used to extract keys from a data index table, or from a
  * table of probe values.
  */
-final class SingleDataIndexBoxedKeySource implements DefaultChunkSource.WithPrev<Values> {
+final class DataIndexBoxedKeySourceSingle implements DefaultChunkSource.WithPrev<Values> {
 
     private final ColumnSource<?> keySource;
 
     /**
-     * Construct a new SingleDataIndexBoxedKeySource backed by the supplied {@link ColumnSource column source}.
+     * Construct a new DataIndexBoxedKeySourceSingle backed by the supplied {@link ColumnSource column source}.
      *
      * @param keySource Source corresponding to the key column
      */
-    SingleDataIndexBoxedKeySource(@NotNull final ColumnSource<?> keySource) {
+    DataIndexBoxedKeySourceSingle(@NotNull final ColumnSource<?> keySource) {
         this.keySource = ReinterpretUtils.maybeConvertToPrimitive(keySource);
     }
 
