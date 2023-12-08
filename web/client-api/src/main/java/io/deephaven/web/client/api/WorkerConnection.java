@@ -1077,8 +1077,8 @@ public class WorkerConnection {
      * Retrieve a widget using a ticket. Does not create a new ticket.
      * 
      * @param typedTicket Ticket to fetch
-     * @param reexport Whether to re-export the widget. If false, you must ensure you call {@link JsWidget#refetch()} before
-     *        using the widget.
+     * @param reexport Whether to re-export the widget. If false, you must ensure you call {@link JsWidget#refetch()}
+     *        before using the widget.
      * @return Promise of the widget
      */
     private Promise<JsWidget> getExportedWidget(TypedTicket typedTicket, boolean reexport) {
