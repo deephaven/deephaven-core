@@ -33,18 +33,11 @@ public class AppendOnlyArrayBackedInputTable extends BaseArrayBackedInputTable {
      *
      * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
      */
-    public static io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable make(
+    public static AppendOnlyArrayBackedInputTable make(
             @NotNull TableDefinition definition) {
         // noinspection resource
-        final Table initialTable = new QueryTable(definition, RowSetFactory.empty().toTracking(),
-                NullValueColumnSource.createColumnSourceMap(definition));
-        final io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable result =
-                new io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable(
-                        initialTable.getDefinition(), new ProcessPendingUpdater());
-        result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
-        result.setFlat();
-        processInitial(initialTable, result);
-        return result;
+        return make(new QueryTable(definition, RowSetFactory.empty().toTracking(),
+                NullValueColumnSource.createColumnSourceMap(definition)));
     }
 
     /**
@@ -54,11 +47,12 @@ public class AppendOnlyArrayBackedInputTable extends BaseArrayBackedInputTable {
      *
      * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
      */
-    public static io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable make(final Table initialTable) {
-        final io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable result =
-                new io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable(
+    public static AppendOnlyArrayBackedInputTable make(final Table initialTable) {
+        final AppendOnlyArrayBackedInputTable result =
+                new AppendOnlyArrayBackedInputTable(
                         initialTable.getDefinition(), new ProcessPendingUpdater());
         result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
         result.setFlat();
         processInitial(initialTable, result);
         return result;
@@ -114,11 +108,11 @@ public class AppendOnlyArrayBackedInputTable extends BaseArrayBackedInputTable {
     }
 
     @Override
-    ArrayBackedInputTable makeHandler() {
+    ArrayBackedInputTableHandler makeHandler() {
         return new Handler();
     }
 
-    private class Handler extends ArrayBackedInputTable {
+    private class Handler extends ArrayBackedInputTableHandler {
 
         @Override
         public void validateDelete(Table tableToDelete) {

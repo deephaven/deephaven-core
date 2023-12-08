@@ -13,7 +13,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.util.input.InputTableStatusListener;
-import io.deephaven.engine.util.input.InputTable;
+import io.deephaven.engine.util.input.InputTableHandler;
 import io.deephaven.engine.table.impl.UpdatableTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -47,14 +47,14 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
     public BaseArrayBackedInputTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
             ProcessPendingUpdater processPendingUpdater) {
         super(rowSet, nameToColumnSource, processPendingUpdater);
-        InputTable inputTable = makeHandler();
-        setAttribute(Table.INPUT_TABLE_ATTRIBUTE, inputTable);
+        InputTableHandler inputTableHandler = makeHandler();
+        setAttribute(Table.INPUT_TABLE_ATTRIBUTE, inputTableHandler);
         setRefreshing(true);
         processPendingUpdater.setThis(this);
     }
 
-    public InputTable inputTable() {
-        return (InputTable) getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+    public InputTableHandler inputTable() {
+        return (InputTableHandler) getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
     }
 
     public Table readOnlyCopy() {
@@ -179,11 +179,11 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
         }
     }
 
-    ArrayBackedInputTable makeHandler() {
-        return new ArrayBackedInputTable();
+    ArrayBackedInputTableHandler makeHandler() {
+        return new ArrayBackedInputTableHandler();
     }
 
-    protected class ArrayBackedInputTable implements InputTable {
+    protected class ArrayBackedInputTableHandler implements InputTableHandler {
         @Override
         public List<String> getKeyNames() {
             return BaseArrayBackedInputTable.this.getKeyNames();

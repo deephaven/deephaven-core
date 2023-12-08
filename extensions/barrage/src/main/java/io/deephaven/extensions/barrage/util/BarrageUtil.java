@@ -36,7 +36,7 @@ import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.ColumnFormatting;
-import io.deephaven.engine.util.input.InputTable;
+import io.deephaven.engine.util.input.InputTableHandler;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.util.type.TypeUtils;
@@ -148,9 +148,10 @@ public class BarrageUtil {
         final Map<String, String> schemaMetadata = attributesToMetadata(attributes);
 
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
-        final InputTable inputTable = (InputTable) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
+        final InputTableHandler inputTableHandler = (InputTableHandler) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         final List<Field> fields = columnDefinitionsToFields(
-                descriptions, inputTable, tableDefinition, tableDefinition.getColumns(), ignored -> new HashMap<>(),
+                descriptions, inputTableHandler, tableDefinition, tableDefinition.getColumns(),
+                ignored -> new HashMap<>(),
                 attributes, options.columnsAsList())
                 .collect(Collectors.toList());
 
@@ -180,12 +181,12 @@ public class BarrageUtil {
 
     public static Stream<Field> columnDefinitionsToFields(
             @NotNull final Map<String, String> columnDescriptions,
-            @Nullable final InputTable inputTable,
+            @Nullable final InputTableHandler inputTableHandler,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
             @NotNull final Map<String, Object> attributes) {
-        return columnDefinitionsToFields(columnDescriptions, inputTable, tableDefinition, columnDefinitions,
+        return columnDefinitionsToFields(columnDescriptions, inputTableHandler, tableDefinition, columnDefinitions,
                 fieldMetadataFactory,
                 attributes,
                 false);
@@ -197,7 +198,7 @@ public class BarrageUtil {
 
     public static Stream<Field> columnDefinitionsToFields(
             @NotNull final Map<String, String> columnDescriptions,
-            @Nullable final InputTable inputTable,
+            @Nullable final InputTableHandler inputTableHandler,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
@@ -274,8 +275,8 @@ public class BarrageUtil {
             if (columnDescription != null) {
                 putMetadata(metadata, "description", columnDescription);
             }
-            if (inputTable != null) {
-                putMetadata(metadata, "inputtable.isKey", inputTable.getKeyNames().contains(name) + "");
+            if (inputTableHandler != null) {
+                putMetadata(metadata, "inputtable.isKey", inputTableHandler.getKeyNames().contains(name) + "");
             }
 
             if (columnsAsList) {

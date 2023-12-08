@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  * Implementations of this interface will make their own guarantees about how atomically changes will be applied and
  * what operations they support.
  */
-public interface InputTable {
+public interface InputTableHandler {
 
     /**
      * Gets the names of the key columns.
