@@ -166,12 +166,13 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
 
     private final class PendingChange {
         final boolean delete;
-        final Table table;
+        @NotNull final Table table;
         final long sequence;
         String error;
 
-        private PendingChange(Table table, boolean delete) {
+        private PendingChange(@NotNull Table table, boolean delete) {
             Assert.holdsLock(pendingChanges, "pendingChanges");
+            Assert.neqNull(table, "table");
             this.table = table;
             this.delete = delete;
             this.sequence = ++enqueuedSequence;
@@ -253,9 +254,8 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
         }
 
         private Table snapshotData(@NotNull final Table data, @NotNull final RowSet rowSet) {
-            try (final TrackingRowSet tracking = rowSet.copy().toTracking()) {
-                return snapshotData(data.getSubTable(tracking));
-            }
+            final TrackingRowSet tracking = rowSet.copy().toTracking();
+            return snapshotData(data.getSubTable(tracking));
         }
 
         private Table snapshotData(@NotNull final Table data) {
