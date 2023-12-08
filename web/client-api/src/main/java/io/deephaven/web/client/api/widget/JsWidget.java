@@ -136,7 +136,8 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
                 fireEvent(EVENT_CLOSE);
                 closeStream();
 
-                // We can release the ticket here because the widget can no longer be used at this point after the server has closed it.
+                // We can release the ticket here because the widget can no longer be used at this point after the
+                // server has closed it.
                 // As a result, fetch-only widgets do not need to be closed, as the server closes them right away.
                 connection.releaseTicket(getTicket());
             });
