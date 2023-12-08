@@ -364,6 +364,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     // The current filter and sort state
     private List<FilterCondition> filters = new ArrayList<>();
     private List<Sort> sorts = new ArrayList<>();
+
+    private TypedTicket sourceTicket;
     private TicketAndPromise<?> filteredTable;
     private TicketAndPromise<?> sortedTable;
 
@@ -396,6 +398,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     public JsTreeTable(WorkerConnection workerConnection, JsWidget widget) {
         this.connection = workerConnection;
         this.widget = widget;
+        this.sourceTicket = widget.getExportedObjects()[0].takeTicket();
 
         // register for same-session disconnect/reconnect callbacks
         this.connection.registerSimpleReconnectable(this);
@@ -509,7 +512,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 .newState(this, (c, newState, metadata) -> {
                     HierarchicalTableSourceExportRequest exportRequest = new HierarchicalTableSourceExportRequest();
                     exportRequest.setResultTableId(newState.getHandle().makeTicket());
-                    exportRequest.setHierarchicalTableId(widget.getTicket());
+                    exportRequest.setHierarchicalTableId(sourceTicket.getTicket());
                     connection.hierarchicalTableServiceClient().exportSource(exportRequest, connection.metadata(),
                             c::apply);
                 }, "source for hierarchical table")
@@ -521,7 +524,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             return filteredTable;
         }
         if (nextFilters.isEmpty()) {
-            return new TicketAndPromise<>(widget.getTicket(), connection);
+            return new TicketAndPromise<>(sourceTicket.getTicket(), connection);
         }
         Ticket ticket = connection.getConfig().newTicket();
         filteredTable = new TicketAndPromise<>(ticket, Callbacks.grpcUnaryPromise(c -> {
@@ -529,7 +532,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             HierarchicalTableApplyRequest applyFilter = new HierarchicalTableApplyRequest();
             applyFilter.setFiltersList(
                     nextFilters.stream().map(FilterCondition::makeDescriptor).toArray(Condition[]::new));
-            applyFilter.setInputHierarchicalTableId(widget.getTicket());
+            applyFilter.setInputHierarchicalTableId(sourceTicket.getTicket());
             applyFilter.setResultHierarchicalTableId(ticket);
             connection.hierarchicalTableServiceClient().apply(applyFilter, connection.metadata(), c::apply);
         }), connection);
@@ -650,7 +653,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     this.alwaysFireNextEvent = false;
 
                     JsLog.debug("Sending tree table request", this,
-                            LazyString.of(() -> widget.getTicket().getTicket_asB64()),
+                            LazyString.of(() -> sourceTicket.getTicket().getTicket_asB64()),
                             columnsBitset,
                             range,
                             alwaysFireEvent);
@@ -977,6 +980,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         JsLog.debug("Closing tree table", this);
 
+        connection.releaseTicket(sourceTicket.getTicket());
+
         connection.unregisterSimpleReconnectable(this);
 
         if (filteredTable != null) {
@@ -1010,7 +1015,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     @Override
     public TypedTicket typedTicket() {
-        return widget.typedTicket();
+        return sourceTicket;
     }
 
     /**

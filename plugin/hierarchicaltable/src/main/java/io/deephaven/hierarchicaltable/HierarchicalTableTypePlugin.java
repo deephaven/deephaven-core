@@ -45,6 +45,7 @@ public class HierarchicalTableTypePlugin extends ObjectTypeBase.FetchOnly {
                 .setSnapshotSchema(BarrageUtil.schemaBytes(
                         fbb -> HierarchicalTableSchemaUtil.makeSchemaPayload(fbb, hierarchicalTable)))
                 .build();
+        exporter.reference(object);
 
         result.writeTo(out);
     }
