@@ -51,7 +51,7 @@ public class JsWidgetExportedObject implements ServerObject {
     }
 
     public Promise<?> fetch() {
-        return fetch(false);
+        return fetch(true);
     }
 
     private void verifyIsOwner() {
@@ -72,7 +72,7 @@ public class JsWidgetExportedObject implements ServerObject {
     /**
      * Fetches the object from the server.
      * 
-     * @param takeOwnership Whether to take ownership of the object. Defaults to false.
+     * @param takeOwnership Whether to take ownership of the object. Defaults to true.
      * @return a promise that resolves to the object
      */
     @JsMethod
@@ -82,7 +82,7 @@ public class JsWidgetExportedObject implements ServerObject {
         }
         verifyIsOwner();
         if (takeOwnership) {
-            return this.connection.getObject(takeTicket());
+            return this.connection.getExportedObject(takeTicket());
         }
         return this.connection.getObject(
                 new JsVariableDefinition(ticket.getType(), null, ticket.getTicket().getTicket_asB64(), null));

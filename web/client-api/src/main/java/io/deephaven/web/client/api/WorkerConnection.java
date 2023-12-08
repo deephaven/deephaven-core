@@ -766,7 +766,7 @@ public class WorkerConnection {
      * @param fetchSummary Description for the fetch. Used for logging and errors.
      * @return Promise for the table
      */
-    public Promise<JsTable> getTable(TypedTicket ticket, String fetchSummary) {
+    private Promise<JsTable> getExportedTable(TypedTicket ticket, String fetchSummary) {
         return Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
             tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
                     metadata(),
@@ -779,22 +779,22 @@ public class WorkerConnection {
     }
 
     /**
-     * Get an object from its ticket.
+     * Get an object from its server-side exported ticket.
      * 
      * @param typedTicket Ticket to get the object for
      * @return The object requested
      */
-    public Promise<?> getObject(TypedTicket typedTicket) {
+    public Promise<?> getExportedObject(TypedTicket typedTicket) {
         if (JsVariableType.TABLE.equalsIgnoreCase(typedTicket.getType())) {
-            return getTable(typedTicket, "get a table");
+            return getExportedTable(typedTicket, "get a table");
         } else if (JsVariableType.FIGURE.equalsIgnoreCase(typedTicket.getType())) {
-            return getFigure(typedTicket);
+            return getExportedFigure(typedTicket);
         } else if (JsVariableType.PANDAS.equalsIgnoreCase(typedTicket.getType())) {
-            return getPandasTable(typedTicket);
+            return getExportedPandasTable(typedTicket);
         } else if (JsVariableType.PARTITIONEDTABLE.equalsIgnoreCase(typedTicket.getType())) {
-            return getPartitionedTable(typedTicket);
+            return getExportedPartitionedTable(typedTicket);
         } else if (JsVariableType.HIERARCHICALTABLE.equalsIgnoreCase(typedTicket.getType())) {
-            return getHierarchicalTable(typedTicket);
+            return getExportedHierarchicalTable(typedTicket);
         } else {
             if (JsVariableType.TABLEMAP.equalsIgnoreCase(typedTicket.getType())) {
                 JsLog.warn(
@@ -804,7 +804,7 @@ public class WorkerConnection {
                 JsLog.warn(
                         "TreeTable is now HierarchicalTable, fetching as a plain widget. To fetch as a HierarchicalTable use that as this type.");
             }
-            return getWidget(typedTicket, true);
+            return getExportedWidget(typedTicket, true);
         }
     }
 
@@ -965,7 +965,7 @@ public class WorkerConnection {
                 .then(widget -> new JsPartitionedTable(this, widget).refetch());
     }
 
-    public Promise<JsPartitionedTable> getPartitionedTable(TypedTicket ticket) {
+    private Promise<JsPartitionedTable> getExportedPartitionedTable(TypedTicket ticket) {
         return whenServerReady("get a partitioned table")
                 .then(ignore -> new JsPartitionedTable(this, new JsWidget(this, ticket)).refetch());
     }
@@ -976,9 +976,9 @@ public class WorkerConnection {
                 .then(widget -> Promise.resolve(new JsTreeTable(this, widget)));
     }
 
-    public Promise<JsTreeTable> getHierarchicalTable(TypedTicket typedTicket) {
+    private Promise<JsTreeTable> getExportedHierarchicalTable(TypedTicket typedTicket) {
         return whenServerReady("get a hierarchical table")
-                .then(ignore -> getWidget(typedTicket, true))
+                .then(ignore -> getExportedWidget(typedTicket, true))
                 .then(widget -> Promise.resolve(new JsTreeTable(this, widget)));
     }
 
@@ -1008,8 +1008,8 @@ public class WorkerConnection {
         return getFigure(getWidget(varDef));
     }
 
-    public Promise<JsFigure> getFigure(TypedTicket ticket) {
-        return getFigure(getWidget(ticket, true));
+    private Promise<JsFigure> getExportedFigure(TypedTicket ticket) {
+        return getFigure(getExportedWidget(ticket, true));
     }
 
     /**
@@ -1018,9 +1018,9 @@ public class WorkerConnection {
      * @param widget Pandas table widget
      * @return Table representing the Pandas data frame
      */
-    private Promise<JsTable> getPandasTable(JsWidget widget) {
+    private Promise<JsTable> getWidgetPandasTable(JsWidget widget) {
         TypedTicket typedTicket = widget.getExportedObjects()[0].takeTicket();
-        return getTable(typedTicket, "table for pandas").then(table -> {
+        return getExportedTable(typedTicket, "table for pandas").then(table -> {
             // TODO(deephaven-core#3604) if using a new session don't attempt a reconnect
             // never attempt a reconnect, since we might have a different widget schema entirely
             table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
@@ -1029,11 +1029,11 @@ public class WorkerConnection {
     }
 
     public Promise<JsTable> getPandasTable(JsVariableDefinition definition) {
-        return getWidget(definition).then(this::getPandasTable);
+        return getWidget(definition).then(this::getWidgetPandasTable);
     }
 
-    public Promise<JsTable> getPandasTable(TypedTicket ticket) {
-        return getWidget(ticket, true).then(this::getPandasTable);
+    private Promise<JsTable> getExportedPandasTable(TypedTicket ticket) {
+        return getExportedWidget(ticket, true).then(this::getWidgetPandasTable);
     }
 
     private TypedTicket createTypedTicket(JsVariableDefinition varDef) {
@@ -1060,16 +1060,16 @@ public class WorkerConnection {
      * Intentionally races the ticket export with the variable export to parallelize the requests.
      * 
      * @param varDef Variable definition to get the widget for
-     * @param refetch Whether to refetch the widget before resolving or not
+     * @param reexport Whether to re-export the widget before resolving or not
      * @return Promise of the widget
      */
-    public Promise<JsWidget> getWidget(JsVariableDefinition varDef, boolean refetch) {
+    public Promise<JsWidget> getWidget(JsVariableDefinition varDef, boolean reexport) {
         return exportScopeTicket(varDef)
                 .race(ticket -> {
                     TypedTicket typedTicket = new TypedTicket();
                     typedTicket.setType(varDef.getType());
                     typedTicket.setTicket(ticket);
-                    return getWidget(typedTicket, refetch);
+                    return getExportedWidget(typedTicket, reexport);
                 }).promise();
     }
 
@@ -1077,15 +1077,15 @@ public class WorkerConnection {
      * Retrieve a widget using a ticket. Does not create a new ticket.
      * 
      * @param typedTicket Ticket to fetch
-     * @param refetch Whether to refetch the widget. If false, you must ensure you call {@link JsWidget#refetch()} before
+     * @param reexport Whether to re-export the widget. If false, you must ensure you call {@link JsWidget#refetch()} before
      *        using the widget.
      * @return Promise of the widget
      */
-    public Promise<JsWidget> getWidget(TypedTicket typedTicket, boolean refetch) {
+    private Promise<JsWidget> getExportedWidget(TypedTicket typedTicket, boolean reexport) {
         return whenServerReady("get a widget")
                 .then(response -> {
                     JsWidget widget = new JsWidget(this, typedTicket);
-                    if (refetch) {
+                    if (reexport) {
                         return widget.refetch();
                     }
                     return Promise.resolve(widget);
