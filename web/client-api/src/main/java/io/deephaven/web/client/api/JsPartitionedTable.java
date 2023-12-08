@@ -308,8 +308,6 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      * will not affect tables in use.
      */
     public void close() {
-        widget.close();
-
         if (keys != null) {
             keys.close();
         }

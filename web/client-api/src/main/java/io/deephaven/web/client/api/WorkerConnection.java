@@ -991,7 +991,6 @@ public class WorkerConnection {
                     Arrays.stream(widget.getExportedObjects()).map(JsWidgetExportedObject::takeTicket)
                             .toArray(TypedTicket[]::new));
             c.apply(null, legacyResponse);
-            widget.close();
             return null;
         }, error -> {
             c.apply(error, null);
@@ -1021,10 +1020,6 @@ public class WorkerConnection {
      */
     private Promise<JsTable> getPandasTable(JsWidget widget) {
         TypedTicket typedTicket = widget.getExportedObjects()[0].takeTicket();
-
-        // We don't need to keep the original widget open, we can just close it right away
-        widget.close();
-
         return getTable(typedTicket, "table for pandas").then(table -> {
             // TODO(deephaven-core#3604) if using a new session don't attempt a reconnect
             // never attempt a reconnect, since we might have a different widget schema entirely
