@@ -4,7 +4,6 @@
 package io.deephaven.engine.util.input;
 
 import io.deephaven.engine.exceptions.ArgumentException;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -133,29 +132,11 @@ public interface InputTable {
      * @throws UnsupportedOperationException If this table does not support deletes
      */
     default void delete(Table table) throws IOException {
-        delete(table, table.getRowSet());
-    }
-
-    /**
-     * Delete the keys contained in {@code table.subTable(rowSet)} from this input table.
-     * <p>
-     * This method will block until the rows are deleted. As a result, this method is not suitable for use from a
-     * {@link io.deephaven.engine.table.TableListener table listener} or any other
-     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
-     * dispatched by this InputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may be
-     * suitable to delete from another update graph if doing so does not introduce any cycles.
-     *
-     * @param table Table containing the rows to delete
-     * @param rowSet The rows to delete
-     * @throws IOException If a problem occurred while deleting the rows
-     * @throws UnsupportedOperationException If this table does not support deletes
-     */
-    default void delete(Table table, RowSet rowSet) throws IOException {
         throw new UnsupportedOperationException("Table does not support deletes");
     }
 
     /**
-     * Delete the keys contained in {@code table.subTable(rowSet)} from this input table.
+     * Delete the keys contained in table from this input table.
      * <p>
      * This method will <em>not</em> block, and can be safely used from a {@link io.deephaven.engine.table.TableListener
      * table listener} or any other {@link io.deephaven.engine.updategraph.NotificationQueue.Notification
@@ -164,10 +145,9 @@ public interface InputTable {
      * cycle.
      *
      * @param table Table containing the rows to delete
-     * @param rowSet The rows to delete
      * @throws UnsupportedOperationException If this table does not support deletes
      */
-    default void deleteAsync(Table table, RowSet rowSet, InputTableStatusListener listener) {
+    default void deleteAsync(Table table, InputTableStatusListener listener) {
         throw new UnsupportedOperationException("Table does not support deletes");
     }
 

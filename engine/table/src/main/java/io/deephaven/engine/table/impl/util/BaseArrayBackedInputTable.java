@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -226,25 +225,24 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
         }
 
         @Override
-        public void delete(@NotNull final Table table, @NotNull final RowSet rowsToDelete) throws IOException {
+        public void delete(@NotNull final Table table) throws IOException {
             checkBlockingEditSafety();
-            final PendingChange pendingChange = enqueueDeletion(table, rowsToDelete);
+            final PendingChange pendingChange = enqueueDeletion(table);
             blockingContinuation(pendingChange);
         }
 
         @Override
         public void deleteAsync(
                 @NotNull final Table table,
-                @NotNull final RowSet rowsToDelete,
                 @NotNull final InputTableStatusListener listener) {
             checkAsyncEditSafety(table);
-            final PendingChange pendingChange = enqueueDeletion(table, rowsToDelete);
+            final PendingChange pendingChange = enqueueDeletion(table);
             asynchronousContinuation(pendingChange, listener);
         }
 
-        private PendingChange enqueueDeletion(@NotNull final Table table, @NotNull final RowSet rowsToDelete) {
+        private PendingChange enqueueDeletion(@NotNull final Table table) {
             validateDelete(table);
-            final Table oldDataSnapshot = snapshotData(table, rowsToDelete);
+            final Table oldDataSnapshot = snapshotData(table);
             final PendingChange pendingChange;
             synchronized (pendingChanges) {
                 pendingChange = new PendingChange(oldDataSnapshot, true);
@@ -252,11 +250,6 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
             }
             onPendingChange.run();
             return pendingChange;
-        }
-
-        private Table snapshotData(@NotNull final Table data, @NotNull final RowSet rowSet) {
-            final TrackingRowSet tracking = rowSet.copy().toTracking();
-            return snapshotData(data.getSubTable(tracking));
         }
 
         private Table snapshotData(@NotNull final Table data) {
