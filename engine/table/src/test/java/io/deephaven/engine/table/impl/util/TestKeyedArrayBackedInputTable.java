@@ -11,7 +11,7 @@ import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.util.input.InputTableHandler;
+import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.util.function.ThrowingRunnable;
 import junit.framework.TestCase;
 import org.junit.Rule;
@@ -43,28 +43,28 @@ public class TestKeyedArrayBackedInputTable {
 
         assertTableEquals(input, kabut);
 
-        final InputTableHandler inputTableHandler = (InputTableHandler) kabut.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
-        TestCase.assertNotNull(inputTableHandler);
+        final InputTableUpdater inputTableUpdater = (InputTableUpdater) kabut.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        TestCase.assertNotNull(inputTableUpdater);
 
         final Table input2 = TableTools.newTable(stringCol("Name", "Randy"), stringCol("Employer", "USGS"));
 
-        handleDelayedRefresh(() -> inputTableHandler.add(input2), kabut);
+        handleDelayedRefresh(() -> inputTableUpdater.add(input2), kabut);
         assertTableEquals(TableTools.merge(input, input2), kabut);
 
         final Table input3 = TableTools.newTable(stringCol("Name", "Randy"), stringCol("Employer", "Tegridy"));
-        handleDelayedRefresh(() -> inputTableHandler.add(input3), kabut);
+        handleDelayedRefresh(() -> inputTableUpdater.add(input3), kabut);
         assertTableEquals(TableTools.merge(input, input3), kabut);
 
 
         final Table input4 = TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Cogswell"));
-        handleDelayedRefresh(() -> inputTableHandler.add(input4), kabut);
+        handleDelayedRefresh(() -> inputTableUpdater.add(input4), kabut);
         showWithRowSet(kabut);
 
         assertTableEquals(TableTools.merge(input, input3, input4).lastBy("Name"), kabut);
 
         final Table input5 =
                 TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Spacely Sprockets"));
-        handleDelayedRefresh(() -> inputTableHandler.add(input5), kabut);
+        handleDelayedRefresh(() -> inputTableUpdater.add(input5), kabut);
         showWithRowSet(kabut);
 
         assertTableEquals(TableTools.merge(input, input3, input4, input5).lastBy("Name"), kabut);
@@ -72,7 +72,7 @@ public class TestKeyedArrayBackedInputTable {
         final long sizeBeforeDelete = kabut.size();
         System.out.println("KABUT.rowSet before delete: " + kabut.getRowSet());
         final Table delete1 = TableTools.newTable(stringCol("Name", "Earl"));
-        handleDelayedRefresh(() -> inputTableHandler.delete(delete1), kabut);
+        handleDelayedRefresh(() -> inputTableUpdater.delete(delete1), kabut);
         System.out.println("KABUT.rowSet after delete: " + kabut.getRowSet());
         final long sizeAfterDelete = kabut.size();
         TestCase.assertEquals(sizeBeforeDelete - 1, sizeAfterDelete);
@@ -101,14 +101,14 @@ public class TestKeyedArrayBackedInputTable {
 
         assertTableEquals(input, aoabmt);
 
-        final InputTableHandler inputTableHandler =
-                (InputTableHandler) aoabmt.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
-        TestCase.assertNotNull(inputTableHandler);
+        final InputTableUpdater inputTableUpdater =
+                (InputTableUpdater) aoabmt.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        TestCase.assertNotNull(inputTableUpdater);
 
         final Table input2 =
                 TableTools.newTable(stringCol("Name", "Randy", "George"), stringCol("Employer", "USGS", "Cogswell"));
 
-        handleDelayedRefresh(() -> inputTableHandler.add(input2), aoabmt);
+        handleDelayedRefresh(() -> inputTableUpdater.add(input2), aoabmt);
         assertTableEquals(TableTools.merge(input, input2), aoabmt);
     }
 
@@ -127,12 +127,12 @@ public class TestKeyedArrayBackedInputTable {
 
         final Table fs = kabut.where("Name.length() == 4").sort("Name");
 
-        final InputTableHandler inputTableHandler = (InputTableHandler) fs.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
-        TestCase.assertNotNull(inputTableHandler);
+        final InputTableUpdater inputTableUpdater = (InputTableUpdater) fs.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        TestCase.assertNotNull(inputTableUpdater);
 
         final Table delete = TableTools.newTable(stringCol("Name", "Fred"));
 
-        handleDelayedRefresh(() -> inputTableHandler.delete(delete), kabut);
+        handleDelayedRefresh(() -> inputTableUpdater.delete(delete), kabut);
         assertTableEquals(input.where("Name != `Fred`"), kabut);
     }
 
@@ -149,19 +149,19 @@ public class TestKeyedArrayBackedInputTable {
 
         assertTableEquals(input, kabut);
 
-        final InputTableHandler inputTableHandler = (InputTableHandler) kabut.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
-        TestCase.assertNotNull(inputTableHandler);
+        final InputTableUpdater inputTableUpdater = (InputTableUpdater) kabut.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        TestCase.assertNotNull(inputTableUpdater);
 
         final Table input2 =
                 TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Spacely Sprockets"));
 
-        handleDelayedRefresh(() -> inputTableHandler.add(input2), kabut);
+        handleDelayedRefresh(() -> inputTableUpdater.add(input2), kabut);
         assertTableEquals(input2, kabut);
 
-        handleDelayedRefresh(() -> inputTableHandler.delete(input2.view("Name")), kabut);
+        handleDelayedRefresh(() -> inputTableUpdater.delete(input2.view("Name")), kabut);
         assertTableEquals(input, kabut);
 
-        handleDelayedRefresh(() -> inputTableHandler.add(input2), kabut);
+        handleDelayedRefresh(() -> inputTableUpdater.add(input2), kabut);
         assertTableEquals(input2, kabut);
     }
 

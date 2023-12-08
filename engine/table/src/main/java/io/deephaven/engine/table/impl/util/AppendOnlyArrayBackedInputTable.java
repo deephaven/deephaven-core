@@ -108,11 +108,11 @@ public class AppendOnlyArrayBackedInputTable extends BaseArrayBackedInputTable {
     }
 
     @Override
-    ArrayBackedInputTableHandler makeHandler() {
-        return new Handler();
+    ArrayBackedInputTableUpdater makeUpdater() {
+        return new Updater();
     }
 
-    private class Handler extends ArrayBackedInputTableHandler {
+    private class Updater extends ArrayBackedInputTableUpdater {
 
         @Override
         public void validateDelete(Table tableToDelete) {

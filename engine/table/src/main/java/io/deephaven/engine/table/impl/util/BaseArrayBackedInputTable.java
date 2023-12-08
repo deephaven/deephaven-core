@@ -13,7 +13,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.util.input.InputTableStatusListener;
-import io.deephaven.engine.util.input.InputTableHandler;
+import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.engine.table.impl.UpdatableTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -47,14 +47,14 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
     public BaseArrayBackedInputTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
             ProcessPendingUpdater processPendingUpdater) {
         super(rowSet, nameToColumnSource, processPendingUpdater);
-        InputTableHandler inputTableHandler = makeHandler();
-        setAttribute(Table.INPUT_TABLE_ATTRIBUTE, inputTableHandler);
+        InputTableUpdater inputTableUpdater = makeUpdater();
+        setAttribute(Table.INPUT_TABLE_ATTRIBUTE, inputTableUpdater);
         setRefreshing(true);
         processPendingUpdater.setThis(this);
     }
 
-    public InputTableHandler inputTable() {
-        return (InputTableHandler) getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+    public InputTableUpdater inputTable() {
+        return (InputTableUpdater) getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
     }
 
     public Table readOnlyCopy() {
@@ -179,11 +179,11 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
         }
     }
 
-    ArrayBackedInputTableHandler makeHandler() {
-        return new ArrayBackedInputTableHandler();
+    ArrayBackedInputTableUpdater makeUpdater() {
+        return new ArrayBackedInputTableUpdater();
     }
 
-    protected class ArrayBackedInputTableHandler implements InputTableHandler {
+    protected class ArrayBackedInputTableUpdater implements InputTableUpdater {
         @Override
         public List<String> getKeyNames() {
             return BaseArrayBackedInputTable.this.getKeyNames();

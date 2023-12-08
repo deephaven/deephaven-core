@@ -70,11 +70,11 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
     public void testMultipleSources() throws Exception {
         final AppendOnlyArrayBackedInputTable source1 = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
                 ColumnDefinition.of("StringCol", Type.stringType())));
-        final BaseArrayBackedInputTable.ArrayBackedInputTableHandler inputTable1 = source1.makeHandler();
+        final BaseArrayBackedInputTable.ArrayBackedInputTableUpdater inputTable1 = source1.makeUpdater();
 
         final AppendOnlyArrayBackedInputTable source2 = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
                 ColumnDefinition.of("IntCol", Type.intType())));
-        final BaseArrayBackedInputTable.ArrayBackedInputTableHandler inputTable2 = source2.makeHandler();
+        final BaseArrayBackedInputTable.ArrayBackedInputTableUpdater inputTable2 = source2.makeUpdater();
 
         final Table functionBacked =
                 FunctionGeneratedTableFactory.create(() -> source1.lastBy().naturalJoin(source2, ""), source1, source2);
