@@ -175,10 +175,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         } else {
             this.setTable = null;
             setKeySource = null;
+
             if (setTable.getRowSet().isNonempty()) {
-                final TupleSource<?> temporaryTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
+                final ChunkSource.WithPrev<Values> tmpKeySource = DataIndexUtils.makeBoxedKeySource(setColumns);
                 try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
-                        temporaryTupleSource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
+                        tmpKeySource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
                     initialKeysIterator.forEachRemaining(this::addKeyUnchecked);
                 }
             }
@@ -215,6 +216,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         liveValues.add(key);
     }
 
+    /**
+     * Returns the optimal data index for the supplied table, or null if no index is available. The ideal index would
+     * contain all key columns but a partial match is also acceptable.
+     */
     @Nullable
     private DataIndex optimalIndex(final Table inputTable) {
         final String[] keyColumnNames = MatchPair.getLeftColumns(matchPairs);

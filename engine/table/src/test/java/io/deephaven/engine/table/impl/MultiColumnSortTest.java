@@ -261,4 +261,97 @@ public class MultiColumnSortTest {
             checkSort(sorted, SortColumn.asc(ColumnName.of("Enum1")), SortColumn.asc(ColumnName.of("L1")));
         }
     }
+
+    @Test
+    public void benchmarkFullIndexTest() {
+        {
+            final ColumnGenerator<String> enumStringCol1 = BenchmarkTools.stringCol(
+                    "Enum1", 10000, 6, 6, 0xB00FB00FL);
+            final ColumnGenerator<String> enumStringCol2 = BenchmarkTools.stringCol(
+                    "Enum2", 1000, 6, 6, 0xF00DF00DL);
+
+            final BenchmarkTableBuilder builder;
+            final int actualSize = BenchmarkTools.sizeWithSparsity(25000000, 90);
+
+            System.out.println("Actual Size: " + actualSize);
+
+            builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize);
+
+            final BenchmarkTable bmTable = builder
+                    .setSeed(0xDEADBEEF)
+                    .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF))
+                    .addColumn(BenchmarkTools.numberCol("I1", int.class))
+                    .addColumn(BenchmarkTools.numberCol("D1", double.class, -10e6, 10e6))
+                    .addColumn(BenchmarkTools.numberCol("L1", long.class))
+                    .addColumn(enumStringCol1)
+                    .addColumn(enumStringCol2)
+                    .build();
+
+
+            final long startGen = System.currentTimeMillis();
+            System.out.println(new Date(startGen) + " Generating Table.");
+            final Table table = bmTable.getTable();
+            DataIndexer.of(table.getRowSet()).createDataIndex(table, "Enum1", "L1");
+
+            final long endGen = System.currentTimeMillis();
+            System.out.println(new Date(endGen) + " Completed generate in " + (endGen - startGen) + "ms");
+
+            final long startSort = System.currentTimeMillis();
+            System.out.println(new Date(startSort) + " Starting sort.");
+
+            final Table sorted = table.sort("Enum1", "L1");
+
+            final long end = System.currentTimeMillis();
+            System.out.println(new Date(end) + " Completed sort in " + (end - startSort) + "ms");
+
+            checkSort(sorted, SortColumn.asc(ColumnName.of("Enum1")), SortColumn.asc(ColumnName.of("L1")));
+        }
+    }
+
+    @Test
+    public void benchmarkFirstColumnIndexTest() {
+        {
+            final ColumnGenerator<String> enumStringCol1 = BenchmarkTools.stringCol(
+                    "Enum1", 10000, 6, 6, 0xB00FB00FL);
+            final ColumnGenerator<String> enumStringCol2 = BenchmarkTools.stringCol(
+                    "Enum2", 1000, 6, 6, 0xF00DF00DL);
+
+            final BenchmarkTableBuilder builder;
+            final int actualSize = BenchmarkTools.sizeWithSparsity(25000000, 90);
+
+            System.out.println("Actual Size: " + actualSize);
+
+            builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize);
+
+            final BenchmarkTable bmTable = builder
+                    .setSeed(0xDEADBEEF)
+                    .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF))
+                    .addColumn(BenchmarkTools.numberCol("I1", int.class))
+                    .addColumn(BenchmarkTools.numberCol("D1", double.class, -10e6, 10e6))
+                    .addColumn(BenchmarkTools.numberCol("L1", long.class))
+                    .addColumn(enumStringCol1)
+                    .addColumn(enumStringCol2)
+                    .build();
+
+
+            final long startGen = System.currentTimeMillis();
+            System.out.println(new Date(startGen) + " Generating Table.");
+            final Table table = bmTable.getTable();
+            DataIndexer.of(table.getRowSet()).createDataIndex(table, "Enum1");
+
+            final long endGen = System.currentTimeMillis();
+            System.out.println(new Date(endGen) + " Completed generate in " + (endGen - startGen) + "ms");
+
+            final long startSort = System.currentTimeMillis();
+            System.out.println(new Date(startSort) + " Starting sort.");
+
+            final Table sorted = table.sort("Enum1", "L1");
+
+            final long end = System.currentTimeMillis();
+            System.out.println(new Date(end) + " Completed sort in " + (end - startSort) + "ms");
+
+            checkSort(sorted, SortColumn.asc(ColumnName.of("Enum1")), SortColumn.asc(ColumnName.of("L1")));
+        }
+    }
+
 }

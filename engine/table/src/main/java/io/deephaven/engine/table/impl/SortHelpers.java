@@ -248,8 +248,10 @@ public class SortHelpers {
             return EMPTY_SORT_MAPPING;
         }
 
-        // If the index has the same number of columns, we have a full index.
-        if (dataIndex != null && dataIndex.keyColumnNames().length == columnsToSortBy.length) {
+        // Don't use a full index if it is too large.
+        if (dataIndex != null
+                && dataIndex.keyColumnNames().length == columnsToSortBy.length
+                && rowSetToSort.size() > (dataIndex.table().size() * 2L)) {
             return getSortMappingIndexed(order, originalColumnsToSortBy, dataIndex, rowSetToSort, usePrev);
         }
 

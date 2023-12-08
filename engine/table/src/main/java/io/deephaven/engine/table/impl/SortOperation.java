@@ -24,6 +24,7 @@ import io.deephaven.util.SafeCloseableList;
 
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -74,18 +75,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
         parent.assertSortable(sortColumnNames);
 
-        // This sort operation might leverage a data index. Make sure to include it in the snapshot.
-        final DataIndexer dataIndexer = DataIndexer.of(parent.getRowSet());
-
-        if (dataIndexer.hasDataIndex(parent, sortColumnNames)) {
-            // We have an index for all sort columns.
-            dataIndex = dataIndexer.getDataIndex(parent, sortColumnNames);
-        } else if (dataIndexer.hasDataIndex(parent, sortColumnNames[0])) {
-            // We have an index for the first column.
-            dataIndex = dataIndexer.getDataIndex(parent, sortColumnNames[0]);
-        } else {
-            dataIndex = null;
-        }
+        // This sort operation might leverage a data index.
+        dataIndex = optimalIndex(parent);
     }
 
     @Override
@@ -108,6 +99,23 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         return dataIndex != null
                 ? new OperationSnapshotControlEx(queryTable, (QueryTable) dataIndex.table())
                 : new OperationSnapshotControl(queryTable);
+    }
+
+    /**
+     * Returns the optimal data index for the supplied table, or null if no index is available. The ideal index would
+     * contain all key columns but matching the first column is still useful.
+     */
+    @Nullable
+    private DataIndex optimalIndex(final Table inputTable) {
+        final DataIndexer dataIndexer = DataIndexer.of(inputTable.getRowSet());
+
+        final DataIndex full = dataIndexer.getDataIndex(inputTable, sortColumnNames);
+        if (full != null) {
+            // We have an index for all sort columns.
+            return full;
+        }
+        // Return an index for the first column (if one exists) or null.
+        return dataIndexer.getDataIndex(inputTable, sortColumnNames[0]);
     }
 
     private static boolean alreadySorted(final QueryTable parent, @NotNull final SortHelpers.SortMapping sortedKeys) {

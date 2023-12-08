@@ -6,10 +6,7 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.DataIndexTransformer;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -159,8 +156,8 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
                 final OperationSnapshotControl snapshotControl =
                         parent.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                 QueryTable.initializeWithSnapshot("wrapRowSetColumn", snapshotControl, (usePrev, beforeClockValue) -> {
-                    final QueryTable resultTable = new QueryTable(parent.getDefinition(), parent.getRowSet(),
-                            resultColumnSourceMap, null, parent.getAttributes());
+                    final QueryTable resultTable = new QueryTable(TableDefinition.inferFrom(resultColumnSourceMap),
+                            parent.getRowSet(), resultColumnSourceMap, null, parent.getAttributes());
                     parent.propagateFlatness(resultTable);
                     if (snapshotControl != null) {
                         final BaseTable.ListenerImpl listener =
