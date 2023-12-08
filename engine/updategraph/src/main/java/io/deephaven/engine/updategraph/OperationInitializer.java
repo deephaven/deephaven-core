@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 /**
- * alt naming: OperationParallelismControl?
+ * Provides guidance for initialization operations on how they can parallelize.
  */
 public interface OperationInitializer {
     OperationInitializer NON_PARALLELIZABLE = new OperationInitializer() {
@@ -26,21 +26,17 @@ public interface OperationInitializer {
     };
 
     /**
-     * @return Whether the current thread can parallelize operations using this OperationInitialization.
+     * Whether the current thread can parallelize operations using this OperationInitialization.
      */
     boolean canParallelize();
 
     /**
      * Submits a task to run in this thread pool.
-     * 
-     * @param runnable
-     * @return
      */
     Future<?> submit(Runnable runnable);
 
     /**
-     *
-     * @return
+     * Number of threads that are potentially available.
      */
     int parallelismFactor();
 }

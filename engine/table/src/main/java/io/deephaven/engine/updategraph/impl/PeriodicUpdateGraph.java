@@ -1212,7 +1212,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
 
         /**
          * Sets a functional interface that adds custom initialization for threads started by this UpdateGraph.
-         * 
+         *
          * @param threadInitializationFactory the function to invoke on any runnables that will be used to start threads
          * @return this builder
          */

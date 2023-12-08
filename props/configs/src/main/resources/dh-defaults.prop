@@ -60,7 +60,3 @@ client.configuration.list=java.version,deephaven.version,barrage.version,http.se
 # jar, and a class that is found in that jar. Any such keys will be made available to the client.configuration.list
 # as <key>.version.
 client.version.list=deephaven=io.deephaven.engine.table.Table,barrage=io.deephaven.barrage.flatbuf.BarrageMessageWrapper
-
-
-# Specifies additional setup to run on threads that can perform table operations with user code. Comma-separated list, instances must be of type io.deephaven.util.thread.ThreadInitializationFactory
-thread.initialization=
