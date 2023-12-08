@@ -33,12 +33,14 @@ public class AppendOnlyArrayBackedInputTable extends BaseArrayBackedInputTable {
      *
      * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
      */
-    public static io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable make(@NotNull TableDefinition definition) {
+    public static io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable make(
+            @NotNull TableDefinition definition) {
         // noinspection resource
         final Table initialTable = new QueryTable(definition, RowSetFactory.empty().toTracking(),
                 NullValueColumnSource.createColumnSourceMap(definition));
-        final io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable result = new io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable(
-                initialTable.getDefinition(), new ProcessPendingUpdater());
+        final io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable result =
+                new io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable(
+                        initialTable.getDefinition(), new ProcessPendingUpdater());
         result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
         result.setFlat();
         processInitial(initialTable, result);
@@ -53,8 +55,9 @@ public class AppendOnlyArrayBackedInputTable extends BaseArrayBackedInputTable {
      * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
      */
     public static io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable make(final Table initialTable) {
-        final io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable result = new io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable(
-                initialTable.getDefinition(), new ProcessPendingUpdater());
+        final io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable result =
+                new io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable(
+                        initialTable.getDefinition(), new ProcessPendingUpdater());
         result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
         result.setFlat();
         processInitial(initialTable, result);
@@ -62,7 +65,7 @@ public class AppendOnlyArrayBackedInputTable extends BaseArrayBackedInputTable {
     }
 
     private AppendOnlyArrayBackedInputTable(@NotNull TableDefinition definition,
-                                            final ProcessPendingUpdater processPendingUpdater) {
+            final ProcessPendingUpdater processPendingUpdater) {
         // noinspection resource
         super(RowSetFactory.empty().toTracking(), makeColumnSourceMap(definition),
                 processPendingUpdater);

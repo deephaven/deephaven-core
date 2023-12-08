@@ -47,7 +47,7 @@ public class KeyedArrayBackedInputTable extends BaseArrayBackedInputTable {
      * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
      */
     public static KeyedArrayBackedInputTable make(@NotNull TableDefinition definition,
-                                                  final String... keyColumnNames) {
+            final String... keyColumnNames) {
         // noinspection resource
         return make(new QueryTable(definition, RowSetFactory.empty().toTracking(),
                 NullValueColumnSource.createColumnSourceMap(definition)), keyColumnNames);
@@ -73,7 +73,7 @@ public class KeyedArrayBackedInputTable extends BaseArrayBackedInputTable {
     }
 
     private KeyedArrayBackedInputTable(@NotNull TableDefinition definition, final String[] keyColumnNames,
-                                       final ProcessPendingUpdater processPendingUpdater) {
+            final ProcessPendingUpdater processPendingUpdater) {
         // noinspection resource
         super(RowSetFactory.empty().toTracking(), makeColumnSourceMap(definition),
                 processPendingUpdater);

@@ -96,8 +96,8 @@ public interface InputTable {
      * This method will block until the rows are added. As a result, this method is not suitable for use from a
      * {@link io.deephaven.engine.table.TableListener table listener} or any other
      * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
-     * dispatched by this InputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
-     * be suitable to delete from another update graph if doing so does not introduce any cycles.
+     * dispatched by this InputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may be
+     * suitable to delete from another update graph if doing so does not introduce any cycles.
      *
      * @param newData The data to write to this table
      * @throws IOException If there is an error writing the data
@@ -125,8 +125,8 @@ public interface InputTable {
      * This method will block until the rows are deleted. As a result, this method is not suitable for use from a
      * {@link io.deephaven.engine.table.TableListener table listener} or any other
      * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
-     * dispatched by this InputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
-     * be suitable to delete from another update graph if doing so does not introduce any cycles.
+     * dispatched by this InputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may be
+     * suitable to delete from another update graph if doing so does not introduce any cycles.
      *
      * @param table The rows to delete
      * @throws IOException If a problem occurred while deleting the rows.
@@ -142,8 +142,8 @@ public interface InputTable {
      * This method will block until the rows are deleted. As a result, this method is not suitable for use from a
      * {@link io.deephaven.engine.table.TableListener table listener} or any other
      * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
-     * dispatched by this InputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
-     * be suitable to delete from another update graph if doing so does not introduce any cycles.
+     * dispatched by this InputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may be
+     * suitable to delete from another update graph if doing so does not introduce any cycles.
      *
      * @param table Table containing the rows to delete
      * @param rowSet The rows to delete
@@ -208,8 +208,8 @@ public interface InputTable {
     /**
      * Queries whether this InputTable is editable in the current context.
      *
-     * @return true if this InputTable may be edited, false otherwise TODO (deephaven/deephaven-core/issues/255):
-     *         Add AuthContext and whatever else is appropriate
+     * @return true if this InputTable may be edited, false otherwise TODO (deephaven/deephaven-core/issues/255): Add
+     *         AuthContext and whatever else is appropriate
      */
     boolean canEdit();
 }

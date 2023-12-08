@@ -46,7 +46,7 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
     private long pendingProcessed = -1L;
 
     public BaseArrayBackedInputTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
-                                     ProcessPendingUpdater processPendingUpdater) {
+            ProcessPendingUpdater processPendingUpdater) {
         super(rowSet, nameToColumnSource, processPendingUpdater);
         InputTable inputTable = makeHandler();
         setAttribute(Table.INPUT_TABLE_ATTRIBUTE, inputTable);
@@ -166,7 +166,8 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
 
     private final class PendingChange {
         final boolean delete;
-        @NotNull final Table table;
+        @NotNull
+        final Table table;
         final long sequence;
         String error;
 
