@@ -23,7 +23,7 @@ import java.util.List;
  * <p>
  * The table is not keyed, all rows are added to the end of the table. Deletions and edits are not permitted.
  */
-public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTable {
+public class AppendOnlyArrayBackedInputTable extends BaseArrayBackedInputTable {
     static final String DEFAULT_DESCRIPTION = "Append Only In-Memory Input Table";
 
     /**
@@ -33,11 +33,11 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
      *
      * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
      */
-    public static AppendOnlyArrayBackedMutableTable make(@NotNull TableDefinition definition) {
+    public static io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable make(@NotNull TableDefinition definition) {
         // noinspection resource
         final Table initialTable = new QueryTable(definition, RowSetFactory.empty().toTracking(),
                 NullValueColumnSource.createColumnSourceMap(definition));
-        final AppendOnlyArrayBackedMutableTable result = new AppendOnlyArrayBackedMutableTable(
+        final io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable result = new io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable(
                 initialTable.getDefinition(), new ProcessPendingUpdater());
         result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
         result.setFlat();
@@ -52,8 +52,8 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
      *
      * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
      */
-    public static AppendOnlyArrayBackedMutableTable make(final Table initialTable) {
-        final AppendOnlyArrayBackedMutableTable result = new AppendOnlyArrayBackedMutableTable(
+    public static io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable make(final Table initialTable) {
+        final io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable result = new io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable(
                 initialTable.getDefinition(), new ProcessPendingUpdater());
         result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
         result.setFlat();
@@ -61,8 +61,8 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
         return result;
     }
 
-    private AppendOnlyArrayBackedMutableTable(@NotNull TableDefinition definition,
-            final ProcessPendingUpdater processPendingUpdater) {
+    private AppendOnlyArrayBackedInputTable(@NotNull TableDefinition definition,
+                                            final ProcessPendingUpdater processPendingUpdater) {
         // noinspection resource
         super(RowSetFactory.empty().toTracking(), makeColumnSourceMap(definition),
                 processPendingUpdater);
@@ -111,11 +111,11 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
     }
 
     @Override
-    ArrayBackedMutableInputTable makeHandler() {
-        return new AppendOnlyArrayBackedMutableInputTable();
+    ArrayBackedInputTable makeHandler() {
+        return new Handler();
     }
 
-    private class AppendOnlyArrayBackedMutableInputTable extends ArrayBackedMutableInputTable {
+    private class Handler extends ArrayBackedInputTable {
 
         @Override
         public void validateDelete(Table tableToDelete) {

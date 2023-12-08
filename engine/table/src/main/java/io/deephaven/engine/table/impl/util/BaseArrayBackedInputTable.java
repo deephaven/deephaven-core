@@ -14,7 +14,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.util.config.InputTableStatusListener;
-import io.deephaven.engine.util.config.MutableInputTable;
+import io.deephaven.engine.util.config.InputTable;
 import io.deephaven.engine.table.impl.UpdatableTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-abstract class BaseArrayBackedMutableTable extends UpdatableTable {
+abstract class BaseArrayBackedInputTable extends UpdatableTable {
 
     /**
      * Queue of pending changes. Only synchronized access is permitted.
@@ -45,21 +45,21 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     long nextRow = 0;
     private long pendingProcessed = -1L;
 
-    public BaseArrayBackedMutableTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
-            ProcessPendingUpdater processPendingUpdater) {
+    public BaseArrayBackedInputTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
+                                     ProcessPendingUpdater processPendingUpdater) {
         super(rowSet, nameToColumnSource, processPendingUpdater);
-        MutableInputTable mutableInputTable = makeHandler();
-        setAttribute(Table.INPUT_TABLE_ATTRIBUTE, mutableInputTable);
+        InputTable inputTable = makeHandler();
+        setAttribute(Table.INPUT_TABLE_ATTRIBUTE, inputTable);
         setRefreshing(true);
         processPendingUpdater.setThis(this);
     }
 
-    public MutableInputTable mutableInputTable() {
-        return (MutableInputTable) getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+    public InputTable inputTable() {
+        return (InputTable) getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
     }
 
     public Table readOnlyCopy() {
-        return copy(BaseArrayBackedMutableTable::applicableForReadOnly);
+        return copy(BaseArrayBackedInputTable::applicableForReadOnly);
     }
 
     private static boolean applicableForReadOnly(String attributeName) {
@@ -75,7 +75,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         return resultMap;
     }
 
-    static void processInitial(Table initialTable, BaseArrayBackedMutableTable result) {
+    static void processInitial(Table initialTable, BaseArrayBackedInputTable result) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         result.processPendingTable(initialTable, new RowSetChangeRecorder() {
             @Override
@@ -98,7 +98,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         result.getUpdateGraph().addSource(result);
     }
 
-    public BaseArrayBackedMutableTable setDescription(String newDescription) {
+    public BaseArrayBackedInputTable setDescription(String newDescription) {
         this.description = newDescription;
         return this;
     }
@@ -152,15 +152,15 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     protected abstract List<String> getKeyNames();
 
     protected static class ProcessPendingUpdater implements Updater {
-        private BaseArrayBackedMutableTable baseArrayBackedMutableTable;
+        private BaseArrayBackedInputTable baseArrayBackedInputTable;
 
         @Override
         public void accept(RowSetChangeRecorder rowSetChangeRecorder) {
-            baseArrayBackedMutableTable.processPending(rowSetChangeRecorder);
+            baseArrayBackedInputTable.processPending(rowSetChangeRecorder);
         }
 
-        public void setThis(BaseArrayBackedMutableTable keyedArrayBackedMutableTable) {
-            this.baseArrayBackedMutableTable = keyedArrayBackedMutableTable;
+        public void setThis(BaseArrayBackedInputTable keyedArrayBackedMutableTable) {
+            this.baseArrayBackedInputTable = keyedArrayBackedMutableTable;
         }
     }
 
@@ -178,19 +178,19 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
     }
 
-    ArrayBackedMutableInputTable makeHandler() {
-        return new ArrayBackedMutableInputTable();
+    ArrayBackedInputTable makeHandler() {
+        return new ArrayBackedInputTable();
     }
 
-    protected class ArrayBackedMutableInputTable implements MutableInputTable {
+    protected class ArrayBackedInputTable implements InputTable {
         @Override
         public List<String> getKeyNames() {
-            return BaseArrayBackedMutableTable.this.getKeyNames();
+            return BaseArrayBackedInputTable.this.getKeyNames();
         }
 
         @Override
         public TableDefinition getTableDefinition() {
-            return BaseArrayBackedMutableTable.this.getDefinition();
+            return BaseArrayBackedInputTable.this.getDefinition();
         }
 
         @Override
@@ -320,7 +320,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 // in order to allow updates.
                 while (processedSequence < sequence) {
                     try {
-                        BaseArrayBackedMutableTable.this.awaitUpdate();
+                        BaseArrayBackedInputTable.this.awaitUpdate();
                     } catch (InterruptedException ignored) {
                     }
                 }
@@ -354,7 +354,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
         @Override
         public Table getTable() {
-            return BaseArrayBackedMutableTable.this;
+            return BaseArrayBackedInputTable.this;
         }
 
         @Override

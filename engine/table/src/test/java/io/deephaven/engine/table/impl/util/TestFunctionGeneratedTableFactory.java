@@ -20,7 +20,7 @@ import io.deephaven.qst.type.Type;
 
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.util.TestKeyedArrayBackedMutableTable.handleDelayedRefresh;
+import static io.deephaven.engine.table.impl.util.TestKeyedArrayBackedInputTable.handleDelayedRefresh;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 
@@ -68,13 +68,13 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
     }
 
     public void testMultipleSources() throws Exception {
-        final AppendOnlyArrayBackedMutableTable source1 = AppendOnlyArrayBackedMutableTable.make(TableDefinition.of(
+        final AppendOnlyArrayBackedInputTable source1 = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
                 ColumnDefinition.of("StringCol", Type.stringType())));
-        final BaseArrayBackedMutableTable.ArrayBackedMutableInputTable inputTable1 = source1.makeHandler();
+        final BaseArrayBackedInputTable.ArrayBackedInputTable inputTable1 = source1.makeHandler();
 
-        final AppendOnlyArrayBackedMutableTable source2 = AppendOnlyArrayBackedMutableTable.make(TableDefinition.of(
+        final AppendOnlyArrayBackedInputTable source2 = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
                 ColumnDefinition.of("IntCol", Type.intType())));
-        final BaseArrayBackedMutableTable.ArrayBackedMutableInputTable inputTable2 = source2.makeHandler();
+        final BaseArrayBackedInputTable.ArrayBackedInputTable inputTable2 = source2.makeHandler();
 
         final Table functionBacked =
                 FunctionGeneratedTableFactory.create(() -> source1.lastBy().naturalJoin(source2, ""), source1, source2);

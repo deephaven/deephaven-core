@@ -15,12 +15,12 @@ import java.util.stream.Collectors;
 
 /**
  * A minimal interface for mutable shared tables, providing the ability to write to the table instance this is attached
- * to. MutableInputTable instances are set on the table as an attribute.
+ * to. InputTable instances are set on the table as an attribute.
  * <p>
  * Implementations of this interface will make their own guarantees about how atomically changes will be applied and
  * what operations they support.
  */
-public interface MutableInputTable {
+public interface InputTable {
 
     /**
      * Gets the names of the key columns.
@@ -96,7 +96,7 @@ public interface MutableInputTable {
      * This method will block until the rows are added. As a result, this method is not suitable for use from a
      * {@link io.deephaven.engine.table.TableListener table listener} or any other
      * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
-     * dispatched by this MutableInputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
+     * dispatched by this InputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
      * be suitable to delete from another update graph if doing so does not introduce any cycles.
      *
      * @param newData The data to write to this table
@@ -125,7 +125,7 @@ public interface MutableInputTable {
      * This method will block until the rows are deleted. As a result, this method is not suitable for use from a
      * {@link io.deephaven.engine.table.TableListener table listener} or any other
      * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
-     * dispatched by this MutableInputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
+     * dispatched by this InputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
      * be suitable to delete from another update graph if doing so does not introduce any cycles.
      *
      * @param table The rows to delete
@@ -142,7 +142,7 @@ public interface MutableInputTable {
      * This method will block until the rows are deleted. As a result, this method is not suitable for use from a
      * {@link io.deephaven.engine.table.TableListener table listener} or any other
      * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
-     * dispatched by this MutableInputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
+     * dispatched by this InputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
      * be suitable to delete from another update graph if doing so does not introduce any cycles.
      *
      * @param table Table containing the rows to delete
@@ -172,16 +172,16 @@ public interface MutableInputTable {
     }
 
     /**
-     * Return a user-readable description of this MutableInputTable.
+     * Return a user-readable description of this InputTable.
      *
      * @return a description of this input table
      */
     String getDescription();
 
     /**
-     * Returns a Deephaven table that contains the current data for this MutableInputTable.
+     * Returns a Deephaven table that contains the current data for this InputTable.
      *
-     * @return the current data in this MutableInputTable.
+     * @return the current data in this InputTable.
      */
     Table getTable();
 
@@ -196,19 +196,19 @@ public interface MutableInputTable {
     }
 
     /**
-     * Returns true if the specified column exists in this MutableInputTable.
+     * Returns true if the specified column exists in this InputTable.
      *
      * @param columnName the column to interrogate
-     * @return true if columnName exists in this MutableInputTable
+     * @return true if columnName exists in this InputTable
      */
     default boolean hasColumn(String columnName) {
         return getTableDefinition().getColumnNames().contains(columnName);
     }
 
     /**
-     * Queries whether this MutableInputTable is editable in the current context.
+     * Queries whether this InputTable is editable in the current context.
      *
-     * @return true if this MutableInputTable may be edited, false otherwise TODO (deephaven/deephaven-core/issues/255):
+     * @return true if this InputTable may be edited, false otherwise TODO (deephaven/deephaven-core/issues/255):
      *         Add AuthContext and whatever else is appropriate
      */
     boolean canEdit();

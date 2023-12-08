@@ -26,7 +26,7 @@ import java.util.*;
  * <p>
  * This is used to implement in-memory editable table columns from web plugins.
  */
-public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
+public class KeyedArrayBackedInputTable extends BaseArrayBackedInputTable {
 
     private static final String DEFAULT_DESCRIPTION = "In-Memory Input Table";
 
@@ -46,8 +46,8 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      *
      * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
      */
-    public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition,
-            final String... keyColumnNames) {
+    public static KeyedArrayBackedInputTable make(@NotNull TableDefinition definition,
+                                                  final String... keyColumnNames) {
         // noinspection resource
         return make(new QueryTable(definition, RowSetFactory.empty().toTracking(),
                 NullValueColumnSource.createColumnSourceMap(definition)), keyColumnNames);
@@ -64,16 +64,16 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      *
      * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
      */
-    public static KeyedArrayBackedMutableTable make(final Table initialTable, final String... keyColumnNames) {
-        final KeyedArrayBackedMutableTable result = new KeyedArrayBackedMutableTable(initialTable.getDefinition(),
+    public static KeyedArrayBackedInputTable make(final Table initialTable, final String... keyColumnNames) {
+        final KeyedArrayBackedInputTable result = new KeyedArrayBackedInputTable(initialTable.getDefinition(),
                 keyColumnNames, new ProcessPendingUpdater());
         processInitial(initialTable, result);
         result.startTrackingPrev();
         return result;
     }
 
-    private KeyedArrayBackedMutableTable(@NotNull TableDefinition definition, final String[] keyColumnNames,
-            final ProcessPendingUpdater processPendingUpdater) {
+    private KeyedArrayBackedInputTable(@NotNull TableDefinition definition, final String[] keyColumnNames,
+                                       final ProcessPendingUpdater processPendingUpdater) {
         // noinspection resource
         super(RowSetFactory.empty().toTracking(), makeColumnSourceMap(definition),
                 processPendingUpdater);
