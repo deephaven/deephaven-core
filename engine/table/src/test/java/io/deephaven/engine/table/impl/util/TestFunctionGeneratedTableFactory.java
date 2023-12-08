@@ -82,9 +82,9 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertEquals(functionBacked.size(), 0);
 
         handleDelayedRefresh(() -> {
-            inputTable1.addAsync(newTable(stringCol("StringCol", "MyString")), false, t -> {
+            inputTable1.addAsync(newTable(stringCol("StringCol", "MyString")), t -> {
             });
-            inputTable2.addAsync(newTable(intCol("IntCol", 12345)), false, t -> {
+            inputTable2.addAsync(newTable(intCol("IntCol", 12345)), t -> {
             });
         }, source1, source2);
 

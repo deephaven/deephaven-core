@@ -4,10 +4,10 @@
 package io.deephaven.engine.util.config;
 
 import io.deephaven.engine.exceptions.ArgumentException;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.rowset.TrackingRowSet;
 
 import java.io.IOException;
 import java.util.List;
@@ -85,7 +85,7 @@ public interface MutableInputTable {
             error.append("Unknown key columns: ").append(extraKeys);
         }
         if (error.length() > 0) {
-            throw new ArgumentException("Invalid Key Table Definition: " + error.toString());
+            throw new ArgumentException("Invalid Key Table Definition: " + error);
         }
     }
 
@@ -105,8 +105,8 @@ public interface MutableInputTable {
     void add(Table newData) throws IOException;
 
     /**
-     * Write {@code newData} to this table. Added rows with keys that match existing rows will instead replace those
-     * rows, if supported and {@code allowEdits == true}.
+     * Write {@code newData} to this table. Added rows with keys that match existing rows replace those rows, if
+     * supported.
      * <p>
      * This method will <em>not</em> block, and can be safely used from a {@link io.deephaven.engine.table.TableListener
      * table listener} or any other {@link io.deephaven.engine.updategraph.NotificationQueue.Notification
@@ -115,11 +115,9 @@ public interface MutableInputTable {
      * cycle.
      *
      * @param newData The data to write to this table
-     * @param allowEdits Whether added rows with keys that match existing rows will instead replace those rows, or
-     *        result in an error
      * @param listener The listener for asynchronous results
      */
-    void addAsync(Table newData, boolean allowEdits, InputTableStatusListener listener);
+    void addAsync(Table newData, InputTableStatusListener listener);
 
     /**
      * Delete the keys contained in {@code table} from this input table.
@@ -152,7 +150,7 @@ public interface MutableInputTable {
      * @throws IOException If a problem occurred while deleting the rows
      * @throws UnsupportedOperationException If this table does not support deletes
      */
-    default void delete(Table table, TrackingRowSet rowSet) throws IOException {
+    default void delete(Table table, RowSet rowSet) throws IOException {
         throw new UnsupportedOperationException("Table does not support deletes");
     }
 
@@ -169,7 +167,7 @@ public interface MutableInputTable {
      * @param rowSet The rows to delete
      * @throws UnsupportedOperationException If this table does not support deletes
      */
-    default void deleteAsync(Table table, TrackingRowSet rowSet, InputTableStatusListener listener) {
+    default void deleteAsync(Table table, RowSet rowSet, InputTableStatusListener listener) {
         throw new UnsupportedOperationException("Table does not support deletes");
     }
 

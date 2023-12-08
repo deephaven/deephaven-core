@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -22,7 +23,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
@@ -77,7 +77,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
     static void processInitial(Table initialTable, BaseArrayBackedMutableTable result) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        result.processPendingTable(initialTable, true, new RowSetChangeRecorder() {
+        result.processPendingTable(initialTable, new RowSetChangeRecorder() {
             @Override
             public void addRowKey(long key) {
                 builder.appendKey(key);
@@ -92,7 +92,6 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             public void modifyRowKey(long key) {
                 throw new UnsupportedOperationException();
             }
-        }, (e) -> {
         });
         result.getRowSet().writableCast().insert(builder.build());
         result.getRowSet().writableCast().initializePreviousValue();
@@ -123,8 +122,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 if (pendingChange.delete) {
                     processPendingDelete(pendingChange.table, rowSetChangeRecorder);
                 } else {
-                    processPendingTable(pendingChange.table, pendingChange.allowEdits, rowSetChangeRecorder,
-                            (e) -> pendingChange.error = e);
+                    processPendingTable(pendingChange.table, rowSetChangeRecorder);
                 }
                 pendingProcessed = pendingChange.sequence;
             }
@@ -145,8 +143,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
     }
 
-    protected abstract void processPendingTable(Table table, boolean allowEdits,
-            RowSetChangeRecorder rowSetChangeRecorder, Consumer<String> errorNotifier);
+    protected abstract void processPendingTable(Table table, RowSetChangeRecorder rowSetChangeRecorder);
 
     protected abstract void processPendingDelete(Table table, RowSetChangeRecorder rowSetChangeRecorder);
 
@@ -171,14 +168,12 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         final boolean delete;
         final Table table;
         final long sequence;
-        final boolean allowEdits;
         String error;
 
-        private PendingChange(Table table, boolean delete, boolean allowEdits) {
+        private PendingChange(Table table, boolean delete) {
             Assert.holdsLock(pendingChanges, "pendingChanges");
             this.table = table;
             this.delete = delete;
-            this.allowEdits = allowEdits;
             this.sequence = ++enqueuedSequence;
         }
     }
@@ -201,28 +196,27 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         @Override
         public void add(@NotNull final Table newData) throws IOException {
             checkBlockingEditSafety();
-            PendingChange pendingChange = enqueueAddition(newData, true);
+            PendingChange pendingChange = enqueueAddition(newData);
             blockingContinuation(pendingChange);
         }
 
         @Override
         public void addAsync(
                 @NotNull final Table newData,
-                final boolean allowEdits,
                 @NotNull final InputTableStatusListener listener) {
             checkAsyncEditSafety(newData);
-            final PendingChange pendingChange = enqueueAddition(newData, allowEdits);
+            final PendingChange pendingChange = enqueueAddition(newData);
             asynchronousContinuation(pendingChange, listener);
         }
 
-        private PendingChange enqueueAddition(@NotNull final Table newData, final boolean allowEdits) {
+        private PendingChange enqueueAddition(@NotNull final Table newData) {
             validateAddOrModify(newData);
             // we want to get a clean copy of the table; that can not change out from under us or result in long reads
             // during our UGP run
             final Table newDataSnapshot = snapshotData(newData);
             final PendingChange pendingChange;
             synchronized (pendingChanges) {
-                pendingChange = new PendingChange(newDataSnapshot, false, allowEdits);
+                pendingChange = new PendingChange(newDataSnapshot, false);
                 pendingChanges.add(pendingChange);
             }
             onPendingChange.run();
@@ -230,7 +224,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         @Override
-        public void delete(@NotNull final Table table, @NotNull final TrackingRowSet rowsToDelete) throws IOException {
+        public void delete(@NotNull final Table table, @NotNull final RowSet rowsToDelete) throws IOException {
             checkBlockingEditSafety();
             final PendingChange pendingChange = enqueueDeletion(table, rowsToDelete);
             blockingContinuation(pendingChange);
@@ -239,27 +233,29 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         @Override
         public void deleteAsync(
                 @NotNull final Table table,
-                @NotNull final TrackingRowSet rowsToDelete,
+                @NotNull final RowSet rowsToDelete,
                 @NotNull final InputTableStatusListener listener) {
             checkAsyncEditSafety(table);
             final PendingChange pendingChange = enqueueDeletion(table, rowsToDelete);
             asynchronousContinuation(pendingChange, listener);
         }
 
-        private PendingChange enqueueDeletion(@NotNull final Table table, @NotNull final TrackingRowSet rowsToDelete) {
+        private PendingChange enqueueDeletion(@NotNull final Table table, @NotNull final RowSet rowsToDelete) {
             validateDelete(table);
             final Table oldDataSnapshot = snapshotData(table, rowsToDelete);
             final PendingChange pendingChange;
             synchronized (pendingChanges) {
-                pendingChange = new PendingChange(oldDataSnapshot, true, false);
+                pendingChange = new PendingChange(oldDataSnapshot, true);
                 pendingChanges.add(pendingChange);
             }
             onPendingChange.run();
             return pendingChange;
         }
 
-        private Table snapshotData(@NotNull final Table data, @NotNull final TrackingRowSet rowSet) {
-            return snapshotData(data.getSubTable(rowSet));
+        private Table snapshotData(@NotNull final Table data, @NotNull final RowSet rowSet) {
+            try (final TrackingRowSet tracking = rowSet.copy().toTracking()) {
+                return snapshotData(data.getSubTable(tracking));
+            }
         }
 
         private Table snapshotData(@NotNull final Table data) {

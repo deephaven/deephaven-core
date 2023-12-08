@@ -17,8 +17,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * An in-memory table that allows you to add rows as if it were an InputTable, which can be updated on the UGP.
@@ -36,22 +34,15 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
      * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
      */
     public static AppendOnlyArrayBackedMutableTable make(@NotNull TableDefinition definition) {
-        return make(definition, Collections.emptyMap());
-    }
-
-    /**
-     * Create an empty AppendOnlyArrayBackedMutableTable with the given definition.
-     *
-     * @param definition the definition of the new table.
-     * @param enumValues a map of column names to enumeration values
-     *
-     * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
-     */
-    public static AppendOnlyArrayBackedMutableTable make(@NotNull TableDefinition definition,
-            final Map<String, Object[]> enumValues) {
         // noinspection resource
-        return make(new QueryTable(definition, RowSetFactory.empty().toTracking(),
-                NullValueColumnSource.createColumnSourceMap(definition)), enumValues);
+        final Table initialTable = new QueryTable(definition, RowSetFactory.empty().toTracking(),
+                NullValueColumnSource.createColumnSourceMap(definition));
+        final AppendOnlyArrayBackedMutableTable result = new AppendOnlyArrayBackedMutableTable(
+                initialTable.getDefinition(), new ProcessPendingUpdater());
+        result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        result.setFlat();
+        processInitial(initialTable, result);
+        return result;
     }
 
     /**
@@ -62,21 +53,8 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
      * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
      */
     public static AppendOnlyArrayBackedMutableTable make(final Table initialTable) {
-        return make(initialTable, Collections.emptyMap());
-    }
-
-    /**
-     * Create an AppendOnlyArrayBackedMutableTable with the given initial data.
-     *
-     * @param initialTable the initial values to copy into the AppendOnlyArrayBackedMutableTable
-     * @param enumValues a map of column names to enumeration values
-     *
-     * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
-     */
-    public static AppendOnlyArrayBackedMutableTable make(final Table initialTable,
-            final Map<String, Object[]> enumValues) {
         final AppendOnlyArrayBackedMutableTable result = new AppendOnlyArrayBackedMutableTable(
-                initialTable.getDefinition(), enumValues, new ProcessPendingUpdater());
+                initialTable.getDefinition(), new ProcessPendingUpdater());
         result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
         result.setFlat();
         processInitial(initialTable, result);
@@ -84,15 +62,14 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
     }
 
     private AppendOnlyArrayBackedMutableTable(@NotNull TableDefinition definition,
-            final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
+            final ProcessPendingUpdater processPendingUpdater) {
         // noinspection resource
         super(RowSetFactory.empty().toTracking(), makeColumnSourceMap(definition),
                 processPendingUpdater);
     }
 
     @Override
-    protected void processPendingTable(Table table, boolean allowEdits, RowSetChangeRecorder rowSetChangeRecorder,
-            Consumer<String> errorNotifier) {
+    protected void processPendingTable(Table table, RowSetChangeRecorder rowSetChangeRecorder) {
         try (final RowSet addRowSet = table.getRowSet().copy()) {
             final long firstRow = nextRow;
             final long lastRow = firstRow + addRowSet.intSize() - 1;
