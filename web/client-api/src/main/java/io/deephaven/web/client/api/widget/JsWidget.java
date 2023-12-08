@@ -86,7 +86,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
     }
 
     /**
-     * Also closes all the exported objects that the widget still owns
+     * Closes all the exported objects that the widget still owns.
      */
     private void closeExportedObjects() {
         for (int i = 0; i < exportedObjects.length; i++) {
