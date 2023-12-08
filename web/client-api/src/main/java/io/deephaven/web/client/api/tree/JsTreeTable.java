@@ -979,8 +979,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         connection.unregisterSimpleReconnectable(this);
 
-        connection.releaseTicket(widget.getTicket());
-
         if (filteredTable != null) {
             filteredTable.release();
             filteredTable = null;
