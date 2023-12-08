@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.util.config;
+package io.deephaven.engine.util.input;
 
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -37,7 +37,7 @@ public interface InputTableStatusListener {
     }
 
     /**
-     * Handle an error that occured during an input table write.
+     * Handle an error that occurred during an input table write.
      * 
      * @param t the error.
      */

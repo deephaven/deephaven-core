@@ -8,8 +8,8 @@ import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable;
-import io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable;
+import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable;
+import io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
@@ -71,9 +71,9 @@ public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTabl
 
         switch (request.getKind().getKindCase()) {
             case IN_MEMORY_APPEND_ONLY:
-                return AppendOnlyArrayBackedMutableTable.make(tableDefinitionFromSchema);
+                return AppendOnlyArrayBackedInputTable.make(tableDefinitionFromSchema);
             case IN_MEMORY_KEY_BACKED:
-                return KeyedArrayBackedMutableTable.make(tableDefinitionFromSchema,
+                return KeyedArrayBackedInputTable.make(tableDefinitionFromSchema,
                         request.getKind().getInMemoryKeyBacked().getKeyColumnsList()
                                 .toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
             case KIND_NOT_SET:

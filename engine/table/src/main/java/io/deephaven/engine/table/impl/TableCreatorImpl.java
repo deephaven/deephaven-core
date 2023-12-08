@@ -8,8 +8,8 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableFactory;
-import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable;
-import io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable;
+import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable;
+import io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.EmptyTable;
@@ -163,14 +163,14 @@ public enum TableCreatorImpl implements TableCreator<Table> {
         @Override
         public UpdatableTable visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
             final TableDefinition definition = DefinitionAdapter.of(inMemoryAppendOnly.schema());
-            return AppendOnlyArrayBackedMutableTable.make(definition);
+            return AppendOnlyArrayBackedInputTable.make(definition);
         }
 
         @Override
         public UpdatableTable visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
             final TableDefinition definition = DefinitionAdapter.of(inMemoryKeyBacked.schema());
             final String[] keyColumnNames = inMemoryKeyBacked.keys().toArray(String[]::new);
-            return KeyedArrayBackedMutableTable.make(definition, keyColumnNames);
+            return KeyedArrayBackedInputTable.make(definition, keyColumnNames);
         }
     }
 
