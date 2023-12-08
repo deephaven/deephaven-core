@@ -6,7 +6,7 @@ package io.deephaven.plugin.js;
 import java.nio.file.Path;
 
 enum PathsAll implements PathsInternal {
-    INSTANCE;
+    ALL;
 
     @Override
     public boolean matches(Path path) {

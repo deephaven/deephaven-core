@@ -13,7 +13,7 @@ public interface Paths {
      * @return the paths
      */
     static Paths all() {
-        return PathsAll.INSTANCE;
+        return PathsAll.ALL;
     }
 
     /**
