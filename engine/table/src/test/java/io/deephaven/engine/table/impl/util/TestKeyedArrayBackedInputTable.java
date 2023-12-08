@@ -11,7 +11,7 @@ import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.util.config.InputTable;
+import io.deephaven.engine.util.input.InputTable;
 import io.deephaven.util.function.ThrowingRunnable;
 import junit.framework.TestCase;
 import org.junit.Rule;

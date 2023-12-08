@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.util.config;
+package io.deephaven.engine.util.input;
 
 import io.deephaven.engine.exceptions.ArgumentException;
 import io.deephaven.engine.rowset.RowSet;

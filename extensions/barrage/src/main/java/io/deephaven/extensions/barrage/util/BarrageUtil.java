@@ -36,7 +36,7 @@ import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.ColumnFormatting;
-import io.deephaven.engine.util.config.InputTable;
+import io.deephaven.engine.util.input.InputTable;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.util.type.TypeUtils;
