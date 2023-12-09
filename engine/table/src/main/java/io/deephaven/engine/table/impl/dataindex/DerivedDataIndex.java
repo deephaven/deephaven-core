@@ -243,7 +243,7 @@ public class DerivedDataIndex extends BaseDataIndex {
         // mutated output row sets.
 
         // noinspection unchecked
-        final ColumnSource<RowSet> indexSource = indexTable.getColumnSource(INDEX_COL_NAME);
+        final ColumnSource<RowSet> indexSource = indexTable.getColumnSource(ROW_SET_COLUMN_NAME);
 
         final RowSetBuilderSequential redirectionBuilder = RowSetFactory.builderSequential();
         final ObjectArraySource<RowSet> resultIndexSource =
@@ -280,7 +280,7 @@ public class DerivedDataIndex extends BaseDataIndex {
                 // We are including all rows from the index table, we don't need Redirected sources.
                 for (Map.Entry<String, ? extends ColumnSource<?>> entry : indexTable.getColumnSourceMap().entrySet()) {
                     final String columnName = entry.getKey();
-                    if (columnName.equals(INDEX_COL_NAME)) {
+                    if (columnName.equals(ROW_SET_COLUMN_NAME)) {
                         // Add the result row set column source.
                         csm.put(columnName, resultIndexSource);
                     } else {
@@ -297,7 +297,7 @@ public class DerivedDataIndex extends BaseDataIndex {
                 // Add a redirected column source for each key column.
                 for (Map.Entry<String, ? extends ColumnSource<?>> entry : indexTable.getColumnSourceMap().entrySet()) {
                     final String columnName = entry.getKey();
-                    if (columnName.equals(INDEX_COL_NAME)) {
+                    if (columnName.equals(ROW_SET_COLUMN_NAME)) {
                         // Add the result row set column source.
                         csm.put(columnName, resultIndexSource);
                     } else {
@@ -322,7 +322,7 @@ public class DerivedDataIndex extends BaseDataIndex {
             return indexTable;
         }
 
-        return indexTable.updateView("FirstKey=" + INDEX_COL_NAME + ".firstRowKey()")
+        return indexTable.updateView("FirstKey=" + ROW_SET_COLUMN_NAME + ".firstRowKey()")
                 .sort("FirstKey")
                 .dropColumns("FirstKey");
     }

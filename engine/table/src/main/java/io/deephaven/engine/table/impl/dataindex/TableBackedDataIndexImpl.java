@@ -69,7 +69,7 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
 
     @Override
     public String rowSetColumnName() {
-        return INDEX_COL_NAME;
+        return ROW_SET_COLUMN_NAME;
     }
 
     @Override
@@ -100,9 +100,9 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
 
                         final QueryTable renamed = (QueryTable) groupedTable.renameColumns(
                                 Collections
-                                        .singleton(Pair.of(EXPOSED_GROUP_ROW_SETS, ColumnName.of(INDEX_COL_NAME))));
+                                        .singleton(Pair.of(EXPOSED_GROUP_ROW_SETS, ColumnName.of(ROW_SET_COLUMN_NAME))));
 
-                        return indexTableWrapper(renamed, INDEX_COL_NAME);
+                        return indexTableWrapper(renamed, ROW_SET_COLUMN_NAME);
                     });
         }
         return indexTable;

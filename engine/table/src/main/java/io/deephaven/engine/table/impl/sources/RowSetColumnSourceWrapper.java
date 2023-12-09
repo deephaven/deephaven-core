@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet>
         implements MutableColumnSourceGetDefaults.ForObject<RowSet> {
 
-    public static RowSetColumnSourceWrapper from(@NotNull final ColumnSource<? extends TrackingRowSet> source) {
+    public static RowSetColumnSourceWrapper from(@NotNull final ColumnSource<? extends RowSet> source) {
         return new RowSetColumnSourceWrapper(source);
     }
 

@@ -35,7 +35,7 @@ import java.util.Map;
  */
 public abstract class BaseDataIndex extends LivenessArtifact implements DataIndex {
 
-    protected static final String INDEX_COL_NAME = "dh_row_set";
+    protected static final String ROW_SET_COLUMN_NAME = "dh_row_set";
 
     @Override
     public DataIndex transform(@NotNull final DataIndexTransformer transformer) {

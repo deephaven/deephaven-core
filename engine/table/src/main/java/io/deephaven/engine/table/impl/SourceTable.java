@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.dataindex.PartitioningColumnDataIndexImpl;
+import io.deephaven.engine.table.impl.dataindex.RegionedPartitioningColumnDataIndex;
 import io.deephaven.engine.table.impl.dataindex.StorageBackedDataIndexImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.*;
@@ -365,7 +365,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         final TableDefinition tableDefinition = getDefinition();
         for (final ColumnDefinition<?> partitioningColumnDefinition : tableDefinition.getPartitioningColumns()) {
             final ColumnSource<?> keySource = columnSourceMap.get(partitioningColumnDefinition.getName());
-            final DataIndex dataIndex = new PartitioningColumnDataIndexImpl<>(
+            final DataIndex dataIndex = new RegionedPartitioningColumnDataIndex<>(
                     keySource,
                     partitioningColumnDefinition.getName(),
                     columnSourceManager);

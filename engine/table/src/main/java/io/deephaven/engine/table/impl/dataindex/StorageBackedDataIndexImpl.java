@@ -206,7 +206,7 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
 
     @Override
     public String rowSetColumnName() {
-        return INDEX_COL_NAME;
+        return ROW_SET_COLUMN_NAME;
     }
 
     @Override
@@ -261,8 +261,8 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
 
                             // Build a new row set from the individual row sets (with their offset keys).
                             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-                            try (final CloseableIterator<RowSet> rsIt = t.columnIterator(INDEX_COL_NAME);
-                                    final CloseableIterator<Long> keyIt = t.columnIterator(OFFSET_KEY_COL_NAME)) {
+                            try (final CloseableIterator<RowSet> rsIt = t.columnIterator(ROW_SET_COLUMN_NAME);
+                                 final CloseableIterator<Long> keyIt = t.columnIterator(OFFSET_KEY_COL_NAME)) {
                                 while (rsIt.hasNext()) {
                                     final RowSet rowSet = rsIt.next();
                                     final long offsetKey = keyIt.next();
@@ -276,7 +276,7 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
                             SingleValueColumnSource<RowSet> rowSetColumnSource =
                                     SingleValueColumnSource.getSingleValueColumnSource(RowSet.class);
                             rowSetColumnSource.set(outputRowSet);
-                            columnSourceMap.put(INDEX_COL_NAME, rowSetColumnSource);
+                            columnSourceMap.put(ROW_SET_COLUMN_NAME, rowSetColumnSource);
 
                             // The result table row set is a single key. We'll use the first key of the input
                             // table to get the correct key values from the key column sources.
@@ -290,7 +290,7 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
                         final Table mergedOutput = transformed.merge();
 
                         final QueryTable result =
-                                indexTableWrapper((QueryTable) mergedOutput.select(), INDEX_COL_NAME);
+                                indexTableWrapper((QueryTable) mergedOutput.select(), ROW_SET_COLUMN_NAME);
                         result.setRefreshing(columnSourceManager.locationTable().isRefreshing());
 
                         return result;
