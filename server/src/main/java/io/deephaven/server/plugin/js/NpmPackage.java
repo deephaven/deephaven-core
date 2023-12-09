@@ -19,15 +19,12 @@ import static io.deephaven.server.plugin.js.Jackson.OBJECT_MAPPER;
 @Immutable
 @SimpleStyle
 abstract class NpmPackage {
-    public static final String NAME = "name";
-    public static final String VERSION = "version";
-    public static final String MAIN = "main";
 
     @JsonCreator
     public static NpmPackage of(
-            @JsonProperty(value = NAME, required = true) String name,
-            @JsonProperty(value = VERSION, required = true) String version,
-            @JsonProperty(value = MAIN, required = true) String main) {
+            @JsonProperty(value = JsPluginNpmPackageRegistration.NAME, required = true) String name,
+            @JsonProperty(value = JsPluginNpmPackageRegistration.VERSION, required = true) String version,
+            @JsonProperty(value = JsPluginNpmPackageRegistration.MAIN, required = true) String main) {
         return ImmutableNpmPackage.of(name, version, main);
     }
 
@@ -39,17 +36,14 @@ abstract class NpmPackage {
     }
 
     @Parameter
-    @JsonProperty(NAME)
+    @JsonProperty(JsPluginNpmPackageRegistration.NAME)
     public abstract String name();
 
     @Parameter
-    @JsonProperty(VERSION)
+    @JsonProperty(JsPluginNpmPackageRegistration.VERSION)
     public abstract String version();
 
     @Parameter
-    @JsonProperty(MAIN)
+    @JsonProperty(JsPluginNpmPackageRegistration.MAIN)
     public abstract String main();
-
-    // Note: do we want "files" here, and actually try to parse it? Or, "deephaven" object that more closely matches
-    // JsPlugin / Paths structure?
 }

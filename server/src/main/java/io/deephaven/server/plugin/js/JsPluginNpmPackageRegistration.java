@@ -12,6 +12,7 @@ import io.deephaven.plugin.js.JsPlugin;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -23,9 +24,30 @@ import static io.deephaven.server.plugin.js.JsPluginModule.DEEPHAVEN_JS_PLUGINS_
 /**
  * Registers the {@link JsPlugin JS plugins} sourced from the NPM package roots as specified via the configuration
  * properties that start with {@value io.deephaven.server.plugin.js.JsPluginModule#DEEPHAVEN_JS_PLUGINS_PREFIX}. This
- * configuration is meant for development-oriented use-cases.
+ * configuration is meant for development-oriented use-cases and is done on a "best-effort" basis.
+ *
+ * <p>
+ * The configuration value of the above property corresponds to the {@link JsPlugin#root()} directory. A
+ * {@value PACKAGE_JSON} must exist in this directory (as specified via
+ * <a href="https://docs.npmjs.com/cli/v6/configuring-npm/package-json">package-json</a>). The {@value NAME} json value
+ * corresponds to {@link JsPlugin#name()}, the {@value VERSION} json value corresponds to {@link JsPlugin#version()},
+ * and the {@value MAIN} json value corresponds to {@link JsPlugin#main()}. Furthermore, the top-level directory of the
+ * {@value MAIN} json value will be used to set {@link JsPlugin#paths()} using
+ * {@link io.deephaven.plugin.js.Paths#ofPrefixes(Path)}; for example, a {@value MAIN} of "build/index.js" will limit
+ * the resources to the "build/" directory; a {@value MAIN} of "dist/bundle/index.js" will limit the resources to the
+ * "dist/" directory.
  */
 public final class JsPluginNpmPackageRegistration implements Registration {
+    public static final String PACKAGE_JSON = "package.json";
+    public static final String NAME = "name";
+    public static final String VERSION = "version";
+    public static final String MAIN = "main";
+
+    // TODO(deephaven-core#4817): JS Plugins development is slow
+    // We may wish to make parsing NPM package.json easier with a bespoke "deephaven" field, or try to exactly match
+    // the semantics of the existing "files" field. This may not be necessary if the top-level directory of "main" works
+    // well enough, or if we have a non-copying jetty route-based impl.
+
     /**
      * Binds {@link JsPluginNpmPackageRegistration} into the set of {@link Registration}.
      */
@@ -54,9 +76,13 @@ public final class JsPluginNpmPackageRegistration implements Registration {
             if (packageRoot == null) {
                 continue;
             }
+            URI uri = URI.create(packageRoot);
+            if (uri.getScheme() == null) {
+                uri = URI.create("file:" + packageRoot);
+            }
             final JsPlugin plugin;
             try {
-                plugin = JsPluginFromNpmPackage.of(Path.of(packageRoot));
+                plugin = JsPluginFromNpmPackage.of(Path.of(uri));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

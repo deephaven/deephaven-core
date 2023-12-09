@@ -9,7 +9,6 @@ import io.deephaven.plugin.js.JsPluginRegistration;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.util.List;
 import java.util.Objects;
 
 /**

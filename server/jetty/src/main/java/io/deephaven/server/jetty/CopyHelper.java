@@ -15,29 +15,33 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
 
 class CopyHelper {
-    static void copyRecursive(Path src, Path dst, PathMatcher dirMatcher, PathMatcher pathMatcher) throws IOException {
+    static void copyRecursive(Path src, Path dst, PathMatcher pathMatcher) throws IOException {
+        copyRecursive(src, dst, pathMatcher, d -> true);
+    }
+
+    static void copyRecursive(Path src, Path dst, PathMatcher pathMatcher, PathMatcher dirMatcher) throws IOException {
         Files.createDirectories(dst.getParent());
-        Files.walkFileTree(src, new CopyRecursiveVisitor(src, dst, dirMatcher, pathMatcher));
+        Files.walkFileTree(src, new CopyRecursiveVisitor(src, dst, pathMatcher, dirMatcher));
     }
 
     private static class CopyRecursiveVisitor extends SimpleFileVisitor<Path> {
         private final Path src;
         private final Path dst;
-        private final PathMatcher dirMatcher;
         private final PathMatcher pathMatcher;
+        private final PathMatcher dirMatcher;
 
-        public CopyRecursiveVisitor(Path src, Path dst, PathMatcher dirMatcher, PathMatcher pathMatcher) {
+        public CopyRecursiveVisitor(Path src, Path dst, PathMatcher pathMatcher, PathMatcher dirMatcher) {
             this.src = Objects.requireNonNull(src);
             this.dst = Objects.requireNonNull(dst);
-            this.dirMatcher = Objects.requireNonNull(dirMatcher);
             this.pathMatcher = Objects.requireNonNull(pathMatcher);
+            this.dirMatcher = Objects.requireNonNull(dirMatcher);
         }
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-            // Note: toString() necessary for src/dst that don't share the same root FS
             final Path relativeDir = src.relativize(dir);
             if (dirMatcher.matches(relativeDir) || pathMatcher.matches(relativeDir)) {
+                // Note: toString() necessary for src/dst that don't share the same root FS
                 Files.copy(dir, dst.resolve(relativeDir.toString()), StandardCopyOption.COPY_ATTRIBUTES);
                 return FileVisitResult.CONTINUE;
             }

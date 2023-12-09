@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 class JsPluginFromNpmPackage {
-    public static final String PACKAGE_JSON = "package.json";
 
     // https://docs.npmjs.com/cli/v6/configuring-npm/package-json#files
     private static final List<String> INCLUDED = List.of(
@@ -34,7 +33,7 @@ class JsPluginFromNpmPackage {
             "NOTICE.md");
 
     static JsPlugin of(Path packageRoot) throws IOException {
-        final Path packageJsonPath = packageRoot.resolve(PACKAGE_JSON);
+        final Path packageJsonPath = packageRoot.resolve(JsPluginNpmPackageRegistration.PACKAGE_JSON);
         final NpmPackage packageJson = NpmPackage.read(packageJsonPath);
         final Path main = packageRoot.relativize(packageRoot.resolve(packageJson.main()));
         final Paths paths;
