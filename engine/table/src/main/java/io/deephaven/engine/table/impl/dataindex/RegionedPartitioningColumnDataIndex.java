@@ -128,7 +128,7 @@ public class RegionedPartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex
         }
         Assert.assertion(initializing || isRefreshing(), "initializing || isRefreshing()");
 
-        final RowSetBuilderSequential addedBuilder = initializing ? null : RowSetFactory.builderSequential();
+        final int previousSize = keyPositionMap.size();
         final RowSetBuilderRandom modifiedBuilder = initializing ? null : RowSetFactory.builderRandom();
 
         final ColumnSource<TableLocation> locationColumnSource =
@@ -138,12 +138,18 @@ public class RegionedPartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex
 
         if (upstream.added().isNonempty()) {
             upstream.added().forAllRowKeys((final long locationRowKey) -> handleKey(
-                    locationRowKey, false, locationColumnSource, rowSetColumnSource, addedBuilder, modifiedBuilder));
+                    locationRowKey, false, locationColumnSource, rowSetColumnSource, previousSize, modifiedBuilder));
         }
 
         if (upstream.modified().isNonempty() && upstream.modifiedColumnSet().containsAny(upstreamRowSetModified)) {
+            Assert.eqFalse(initializing, "initializing");
             upstream.modified().forAllRowKeys((final long locationRowKey) -> handleKey(
-                    locationRowKey, true, locationColumnSource, rowSetColumnSource, addedBuilder, modifiedBuilder));
+                    locationRowKey, true, locationColumnSource, rowSetColumnSource, previousSize, modifiedBuilder));
+        }
+
+        final int newSize = keyPositionMap.size();
+        if (previousSize != newSize) {
+            indexTable.getRowSet().writableCast().insertRange(previousSize, newSize - 1);
         }
 
         if (initializing) {
@@ -151,15 +157,14 @@ public class RegionedPartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex
         }
 
         // Send the downstream updates to any listeners of the index table
-        final RowSet added = addedBuilder.build();
         final WritableRowSet modified = modifiedBuilder.build();
-        if (added.isEmpty() && modified.isEmpty()) {
-            SafeCloseable.closeAll(added, modified);
+        if (previousSize == newSize && modified.isEmpty()) {
+            modified.close();
             return;
         }
 
         final TableUpdate downstream = new TableUpdateImpl(
-                added,
+                RowSetFactory.fromRange(previousSize, newSize - 1),
                 RowSetFactory.empty(),
                 modified,
                 RowSetShiftData.EMPTY,
@@ -172,7 +177,7 @@ public class RegionedPartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex
             final boolean isModify,
             @NotNull final ColumnSource<TableLocation> locationColumnSource,
             @NotNull final ColumnSource<RowSet> rowSetColumnSource,
-            @Nullable final RowSetBuilderSequential addedBuilder,
+            final int previousSize,
             @Nullable final RowSetBuilderRandom modifiedBuilder) {
         final TableLocation location = locationColumnSource.get(locationRowKey);
         if (location == null) {
@@ -198,12 +203,8 @@ public class RegionedPartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex
 
             indexRowSetSource.ensureCapacity(addedKeyPos + 1);
             indexRowSetSource.set(addedKeyPos, regionRowSet.shift(regionFirstRowKey));
-
-            if (addedBuilder != null) {
-                addedBuilder.appendKey(addedKeyPos);
-            }
         } else {
-            //noinspection DataFlowIssue
+            // noinspection DataFlowIssue
             final WritableRowSet existingRowSet = indexRowSetSource.get(pos).writableCast();
             try (final WritableRowSet shiftedRowSet = regionRowSet.shift(regionFirstRowKey)) {
                 // We could assert that:
@@ -213,7 +214,7 @@ public class RegionedPartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex
                 existingRowSet.insert(shiftedRowSet);
             }
 
-            if (modifiedBuilder != null && pos <= indexTable.getRowSet().lastRowKey()) {
+            if (modifiedBuilder != null && pos < previousSize) {
                 modifiedBuilder.addKey(pos);
             }
         }
