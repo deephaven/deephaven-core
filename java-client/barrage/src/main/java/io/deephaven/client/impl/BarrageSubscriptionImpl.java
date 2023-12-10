@@ -12,6 +12,7 @@ import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.exceptions.RequestCancelledException;
+import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -54,7 +55,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * Users may call {@link #entireTable} or {@link #partialTable} to initiate the gRPC call to the server. These methods
  * return a {@link Future<BarrageTable>} to the user.
  */
-public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implements BarrageSubscription {
+public class BarrageSubscriptionImpl extends LivenessArtifact implements BarrageSubscription {
     private static final Logger log = LoggerFactory.getLogger(BarrageSubscriptionImpl.class);
 
     private final String logName;
@@ -94,6 +95,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         final TableDefinition tableDefinition = schema.tableDef;
         checkForCompletion = new CheckForCompletion();
         resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, checkForCompletion);
+        manage(resultTable);
 
         final MethodDescriptor<FlightData, BarrageMessage> subscribeDescriptor =
                 getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
