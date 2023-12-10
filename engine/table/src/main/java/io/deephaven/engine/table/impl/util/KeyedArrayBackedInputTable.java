@@ -20,14 +20,13 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 /**
  * An in-memory table that has keys for each row, which can be updated on the UGP.
  * <p>
  * This is used to implement in-memory editable table columns from web plugins.
  */
-public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
+public class KeyedArrayBackedInputTable extends BaseArrayBackedInputTable {
 
     private static final String DEFAULT_DESCRIPTION = "In-Memory Input Table";
 
@@ -47,7 +46,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      *
      * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
      */
-    public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition,
+    public static KeyedArrayBackedInputTable make(@NotNull TableDefinition definition,
             final String... keyColumnNames) {
         // noinspection resource
         return make(new QueryTable(definition, RowSetFactory.empty().toTracking(),
@@ -56,22 +55,6 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
 
     /**
      * Create an empty KeyedArrayBackedMutableTable.
-     *
-     * @param definition the definition of the table to create
-     * @param enumValues a map of column names to enumeration values
-     * @param keyColumnNames the name of the key columns
-     *
-     * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
-     */
-    public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition,
-            final Map<String, Object[]> enumValues, final String... keyColumnNames) {
-        // noinspection resource
-        return make(new QueryTable(definition, RowSetFactory.empty().toTracking(),
-                NullValueColumnSource.createColumnSourceMap(definition)), enumValues, keyColumnNames);
-    }
-
-    /**
-     * Create an empty KeyedArrayBackedMutableTable.
      * <p>
      * The initialTable is processed in order, so if there are duplicate keys only the last row is reflected in the
      * output.
@@ -81,36 +64,19 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      *
      * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
      */
-    public static KeyedArrayBackedMutableTable make(final Table initialTable, final String... keyColumnNames) {
-        return make(initialTable, Collections.emptyMap(), keyColumnNames);
-    }
-
-    /**
-     * Create an empty KeyedArrayBackedMutableTable.
-     * <p>
-     * The initialTable is processed in order, so if there are duplicate keys only the last row is reflected in the
-     * output.
-     *
-     * @param initialTable the initial values to copy into the KeyedArrayBackedMutableTable
-     * @param enumValues a map of column names to enumeration values
-     * @param keyColumnNames the name of the key columns
-     *
-     * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
-     */
-    public static KeyedArrayBackedMutableTable make(final Table initialTable, final Map<String, Object[]> enumValues,
-            final String... keyColumnNames) {
-        final KeyedArrayBackedMutableTable result = new KeyedArrayBackedMutableTable(initialTable.getDefinition(),
-                keyColumnNames, enumValues, new ProcessPendingUpdater());
+    public static KeyedArrayBackedInputTable make(final Table initialTable, final String... keyColumnNames) {
+        final KeyedArrayBackedInputTable result = new KeyedArrayBackedInputTable(initialTable.getDefinition(),
+                keyColumnNames, new ProcessPendingUpdater());
         processInitial(initialTable, result);
         result.startTrackingPrev();
         return result;
     }
 
-    private KeyedArrayBackedMutableTable(@NotNull TableDefinition definition, final String[] keyColumnNames,
-            final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
+    private KeyedArrayBackedInputTable(@NotNull TableDefinition definition, final String[] keyColumnNames,
+            final ProcessPendingUpdater processPendingUpdater) {
         // noinspection resource
         super(RowSetFactory.empty().toTracking(), makeColumnSourceMap(definition),
-                enumValues, processPendingUpdater);
+                processPendingUpdater);
         final List<String> missingKeyColumns = new ArrayList<>(Arrays.asList(keyColumnNames));
         missingKeyColumns.removeAll(definition.getColumnNames());
         if (!missingKeyColumns.isEmpty()) {
@@ -135,13 +101,11 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     }
 
     @Override
-    protected void processPendingTable(Table table, boolean allowEdits, RowSetChangeRecorder rowSetChangeRecorder,
-            Consumer<String> errorNotifier) {
+    protected void processPendingTable(Table table, RowSetChangeRecorder rowSetChangeRecorder) {
         final ChunkSource<Values> keySource = makeKeySource(table);
         final int chunkCapacity = table.intSize();
 
         long rowToInsert = nextRow;
-        final StringBuilder errorBuilder = new StringBuilder();
 
         try (final RowSet addRowSet = table.getRowSet().copy();
                 final WritableLongChunk<RowKeys> destinations = WritableLongChunk.makeWritableChunk(chunkCapacity);
@@ -161,23 +125,11 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
                         keyToRowMap.put(key, rowNumber);
                         rowSetChangeRecorder.addRowKey(rowNumber);
                         destinations.set(ii, rowNumber);
-                    } else if (allowEdits) {
+                    } else {
                         rowSetChangeRecorder.modifyRowKey(rowNumber);
                         destinations.set(ii, rowNumber);
-                    } else {
-                        // invalid edit
-                        if (errorBuilder.length() > 0) {
-                            errorBuilder.append(", ").append(key);
-                        } else {
-                            errorBuilder.append("Can not edit keys ").append(key);
-                        }
                     }
                 }
-            }
-
-            if (errorBuilder.length() > 0) {
-                errorNotifier.accept(errorBuilder.toString());
-                return;
             }
 
             for (long ii = nextRow; ii < rowToInsert; ++ii) {

@@ -3644,5 +3644,8 @@ public class QueryTableTest extends QueryTableTestBase {
         public void requestRefresh() {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public void stop() {}
     }
 }
