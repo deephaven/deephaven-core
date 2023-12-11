@@ -77,6 +77,7 @@ public class JsWidgetExportedObject implements ServerObject {
      * was already closed (either by calling {@link #close()} or closing the object returned from {@link #fetch()}).
      * @return a promise returning a reexported copy of this object, still referencing the same server-side object.
      */
+    @JsMethod
     public Promise<JsWidgetExportedObject> reexport() {
         Ticket reexportedTicket = connection.getConfig().newTicket();
         return Callbacks.grpcUnaryPromise(c -> {
@@ -98,6 +99,7 @@ public class JsWidgetExportedObject implements ServerObject {
     // * Returns a copy of this widget, so that any later {@link #fetch()} will always return a fresh instance.
     // * @return
     // */
+    // @JsMethod
     // public JsWidgetExportedObject copy() {
     // return new JsWidgetExportedObject(connection, ticket);
     // }
