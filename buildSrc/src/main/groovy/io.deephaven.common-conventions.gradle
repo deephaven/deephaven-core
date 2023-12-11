@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'io.deephaven'
-version = '0.30.3'
+version = '0.30.4'
 
 if (!name.startsWith('deephaven-')) {
     archivesBaseName = "deephaven-${name}"
