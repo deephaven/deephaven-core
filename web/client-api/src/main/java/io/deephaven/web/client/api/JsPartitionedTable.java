@@ -29,10 +29,7 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Represents a set of Tables each corresponding to some key. The keys are available locally, but a call must be made to
@@ -95,19 +92,25 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                     WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
             ColumnDefinition[] columnDefinitions = tableDefinition.getColumns();
             Column[] columns = new Column[0];
-            Column[] keyColumns = new Column[0];
             for (int i = 0; i < columnDefinitions.length; i++) {
                 ColumnDefinition columnDefinition = columnDefinitions[i];
                 Column column = columnDefinition.makeJsColumn(columns.length, tableDefinition.getColumnsByName());
                 columns[columns.length] = column;
-                if (descriptor.getKeyColumnNamesList().indexOf(columnDefinition.getName()) != -1) {
-                    keyColumnTypes.add(columnDefinition.getType());
-                    keyColumns[keyColumns.length] = column;
+            }
+            Column[] keyColumns = new Column[0];
+            JsArray<String> keyColumnNames = descriptor.getKeyColumnNamesList();
+            for (int i = 0; i < keyColumnNames.length; i++) {
+                String name = keyColumnNames.getAt(i);
+                ColumnDefinition columnDefinition = tableDefinition.getColumnsByName().get(false).get(name);
+                int index = 0;
+                while (!columns[index].getName().equals(name)) {
+                    index++;
                 }
+                keyColumnTypes.add(columnDefinition.getType());
+                keyColumns[keyColumns.length] = columns[index];
             }
             this.columns = JsObject.freeze(columns);
             this.keyColumns = JsObject.freeze(keyColumns);
-
             return w.getExportedObjects()[0].fetch();
         }).then(result -> {
             keys = (JsTable) result;
