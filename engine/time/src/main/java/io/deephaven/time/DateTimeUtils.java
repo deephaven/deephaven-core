@@ -4077,7 +4077,7 @@ public class DateTimeUtils {
         try {
             return LocalTime.parse(s, FORMATTER_ISO_LOCAL_TIME);
         } catch (java.time.format.DateTimeParseException e) {
-            throw new DateTimeParseException("Cannot parse local date: " + s, e);
+            throw new DateTimeParseException("Cannot parse local time: " + s, e);
         }
     }
 
