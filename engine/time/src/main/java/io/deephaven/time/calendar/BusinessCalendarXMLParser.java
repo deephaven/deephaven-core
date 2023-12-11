@@ -4,6 +4,7 @@
 package io.deephaven.time.calendar;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeZoneAliases;
 import org.jdom2.Document;
@@ -71,8 +72,10 @@ public class BusinessCalendarXMLParser {
      *
      * @param file XML file
      * @return business calendar.
+     * @throws RequirementFailure if the input is null
      */
     public static BusinessCalendar loadBusinessCalendar(@NotNull final String file) {
+        Require.neqNull(file, "file");
         return loadBusinessCalendar(new File(file));
     }
 
@@ -81,8 +84,10 @@ public class BusinessCalendarXMLParser {
      *
      * @param file XML file
      * @return business calendar.
+     * @throws RequirementFailure if the input is null
      */
     public static BusinessCalendar loadBusinessCalendar(@NotNull final File file) {
+        Require.neqNull(file, "file");
         final BusinessCalendarInputs in = parseBusinessCalendarInputs(file);
 
         return new BusinessCalendar(in.calendarName, in.description,

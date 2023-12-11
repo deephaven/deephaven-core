@@ -95,8 +95,10 @@ public class Calendars {
      * Removes a calendar from the collection.
      *
      * @param name calendar name
+     * @throws RequirementFailure if the input is null
      */
     public synchronized static void removeCalendar(final String name) {
+        Require.neqNull(name, "name");
         map.remove(name);
     }
 
@@ -104,8 +106,11 @@ public class Calendars {
      * Adds a calendar to the collection.
      *
      * @param cal business calendar
+     * @throws RequirementFailure if the input is null
      */
     public synchronized static void addCalendar(final BusinessCalendar cal) {
+        Require.neqNull(cal, "cal");
+
         final String name = cal.name().toUpperCase();
         if (!NameValidator.isValidQueryParameterName(name)) {
             throw new IllegalArgumentException("Invalid name for calendar: name='" + name + "'");
@@ -126,8 +131,10 @@ public class Calendars {
      * Adds a calendar to the collection from a file.
      *
      * @param file business calendar file
+     * @throws RequirementFailure if the input is null
      */
     public static void addCalendarFromFile(final String file) {
+        Require.neqNull(file, "file");
         addCalendarFromFile(new File(file));
     }
 
@@ -135,8 +142,11 @@ public class Calendars {
      * Adds a calendar to the collection from a file.
      *
      * @param file business calendar file
+     * @throws RequirementFailure if the input is null
      */
     public static void addCalendarFromFile(final File file) {
+        Require.neqNull(file, "file");
+
         if (file.getAbsolutePath().endsWith(".calendar")) {
             final BusinessCalendar cal = BusinessCalendarXMLParser.loadBusinessCalendar(file);
             addCalendar(cal);
@@ -180,13 +190,15 @@ public class Calendars {
     /**
      * Returns a business calendar.
      *
-     * @param name name of the calendar
-     * @return business calendar
+     * @param name name of the calendar.  The name is case insensitive.
+     * @return business calendar or {@code null} if {@code name} is {@code null}.
      * @throws IllegalArgumentException no calendar matching {@code name}
      * @throws RequirementFailure if the input is null
      */
     public synchronized static BusinessCalendar calendar(final String name) {
-        Require.neqNull(name, "name");
+        if(name == null){
+            return null;
+        }
 
         final String n = name.toUpperCase();
 

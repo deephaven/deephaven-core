@@ -43,6 +43,8 @@ public class TestCalendars extends BaseArrayTestCase {
         } catch (Exception e) {
             // pass
         }
+
+        assertNull(Calendars.calendar(null));
     }
 
     public void testAdd() throws URISyntaxException {
