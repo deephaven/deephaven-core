@@ -48,10 +48,9 @@ public class ArrowToTableConverter {
 
     private volatile boolean completed = false;
 
-    private static BarrageProtoUtil.MessageInfo parseArrowIpcMessage(final byte[] ipcMessage) throws IOException {
+    private BarrageProtoUtil.MessageInfo parseArrowIpcMessage(ByteBuffer bb) throws IOException {
         final BarrageProtoUtil.MessageInfo mi = new BarrageProtoUtil.MessageInfo();
 
-        final ByteBuffer bb = ByteBuffer.wrap(ipcMessage);
         bb.order(ByteOrder.LITTLE_ENDIAN);
         final int continuation = bb.getInt();
         final int metadata_size = bb.getInt();
@@ -70,7 +69,7 @@ public class ArrowToTableConverter {
     }
 
     @ScriptApi
-    public synchronized void setSchema(final byte[] ipcMessage) {
+    public synchronized void setSchema(final ByteBuffer ipcMessage) {
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
         }
@@ -82,7 +81,7 @@ public class ArrowToTableConverter {
     }
 
     @ScriptApi
-    public synchronized void addRecordBatch(final byte[] ipcMessage) {
+    public synchronized void addRecordBatch(final ByteBuffer ipcMessage) {
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
         }
@@ -192,7 +191,7 @@ public class ArrowToTableConverter {
         return msg;
     }
 
-    private BarrageProtoUtil.MessageInfo getMessageInfo(byte[] ipcMessage) {
+    private BarrageProtoUtil.MessageInfo getMessageInfo(ByteBuffer ipcMessage) {
         final BarrageProtoUtil.MessageInfo mi;
         try {
             mi = parseArrowIpcMessage(ipcMessage);
@@ -201,4 +200,6 @@ public class ArrowToTableConverter {
         }
         return mi;
     }
+
+
 }

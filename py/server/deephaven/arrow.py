@@ -101,12 +101,12 @@ def to_table(pa_table: pa.Table, cols: List[str] = None) -> Table:
 
     try:
         pa_buffer = dh_schema.serialize()
-        j_barrage_table_builder.setSchema(dtypes.array(dtypes.byte, pa_buffer))
+        j_barrage_table_builder.setSchema(pa_buffer)
 
         record_batches = pa_table.to_batches()
         for rb in record_batches:
             pa_buffer = rb.serialize()
-            j_barrage_table_builder.addRecordBatch(dtypes.array(dtypes.byte, pa_buffer))
+            j_barrage_table_builder.addRecordBatch(pa_buffer)
         j_barrage_table_builder.onCompleted()
 
         return Table(j_table=j_barrage_table_builder.getResultTable())

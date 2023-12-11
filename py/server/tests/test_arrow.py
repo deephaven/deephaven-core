@@ -18,6 +18,7 @@ from deephaven.column import byte_col, char_col, short_col, int_col, long_col, f
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
+
 class ArrowTestCase(BaseTestCase):
     test_table: Table
 
