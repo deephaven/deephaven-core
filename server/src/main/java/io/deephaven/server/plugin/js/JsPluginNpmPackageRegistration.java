@@ -13,9 +13,13 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 import static io.deephaven.server.plugin.js.JsPluginManifestRegistration.JS_PLUGIN_RESOURCE_BASE;
@@ -80,13 +84,30 @@ public final class JsPluginNpmPackageRegistration implements Registration {
             if (uri.getScheme() == null) {
                 uri = URI.create("file:" + packageRoot);
             }
+            final FileSystem fileSystem = getOrCreateFileSystem(uri);
             final JsPlugin plugin;
             try {
-                plugin = JsPluginFromNpmPackage.of(Path.of(uri));
+                plugin = JsPluginFromNpmPackage.of(fileSystem.provider().getPath(uri));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
             callback.register(plugin);
+        }
+    }
+
+    private static FileSystem getOrCreateFileSystem(URI uri) {
+        if ("file".equalsIgnoreCase(uri.getScheme())) {
+            return FileSystems.getDefault();
+        }
+        try {
+            return FileSystems.getFileSystem(uri);
+        } catch (FileSystemNotFoundException e) {
+            // ignore
+        }
+        try {
+            return FileSystems.newFileSystem(uri, Map.of());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
