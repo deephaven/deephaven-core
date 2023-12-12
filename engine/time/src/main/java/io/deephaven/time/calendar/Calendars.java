@@ -27,19 +27,35 @@ public class Calendars {
     private static final String BUSINESS_CALENDAR_PROP_USER = "Calendar.userImportPath";
     private static String defaultName = Configuration.getInstance().getProperty("Calendar.default");
 
-    private static final Map<String, BusinessCalendar> map = new TreeMap<>();
+    // Variable should only be accessed through getMap()
+    private static volatile Map<String, BusinessCalendar> calMap;
 
     private Calendars() {}
 
     // region Load
 
-    static {
-        final Configuration configuration = Configuration.getInstance();
+    // Get the initialized map of calendars.
+    // Initilization is deferred to so that errors are easier for users to find.
+    private static Map<String, BusinessCalendar> getMap() {
+        if(calMap != null) {
+            return calMap;
+        }
 
-        loadProperty(configuration, BUSINESS_CALENDAR_PROP_INTERNAL);
+        synchronized (Calendars.class) {
+            if(calMap != null) {
+                return calMap;
+            }
 
-        if (configuration.hasProperty(BUSINESS_CALENDAR_PROP_USER)) {
-            loadProperty(configuration, BUSINESS_CALENDAR_PROP_USER);
+            calMap = new TreeMap<>();
+            final Configuration configuration = Configuration.getInstance();
+
+            loadProperty(configuration, BUSINESS_CALENDAR_PROP_INTERNAL);
+
+            if (configuration.hasProperty(BUSINESS_CALENDAR_PROP_USER)) {
+                loadProperty(configuration, BUSINESS_CALENDAR_PROP_USER);
+            }
+
+            return calMap;
         }
     }
 
@@ -99,7 +115,7 @@ public class Calendars {
      */
     public synchronized static void removeCalendar(final String name) {
         Require.neqNull(name, "name");
-        map.remove(name);
+        getMap().remove(name);
     }
 
     /**
@@ -115,6 +131,8 @@ public class Calendars {
         if (!NameValidator.isValidQueryParameterName(name)) {
             throw new IllegalArgumentException("Invalid name for calendar: name='" + name + "'");
         }
+
+        final Map<String, BusinessCalendar> map = getMap();
 
         if (map.containsKey(name)) {
             final Calendar oldCalendar = map.get(name);
@@ -201,6 +219,7 @@ public class Calendars {
         }
 
         final String n = name.toUpperCase();
+        final Map<String, BusinessCalendar> map = getMap();
 
         if (!map.containsKey(n)) {
             throw new IllegalArgumentException("No such calendar: " + name);
@@ -239,7 +258,7 @@ public class Calendars {
      * @return names of all available calendars
      */
     public synchronized static String[] calendarNames() {
-        return map.keySet().toArray(String[]::new);
+        return getMap().keySet().toArray(String[]::new);
     }
 
     // endregion
