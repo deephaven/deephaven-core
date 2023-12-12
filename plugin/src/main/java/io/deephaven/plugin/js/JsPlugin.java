@@ -43,7 +43,7 @@ public abstract class JsPlugin extends PluginBase {
     public abstract String version();
 
     /**
-     * The main JS file path, specified relative to {@link #root()}. The main JS file must exist
+     * The main JS file path, specified relative to {@link #rootPath()}. The main JS file must exist
      * ({@code Files.isRegularFile(root().resolve(main()))}) and must be included in {@link #paths()}. Will be included
      * as the "main" field for the manifest entry in "js-plugins/manifest.json".
      *
@@ -53,14 +53,14 @@ public abstract class JsPlugin extends PluginBase {
     public abstract Path main();
 
     /**
-     * The root directory of the resources to serve. The root must exist ({@code Files.isDirectory(root())}).
+     * The root directory path of the resources to serve. The root must exist ({@code Files.isDirectory(root())}).
      *
      * @return the root
      */
-    public abstract Path root();
+    public abstract Path rootPath();
 
     /**
-     * The paths to serve, specified relative to {@link #root()}. The resources will be served via the URL path
+     * The paths to serve, specified relative to {@link #rootPath()}. The resources will be served via the URL path
      * "js-plugins/{name}/{pathRelativeToRoot}". By default, is {@link Paths#all()}.
      *
      * @return the paths
@@ -76,15 +76,15 @@ public abstract class JsPlugin extends PluginBase {
     }
 
     @Check
-    final void checkRoot() {
-        if (!Files.isDirectory(root())) {
-            throw new IllegalArgumentException(String.format("root ('%s') must exist and be a directory", root()));
+    final void checkRootPath() {
+        if (!Files.isDirectory(rootPath())) {
+            throw new IllegalArgumentException(String.format("rootPath ('%s') must exist and be a directory", rootPath()));
         }
     }
 
     @Check
     final void checkMain() {
-        final Path mainPath = root().resolve(main());
+        final Path mainPath = rootPath().resolve(main());
         if (!Files.isRegularFile(mainPath)) {
             throw new IllegalArgumentException(String.format("main ('%s') must exist and be a regular file", mainPath));
         }
@@ -95,7 +95,7 @@ public abstract class JsPlugin extends PluginBase {
         if (!(paths() instanceof PathsInternal)) {
             throw new IllegalArgumentException("Must construct one of the approved Paths");
         }
-        final Path relativeMain = root().relativize(root().resolve(main()));
+        final Path relativeMain = rootPath().relativize(rootPath().resolve(main()));
         if (!((PathsInternal) paths()).matches(relativeMain)) {
             throw new IllegalArgumentException(String.format("main ('%s') is not in paths", relativeMain));
         }
@@ -108,7 +108,7 @@ public abstract class JsPlugin extends PluginBase {
 
         Builder main(Path main);
 
-        Builder root(Path root);
+        Builder rootPath(Path rootPath);
 
         Builder paths(Paths paths);
 

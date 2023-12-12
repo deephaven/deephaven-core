@@ -22,7 +22,7 @@ class JsPluginsFromManifest {
                     .name(entry.name())
                     .version(entry.version())
                     .main(pluginMain)
-                    .root(pluginRoot)
+                    .rootPath(pluginRoot)
                     .build();
             // We expect manifests to be "production" use cases - they should already be packed as appropriate.
             // Additionally, there is no strict requirement that they have package.json anyways.

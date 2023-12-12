@@ -38,7 +38,7 @@ public final class Example123Registration implements Registration {
                 .name("@deephaven_test/example1")
                 .version("0.1.0")
                 .main(main)
-                .root(resourceRoot)
+                .rootPath(resourceRoot)
                 .build();
     }
 
@@ -49,7 +49,7 @@ public final class Example123Registration implements Registration {
                 .name("@deephaven_test/example2")
                 .version("0.2.0")
                 .main(main)
-                .root(resourceRoot)
+                .rootPath(resourceRoot)
                 .paths(Paths.ofPrefixes(main))
                 .build();
     }
@@ -61,7 +61,7 @@ public final class Example123Registration implements Registration {
                 .name("@deephaven_test/example3")
                 .version("0.3.0")
                 .main(main)
-                .root(resourceRoot)
+                .rootPath(resourceRoot)
                 .build();
     }
 }

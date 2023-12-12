@@ -69,7 +69,7 @@ class JsPluginsZipFilesystem {
             // If listing and traversing the contents of development directories (and skipping the copy) becomes
             // too expensive, we can add logic here wrt PathsInternal/PathsPrefix to specify a dirMatcher. Or,
             // properly route directly from the filesystem via Jetty.
-            CopyHelper.copyRecursive(plugin.root(), dstPath, pathMatcher);
+            CopyHelper.copyRecursive(plugin.rootPath(), dstPath, pathMatcher);
             plugins.add(plugin);
             writeManifest(fs);
         }

@@ -31,7 +31,7 @@ import static io.deephaven.server.plugin.js.JsPluginModule.DEEPHAVEN_JS_PLUGINS_
  * configuration is meant for development-oriented use-cases and is done on a "best-effort" basis.
  *
  * <p>
- * The configuration value of the above property corresponds to the {@link JsPlugin#root()} directory. A
+ * The configuration value of the above property corresponds to the {@link JsPlugin#rootPath()} directory. A
  * {@value PACKAGE_JSON} must exist in this directory (as specified via
  * <a href="https://docs.npmjs.com/cli/v6/configuring-npm/package-json">package-json</a>). The {@value NAME} json value
  * corresponds to {@link JsPlugin#name()}, the {@value VERSION} json value corresponds to {@link JsPlugin#version()},
