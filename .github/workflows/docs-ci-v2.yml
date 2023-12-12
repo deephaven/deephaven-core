@@ -10,14 +10,7 @@ jobs:
   makedirs:
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-22.04
-    concurrency:
-      group: makdirs-${{ github.workflow }}-${{ github.ref }}
-      # We don't want to cancel in-progress jobs against main because that might leave the upload in a bad state.
-      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Make Directories
         run: |
           mkdir -p tmp-deephaven-core-v2/${{ github.ref_name }}/
@@ -40,14 +33,7 @@ jobs:
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/v') }}
     needs: [javadoc, typedoc, pydoc, cppdoc, rdoc]
     runs-on: ubuntu-22.04
-    concurrency:
-      group: symlink-${{ github.workflow }}-${{ github.ref }}
-      # We don't want to cancel in-progress jobs against main because that might leave the upload in a bad state.
-      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Make Symlinks
         run: |
           mkdir -p tmp-deephaven-core-v2/symlinks
