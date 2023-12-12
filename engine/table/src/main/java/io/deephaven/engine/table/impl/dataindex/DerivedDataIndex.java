@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.dataindex;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
@@ -35,8 +35,8 @@ public class DerivedDataIndex extends BaseDataIndex {
     private SoftReference<Table> cachedTable = new SoftReference<>(null);
     private long cachedTableStep = -1;
 
-    private SoftReference<PositionLookup> cachedPositionLookup = new SoftReference<>(null);
-    private long cachedPositionLookupStep = -1;
+    private SoftReference<RowKeyLookup> cachedKeyLookup = new SoftReference<>(null);
+    private long cachedKeyLookupStep = -1;
 
     public static DerivedDataIndex from(@NotNull final DataIndex index,
             @NotNull final DataIndexTransformer transformer) {
@@ -115,29 +115,11 @@ public class DerivedDataIndex extends BaseDataIndex {
     }
 
     @Override
-    public @NotNull RowSetLookup rowSetLookup() {
-        // Assuming the parent lookup function is fast and efficient, we will leverage the parent's function
-        // and apply the mutator to the retrieved result.
-        final RowSetLookup lookup = parentIndex.rowSetLookup();
-        if (transformer.intersectRowSet().isEmpty() && transformer.invertRowSet().isEmpty()) {
-            // No need to mutate retrieved row set.
-            return lookup;
-        }
-
-        final Function<RowSet, RowSet> mutator =
-                getMutator(transformer.intersectRowSet().orElse(null), transformer.invertRowSet().orElse(null));
-        return (Object key, boolean usePrev) -> {
-            final RowSet rowSet = lookup.apply(key, usePrev);
-            return rowSet == null ? null : mutator.apply(rowSet);
-        };
-    }
-
-    @Override
-    public @NotNull PositionLookup positionLookup() {
+    public @NotNull RowKeyLookup rowKeyLookup() {
         if (!mayModifyParentIndexRowSet()) {
             // We can use the parent lookup function directly because the operations being applied will not change
-            // the index table row set and the key vs. position will be correct.
-            return parentIndex.positionLookup();
+            // the index table row set and the key will be correct.
+            return parentIndex.rowKeyLookup();
         }
 
         // Make sure we have a valid table on hand to check the current clock.
@@ -145,32 +127,32 @@ public class DerivedDataIndex extends BaseDataIndex {
 
         // Return a valid cached table if possible. If the index was computed on this cycle or is derived from a static
         // index, it remains valid. Otherwise, we need to recompute the index from its parent.
-        PositionLookup cachedLookup = cachedPositionLookup.get();
+        RowKeyLookup cachedLookup = cachedKeyLookup.get();
         if (cachedLookup != null
                 && (!parentIndex.isRefreshing()
-                        || indexTable.getUpdateGraph().clock().currentStep() == cachedPositionLookupStep)) {
+                        || indexTable.getUpdateGraph().clock().currentStep() == cachedKeyLookupStep)) {
             return cachedLookup;
         }
 
         synchronized (this) {
-            cachedLookup = cachedPositionLookup.get();
+            cachedLookup = cachedKeyLookup.get();
             if (cachedLookup != null
                     && (!parentIndex.isRefreshing()
-                            || indexTable.getUpdateGraph().clock().currentStep() == cachedPositionLookupStep)) {
+                            || indexTable.getUpdateGraph().clock().currentStep() == cachedKeyLookupStep)) {
                 return cachedLookup;
             }
 
             // TODO: This is wretched nonsense. Starting point for discussion only...
-            final TObjectIntHashMap prevKeyPositionMap = buildPositionMap(indexTable, keyColumnNames(), true);
-            final TObjectIntHashMap keyPositionMap = buildPositionMap(indexTable, keyColumnNames(), false);
+            final TObjectLongHashMap prevKeyMap = buildKeyMap(indexTable, keyColumnNames(), true);
+            final TObjectLongHashMap keyMap = buildKeyMap(indexTable, keyColumnNames(), false);
 
             cachedLookup = (Object key, boolean usePrev) -> {
-                return usePrev ? prevKeyPositionMap.get(key) : keyPositionMap.get(key);
+                return usePrev ? prevKeyMap.get(key) : keyMap.get(key);
             };
 
             // Cache the result.
-            cachedPositionLookup = new SoftReference<>(cachedLookup);
-            cachedPositionLookupStep = indexTable.getUpdateGraph().clock().currentStep();
+            cachedKeyLookup = new SoftReference<>(cachedLookup);
+            cachedKeyLookupStep = indexTable.getUpdateGraph().clock().currentStep();
 
             return cachedLookup;
         }
@@ -190,7 +172,8 @@ public class DerivedDataIndex extends BaseDataIndex {
     private boolean mayModifyParentIndexRowSet() {
         return transformer.intersectRowSet().isPresent()
                 || transformer.invertRowSet().isPresent()
-                || transformer.sortByFirstRowKey();
+                || transformer.sortByFirstRowKey()
+                || transformer.immutable();
     }
 
     /** Return true if the set of transformations force the materialized index table to become static. **/
@@ -276,8 +259,8 @@ public class DerivedDataIndex extends BaseDataIndex {
             final WritableRowSet redirRowSet = redirectionBuilder.build();
             final Map<String, ColumnSource<?>> csm = new LinkedHashMap<>();
 
-            if (redirRowSet.size() == indexTable.size()) {
-                // We are including all rows from the index table, we don't need Redirected sources.
+            if (redirRowSet.isFlat()) {
+                // We don't need Redirected sources.
                 for (Map.Entry<String, ? extends ColumnSource<?>> entry : indexTable.getColumnSourceMap().entrySet()) {
                     final String columnName = entry.getKey();
                     if (columnName.equals(INDEX_COL_NAME)) {

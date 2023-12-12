@@ -51,15 +51,13 @@ public class TestParquetGrouping extends RefreshingTableTestCase {
             assertEquals(80_000 * 4, tableR.getRowSet().size());
             assertEquals(80_000, allGroupingTable.size());
 
-            final DataIndex.PositionLookup posLookup = dataIndex.positionLookup();
-            final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup();
+            final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
 
             final ColumnSource<RowSet> rowSetColumnSource = dataIndex.rowSetColumn();
 
             for (int i = 0; i < data.length / 4; i++) {
-                assertEquals(rowSetLookup.apply(i, false), RowSetFactory.fromRange(i * 4, i * 4 + 3));
-                int pos = posLookup.apply(i, false);
-                assertEquals(rowSetColumnSource.get(pos), RowSetFactory.fromRange(i * 4, i * 4 + 3));
+                final long key = rowKeyLookup.apply(i, false);
+                assertEquals(rowSetColumnSource.get(key), RowSetFactory.fromRange(i * 4, i * 4 + 3));
             }
 
             // Clamp the index rowset and assert it is still correct.

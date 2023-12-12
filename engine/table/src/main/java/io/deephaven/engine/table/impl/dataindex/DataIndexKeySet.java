@@ -33,14 +33,9 @@ public class DataIndexKeySet {
 
         @Override
         public boolean equalKey(@Nullable final Object key, @NotNull final Object value) {
-            if (key instanceof Object[] && value instanceof Object[]) {
-                return Arrays.equals((Object[]) key, (Object[]) value);
-            }
-            return Objects.equals(key, value);
+            return DataIndexUtils.keysEqual(key, value);
         }
     }
-
-
 
     public DataIndexKeySet(final int initialCapacity) {
         set = new KeyedObjectHashSet<>(initialCapacity, INSTANCE);

@@ -1595,7 +1595,7 @@ public class ChunkedOperatorAggregationHelper {
         ac.propagateInitialStateToOperators(result, groupCount);
 
         // Leverage the lookup function from the index for this table.
-        ac.supplyRowLookup(() -> key -> dataIndex.positionLookup().apply(key, false));
+        ac.supplyRowLookup(() -> key -> (int) dataIndex.rowKeyLookup().apply(key, false));
 
         return ac.transformResult(result);
     }

@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.dataindex;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
@@ -40,36 +40,36 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
     }
 
     /**
-     * Build a map from the keys of the provided index table to positions in the table.
+     * Build a map from the lookup keys of the provided index table to row keys in the table.
      *
      * @param indexTable the table to search
      * @param keyColumnNames the key columns to search
      * @return a map from keys to table positions
      */
-    static TObjectIntHashMap<Object> buildPositionMap(
+    static TObjectLongHashMap<Object> buildKeyMap(
             final Table indexTable,
             final String[] keyColumnNames,
             final boolean usePrev) {
         // TODO-RWC: Come back to this, since we might not want to keep it.
         final RowSet rowSetToUse = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
 
-        int position = 0;
         // If we have only one key column, we will push values directly into the hashmap.
         if (keyColumnNames.length == 1) {
-            TObjectIntHashMap<Object> result = new TObjectIntHashMap<>(indexTable.intSize(), 0.5f, -1);
+            TObjectLongHashMap<Object> result = new TObjectLongHashMap<>(indexTable.intSize(), 0.5f, -1);
 
             final ColumnSource<?> keyColumn = usePrev
                     ? indexTable.getColumnSource(keyColumnNames[0]).getPrevSource()
                     : indexTable.getColumnSource(keyColumnNames[0]);
-            try (final CloseableIterator<Object> keyIterator = ChunkedColumnIterator.make(keyColumn, rowSetToUse)) {
+            try (final CloseableIterator<Object> keyIterator = ChunkedColumnIterator.make(keyColumn, rowSetToUse);
+                    final RowSet.Iterator rsIterator = rowSetToUse.iterator()) {
                 while (keyIterator.hasNext()) {
-                    result.put(keyIterator.next(), position++);
+                    result.put(keyIterator.next(), rsIterator.next());
                 }
                 return result;
             }
         } else {
             // Override the comparison and hashcode methods to handle arrays of keys.
-            TObjectIntHashMap<Object> result = new TObjectIntHashMap<>(indexTable.intSize(), 0.5f, -1) {
+            TObjectLongHashMap<Object> result = new TObjectLongHashMap<>(indexTable.intSize(), 0.5f, -1) {
                 @Override
                 protected boolean equals(Object k1, Object k2) {
                     return Arrays.equals((Object[]) k1, (Object[]) k2);
@@ -89,12 +89,15 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
                     .map(col -> ChunkedColumnIterator.make(col, rowSetToUse))
                     .toArray(ColumnIterator[]::new);
 
+            final RowSet.Iterator rsIterator = rowSetToUse.iterator();
+
             while (keyIterators[0].hasNext()) {
                 final Object[] complexKey = Arrays.stream(keyIterators).map(ColumnIterator::next).toArray();
-                result.put(complexKey, position++);
+                result.put(complexKey, rsIterator.next());
             }
 
             SafeCloseableArray.close(keyIterators);
+            rsIterator.close();
 
             return result;
         }

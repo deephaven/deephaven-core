@@ -3,6 +3,11 @@ package io.deephaven.engine.table.impl.dataindex;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Tools for working with {@link io.deephaven.engine.table.DataIndex data indices}.
@@ -10,8 +15,8 @@ import io.deephaven.engine.table.ColumnSource;
 public class DataIndexUtils {
 
     /**
-     * Make a {@link ChunkSource} that produces data index {@link io.deephaven.engine.table.DataIndex.RowSetLookup row
-     * set lookup} keys from {@code keySources}.
+     * Make a {@link ChunkSource} that produces data index {@link io.deephaven.engine.table.DataIndex.RowKeyLookup
+     * lookup} keys from {@code keySources}.
      * 
      * @param keySources The individual key sources
      * @return The boxed key source
@@ -25,5 +30,13 @@ public class DataIndexUtils {
             default:
                 return new CompoundDataIndexBoxedKeySource(keySources);
         }
+    }
+
+    /** Return true if the two keys are equal. */
+    public static boolean keysEqual(@Nullable final Object key1, @NotNull final Object key2) {
+        if (key1 instanceof Object[] && key2 instanceof Object[]) {
+            return Arrays.equals((Object[]) key1, (Object[]) key2);
+        }
+        return Objects.equals(key1, key2);
     }
 }

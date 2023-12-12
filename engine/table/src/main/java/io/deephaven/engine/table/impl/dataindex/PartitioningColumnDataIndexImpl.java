@@ -32,8 +32,8 @@ public class PartitioningColumnDataIndexImpl<KEY_TYPE> extends BaseDataIndex {
     private final ObjectArraySource<WritableRowSet> indexRowSetSource;
     private final ModifiedColumnSet rowSetModifiedColumnSet;
 
-    /** Provides fast lookup from keys to positions in the index table **/
-    private final TObjectIntHashMap<Object> keyPositionMap;
+    /** Provides fast lookup from keys to row keys in the index table **/
+    private final TObjectIntHashMap<Object> keyMap;
 
     public PartitioningColumnDataIndexImpl(
             @NotNull final ColumnSource<KEY_TYPE> keySource,
@@ -51,7 +51,7 @@ public class PartitioningColumnDataIndexImpl<KEY_TYPE> extends BaseDataIndex {
                 keySource.getComponentType());
         indexRowSetSource = new ObjectArraySource<>(WritableRowSet.class, null);
 
-        keyPositionMap = new TObjectIntHashMap<>(locationTable.intSize(), 0.5F, -1);
+        keyMap = new TObjectIntHashMap<>(locationTable.intSize(), 0.5F, -1);
 
         indexTable = new QueryTable(RowSetFactory.empty().toTracking(), Map.of(
                 keyColumnName, indexKeySource,
@@ -123,13 +123,13 @@ public class PartitioningColumnDataIndexImpl<KEY_TYPE> extends BaseDataIndex {
                 // noinspection DataFlowIssue
                 final KEY_TYPE locationKey = location.getKey().getPartitionValue(keyColumnName);
 
-                final int pos = keyPositionMap.get(locationKey);
+                final int pos = keyMap.get(locationKey);
                 if (pos == -1) {
                     // Key not found, add it.
                     final int addedPos = position.getAndIncrement();
                     indexKeySource.set(addedPos, locationKey);
                     indexRowSetSource.set(addedPos, shiftedRowSet);
-                    keyPositionMap.put(locationKey, addedPos);
+                    keyMap.put(locationKey, addedPos);
 
                     if (addedBuilder != null) {
                         addedBuilder.appendKey(pos);
@@ -152,7 +152,7 @@ public class PartitioningColumnDataIndexImpl<KEY_TYPE> extends BaseDataIndex {
 
             final Object locationKey = location.getKey().getPartitionValue(keyColumnName);
 
-            final int pos = keyPositionMap.get(locationKey);
+            final int pos = keyMap.get(locationKey);
             if (pos == -1) {
                 // Key not found. This is a problem.
                 throw new IllegalStateException("Modified partition key does not exist.");
@@ -205,27 +205,8 @@ public class PartitioningColumnDataIndexImpl<KEY_TYPE> extends BaseDataIndex {
     }
 
     @Override
-    public @Nullable RowSetLookup rowSetLookup() {
-        final ColumnSource<RowSet> rowSetColumnSource = rowSetColumn();
-        return (Object key, boolean usePrev) -> {
-            // Pass the object to the position map, then return the row set at that position.
-            final int position = keyPositionMap.get(key);
-            if (position == -1) {
-                return null;
-            }
-            if (usePrev) {
-                final long prevRowKey = table().getRowSet().prev().get(position);
-                return rowSetColumnSource.getPrev(prevRowKey);
-            } else {
-                final long rowKey = table().getRowSet().get(position);
-                return rowSetColumnSource.get(rowKey);
-            }
-        };
-    }
-
-    @Override
-    public @NotNull PositionLookup positionLookup() {
-        return (Object key, boolean usePrev) -> keyPositionMap.get(key);
+    public @NotNull RowKeyLookup rowKeyLookup() {
+        return (Object key, boolean usePrev) -> keyMap.get(key);
     }
 
     @Override

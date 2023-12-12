@@ -2,7 +2,6 @@ package io.deephaven.engine.table.impl.dataindex;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -11,7 +10,6 @@ import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -104,28 +102,9 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
     }
 
     @Override
-    public @Nullable RowSetLookup rowSetLookup() {
-        final ColumnSource<RowSet> rowSetColumnSource = rowSetColumn();
+    public @NotNull RowKeyLookup rowKeyLookup() {
         return (Object key, boolean usePrev) -> {
-            // Pass the object to the position lookup and get the resulting position.
-            final int position = lookupFunction.get(key);
-            if (position == AggregationRowLookup.DEFAULT_UNKNOWN_ROW) {
-                return null;
-            }
-
-            // Aggregations return a dense result, so this position can be used directly as a row key.
-            if (usePrev) {
-                return rowSetColumnSource.getPrev(position);
-            } else {
-                return rowSetColumnSource.get(position);
-            }
-        };
-    }
-
-    @Override
-    public @NotNull PositionLookup positionLookup() {
-        return (Object key, boolean usePrev) -> {
-            // Pass the object to the aggregation lookup, then return the resulting position. This index will be
+            // Pass the object to the aggregation lookup, then return the resulting row key. This index will be
             // correct in prev or current space because of the aggregation's hash-based lookup.
             return lookupFunction.get(key);
         };

@@ -3,9 +3,10 @@
  */
 package io.deephaven.engine.table.impl.indexer;
 
-import io.deephaven.base.verify.Assert;
+import com.google.common.collect.Sets;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.testutil.ColumnInfo;
@@ -17,6 +18,7 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.*;
@@ -29,26 +31,15 @@ import static io.deephaven.engine.testutil.GenerateTableUpdates.generateTableUpd
 public class TestDataIndexer extends RefreshingTableTestCase {
 
     private static ArrayList<ArrayList<String>> powerSet(Set<String> originalSet) {
-        return powerSet(new ArrayList<>(originalSet));
-    }
-
-    private static <T> ArrayList<ArrayList<T>> powerSet(List<T> originalSet) {
-        ArrayList<ArrayList<T>> sets = new ArrayList<>();
-        if (originalSet.isEmpty()) {
-            sets.add(new ArrayList<>());
-            return sets;
+        final ArrayList<ArrayList<String>> setList = new ArrayList<>();
+        Set<Set<String>> powerSet = Sets.powerSet(originalSet);
+        for (Set<String> set : powerSet) {
+            if (set.isEmpty()) {
+                continue;
+            }
+            setList.add(new ArrayList<>(set));
         }
-        ArrayList<T> list = new ArrayList<>(originalSet);
-        T head = list.get(0);
-        for (ArrayList<T> set : powerSet(list.subList(1, list.size()))) {
-            ArrayList<T> newSet = new ArrayList<>(list.size());
-            newSet.add(head);
-            newSet.addAll(set);
-            sets.add(newSet);
-            sets.add(set);
-        }
-        Assert.eq(sets.size(), "sets.size()", 1 << originalSet.size(), "1<<originalSet.size()");
-        return sets;
+        return setList;
     }
 
     public void testIndex() {
@@ -87,7 +78,7 @@ public class TestDataIndexer extends RefreshingTableTestCase {
             dataIndexer.createDataIndex(queryTable, set.toArray(String[]::new));
         }
 
-        addIndexeValidator(queryTable, "queryTable");
+        addIndexValidator(queryTable, "queryTable");
 
         final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> {
@@ -129,25 +120,25 @@ public class TestDataIndexer extends RefreshingTableTestCase {
         };
 
         for (int ii = 0; ii < en.length; ++ii) {
-            addIndexeValidator(en[ii].originalValue, "en[" + ii + "]");
+            addIndexValidator(en[ii].originalValue, "en[" + ii + "]");
         }
 
         Table by = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> queryTable.avgBy("Sym"));
-        addIndexeValidator(by, "groupBy");
+        addIndexValidator(by, "groupBy");
         Table avgBy = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> queryTable.avgBy("Sym"));
-        addIndexeValidator(avgBy, "avgBy");
+        addIndexValidator(avgBy, "avgBy");
         Table avgBy1 = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> queryTable.avgBy("Sym", "intCol"));
-        addIndexeValidator(avgBy1, "avgBy1");
+        addIndexValidator(avgBy1, "avgBy1");
 
         Table merged = Require.neqNull(ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> TableTools.merge(queryTable)), "TableTools.merge(queryTable)");
-        addIndexeValidator(merged, "merged");
+        addIndexValidator(merged, "merged");
         Table updated = ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
                 .computeLocked(() -> merged.update("HiLo = intCol > 50 ? `Hi` : `Lo`"));
-        addIndexeValidator(updated, "updated");
+        addIndexValidator(updated, "updated");
 
         final int maxSteps = numSteps.intValue(); // 8;
 
@@ -180,231 +171,96 @@ public class TestDataIndexer extends RefreshingTableTestCase {
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     private final ArrayList<IndexValidator> indexValidators = new ArrayList<>();
 
-    private void addIndexeValidator(Table originalValue, String context) {
-        ArrayList<ArrayList<String>> columnSets2 = powerSet(originalValue.getColumnSourceMap().keySet());
-        ArrayList<String> columnNames = new ArrayList<>(originalValue.getColumnSourceMap().keySet());
-        columnSets2.add(columnNames);
-        indexValidators.add(new IndexValidator(context, originalValue, columnSets2));
+    private void addIndexValidator(Table originalValue, String context) {
+        ArrayList<ArrayList<String>> columnSets = powerSet(originalValue.getColumnSourceMap().keySet());
+        indexValidators.add(new IndexValidator(context, originalValue, columnSets));
     }
 
-    // public void testCombinedGrouping() {
-    // Random random = new Random(0);
-    // int size = 100;
-    //
-    // ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[4];
-    // columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
-    // ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
-    // columnInfo[1] = new ColumnInfo<>(new SetGenerator<>("q", "r", "s", "t"), "Sym2",
-    // ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
-    // columnInfo[2] = new ColumnInfo<>(new IntGenerator(10, 100), "intCol",
-    // ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
-    // columnInfo[3] = new ColumnInfo<>(new SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
-    //
-    // final QueryTable nonCountingTable = TstUtils.getTable(size, random, columnInfo);
-    //
-    // final QueryTable countingTable = CountingTable.getCountingTable(nonCountingTable);
-    //
-    // final ColumnSource<?> symColumnSource = countingTable.getColumnSource("Sym");
-    // final ColumnSource<?> sym2ColumnSource = countingTable.getColumnSource("Sym2");
-    // final ColumnSource<?> intColumnSource = countingTable.getColumnSource("intCol");
-    // final ColumnSource<?> doubleColumnSource = countingTable.getColumnSource("doubleCol");
-    //
-    // final RowSetIndexer indexer = RowSetIndexer.of(countingTable.getRowSet());
-    //
-    // assertTrue(indexer.hasGrouping(symColumnSource));
-    // assertTrue(indexer.hasGrouping(sym2ColumnSource));
-    // assertTrue(indexer.hasGrouping(intColumnSource));
-    // assertFalse(indexer.hasGrouping(intColumnSource, symColumnSource));
-    // assertFalse(indexer.hasGrouping(intColumnSource, symColumnSource, sym2ColumnSource));
-    // assertFalse(indexer.hasGrouping(intColumnSource, symColumnSource, doubleColumnSource));
-    //
-    // Map<Object, RowSet> symGrouping = indexer.getGrouping(symColumnSource);
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
-    //
-    // IndexValidator.validateGrouping(new String[]{"Sym"}, countingTable.getRowSet(), countingTable, "sym",
-    // symGrouping);
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    //
-    // Map<Object, RowSet> intGrouping = indexer.getGrouping(intColumnSource);
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-    // IndexValidator.validateGrouping(new String[]{"intCol"}, countingTable.getRowSet(), countingTable, "intCol",
-    // intGrouping);
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    //
-    // final TupleSource<?> intSymTupleSource = TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource);
-    //
-    // Map<Object, RowSet> intSymGrouping = indexer.getGrouping(intSymTupleSource);
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-    // IndexValidator.validateGrouping(new String[]{"intCol", "Sym"}, countingTable.getRowSet(), countingTable,
-    // "intCol+sym", intSymGrouping);
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    //
-    // final TupleSource<?> intSymSym2TupleSource =
-    // TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, sym2ColumnSource);
-    // Map<Object, RowSet> intSymSym2Grouping = indexer.getGrouping(intSymSym2TupleSource);
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-    // IndexValidator.validateGrouping(new String[]{"intCol", "Sym", "Sym2"}, countingTable.getRowSet(),
-    // countingTable, "intCol+sym+sym2", intSymSym2Grouping);
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    //
-    // final TupleSource<?> intSymDoubleTupleSource =
-    // TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, doubleColumnSource);
-    // Map<Object, RowSet> intSymDoubleGrouping = indexer.getGrouping(intSymDoubleTupleSource);
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-    // TestCase.assertEquals(countingTable.size(),
-    // ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
-    // IndexValidator.validateGrouping(new String[]{"intCol", "Sym", "doubleCol"}, countingTable.getRowSet(),
-    // countingTable, "intCol+sym+doubleCol", intSymDoubleGrouping);
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    //
-    // final TupleSource<?> intSymSym2DoubleTupleSource = TupleSourceFactory.makeTupleSource(intColumnSource,
-    // symColumnSource, sym2ColumnSource, doubleColumnSource);
-    // Map<Object, RowSet> intSymSym2DoubleGrouping =
-    // indexer.getGrouping(intSymSym2DoubleTupleSource);
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-    // TestCase.assertEquals(countingTable.size(),
-    // ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
-    // IndexValidator.validateGrouping(new String[]{"intCol", "Sym", "Sym2", "doubleCol"},
-    // countingTable.getRowSet(), countingTable, "intCol+sym+sym2+doubleCol", intSymSym2DoubleGrouping);
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    // }
+    public void testCombinedGrouping() {
+        Random random = new Random(0);
+        int size = 100;
 
-    // public void testRestrictedGrouping() {
-    // Random random = new Random(0);
-    // int size = 100;
-    //
-    // ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[4];
-    // columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
-    // ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
-    // columnInfo[1] = new ColumnInfo<>(new SetGenerator<>("q", "r", "s", "t", "u", "v"), "Sym2",
-    // ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
-    // columnInfo[2] = new ColumnInfo<>(new IntGenerator(10, 100), "intCol",
-    // ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
-    // columnInfo[3] = new ColumnInfo<>(new SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
-    //
-    // final QueryTable nonCountingTable = TstUtils.getTable(size, random, columnInfo);
-    //
-    // final QueryTable countingTable = CountingTable.getCountingTable(nonCountingTable);
-    //
-    // final ColumnSource<?> symColumnSource = countingTable.getColumnSource("Sym");
-    // final ColumnSource<?> sym2ColumnSource = countingTable.getColumnSource("Sym2");
-    // final ColumnSource<?> intColumnSource = countingTable.getColumnSource("intCol");
-    // final ColumnSource<?> doubleColumnSource = countingTable.getColumnSource("doubleCol");
-    //
-    // final RowSetIndexer indexer = RowSetIndexer.of(countingTable.getRowSet());
-    //
-    // assertTrue(indexer.hasGrouping(symColumnSource));
-    // assertTrue(indexer.hasGrouping(sym2ColumnSource));
-    // assertTrue(indexer.hasGrouping(intColumnSource));
-    // assertFalse(indexer.hasGrouping(intColumnSource, symColumnSource));
-    // assertFalse(indexer.hasGrouping(intColumnSource, symColumnSource, sym2ColumnSource));
-    // assertFalse(indexer.hasGrouping(intColumnSource, symColumnSource, sym2ColumnSource,
-    // doubleColumnSource));
-    // assertFalse(indexer.hasGrouping(intColumnSource, symColumnSource, doubleColumnSource));
-    //
-    // final TreeSet<Object> keySet = new TreeSet<>(Arrays.asList("a", "b"));
-    // final Map<Object, RowSet> symGrouping = indexer.getGroupingForKeySet(keySet, symColumnSource);
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
-    //
-    // IndexValidator.validateRestrictedGrouping(new String[]{"Sym"}, countingTable.getRowSet(), countingTable,
-    // "sym", symGrouping, keySet);
-    // ((CountingTable.MethodCounter) symColumnSource).clear();
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    //
-    // keySet.clear();
-    // keySet.addAll(Arrays.asList(10, 20, 30, 40, 50, 60, 70, 80, 90));
-    // final Map<Object, RowSet> intGrouping = indexer.getGroupingForKeySet(keySet, intColumnSource);
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-    // IndexValidator.validateRestrictedGrouping(new String[]{"intCol"}, countingTable.getRowSet(), countingTable,
-    // "intCol", intGrouping, keySet);
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    //
-    // keySet.clear();
-    // final TupleSource<?> intSymFactory = TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource);
-    // TstUtils.selectSubIndexSet(5, countingTable.getRowSet(), random)
-    // .forAllRowKeys(row -> keySet.add(intSymFactory.createTuple(row)));
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    //
-    // final Map<Object, RowSet> intSymGrouping = indexer.getGroupingForKeySet(keySet,
-    // TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-    // IndexValidator.validateRestrictedGrouping(new String[]{"intCol", "Sym"}, countingTable.getRowSet(),
-    // countingTable, "intCol+sym", intSymGrouping, keySet);
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    //
-    // keySet.clear();
-    // final TupleSource<?> intSymDoubleFactory =
-    // TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, doubleColumnSource);
-    // TstUtils.selectSubIndexSet(5, countingTable.getRowSet(), random)
-    // .forAllRowKeys(row -> keySet.add(intSymDoubleFactory.createTuple(row)));
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    //
-    // long intSymGroupingSize = indexer.getGroupingForKeySet(
-    // keySet.stream().map(k -> {
-    // final IntObjectDoubleTuple kTuple = (IntObjectDoubleTuple) k;
-    // return new IntObjectTuple(kTuple.getFirstElement(), kTuple.getSecondElement());
-    // }).collect(Collectors.toSet()),
-    // TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource))
-    // .values().stream().mapToLong(RowSet::size).sum();
-    // final Map<Object, RowSet> intSymDoubleGrouping = indexer.getGroupingForKeySet(keySet,
-    // TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, doubleColumnSource));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-    // TestCase.assertEquals(intSymGroupingSize,
-    // ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    //
-    // IndexValidator.validateRestrictedGrouping(new String[]{"intCol", "Sym", "doubleCol"},
-    // countingTable.getRowSet(), countingTable, "intCol+sym+doubleCol", intSymDoubleGrouping, keySet);
-    //
-    // keySet.clear();
-    // final TupleSource<?> intSymSym2DoubleFactory =
-    // TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource,
-    // sym2ColumnSource, doubleColumnSource);
-    // TstUtils.selectSubIndexSet(5, countingTable.getRowSet(), random)
-    // .forAllRowKeys(row -> keySet.add(intSymSym2DoubleFactory.createTuple(row)));
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    //
-    // long intSymSym2GroupingSize = indexer.getGroupingForKeySet(
-    // keySet.stream().map(k -> {
-    // final ArrayTuple kTuple = (ArrayTuple) k;
-    // return new IntObjectObjectTuple(
-    // kTuple.getElement(0), kTuple.getElement(1), kTuple.getElement(2));
-    // }).collect(Collectors.toSet()),
-    // TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, sym2ColumnSource))
-    // .values().stream().mapToLong(RowSet::size).sum();
-    // final Map<Object, RowSet> intSymSym2DoubleGrouping =
-    // indexer.getGroupingForKeySet(keySet, TupleSourceFactory
-    // .makeTupleSource(intColumnSource, symColumnSource, sym2ColumnSource, doubleColumnSource));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-    // TestCase.assertEquals(intSymSym2GroupingSize,
-    // ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
-    // TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
-    // countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
-    //
-    // IndexValidator.validateRestrictedGrouping(new String[]{"intCol", "Sym", "Sym2", "doubleCol"},
-    // countingTable.getRowSet(), countingTable, "intCol+sym+sym2+doubleCol", intSymSym2DoubleGrouping,
-    // keySet);
-    // }
+        ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[4];
+        columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
+        columnInfo[1] = new ColumnInfo<>(new SetGenerator<>("q", "r", "s", "t"), "Sym2",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
+        columnInfo[2] = new ColumnInfo<>(new IntGenerator(10, 100), "intCol",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
+        columnInfo[3] = new ColumnInfo<>(new SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
+
+        final QueryTable nonCountingTable = TstUtils.getTable(size, random, columnInfo);
+
+        final QueryTable countingTable = CountingTable.getCountingTable(nonCountingTable);
+
+        final ColumnSource<?> symColumnSource = countingTable.getColumnSource("Sym");
+        final ColumnSource<?> sym2ColumnSource = countingTable.getColumnSource("Sym2");
+        final ColumnSource<?> intColumnSource = countingTable.getColumnSource("intCol");
+        final ColumnSource<?> doubleColumnSource = countingTable.getColumnSource("doubleCol");
+
+        final DataIndexer indexer = DataIndexer.of(countingTable.getRowSet());
+
+        assertTrue(indexer.hasDataIndex(symColumnSource));
+        assertTrue(indexer.hasDataIndex(sym2ColumnSource));
+        assertTrue(indexer.hasDataIndex(intColumnSource));
+        assertFalse(indexer.hasDataIndex(intColumnSource, symColumnSource));
+        assertFalse(indexer.hasDataIndex(intColumnSource, symColumnSource, sym2ColumnSource));
+        assertFalse(indexer.hasDataIndex(intColumnSource, symColumnSource, doubleColumnSource));
+
+        // Add the multi-column indexes.
+        indexer.createDataIndex(countingTable, "intCol", "Sym");
+        indexer.createDataIndex(countingTable, "intCol", "Sym", "Sym2");
+        indexer.createDataIndex(countingTable, "intCol", "Sym", "doubleCol");
+        indexer.createDataIndex(countingTable, "intCol", "Sym", "Sym2", "doubleCol");
+
+        assertTrue(indexer.hasDataIndex(intColumnSource, symColumnSource));
+        assertTrue(indexer.hasDataIndex(intColumnSource, symColumnSource, sym2ColumnSource));
+        assertTrue(indexer.hasDataIndex(intColumnSource, symColumnSource, doubleColumnSource));
+        assertTrue(indexer.hasDataIndex(intColumnSource, symColumnSource, sym2ColumnSource, doubleColumnSource));
+
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
+
+        IndexValidator.validateIndex(new String[] {"Sym"}, countingTable.getRowSet(), countingTable, "sym", false);
+        countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
+
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
+        IndexValidator.validateIndex(new String[] {"intCol"}, countingTable.getRowSet(), countingTable, "intCol",
+                false);
+        countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
+
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
+        IndexValidator.validateIndex(new String[] {"intCol", "Sym"}, countingTable.getRowSet(), countingTable,
+                "intCol+sym", false);
+        countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
+
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
+        IndexValidator.validateIndex(new String[] {"intCol", "Sym", "Sym2"}, countingTable.getRowSet(),
+                countingTable, "intCol+sym+sym2", false);
+        countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
+
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
+        IndexValidator.validateIndex(new String[] {"intCol", "Sym", "doubleCol"}, countingTable.getRowSet(),
+                countingTable, "intCol+sym+doubleCol", false);
+        countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
+
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
+        IndexValidator.validateIndex(new String[] {"intCol", "Sym", "Sym2", "doubleCol"},
+                countingTable.getRowSet(), countingTable, "intCol+sym+sym2+doubleCol", false);
+        countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
+    }
 }

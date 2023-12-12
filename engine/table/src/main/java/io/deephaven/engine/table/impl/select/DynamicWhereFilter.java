@@ -312,10 +312,12 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             final ColumnSource<?>[] keyColumns) {
         // Use the index RowSetLookup to create a combined row set of matching rows.
         final RowSetBuilderRandom rowSetBuilder = RowSetFactory.builderRandom();
-        final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup(keyColumns);
+        final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup(keyColumns);
+        final ColumnSource<RowSet> rowSetColumn = dataIndex.rowSetColumn();
 
         liveValues.forEach(key -> {
-            final RowSet rowSet = rowSetLookup.apply(key, false);
+            final long rowKey = rowKeyLookup.apply(key, false);
+            final RowSet rowSet = rowSetColumn.get(rowKey);
             if (rowSet != null) {
                 rowSetBuilder.addRowSet(rowSet);
             }
@@ -348,14 +350,16 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         Assert.geqZero(indexedSourceList.size(), "indexedSourceList.size()");
 
         final List<RowSet> indexRowSets = new ArrayList<>(indexedSourceList.size());
-        final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup();
+        final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
+        final ColumnSource<RowSet> rowSetColumn = dataIndex.rowSetColumn();
 
         if (indexedSourceIndices.size() == 1) {
             // Only one indexed source, so we can use the RowSetLookup directly.
             final int keyIndex = indexedSourceIndices.get(0);
             liveValues.forEach(key -> {
                 final Object[] keys = (Object[]) key;
-                final RowSet rowSet = rowSetLookup.apply(keys[keyIndex], false);
+                final long rowKey = rowKeyLookup.apply(keys[keyIndex], false);
+                final RowSet rowSet = rowSetColumn.get(rowKey);
                 if (rowSet != null) {
                     indexRowSets.add(rowSet);
                 }
@@ -373,7 +377,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                 }
 
                 // Perform the lookup using the partial key.
-                final RowSet rowSet = rowSetLookup.apply(partialKey, false);
+                final long rowKey = rowKeyLookup.apply(partialKey, false);
+                final RowSet rowSet = rowSetColumn.get(rowKey);
                 if (rowSet != null) {
                     indexRowSets.add(rowSet);
                 }

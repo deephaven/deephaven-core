@@ -301,26 +301,7 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
     }
 
     @Override
-    public RowSetLookup rowSetLookup() {
-        final ColumnSource<RowSet> rowSetColumnSource = rowSetColumn();
-        return (Object key, boolean usePrev) -> {
-            // Pass the object to the position lookup, then return the row set at that position.
-            final int position = lookupFunction.get(key);
-            if (position == AggregationRowLookup.DEFAULT_UNKNOWN_ROW) {
-                return null;
-            }
-            if (usePrev) {
-                final long prevRowKey = table().getRowSet().prev().get(position);
-                return rowSetColumnSource.getPrev(prevRowKey);
-            } else {
-                final long rowKey = table().getRowSet().get(position);
-                return rowSetColumnSource.get(rowKey);
-            }
-        };
-    }
-
-    @Override
-    public @NotNull PositionLookup positionLookup() {
+    public @NotNull RowKeyLookup rowKeyLookup() {
         return (Object key, boolean usePrev) -> {
             // Pass the object to the aggregation lookup, then return the resulting position. This index will be
             // correct in prev or current space because of the aggregation's hash-based lookup.
