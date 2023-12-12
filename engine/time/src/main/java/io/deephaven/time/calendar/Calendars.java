@@ -190,13 +190,13 @@ public class Calendars {
     /**
      * Returns a business calendar.
      *
-     * @param name name of the calendar.  The name is case insensitive.
+     * @param name name of the calendar. The name is case insensitive.
      * @return business calendar or {@code null} if {@code name} is {@code null}.
      * @throws IllegalArgumentException no calendar matching {@code name}
      * @throws RequirementFailure if the input is null
      */
     public synchronized static BusinessCalendar calendar(final String name) {
-        if(name == null){
+        if (name == null) {
             return null;
         }
 

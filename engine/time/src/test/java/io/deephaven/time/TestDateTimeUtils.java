@@ -1775,6 +1775,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             throw ex;
         }
 
+        assertNull(DateTimeUtils.today(null));
+        assertNull(DateTimeUtils.todayLocalDate(null));
+
         DateTimeUtils.setClock(initial);
     }
 
@@ -1796,6 +1799,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         }
 
         TestCase.assertEquals(ZoneId.systemDefault(), DateTimeUtils.timeZone());
+        TestCase.assertNull(DateTimeUtils.timeZone(null));
     }
 
     public void testTimeZoneAliasAddRm() {

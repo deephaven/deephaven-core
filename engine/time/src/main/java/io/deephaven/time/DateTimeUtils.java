@@ -456,13 +456,18 @@ public class DateTimeUtils {
      * this method can return the date according to replay time.
      *
      * @param timeZone the time zone
-     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd"
+     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd". {@code null} if
+     *         the input is {@code null}.
      * @see #currentClock()
      * @see #setClock(Clock)
      */
     @ScriptApi
-    @NotNull
-    public static String today(@NotNull final ZoneId timeZone) {
+    @Nullable
+    public static String today(@Nullable final ZoneId timeZone) {
+        if (timeZone == null) {
+            return null;
+        }
+
         return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).getStr();
     }
 
@@ -489,13 +494,18 @@ public class DateTimeUtils {
      * return the date according to replay time.
      *
      * @param timeZone the time zone
-     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd"
+     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd". {@code null} if
+     *         the input is {@code null}.
      * @see #currentClock()
      * @see #setClock(Clock)
      */
     @ScriptApi
-    @NotNull
-    public static LocalDate todayLocalDate(@NotNull final ZoneId timeZone) {
+    @Nullable
+    public static LocalDate todayLocalDate(@Nullable final ZoneId timeZone) {
+        if (timeZone == null) {
+            return null;
+        }
+
         return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).getLocalDate();
     }
 
@@ -524,12 +534,16 @@ public class DateTimeUtils {
      * Gets the time zone for a time zone name.
      *
      * @param timeZone the time zone name
-     * @return the corresponding time zone
-     * @throws NullPointerException if {@code timeZone} is {@code null}
+     * @return the corresponding time zone. {@code null} if the input is {@code null}.
      * @throws DateTimeException if {@code timeZone} has an invalid format
      * @throws ZoneRulesException if {@code timeZone} cannot be found
      */
-    public static ZoneId timeZone(@NotNull String timeZone) {
+    @Nullable
+    public static ZoneId timeZone(@Nullable String timeZone) {
+        if (timeZone == null) {
+            return null;
+        }
+
         return TimeZoneAliases.zoneId(timeZone);
     }
 

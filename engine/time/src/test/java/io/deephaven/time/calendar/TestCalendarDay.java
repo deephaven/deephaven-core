@@ -10,6 +10,7 @@ import java.time.*;
 import java.util.List;
 import java.util.Objects;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static org.junit.Assert.assertNotEquals;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
@@ -44,6 +45,12 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertEquals(Duration.ofNanos(0), empty.businessDurationRemaining(open1));
         assertEquals(0L, empty.businessNanosRemaining(close1));
         assertEquals(Duration.ofNanos(0), empty.businessDurationRemaining(close1));
+
+        assertEquals(NULL_LONG, empty.businessNanosElapsed(null));
+        assertEquals(NULL_LONG, empty.businessNanosRemaining(null));
+        assertNull(empty.businessDurationElapsed(null));
+        assertNull(empty.businessDurationRemaining(null));
+        assertFalse(empty.isBusinessTime(null));
     }
 
     public void testSinglePeriod() {
@@ -82,6 +89,12 @@ public class TestCalendarDay extends BaseArrayTestCase {
                 single.businessNanosRemaining(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
         assertEquals(Duration.ofNanos(0),
                 single.businessDurationRemaining(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
+
+        assertEquals(NULL_LONG, single.businessNanosElapsed(null));
+        assertEquals(NULL_LONG, single.businessNanosRemaining(null));
+        assertNull(single.businessDurationElapsed(null));
+        assertNull(single.businessDurationRemaining(null));
+        assertFalse(single.isBusinessTime(null));
     }
 
     public void testMultiPeriod() {
@@ -130,6 +143,11 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 4),
                 multi.businessDurationRemaining(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
 
+        assertEquals(NULL_LONG, multi.businessNanosElapsed(null));
+        assertEquals(NULL_LONG, multi.businessNanosRemaining(null));
+        assertNull(multi.businessDurationElapsed(null));
+        assertNull(multi.businessDurationRemaining(null));
+        assertFalse(multi.isBusinessTime(null));
 
         final CalendarDay<Instant> multi2 = new CalendarDay<>(new TimeRange[] {period2, period1});
         assertEquals(List.of(period1, period2), multi2.businessTimeRanges());
@@ -163,6 +181,12 @@ public class TestCalendarDay extends BaseArrayTestCase {
                 multi2.businessNanosElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
         assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 2),
                 multi2.businessDurationElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
+
+        assertEquals(NULL_LONG, multi2.businessNanosElapsed(null));
+        assertEquals(NULL_LONG, multi2.businessNanosRemaining(null));
+        assertNull(multi2.businessDurationElapsed(null));
+        assertNull(multi2.businessDurationRemaining(null));
+        assertFalse(multi2.isBusinessTime(null));
     }
 
     public void testPeriodsOverlap() {

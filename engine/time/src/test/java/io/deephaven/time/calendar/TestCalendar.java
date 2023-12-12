@@ -8,6 +8,8 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
+import static io.deephaven.util.QueryConstants.NULL_INT;
+
 public class TestCalendar extends BaseArrayTestCase {
     protected final String name = "TEST CALENDAR";
     protected final String description = "This is a test";
@@ -38,6 +40,10 @@ public class TestCalendar extends BaseArrayTestCase {
         assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2)));
         assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2).atTime(1, 2, 3).atZone(timeZone)));
         assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2).atTime(1, 2, 3).atZone(timeZone).toInstant()));
+        assertEquals(NULL_INT, calendar.dayOfWeek((LocalDate) null));
+        assertEquals(NULL_INT, calendar.dayOfWeek((String) null));
+        assertEquals(NULL_INT, calendar.dayOfWeek((Instant) null));
+        assertEquals(NULL_INT, calendar.dayOfWeek((ZonedDateTime) null));
     }
 
     public void testPlusDays() {
@@ -71,6 +77,16 @@ public class TestCalendar extends BaseArrayTestCase {
         assertEquals(i3, calendar.plusDays(i, -2));
         assertEquals(-2 * DateTimeUtils.DAY, DateTimeUtils.minus(i3, i));
         assertEquals(-2 * DateTimeUtils.DAY, DateTimeUtils.minus(z3, z));
+
+        assertNull(calendar.plusDays((LocalDate) null, 1));
+        assertNull(calendar.plusDays((String) null, 1));
+        assertNull(calendar.plusDays((Instant) null, 1));
+        assertNull(calendar.plusDays((ZonedDateTime) null, 1));
+
+        assertNull(calendar.plusDays(d, NULL_INT));
+        assertNull(calendar.plusDays(s, NULL_INT));
+        assertNull(calendar.plusDays(i, NULL_INT));
+        assertNull(calendar.plusDays(z, NULL_INT));
 
         // Test Daylight Savings Time
         final ZonedDateTime zDST1 = ZonedDateTime.of(2023, 11, 4, 14, 1, 2, 3, timeZone).withZoneSameInstant(timeZone2);
@@ -112,6 +128,16 @@ public class TestCalendar extends BaseArrayTestCase {
         assertEquals(z3, calendar.minusDays(z, -2));
         assertEquals(i3, calendar.minusDays(i, -2));
 
+        assertNull(calendar.minusDays((LocalDate) null, 1));
+        assertNull(calendar.minusDays((String) null, 1));
+        assertNull(calendar.minusDays((Instant) null, 1));
+        assertNull(calendar.minusDays((ZonedDateTime) null, 1));
+
+        assertNull(calendar.minusDays(d, NULL_INT));
+        assertNull(calendar.minusDays(s, NULL_INT));
+        assertNull(calendar.minusDays(i, NULL_INT));
+        assertNull(calendar.minusDays(z, NULL_INT));
+
         // Test Daylight Savings Time
         final ZonedDateTime zDST1 = ZonedDateTime.of(2023, 11, 4, 14, 1, 2, 3, timeZone);
         final ZonedDateTime zDST2 = ZonedDateTime.of(2023, 11, 5, 14, 1, 2, 3, timeZone).withZoneSameInstant(timeZone2);
@@ -131,11 +157,13 @@ public class TestCalendar extends BaseArrayTestCase {
     public void testFutureDate() {
         assertEquals(calendar.plusDays(DateTimeUtils.todayLocalDate(), 3), calendar.futureDate(3));
         assertEquals(calendar.plusDays(DateTimeUtils.todayLocalDate(), -3), calendar.futureDate(-3));
+        assertNull(calendar.futureDate(NULL_INT));
     }
 
     public void testPastDate() {
         assertEquals(calendar.minusDays(DateTimeUtils.todayLocalDate(), 3), calendar.pastDate(3));
         assertEquals(calendar.minusDays(DateTimeUtils.todayLocalDate(), -3), calendar.pastDate(-3));
+        assertNull(calendar.pastDate(NULL_INT));
     }
 
     public void testCalendarDates() {
@@ -174,6 +202,15 @@ public class TestCalendar extends BaseArrayTestCase {
                 end.atTime(1, 24).atZone(timeZone), false, false));
         assertEquals(new LocalDate[] {middle}, calendar.calendarDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
                 end.atTime(1, 24).atZone(timeZone).toInstant(), false, false));
+
+        assertNull(calendar.calendarDates(null, end, false, false));
+        assertNull(calendar.calendarDates(start, null, false, false));
+        assertNull(calendar.calendarDates(null, end.toString(), false, false));
+        assertNull(calendar.calendarDates(start.toString(), null, false, false));
+        assertNull(calendar.calendarDates(null, end.atTime(3, 15).atZone(timeZone).toInstant(), false, false));
+        assertNull(calendar.calendarDates(start.atTime(3, 15).atZone(timeZone).toInstant(), null, false, false));
+        assertNull(calendar.calendarDates(null, end.atTime(3, 15).atZone(timeZone), false, false));
+        assertNull(calendar.calendarDates(start.atTime(3, 15).atZone(timeZone), null, false, false));
     }
 
     public void testNumberCalendarDates() {
@@ -208,5 +245,16 @@ public class TestCalendar extends BaseArrayTestCase {
                 end.atTime(1, 24).atZone(timeZone), false, false));
         assertEquals(1, calendar.numberCalendarDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
                 end.atTime(1, 24).atZone(timeZone).toInstant(), false, false));
+
+        assertEquals(NULL_INT, calendar.numberCalendarDates(null, end, false, false));
+        assertEquals(NULL_INT, calendar.numberCalendarDates(start, null, false, false));
+        assertEquals(NULL_INT, calendar.numberCalendarDates(null, end.toString(), false, false));
+        assertEquals(NULL_INT, calendar.numberCalendarDates(start.toString(), null, false, false));
+        assertEquals(NULL_INT,
+                calendar.numberCalendarDates(null, end.atTime(3, 15).atZone(timeZone).toInstant(), false, false));
+        assertEquals(NULL_INT,
+                calendar.numberCalendarDates(start.atTime(3, 15).atZone(timeZone).toInstant(), null, false, false));
+        assertEquals(NULL_INT, calendar.numberCalendarDates(null, end.atTime(3, 15).atZone(timeZone), false, false));
+        assertEquals(NULL_INT, calendar.numberCalendarDates(start.atTime(3, 15).atZone(timeZone), null, false, false));
     }
 }

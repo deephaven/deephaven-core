@@ -15,6 +15,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.deephaven.util.QueryConstants.NULL_INT;
+
 /**
  * A calendar.
  * <p>
@@ -37,11 +39,12 @@ public class Calendar {
      * @param name calendar name.
      * @param description calendar description.
      * @param timeZone calendar time zone.
+     * @throws RequirementFailure if any parameter is {@code null}
      */
     public Calendar(final String name, final String description, final ZoneId timeZone) {
-        this.name = name;
-        this.description = description;
-        this.timeZone = timeZone;
+        this.name = Require.neqNull(name, "name");
+        this.description = Require.neqNull(description, "description");
+        this.timeZone = Require.neqNull(timeZone, "timeZone");
     }
 
     // endregion
@@ -110,9 +113,14 @@ public class Calendar {
      * The current day of the week for the calendar.
      *
      * @param date date
-     * @return current day of the week
+     * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
+     *         {@code null}.
      */
     public int dayOfWeek(final LocalDate date) {
+        if (date == null) {
+            return NULL_INT;
+        }
+
         return DateTimeUtils.dayOfWeek(date);
     }
 
@@ -120,9 +128,14 @@ public class Calendar {
      * The current day of the week for the calendar.
      *
      * @param date date
-     * @return current day of the week
+     * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
+     *         {@code null}.
      */
     public int dayOfWeek(final String date) {
+        if (date == null) {
+            return NULL_INT;
+        }
+
         return DateTimeUtils.dayOfWeek(DateTimeUtils.parseLocalDate(date));
     }
 
@@ -130,9 +143,14 @@ public class Calendar {
      * The current day of the week for the calendar.
      *
      * @param time time
-     * @return current day of the week
+     * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
+     *         {@code null}.
      */
     public int dayOfWeek(final Instant time) {
+        if (time == null) {
+            return NULL_INT;
+        }
+
         return DateTimeUtils.dayOfWeek(time, timeZone);
     }
 
@@ -140,9 +158,14 @@ public class Calendar {
      * The current day of the week for the calendar.
      *
      * @param time time
-     * @return current day of the week
+     * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
+     *         {@code null}.
      */
     public int dayOfWeek(final ZonedDateTime time) {
+        if (time == null) {
+            return NULL_INT;
+        }
+
         return DateTimeUtils.dayOfWeek(time.toInstant(), timeZone);
     }
 
@@ -156,11 +179,14 @@ public class Calendar {
      *
      * @param date date
      * @param days number of days to add
-     * @return {@code days} days after {@code date}
-     * @throws RequirementFailure if the input is null
+     * @return {@code days} days after {@code date}, or {@code null} if any input is {@code null} or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public LocalDate plusDays(final LocalDate date, final int days) {
-        Require.neqNull(date, "date");
+        if (date == null || days == NULL_INT) {
+            return null;
+        }
+
         return date.plusDays(days);
     }
 
@@ -169,12 +195,15 @@ public class Calendar {
      *
      * @param date date
      * @param days number of days to add
-     * @return {@code days} days after {@code date}
-     * @throws RequirementFailure if the input is null
+     * @return {@code days} days after {@code date}, or {@code null} if any input is {@code null} or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate plusDays(final String date, final int days) {
-        Require.neqNull(date, "date");
+        if (date == null || days == NULL_INT) {
+            return null;
+        }
+
         return plusDays(DateTimeUtils.parseLocalDate(date), days);
     }
 
@@ -188,11 +217,14 @@ public class Calendar {
      *
      * @param time time
      * @param days number of days to add
-     * @return {@code days} days after {@code time}.
-     * @throws RequirementFailure if the input is null
+     * @return {@code days} days after {@code time}, or {@code null} if any input is {@code null} or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public Instant plusDays(final Instant time, final int days) {
-        Require.neqNull(time, "time");
+        if (time == null || days == NULL_INT) {
+            return null;
+        }
+
         return plusDays(DateTimeUtils.toZonedDateTime(time, timeZone), days).toInstant();
     }
 
@@ -209,11 +241,14 @@ public class Calendar {
      *
      * @param time time
      * @param days number of days to add
-     * @return {@code days} days after {@code time}
-     * @throws RequirementFailure if the input is null
+     * @return {@code days} days after {@code time}, or {@code null} if any input is {@code null} or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public ZonedDateTime plusDays(final ZonedDateTime time, final int days) {
-        Require.neqNull(time, "time");
+        if (time == null || days == NULL_INT) {
+            return null;
+        }
+
         final ZonedDateTime zdt = time.withZoneSameInstant(timeZone);
         return plusDays(zdt.toLocalDate(), days)
                 .atTime(zdt.toLocalTime())
@@ -225,11 +260,14 @@ public class Calendar {
      *
      * @param date date
      * @param days number of days to subtract
-     * @return {@code days} days after {@code date}
-     * @throws RequirementFailure if the input is null
+     * @return {@code days} days before {@code date}, or {@code null} if any input is {@code null} or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public LocalDate minusDays(final LocalDate date, final int days) {
-        Require.neqNull(date, "date");
+        if (date == null || days == NULL_INT) {
+            return null;
+        }
+
         return date.minusDays(days);
     }
 
@@ -238,12 +276,15 @@ public class Calendar {
      *
      * @param date date
      * @param days number of days to subtract
-     * @return {@code days} days after {@code date}
-     * @throws RequirementFailure if the input is null
+     * @return {@code days} days before {@code date}, or {@code null} if any input is {@code null} or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate minusDays(final String date, final int days) {
-        Require.neqNull(date, "date");
+        if (date == null || days == NULL_INT) {
+            return null;
+        }
+
         return minusDays(DateTimeUtils.parseLocalDate(date), days);
     }
 
@@ -257,11 +298,14 @@ public class Calendar {
      *
      * @param time time
      * @param days number of days to subtract
-     * @return {@code days} days after {@code time}
-     * @throws RequirementFailure if the input is null
+     * @return {@code days} days before {@code time}, or {@code null} if any input is {@code null} or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public Instant minusDays(final Instant time, final int days) {
-        Require.neqNull(time, "time");
+        if (time == null || days == NULL_INT) {
+            return null;
+        }
+
         return plusDays(time, -days);
     }
 
@@ -278,11 +322,14 @@ public class Calendar {
      *
      * @param time time
      * @param days number of days to subtract
-     * @return {@code days} days after {@code time}
-     * @throws RequirementFailure if the input is null
+     * @return {@code days} days before {@code time}, or {@code null} if any input is {@code null} or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public ZonedDateTime minusDays(final ZonedDateTime time, final int days) {
-        Require.neqNull(time, "time");
+        if (time == null || days == NULL_INT) {
+            return null;
+        }
+
         return plusDays(time, -days);
     }
 
@@ -290,7 +337,8 @@ public class Calendar {
      * Adds a specified number of days to the current date. Adding negative days is equivalent to subtracting days.
      *
      * @param days number of days to add.
-     * @return {@code days} days after the current date
+     * @return {@code days} days after the current date, or {@code null} if {@code days} is
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public LocalDate futureDate(final int days) {
         return plusDays(calendarDate(), days);
@@ -301,7 +349,8 @@ public class Calendar {
      * days.
      *
      * @param days number of days to subtract.
-     * @return {@code days} days before the current date
+     * @return {@code days} days before the current date, or {@code null} if {@code days} is
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public LocalDate pastDate(final int days) {
         return minusDays(calendarDate(), days);
@@ -318,13 +367,13 @@ public class Calendar {
      * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
      * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
-     * @return dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return dates between {@code start} and {@code end}, or {@code null} if any input is {@code null}.
      */
     public LocalDate[] calendarDates(final LocalDate start, final LocalDate end, final boolean startInclusive,
             final boolean endInclusive) {
-        Require.neqNull(start, "start");
-        Require.neqNull(end, "end");
+        if (start == null || end == null) {
+            return null;
+        }
 
         List<LocalDate> dateList = new ArrayList<>();
 
@@ -346,14 +395,15 @@ public class Calendar {
      * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
      * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
-     * @return dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return dates between {@code start} and {@code end}, or {@code null} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] calendarDates(final String start, final String end, final boolean startInclusive,
             final boolean endInclusive) {
-        Require.neqNull(start, "start");
-        Require.neqNull(end, "end");
+        if (start == null || end == null) {
+            return null;
+        }
+
         return calendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive,
                 endInclusive);
     }
@@ -365,14 +415,15 @@ public class Calendar {
      * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
      * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
-     * @return dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return dates between {@code start} and {@code end}, or {@code null} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] calendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive,
             final boolean endInclusive) {
-        Require.neqNull(start, "start");
-        Require.neqNull(end, "end");
+        if (start == null || end == null) {
+            return null;
+        }
+
         return calendarDates(start.withZoneSameInstant(timeZone).toLocalDate(),
                 end.withZoneSameInstant(timeZone).toLocalDate(), startInclusive, endInclusive);
     }
@@ -384,14 +435,15 @@ public class Calendar {
      * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
      * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
-     * @return dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return dates between {@code start} and {@code end}, or {@code null} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] calendarDates(final Instant start, final Instant end, final boolean startInclusive,
             final boolean endInclusive) {
-        Require.neqNull(start, "start");
-        Require.neqNull(end, "end");
+        if (start == null || end == null) {
+            return null;
+        }
+
         return calendarDates(DateTimeUtils.toLocalDate(start, timeZone), DateTimeUtils.toLocalDate(end, timeZone),
                 startInclusive, endInclusive);
     }
@@ -401,8 +453,8 @@ public class Calendar {
      *
      * @param start start of a time range
      * @param end end of a time range
-     * @return dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return dates between {@code start} and {@code end}, including {@code start} and {@code end}, or {@code null} if
+     *         any input is {@code null}.
      */
     public LocalDate[] calendarDates(final LocalDate start, final LocalDate end) {
         return calendarDates(start, end, true, true);
@@ -413,8 +465,8 @@ public class Calendar {
      *
      * @param start start of a time range
      * @param end end of a time range
-     * @return dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return dates between {@code start} and {@code end}, including {@code start} and {@code end}, or {@code null} if
+     *         any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] calendarDates(final String start, final String end) {
@@ -426,8 +478,8 @@ public class Calendar {
      *
      * @param start start of a time range
      * @param end end of a time range
-     * @return dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return dates between {@code start} and {@code end}, including {@code start} and {@code end}, or {@code null} if
+     *         any input is {@code null}.
      */
     public LocalDate[] calendarDates(final ZonedDateTime start, final ZonedDateTime end) {
         return calendarDates(start, end, true, true);
@@ -438,8 +490,8 @@ public class Calendar {
      *
      * @param start start of a time range
      * @param end end of a time range
-     * @return dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return dates between {@code start} and {@code end}, including {@code start} and {@code end}, or {@code null} if
+     *         any input is {@code null}.
      */
     public LocalDate[] calendarDates(final Instant start, final Instant end) {
         return calendarDates(start, end, true, true);
@@ -452,13 +504,14 @@ public class Calendar {
      * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
      * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
-     * @return number of dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return number of dates between {@code start} and {@code end}, or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      */
     public int numberCalendarDates(final LocalDate start, final LocalDate end, final boolean startInclusive,
             final boolean endInclusive) {
-        Require.neqNull(start, "start");
-        Require.neqNull(end, "end");
+        if (start == null || end == null) {
+            return NULL_INT;
+        }
 
         int days = (int) ChronoUnit.DAYS.between(start, end.plusDays(1));
 
@@ -480,14 +533,16 @@ public class Calendar {
      * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
      * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
-     * @return number of dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return number of dates between {@code start} and {@code end}, or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final String start, final String end, final boolean startInclusive,
             final boolean endInclusive) {
-        Require.neqNull(start, "start");
-        Require.neqNull(end, "end");
+        if (start == null || end == null) {
+            return NULL_INT;
+        }
+
         return numberCalendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end),
                 startInclusive, endInclusive);
     }
@@ -499,14 +554,16 @@ public class Calendar {
      * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
      * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
-     * @return number of dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return number of dates between {@code start} and {@code end}, or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive,
             final boolean endInclusive) {
-        Require.neqNull(start, "start");
-        Require.neqNull(end, "end");
+        if (start == null || end == null) {
+            return NULL_INT;
+        }
+
         return numberCalendarDates(start.withZoneSameInstant(timeZone).toLocalDate(),
                 end.withZoneSameInstant(timeZone).toLocalDate(), startInclusive, endInclusive);
     }
@@ -518,14 +575,16 @@ public class Calendar {
      * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
      * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
-     * @return number of dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return number of dates between {@code start} and {@code end}, or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final Instant start, final Instant end, final boolean startInclusive,
             final boolean endInclusive) {
-        Require.neqNull(start, "start");
-        Require.neqNull(end, "end");
+        if (start == null || end == null) {
+            return NULL_INT;
+        }
+
         return numberCalendarDates(DateTimeUtils.toLocalDate(start, timeZone), DateTimeUtils.toLocalDate(end, timeZone),
                 startInclusive, endInclusive);
     }
@@ -535,8 +594,8 @@ public class Calendar {
      *
      * @param start start of a time range
      * @param end end of a time range
-     * @return number of dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return number of dates between {@code start} and {@code end}, including {@code start} and {@code end}, or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      */
     public int numberCalendarDates(final LocalDate start, final LocalDate end) {
         return numberCalendarDates(start, end, true, true);
@@ -547,8 +606,8 @@ public class Calendar {
      *
      * @param start start of a time range
      * @param end end of a time range
-     * @return number of dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return number of dates between {@code start} and {@code end}, including {@code start} and {@code end}, or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final String start, final String end) {
@@ -560,8 +619,8 @@ public class Calendar {
      *
      * @param start start of a time range
      * @param end end of a time range
-     * @return number of dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return number of dates between {@code start} and {@code end}, including {@code start} and {@code end}, or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      */
     public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end) {
         return numberCalendarDates(start, end, true, true);
@@ -572,8 +631,8 @@ public class Calendar {
      *
      * @param start start of a time range
      * @param end end of a time range
-     * @return number of dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @return number of dates between {@code start} and {@code end}, including {@code start} and {@code end}, or
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      */
     public int numberCalendarDates(final Instant start, final Instant end) {
         return numberCalendarDates(start, end, true, true);

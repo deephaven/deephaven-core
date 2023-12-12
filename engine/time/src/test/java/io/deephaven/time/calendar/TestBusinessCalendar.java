@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static io.deephaven.util.QueryConstants.*;
+
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class TestBusinessCalendar extends TestCalendar {
     private final LocalDate firstValidDate = LocalDate.of(2000, 1, 1);
@@ -120,29 +122,10 @@ public class TestBusinessCalendar extends TestCalendar {
         } catch (BusinessCalendar.InvalidDateException ignored) {
         }
 
-        try {
-            bCalendar.calendarDay((LocalDate) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.calendarDay((String) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.calendarDay((ZonedDateTime) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.calendarDay((Instant) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
+        assertNull(bCalendar.calendarDay((LocalDate) null));
+        assertNull(bCalendar.calendarDay((String) null));
+        assertNull(bCalendar.calendarDay((ZonedDateTime) null));
+        assertNull(bCalendar.calendarDay((Instant) null));
     }
 
     public void testIsBusinessDay() {
@@ -204,35 +187,11 @@ public class TestBusinessCalendar extends TestCalendar {
         } catch (BusinessCalendar.InvalidDateException ignored) {
         }
 
-        try {
-            bCalendar.isBusinessDay((LocalDate) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isBusinessDay((String) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isBusinessDay((ZonedDateTime) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isBusinessDay((Instant) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isBusinessDay((DayOfWeek) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
+        assertFalse(bCalendar.isBusinessDay((LocalDate) null));
+        assertFalse(bCalendar.isBusinessDay((String) null));
+        assertFalse(bCalendar.isBusinessDay((ZonedDateTime) null));
+        assertFalse(bCalendar.isBusinessDay((Instant) null));
+        assertFalse(bCalendar.isBusinessDay((DayOfWeek) null));
     }
 
     public void testIsLastBusinessDayOfMonth() {
@@ -284,29 +243,10 @@ public class TestBusinessCalendar extends TestCalendar {
         } catch (BusinessCalendar.InvalidDateException ignored) {
         }
 
-        try {
-            bCalendar.isLastBusinessDayOfMonth((LocalDate) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isLastBusinessDayOfMonth((String) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isLastBusinessDayOfMonth((ZonedDateTime) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isLastBusinessDayOfMonth((Instant) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
+        assertFalse(bCalendar.isLastBusinessDayOfMonth((LocalDate) null));
+        assertFalse(bCalendar.isLastBusinessDayOfMonth((String) null));
+        assertFalse(bCalendar.isLastBusinessDayOfMonth((ZonedDateTime) null));
+        assertFalse(bCalendar.isLastBusinessDayOfMonth((Instant) null));
     }
 
     public void testIsLastBusinessDayOfWeek() {
@@ -376,29 +316,10 @@ public class TestBusinessCalendar extends TestCalendar {
         } catch (BusinessCalendar.InvalidDateException ignored) {
         }
 
-        try {
-            bCalendar.isLastBusinessDayOfWeek((LocalDate) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isLastBusinessDayOfWeek((String) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isLastBusinessDayOfWeek((ZonedDateTime) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isLastBusinessDayOfWeek((Instant) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
+        assertFalse(bCalendar.isLastBusinessDayOfWeek((LocalDate) null));
+        assertFalse(bCalendar.isLastBusinessDayOfWeek((String) null));
+        assertFalse(bCalendar.isLastBusinessDayOfWeek((ZonedDateTime) null));
+        assertFalse(bCalendar.isLastBusinessDayOfWeek((Instant) null));
     }
 
     public void testIsLastBusinessDayOfYear() {
@@ -462,29 +383,10 @@ public class TestBusinessCalendar extends TestCalendar {
         } catch (BusinessCalendar.InvalidDateException ignored) {
         }
 
-        try {
-            bCalendar.isLastBusinessDayOfYear((LocalDate) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isLastBusinessDayOfYear((String) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isLastBusinessDayOfYear((ZonedDateTime) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isLastBusinessDayOfYear((Instant) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
+        assertFalse(bCalendar.isLastBusinessDayOfYear((LocalDate) null));
+        assertFalse(bCalendar.isLastBusinessDayOfYear((String) null));
+        assertFalse(bCalendar.isLastBusinessDayOfYear((ZonedDateTime) null));
+        assertFalse(bCalendar.isLastBusinessDayOfYear((Instant) null));
     }
 
     public void testIsBusinessTime() {
@@ -532,17 +434,8 @@ public class TestBusinessCalendar extends TestCalendar {
             bCalendar.isBusinessTime(d.atTime(12, 34).atZone(timeZone));
         }
 
-        try {
-            bCalendar.isBusinessTime((ZonedDateTime) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.isBusinessTime((Instant) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
+        assertFalse(bCalendar.isBusinessTime((ZonedDateTime) null));
+        assertFalse(bCalendar.isBusinessTime((Instant) null));
     }
 
     public void testFractionStandardBusinessDay() {
@@ -587,29 +480,10 @@ public class TestBusinessCalendar extends TestCalendar {
             bCalendar.fractionStandardBusinessDay(d);
         }
 
-        try {
-            bCalendar.fractionStandardBusinessDay((LocalDate) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.fractionStandardBusinessDay((String) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.fractionStandardBusinessDay((ZonedDateTime) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.fractionStandardBusinessDay((Instant) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
+        assertEquals(NULL_DOUBLE, bCalendar.fractionStandardBusinessDay((LocalDate) null));
+        assertEquals(NULL_DOUBLE, bCalendar.fractionStandardBusinessDay((String) null));
+        assertEquals(NULL_DOUBLE, bCalendar.fractionStandardBusinessDay((ZonedDateTime) null));
+        assertEquals(NULL_DOUBLE, bCalendar.fractionStandardBusinessDay((Instant) null));
     }
 
 
@@ -675,17 +549,8 @@ public class TestBusinessCalendar extends TestCalendar {
             bCalendar.fractionBusinessDayComplete(d.atTime(12, 34).atZone(timeZone));
         }
 
-        try {
-            bCalendar.fractionBusinessDayComplete((ZonedDateTime) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.fractionBusinessDayComplete((Instant) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
+        assertEquals(NULL_DOUBLE, bCalendar.fractionBusinessDayComplete((ZonedDateTime) null));
+        assertEquals(NULL_DOUBLE, bCalendar.fractionBusinessDayComplete((Instant) null));
     }
 
     public void testFractionBusinessDayRemaining() {
@@ -750,17 +615,8 @@ public class TestBusinessCalendar extends TestCalendar {
             bCalendar.fractionBusinessDayRemaining(d.atTime(12, 34).atZone(timeZone));
         }
 
-        try {
-            bCalendar.fractionBusinessDayRemaining((ZonedDateTime) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
-
-        try {
-            bCalendar.fractionBusinessDayRemaining((Instant) null);
-            fail("should throw an exception");
-        } catch (RequirementFailure ignored) {
-        }
+        assertEquals(NULL_DOUBLE, bCalendar.fractionBusinessDayRemaining((ZonedDateTime) null));
+        assertEquals(NULL_DOUBLE, bCalendar.fractionBusinessDayRemaining((Instant) null));
     }
 
     public void testBusinessDates() {
@@ -821,6 +677,15 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(Arrays.copyOfRange(bus, 1, bus.length - 1),
                 bCalendar.businessDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
                         end.atTime(1, 24).atZone(timeZone).toInstant(), false, false));
+
+        assertNull(bCalendar.businessDates(null, end, true, true));
+        assertNull(bCalendar.businessDates(start, null, true, true));
+        assertNull(bCalendar.businessDates(null, end.toString(), true, true));
+        assertNull(bCalendar.businessDates(start.toString(), null, true, true));
+        assertNull(bCalendar.businessDates(null, end.atTime(1, 2).atZone(timeZone).toInstant(), true, true));
+        assertNull(bCalendar.businessDates(start.atTime(1, 2).atZone(timeZone).toInstant(), null, true, true));
+        assertNull(bCalendar.businessDates(null, end.atTime(1, 2).atZone(timeZone), true, true));
+        assertNull(bCalendar.businessDates(start.atTime(1, 2).atZone(timeZone), null, true, true));
     }
 
     public void testNumberBusinessDates() {
@@ -875,6 +740,18 @@ public class TestBusinessCalendar extends TestCalendar {
                 end.atTime(1, 24).atZone(timeZone), false, false));
         assertEquals(bus.length - 2, bCalendar.numberBusinessDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
                 end.atTime(1, 24).atZone(timeZone).toInstant(), false, false));
+
+
+        assertEquals(NULL_INT, bCalendar.numberBusinessDates(null, end, true, true));
+        assertEquals(NULL_INT, bCalendar.numberBusinessDates(start, null, true, true));
+        assertEquals(NULL_INT, bCalendar.numberBusinessDates(null, end.toString(), true, true));
+        assertEquals(NULL_INT, bCalendar.numberBusinessDates(start.toString(), null, true, true));
+        assertEquals(NULL_INT,
+                bCalendar.numberBusinessDates(null, end.atTime(1, 2).atZone(timeZone).toInstant(), true, true));
+        assertEquals(NULL_INT,
+                bCalendar.numberBusinessDates(start.atTime(1, 2).atZone(timeZone).toInstant(), null, true, true));
+        assertEquals(NULL_INT, bCalendar.numberBusinessDates(null, end.atTime(1, 2).atZone(timeZone), true, true));
+        assertEquals(NULL_INT, bCalendar.numberBusinessDates(start.atTime(1, 2).atZone(timeZone), null, true, true));
     }
 
     public void testNonBusinessDates() {
@@ -941,6 +818,15 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(Arrays.copyOfRange(nonBus, 1, nonBus.length - 1),
                 bCalendar.nonBusinessDates(nonBus[0].atTime(1, 24).atZone(timeZone).toInstant(),
                         nonBus[nonBus.length - 1].atTime(1, 24).atZone(timeZone).toInstant(), false, false));
+
+        assertNull(bCalendar.nonBusinessDates(null, end, true, true));
+        assertNull(bCalendar.nonBusinessDates(start, null, true, true));
+        assertNull(bCalendar.nonBusinessDates(null, end.toString(), true, true));
+        assertNull(bCalendar.nonBusinessDates(start.toString(), null, true, true));
+        assertNull(bCalendar.nonBusinessDates(null, end.atTime(1, 2).atZone(timeZone).toInstant(), true, true));
+        assertNull(bCalendar.nonBusinessDates(start.atTime(1, 2).atZone(timeZone).toInstant(), null, true, true));
+        assertNull(bCalendar.nonBusinessDates(null, end.atTime(1, 2).atZone(timeZone), true, true));
+        assertNull(bCalendar.nonBusinessDates(start.atTime(1, 2).atZone(timeZone), null, true, true));
     }
 
     public void testNumberNonBusinessDates() {
@@ -1004,6 +890,17 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(nonBus.length - 2,
                 bCalendar.numberNonBusinessDates(nonBus[0].atTime(1, 24).atZone(timeZone).toInstant(),
                         nonBus[nonBus.length - 1].atTime(1, 24).atZone(timeZone).toInstant(), false, false));
+
+        assertEquals(NULL_INT, bCalendar.numberNonBusinessDates(null, end, true, true));
+        assertEquals(NULL_INT, bCalendar.numberNonBusinessDates(start, null, true, true));
+        assertEquals(NULL_INT, bCalendar.numberNonBusinessDates(null, end.toString(), true, true));
+        assertEquals(NULL_INT, bCalendar.numberNonBusinessDates(start.toString(), null, true, true));
+        assertEquals(NULL_INT,
+                bCalendar.numberNonBusinessDates(null, end.atTime(1, 2).atZone(timeZone).toInstant(), true, true));
+        assertEquals(NULL_INT,
+                bCalendar.numberNonBusinessDates(start.atTime(1, 2).atZone(timeZone).toInstant(), null, true, true));
+        assertEquals(NULL_INT, bCalendar.numberNonBusinessDates(null, end.atTime(1, 2).atZone(timeZone), true, true));
+        assertEquals(NULL_INT, bCalendar.numberNonBusinessDates(start.atTime(1, 2).atZone(timeZone), null, true, true));
     }
 
     public void testDiffBusinessNanos() {
@@ -1031,6 +928,11 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(-target, bCalendar.diffBusinessNanos(zdt3, zdt1));
         assertEquals(target, bCalendar.diffBusinessNanos(zdt1.toInstant(), zdt3.toInstant()));
         assertEquals(-target, bCalendar.diffBusinessNanos(zdt3.toInstant(), zdt1.toInstant()));
+
+        assertEquals(NULL_LONG, bCalendar.diffBusinessNanos(zdt1, null));
+        assertEquals(NULL_LONG, bCalendar.diffBusinessNanos(null, zdt3));
+        assertEquals(NULL_LONG, bCalendar.diffBusinessNanos(zdt1.toInstant(), null));
+        assertEquals(NULL_LONG, bCalendar.diffBusinessNanos(null, zdt3.toInstant()));
     }
 
     public void testDiffNonBusinessNanos() {
@@ -1056,6 +958,11 @@ public class TestBusinessCalendar extends TestCalendar {
                 bCalendar.diffNonBusinessNanos(zdt1.toInstant(), zdt3.toInstant()));
         assertEquals(-bCalendar.diffNonBusinessNanos(zdt1, zdt3),
                 bCalendar.diffNonBusinessNanos(zdt3.toInstant(), zdt1.toInstant()));
+
+        assertEquals(NULL_LONG, bCalendar.diffNonBusinessNanos(zdt1, null));
+        assertEquals(NULL_LONG, bCalendar.diffNonBusinessNanos(null, zdt3));
+        assertEquals(NULL_LONG, bCalendar.diffNonBusinessNanos(zdt1.toInstant(), null));
+        assertEquals(NULL_LONG, bCalendar.diffNonBusinessNanos(null, zdt3.toInstant()));
     }
 
     public void testDiffBusinessDuration() {
@@ -1083,6 +990,11 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(Duration.ofNanos(-target), bCalendar.diffBusinessDuration(zdt3, zdt1));
         assertEquals(Duration.ofNanos(target), bCalendar.diffBusinessDuration(zdt1.toInstant(), zdt3.toInstant()));
         assertEquals(Duration.ofNanos(-target), bCalendar.diffBusinessDuration(zdt3.toInstant(), zdt1.toInstant()));
+
+        assertNull(bCalendar.diffBusinessDuration(zdt1, null));
+        assertNull(bCalendar.diffBusinessDuration(null, zdt3));
+        assertNull(bCalendar.diffBusinessDuration(zdt1.toInstant(), null));
+        assertNull(bCalendar.diffBusinessDuration(null, zdt3.toInstant()));
     }
 
     public void testDiffNonBusinessDuration() {
@@ -1110,6 +1022,12 @@ public class TestBusinessCalendar extends TestCalendar {
                 bCalendar.diffNonBusinessDuration(zdt1.toInstant(), zdt3.toInstant()));
         assertEquals(Duration.ofNanos(-bCalendar.diffNonBusinessNanos(zdt1, zdt3)),
                 bCalendar.diffNonBusinessDuration(zdt3.toInstant(), zdt1.toInstant()));
+
+        assertNull(bCalendar.diffNonBusinessDuration(zdt1, null));
+        assertNull(bCalendar.diffNonBusinessDuration(null, zdt3));
+        assertNull(bCalendar.diffNonBusinessDuration(zdt1.toInstant(), null));
+        assertNull(bCalendar.diffNonBusinessDuration(null, zdt3.toInstant()));
+
     }
 
     public void testDiffBusinessDays() {
@@ -1120,6 +1038,11 @@ public class TestBusinessCalendar extends TestCalendar {
                 bCalendar.diffBusinessDays(zdt1, zdt2));
         assertEquals(bCalendar.diffBusinessNanos(zdt1, zdt2) / (double) schedule.businessNanos(),
                 bCalendar.diffBusinessDays(zdt1.toInstant(), zdt2.toInstant()));
+
+        assertEquals(NULL_DOUBLE, bCalendar.diffBusinessDays(zdt1, null));
+        assertEquals(NULL_DOUBLE, bCalendar.diffBusinessDays(null, zdt2));
+        assertEquals(NULL_DOUBLE, bCalendar.diffBusinessDays(zdt1.toInstant(), null));
+        assertEquals(NULL_DOUBLE, bCalendar.diffBusinessDays(null, zdt2.toInstant()));
     }
 
     public void testDiffBusinessYears() {
@@ -1152,6 +1075,11 @@ public class TestBusinessCalendar extends TestCalendar {
 
         assertEquals(3.0 + start + end, bCalendar.diffBusinessYears(zdt5, zdt6), 1e-5);
         assertEquals(3.0 + start + end, bCalendar.diffBusinessYears(zdt5.toInstant(), zdt6.toInstant()), 1e-5);
+
+        assertEquals(NULL_DOUBLE, bCalendar.diffBusinessYears(zdt1, null));
+        assertEquals(NULL_DOUBLE, bCalendar.diffBusinessYears(null, zdt2));
+        assertEquals(NULL_DOUBLE, bCalendar.diffBusinessYears(zdt1.toInstant(), null));
+        assertEquals(NULL_DOUBLE, bCalendar.diffBusinessYears(null, zdt2.toInstant()));
     }
 
     public void testPlusBusinessDays() {
@@ -1247,6 +1175,16 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.plusBusinessDays(s, 0));
         assertNull(bCalendar.plusBusinessDays(z.withZoneSameInstant(timeZone), 0));
         assertNull(bCalendar.plusBusinessDays(i, 0));
+
+        assertNull(bCalendar.plusBusinessDays((LocalDate) null, 1));
+        assertNull(bCalendar.plusBusinessDays((String) null, 1));
+        assertNull(bCalendar.plusBusinessDays((ZonedDateTime) null, 1));
+        assertNull(bCalendar.plusBusinessDays((Instant) null, 1));
+
+        assertNull(bCalendar.plusBusinessDays(d, NULL_INT));
+        assertNull(bCalendar.plusBusinessDays(s, NULL_INT));
+        assertNull(bCalendar.plusBusinessDays(z.withZoneSameInstant(timeZone), NULL_INT));
+        assertNull(bCalendar.plusBusinessDays(i, NULL_INT));
     }
 
     public void testMinusBusinessDays() {
@@ -1342,6 +1280,16 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.minusBusinessDays(s, 0));
         assertNull(bCalendar.minusBusinessDays(z, 0));
         assertNull(bCalendar.minusBusinessDays(i, 0));
+
+        assertNull(bCalendar.minusBusinessDays((LocalDate) null, 1));
+        assertNull(bCalendar.minusBusinessDays((String) null, 1));
+        assertNull(bCalendar.minusBusinessDays((ZonedDateTime) null, 1));
+        assertNull(bCalendar.minusBusinessDays((Instant) null, 1));
+
+        assertNull(bCalendar.minusBusinessDays(d, NULL_INT));
+        assertNull(bCalendar.minusBusinessDays(s, NULL_INT));
+        assertNull(bCalendar.minusBusinessDays(z.withZoneSameInstant(timeZone), NULL_INT));
+        assertNull(bCalendar.minusBusinessDays(i, NULL_INT));
     }
 
     public void testPlusNonBusinessDays() {
@@ -1437,6 +1385,16 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.plusNonBusinessDays(s, 0));
         assertNull(bCalendar.plusNonBusinessDays(z, 0));
         assertNull(bCalendar.plusNonBusinessDays(i, 0));
+
+        assertNull(bCalendar.plusNonBusinessDays((LocalDate) null, 1));
+        assertNull(bCalendar.plusNonBusinessDays((String) null, 1));
+        assertNull(bCalendar.plusNonBusinessDays((ZonedDateTime) null, 1));
+        assertNull(bCalendar.plusNonBusinessDays((Instant) null, 1));
+
+        assertNull(bCalendar.plusNonBusinessDays(d, NULL_INT));
+        assertNull(bCalendar.plusNonBusinessDays(s, NULL_INT));
+        assertNull(bCalendar.plusNonBusinessDays(z.withZoneSameInstant(timeZone), NULL_INT));
+        assertNull(bCalendar.plusNonBusinessDays(i, NULL_INT));
     }
 
     public void testMinusNonBusinessDays() {
@@ -1532,16 +1490,28 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.minusNonBusinessDays(s, 0));
         assertNull(bCalendar.minusNonBusinessDays(z, 0));
         assertNull(bCalendar.minusNonBusinessDays(i, 0));
+
+        assertNull(bCalendar.minusNonBusinessDays((LocalDate) null, 1));
+        assertNull(bCalendar.minusNonBusinessDays((String) null, 1));
+        assertNull(bCalendar.minusNonBusinessDays((ZonedDateTime) null, 1));
+        assertNull(bCalendar.minusNonBusinessDays((Instant) null, 1));
+
+        assertNull(bCalendar.minusNonBusinessDays(d, NULL_INT));
+        assertNull(bCalendar.minusNonBusinessDays(s, NULL_INT));
+        assertNull(bCalendar.minusNonBusinessDays(z.withZoneSameInstant(timeZone), NULL_INT));
+        assertNull(bCalendar.minusNonBusinessDays(i, NULL_INT));
     }
 
     public void testFutureBusinessDate() {
         assertEquals(bCalendar.plusBusinessDays(DateTimeUtils.todayLocalDate(), 3), bCalendar.futureBusinessDate(3));
         assertEquals(bCalendar.plusBusinessDays(DateTimeUtils.todayLocalDate(), -3), bCalendar.futureBusinessDate(-3));
+        assertNull(bCalendar.futureBusinessDate(NULL_INT));
     }
 
     public void testPastBusinessDate() {
         assertEquals(bCalendar.minusBusinessDays(DateTimeUtils.todayLocalDate(), 3), bCalendar.pastBusinessDate(3));
         assertEquals(bCalendar.minusBusinessDays(DateTimeUtils.todayLocalDate(), -3), bCalendar.pastBusinessDate(-3));
+        assertNull(bCalendar.pastBusinessDate(NULL_INT));
     }
 
     public void testFutureNonBusinessDate() {
@@ -1549,6 +1519,7 @@ public class TestBusinessCalendar extends TestCalendar {
                 bCalendar.futureNonBusinessDate(3));
         assertEquals(bCalendar.plusNonBusinessDays(DateTimeUtils.todayLocalDate(), -3),
                 bCalendar.futureNonBusinessDate(-3));
+        assertNull(bCalendar.futureNonBusinessDate(NULL_INT));
     }
 
     public void testPastNonBusinessDate() {
@@ -1556,6 +1527,7 @@ public class TestBusinessCalendar extends TestCalendar {
                 bCalendar.pastNonBusinessDate(3));
         assertEquals(bCalendar.minusNonBusinessDays(DateTimeUtils.todayLocalDate(), -3),
                 bCalendar.pastNonBusinessDate(-3));
+        assertNull(bCalendar.pastNonBusinessDate(NULL_INT));
     }
 
 }

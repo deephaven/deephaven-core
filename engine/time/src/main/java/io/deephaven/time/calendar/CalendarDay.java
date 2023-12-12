@@ -12,6 +12,8 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.util.*;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 /**
  * Schedule for a single calendar day. The schedule contains a list of business time ranges, which are the ranges of
  * time during which businesses are open.
@@ -35,7 +37,8 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      *
      * @param businessTimeRanges array of business time ranges for the day.
      * @throws IllegalArgumentException if {@code businessTimeRanges} overlaps.
-     * @throws RequirementFailure if {@code businessTimeRanges} or any constituent business time ranges are null.
+     * @throws RequirementFailure if {@code businessTimeRanges} or any constituent business time ranges are
+     *         {@code null}.
      */
     CalendarDay(@NotNull final TimeRange<T>[] businessTimeRanges) {
         Require.neqNull(businessTimeRanges, "businessTimeRanges");
@@ -83,7 +86,7 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
     /**
      * Start of the business day. Equivalent to the start of the first business time range.
      *
-     * @return start of the business day, or null for a holiday schedule
+     * @return start of the business day, or {@code null} for a holiday schedule
      */
     public T businessStart() {
         return !businessTimeRanges.isEmpty() ? businessTimeRanges.get(0).start() : null;
@@ -92,14 +95,14 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
     /**
      * End of the business day. Equivalent to the end of the last business time range.
      *
-     * @return end of the business day, or null for a holiday schedule
+     * @return end of the business day, or {@code null} for a holiday schedule
      */
     public T businessEnd() {
         return !businessTimeRanges.isEmpty() ? businessTimeRanges.get(businessTimeRanges.size() - 1).end() : null;
     }
 
     /**
-     * Is the end of the business day inclusive?  Equivalent to the end of the last business time range.
+     * Is the end of the business day inclusive? Equivalent to the end of the last business time range.
      *
      * @return is the end of the business day inclusive?
      */
@@ -131,10 +134,14 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * Amount of business time in nanoseconds that has elapsed on the given day by the specified time.
      *
      * @param time time
-     * @return business time in nanoseconds that has elapsed on the given day by the specified time
+     * @return business time in nanoseconds that has elapsed on the given day by the specified time, or
+     *         {@link io.deephaven.util.QueryConstants#NULL_LONG} if the input is {@code null}.
      */
     public long businessNanosElapsed(final T time) {
-        Require.neqNull(time, "time");
+        if (time == null) {
+            return NULL_LONG;
+        }
+
         long elapsed = 0;
 
         for (TimeRange<T> btr : businessTimeRanges) {
@@ -155,9 +162,14 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * Amount of business time that has elapsed on the given day by the specified time.
      *
      * @param time time
-     * @return business time that has elapsed on the given day by the specified time
+     * @return business time that has elapsed on the given day by the specified time, or {@code null} if the input is
+     *         {@code null}.
      */
     public Duration businessDurationElapsed(final T time) {
+        if (time == null) {
+            return null;
+        }
+
         return Duration.ofNanos(businessNanosElapsed(time));
     }
 
@@ -165,10 +177,14 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * Amount of business time in nanoseconds that remains until the end of the day.
      *
      * @param time time
-     * @return business time in nanoseconds that remains until the end of the day.
+     * @return business time in nanoseconds that remains until the end of the day, or
+     *         {@link io.deephaven.util.QueryConstants#NULL_LONG} if the input is {@code null}.
      */
     public long businessNanosRemaining(final T time) {
-        Require.neqNull(time, "time");
+        if (time == null) {
+            return NULL_LONG;
+        }
+
         return businessNanos() - businessNanosElapsed(time);
     }
 
@@ -176,14 +192,18 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * Amount of business time that remains until the end of the day.
      *
      * @param time time
-     * @return business time that remains until the end of the day
+     * @return business time that remains until the end of the day, or {@code null} if the input is {@code null}.
      */
     public Duration businessDurationRemaining(final T time) {
+        if (time == null) {
+            return null;
+        }
+
         return Duration.ofNanos(businessNanosRemaining(time));
     }
 
     /**
-     * Is this day a business day?  A business day is a day that contains at least some business time.
+     * Is this day a business day? A business day is a day that contains at least some business time.
      *
      * @return true if it is a business day; false otherwise.
      */
@@ -195,9 +215,14 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * Determines if the specified time is a business time for the day.
      *
      * @param time time.
-     * @return true if the time is a business time for the day; otherwise, false.
+     * @return true if the time is a business time for the day; otherwise, false. If the input is {@code null}, returns
+     *         false.
      */
     public boolean isBusinessTime(final T time) {
+        if (time == null) {
+            return false;
+        }
+
         for (TimeRange<T> p : businessTimeRanges) {
             if (p.contains(time)) {
                 return true;
