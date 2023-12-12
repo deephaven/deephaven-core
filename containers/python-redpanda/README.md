@@ -15,9 +15,7 @@ For instructions on launching and using Kafka, see [How to connect to a Kafka st
 To launch Deephaven, execute the following in your deployment directory:
 
 ```sh
-compose_file=https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-redpanda/docker-compose.yml
-curl -O "${compose_file}"
-
+curl -O https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-redpanda/docker-compose.yml
 docker compose pull
 docker compose up -d
 ```

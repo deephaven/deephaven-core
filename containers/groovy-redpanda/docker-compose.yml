@@ -14,18 +14,13 @@ services:
     command:
     - redpanda
     - start
-    - --smp
-    - '1'
-    - --reserve-memory
-    - 0M
+    - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+    - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    - --smp 1
+    - --reserve-memory 0M
     - --overprovisioned
-    - --node-id
-    - '0'
-    - --kafka-addr
-    - PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
-    - --advertise-kafka-addr
-    - PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
-    image: docker.redpanda.com/vectorized/redpanda:v22.2.2
+    - --node-id 0
+    image: docker.redpanda.com/redpandadata/redpanda:v23.2.18
     ports:
     - 9092:9092
     - 29092:29092
