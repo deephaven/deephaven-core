@@ -15,14 +15,13 @@ import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.page.DictionaryPage;
 import org.apache.parquet.format.*;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
-import org.apache.parquet.io.ParquetDecodingException;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -193,7 +192,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     @NotNull
     private Dictionary readDictionary(ReadableByteChannel file) throws IOException {
         // explicitly not closing this, caller is responsible
-        final InputStream inputStream = Channels.newInputStream(file);
+        final BufferedInputStream inputStream = new BufferedInputStream(Channels.newInputStream(file));
         final PageHeader pageHeader = Util.readPageHeader(inputStream);
         if (pageHeader.getType() != PageType.DICTIONARY_PAGE) {
             // In case our fallback in getDictionary was too optimistic...
@@ -202,7 +201,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         final DictionaryPageHeader dictHeader = pageHeader.getDictionary_page_header();
 
         final BytesInput payload;
-        int compressedPageSize = pageHeader.getCompressed_page_size();
+        final int compressedPageSize = pageHeader.getCompressed_page_size();
         if (compressedPageSize == 0) {
             // Sometimes the size is explicitly empty, just use an empty payload
             payload = BytesInput.empty();
@@ -230,6 +229,17 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
             return remainingValues > 0;
         }
 
+        // TODO Move to a separate file
+        final class PositionedBufferedInputStream extends BufferedInputStream {
+            PositionedBufferedInputStream(final ReadableByteChannel readChannel, final int size) {
+                super(Channels.newInputStream(readChannel), size);
+            }
+
+            long position() throws IOException {
+                return this.pos;
+            }
+        }
+
         @Override
         public ColumnPageReader next() {
             if (!hasNext()) {
@@ -240,8 +250,13 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                 final long headerOffset = currentOffset;
                 readChannel.position(currentOffset);
                 // deliberately not closing this stream
-                final PageHeader pageHeader = Util.readPageHeader(Channels.newInputStream(readChannel));
-                currentOffset = readChannel.position() + pageHeader.getCompressed_page_size();
+                // TODO Assuming header size will be less than 16384
+                final PositionedBufferedInputStream bufferedInput =
+                        new PositionedBufferedInputStream(readChannel, 16384);
+                final PageHeader pageHeader = Util.readPageHeader(bufferedInput);
+                final long headerSize = bufferedInput.position();
+                final long pageDataOffset = currentOffset + headerSize;
+                currentOffset += headerSize + pageHeader.getCompressed_page_size();
                 if (pageHeader.isSetDictionary_page_header()) {
                     // Dictionary page; skip it
                     return next();
@@ -271,7 +286,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                                 ? dictionarySupplier
                                 : () -> NULL_DICTIONARY;
                 return new ColumnPageReaderImpl(channelsProvider, decompressor, pageDictionarySupplier,
-                        nullMaterializerFactory, path, getFilePath(), fieldTypes, readChannel.position(), pageHeader,
+                        nullMaterializerFactory, path, getFilePath(), fieldTypes, pageDataOffset, pageHeader,
                         ColumnPageReaderImpl.NULL_NUM_VALUES);
             } catch (IOException e) {
                 throw new UncheckedDeephavenException("Error reading page header", e);

@@ -99,6 +99,17 @@ public class ParquetTools {
         return readTableInternal(new File(sourceFilePath), ParquetInstructions.EMPTY);
     }
 
+    public static Table readTable(@NotNull final String sourceFilePath,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final TableDefinition tableDefinition) {
+        if (sourceFilePath.startsWith("s3:") && sourceFilePath.endsWith(PARQUET_FILE_EXTENSION)) {
+            // TODO This is hacky, because here URI is getting converted to a file path and // will change to /
+            // We need to keep this as a URI and internally check if its a file or S3 backed URI
+            return readSingleFileTable(new File(sourceFilePath), readInstructions, tableDefinition);
+        }
+        return readTableInternal(new File(sourceFilePath), readInstructions);
+    }
+
     /**
      * Reads in a table from a single parquet, metadata file, or directory with recognized layout.
      *
@@ -1070,7 +1081,8 @@ public class ParquetTools {
             final int index = absolutePath.indexOf(S3_MARKER);
             final String s3uri = S3_MARKER + absolutePath.substring(index + S3_MARKER.length() - 1);
             return new ParquetFileReader(absolutePath,
-                    new S3BackedSeekableChannelProvider(readInstructions.getAwsRegionName(), s3uri));
+                    new CachedChannelProvider(
+                            new S3BackedSeekableChannelProvider(readInstructions.getAwsRegionName(), s3uri), 1 << 7));
         }
         return new ParquetFileReader(
                 parquetFile.getAbsolutePath(),

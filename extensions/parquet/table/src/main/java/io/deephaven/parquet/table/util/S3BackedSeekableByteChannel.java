@@ -1,11 +1,12 @@
 package io.deephaven.parquet.table.util;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3URI;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import io.deephaven.base.verify.Assert;
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Uri;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -17,13 +18,13 @@ public final class S3BackedSeekableByteChannel implements SeekableByteChannel {
 
     private static final int CLOSED_SENTINEL = -1;
 
-    private final AmazonS3 s3Client;
-    private final AmazonS3URI s3URI;
+    private final S3Client s3Client;
+    private final S3Uri s3URI;
 
     private long size;
     private long position;
 
-    S3BackedSeekableByteChannel(@NotNull final AmazonS3 s3Client, @NotNull final AmazonS3URI s3URI, final long size) {
+    S3BackedSeekableByteChannel(@NotNull final S3Client s3Client, @NotNull final S3Uri s3URI, final long size) {
         this.s3Client = s3Client;
         this.s3URI = s3URI;
         this.size = size;
@@ -38,22 +39,26 @@ public final class S3BackedSeekableByteChannel implements SeekableByteChannel {
         if (endPosition >= size) {
             endPosition = size - 1;
         }
-        final GetObjectRequest rangeObjectRequest =
-                new GetObjectRequest(s3URI.getBucket(), s3URI.getKey()).withRange(position, endPosition);
+        final String byteRange = "bytes=" + position + "-" + endPosition;
+        Assert.eqTrue(s3URI.bucket().isPresent(), "s3URI.bucket().isPresent()");
+        Assert.eqTrue(s3URI.key().isPresent(), "s3URI.key().isPresent()");
+        final GetObjectRequest rangeObjectRequest = GetObjectRequest.builder()
+                .bucket(s3URI.bucket().get())
+                .key(s3URI.key().get())
+                .range(byteRange)
+                .build();
 
-        // Following will create and send a GET request over a pool of shared HTTP connections to S3.
-        final S3Object s3Object = s3Client.getObject(rangeObjectRequest);
-        final S3ObjectInputStream s3ObjectInputStream = s3Object.getObjectContent();
+        // Following will create and send a blocking GET request over a pool of shared HTTP connections to S3.
         int totalBytesRead = 0;
         int bytesRead;
-        do {
-            if ((bytesRead =
-                    s3ObjectInputStream.read(readBuf, totalBytesRead, numBytesToRead - totalBytesRead)) != -1) {
-                position += bytesRead;
-                totalBytesRead += bytesRead;
-            }
-        } while (totalBytesRead < numBytesToRead && bytesRead != -1);
-        s3ObjectInputStream.close();
+        try (final ResponseInputStream<GetObjectResponse> s3InputStream = s3Client.getObject(rangeObjectRequest)) {
+            do {
+                if ((bytesRead = s3InputStream.read(readBuf, totalBytesRead, numBytesToRead - totalBytesRead)) != -1) {
+                    position += bytesRead;
+                    totalBytesRead += bytesRead;
+                }
+            } while (totalBytesRead < numBytesToRead && bytesRead != -1);
+        }
         if (totalBytesRead > 0) {
             dst.put(readBuf, 0, totalBytesRead); // TODO Think if we can avoid this extra copy
             return totalBytesRead;

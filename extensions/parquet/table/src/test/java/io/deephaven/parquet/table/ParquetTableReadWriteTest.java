@@ -570,6 +570,104 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void readRefParquetFileFromS3Test() {
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setAwsRegionName("us-east-2")
+                .build();
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofString("hash"),
+                ColumnDefinition.ofLong("version"),
+                ColumnDefinition.ofLong("size"),
+                ColumnDefinition.ofString("block_hash"),
+                ColumnDefinition.ofLong("block_number"),
+                ColumnDefinition.ofLong("index"),
+                ColumnDefinition.ofLong("virtual_size"),
+                ColumnDefinition.ofLong("lock_time"),
+                ColumnDefinition.ofLong("input_count"),
+                ColumnDefinition.ofLong("output_count"),
+                ColumnDefinition.ofBoolean("isCoinbase"),
+                ColumnDefinition.ofDouble("output_value"),
+                ColumnDefinition.ofTime("last_modified"),
+                ColumnDefinition.ofDouble("input_value"));
+
+        final Table fromAws1 = ParquetTools.readTable(
+                "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
+                readInstructions, tableDefinition).head(5).select();
+        final Table fromDisk1 = ParquetTools.readSingleFileTable(
+                new File(
+                        "/Users/shivammalhotra/Documents/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet"),
+                ParquetTools.SNAPPY,
+                tableDefinition).head(5).select();
+        assertTableEquals(fromAws1, fromDisk1);
+
+        final Table fromAws2 = ParquetTools.readTable(
+                "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
+                readInstructions, tableDefinition).head(5).select();
+        final Table fromDisk2 = ParquetTools.readSingleFileTable(
+                new File(
+                        "/Users/shivammalhotra/Documents/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet"),
+                ParquetTools.SNAPPY,
+                tableDefinition).head(5).select();
+        assertTableEquals(fromAws2, fromDisk2);
+    }
+
+    @Test
+    public void readRefParquetFileLocally() {
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofString("hash"),
+                ColumnDefinition.ofLong("version"),
+                ColumnDefinition.ofLong("size"),
+                ColumnDefinition.ofString("block_hash"),
+                ColumnDefinition.ofLong("block_number"),
+                ColumnDefinition.ofLong("index"),
+                ColumnDefinition.ofLong("virtual_size"),
+                ColumnDefinition.ofLong("lock_time"),
+                ColumnDefinition.ofLong("input_count"),
+                ColumnDefinition.ofLong("output_count"),
+                ColumnDefinition.ofBoolean("isCoinbase"),
+                ColumnDefinition.ofDouble("output_value"),
+                ColumnDefinition.ofTime("last_modified"),
+                ColumnDefinition.ofDouble("input_value"));
+        final Table fromAws1 =
+                ParquetTools.readSingleFileTable(
+                        new File(
+                                "/Users/shivammalhotra/Documents/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet"),
+                        // new File(
+                        // "/Users/shivammalhotra/Documents/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet"),
+                        ParquetTools.SNAPPY,
+                        tableDefinition).head(5).select();
+    }
+
+    @Test
+    public void profileReadingFromS3() {
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setAwsRegionName("us-east-1")
+                .build();
+
+        long totalTime = 0;
+        long NUM_RUNS = 5;
+        for (int i = 0; i < NUM_RUNS; i++) {
+            final long start = System.nanoTime();
+            ParquetTools.readTable("s3://dh-s3-parquet-test1/multiColFile.parquet", readInstructions).select();
+            final long end = System.nanoTime();
+            totalTime += end - start;
+            System.out.println((i + 1) + ". Execution time AWS is " + (end - start) / 1000_000_000.0 + " sec");
+        }
+        System.out.println("Average execution time AWS is " + totalTime / (NUM_RUNS * 1000_000_000.0) + " sec");
+
+        NUM_RUNS = 100;
+        totalTime = 0;
+        for (int i = 0; i < NUM_RUNS; i++) {
+            final long start = System.nanoTime();
+            ParquetTools.readTable("/Users/shivammalhotra/documents/multiColFile.parquet").select();
+            final long end = System.nanoTime();
+            totalTime += end - start;
+            System.out.println((i + 1) + ". Execution time local is " + (end - start) / 1000_000_000.0 + " sec");
+        }
+        System.out.println("Average execution time local is " + totalTime / (NUM_RUNS * 1000_000_000.0) + " sec");
+    }
+
+    @Test
     public void readParquetFileFromS3Test() {
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setAwsRegionName("us-east-1")
