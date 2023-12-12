@@ -130,12 +130,12 @@ public class IdeSession extends HasEventHandling {
      */
     public Promise<JsTreeTable> getTreeTable(String name) {
         return connection.getVariableDefinition(name, JsVariableType.HIERARCHICALTABLE)
-                .then(connection::getTreeTable);
+                .then(connection::getHierarchicalTable);
     }
 
     public Promise<JsTreeTable> getHierarchicalTable(String name) {
         return connection.getVariableDefinition(name, JsVariableType.HIERARCHICALTABLE)
-                .then(connection::getTreeTable);
+                .then(connection::getHierarchicalTable);
     }
 
     public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
