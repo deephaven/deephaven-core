@@ -4,10 +4,9 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
-import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -18,17 +17,14 @@ import java.util.UUID;
 public abstract class BlinkInputTable extends InputTableBase {
 
     public static BlinkInputTable of(TableSchema schema) {
-        return ImmutableBlinkInputTable.builder()
-                .schema(schema)
-                .build();
+        return ImmutableBlinkInputTable.of(schema, UUID.randomUUID());
     }
 
+    @Parameter
     public abstract TableSchema schema();
 
-    @Default
-    UUID id() {
-        return UUID.randomUUID();
-    }
+    @Parameter
+    abstract UUID id();
 
     @Override
     public final <R> R walk(InputTable.Visitor<R> visitor) {

@@ -5,6 +5,8 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.util.input.InputTableStatusListener;
+import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.util.annotations.TestUseOnly;
 
 import javax.annotation.Nullable;
@@ -170,11 +172,18 @@ public class TablePublisher {
     }
 
     /**
-     * The {@link Table#BLINK_TABLE_ATTRIBUTE blink table} with its {@link Table#getAttribute(String) attribute}
-     * {@value Table#INPUT_TABLE_ATTRIBUTE} set to an {@link io.deephaven.engine.util.input.InputTableUpdater}
-     * implementation based on {@code this}. This is primarily useful for existing code that already works with
-     * {@link io.deephaven.engine.util.input.InputTableUpdater} - new code should probably prefer to work directly with
-     * {@code this}.
+     * Creates a new {@link Table#BLINK_TABLE_ATTRIBUTE blink table} with its {@link Table#getAttribute(String)
+     * attribute} {@value Table#INPUT_TABLE_ATTRIBUTE} set to an {@link InputTableUpdater} implementation based on
+     * {@code this}. This is primarily useful for existing code that already works with {@link InputTableUpdater} - new
+     * code should prefer to work directly with {@code this}.
+     *
+     * <p>
+     * Unlike the interface suggests, the {@link InputTableUpdater} implementation does <b>not</b> block on
+     * {@link InputTableUpdater#add(Table) add}; furthermore, it does not implement
+     * {@link InputTableUpdater#addAsync(Table, InputTableStatusListener) addAsync},
+     * {@link InputTableUpdater#delete(Table) delete}, nor
+     * {@link InputTableUpdater#deleteAsync(Table, InputTableStatusListener) deletAsync}, and so it may not be
+     * applicable in all contexts.
      *
      * <p>
      * May return {@code null} if invoked more than once and the initial caller does not enforce strong reachability of
