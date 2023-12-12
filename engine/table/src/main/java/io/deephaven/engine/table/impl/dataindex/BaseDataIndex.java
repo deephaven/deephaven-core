@@ -38,6 +38,7 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
     protected static final String ROW_SET_COLUMN_NAME = "dh_row_set";
 
     @Override
+    @NotNull
     public DataIndex transform(@NotNull final DataIndexTransformer transformer) {
         return DerivedDataIndex.from(this, transformer);
     }

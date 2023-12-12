@@ -14,8 +14,7 @@ class DataIndexKeySetSingle implements DataIndexKeySet {
 
     private static class KeyHashAdapter implements KeyedObjectKey<Object, Object> {
 
-        private KeyHashAdapter() {
-        }
+        private KeyHashAdapter() {}
 
         @Override
         public Object getKey(@NotNull final Object value) {

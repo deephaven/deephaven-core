@@ -63,11 +63,13 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
     }
 
     @Override
+    @NotNull
     public Map<ColumnSource<?>, String> keyColumnMap() {
         return keyColumnMap;
     }
 
     @Override
+    @NotNull
     public String rowSetColumnName() {
         return ROW_SET_COLUMN_NAME;
     }
@@ -100,7 +102,8 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
 
                         final QueryTable renamed = (QueryTable) groupedTable.renameColumns(
                                 Collections
-                                        .singleton(Pair.of(EXPOSED_GROUP_ROW_SETS, ColumnName.of(ROW_SET_COLUMN_NAME))));
+                                        .singleton(
+                                                Pair.of(EXPOSED_GROUP_ROW_SETS, ColumnName.of(ROW_SET_COLUMN_NAME))));
 
                         return indexTableWrapper(renamed, ROW_SET_COLUMN_NAME);
                     });
@@ -109,7 +112,8 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
     }
 
     @Override
-    public @Nullable RowSetLookup rowSetLookup() {
+    @NotNull
+    public RowSetLookup rowSetLookup() {
         final ColumnSource<RowSet> rowSetColumnSource = rowSetColumn();
         return (Object key, boolean usePrev) -> {
             // Pass the object to the position lookup and get the resulting position.
@@ -128,7 +132,8 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
     }
 
     @Override
-    public @NotNull PositionLookup positionLookup() {
+    @NotNull
+    public PositionLookup positionLookup() {
         return (Object key, boolean usePrev) -> {
             // Pass the object to the aggregation lookup, then return the resulting position. This index will be
             // correct in prev or current space because of the aggregation's hash-based lookup.

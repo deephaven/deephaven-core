@@ -24,24 +24,26 @@ import java.util.*;
 import java.util.function.Function;
 
 public class DerivedDataIndex extends BaseDataIndex {
-    private static final int CHUNK_SIZE = 2048;
-    @NotNull
-    final DataIndex parentIndex;
-    @NotNull
-    final DataIndexTransformer transformer;
 
-    final Map<ColumnSource<?>, String> columnNameMap;
+    public static DerivedDataIndex from(@NotNull final DataIndex index,
+                                        @NotNull final DataIndexTransformer transformer) {
+        return new DerivedDataIndex(index, transformer);
+    }
+
+    private static final int CHUNK_SIZE = 2048;
+
+    @NotNull
+    private final DataIndex parentIndex;
+    @NotNull
+    private final DataIndexTransformer transformer;
+
+    private final Map<ColumnSource<?>, String> columnNameMap;
 
     private SoftReference<Table> cachedTable = new SoftReference<>(null);
     private long cachedTableStep = -1;
 
     private SoftReference<PositionLookup> cachedPositionLookup = new SoftReference<>(null);
     private long cachedPositionLookupStep = -1;
-
-    public static DerivedDataIndex from(@NotNull final DataIndex index,
-            @NotNull final DataIndexTransformer transformer) {
-        return new DerivedDataIndex(index, transformer);
-    }
 
     private DerivedDataIndex(@NotNull final DataIndex parentIndex,
             @NotNull final DataIndexTransformer transformer) {
@@ -72,17 +74,20 @@ public class DerivedDataIndex extends BaseDataIndex {
     }
 
     @Override
+    @NotNull
     public Map<ColumnSource<?>, String> keyColumnMap() {
         return columnNameMap != null ? columnNameMap : parentIndex.keyColumnMap();
     }
 
     @Override
+    @NotNull
     public String rowSetColumnName() {
         return parentIndex.rowSetColumnName();
     }
 
     @Override
-    public @NotNull Table table() {
+    @NotNull
+    public Table table() {
         // Return a valid cached table if possible. If the index was computed on this cycle or is derived from a static
         // index, it remains valid. Otherwise, we need to recompute the index from its parent.
         Table cached = cachedTable.get();
@@ -115,7 +120,8 @@ public class DerivedDataIndex extends BaseDataIndex {
     }
 
     @Override
-    public @NotNull RowSetLookup rowSetLookup() {
+    @NotNull
+    public RowSetLookup rowSetLookup() {
         // Assuming the parent lookup function is fast and efficient, we will leverage the parent's function
         // and apply the mutator to the retrieved result.
         final RowSetLookup lookup = parentIndex.rowSetLookup();
@@ -133,7 +139,8 @@ public class DerivedDataIndex extends BaseDataIndex {
     }
 
     @Override
-    public @NotNull PositionLookup positionLookup() {
+    @NotNull
+    public PositionLookup positionLookup() {
         if (!mayModifyParentIndexRowSet()) {
             // We can use the parent lookup function directly because the operations being applied will not change
             // the index table row set and the key vs. position will be correct.
@@ -179,11 +186,6 @@ public class DerivedDataIndex extends BaseDataIndex {
     @Override
     public boolean isRefreshing() {
         return !staticResult() && parentIndex.isRefreshing();
-    }
-
-    @Override
-    public DataIndex transform(@NotNull final DataIndexTransformer transformer) {
-        return DerivedDataIndex.from(this, transformer);
     }
 
     /** Return true if the set of transformations may modify the parent index table row set. **/

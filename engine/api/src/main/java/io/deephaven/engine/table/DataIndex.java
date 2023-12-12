@@ -61,24 +61,29 @@ public interface DataIndex extends LivenessReferent {
     }
 
     /** Get the key column names for the index {@link #table() table}. */
+    @NotNull
     String[] keyColumnNames();
 
     /** Get a map from indexed column sources to key column names for the index {@link #table() table}. */
+    @NotNull
     Map<ColumnSource<?>, String> keyColumnMap();
 
     /** Get the output row set column name for this index. */
+    @NotNull
     String rowSetColumnName();
 
     /** Return the index table key sources in the order of the index table. **/
     @FinalDefault
     default ColumnSource<?>[] indexKeyColumns() {
-        final ColumnSource<?>[] columnSources = keyColumnMap().keySet().toArray(new ColumnSource[0]);
+        final ColumnSource<?>[] columnSources =
+                keyColumnMap().keySet().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         return indexKeyColumns(columnSources);
         // TODO-RWC: Should this be in a static helper instead of the interface?
     }
 
     /** Return the index table key sources in the relative order of the indexed sources supplied. **/
     @FinalDefault
+    @NotNull
     default ColumnSource<?>[] indexKeyColumns(@NotNull final ColumnSource<?>[] columnSources) {
         final Table indexTable = table();
         final Map<ColumnSource<?>, String> keyColumnMap = keyColumnMap();
@@ -96,6 +101,7 @@ public interface DataIndex extends LivenessReferent {
 
     /** Return the index table row set source. **/
     @FinalDefault
+    @NotNull
     default ColumnSource<RowSet> rowSetColumn() {
         return table().getColumnSource(rowSetColumnName(), RowSet.class);
     }
@@ -185,7 +191,8 @@ public interface DataIndex extends LivenessReferent {
      *
      * @return the transformed {@link DataIndex}
      */
-    DataIndex transform(final @NotNull DataIndexTransformer transformer);
+    @NotNull
+    DataIndex transform(@NotNull final DataIndexTransformer transformer);
 
     /**
      * Whether the materialized data index table is refreshing. Some transformations will force the index to become

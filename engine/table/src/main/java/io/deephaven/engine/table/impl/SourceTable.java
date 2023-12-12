@@ -8,8 +8,8 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.dataindex.RegionedPartitioningColumnDataIndex;
-import io.deephaven.engine.table.impl.dataindex.StorageBackedDataIndexImpl;
+import io.deephaven.engine.table.impl.sources.regioned.PartitioningColumnDataIndex;
+import io.deephaven.engine.table.impl.sources.regioned.MergedDataIndex;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
@@ -351,11 +351,9 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     }
 
     /*
-     * TODO-RWC:
-     * SourceTable to strongly refer to DeferredDataIndex objects, as well as manage them (if refreshing) on coalesce.
-     * SourceTable to manage its own includedLocationsTable.
-     * SourceTable destruction should also destroy includedLocationsTable and DeferredDataIndexes.
-     * Create deferred data indexes, use snapshots, etc.
+     * TODO-RWC: SourceTable to strongly refer to DeferredDataIndex objects, as well as manage them (if refreshing) on
+     * coalesce. SourceTable to manage its own includedLocationsTable. SourceTable destruction should also destroy
+     * includedLocationsTable and DeferredDataIndexes. Create deferred data indexes, use snapshots, etc.
      */
 
     private void initializePartitionDataIndexes() {
@@ -365,7 +363,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         final TableDefinition tableDefinition = getDefinition();
         for (final ColumnDefinition<?> partitioningColumnDefinition : tableDefinition.getPartitioningColumns()) {
             final ColumnSource<?> keySource = columnSourceMap.get(partitioningColumnDefinition.getName());
-            final DataIndex dataIndex = new RegionedPartitioningColumnDataIndex<>(
+            final DataIndex dataIndex = new PartitioningColumnDataIndex<>(
                     keySource,
                     partitioningColumnDefinition.getName(),
                     columnSourceManager);
@@ -388,9 +386,9 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             final ColumnSource<?>[] keySources = Arrays.stream(keyColumnNames)
                     .map(columnSourceMap::get)
                     .toArray(ColumnSource[]::new);
-            final DataIndex dataIndex = new StorageBackedDataIndexImpl(
-                    keySources,
+            final DataIndex dataIndex = new MergedDataIndex(
                     keyColumnNames,
+                    keySources,
                     columnSourceManager);
             dataIndexer.addDataIndex(dataIndex);
         }

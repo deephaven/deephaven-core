@@ -1,10 +1,9 @@
-package io.deephaven.engine.table.impl.dataindex;
+package io.deephaven.engine.table.impl.sources.regioned;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -14,27 +13,23 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.ColumnSourceManager;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.RowSetColumnSourceWrapper;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
-import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
 /**
- * DataIndex over a partitioning column of a SourceTable.
+ * DataIndex over a partitioning column of a {@link SourceTable} backed by a {@link RegionedColumnSourceManager}.
  */
 // TODO-RWC: Maybe we want the data indexes for a source table to live inside the CSM for coupling.
 // TODO-RWC: Do we need "previous" support on instantiation?
-public class RegionedPartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
+public class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
 
     private static final int KEY_NOT_FOUND = -1;
 
@@ -54,7 +49,7 @@ public class RegionedPartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex
     private final ModifiedColumnSet upstreamRowSetModified;
     private final ModifiedColumnSet downstreamRowSetModified;
 
-    public RegionedPartitioningColumnDataIndex(
+    public PartitioningColumnDataIndex(
             @NotNull final ColumnSource<KEY_TYPE> keySource,
             @NotNull final String keyColumnName,
             @NotNull final ColumnSourceManager columnSourceManager) {
@@ -68,7 +63,7 @@ public class RegionedPartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex
                 locationTable.size(),
                 keySource.getType(),
                 keySource.getComponentType());
-        indexRowSetSource = new ObjectArraySource<>(RowSet.class, null);
+        indexRowSetSource = new ObjectArraySource<>(RowSet.class);
         indexTable = new QueryTable(RowSetFactory.empty().toTracking(), Map.of(
                 keyColumnName, indexKeySource,
                 ROW_SET_COLUMN_NAME, RowSetColumnSourceWrapper.from(indexRowSetSource)));
@@ -89,7 +84,6 @@ public class RegionedPartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex
         }
 
         if (locationTable.isRefreshing()) {
-            indexTable.setRefreshing(true);
             // No need to track previous values; we mutate the index table's RowSets in-place, and we never move a key.
             upstreamLocationModified = locationTable.newModifiedColumnSet(columnSourceManager.locationColumnName());
             upstreamRowSetModified = locationTable.newModifiedColumnSet(columnSourceManager.rowSetColumnName());
@@ -118,13 +112,13 @@ public class RegionedPartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex
             return;
         }
         if (upstream.removed().isNonempty()) {
-            throw new UnsupportedOperationException("Removed rows are not currently supported");
+            throw new UnsupportedOperationException("Removed locations are not currently supported");
         }
         if (upstream.shifted().nonempty()) {
-            throw new UnsupportedOperationException("Shifted rows are not currently supported");
+            throw new UnsupportedOperationException("Shifted locations are not currently supported");
         }
         if (upstream.modified().isNonempty() && upstream.modifiedColumnSet().containsAny(upstreamLocationModified)) {
-            throw new UnsupportedOperationException("Modified keys are not currently supported");
+            throw new UnsupportedOperationException("Modified locations are not currently supported");
         }
         Assert.assertion(initializing || isRefreshing(), "initializing || isRefreshing()");
 
@@ -221,16 +215,19 @@ public class RegionedPartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex
     }
 
     @Override
+    @NotNull
     public String[] keyColumnNames() {
         return new String[] {keyColumnName};
     }
 
     @Override
+    @NotNull
     public Map<ColumnSource<?>, String> keyColumnMap() {
         return Map.of(keySource, keyColumnName);
     }
 
     @Override
+    @NotNull
     public String rowSetColumnName() {
         return ROW_SET_COLUMN_NAME;
     }
