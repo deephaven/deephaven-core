@@ -17,6 +17,7 @@ import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
@@ -94,6 +95,9 @@ public class JsWidgetExportedObject implements ServerObject {
     @JsMethod
     public Promise<JsWidgetExportedObject> reexport() {
         Ticket reexportedTicket = connection.getConfig().newTicket();
+
+        // Future optimization - we could "race" these by running the export in the background, to avoid
+        // an extra round trip.
         return Callbacks.grpcUnaryPromise(c -> {
             ExportRequest req = new ExportRequest();
             req.setSourceId(ticket.getTicket());
@@ -115,7 +119,10 @@ public class JsWidgetExportedObject implements ServerObject {
      */
     @JsMethod
     public Promise<?> fetch() {
-        return fetched.get();
+        if (getType() != null) {
+            return fetched.get();
+        }
+        return Promise.reject("Can't fetch an object with no type (i.e. no server plugin implementation)");
     }
 
     /**
@@ -126,6 +133,8 @@ public class JsWidgetExportedObject implements ServerObject {
     public void close() {
         if (!fetched.isAvailable()) {
             connection.releaseTicket(ticket.getTicket());
+        } else {
+            JsLog.warn("Cannot close, already fetched. Instead, close the fetched object.");
         }
     }
 }

@@ -74,7 +74,7 @@ import java.util.function.Supplier;
  *
  * Handling server objects in messages also has more than one potential pattern that can be used:
  * <ul>
- * <li>One object per message - the message clearly is about that message, no other details required.</li>
+ * <li>One object per message - the message clearly is about that object, no other details required.</li>
  * <li>Objects indexed within their message - as each message comes with a list of objects, those objects can be
  * referenced within the payload by index. This is roughly how {@link io.deephaven.web.client.api.widget.plot.JsFigure}
  * behaves, where the figure descriptor schema includes an index for each created series, describing which table should
