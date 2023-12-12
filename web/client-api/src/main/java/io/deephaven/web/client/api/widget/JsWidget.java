@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.widget;
 
 import com.vertispan.tsdefs.annotations.TsName;
-import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.ArrayBuffer;

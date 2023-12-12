@@ -16,7 +16,6 @@ import io.deephaven.web.client.api.JsLazy;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
-import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsMethod;
