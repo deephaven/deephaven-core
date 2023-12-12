@@ -5,6 +5,7 @@ package io.deephaven.web.client.api.widget;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
@@ -19,10 +20,13 @@ import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 
 /**
- * Represents a server-side object that may not yet have been fetched by the client.
+ * Represents a server-side object that may not yet have been fetched by the client. When this object will no longer be
+ * used, if {@link #fetch()} is not called on this object, then {@link #close()} must be to ensure server-side resources
+ * are correctly freed.
  */
 @TsInterface
 @TsName(namespace = "dh", name = "WidgetExportedObject")
@@ -58,8 +62,19 @@ public class JsWidgetExportedObject implements ServerObject {
         });
     }
 
+    /**
+     * Returns the type of this export, typically one of {@link JsVariableType}, but may also include plugin types. If
+     * null, this object cannot be fetched, but can be passed to the server, such as via
+     * {@link JsWidget#sendMessage(JsWidget.MessageUnion, JsArray)}.
+     *
+     * @return the string type of this server-side object, or null.
+     */
+    @JsNullable
     @JsProperty
     public String getType() {
+        if (ticket.getType().isEmpty()) {
+            return null;
+        }
         return ticket.getType();
     }
 
@@ -92,17 +107,6 @@ public class JsWidgetExportedObject implements ServerObject {
             return Promise.resolve(new JsWidgetExportedObject(connection, typedTicket));
         });
     }
-
-
-    // Could also return Promise<JsWidgetExportedObject> - perhaps if we make it have a `boolean refetch` arg?
-    // /**
-    // * Returns a copy of this widget, so that any later {@link #fetch()} will always return a fresh instance.
-    // * @return
-    // */
-    // @JsMethod
-    // public JsWidgetExportedObject copy() {
-    // return new JsWidgetExportedObject(connection, ticket);
-    // }
 
     /**
      * Returns a promise that will fetch the object represented by this reference. Multiple calls to this will return

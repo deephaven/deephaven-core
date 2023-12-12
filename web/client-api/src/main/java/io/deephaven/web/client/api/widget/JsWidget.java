@@ -218,6 +218,10 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
         return new String(Js.uncheckedCast(response.getData().getPayload_asU8()), StandardCharsets.UTF_8);
     }
 
+    /**
+     * @return the exported objects sent in the initial message from the server. The client is responsible for closing
+     *         them when finished using them.
+     */
     @Override
     @JsProperty
     public JsWidgetExportedObject[] getExportedObjects() {
