@@ -37,12 +37,12 @@ public class Calendars {
     // Get the initialized map of calendars.
     // Initilization is deferred to so that errors are easier for users to find.
     private static Map<String, BusinessCalendar> getMap() {
-        if(calMap != null) {
+        if (calMap != null) {
             return calMap;
         }
 
         synchronized (Calendars.class) {
-            if(calMap != null) {
+            if (calMap != null) {
                 return calMap;
             }
 
