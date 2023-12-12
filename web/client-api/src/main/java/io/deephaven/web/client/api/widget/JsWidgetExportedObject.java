@@ -53,8 +53,7 @@ public class JsWidgetExportedObject implements ServerObject {
                     return Promise.resolve(table);
                 });
             } else {
-                return this.connection.getObject(
-                        new JsVariableDefinition(ticket.getType(), null, ticket.getTicket().getTicket_asB64(), null));
+                return this.connection.getObject(ticket);
             }
         });
     }
@@ -75,6 +74,7 @@ public class JsWidgetExportedObject implements ServerObject {
     /**
      * Exports another copy of this reference, allowing it to be fetched separately. Results in rejection if the ticket
      * was already closed (either by calling {@link #close()} or closing the object returned from {@link #fetch()}).
+     *
      * @return a promise returning a reexported copy of this object, still referencing the same server-side object.
      */
     @JsMethod
