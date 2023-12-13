@@ -104,7 +104,7 @@ def calendar_name() -> str:
 def calendar(name: Optional[str] = None) -> BusinessCalendar:
     """ Returns the calendar with the given name.
 
-    The returned calendar is a 'io.deephaven.time.calendar.BusinessCalendar' Java object that can be used in Python.
+    The returned calendar is an 'io.deephaven.time.calendar.BusinessCalendar' Java object that can be used in Python.
     For details on the available methods, see https://deephaven.io/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html.
     These methods must be called with string arguments or with Java date-time objects.  To convert Python date-time
     objects to Java date-time objects, use the conversion functions in the 'deephaven.time' module.
