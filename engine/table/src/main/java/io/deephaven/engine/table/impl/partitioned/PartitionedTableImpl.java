@@ -297,7 +297,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             // Perform the transformation
             final Table resultTable = prepared.update(List.of(new TableTransformationColumn(
                     constituentColumnName,
-                    maybeReplaceExecContext(executionContext),
+                    disableRecursiveParallelOperationInitialization(executionContext),
                     prepared.isRefreshing() ? transformer : assertResultsStatic(transformer))));
 
             // Make sure we have a valid result constituent definition
@@ -325,7 +325,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
      * {@link OperationInitializer#canParallelize()}, or must be a different instance than the current context's
      * OperationInitializer.
      */
-    private static ExecutionContext maybeReplaceExecContext(ExecutionContext provided) {
+    private static ExecutionContext disableRecursiveParallelOperationInitialization(ExecutionContext provided) {
         if (provided == null) {
             return null;
         }
@@ -336,6 +336,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         if (current.getInitializer() != provided.getInitializer()) {
             return provided;
         }
+
+        // The current operation initializer isn't safe to submit more tasks that we will block on, replace
+        // with an instance that will never attempt to push work to another thread
         return provided.withOperationInitializer(OperationInitializer.NON_PARALLELIZABLE);
     }
 
@@ -374,7 +377,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     .update(List.of(new BiTableTransformationColumn(
                             constituentColumnName,
                             RHS_CONSTITUENT,
-                            maybeReplaceExecContext(executionContext),
+                            disableRecursiveParallelOperationInitialization(executionContext),
                             prepared.isRefreshing() ? transformer : assertResultsStatic(transformer))))
                     .dropColumns(RHS_CONSTITUENT);
 
