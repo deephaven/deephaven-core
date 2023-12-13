@@ -10,6 +10,7 @@ import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.util.annotations.TestUseOnly;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -174,16 +175,11 @@ public class TablePublisher {
     /**
      * Creates a new {@link Table#BLINK_TABLE_ATTRIBUTE blink table} with its {@link Table#getAttribute(String)
      * attribute} {@value Table#INPUT_TABLE_ATTRIBUTE} set to an {@link InputTableUpdater} implementation based on
-     * {@code this}. This is primarily useful for existing code that already works with {@link InputTableUpdater} - new
-     * code should prefer to work directly with {@code this}.
-     *
-     * <p>
-     * Unlike the interface suggests, the {@link InputTableUpdater} implementation does <b>not</b> block on
-     * {@link InputTableUpdater#add(Table) add}; furthermore, it does not implement
-     * {@link InputTableUpdater#addAsync(Table, InputTableStatusListener) addAsync},
-     * {@link InputTableUpdater#delete(Table) delete}, nor
-     * {@link InputTableUpdater#deleteAsync(Table, InputTableStatusListener) deletAsync}, and so it may not be
-     * applicable in all contexts.
+     * {@code this}. The implementation's definition of "completed" with respect to {@link InputTableUpdater#add(Table)}
+     * and {@link InputTableUpdater#addAsync(Table, InputTableStatusListener)} matches the semantics provided by
+     * {@link #add(Table)} - that is, "completed" means that a snapshot of {@code newData} has been taken and handed
+     * off. The implementation does not implement {@link InputTableUpdater#delete(Table)} nor
+     * {@link InputTableUpdater#deleteAsync(Table, InputTableStatusListener)}.
      *
      * <p>
      * May return {@code null} if invoked more than once and the initial caller does not enforce strong reachability of
