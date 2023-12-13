@@ -44,6 +44,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -93,6 +96,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         }
         scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
+        registerJavaExecutor();
         publishInitial();
         /*
          * And now the user-defined initialization scripts, if any.
@@ -122,7 +126,17 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         }
         scriptFinder = null;
 
+        registerJavaExecutor();
         publishInitial();
+    }
+
+    private void registerJavaExecutor() {
+        // TODO (deephaven-core#4040) Temporary exec service until we have cleaner startup wiring
+        try (final PythonDeephavenThreadsModule module = PyModule.importModule("deephaven.threads").createProxy(PythonDeephavenThreadsModule.class)) {
+            ExecutorService executorService = Executors.newFixedThreadPool(1);
+            module._register_named_java_executor("serial", executorService::submit);
+            module._register_named_java_executor("concurrent", executorService::submit);
+        }
     }
 
     @Override
@@ -326,5 +340,10 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         Object javaify(PyObject object);
 
         void close();
+    }
+
+    interface PythonDeephavenThreadsModule extends Closeable {
+        void close();
+        void _register_named_java_executor(String executorName, Consumer<Runnable> execute);
     }
 }
