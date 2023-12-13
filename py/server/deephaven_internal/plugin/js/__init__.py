@@ -10,11 +10,8 @@ _JPath = jpy.get_type("java.nio.file.Path")
 
 
 def to_j_js_plugin(js_plugin: JsPlugin) -> jpy.JType:
-    with js_plugin.path() as tmp_path:
-        path = tmp_path
-    if not path.exists():
-        raise NotImplementedError(f"The Deephaven JsPlugin server-side currently only supports normal filesystem resources. {js_plugin}")
-    main_path = root_path.relativize(root_path.resolve(js_plugin.main))
+    j_path = _JPath.of(str(js_plugin.path))
+    main_path = j_path.relativize(j_path.resolve(js_plugin.main))
     builder = _JJsPlugin.builder()
     builder.name(js_plugin.name)
     builder.version(js_plugin.version)

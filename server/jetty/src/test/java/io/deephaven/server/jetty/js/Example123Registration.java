@@ -32,36 +32,36 @@ public final class Example123Registration implements Registration {
     }
 
     private static JsPlugin example1() throws URISyntaxException {
-        final Path resourceRoot = Path.of(Sentinel.class.getResource("examples/@deephaven_test/example1").toURI());
-        final Path main = resourceRoot.relativize(resourceRoot.resolve("dist/index.js"));
+        final Path resourcePath = Path.of(Sentinel.class.getResource("examples/@deephaven_test/example1").toURI());
+        final Path main = resourcePath.relativize(resourcePath.resolve("dist/index.js"));
         return JsPlugin.builder()
                 .name("@deephaven_test/example1")
                 .version("0.1.0")
                 .main(main)
-                .rootPath(resourceRoot)
+                .path(resourcePath)
                 .build();
     }
 
     private static JsPlugin example2() throws URISyntaxException {
-        final Path resourceRoot = Path.of(Sentinel.class.getResource("examples/@deephaven_test/example2").toURI());
-        final Path main = resourceRoot.relativize(resourceRoot.resolve("dist/index.js"));
+        final Path resourcePath = Path.of(Sentinel.class.getResource("examples/@deephaven_test/example2").toURI());
+        final Path main = resourcePath.relativize(resourcePath.resolve("dist/index.js"));
         return JsPlugin.builder()
                 .name("@deephaven_test/example2")
                 .version("0.2.0")
                 .main(main)
-                .rootPath(resourceRoot)
+                .path(resourcePath)
                 .paths(Paths.ofPrefixes(main))
                 .build();
     }
 
     private static JsPlugin example3() throws URISyntaxException {
-        final Path resourceRoot = Path.of(Sentinel.class.getResource("examples/@deephaven_test/example3").toURI());
-        final Path main = resourceRoot.relativize(resourceRoot.resolve("index.js"));
+        final Path resourcePath = Path.of(Sentinel.class.getResource("examples/@deephaven_test/example3").toURI());
+        final Path main = resourcePath.relativize(resourcePath.resolve("index.js"));
         return JsPlugin.builder()
                 .name("@deephaven_test/example3")
                 .version("0.3.0")
                 .main(main)
-                .rootPath(resourceRoot)
+                .path(resourcePath)
                 .build();
     }
 }

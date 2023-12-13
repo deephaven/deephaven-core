@@ -63,7 +63,7 @@ class JsPluginFromNpmPackage {
                 .name(packageJson.name())
                 .version(packageJson.version())
                 .main(main)
-                .rootPath(packageRoot)
+                .path(packageRoot)
                 .paths(paths);
         return builder.build();
     }
