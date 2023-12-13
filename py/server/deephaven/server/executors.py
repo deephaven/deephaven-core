@@ -1,0 +1,56 @@
+#
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+#
+"""
+Support for running operations on JVM server threads, so that they can be given work from python. Initially, there
+are two executors, "serial" and "concurrent". Any task that will take an exclusive UGP lock should use the serial
+executor, otherwise the concurrent executor should be used. In the future there may be a "fast" executor, for use
+when there is no chance of using either lock.
+"""
+
+from typing import Callable, Dict, List
+import jpy
+from deephaven.jcompat import j_runnable
+
+
+_executors: Dict[str, Callable[[Callable[[], None]], None]] = {}
+
+
+def has_named_executor(executor_name: str) -> bool:
+    """
+    Returns True if the named executor exists and can have tasks submitted to it.
+    """
+    return executor_name in executor_names()
+
+
+def executor_names() -> List[str]:
+    """
+    Returns: the List of known executor names
+    """
+    return list(_executors.keys())
+
+
+def submit_task(executor_name: str, task: Callable[[], None]) -> None:
+    """
+    Submits a task to run on a named executor. If no such executor exists, raises KeyError.
+
+    Typically, tasks should not block on other threads. Ensure tasks never block on other tasks submitted to the same executor.
+
+    Args:
+        executor_name: the name of the executor to submit the task to
+        task: the function to run on the named executor
+
+    Raises: KeyError if the executor name
+    """
+    _executors[executor_name](task)
+
+
+def _register_named_java_executor(executor_name: str, java_executor: jpy.JType) -> None:
+    """
+    Provides a Java executor for user code to submit tasks to.
+
+    Args:
+        executor_name: the name of the executor to register
+        java_executor: a Java Consumer<Runnable> instance
+    """
+    _executors[executor_name] = lambda task: java_executor.accept(j_runnable(task))

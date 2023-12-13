@@ -132,7 +132,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     private void registerJavaExecutor() {
         // TODO (deephaven-core#4040) Temporary exec service until we have cleaner startup wiring
-        try (final PythonDeephavenThreadsModule module = PyModule.importModule("deephaven.threads").createProxy(PythonDeephavenThreadsModule.class)) {
+        try (PyModule pyModule = PyModule.importModule("deephaven.server.executors");
+             final PythonDeephavenThreadsModule module = pyModule.createProxy(PythonDeephavenThreadsModule.class)) {
             ExecutorService executorService = Executors.newFixedThreadPool(1);
             module._register_named_java_executor("serial", executorService::submit);
             module._register_named_java_executor("concurrent", executorService::submit);
