@@ -487,6 +487,12 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         }
 
         @Override
+        public boolean completeExceptionally(Throwable ex) {
+            maybeRelease();
+            return super.completeExceptionally(ex);
+        }
+
+        @Override
         public Table get(final long timeout, @NotNull final TimeUnit unit)
                 throws InterruptedException, ExecutionException, TimeoutException {
             try {
@@ -554,6 +560,12 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 return true;
             }
             return false;
+        }
+
+        @Override
+        public boolean completeExceptionally(Throwable ex) {
+            maybeRelease();
+            return super.completeExceptionally(ex);
         }
 
         @Override

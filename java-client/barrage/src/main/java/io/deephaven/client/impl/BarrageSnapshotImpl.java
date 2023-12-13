@@ -389,6 +389,12 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         }
 
         @Override
+        public boolean completeExceptionally(Throwable ex) {
+            maybeRelease();
+            return super.completeExceptionally(ex);
+        }
+
+        @Override
         public Table get(final long timeout, @NotNull final TimeUnit unit)
                 throws InterruptedException, ExecutionException, TimeoutException {
             try {
