@@ -8,10 +8,10 @@ on:
 
 jobs:
   makedirs:
-    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-22.04
     steps:
       - name: Make Directories
+        if: ${{ github.event_name == 'push' }}
         run: |
           mkdir -p tmp-deephaven-core-v2/${{ github.ref_name }}/
           cd tmp-deephaven-core-v2/${{ github.ref_name }}/
@@ -20,6 +20,7 @@ jobs:
           mkdir -p javascript python cpp-examples cpp r
           
       - name: Deploy Directories
+        if: ${{ github.event_name == 'push' }}
         uses: burnett01/rsync-deployments@5.2
         with:
           switches: -rlptDvz
