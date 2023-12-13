@@ -10,7 +10,6 @@ import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.util.annotations.TestUseOnly;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
