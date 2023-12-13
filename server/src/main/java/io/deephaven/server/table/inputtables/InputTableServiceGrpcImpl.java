@@ -10,6 +10,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.util.input.InputTableStatusListener;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -96,13 +97,18 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         }
 
                         // actually add the tables contents
-                        try {
-                            inputTableUpdater.add(tableToAdd);
-                            GrpcUtil.safelyComplete(responseObserver, AddTableResponse.getDefaultInstance());
-                        } catch (IOException ioException) {
-                            throw Exceptions.statusRuntimeException(Code.DATA_LOSS,
-                                    "Error adding table to input table");
-                        }
+                        inputTableUpdater.addAsync(tableToAdd, new InputTableStatusListener() {
+                            @Override
+                            public void onSuccess() {
+                                GrpcUtil.safelyComplete(responseObserver, AddTableResponse.getDefaultInstance());
+                            }
+
+                            @Override
+                            public void onError(Throwable t) {
+                                GrpcUtil.safelyError(responseObserver, Exceptions.statusRuntimeException(Code.DATA_LOSS,
+                                        "Error adding table to input table"));
+                            }
+                        });
                     });
         }
     }
@@ -157,13 +163,18 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         }
 
                         // actually delete the table's contents
-                        try {
-                            inputTableUpdater.delete(tableToRemove);
-                            GrpcUtil.safelyComplete(responseObserver, DeleteTableResponse.getDefaultInstance());
-                        } catch (IOException ioException) {
-                            throw Exceptions.statusRuntimeException(Code.DATA_LOSS,
-                                    "Error deleting table from inputtable");
-                        }
+                        inputTableUpdater.deleteAsync(tableToRemove, new InputTableStatusListener() {
+                            @Override
+                            public void onSuccess() {
+                                GrpcUtil.safelyComplete(responseObserver, DeleteTableResponse.getDefaultInstance());
+                            }
+
+                            @Override
+                            public void onError(Throwable t) {
+                                GrpcUtil.safelyError(responseObserver, Exceptions.statusRuntimeException(Code.DATA_LOSS,
+                                        "Error deleting table from inputtable"));
+                            }
+                        });
                     });
         }
     }

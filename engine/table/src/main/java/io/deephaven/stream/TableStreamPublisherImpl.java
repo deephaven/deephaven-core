@@ -113,14 +113,21 @@ class TableStreamPublisherImpl implements StreamPublisher {
         }
 
         @Override
+        public void addAsync(Table newData, InputTableStatusListener listener) {
+            try {
+                TableStreamPublisherImpl.this.add(newData);
+            } catch (Throwable t) {
+                listener.onError(t);
+                return;
+            }
+            listener.onSuccess();
+        }
+
+        @Override
         public List<String> getKeyNames() {
             return Collections.emptyList();
         }
 
-        @Override
-        public void addAsync(Table newData, InputTableStatusListener listener) {
-            throw new UnsupportedOperationException("Table does not support async add");
-        }
     }
 
     private class FillChunks implements SnapshotFunction {
