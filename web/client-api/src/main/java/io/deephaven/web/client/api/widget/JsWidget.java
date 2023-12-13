@@ -164,7 +164,6 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
                 }
                 fireEvent(EVENT_CLOSE);
                 closeStream();
-                connection.releaseTicket(getTicket());
             });
             messageStream.onEnd(status -> {
                 closeStream();
