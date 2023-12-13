@@ -15,7 +15,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.*;
@@ -225,7 +224,7 @@ public class SortHelpers {
             final SortingOrder[] order,
             final ColumnSource<Comparable<?>>[] originalColumnsToSortBy,
             final ColumnSource<Comparable<?>>[] columnsToSortBy,
-            final DataIndex dataIndex,
+            final PrimaryDataIndex dataIndex,
             final RowSet rowSetToSort,
             final boolean usePrev) {
         return getSortedKeys(order, originalColumnsToSortBy, columnsToSortBy, dataIndex, rowSetToSort, usePrev,
@@ -240,7 +239,7 @@ public class SortHelpers {
             final SortingOrder[] order,
             final ColumnSource<Comparable<?>>[] originalColumnsToSortBy,
             final ColumnSource<Comparable<?>>[] columnsToSortBy,
-            final DataIndex dataIndex,
+            final PrimaryDataIndex dataIndex,
             final RowSet rowSetToSort,
             final boolean usePrev,
             final boolean allowSymbolTable) {
@@ -516,17 +515,15 @@ public class SortHelpers {
     }
 
     private static SortMapping getSortMappingIndexed(SortingOrder order[], ColumnSource<Comparable<?>>[] columnSources,
-            DataIndex dataIndex, RowSet rowSet, boolean usePrev) {
+            PrimaryDataIndex dataIndex, RowSet rowSet, boolean usePrev) {
         Assert.neqNull(dataIndex, "dataIndex");
 
         final Map<ColumnSource<?>, String> map = dataIndex.keyColumnMap();
         final String[] keyColumnNames = Arrays.stream(columnSources).map(col -> map.get(col)).toArray(String[]::new);
         final String rowSetColumnName = dataIndex.rowSetColumnName();
 
-        final Table indexTable = usePrev ? ((BaseDataIndex) dataIndex).prevTable() : dataIndex.table();
-
         // Sort the index table incrementally by the reverse column order.
-        Table sortedIndexTable = indexTable;
+        Table sortedIndexTable = dataIndex.table();
         for (int idx = order.length - 1; idx >= 0; idx--) {
             sortedIndexTable = order[idx] == SortingOrder.Ascending
                     ? sortedIndexTable.sort(keyColumnNames[idx])
@@ -576,7 +573,7 @@ public class SortHelpers {
             final SortingOrder[] order,
             final ColumnSource<Comparable<?>>[] originalColumnSources,
             final ColumnSource<Comparable<?>>[] columnSources,
-            final DataIndex dataIndex,
+            final PrimaryDataIndex dataIndex,
             final RowSet rowSet,
             boolean usePrev) {
         Assert.gt(columnSources.length, "columnSources.length", 1);
@@ -594,7 +591,7 @@ public class SortHelpers {
         if (dataIndex != null
                 && dataIndex.keyColumnNames().length == 1
                 && dataIndex.keyColumnMap().containsKey(originalColumnSources[0])) {
-            final Table indexTable = usePrev ? ((BaseDataIndex) dataIndex).prevTable() : dataIndex.table();
+            final Table indexTable = dataIndex.table();
 
             final String firstColumnName = dataIndex.keyColumnNames()[0];
 

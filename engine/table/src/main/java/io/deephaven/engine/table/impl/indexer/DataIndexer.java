@@ -7,7 +7,7 @@ import com.google.common.collect.Sets;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.PrimaryDataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
@@ -48,12 +48,12 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
         /** The index at this level. */
         @Nullable
-        private volatile DataIndex localIndex; // TODO-RWC: Weak reference
+        private volatile PrimaryDataIndex localIndex; // TODO-RWC: Weak reference
 
         /** The sub-indexes below this level. */
         private final WeakHashMap<ColumnSource<?>, DataIndexCache> descendantCaches;
 
-        DataIndexCache(@Nullable final DataIndex localIndex) {
+        DataIndexCache(@Nullable final PrimaryDataIndex localIndex) {
             this.localIndex = localIndex;
             this.descendantCaches = new WeakHashMap<>();
         }
@@ -87,7 +87,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (localRoot) {
-            final DataIndex dataIndex = findIndex(localRoot, keyColumns);
+            final PrimaryDataIndex dataIndex = findIndex(localRoot, keyColumns);
             return dataIndex != null && ((BaseDataIndex) dataIndex).validate();
         }
     }
@@ -101,23 +101,23 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     /**
-     * Return a DataIndex for the given key columns, or null if no such index exists.
+     * Return a PrimaryDataIndex for the given key columns, or null if no such index exists.
      *
-     * @param keyColumns the column sources for which to retrieve a DataIndex
-     * @return the DataIndex, or null if one does not exist
+     * @param keyColumns the column sources for which to retrieve a PrimaryDataIndex
+     * @return the PrimaryDataIndex, or null if one does not exist
      */
-    public DataIndex getDataIndex(final ColumnSource<?>... keyColumns) {
+    public PrimaryDataIndex getDataIndex(final ColumnSource<?>... keyColumns) {
         return getDataIndexInternal(Arrays.asList(keyColumns));
     }
 
     /**
-     * Return a DataIndex for the given key columns, or null if no such index exists.
+     * Return a PrimaryDataIndex for the given key columns, or null if no such index exists.
      *
      * @param sourceTable the table to index (if a new index is created by this operation)
-     * @param keyColumnNames the column sources for which to retrieve a DataIndex
-     * @return the DataIndex, or null if one does not exist
+     * @param keyColumnNames the column sources for which to retrieve a PrimaryDataIndex
+     * @return the PrimaryDataIndex, or null if one does not exist
      */
-    public DataIndex getDataIndex(final Table sourceTable, final String... keyColumnNames) {
+    public PrimaryDataIndex getDataIndex(final Table sourceTable, final String... keyColumnNames) {
         final Map<String, ? extends ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
         // Verify all the key columns belong to the source table.
         final Collection<String> missingKeys = Arrays.stream(keyColumnNames)
@@ -135,7 +135,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     @Nullable
-    private DataIndex getDataIndexInternal(final Collection<ColumnSource<?>> keyColumns) {
+    private PrimaryDataIndex getDataIndexInternal(final Collection<ColumnSource<?>> keyColumns) {
         // Return null if there are no indexes.
         final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = root;
         if (keyColumns.isEmpty() || localRoot == EMPTY_ROOT) {
@@ -145,7 +145,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (localRoot) {
             // Only return a valid index.
-            final DataIndex dataIndex = findIndex(localRoot, keyColumns);
+            final PrimaryDataIndex dataIndex = findIndex(localRoot, keyColumns);
             if (dataIndex == null || !((BaseDataIndex) dataIndex).validate()) {
                 return null;
             }
@@ -156,9 +156,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     /**
-     * Return a {@link DataIndex} for a strict subset of the given key columns, or null if no such index exists. Will
-     * choose the data index that results in the largest index table, following the assumption that the largest index
-     * table will divide the source table into the most specific partitions.
+     * Return a {@link PrimaryDataIndex} for a strict subset of the given key columns, or null if no such index exists.
+     * Will choose the data index that results in the largest index table, following the assumption that the largest
+     * index table will divide the source table into the most specific partitions.
      *
      * @param sourceTable The table that is indexed
      * @param keyColumnNames The column names to use for the index
@@ -166,7 +166,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @return The optimal partial index, or null if no such index exists
      */
     @Nullable
-    public DataIndex getOptimalPartialIndex(final Table sourceTable, final String... keyColumnNames) {
+    public PrimaryDataIndex getOptimalPartialIndex(final Table sourceTable, final String... keyColumnNames) {
         final Map<String, ? extends ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
         // Verify all the key columns belong to the source table.
         final Collection<String> missingKeys = Arrays.stream(keyColumnNames)
@@ -184,15 +184,15 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     /**
-     * Return a {@link DataIndex} for a strict subset of the given key columns, or null if no such index exists. Will
-     * choose the data index that results in the largest index table, following the assumption that the largest index
-     * table will divide the source table into the most specific partitions.
+     * Return a {@link PrimaryDataIndex} for a strict subset of the given key columns, or null if no such index exists.
+     * Will choose the data index that results in the largest index table, following the assumption that the largest
+     * index table will divide the source table into the most specific partitions.
      *
      * @param keyColumns The column sources to consider for the index
      * @return The optimal partial index, or null if no such index exists
      */
     @Nullable
-    public DataIndex getOptimalPartialIndex(final Collection<ColumnSource<?>> keyColumns) {
+    public PrimaryDataIndex getOptimalPartialIndex(final Collection<ColumnSource<?>> keyColumns) {
         // Return null if there are no indexes.
         final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = root;
         if (keyColumns.isEmpty() || localRoot == EMPTY_ROOT) {
@@ -203,7 +203,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         final Set<ColumnSource<?>> keyColumnSet = new HashSet<>(keyColumns);
         Set<Set<ColumnSource<?>>> keyColumnPowerSet = Sets.powerSet(keyColumnSet);
 
-        DataIndex optimalIndex = null;
+        PrimaryDataIndex optimalIndex = null;
 
         for (Set<ColumnSource<?>> keyColumnSubset : keyColumnPowerSet) {
             if (keyColumnSubset.isEmpty() || keyColumnSubset.size() == keyColumnSet.size()) {
@@ -213,7 +213,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
             // noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (localRoot) {
-                final DataIndex partialIndex = findIndex(localRoot, keyColumnSubset);
+                final PrimaryDataIndex partialIndex = findIndex(localRoot, keyColumnSubset);
                 // The winner is index with the most rows.
                 if (optimalIndex == null ||
                         (partialIndex != null && partialIndex.table().size() > optimalIndex.table().size())) {
@@ -226,7 +226,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     /**
-     * Create a refreshing DataIndex for the given table and key columns.
+     * Create a refreshing PrimaryDataIndex for the given table and key columns.
      *
      * @param sourceTable the table to index
      * @param keyColumnNames the column sources to include in the index
@@ -250,7 +250,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
         // Create an index, add it to the map and return it.
         QueryTable coalesced = (QueryTable) sourceTable.coalesce();
-        final DataIndex index = new TableBackedDataIndexImpl(coalesced, keyColumnNames);
+        final PrimaryDataIndex index = new TableBackedDataIndexImpl(coalesced, keyColumnNames);
 
         final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = ensureRoot();
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
@@ -260,11 +260,11 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     /**
-     * Add a {@link DataIndex index} to the {@link DataIndexer}.
+     * Add a {@link PrimaryDataIndex index} to the {@link DataIndexer}.
      *
      * @param index the index to add
      */
-    public void addDataIndex(final DataIndex index) {
+    public void addDataIndex(final PrimaryDataIndex index) {
         // TODO-RWC/LAB: We need to prevent "snapshot" derived data indexes from being added to the data indexer, here
         // and in create.
         final ColumnSource<?>[] keyColumns = index.keyColumnMap().keySet().toArray(ColumnSource<?>[]::new);
@@ -277,8 +277,8 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         }
     }
 
-    public List<DataIndex> dataIndexes() {
-        final List<DataIndex> result = new ArrayList<>();
+    public List<PrimaryDataIndex> dataIndexes() {
+        final List<PrimaryDataIndex> result = new ArrayList<>();
 
         if (root != null) {
             addIndexesToList(root, result);
@@ -288,7 +288,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     private static void addIndexesToList(final WeakHashMap<ColumnSource<?>, DataIndexCache> dataIndexes,
-            final List<DataIndex> resultList) {
+            final List<PrimaryDataIndex> resultList) {
         // Recurse through all the sub-indexes and collect DataIndexes.
         for (final Map.Entry<ColumnSource<?>, DataIndexCache> entry : dataIndexes.entrySet()) {
             final DataIndexCache subCache = entry.getValue();
@@ -303,7 +303,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     /** Check a specified map for an index with these column sources. */
-    private static DataIndex findIndex(
+    private static PrimaryDataIndex findIndex(
             final WeakHashMap<ColumnSource<?>, DataIndexCache> indexMap,
             final Collection<ColumnSource<?>> keyColumnSources) {
         // Looking for a single key.
@@ -322,7 +322,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                         keyColumnSources.stream().filter(s -> s != keySource).collect(Collectors.toList());
 
                 // Recursively search for the remaining key sources.
-                final DataIndex index = findIndex(cache.descendantCaches, sliced);
+                final PrimaryDataIndex index = findIndex(cache.descendantCaches, sliced);
                 if (index != null) {
                     return index;
                 }
@@ -335,7 +335,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     private static void addIndex(
             final WeakHashMap<ColumnSource<?>, DataIndexCache> indexMap,
             final List<ColumnSource<?>> keyColumnSources,
-            final DataIndex index,
+            final PrimaryDataIndex index,
             final int nextColumnSourceIndex) {
         final ColumnSource<?> nextColumnSource = keyColumnSources.get(nextColumnSourceIndex);
         final boolean isLast = nextColumnSourceIndex == keyColumnSources.size() - 1;

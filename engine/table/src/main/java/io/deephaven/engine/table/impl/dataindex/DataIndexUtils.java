@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl.dataindex;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.PrimaryDataIndex;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,13 +11,13 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Tools for working with {@link io.deephaven.engine.table.DataIndex data indices}.
+ * Tools for working with {@link PrimaryDataIndex data indices}.
  */
 public class DataIndexUtils {
 
     /**
-     * Make a {@link ChunkSource} that produces data index {@link io.deephaven.engine.table.DataIndex.RowKeyLookup
-     * lookup} keys from {@code keySources}.
+     * Make a {@link ChunkSource} that produces data index {@link PrimaryDataIndex.RowKeyLookup lookup} keys from
+     * {@code keySources}.
      * 
      * @param keySources The individual key sources
      * @return The boxed key source

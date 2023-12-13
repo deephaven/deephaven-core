@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.by;
 
+import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -20,6 +21,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.NoSuchColumnException.Type;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sort.findruns.IntFindRunsKernel;
@@ -122,7 +124,7 @@ public class ChunkedOperatorAggregationHelper {
                 Arrays.stream(keyNames).map(input::getColumnSource).toArray(ColumnSource[]::new);
 
         // If the table is refreshing and using an index, include the index table in the snapshot control.
-        final DataIndex dataIndex;
+        final PrimaryDataIndex dataIndex;
         final DataIndexer dataIndexer = DataIndexer.of(input.getRowSet());
         if (control.considerIndexing(input, keySources) && dataIndexer.hasDataIndex(input, keyNames)) {
             dataIndex = dataIndexer.getDataIndex(input, keyNames);
@@ -155,7 +157,7 @@ public class ChunkedOperatorAggregationHelper {
             @Nullable final OperationSnapshotControl snapshotControl,
             @NotNull final AggregationContextFactory aggregationContextFactory,
             @NotNull final QueryTable input,
-            @Nullable final DataIndex dataIndex,
+            @Nullable final PrimaryDataIndex dataIndex,
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
             @NotNull final String[] keyNames,
@@ -1565,7 +1567,7 @@ public class ChunkedOperatorAggregationHelper {
 
     @NotNull
     private static QueryTable staticIndexedAggregation(
-            final DataIndex preTransformDataIndex,
+            final PrimaryDataIndex preTransformDataIndex,
             final String[] keyNames,
             final ColumnSource<?>[] keySources,
             final AggregationContext ac) {
@@ -1594,8 +1596,9 @@ public class ChunkedOperatorAggregationHelper {
         final QueryTable result = new QueryTable(RowSetFactory.flat(groupCount).toTracking(), resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result, groupCount);
 
-        // Leverage the lookup function from the index for this table.
-        ac.supplyRowLookup(() -> key -> (int) dataIndex.rowKeyLookup().apply(key, false));
+        // Create a hashmap lookup function from the index table.
+        final TObjectLongHashMap<Object> lookup = BaseDataIndex.buildKeyMap(indexTable, keyNames);
+        ac.supplyRowLookup(() -> key -> (int) lookup.get(key));
 
         return ac.transformResult(result);
     }
@@ -1847,7 +1850,7 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static void initialIndexedKeyAddition(
-            final DataIndex preTransformDataIndex,
+            final PrimaryDataIndex preTransformDataIndex,
             final ColumnSource<?>[] keySources,
             final AggregationContext ac,
             final OperatorAggregationStateManager stateManager,

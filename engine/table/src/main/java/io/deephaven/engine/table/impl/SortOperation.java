@@ -47,7 +47,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     /** Stores reinterpreted column sources. */
     private final ColumnSource<Comparable<?>>[] sortColumns;
 
-    private final DataIndex dataIndex;
+    private final PrimaryDataIndex dataIndex;
 
     public SortOperation(QueryTable parent, SortPair[] sortPairs) {
         this.parent = parent;
@@ -106,10 +106,10 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
      * contain all key columns but matching the first column is still useful.
      */
     @Nullable
-    private DataIndex optimalIndex(final Table inputTable) {
+    private PrimaryDataIndex optimalIndex(final Table inputTable) {
         final DataIndexer dataIndexer = DataIndexer.of(inputTable.getRowSet());
 
-        final DataIndex full = dataIndexer.getDataIndex(inputTable, sortColumnNames);
+        final PrimaryDataIndex full = dataIndexer.getDataIndex(inputTable, sortColumnNames);
         if (full != null) {
             // We have an index for all sort columns.
             return full;

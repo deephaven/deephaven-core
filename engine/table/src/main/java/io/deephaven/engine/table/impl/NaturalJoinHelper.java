@@ -94,7 +94,8 @@ class NaturalJoinHelper {
             final DataIndexer leftDataIndexer = DataIndexer.of(leftTable.getRowSet());
             final boolean useIndex;
             if (bucketingContext.useLeftIndex) {
-                final DataIndex leftDataIndex = leftDataIndexer.getDataIndex(bucketingContext.originalLeftSources);
+                final PrimaryDataIndex leftDataIndex =
+                        leftDataIndexer.getDataIndex(bucketingContext.originalLeftSources);
                 // Using the index has overhead, so make sure the payoff is sufficient.
                 useIndex = leftDataIndex.table().size() <= leftTable.size() * INDEX_THRESHOLD_FRACTION;
             } else {
@@ -117,7 +118,7 @@ class NaturalJoinHelper {
                         jsm.makeInitialBuildContext()) {
 
                     if (useIndex) {
-                        final DataIndex leftDataIndex =
+                        final PrimaryDataIndex leftDataIndex =
                                 leftDataIndexer.getDataIndex(bucketingContext.originalLeftSources);
                         final Table leftIndexTable = leftDataIndex.table();
                         final ColumnSource<RowSet> rowSetSource = leftDataIndex.rowSetColumn();
@@ -169,7 +170,8 @@ class NaturalJoinHelper {
 
                 jsm.buildFromRightSide(rightTable, bucketingContext.rightSources);
                 if (useIndex) {
-                    final DataIndex leftDataIndex = leftDataIndexer.getDataIndex(bucketingContext.originalLeftSources);
+                    final PrimaryDataIndex leftDataIndex =
+                            leftDataIndexer.getDataIndex(bucketingContext.originalLeftSources);
                     final Table leftIndexTable = leftDataIndex.table();
                     final ColumnSource<RowSet> rowSetSource = leftDataIndex.rowSetColumn();
                     final ColumnSource<?>[] indexKeySources =
@@ -214,7 +216,8 @@ class NaturalJoinHelper {
 
                 if (useIndex) {
                     final DataIndexer dataIndexer = DataIndexer.of(leftTable.getRowSet());
-                    final DataIndex leftDataIndex = dataIndexer.getDataIndex(bucketingContext.originalLeftSources);
+                    final PrimaryDataIndex leftDataIndex =
+                            dataIndexer.getDataIndex(bucketingContext.originalLeftSources);
                     final Table leftIndexTable = leftDataIndex.table();
 
                     groupingSize = leftIndexTable.intSize();
@@ -255,7 +258,8 @@ class NaturalJoinHelper {
                 return result;
             } else { // both are static
                 if (useIndex) {
-                    final DataIndex leftDataIndex = leftDataIndexer.getDataIndex(bucketingContext.originalLeftSources);
+                    final PrimaryDataIndex leftDataIndex =
+                            leftDataIndexer.getDataIndex(bucketingContext.originalLeftSources);
                     final Table leftIndexTable = leftDataIndex.table();
 
                     final int groupingSize = leftIndexTable.intSize();

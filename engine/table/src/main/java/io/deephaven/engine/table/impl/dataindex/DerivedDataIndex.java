@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl.dataindex;
 
-import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
@@ -23,47 +23,26 @@ import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.function.Function;
 
-public class DerivedDataIndex extends BaseDataIndex {
+import static io.deephaven.engine.table.impl.dataindex.BaseDataIndex.INDEX_COL_NAME;
+
+public class DerivedDataIndex extends LivenessArtifact implements DataIndex {
     private static final int CHUNK_SIZE = 2048;
     @NotNull
-    final DataIndex parentIndex;
+    private final PrimaryDataIndex parentIndex;
     @NotNull
-    final DataIndexTransformer transformer;
-
-    final Map<ColumnSource<?>, String> columnNameMap;
-
+    private final DataIndexTransformer transformer;
     private SoftReference<Table> cachedTable = new SoftReference<>(null);
     private long cachedTableStep = -1;
 
-    private SoftReference<RowKeyLookup> cachedKeyLookup = new SoftReference<>(null);
-    private long cachedKeyLookupStep = -1;
-
-    public static DerivedDataIndex from(@NotNull final DataIndex index,
+    public static DerivedDataIndex from(@NotNull final PrimaryDataIndex index,
             @NotNull final DataIndexTransformer transformer) {
         return new DerivedDataIndex(index, transformer);
     }
 
-    private DerivedDataIndex(@NotNull final DataIndex parentIndex,
+    private DerivedDataIndex(@NotNull final PrimaryDataIndex parentIndex,
             @NotNull final DataIndexTransformer transformer) {
         this.parentIndex = parentIndex;
         this.transformer = transformer;
-
-        if (transformer.oldToNewColumnMap().isEmpty()) {
-            columnNameMap = null;
-            return;
-        }
-
-        // Build a new map of column sources to index table key column names using either the original column
-        // sources or the remapped column sources.
-        columnNameMap = new LinkedHashMap<>();
-
-        for (Map.Entry<ColumnSource<?>, String> entry : parentIndex.keyColumnMap().entrySet()) {
-            final ColumnSource<?> originalColumnSource = entry.getKey();
-            // Use the remapped column source (or the original source if not remapped) as the key.
-            columnNameMap.put(
-                    transformer.oldToNewColumnMap().getOrDefault(originalColumnSource, originalColumnSource),
-                    entry.getValue());
-        }
     }
 
     @Override
@@ -73,7 +52,7 @@ public class DerivedDataIndex extends BaseDataIndex {
 
     @Override
     public Map<ColumnSource<?>, String> keyColumnMap() {
-        return columnNameMap != null ? columnNameMap : parentIndex.keyColumnMap();
+        return parentIndex.keyColumnMap();
     }
 
     @Override
@@ -115,65 +94,8 @@ public class DerivedDataIndex extends BaseDataIndex {
     }
 
     @Override
-    public @NotNull RowKeyLookup rowKeyLookup() {
-        if (!mayModifyParentIndexRowSet()) {
-            // We can use the parent lookup function directly because the operations being applied will not change
-            // the index table row set and the key will be correct.
-            return parentIndex.rowKeyLookup();
-        }
-
-        // Make sure we have a valid table on hand to check the current clock.
-        final Table indexTable = table();
-
-        // Return a valid cached table if possible. If the index was computed on this cycle or is derived from a static
-        // index, it remains valid. Otherwise, we need to recompute the index from its parent.
-        RowKeyLookup cachedLookup = cachedKeyLookup.get();
-        if (cachedLookup != null
-                && (!parentIndex.isRefreshing()
-                        || indexTable.getUpdateGraph().clock().currentStep() == cachedKeyLookupStep)) {
-            return cachedLookup;
-        }
-
-        synchronized (this) {
-            cachedLookup = cachedKeyLookup.get();
-            if (cachedLookup != null
-                    && (!parentIndex.isRefreshing()
-                            || indexTable.getUpdateGraph().clock().currentStep() == cachedKeyLookupStep)) {
-                return cachedLookup;
-            }
-
-            // TODO: This is wretched nonsense. Starting point for discussion only...
-            final TObjectLongHashMap prevKeyMap = buildKeyMap(indexTable, keyColumnNames(), true);
-            final TObjectLongHashMap keyMap = buildKeyMap(indexTable, keyColumnNames(), false);
-
-            cachedLookup = (Object key, boolean usePrev) -> {
-                return usePrev ? prevKeyMap.get(key) : keyMap.get(key);
-            };
-
-            // Cache the result.
-            cachedKeyLookup = new SoftReference<>(cachedLookup);
-            cachedKeyLookupStep = indexTable.getUpdateGraph().clock().currentStep();
-
-            return cachedLookup;
-        }
-    }
-
-    @Override
     public boolean isRefreshing() {
         return !staticResult() && parentIndex.isRefreshing();
-    }
-
-    @Override
-    public DataIndex transform(@NotNull final DataIndexTransformer transformer) {
-        return DerivedDataIndex.from(this, transformer);
-    }
-
-    /** Return true if the set of transformations may modify the parent index table row set. **/
-    private boolean mayModifyParentIndexRowSet() {
-        return transformer.intersectRowSet().isPresent()
-                || transformer.invertRowSet().isPresent()
-                || transformer.sortByFirstRowKey()
-                || transformer.immutable();
     }
 
     /** Return true if the set of transformations force the materialized index table to become static. **/
@@ -183,7 +105,7 @@ public class DerivedDataIndex extends BaseDataIndex {
                 || transformer.immutable();
     }
 
-    // region DataIndex materialization operations
+    // region PrimaryDataIndex materialization operations
     private static Function<RowSet, RowSet> getMutator(
             @Nullable final RowSet intersectRowSet,
             @Nullable final RowSet invertRowSet) {
@@ -359,10 +281,5 @@ public class DerivedDataIndex extends BaseDataIndex {
         // All the sources were already immutable, we can just return the input table.
         return indexTable;
     }
-    // endregion DataIndex materialization operations
-
-    @Override
-    public boolean validate() {
-        return ((BaseDataIndex) parentIndex).validate();
-    }
+    // endregion PrimaryDataIndex materialization operations
 }

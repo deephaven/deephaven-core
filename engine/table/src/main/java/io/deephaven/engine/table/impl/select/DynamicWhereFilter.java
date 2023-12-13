@@ -54,7 +54,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
     /** Stores the optimal data index for this filter. */
     @Nullable
-    private DataIndex sourceDataIndex;
+    private PrimaryDataIndex sourceDataIndex;
 
     private RecomputeListener listener;
     private QueryTable resultTable;
@@ -221,15 +221,15 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
      * contain all key columns but a partial match is also acceptable.
      */
     @Nullable
-    private DataIndex optimalIndex(final Table inputTable) {
+    private PrimaryDataIndex optimalIndex(final Table inputTable) {
         final String[] keyColumnNames = MatchPair.getLeftColumns(matchPairs);
 
         final DataIndexer dataIndexer = DataIndexer.of(inputTable.getRowSet());
-        final DataIndex fullIndex = dataIndexer.getDataIndex(inputTable, keyColumnNames);
+        final PrimaryDataIndex fullIndex = dataIndexer.getDataIndex(inputTable, keyColumnNames);
         if (fullIndex != null) {
             return fullIndex;
         } else {
-            final DataIndex partialIndex = dataIndexer.getOptimalPartialIndex(inputTable, keyColumnNames);
+            final PrimaryDataIndex partialIndex = dataIndexer.getOptimalPartialIndex(inputTable, keyColumnNames);
             return partialIndex;
         }
     }
@@ -245,7 +245,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     }
 
     @Override
-    public List<DataIndex> getDataIndexes(final Table sourceTable) {
+    public List<PrimaryDataIndex> getDataIndexes(final Table sourceTable) {
         if (sourceDataIndex == null) {
             sourceDataIndex = optimalIndex(sourceTable);
         }
@@ -308,11 +308,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     @NotNull
     private WritableRowSet filterFullIndex(
             @NotNull final RowSet selection,
-            final DataIndex dataIndex,
+            final PrimaryDataIndex dataIndex,
             final ColumnSource<?>[] keyColumns) {
         // Use the index RowSetLookup to create a combined row set of matching rows.
         final RowSetBuilderRandom rowSetBuilder = RowSetFactory.builderRandom();
-        final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup(keyColumns);
+        final PrimaryDataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup(keyColumns);
         final ColumnSource<RowSet> rowSetColumn = dataIndex.rowSetColumn();
 
         liveValues.forEach(key -> {
@@ -332,7 +332,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     @NotNull
     private WritableRowSet filterPartialIndex(
             @NotNull final RowSet selection,
-            final DataIndex dataIndex,
+            final PrimaryDataIndex dataIndex,
             final ColumnSource<?>[] keyColumns) {
 
         List<ColumnSource<?>> indexedSourceList = new ArrayList<>();
@@ -350,7 +350,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         Assert.geqZero(indexedSourceList.size(), "indexedSourceList.size()");
 
         final List<RowSet> indexRowSets = new ArrayList<>(indexedSourceList.size());
-        final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
+        final PrimaryDataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
         final ColumnSource<RowSet> rowSetColumn = dataIndex.rowSetColumn();
 
         if (indexedSourceIndices.size() == 1) {

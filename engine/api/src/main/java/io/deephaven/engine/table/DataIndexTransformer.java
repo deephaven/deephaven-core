@@ -5,7 +5,6 @@ import io.deephaven.engine.rowset.RowSet;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
-import java.util.Map;
 import java.util.Optional;
 
 @Immutable
@@ -30,12 +29,9 @@ public interface DataIndexTransformer {
         return false;
     }
 
-    /** Map the old key columns to the new key columns. */
-    Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap();
-
     /**
      * Create a {@link DataIndexTransformer.Builder builder} that specifies transformations to apply to an existing
-     * {@link DataIndex data index}.
+     * {@link PrimaryDataIndex data index}.
      * <p>
      * When multiple transformations are specified, they are applied in a specific order:
      * <ol>
@@ -73,17 +69,6 @@ public interface DataIndexTransformer {
 
         /** Whether to force the materialized table to be static, flat, and immutable. */
         Builder immutable(boolean immutable);
-
-        /** Map the new key columns to the old columns. */
-        @SuppressWarnings("unused")
-        Builder putOldToNewColumnMap(ColumnSource<?> key, ColumnSource<?> value);
-
-        /** Map the new key columns to the old columns. */
-        @SuppressWarnings("unused")
-        Builder putOldToNewColumnMap(Map.Entry<? extends ColumnSource<?>, ? extends ColumnSource<?>> entry);
-
-        /** Map the new key columns to the old columns. */
-        Builder putAllOldToNewColumnMap(Map<? extends ColumnSource<?>, ? extends ColumnSource<?>> entries);
 
         DataIndexTransformer build();
     }

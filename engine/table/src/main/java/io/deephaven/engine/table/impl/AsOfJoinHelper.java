@@ -20,7 +20,7 @@ import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBa
 import io.deephaven.engine.table.impl.asofjoin.StaticHashedAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.asofjoin.BucketedChunkedAjMergedListener;
-import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.PrimaryDataIndex;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
 import io.deephaven.engine.table.impl.asofjoin.ZeroKeyChunkedAjMergedListener;
@@ -148,10 +148,10 @@ public class AsOfJoinHelper {
 
         final RowSet leftRowSetToUse;
         final ColumnSource<?>[] leftSourcesToUse;
-        final DataIndex leftDataIndex;
+        final PrimaryDataIndex leftDataIndex;
         final RowSet rightRowSetToUse;
         final ColumnSource<?>[] rightSourcesToUse;
-        final DataIndex rightDataIndex;
+        final PrimaryDataIndex rightDataIndex;
 
         if (control.useDataIndex(leftTable, originalLeftSources)) {
             leftDataIndex = DataIndexer.of(leftTable.getRowSet()).getDataIndex(originalLeftSources);
@@ -529,10 +529,10 @@ public class AsOfJoinHelper {
         final IntegerArraySource slots = new IntegerArraySource();
         final RowSet leftRowSetToUse;
         final ColumnSource<?>[] leftSourcesToUse;
-        final DataIndex leftDataIndex;
+        final PrimaryDataIndex leftDataIndex;
         final RowSet rightRowSetToUse;
         final ColumnSource<?>[] rightSourcesToUse;
-        final DataIndex rightDataIndex;
+        final PrimaryDataIndex rightDataIndex;
 
         if (control.useDataIndex(leftTable, originalLeftSources)) {
             leftDataIndex = DataIndexer.of(leftTable.getRowSet()).getDataIndex(originalLeftSources);
@@ -964,10 +964,10 @@ public class AsOfJoinHelper {
 
         final RowSet leftRowSetToUse;
         final ColumnSource<?>[] leftSourcesToUse;
-        final DataIndex leftDataIndex;
+        final PrimaryDataIndex leftDataIndex;
         final RowSet rightRowSetToUse;
         final ColumnSource<?>[] rightSourcesToUse;
-        final DataIndex rightDataIndex;
+        final PrimaryDataIndex rightDataIndex;
 
         if (control.useDataIndex(leftTable, originalLeftSources)) {
             leftDataIndex = DataIndexer.of(leftTable.getRowSet()).getDataIndex(originalLeftSources);
