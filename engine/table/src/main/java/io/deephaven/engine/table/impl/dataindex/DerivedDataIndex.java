@@ -25,8 +25,9 @@ import java.util.function.Function;
 
 public class DerivedDataIndex extends BaseDataIndex {
 
-    public static DerivedDataIndex from(@NotNull final DataIndex index,
-                                        @NotNull final DataIndexTransformer transformer) {
+    public static DerivedDataIndex from(
+            @NotNull final DataIndex index,
+            @NotNull final DataIndexTransformer transformer) {
         return new DerivedDataIndex(index, transformer);
     }
 

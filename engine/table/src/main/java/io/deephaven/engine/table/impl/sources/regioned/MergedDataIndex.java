@@ -4,6 +4,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -18,8 +19,10 @@ import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.vector.ObjectVector;
+import org.gradle.internal.impldep.com.beust.jcommander.Strings;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -34,8 +37,10 @@ import java.util.stream.IntStream;
  * 
  * @implNote This implementation is responsible for ensuring that the provided table accounts for the relative positions
  *           of individual table locations in the provided table of indices. Work to coalesce the index table is
- *           deferred until the first call to {@link #table()}. Refreshing inputs/indexes are not supported at this
- *           time.
+ *           deferred until the first call to {@link #table()}. Refreshing inputs/indexes are not supported at this time
+ *           due to concurrency limitations (w.r.t. the UpdateGraph) of the underlying table operations used to compute
+ *           the merged index table, as well as a lack of use cases beyond "new static partitions are added to a live
+ *           source table".
  */
 @InternalUseOnly
 class MergedDataIndex extends BaseDataIndex {
@@ -105,7 +110,7 @@ class MergedDataIndex extends BaseDataIndex {
             }
             try {
                 QueryPerformanceRecorder.withNugget(
-                        "Merge Data Indexes [" + String.join(", ", keyColumnNames) + "]",
+                        String.format("Merge Data Indexes [%s]", String.join(", ", keyColumnNames)),
                         this::buildTable);
             } catch (Throwable t) {
                 isCorrupt = true;
@@ -125,7 +130,7 @@ class MergedDataIndex extends BaseDataIndex {
         final Table locationDataIndexes = locationTable.update(List.of(new FunctionalColumn<>(
                 columnSourceManager.locationColumnName(), TableLocation.class,
                 LOCATION_DATA_INDEX_TABLE_COLUMN_NAME, Table.class,
-                this::loadAndShiftIndexTableRowSet))).dropColumns(columnSourceManager.locationColumnName());
+                this::loadIndexTableAndShiftRowSets))).dropColumns(columnSourceManager.locationColumnName());
 
         // Merge all the location index tables into a single table
         final Table mergedDataIndexes = PartitionedTableFactory.of(locationDataIndexes).merge();
@@ -137,17 +142,25 @@ class MergedDataIndex extends BaseDataIndex {
         final Table combined = groupedByKeyColumns.update(List.of(new FunctionalColumn<>(
                 ROW_SET_COLUMN_NAME, ObjectVector.class,
                 ROW_SET_COLUMN_NAME, RowSet.class,
-                this::accumulateRowSets)));
+                this::mergeRowSets)));
+        Assert.assertion(combined.isFlat(), "combined.isFlat()");
+        Assert.eq(groupedByKeyColumns.size(), "groupedByKeyColumns.size()", combined.size(), "combined.size()");
+
+        // Cleanup after ourselves
+        try (final CloseableIterator<RowSet> rowSets = mergedDataIndexes.objectColumnIterator(ROW_SET_COLUMN_NAME)) {
+            rowSets.forEachRemaining(SafeCloseable::close);
+        }
 
         lookupFunction = AggregationProcessor.getRowLookup(groupedByKeyColumns);
         indexTable = combined;
     }
 
-    private Table loadAndShiftIndexTableRowSet(final long locationRowKey, @NotNull final TableLocation location) {
+    private Table loadIndexTableAndShiftRowSets(final long locationRowKey, @NotNull final TableLocation location) {
         final Table indexTable = location.getDataIndex(keyColumnNames);
         if (indexTable == null) {
             isCorrupt = true;
-            throw new UncheckedDeephavenException("Failed to load data index for location " + location);
+            throw new UncheckedDeephavenException(String.format("Failed to load data index [%s] for location %s",
+                    Strings.join(", ", keyColumnNames), location));
         }
         return indexTable.coalesce().update(List.of(new FunctionalColumn<>(
                 ROW_SET_COLUMN_NAME, RowSet.class,
@@ -156,7 +169,7 @@ class MergedDataIndex extends BaseDataIndex {
                         .shift(RegionedColumnSource.getFirstRowKey(Math.toIntExact(locationRowKey))))));
     }
 
-    private RowSet accumulateRowSets(
+    private RowSet mergeRowSets(
             @SuppressWarnings("unused") final long unusedRowKey,
             @NotNull final ObjectVector<RowSet> keyRowSets) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
@@ -177,7 +190,8 @@ class MergedDataIndex extends BaseDataIndex {
             if (keyRowPosition == lookupFunction.noEntryValue()) {
                 return null;
             }
-            // Return the RowSet at that row position (which is also the row key).
+            // Return the RowSet at that row position (which is also the row key)
+            // Note that since this is a static data index, there's no need to handle `usePrev
             return rowSetColumnSource.get(keyRowPosition);
         };
     }
@@ -186,10 +200,14 @@ class MergedDataIndex extends BaseDataIndex {
     @NotNull
     public PositionLookup positionLookup() {
         table();
-        return (Object key, boolean usePrev) -> {
-            // Pass the object to the aggregation lookup, then return the resulting position. This index will be
-            // correct in prev or current space because of the aggregation's hash-based lookup.
-            return lookupFunction.get(key);
+        return (final Object key, final boolean usePrev) -> {
+            // Pass the object to the aggregation lookup, then return the resulting row position (which is also the row
+            // key).
+            final int keyRowPosition = lookupFunction.get(key);
+            if (keyRowPosition == lookupFunction.noEntryValue()) {
+                return (int) RowSequence.NULL_ROW_KEY;
+            }
+            return keyRowPosition;
         };
     }
 
@@ -204,7 +222,7 @@ class MergedDataIndex extends BaseDataIndex {
             return false;
         }
         try (final CloseableIterator<TableLocation> locations =
-                     columnSourceManager.locationTable().objectColumnIterator(columnSourceManager.locationColumnName())) {
+                columnSourceManager.locationTable().objectColumnIterator(columnSourceManager.locationColumnName())) {
             while (locations.hasNext()) {
                 final TableLocation location = locations.next();
                 if (!location.hasDataIndex(keyColumnNames)) {
