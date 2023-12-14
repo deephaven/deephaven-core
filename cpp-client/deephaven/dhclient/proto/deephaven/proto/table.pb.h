@@ -187,6 +187,9 @@ extern CreateInputTableRequestDefaultTypeInternal _CreateInputTableRequest_defau
 class CreateInputTableRequest_InputTableKind;
 struct CreateInputTableRequest_InputTableKindDefaultTypeInternal;
 extern CreateInputTableRequest_InputTableKindDefaultTypeInternal _CreateInputTableRequest_InputTableKind_default_instance_;
+class CreateInputTableRequest_InputTableKind_Blink;
+struct CreateInputTableRequest_InputTableKind_BlinkDefaultTypeInternal;
+extern CreateInputTableRequest_InputTableKind_BlinkDefaultTypeInternal _CreateInputTableRequest_InputTableKind_Blink_default_instance_;
 class CreateInputTableRequest_InputTableKind_InMemoryAppendOnly;
 struct CreateInputTableRequest_InputTableKind_InMemoryAppendOnlyDefaultTypeInternal;
 extern CreateInputTableRequest_InputTableKind_InMemoryAppendOnlyDefaultTypeInternal _CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_default_instance_;
@@ -463,6 +466,7 @@ template<> ::io::deephaven::proto::backplane::grpc::Condition* Arena::CreateMayb
 template<> ::io::deephaven::proto::backplane::grpc::ContainsCondition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::ContainsCondition>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::CreateInputTableRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryAppendOnly* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryAppendOnly>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryKeyBacked* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryKeyBacked>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::CrossJoinTablesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::CrossJoinTablesRequest>(Arena*);
@@ -22456,6 +22460,122 @@ class CreateInputTableRequest_InputTableKind_InMemoryKeyBacked final :
 };
 // -------------------------------------------------------------------
 
+class CreateInputTableRequest_InputTableKind_Blink final :
+    public ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.Blink) */ {
+ public:
+  inline CreateInputTableRequest_InputTableKind_Blink() : CreateInputTableRequest_InputTableKind_Blink(nullptr) {}
+  explicit PROTOBUF_CONSTEXPR CreateInputTableRequest_InputTableKind_Blink(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  CreateInputTableRequest_InputTableKind_Blink(const CreateInputTableRequest_InputTableKind_Blink& from);
+  CreateInputTableRequest_InputTableKind_Blink(CreateInputTableRequest_InputTableKind_Blink&& from) noexcept
+    : CreateInputTableRequest_InputTableKind_Blink() {
+    *this = ::std::move(from);
+  }
+
+  inline CreateInputTableRequest_InputTableKind_Blink& operator=(const CreateInputTableRequest_InputTableKind_Blink& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline CreateInputTableRequest_InputTableKind_Blink& operator=(CreateInputTableRequest_InputTableKind_Blink&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const CreateInputTableRequest_InputTableKind_Blink& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const CreateInputTableRequest_InputTableKind_Blink* internal_default_instance() {
+    return reinterpret_cast<const CreateInputTableRequest_InputTableKind_Blink*>(
+               &_CreateInputTableRequest_InputTableKind_Blink_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    114;
+
+  friend void swap(CreateInputTableRequest_InputTableKind_Blink& a, CreateInputTableRequest_InputTableKind_Blink& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(CreateInputTableRequest_InputTableKind_Blink* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(CreateInputTableRequest_InputTableKind_Blink* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  CreateInputTableRequest_InputTableKind_Blink* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<CreateInputTableRequest_InputTableKind_Blink>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyFrom;
+  inline void CopyFrom(const CreateInputTableRequest_InputTableKind_Blink& from) {
+    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl(this, from);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeFrom;
+  void MergeFrom(const CreateInputTableRequest_InputTableKind_Blink& from) {
+    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl(this, from);
+  }
+  public:
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.Blink";
+  }
+  protected:
+  explicit CreateInputTableRequest_InputTableKind_Blink(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.Blink)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
 class CreateInputTableRequest_InputTableKind final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind) */ {
  public:
@@ -22502,6 +22622,7 @@ class CreateInputTableRequest_InputTableKind final :
   enum KindCase {
     kInMemoryAppendOnly = 1,
     kInMemoryKeyBacked = 2,
+    kBlink = 3,
     KIND_NOT_SET = 0,
   };
 
@@ -22510,7 +22631,7 @@ class CreateInputTableRequest_InputTableKind final :
                &_CreateInputTableRequest_InputTableKind_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    114;
+    115;
 
   friend void swap(CreateInputTableRequest_InputTableKind& a, CreateInputTableRequest_InputTableKind& b) {
     a.Swap(&b);
@@ -22580,12 +22701,14 @@ class CreateInputTableRequest_InputTableKind final :
 
   typedef CreateInputTableRequest_InputTableKind_InMemoryAppendOnly InMemoryAppendOnly;
   typedef CreateInputTableRequest_InputTableKind_InMemoryKeyBacked InMemoryKeyBacked;
+  typedef CreateInputTableRequest_InputTableKind_Blink Blink;
 
   // accessors -------------------------------------------------------
 
   enum : int {
     kInMemoryAppendOnlyFieldNumber = 1,
     kInMemoryKeyBackedFieldNumber = 2,
+    kBlinkFieldNumber = 3,
   };
   // .io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly in_memory_append_only = 1;
   bool has_in_memory_append_only() const;
@@ -22623,6 +22746,24 @@ class CreateInputTableRequest_InputTableKind final :
       ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryKeyBacked* in_memory_key_backed);
   ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryKeyBacked* unsafe_arena_release_in_memory_key_backed();
 
+  // .io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.Blink blink = 3;
+  bool has_blink() const;
+  private:
+  bool _internal_has_blink() const;
+  public:
+  void clear_blink();
+  const ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink& blink() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* release_blink();
+  ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* mutable_blink();
+  void set_allocated_blink(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* blink);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink& _internal_blink() const;
+  ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* _internal_mutable_blink();
+  public:
+  void unsafe_arena_set_allocated_blink(
+      ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* blink);
+  ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* unsafe_arena_release_blink();
+
   void clear_kind();
   KindCase kind_case() const;
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind)
@@ -22630,6 +22771,7 @@ class CreateInputTableRequest_InputTableKind final :
   class _Internal;
   void set_has_in_memory_append_only();
   void set_has_in_memory_key_backed();
+  void set_has_blink();
 
   inline bool has_kind() const;
   inline void clear_has_kind();
@@ -22642,6 +22784,7 @@ class CreateInputTableRequest_InputTableKind final :
       ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized _constinit_;
     ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryAppendOnly* in_memory_append_only_;
     ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryKeyBacked* in_memory_key_backed_;
+    ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* blink_;
   } kind_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   uint32_t _oneof_case_[1];
@@ -22704,7 +22847,7 @@ class CreateInputTableRequest final :
                &_CreateInputTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    115;
+    116;
 
   friend void swap(CreateInputTableRequest& a, CreateInputTableRequest& b) {
     a.Swap(&b);
@@ -22931,7 +23074,7 @@ class WhereInRequest final :
                &_WhereInRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    116;
+    117;
 
   friend void swap(WhereInRequest& a, WhereInRequest& b) {
     a.Swap(&b);
@@ -23160,7 +23303,7 @@ class ColumnStatisticsRequest final :
                &_ColumnStatisticsRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    117;
+    118;
 
   friend void swap(ColumnStatisticsRequest& a, ColumnStatisticsRequest& b) {
     a.Swap(&b);
@@ -23408,7 +23551,7 @@ class BatchTableRequest_Operation final :
                &_BatchTableRequest_Operation_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    118;
+    119;
 
   friend void swap(BatchTableRequest_Operation& a, BatchTableRequest_Operation& b) {
     a.Swap(&b);
@@ -24391,7 +24534,7 @@ class BatchTableRequest final :
                &_BatchTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    119;
+    120;
 
   friend void swap(BatchTableRequest& a, BatchTableRequest& b) {
     a.Swap(&b);
@@ -46381,6 +46524,10 @@ CreateInputTableRequest_InputTableKind_InMemoryKeyBacked::mutable_key_columns() 
 
 // -------------------------------------------------------------------
 
+// CreateInputTableRequest_InputTableKind_Blink
+
+// -------------------------------------------------------------------
+
 // CreateInputTableRequest_InputTableKind
 
 // .io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly in_memory_append_only = 1;
@@ -46528,6 +46675,80 @@ inline ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTab
 inline ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryKeyBacked* CreateInputTableRequest_InputTableKind::mutable_in_memory_key_backed() {
   ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryKeyBacked* _msg = _internal_mutable_in_memory_key_backed();
   // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.in_memory_key_backed)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.Blink blink = 3;
+inline bool CreateInputTableRequest_InputTableKind::_internal_has_blink() const {
+  return kind_case() == kBlink;
+}
+inline bool CreateInputTableRequest_InputTableKind::has_blink() const {
+  return _internal_has_blink();
+}
+inline void CreateInputTableRequest_InputTableKind::set_has_blink() {
+  _oneof_case_[0] = kBlink;
+}
+inline void CreateInputTableRequest_InputTableKind::clear_blink() {
+  if (_internal_has_blink()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete kind_.blink_;
+    }
+    clear_has_kind();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* CreateInputTableRequest_InputTableKind::release_blink() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.blink)
+  if (_internal_has_blink()) {
+    clear_has_kind();
+    ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* temp = kind_.blink_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    kind_.blink_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink& CreateInputTableRequest_InputTableKind::_internal_blink() const {
+  return _internal_has_blink()
+      ? *kind_.blink_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink&>(::io::deephaven::proto::backplane::grpc::_CreateInputTableRequest_InputTableKind_Blink_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink& CreateInputTableRequest_InputTableKind::blink() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.blink)
+  return _internal_blink();
+}
+inline ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* CreateInputTableRequest_InputTableKind::unsafe_arena_release_blink() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.blink)
+  if (_internal_has_blink()) {
+    clear_has_kind();
+    ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* temp = kind_.blink_;
+    kind_.blink_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void CreateInputTableRequest_InputTableKind::unsafe_arena_set_allocated_blink(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* blink) {
+  clear_kind();
+  if (blink) {
+    set_has_blink();
+    kind_.blink_ = blink;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.blink)
+}
+inline ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* CreateInputTableRequest_InputTableKind::_internal_mutable_blink() {
+  if (!_internal_has_blink()) {
+    clear_kind();
+    set_has_blink();
+    kind_.blink_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink >(GetArenaForAllocation());
+  }
+  return kind_.blink_;
+}
+inline ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* CreateInputTableRequest_InputTableKind::mutable_blink() {
+  ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_Blink* _msg = _internal_mutable_blink();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.blink)
   return _msg;
 }
 
@@ -50520,6 +50741,8 @@ BatchTableRequest::ops() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

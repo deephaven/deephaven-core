@@ -303,11 +303,6 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
             }
         }
 
-        @Override
-        public String getDescription() {
-            return description;
-        }
-
         void waitForSequence(long sequence) {
             if (updateGraph.exclusiveLock().isHeldByCurrentThread()) {
                 // We're holding the lock. currentTable had better be refreshing. Wait on its UGP condition
@@ -346,16 +341,5 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
             return sources;
         }
 
-        @Override
-        public Table getTable() {
-            return BaseArrayBackedInputTable.this;
-        }
-
-        @Override
-        public boolean canEdit() {
-            // TODO: Should we be more restrictive, or provide a mechanism for determining which users can edit this
-            // table beyond "they have a handle to it"?
-            return true;
-        }
     }
 }
