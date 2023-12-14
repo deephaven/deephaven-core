@@ -25,5 +25,7 @@ public interface InputTable extends TableSpec {
         R visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly);
 
         R visit(InMemoryKeyBackedInputTable inMemoryKeyBacked);
+
+        R visit(BlinkInputTable blinkInputTable);
     }
 }

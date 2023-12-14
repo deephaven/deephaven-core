@@ -91,9 +91,14 @@ public interface InputTableUpdater {
     /**
      * Write {@code newData} to this table. Added rows with keys that match existing rows will instead replace those
      * rows, if supported.
+     *
      * <p>
-     * This method will block until the rows are added. As a result, this method is not suitable for use from a
-     * {@link io.deephaven.engine.table.TableListener table listener} or any other
+     * This method will block until the add is "completed", where the definition of "completed" is implementation
+     * dependenent.
+     *
+     * <p>
+     * For implementations where "completed" means "visible in the next update graph cycle", this method is not suitable
+     * for use from a {@link io.deephaven.engine.table.TableListener table listener} or any other
      * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
      * dispatched by this InputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may be
      * suitable to delete from another update graph if doing so does not introduce any cycles.
@@ -106,6 +111,11 @@ public interface InputTableUpdater {
     /**
      * Write {@code newData} to this table. Added rows with keys that match existing rows replace those rows, if
      * supported.
+     *
+     * <p>
+     * The callback to {@code listener} will happen when the add has "completed", where the definition of "completed" is
+     * implementation dependenent. It's possible that the callback happens immediately on the same thread.
+     *
      * <p>
      * This method will <em>not</em> block, and can be safely used from a {@link io.deephaven.engine.table.TableListener
      * table listener} or any other {@link io.deephaven.engine.updategraph.NotificationQueue.Notification
@@ -120,9 +130,14 @@ public interface InputTableUpdater {
 
     /**
      * Delete the keys contained in {@code table} from this input table.
+     *
      * <p>
-     * This method will block until the rows are deleted. As a result, this method is not suitable for use from a
-     * {@link io.deephaven.engine.table.TableListener table listener} or any other
+     * This method will block until the delete is "completed", where the definition of "completed" is implementation
+     * dependenent.
+     *
+     * <p>
+     * For implementations where "completed" means "visible in the next update graph cycle", this method is not suitable
+     * for use from a {@link io.deephaven.engine.table.TableListener table listener} or any other
      * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
      * dispatched by this InputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may be
      * suitable to delete from another update graph if doing so does not introduce any cycles.
@@ -137,6 +152,11 @@ public interface InputTableUpdater {
 
     /**
      * Delete the keys contained in table from this input table.
+     *
+     * <p>
+     * The callback to {@code listener} will happen when the delete has "completed", where the definition of "completed"
+     * is implementation dependenent. It's possible that the callback happens immediately on the same thread.
+     * 
      * <p>
      * This method will <em>not</em> block, and can be safely used from a {@link io.deephaven.engine.table.TableListener
      * table listener} or any other {@link io.deephaven.engine.updategraph.NotificationQueue.Notification
@@ -150,20 +170,6 @@ public interface InputTableUpdater {
     default void deleteAsync(Table table, InputTableStatusListener listener) {
         throw new UnsupportedOperationException("Table does not support deletes");
     }
-
-    /**
-     * Return a user-readable description of this InputTable.
-     *
-     * @return a description of this input table
-     */
-    String getDescription();
-
-    /**
-     * Returns a Deephaven table that contains the current data for this InputTable.
-     *
-     * @return the current data in this InputTable.
-     */
-    Table getTable();
 
     /**
      * Returns true if the specified column is a key.
@@ -184,12 +190,4 @@ public interface InputTableUpdater {
     default boolean hasColumn(String columnName) {
         return getTableDefinition().getColumnNames().contains(columnName);
     }
-
-    /**
-     * Queries whether this InputTable is editable in the current context.
-     *
-     * @return true if this InputTable may be edited, false otherwise TODO (deephaven/deephaven-core/issues/255): Add
-     *         AuthContext and whatever else is appropriate
-     */
-    boolean canEdit();
 }

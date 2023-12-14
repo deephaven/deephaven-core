@@ -21,6 +21,7 @@ import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.engine.util.PythonScopeJpyImpl;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.jpy.PythonTest;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jpy.PyInputMode;
 import org.jpy.PyModule;
@@ -376,6 +377,7 @@ public class TestConditionFilter extends PythonTest {
                 if (pythonScope == null) {
                     final ExecutionContext context = new PythonDeephavenSession(
                             ExecutionContext.getDefaultContext().getUpdateGraph(),
+                            ThreadInitializationFactory.NO_OP,
                             new PythonScopeJpyImpl(getMainGlobals().asDict())).getExecutionContext();
                     pythonScope = context.getQueryScope();
                     context.open();

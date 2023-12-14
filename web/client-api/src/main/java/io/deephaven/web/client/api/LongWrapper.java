@@ -41,4 +41,16 @@ public class LongWrapper {
     public String toString() {
         return String.valueOf(value);
     }
+
+    @JsIgnore
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof LongWrapper && ((LongWrapper) obj).value == value;
+    }
+
+    @JsIgnore
+    @Override
+    public int hashCode() {
+        return Long.hashCode(value);
+    }
 }

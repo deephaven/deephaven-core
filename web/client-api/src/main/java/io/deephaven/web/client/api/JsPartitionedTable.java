@@ -314,6 +314,8 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         if (subscription != null) {
             subscription.close();
         }
+
+        widget.close();
     }
 
 }

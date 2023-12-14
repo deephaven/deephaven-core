@@ -23,6 +23,7 @@ import org.junit.*;
 import java.nio.file.Path;
 import java.util.Collections;
 
+import static io.deephaven.engine.context.TestExecutionContext.OPERATION_INITIALIZATION;
 import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.Assert.assertEquals;
 
@@ -105,8 +106,13 @@ public class TestEventDrivenUpdateGraph {
     public void testSimpleAdd() {
         final EventDrivenUpdateGraph eventDrivenUpdateGraph = EventDrivenUpdateGraph.newBuilder("TestEDUG").build();
 
-        final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(eventDrivenUpdateGraph)
-                .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
+        final ExecutionContext context = ExecutionContext.newBuilder()
+                .setUpdateGraph(eventDrivenUpdateGraph)
+                .emptyQueryScope()
+                .newQueryLibrary()
+                .setOperationInitializer(OPERATION_INITIALIZATION)
+                .setQueryCompiler(compilerForUnitTests())
+                .build();
         try (final SafeCloseable ignored = context.open()) {
             final SourceThatRefreshes sourceThatRefreshes = new SourceThatRefreshes(eventDrivenUpdateGraph);
             final Table updated =
@@ -125,8 +131,13 @@ public class TestEventDrivenUpdateGraph {
     public void testSimpleModify() {
         final EventDrivenUpdateGraph eventDrivenUpdateGraph = new EventDrivenUpdateGraph.Builder("TestEDUG").build();
 
-        final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(eventDrivenUpdateGraph)
-                .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
+        final ExecutionContext context = ExecutionContext.newBuilder()
+                .setUpdateGraph(eventDrivenUpdateGraph)
+                .emptyQueryScope()
+                .newQueryLibrary()
+                .setOperationInitializer(OPERATION_INITIALIZATION)
+                .setQueryCompiler(compilerForUnitTests())
+                .build();
         try (final SafeCloseable ignored = context.open()) {
             final SourceThatModifiesItself modifySource = new SourceThatModifiesItself(eventDrivenUpdateGraph);
             final Table updated =
@@ -182,8 +193,13 @@ public class TestEventDrivenUpdateGraph {
         defaultUpdateGraph.requestRefresh();
 
         final Table inRange;
-        final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(defaultUpdateGraph)
-                .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
+        final ExecutionContext context = ExecutionContext.newBuilder()
+                .setUpdateGraph(defaultUpdateGraph)
+                .emptyQueryScope()
+                .newQueryLibrary()
+                .setQueryCompiler(compilerForUnitTests())
+                .setOperationInitializer(OPERATION_INITIALIZATION)
+                .build();
         try (final SafeCloseable ignored = context.open()) {
             final Table uptAgged = upt.where("!isNull(EntryId)").aggBy(
                     Aggregation.AggSum("UsageNanos", "InvocationCount", "RowsModified"),
@@ -223,8 +239,13 @@ public class TestEventDrivenUpdateGraph {
 
     private Object doWork(final EventDrivenUpdateGraph eventDrivenUpdateGraph, final int durationMillis,
             final int steps) {
-        final ExecutionContext context = ExecutionContext.newBuilder().setUpdateGraph(eventDrivenUpdateGraph)
-                .emptyQueryScope().newQueryLibrary().setQueryCompiler(compilerForUnitTests()).build();
+        final ExecutionContext context = ExecutionContext.newBuilder()
+                .setUpdateGraph(eventDrivenUpdateGraph)
+                .emptyQueryScope()
+                .newQueryLibrary()
+                .setQueryCompiler(compilerForUnitTests())
+                .setOperationInitializer(OPERATION_INITIALIZATION)
+                .build();
         try (final SafeCloseable ignored = context.open()) {
             final SourceThatModifiesItself modifySource = new SourceThatModifiesItself(eventDrivenUpdateGraph);
             final Table updated =

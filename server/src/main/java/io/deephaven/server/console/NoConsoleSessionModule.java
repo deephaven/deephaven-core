@@ -12,6 +12,7 @@ import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.console.groovy.InitScriptsModule;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 
 import javax.inject.Named;
 
@@ -26,7 +27,8 @@ public class NoConsoleSessionModule {
 
     @Provides
     NoLanguageDeephavenSession bindNoLanguageSession(
-            @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph updateGraph) {
-        return new NoLanguageDeephavenSession(updateGraph);
+            @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph updateGraph,
+            ThreadInitializationFactory threadInitializationFactory) {
+        return new NoLanguageDeephavenSession(updateGraph, threadInitializationFactory);
     }
 }

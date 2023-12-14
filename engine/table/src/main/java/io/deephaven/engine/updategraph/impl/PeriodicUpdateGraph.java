@@ -98,6 +98,8 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
             "PeriodicUpdateGraph.targetCycleDurationMillis";
     private final long defaultTargetCycleDurationMillis;
     private volatile long targetCycleDurationMillis;
+    private final ThreadInitializationFactory threadInitializationFactory;
+
 
     /**
      * The number of threads in our executor service for dispatching notifications. If 1, then we don't actually use the
@@ -115,11 +117,13 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
             final boolean allowUnitTestMode,
             final long targetCycleDurationMillis,
             final long minimumCycleDurationToLogNanos,
-            final int numUpdateThreads) {
+            final int numUpdateThreads,
+            final ThreadInitializationFactory threadInitializationFactory) {
         super(name, allowUnitTestMode, log, minimumCycleDurationToLogNanos);
         this.allowUnitTestMode = allowUnitTestMode;
         this.defaultTargetCycleDurationMillis = targetCycleDurationMillis;
         this.targetCycleDurationMillis = targetCycleDurationMillis;
+        this.threadInitializationFactory = threadInitializationFactory;
 
         if (numUpdateThreads <= 0) {
             this.updateThreads = Runtime.getRuntime().availableProcessors();
@@ -127,8 +131,9 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
             this.updateThreads = numUpdateThreads;
         }
 
-        refreshThread = new Thread(ThreadInitializationFactory.wrapRunnable(() -> {
-            configureRefreshThread();
+        OperationInitializer captured = ExecutionContext.getContext().getInitializer();
+        refreshThread = new Thread(threadInitializationFactory.createInitializer(() -> {
+            configureRefreshThread(captured);
             while (running) {
                 Assert.eqFalse(this.allowUnitTestMode, "allowUnitTestMode");
                 refreshTablesAndFlushNotifications();
@@ -140,7 +145,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
                     @Override
                     public Thread newThread(@NotNull final Runnable r) {
                         // Not a refresh thread, but should still be instrumented for debugging purposes.
-                        return super.newThread(ThreadInitializationFactory.wrapRunnable(r));
+                        return super.newThread(threadInitializationFactory.createInitializer(r));
                     }
                 });
     }
@@ -1092,8 +1097,9 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
 
         @Override
         public Thread newThread(@NotNull final Runnable r) {
-            return super.newThread(ThreadInitializationFactory.wrapRunnable(() -> {
-                configureRefreshThread();
+            OperationInitializer captured = ExecutionContext.getContext().getInitializer();
+            return super.newThread(threadInitializationFactory.createInitializer(() -> {
+                configureRefreshThread(captured);
                 r.run();
             }));
         }
@@ -1112,8 +1118,9 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
 
         @Override
         public Thread newThread(@NotNull final Runnable r) {
+            OperationInitializer captured = ExecutionContext.getContext().getInitializer();
             return super.newThread(() -> {
-                configureUnitTestRefreshThread();
+                configureUnitTestRefreshThread(captured);
                 r.run();
             });
         }
@@ -1122,19 +1129,19 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
     /**
      * Configure the primary UpdateGraph thread or one of the auxiliary notification processing threads.
      */
-    private void configureRefreshThread() {
+    private void configureRefreshThread(OperationInitializer captured) {
         SystemicObjectTracker.markThreadSystemic();
         MultiChunkPool.enableDedicatedPoolForThisThread();
         isUpdateThread.set(true);
-        // Install this UpdateGraph via ExecutionContext for refresh threads
+        // Install this UpdateGraph via ExecutionContext for refresh threads, share the same operation initializer
         // noinspection resource
-        ExecutionContext.newBuilder().setUpdateGraph(this).build().open();
+        ExecutionContext.newBuilder().setUpdateGraph(this).setOperationInitializer(captured).build().open();
     }
 
     /**
      * Configure threads to be used for unit test processing.
      */
-    private void configureUnitTestRefreshThread() {
+    private void configureUnitTestRefreshThread(OperationInitializer captured) {
         final Thread currentThread = Thread.currentThread();
         final Thread.UncaughtExceptionHandler existing = currentThread.getUncaughtExceptionHandler();
         currentThread.setUncaughtExceptionHandler((final Thread errorThread, final Throwable throwable) -> {
@@ -1142,9 +1149,9 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
             existing.uncaughtException(errorThread, throwable);
         });
         isUpdateThread.set(true);
-        // Install this UpdateGraph via ExecutionContext for refresh threads
+        // Install this UpdateGraph and share operation initializer pool via ExecutionContext for refresh threads
         // noinspection resource
-        ExecutionContext.newBuilder().setUpdateGraph(this).build().open();
+        ExecutionContext.newBuilder().setUpdateGraph(this).setOperationInitializer(captured).build().open();
     }
 
     public static PeriodicUpdateGraph getInstance(final String name) {
@@ -1160,6 +1167,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
 
         private String name;
         private int numUpdateThreads = -1;
+        private ThreadInitializationFactory threadInitializationFactory = runnable -> runnable;
 
         public Builder(String name) {
             this.name = name;
@@ -1203,6 +1211,17 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
         }
 
         /**
+         * Sets a functional interface that adds custom initialization for threads started by this UpdateGraph.
+         *
+         * @param threadInitializationFactory the function to invoke on any runnables that will be used to start threads
+         * @return this builder
+         */
+        public Builder threadInitializationFactory(ThreadInitializationFactory threadInitializationFactory) {
+            this.threadInitializationFactory = threadInitializationFactory;
+            return this;
+        }
+
+        /**
          * Constructs and returns a PeriodicUpdateGraph. It is an error to do so an instance already exists with the
          * name provided to this builder.
          *
@@ -1230,7 +1249,8 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
                     allowUnitTestMode,
                     targetCycleDurationMillis,
                     minimumCycleDurationToLogNanos,
-                    numUpdateThreads);
+                    numUpdateThreads,
+                    threadInitializationFactory);
         }
     }
 }

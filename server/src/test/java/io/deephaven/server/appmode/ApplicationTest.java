@@ -13,6 +13,7 @@ import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.engine.util.PythonEvaluatorJpy;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -51,7 +52,9 @@ public class ApplicationTest {
     @Test
     public void app01() throws IOException {
         session = new GroovyDeephavenSession(
-                ExecutionContext.getContext().getUpdateGraph(), NoOp.INSTANCE, null,
+                ExecutionContext.getContext().getUpdateGraph(),
+                ThreadInitializationFactory.NO_OP,
+                NoOp.INSTANCE, null,
                 GroovyDeephavenSession.RunScripts.none());
         ApplicationState app = ApplicationFactory.create(ApplicationConfigs.testAppDir(), ApplicationConfigs.app01(),
                 session, new NoopStateListener());
@@ -65,7 +68,9 @@ public class ApplicationTest {
     @Ignore("TODO: deephaven-core#1741 python test needs to run in a container")
     public void app02() throws IOException, InterruptedException, TimeoutException {
         session = new PythonDeephavenSession(
-                ExecutionContext.getDefaultContext().getUpdateGraph(), NoOp.INSTANCE, null, false,
+                ExecutionContext.getDefaultContext().getUpdateGraph(),
+                ThreadInitializationFactory.NO_OP,
+                NoOp.INSTANCE, null, false,
                 PythonEvaluatorJpy.withGlobalCopy());
         ApplicationState app = ApplicationFactory.create(ApplicationConfigs.testAppDir(), ApplicationConfigs.app02(),
                 session, new NoopStateListener());
