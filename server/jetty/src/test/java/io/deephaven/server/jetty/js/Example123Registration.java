@@ -44,13 +44,14 @@ public final class Example123Registration implements Registration {
 
     private static JsPlugin example2() throws URISyntaxException {
         final Path resourcePath = Path.of(Sentinel.class.getResource("examples/@deephaven_test/example2").toURI());
-        final Path main = resourcePath.relativize(resourcePath.resolve("dist/index.js"));
+        final Path dist = resourcePath.relativize(resourcePath.resolve("dist"));
+        final Path main = dist.resolve("index.js");
         return JsPlugin.builder()
                 .name("@deephaven_test/example2")
                 .version("0.2.0")
                 .main(main)
                 .path(resourcePath)
-                .paths(Paths.ofPrefixes(main))
+                .paths(Paths.ofPrefixes(dist))
                 .build();
     }
 

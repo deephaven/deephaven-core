@@ -61,7 +61,7 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
         // Note: JettyFlightRoundTripTest is not the most minimal / appropriate bootstrapping for this test, but it is
         // the most convenient since it has all of the necessary prerequisites
         new Example123Registration().registerInto(component.registration());
-        testJsPluginExamples(true, true);
+        testJsPluginExamples(false, true, true);
     }
 
     @Test
@@ -71,7 +71,7 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
         final Path manifestRoot = Path.of(Sentinel.class.getResource("examples").toURI());
         new JsPluginsManifestRegistration(manifestRoot)
                 .registerInto(component.registration());
-        testJsPluginExamples(false, true);
+        testJsPluginExamples(false, false, true);
     }
 
     @Test
@@ -85,10 +85,11 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
                 .registerInto(component.registration());
         new JsPluginsNpmPackageRegistration(example2Root)
                 .registerInto(component.registration());
-        testJsPluginExamples(false, false);
+        testJsPluginExamples(true, true, false);
     }
 
-    private void testJsPluginExamples(boolean example2IsLimited, boolean hasExample3) throws Exception {
+    private void testJsPluginExamples(boolean example1IsLimited, boolean example2IsLimited, boolean hasExample3)
+            throws Exception {
         final HttpClient client = new HttpClient();
         client.start();
         try {
@@ -97,7 +98,7 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
             } else {
                 manifestTest12(client);
             }
-            example1Tests(client);
+            example1Tests(client, example1IsLimited);
             example2Tests(client, example2IsLimited);
             if (hasExample3) {
                 example3Tests(client);
@@ -119,10 +120,16 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
                 "{\"plugins\":[{\"name\":\"@deephaven_test/example1\",\"version\":\"0.1.0\",\"main\":\"dist/index.js\"},{\"name\":\"@deephaven_test/example2\",\"version\":\"0.2.0\",\"main\":\"dist/index.js\"},{\"name\":\"@deephaven_test/example3\",\"version\":\"0.3.0\",\"main\":\"index.js\"}]}");
     }
 
-    private void example1Tests(HttpClient client) throws InterruptedException, TimeoutException, ExecutionException {
-        assertOk(get(client, "js-plugins/@deephaven_test/example1/package.json"),
-                "application/json",
-                "{\"name\":\"@deephaven_test/example1\",\"version\":\"0.1.0\",\"main\":\"dist/index.js\",\"files\":[\"dist\"]}");
+    private void example1Tests(HttpClient client, boolean isLimited)
+            throws InterruptedException, TimeoutException, ExecutionException {
+        if (isLimited) {
+            assertThat(get(client, "js-plugins/@deephaven_test/example1/package.json").getStatus())
+                    .isEqualTo(HttpStatus.NOT_FOUND_404);
+        } else {
+            assertOk(get(client, "js-plugins/@deephaven_test/example1/package.json"),
+                    "application/json",
+                    "{\"name\":\"@deephaven_test/example1\",\"version\":\"0.1.0\",\"main\":\"dist/index.js\",\"files\":[\"dist\"]}");
+        }
 
         assertOk(
                 get(client, "js-plugins/@deephaven_test/example1/dist/index.js"),
@@ -151,15 +158,10 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
                 "text/javascript",
                 "// example2/dist/index.js");
 
-        if (isLimited) {
-            assertThat(get(client, "js-plugins/@deephaven_test/example2/dist/index2.js").getStatus())
-                    .isEqualTo(HttpStatus.NOT_FOUND_404);
-        } else {
-            assertOk(
-                    get(client, "js-plugins/@deephaven_test/example2/dist/index2.js"),
-                    "text/javascript",
-                    "// example2/dist/index2.js");
-        }
+        assertOk(
+                get(client, "js-plugins/@deephaven_test/example2/dist/index2.js"),
+                "text/javascript",
+                "// example2/dist/index2.js");
     }
 
     private void example3Tests(HttpClient client) throws InterruptedException, TimeoutException, ExecutionException {
