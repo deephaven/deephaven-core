@@ -5,6 +5,9 @@ package io.deephaven.plugin.js;
 
 import java.nio.file.Path;
 
+/**
+ * The subset of paths to serve, see {@link JsPlugin#paths()}.
+ */
 public interface Paths {
 
     /**

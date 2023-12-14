@@ -14,9 +14,37 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * A JS plugin is a {@link Plugin} that allows adding javascript code under the server's URL path "js-plugins/". See
- * <a href="https://github.com/deephaven/deephaven-plugins#js-plugins">deephaven-plugins#js-plugins</a> for more details
- * about the underlying construction for JS plugins.
+ * A JS plugin is a {@link Plugin} that allows for custom javascript and related content to be served, see
+ * {@link io.deephaven.plugin.js}.
+ *
+ * <p>
+ * For example, if the following JS plugin was the only JS plugin installed
+ *
+ * <pre>
+ * JsPlugin.builder()
+ *         .name("foo")
+ *         .version("1.0.0")
+ *         .main(Path.of("dist/index.js"))
+ *         .path(Path.of("/path-to/my-plugin"))
+ *         .build()
+ * </pre>
+ *
+ * the manifest served at "js-plugins/manifest.json" would be equivalent to
+ *
+ * <pre>
+ * {
+ *   "plugins": [
+ *     {
+ *       "name": "foo",
+ *       "version": "1.0.0",
+ *       "main": "dist/index.js"
+ *     }
+ *   ]
+ * }
+ * </pre>
+ *
+ * and the file "/path-to/my-plugin/dist/index.js" would be served at "js-plugins/foo/dist/index.js". All other files of
+ * the form "/path-to/my-plugin/{somePath}" will be served at "js-plugins/foo/{somePath}".
  */
 @Immutable
 @BuildableStyle
@@ -47,21 +75,23 @@ public abstract class JsPlugin extends PluginBase {
      * ({@code Files.isRegularFile(root().resolve(main()))}) and must be included in {@link #paths()}. Will be included
      * as the "main" field for the manifest entry in "js-plugins/manifest.json".
      *
-     *
      * @return the main JS file path
      */
     public abstract Path main();
 
     /**
-     * The directory path of the resources to serve. The path must exist ({@code Files.isDirectory(path())}).
+     * The directory path of the resources to serve. The resources will be served via the URL path
+     * "js-plugins/{name}/{relativeToPath}". The path must exist ({@code Files.isDirectory(path())}).
      *
      * @return the path
      */
     public abstract Path path();
 
     /**
-     * The paths to serve, specified relative to {@link #path()}. The resources will be served via the URL path
-     * "js-plugins/{name}/{relativePath}". By default, is {@link Paths#all()}.
+     * The subset of resources from {@link #path()} to serve. Production installations should preferably be packaged
+     * with the exact resources necessary (and thus served with {@link Paths#all()}). During development, other subsets
+     * may be useful if {@link #path()} contains content unrelated to the JS content. By default, is
+     * {@link Paths#all()}.
      *
      * @return the paths
      */

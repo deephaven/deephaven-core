@@ -45,8 +45,7 @@ public final class JsPluginConfigDirRegistration implements Registration {
     public void registerInto(Callback callback) {
         // <configDir>/js-plugins/ (manifest root)
         final Path manifestRoot = ConfigDir.get()
-                .map(JsPluginConfigDirRegistration::resolveJsPlugins)
-                .map(JsPluginConfigDirRegistration::resolveManifest)
+                .map(p -> p.resolve(JS_PLUGINS).resolve(MANIFEST_JSON))
                 .filter(Files::exists)
                 .map(Path::getParent)
                 .orElse(null);
@@ -62,13 +61,5 @@ public final class JsPluginConfigDirRegistration implements Registration {
         for (JsPlugin plugin : plugins) {
             callback.register(plugin);
         }
-    }
-
-    private static Path resolveJsPlugins(Path p) {
-        return p.resolve(JS_PLUGINS);
-    }
-
-    private static Path resolveManifest(Path p) {
-        return p.resolve(MANIFEST_JSON);
     }
 }
