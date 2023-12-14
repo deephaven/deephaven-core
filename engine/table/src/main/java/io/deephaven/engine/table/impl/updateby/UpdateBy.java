@@ -300,13 +300,13 @@ public abstract class UpdateBy {
                     dirtyWindowOperators[winIdx].set(0, windows[winIdx].operators.length);
                 }
                 // Create the proper JobScheduler for the following parallel tasks
-                if (OperationInitializationThreadPool.canParallelize()) {
-                    jobScheduler = new OperationInitializationPoolJobScheduler();
+                if (ExecutionContext.getContext().getInitializer().canParallelize()) {
+                    jobScheduler =
+                            new OperationInitializationPoolJobScheduler(ExecutionContext.getContext().getInitializer());
                 } else {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;
                 }
                 executionContext = ExecutionContext.newBuilder()
-                        .captureUpdateGraph()
                         .markSystemic().build();
             } else {
                 // Determine which windows need to be computed.
