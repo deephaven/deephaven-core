@@ -69,13 +69,15 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     /**
      * Represents a BarrageSnapshot.
+     * <p>
+     * See {@link BarrageSnapshot#make}.
      *
      * @param session the Deephaven session that this export belongs to
      * @param executorService an executor service used to flush metrics when enabled
      * @param tableHandle the tableHandle to snapshot (ownership is transferred to the snapshot)
      * @param options the transport level options for this snapshot
      */
-    public BarrageSnapshotImpl(
+    BarrageSnapshotImpl(
             final BarrageSession session, @Nullable final ScheduledExecutorService executorService,
             final TableHandle tableHandle, final BarrageSnapshotOptions options) {
         super(false);

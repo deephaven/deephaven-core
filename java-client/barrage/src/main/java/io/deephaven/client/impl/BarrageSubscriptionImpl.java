@@ -18,6 +18,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraphAwareCompletableFuture;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -25,7 +26,6 @@ import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.CallOptions;
@@ -73,17 +73,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private static final AtomicIntegerFieldUpdater<BarrageSubscriptionImpl> CONNECTED_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(BarrageSubscriptionImpl.class, "connected");
 
-    public static BarrageSubscriptionImpl make(
-            final BarrageSession session, final ScheduledExecutorService executorService,
-            final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
-        final LivenessScope scope = new LivenessScope();
-        try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
-            return new BarrageSubscriptionImpl(session, executorService, tableHandle, options, scope);
-        }
-    }
-
     /**
      * Represents a BarrageSubscription.
+     * <p>
+     * See {@link BarrageSubscription#make}.
      *
      * @param session the Deephaven session that this export belongs to
      * @param executorService an executor service used to flush stats
@@ -91,7 +84,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
      * @param options the transport level options for this subscription
      * @param constructionScope the scope used for constructing this
      */
-    private BarrageSubscriptionImpl(
+    BarrageSubscriptionImpl(
             final BarrageSession session, final ScheduledExecutorService executorService,
             final TableHandle tableHandle, final BarrageSubscriptionOptions options,
             final LivenessScope constructionScope) {
@@ -463,9 +456,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     private interface FutureAdapter extends Future<Table> {
-        boolean complete(Table value);
-
         boolean completeExceptionally(Throwable ex);
+
+        boolean complete(Table value);
 
         /**
          * Called when the hand-off from the future is complete to release the construction scope.
@@ -479,16 +472,22 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         @FinalDefault
         default Table doGet(final Supplier supplier) throws InterruptedException, ExecutionException, TimeoutException {
+            boolean throwingTimeout = false;
             try {
                 final Table result = supplier.get();
 
-                if (result instanceof LivenessArtifact) {
+                if (result instanceof LivenessArtifact && DynamicNode.notDynamicOrIsRefreshing(result)) {
                     ((LivenessArtifact) result).manageWithCurrentScope();
                 }
 
                 return result;
+            } catch (final TimeoutException toe) {
+                throwingTimeout = true;
+                throw toe;
             } finally {
-                maybeRelease();
+                if (!throwingTimeout) {
+                    maybeRelease();
+                }
             }
         }
     }
