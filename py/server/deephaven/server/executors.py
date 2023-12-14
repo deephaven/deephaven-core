@@ -11,6 +11,7 @@ when there is no chance of using either lock.
 from typing import Callable, Dict, List
 import jpy
 from deephaven.jcompat import j_runnable
+from deephaven import DHError
 
 
 _executors: Dict[str, Callable[[Callable[[], None]], None]] = {}
@@ -53,4 +54,6 @@ def _register_named_java_executor(executor_name: str, java_executor: jpy.JType) 
         executor_name (str): the name of the executor to register
         java_executor (jpy.JType): a Java Consumer<Runnable> instance
     """
+    if executor_name in executor_names():
+        raise DHError(f"Executor with name {executor_name} already registered")
     _executors[executor_name] = lambda task: java_executor.accept(j_runnable(task))
