@@ -11,8 +11,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.ColumnSourceManager;
-import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
@@ -32,7 +30,7 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 /**
- * DataIndex that accumulates the individual per-{@link TableLocation} data indexes of a {@link SourceTable} backed by a
+ * DataIndex that accumulates the individual per-{@link TableLocation} data indexes of a {@link Table} backed by a
  * {@link RegionedColumnSourceManager}.
  * 
  * @implNote This implementation is responsible for ensuring that the provided table accounts for the relative positions
@@ -48,7 +46,8 @@ class MergedDataIndex extends BaseDataIndex {
     private static final String LOCATION_DATA_INDEX_TABLE_COLUMN_NAME = "__DataIndexTable";
 
     private final String[] keyColumnNames;
-    private final ColumnSourceManager columnSourceManager;
+    private final RegionedColumnSourceManager columnSourceManager;
+
     private final Map<ColumnSource<?>, String> keyColumnMap;
 
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
@@ -62,7 +61,7 @@ class MergedDataIndex extends BaseDataIndex {
     MergedDataIndex(
             @NotNull final String[] keyColumnNames,
             @NotNull final ColumnSource<?>[] keySources,
-            @NotNull final ColumnSourceManager columnSourceManager) {
+            @NotNull final RegionedColumnSourceManager columnSourceManager) {
 
         Require.eq(keyColumnNames.length, "keyColumnNames.length", keySources.length, "keySources.length");
 

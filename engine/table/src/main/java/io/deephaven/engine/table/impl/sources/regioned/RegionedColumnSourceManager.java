@@ -4,23 +4,25 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.ColumnSourceManager;
-import io.deephaven.engine.table.impl.ColumnToCodecMappings;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
+import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,7 +31,7 @@ import java.util.stream.Stream;
 /**
  * Manage column sources made up of regions in their own row key address space.
  */
-public class RegionedColumnSourceManager implements ColumnSourceManager {
+public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode implements ColumnSourceManager {
 
     private static final Logger log = LoggerFactory.getLogger(RegionedColumnSourceManager.class);
 
@@ -71,15 +73,29 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
      */
     private final List<IncludedTableLocationEntry> orderedIncludedTableLocations = new ArrayList<>();
 
+    private static final String LOCATION_COLUMN_NAME = "dh_location";
+    private static final String ROWSET_COLUMN_NAME = "dh_rowset";
+    private static final TableDefinition LOCATION_TABLE_DEFINITION = TableDefinition.of(
+            ColumnDefinition.fromGenericType(LOCATION_COLUMN_NAME, TableLocation.class),
+            ColumnDefinition.fromGenericType(ROWSET_COLUMN_NAME, RowSet.class));
+    private static final Map<String, Object> LOCATION_TABLE_ATTRIBUTES = Map.of(
+            Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE,
+            Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+
     /**
-     * Non-empty table locations stored in a table. Rows are keyed by location index.
+     * Non-empty table locations stored in a table. Rows are keyed by {@link IncludedTableLocationEntry#regionIndex
+     * region index}.
      */
     private final QueryTable includedLocationsTable;
-    private static final String LOCATION_COLUMN_NAME = "dh_location";
     private final ObjectArraySource<TableLocation> locationSource;
-    private static final String ROWSET_COLUMN_NAME = "dh_rowset";
     private final ObjectArraySource<RowSet> rowSetSource;
     private final ModifiedColumnSet rowSetModifiedColumnSet;
+
+    /**
+     * A reference to a delayed error notifier for the {@link #includedLocationsTable}, if one is pending.
+     */
+    @ReferentialIntegrity
+    private Runnable delayedErrorReference;
 
     /**
      * Construct a column manager with the specified component factory and definitions.
@@ -88,10 +104,13 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
      * @param componentFactory The component factory
      * @param columnDefinitions The column definitions
      */
-    RegionedColumnSourceManager(final boolean isRefreshing,
+    RegionedColumnSourceManager(
+            final boolean isRefreshing,
             @NotNull final RegionedTableComponentFactory componentFactory,
             @NotNull final ColumnToCodecMappings codecMappings,
             @NotNull final List<ColumnDefinition<?>> columnDefinitions) {
+        super(false);
+
         this.isRefreshing = isRefreshing;
         this.columnDefinitions = columnDefinitions;
         for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
@@ -103,15 +122,20 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         // Create the table that will hold the location data
         locationSource = new ObjectArraySource<>(TableLocation.class);
         rowSetSource = new ObjectArraySource<>(RowSet.class);
-        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+        final LinkedHashMap<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
         columnSourceMap.put(LOCATION_COLUMN_NAME, locationSource);
         columnSourceMap.put(ROWSET_COLUMN_NAME, rowSetSource);
 
-        includedLocationsTable = new QueryTable(RowSetFactory.empty().toTracking(), columnSourceMap);
+        includedLocationsTable = new QueryTable(
+                LOCATION_TABLE_DEFINITION,
+                RowSetFactory.empty().toTracking(),
+                columnSourceMap,
+                null, // No need to pre-allocate a MCS
+                LOCATION_TABLE_ATTRIBUTES) {{
+            setFlat();
+            setRefreshing(isRefreshing);
+        }};
         if (isRefreshing) {
-            includedLocationsTable.setRefreshing(true);
-            locationSource.startTrackingPrevValues();
-            rowSetSource.startTrackingPrevValues();
             rowSetModifiedColumnSet = includedLocationsTable.newModifiedColumnSet(ROWSET_COLUMN_NAME);
         } else {
             rowSetModifiedColumnSet = null;
@@ -165,7 +189,29 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     }
 
     @Override
-    public synchronized WritableRowSet refresh(final boolean initializing) {
+    public synchronized TrackingWritableRowSet initialize() {
+        final TrackingWritableRowSet initialRowSet = update(true).toTracking();
+
+    }
+
+    @Override
+    public synchronized WritableRowSet refresh() {
+        return update(false);
+    }
+
+    @Override
+    public void deliverError(@NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+        // Notify any listeners to the locations table that we had an error.
+        final BaseTable<?> locationTable = (BaseTable<?>) columnSourceManager.locationTable();
+        if (locationTable.getLastNotificationStep() == updateGraph.clock().currentStep()) {
+            delayedErrorReference = new DelayedErrorNotifier(e, entry, locationTable);
+        } else {
+            locationTable.notifyListenersOnError(e, entry);
+            locationTable.forceReferenceCountToZero();
+        }
+    }
+
+    private WritableRowSet update(final boolean initializing) {
         final RowSetBuilderSequential addedRowSetBuilder = RowSetFactory.builderSequential();
 
         final RowSetBuilderSequential addedRegionBuilder = initializing ? null : RowSetFactory.builderSequential();
@@ -189,25 +235,25 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
 
         Collection<EmptyTableLocationEntry> entriesToInclude = null;
         for (final Iterator<EmptyTableLocationEntry> iterator = emptyTableLocations.iterator(); iterator.hasNext();) {
-            final EmptyTableLocationEntry nonexistentEntry = iterator.next();
-            nonexistentEntry.refresh();
-            final RowSet locationRowSet = nonexistentEntry.location.getRowSet();
-            if (locationRowSet != null) {
-                if (locationRowSet.isEmpty()) {
-                    locationRowSet.close();
-                } else {
-                    nonexistentEntry.initialRowSet = locationRowSet;
-                    (entriesToInclude == null ? entriesToInclude = new TreeSet<>() : entriesToInclude)
-                            .add(nonexistentEntry);
-                    iterator.remove();
-                }
+            final EmptyTableLocationEntry emptyEntry = iterator.next();
+            emptyEntry.refresh();
+            final RowSet locationRowSet = emptyEntry.location.getRowSet();
+            if (locationRowSet == null) {
+                continue;
+            }
+            if (locationRowSet.isEmpty()) {
+                locationRowSet.close();
+            } else {
+                emptyEntry.initialRowSet = locationRowSet;
+                (entriesToInclude == null ? entriesToInclude = new TreeSet<>() : entriesToInclude).add(emptyEntry);
+                iterator.remove();
             }
         }
+        final int previousNumRegions = includedTableLocations.size();
+        final int newNumRegions = previousNumRegions + (entriesToInclude == null ? 0 : entriesToInclude.size());
         if (entriesToInclude != null) {
-            final int startIndex = includedTableLocations.size();
-            final int endIndex = startIndex + entriesToInclude.size() - 1;
-            locationSource.ensureCapacity(endIndex + 1);
-            rowSetSource.ensureCapacity(endIndex + 1);
+            locationSource.ensureCapacity(newNumRegions);
+            rowSetSource.ensureCapacity(newNumRegions);
 
             for (final EmptyTableLocationEntry entryToInclude : entriesToInclude) {
                 final IncludedTableLocationEntry entry = new IncludedTableLocationEntry(entryToInclude);
@@ -219,27 +265,28 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 locationSource.set(entry.regionIndex, entry.location);
                 rowSetSource.set(entry.regionIndex, entry.location.getRowSet());
             }
-            includedLocationsTable.getRowSet().writableCast().insertRange(startIndex, endIndex);
-            if (addedRegionBuilder != null) {
-                addedRegionBuilder.appendRange(startIndex, endIndex);
-            }
         }
+
         if (!isRefreshing) {
             emptyTableLocations.clear();
-        } else if (!initializing) {
-            // Send the downstream updates to any listeners of the table.
-            final RowSet added = addedRegionBuilder.build();
-            final RowSet modified = modifiedRegionBuilder.build();
-            if (added.isEmpty() && modified.isEmpty()) {
-                added.close();
-                modified.close();
+        }
+// TODO-RWC: Finish table initialization and index intialization. Don't forget prev tracking and rowset prev reset
+        if (initializing) {
+            rowSetSource.startTrackingPrevValues();
+        } else {
+            final RowSet modifiedRegions = modifiedRegionBuilder.build();
+            if (previousNumRegions == newNumRegions && modifiedRegions.isEmpty()) {
+                modifiedRegions.close();
             } else {
                 final TableUpdate update = new TableUpdateImpl(
-                        added,
+                        previousNumRegions == newNumRegions
+                                ? RowSetFactory.empty()
+                                : RowSetFactory.fromRange(previousNumRegions + 1, newNumRegions),
                         RowSetFactory.empty(),
-                        modified,
+                        modifiedRegions,
                         RowSetShiftData.EMPTY,
-                        modified.isNonempty() ? rowSetModifiedColumnSet : ModifiedColumnSet.EMPTY);
+                        modifiedRegions.isNonempty() ? rowSetModifiedColumnSet : ModifiedColumnSet.EMPTY);
+                includedLocationsTable.getRowSet().writableCast().insertRange(previousNumRegions, newNumRegions - 1);
                 includedLocationsTable.notifyListeners(update);
             }
         }
@@ -260,18 +307,31 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    @Override
-    public Table locationTable() {
+    /**
+     * Get the added locations that have been found to exist and have non-zero size as a table containing the
+     * {@link RowSet row sets} for each location.
+     *
+     * @return The added locations that have been found to exist and have non-zero size
+     */
+    Table locationTable() {
         return includedLocationsTable;
     }
 
-    @Override
-    public String locationColumnName() {
+    /**
+     * Get the name of the column that contains the {@link TableLocation} values from {@link #locationTable()}.
+     *
+     * @return The name of the location column
+     */
+    String locationColumnName() {
         return LOCATION_COLUMN_NAME;
     }
 
-    @Override
-    public String rowSetColumnName() {
+    /**
+     * Get the name of the column that contains the {@link RowSet} values from {@link #locationTable()}.
+     *
+     * @return The name of the row set column
+     */
+    String rowSetColumnName() {
         return ROWSET_COLUMN_NAME;
     }
 

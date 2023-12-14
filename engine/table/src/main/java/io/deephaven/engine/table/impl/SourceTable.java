@@ -78,12 +78,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     private Runnable locationChangePoller;
 
     /**
-     * A reference to a delayed error notifier, if one is pending.
-     */
-    @ReferentialIntegrity
-    private Runnable delayedErrorReference;
-
-    /**
      * Construct a new disk-backed table.
      *
      * @param tableDefinition A TableDefinition
@@ -111,10 +105,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     ColumnToCodecMappings.EMPTY,
                     definition.getColumns() // This is the *re-written* definition passed to the super-class constructor
             );
-
-            // Add a liveness reference to the location table.
             if (isRefreshing) {
-                manage(columnSourceManager.locationTable());
+                manage(columnSourceManager);
             }
         }
 
@@ -204,25 +196,13 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             QueryPerformanceRecorder.withNugget(description + ".initializeLocationSizes()", sizeForInstrumentation(),
                     () -> {
                         Assert.eqNull(rowSet, "rowSet");
-                        rowSet = refreshLocationSizes(true).toTracking();
+                        rowSet = columnSourceManager.initialize();
                         if (!isRefreshing()) {
                             return;
                         }
-                        rowSet.initializePreviousValue();
-                        final long currentClockValue = getUpdateGraph().clock().currentValue();
-                        setLastNotificationStep(LogicalClock.getState(currentClockValue) == LogicalClock.State.Updating
-                                ? LogicalClock.getStep(currentClockValue) - 1
-                                : LogicalClock.getStep(currentClockValue));
+                        initializeLastNotificationStep(getUpdateGraph().clock());
                     });
             locationSizesInitialized = true;
-        }
-    }
-
-    private WritableRowSet refreshLocationSizes(final boolean initializing) {
-        try {
-            return columnSourceManager.refresh(initializing);
-        } catch (Exception e) {
-            throw new TableDataException("Error refreshing location sizes", e);
         }
     }
 
@@ -253,7 +233,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     return;
                 }
 
-                final RowSet added = refreshLocationSizes(false);
+                final RowSet added = columnSourceManager.refresh();
                 if (added.isEmpty()) {
                     return;
                 }
@@ -271,14 +251,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 // Notify listeners to the SourceTable when we had an issue refreshing available locations.
                 notifyListenersOnError(e, entry);
 
-                // Notify any listeners to the locations table that we had an error.
-                final BaseTable<?> locationTable = (BaseTable<?>) columnSourceManager.locationTable();
-                if (locationTable.getLastNotificationStep() == updateGraph.clock().currentStep()) {
-                    delayedErrorReference = new DelayedErrorNotifier(e, entry, locationTable);
-                } else {
-                    locationTable.notifyListenersOnError(e, entry);
-                    locationTable.forceReferenceCountToZero();
-                }
+                // And be sure that the ColumnSourceManager is aware
+                columnSourceManager.deliverError(e, entry);
             }
         }
     }
@@ -364,8 +338,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         for (final ColumnDefinition<?> partitioningColumnDefinition : tableDefinition.getPartitioningColumns()) {
             final ColumnSource<?> keySource = columnSourceMap.get(partitioningColumnDefinition.getName());
             final DataIndex dataIndex = new PartitioningColumnDataIndex<>(
-                    keySource,
                     partitioningColumnDefinition.getName(),
+                    keySource,
                     columnSourceManager);
             dataIndexer.addDataIndex(dataIndex);
         }

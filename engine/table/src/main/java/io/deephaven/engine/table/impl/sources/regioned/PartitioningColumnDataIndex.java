@@ -13,7 +13,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
@@ -25,17 +27,16 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 /**
- * DataIndex over a partitioning column of a {@link SourceTable} backed by a {@link RegionedColumnSourceManager}.
+ * DataIndex over a partitioning column of a {@link Table} backed by a {@link RegionedColumnSourceManager}.
  */
-// TODO-RWC: Maybe we want the data indexes for a source table to live inside the CSM for coupling.
-// TODO-RWC: Do we need "previous" support on instantiation?
-public class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
+class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
 
     private static final int KEY_NOT_FOUND = -1;
 
-    private final ColumnSource<KEY_TYPE> keySource;
     private final String keyColumnName;
-    private final ColumnSourceManager columnSourceManager;
+    private final RegionedColumnSourceManager columnSourceManager;
+
+    private final Map<ColumnSource<?>, String> keyColumnMap;
 
     /** The table containing the index. Consists of a sorted key column and an associated RowSet column. */
     private final QueryTable indexTable;
@@ -49,13 +50,14 @@ public class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
     private final ModifiedColumnSet upstreamRowSetModified;
     private final ModifiedColumnSet downstreamRowSetModified;
 
-    public PartitioningColumnDataIndex(
-            @NotNull final ColumnSource<KEY_TYPE> keySource,
+    PartitioningColumnDataIndex(
             @NotNull final String keyColumnName,
-            @NotNull final ColumnSourceManager columnSourceManager) {
-        this.keySource = keySource;
-        this.columnSourceManager = columnSourceManager;
+            @NotNull final ColumnSource<KEY_TYPE> keySource,
+            @NotNull final RegionedColumnSourceManager columnSourceManager) {
         this.keyColumnName = keyColumnName;
+        this.columnSourceManager = columnSourceManager;
+
+        keyColumnMap = Map.of(keySource, keyColumnName);
 
         // Build the index table and the position lookup map.
         final QueryTable locationTable = (QueryTable) columnSourceManager.locationTable().coalesce();
@@ -223,7 +225,7 @@ public class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
     @Override
     @NotNull
     public Map<ColumnSource<?>, String> keyColumnMap() {
-        return Map.of(keySource, keyColumnName);
+        return keyColumnMap;
     }
 
     @Override
