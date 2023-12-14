@@ -24,6 +24,7 @@ import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.thread.NamingThreadFactory;
 import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -96,7 +97,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         }
         scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
-        registerJavaExecutor();
+        registerJavaExecutor(threadInitializationFactory);
         publishInitial();
         /*
          * And now the user-defined initialization scripts, if any.
@@ -126,15 +127,21 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         }
         scriptFinder = null;
 
-        registerJavaExecutor();
+        registerJavaExecutor(threadInitializationFactory);
         publishInitial();
     }
 
-    private void registerJavaExecutor() {
+    private void registerJavaExecutor(ThreadInitializationFactory threadInitializationFactory) {
         // TODO (deephaven-core#4040) Temporary exec service until we have cleaner startup wiring
         try (PyModule pyModule = PyModule.importModule("deephaven.server.executors");
                 final PythonDeephavenThreadsModule module = pyModule.createProxy(PythonDeephavenThreadsModule.class)) {
-            ExecutorService executorService = Executors.newFixedThreadPool(1);
+            NamingThreadFactory threadFactory = new NamingThreadFactory(PythonDeephavenSession.class, "serverThread") {
+                @Override
+                public Thread newThread(@NotNull Runnable r) {
+                    return super.newThread(threadInitializationFactory.createInitializer(r));
+                }
+            };
+            ExecutorService executorService = Executors.newFixedThreadPool(1, threadFactory);
             module._register_named_java_executor("serial", executorService::submit);
             module._register_named_java_executor("concurrent", executorService::submit);
         }
