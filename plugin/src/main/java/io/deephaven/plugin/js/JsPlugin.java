@@ -43,8 +43,7 @@ import java.nio.file.Path;
  * }
  * </pre>
  *
- * and the file "/path-to/my-plugin/dist/index.js" would be served at "js-plugins/foo/dist/index.js". All other files of
- * the form "/path-to/my-plugin/{somePath}" will be served at "js-plugins/foo/{somePath}".
+ * and all files of the form "/path-to/my-plugin/{somePath}" would be served at "js-plugins/foo/{somePath}".
  */
 @Immutable
 @BuildableStyle
@@ -55,8 +54,9 @@ public abstract class JsPlugin extends PluginBase {
     }
 
     /**
-     * The JS plugin name. The JS plugin contents will be served via the URL path "js-plugins/{name}/", as well as
-     * included as the "name" field for the manifest entry in "js-plugins/manifest.json".
+     * The JS plugin name. The JS plugin contents will be served under the URL path "js-plugins/{name}/", as well as
+     * included as the "name" field for the manifest entry in "js-plugins/manifest.json". The "/" character will not be
+     * URL encoded - the name "@example/foo" would be served under the URL path "js-plugins/@example/foo/".
      *
      * @return the name
      */
