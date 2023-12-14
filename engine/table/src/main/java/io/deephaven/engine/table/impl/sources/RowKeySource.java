@@ -6,10 +6,13 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 
-public class RowIdSource extends AbstractColumnSource<Long> implements ImmutableColumnSourceGetDefaults.ForLong {
-    public static final RowIdSource INSTANCE = new RowIdSource();
+/**
+ * A column source that returns the row key as a long.
+ */
+public class RowKeySource extends AbstractColumnSource<Long> implements ImmutableColumnSourceGetDefaults.ForLong {
+    public static final RowKeySource INSTANCE = new RowKeySource();
 
-    public RowIdSource() {
+    public RowKeySource() {
         super(Long.class);
     }
 
