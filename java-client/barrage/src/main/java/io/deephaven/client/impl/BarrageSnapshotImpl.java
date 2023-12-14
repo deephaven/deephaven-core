@@ -10,7 +10,6 @@ import io.deephaven.barrage.flatbuf.*;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.exceptions.RequestCancelledException;
-import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -38,7 +37,9 @@ import org.jetbrains.annotations.Nullable;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
@@ -359,76 +360,19 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         }
     }
 
-    private static final AtomicIntegerFieldUpdater<SnapshotCompletableFuture> WAS_RELEASED =
-            AtomicIntegerFieldUpdater.newUpdater(SnapshotCompletableFuture.class, "wasReleased");
 
     /**
      * The Completable Future is used to encapsulate the concept that the table is filled with requested data.
-     * <p>
-     * We will keep the result table alive until the user calls {@link Future#get get()} on the future. Note that this
-     * only protects the getters on {@link Future} not the entire {@link CompletionStage} interface.
-     * <p>
-     * Subsequent calls to {@link Future#get get()} will only succeed if the result is still alive and will increase the
-     * the reference count of the result table.
      */
     private class SnapshotCompletableFuture extends CompletableFuture<Table> {
-        volatile int wasReleased;
-
-        public SnapshotCompletableFuture() {
-            resultTable.incrementReferenceCount();
-        }
-
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
-            maybeRelease();
             if (super.cancel(mayInterruptIfRunning)) {
                 BarrageSnapshotImpl.this.cancel("cancelled by user");
                 return true;
             }
+
             return false;
-        }
-
-        @Override
-        public boolean completeExceptionally(Throwable ex) {
-            maybeRelease();
-            return super.completeExceptionally(ex);
-        }
-
-        @Override
-        public Table get(final long timeout, @NotNull final TimeUnit unit)
-                throws InterruptedException, ExecutionException, TimeoutException {
-            try {
-                final Table result = super.get(timeout, unit);
-
-                if (result instanceof LivenessArtifact) {
-                    ((LivenessArtifact) result).manageWithCurrentScope();
-                }
-
-                return result;
-            } finally {
-                maybeRelease();
-            }
-        }
-
-        @Override
-        public Table get() throws InterruptedException, ExecutionException {
-            try {
-                final Table result = super.get();
-
-                if (result instanceof LivenessArtifact) {
-                    ((LivenessArtifact) result).manageWithCurrentScope();
-                }
-
-                return result;
-            } finally {
-                maybeRelease();
-            }
-        }
-
-        private void maybeRelease() {
-            if (WAS_RELEASED.compareAndSet(this, 0, 1)) {
-                resultTable.decrementReferenceCount();
-            }
         }
     }
 }

@@ -25,8 +25,9 @@ import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.function.ThrowingSupplier;
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
 import io.grpc.Context;
@@ -45,7 +46,6 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.function.Supplier;
 
 /**
  * This class is an intermediary helper class that uses a {@code DoExchange} to populate a {@link BarrageTable} using
@@ -64,14 +64,23 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private final CheckForCompletion checkForCompletion;
     private final BarrageTable resultTable;
 
+    private LivenessScope constructionScope;
     private volatile FutureAdapter future;
     private boolean subscribed;
     private boolean isSnapshot;
 
-
     private volatile int connected = 1;
     private static final AtomicIntegerFieldUpdater<BarrageSubscriptionImpl> CONNECTED_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(BarrageSubscriptionImpl.class, "connected");
+
+    public static BarrageSubscriptionImpl make(
+            final BarrageSession session, final ScheduledExecutorService executorService,
+            final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
+        final LivenessScope scope = new LivenessScope();
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
+            return new BarrageSubscriptionImpl(session, executorService, tableHandle, options, scope);
+        }
+    }
 
     /**
      * Represents a BarrageSubscription.
@@ -80,15 +89,18 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
      * @param executorService an executor service used to flush stats
      * @param tableHandle the tableHandle to subscribe to (ownership is transferred to the subscription)
      * @param options the transport level options for this subscription
+     * @param constructionScope the scope used for constructing this
      */
-    public BarrageSubscriptionImpl(
+    private BarrageSubscriptionImpl(
             final BarrageSession session, final ScheduledExecutorService executorService,
-            final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
+            final TableHandle tableHandle, final BarrageSubscriptionOptions options,
+            final LivenessScope constructionScope) {
         super(false);
 
         this.logName = tableHandle.exportId().toString();
         this.tableHandle = tableHandle;
         this.options = options;
+        this.constructionScope = constructionScope;
 
         final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         final TableDefinition tableDefinition = schema.tableDef;
@@ -454,6 +466,31 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         boolean complete(Table value);
 
         boolean completeExceptionally(Throwable ex);
+
+        /**
+         * Called when the hand-off from the future is complete to release the construction scope.
+         */
+        void maybeRelease();
+
+        @FunctionalInterface
+        interface Supplier {
+            Table get() throws InterruptedException, ExecutionException, TimeoutException;
+        }
+
+        @FinalDefault
+        default Table doGet(final Supplier supplier) throws InterruptedException, ExecutionException, TimeoutException {
+            try {
+                final Table result = supplier.get();
+
+                if (result instanceof LivenessArtifact) {
+                    ((LivenessArtifact) result).manageWithCurrentScope();
+                }
+
+                return result;
+            } finally {
+                maybeRelease();
+            }
+        }
     }
 
     private static final AtomicIntegerFieldUpdater<CompletableFutureAdapter> CF_WAS_RELEASED =
@@ -466,22 +503,21 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
      * only protects the getters on {@link Future} not the entire {@link CompletionStage} interface.
      * <p>
      * Subsequent calls to {@link Future#get get()} will only succeed if the result is still alive and will increase the
-     * the reference count of the result table.
+     * reference count of the result table.
      */
     private class CompletableFutureAdapter extends CompletableFuture<Table> implements FutureAdapter {
 
         volatile int wasReleased;
 
-        public CompletableFutureAdapter() {
-            resultTable.incrementReferenceCount();
-        }
-
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
-            maybeRelease();
-            if (super.cancel(mayInterruptIfRunning)) {
-                BarrageSubscriptionImpl.this.cancel("cancelled by user");
-                return true;
+            try {
+                if (super.cancel(mayInterruptIfRunning)) {
+                    BarrageSubscriptionImpl.this.cancel("cancelled by user");
+                    return true;
+                }
+            } finally {
+                maybeRelease();
             }
             return false;
         }
@@ -495,37 +531,23 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         @Override
         public Table get(final long timeout, @NotNull final TimeUnit unit)
                 throws InterruptedException, ExecutionException, TimeoutException {
-            try {
-                final Table result = super.get(timeout, unit);
-
-                if (result instanceof LivenessArtifact) {
-                    ((LivenessArtifact) result).manageWithCurrentScope();
-                }
-
-                return result;
-            } finally {
-                maybeRelease();
-            }
+            return doGet(() -> super.get(timeout, unit));
         }
 
         @Override
         public Table get() throws InterruptedException, ExecutionException {
             try {
-                final Table result = super.get();
-
-                if (result instanceof LivenessArtifact) {
-                    ((LivenessArtifact) result).manageWithCurrentScope();
-                }
-
-                return result;
-            } finally {
-                maybeRelease();
+                return doGet(super::get);
+            } catch (TimeoutException toe) {
+                throw new IllegalStateException("Unexpected TimeoutException", toe);
             }
         }
 
-        private void maybeRelease() {
+        @Override
+        public void maybeRelease() {
             if (CF_WAS_RELEASED.compareAndSet(this, 0, 1)) {
-                resultTable.decrementReferenceCount();
+                constructionScope.release();
+                constructionScope = null;
             }
         }
     }
@@ -540,7 +562,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
      * We will keep the result table alive until the user calls {@link Future#get get()} on the future.
      * <p>
      * Subsequent calls to {@link Future#get get()} will only succeed if the result is still alive and will increase the
-     * the reference count of the result table.
+     * reference count of the result table.
      */
     private class UpdateGraphAwareFutureAdapter extends UpdateGraphAwareCompletableFuture<Table>
             implements FutureAdapter {
@@ -549,15 +571,17 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         public UpdateGraphAwareFutureAdapter(@NotNull final UpdateGraph updateGraph) {
             super(updateGraph);
-            resultTable.incrementReferenceCount();
         }
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
-            maybeRelease();
-            if (super.cancel(mayInterruptIfRunning)) {
-                BarrageSubscriptionImpl.this.cancel("cancelled by user");
-                return true;
+            try {
+                if (super.cancel(mayInterruptIfRunning)) {
+                    BarrageSubscriptionImpl.this.cancel("cancelled by user");
+                    return true;
+                }
+            } finally {
+                maybeRelease();
             }
             return false;
         }
@@ -571,37 +595,23 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         @Override
         public Table get(final long timeout, @NotNull final TimeUnit unit)
                 throws InterruptedException, ExecutionException, TimeoutException {
-            try {
-                final Table result = super.get(timeout, unit);
-
-                if (result instanceof LivenessArtifact) {
-                    ((LivenessArtifact) result).manageWithCurrentScope();
-                }
-
-                return result;
-            } finally {
-                maybeRelease();
-            }
+            return doGet(() -> super.get(timeout, unit));
         }
 
         @Override
         public Table get() throws InterruptedException, ExecutionException {
             try {
-                final Table result = super.get();
-
-                if (result instanceof LivenessArtifact) {
-                    ((LivenessArtifact) result).manageWithCurrentScope();
-                }
-
-                return result;
-            } finally {
-                maybeRelease();
+                return doGet(super::get);
+            } catch (TimeoutException toe) {
+                throw new IllegalStateException("Unexpected TimeoutException", toe);
             }
         }
 
-        private void maybeRelease() {
+        @Override
+        public void maybeRelease() {
             if (UG_WAS_RELEASED.compareAndSet(this, 0, 1)) {
-                resultTable.decrementReferenceCount();
+                constructionScope.release();
+                constructionScope = null;
             }
         }
     }
