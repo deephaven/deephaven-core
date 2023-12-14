@@ -5,6 +5,7 @@ package io.deephaven.client.impl;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.qst.table.TableSpec;
 import org.jetbrains.annotations.Nullable;
@@ -54,6 +55,11 @@ public interface BarrageSnapshot {
          */
         BarrageSnapshot snapshot(TableHandle tableHandle, BarrageSnapshotOptions options);
     }
+
+    /**
+     * @return the {@link TableDefinition} of the subscribed table
+     */
+    TableDefinition getTableDefinition();
 
     /**
      * Request a full snapshot of the data and populate a {@link Table} with the data that is received. The returned

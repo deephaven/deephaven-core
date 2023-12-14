@@ -177,6 +177,11 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     }
 
     @Override
+    public TableDefinition getTableDefinition() {
+        return resultTable.getDefinition();
+    }
+
+    @Override
     public Future<Table> entireTable() {
         return partialTable(null, null, false);
     }

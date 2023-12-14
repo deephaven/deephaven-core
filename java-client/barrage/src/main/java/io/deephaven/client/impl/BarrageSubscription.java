@@ -7,6 +7,7 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.util.SafeCloseable;
@@ -59,6 +60,11 @@ public interface BarrageSubscription {
          */
         BarrageSubscription subscribe(TableHandle tableHandle, BarrageSubscriptionOptions options);
     }
+
+    /**
+     * @return the {@link TableDefinition} of the subscribed table
+     */
+    TableDefinition getTableDefinition();
 
     /**
      * Request a full subscription of the data and populate a {@link Table} with the incrementally updating data that is
