@@ -104,9 +104,7 @@ def to_table(pa_table: pa.Table, cols: List[str] = None) -> Table:
         j_barrage_table_builder.setSchema(pa_buffer)
 
         record_batches = pa_table.to_batches()
-        for rb in record_batches:
-            pa_buffer = rb.serialize()
-            j_barrage_table_builder.addRecordBatch(pa_buffer)
+        j_barrage_table_builder.addRecordBatches([jpy.byte_buffer(rb.serialize()) for rb in record_batches])
         j_barrage_table_builder.onCompleted()
 
         return Table(j_table=j_barrage_table_builder.getResultTable())

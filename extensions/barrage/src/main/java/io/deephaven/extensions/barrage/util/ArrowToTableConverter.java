@@ -81,6 +81,13 @@ public class ArrowToTableConverter {
     }
 
     @ScriptApi
+    public synchronized void addRecordBatches(final ByteBuffer... ipcMessages) {
+        for (final ByteBuffer ipcMessage : ipcMessages) {
+            addRecordBatch(ipcMessage);
+        }
+    }
+
+    @ScriptApi
     public synchronized void addRecordBatch(final ByteBuffer ipcMessage) {
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
