@@ -41,7 +41,8 @@ def submit_task(executor_name: str, task: Callable[[], None]) -> None:
         executor_name (str): the name of the executor to submit the task to
         task (Callable[[], None]): the function to run on the named executor
 
-    Raises: KeyError if the executor name
+    Raises:
+         KeyError if the executor name
     """
     _executors[executor_name](task)
 
@@ -53,6 +54,9 @@ def _register_named_java_executor(executor_name: str, java_executor: jpy.JType) 
     Args:
         executor_name (str): the name of the executor to register
         java_executor (jpy.JType): a Java Consumer<Runnable> instance
+
+    Raises:
+        DHError
     """
     if executor_name in executor_names():
         raise DHError(f"Executor with name {executor_name} already registered")
