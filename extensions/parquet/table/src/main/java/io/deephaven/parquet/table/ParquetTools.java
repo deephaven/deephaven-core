@@ -586,7 +586,7 @@ public class ParquetTools {
         final Table firstTable = sources[0];
         final Map<String, ? extends ColumnSource<?>> columnSourceMap = firstTable.getColumnSourceMap();
         final DataIndexer dataIndexer = DataIndexer.of(firstTable.getRowSet());
-        final List<PrimaryDataIndex> dataIndexes = dataIndexer.dataIndexes();
+        final List<DataIndex> dataIndexes = dataIndexer.dataIndexes();
         final Set<String[]> indexesToWrite = new HashSet<>();
 
         // Build the list of indexes to write.
@@ -1165,7 +1165,7 @@ public class ParquetTools {
         }
 
         // Either there are more than 1 key columns, or there was no grouping info, so lets see if there was a
-        // PrimaryDataIndex.
+        // DataIndex.
         final DataIndexInfo di = info.dataIndexes().stream()
                 .filter(item -> item.matchesColumns(keyColumnNames))
                 .findFirst()

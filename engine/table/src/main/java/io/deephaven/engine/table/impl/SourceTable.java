@@ -357,7 +357,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         final TableDefinition tableDefinition = getDefinition();
         for (final ColumnDefinition<?> partitioningColumnDefinition : tableDefinition.getPartitioningColumns()) {
             final ColumnSource<?> keySource = columnSourceMap.get(partitioningColumnDefinition.getName());
-            final PrimaryDataIndex dataIndex = new PartitioningColumnDataIndexImpl<>(
+            final DataIndex dataIndex = new PartitioningColumnDataIndexImpl<>(
                     keySource,
                     partitioningColumnDefinition.getName(),
                     columnSourceManager);
@@ -380,7 +380,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             final ColumnSource<?>[] keySources = Arrays.stream(keyColumnNames)
                     .map(columnSourceMap::get)
                     .toArray(ColumnSource[]::new);
-            final PrimaryDataIndex dataIndex = new StorageBackedDataIndexImpl(
+            final DataIndex dataIndex = new StorageBackedDataIndexImpl(
                     keySources,
                     keyColumnNames,
                     columnSourceManager);

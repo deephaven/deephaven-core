@@ -112,7 +112,7 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
         SafeCloseable.closeAll(rsIt);
 
         // Verify that every key in the row set is in the index at the correct position.
-        final PrimaryDataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
+        final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
         final ColumnSource<RowSet> rowSetColumn = dataIndex.rowSetColumn();
 
         for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {

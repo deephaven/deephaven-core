@@ -143,7 +143,7 @@ public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet> {
             boolean invertMatch,
             boolean usePrev,
             boolean caseInsensitive,
-            @Nullable final PrimaryDataIndex dataIndex,
+            @Nullable final DataIndex dataIndex,
             @NotNull RowSet mapper, Object... keys) {
         throw new NotImplementedException("RowSetColumnSourceWrapper.match");
     }

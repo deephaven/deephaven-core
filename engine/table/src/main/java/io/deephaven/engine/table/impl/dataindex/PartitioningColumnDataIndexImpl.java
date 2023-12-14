@@ -18,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 /**
- * DataIndex over a partitioning column of a SourceTable.
+ * BasicDataIndex over a partitioning column of a SourceTable.
  */
 public class PartitioningColumnDataIndexImpl<KEY_TYPE> extends BaseDataIndex {
 

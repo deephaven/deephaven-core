@@ -94,7 +94,7 @@ class NaturalJoinHelper {
             final DataIndexer leftDataIndexer = DataIndexer.of(leftTable.getRowSet());
             final boolean useIndex;
             if (bucketingContext.useLeftIndex) {
-                final PrimaryDataIndex leftDataIndex =
+                final DataIndex leftDataIndex =
                         leftDataIndexer.getDataIndex(bucketingContext.originalLeftSources);
                 // Using the index has overhead, so make sure the payoff is sufficient.
                 useIndex = leftDataIndex.table().size() <= leftTable.size() * INDEX_THRESHOLD_FRACTION;
@@ -118,7 +118,7 @@ class NaturalJoinHelper {
                         jsm.makeInitialBuildContext()) {
 
                     if (useIndex) {
-                        final PrimaryDataIndex leftDataIndex =
+                        final DataIndex leftDataIndex =
                                 leftDataIndexer.getDataIndex(bucketingContext.originalLeftSources);
                         final Table leftIndexTable = leftDataIndex.table();
                         final ColumnSource<RowSet> rowSetSource = leftDataIndex.rowSetColumn();
@@ -170,7 +170,7 @@ class NaturalJoinHelper {
 
                 jsm.buildFromRightSide(rightTable, bucketingContext.rightSources);
                 if (useIndex) {
-                    final PrimaryDataIndex leftDataIndex =
+                    final DataIndex leftDataIndex =
                             leftDataIndexer.getDataIndex(bucketingContext.originalLeftSources);
                     final Table leftIndexTable = leftDataIndex.table();
                     final ColumnSource<RowSet> rowSetSource = leftDataIndex.rowSetColumn();
@@ -216,7 +216,7 @@ class NaturalJoinHelper {
 
                 if (useIndex) {
                     final DataIndexer dataIndexer = DataIndexer.of(leftTable.getRowSet());
-                    final PrimaryDataIndex leftDataIndex =
+                    final DataIndex leftDataIndex =
                             dataIndexer.getDataIndex(bucketingContext.originalLeftSources);
                     final Table leftIndexTable = leftDataIndex.table();
 
@@ -258,7 +258,7 @@ class NaturalJoinHelper {
                 return result;
             } else { // both are static
                 if (useIndex) {
-                    final PrimaryDataIndex leftDataIndex =
+                    final DataIndex leftDataIndex =
                             leftDataIndexer.getDataIndex(bucketingContext.originalLeftSources);
                     final Table leftIndexTable = leftDataIndex.table();
 

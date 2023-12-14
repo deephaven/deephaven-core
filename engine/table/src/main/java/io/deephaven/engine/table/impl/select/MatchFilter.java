@@ -44,7 +44,7 @@ public class MatchFilter extends WhereFilterImpl {
 
     /** The data index for the source table, if any. */
     @Nullable
-    private PrimaryDataIndex sourceDataIndex;
+    private DataIndex sourceDataIndex;
     private boolean initialized = false;
 
     public enum MatchType {
@@ -135,7 +135,7 @@ public class MatchFilter extends WhereFilterImpl {
     }
 
     @Override
-    public List<PrimaryDataIndex> getDataIndexes(final Table sourceTable) {
+    public List<DataIndex> getDataIndexes(final Table sourceTable) {
         if (sourceDataIndex == null) {
             // The outside world knows we would like to use this index, we can rely on it being in the correct state
             // for this cycle only.

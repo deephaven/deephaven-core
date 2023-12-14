@@ -43,7 +43,7 @@ public class TestParquetGrouping extends RefreshingTableTestCase {
             final Table tableR = ParquetTools.readTable(dest);
             assertEquals(data.length, tableR.size());
             final DataIndexer dataIndexer = DataIndexer.of(tableR.getRowSet());
-            final PrimaryDataIndex dataIndex = dataIndexer.getDataIndex(tableR, "V");
+            final DataIndex dataIndex = dataIndexer.getDataIndex(tableR, "V");
             Assert.neqNull(dataIndex, "dataIndex");
             final Table allGroupingTable = dataIndex.table();
 
@@ -51,7 +51,7 @@ public class TestParquetGrouping extends RefreshingTableTestCase {
             assertEquals(80_000 * 4, tableR.getRowSet().size());
             assertEquals(80_000, allGroupingTable.size());
 
-            final PrimaryDataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
+            final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
 
             final ColumnSource<RowSet> rowSetColumnSource = dataIndex.rowSetColumn();
 

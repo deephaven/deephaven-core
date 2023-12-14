@@ -893,13 +893,13 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(fromDisk, table);
 
         // Read the legacy grouping table.
-        final PrimaryDataIndex fromDiskIndex =
+        final DataIndex fromDiskIndex =
                 DataIndexer.of(fromDisk.getRowSet()).getDataIndex(fromDisk, groupingColName);
         final Table fromDiskIndexTable = fromDiskIndex.table();
 
         // Create a dynamic index from the table.
         DataIndexer.of(table.getRowSet()).createDataIndex(table, groupingColName);
-        final PrimaryDataIndex tableIndex = DataIndexer.of(table.getRowSet()).getDataIndex(table, groupingColName);
+        final DataIndex tableIndex = DataIndexer.of(table.getRowSet()).getDataIndex(table, groupingColName);
         final Table tableIndexTable = tableIndex.table();
 
         // Validate the loaded and created index match.

@@ -256,7 +256,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
         // Create the index for this table and column.
         dataIndexer.createDataIndex(timeTable, "Timestamp");
 
-        final DataIndex dataIndex =
+        final BasicDataIndex dataIndex =
                 dataIndexer.getDataIndex(dtColumn).transform(
                         DataIndexTransformer.builder()
                                 .intersectRowSet(RowSetFactory.fromRange(100, 109))
@@ -283,7 +283,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
         // Create the index for this table and column.
         dataIndexer.createDataIndex(riTable, "longTimestamp");
 
-        final DataIndex longDataIndex =
+        final BasicDataIndex longDataIndex =
                 dataIndexer.getDataIndex(riTable.getColumnSource("longTimestamp")).transform(
                         DataIndexTransformer.builder()
                                 .intersectRowSet(RowSetFactory.fromRange(100, 109))

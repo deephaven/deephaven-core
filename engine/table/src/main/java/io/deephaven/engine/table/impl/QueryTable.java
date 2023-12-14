@@ -1222,7 +1222,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
                         // Request the data indexes from the filters so we can include any index tables in the
                         // snapshot control.
-                        final List<PrimaryDataIndex> dataIndexList = new ArrayList<>();
+                        final List<DataIndex> dataIndexList = new ArrayList<>();
                         Arrays.stream(filters).forEach(filter -> dataIndexList.addAll(filter.getDataIndexes(this)));
                         final NotificationStepSource[] dataIndexTables = dataIndexList.stream()
                                 .map(di -> (NotificationStepSource) di.table())
@@ -1362,7 +1362,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final boolean setRefreshing = rightTable.isRefreshing();
 
                     final String[] columnNames = MatchPair.getRightColumns(columnsToMatch);
-                    final PrimaryDataIndex rightIndex =
+                    final DataIndex rightIndex =
                             DataIndexer.of(rightTable.getRowSet()).getDataIndex(rightTable, columnNames);
                     if (rightIndex != null) {
                         // We have a distinct index table, let's use it.
@@ -1592,7 +1592,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         // Get a list of all the data indexes in the source table.
         final DataIndexer dataIndexer = DataIndexer.of(rowSet);
-        final List<PrimaryDataIndex> dataIndexes = dataIndexer.dataIndexes();
+        final List<DataIndex> dataIndexes = dataIndexer.dataIndexes();
         if (dataIndexes.isEmpty()) {
             return;
         }
@@ -1666,8 +1666,8 @@ public class QueryTable extends BaseTable<QueryTable> {
             return;
         }
 
-        // Add new PrimaryDataIndex entries to the DataIndexer with the remapped column sources.
-        for (final PrimaryDataIndex dataIndex : dataIndexes) {
+        // Add new DataIndex entries to the DataIndexer with the remapped column sources.
+        for (final DataIndex dataIndex : dataIndexes) {
             // Create a new data index for each unique mapping.
             oldToNewMaps.forEach(map -> {
                 if (Collections.disjoint(dataIndex.keyColumnMap().keySet(), map.keySet())) {
@@ -1675,8 +1675,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                     return;
                 }
 
-                // Create a new PrimaryDataIndex using the new column sources as keys.
-                final PrimaryDataIndex remappedIndex = dataIndex.remapKeyColumns(map);
+                // Create a new DataIndex using the new column sources as keys.
+                final DataIndex remappedIndex = dataIndex.remapKeyColumns(map);
 
                 // Add the new index to the DataIndexer.
                 dataIndexer.addDataIndex(remappedIndex);

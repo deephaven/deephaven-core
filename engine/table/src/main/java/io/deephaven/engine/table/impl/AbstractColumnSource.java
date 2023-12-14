@@ -12,7 +12,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.PrimaryDataIndex;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
@@ -124,7 +124,7 @@ public abstract class AbstractColumnSource<T> implements
             final boolean invertMatch,
             final boolean usePrev,
             final boolean caseInsensitive,
-            @Nullable final PrimaryDataIndex dataIndex,
+            @Nullable final DataIndex dataIndex,
             @NotNull final RowSet mapper,
             final Object... keys) {
 
@@ -159,7 +159,7 @@ public abstract class AbstractColumnSource<T> implements
                 }
             } else {
                 // Use the lookup function to get the matching RowSets intersected with the mapper
-                final PrimaryDataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
+                final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
                 for (Object key : keys) {
                     final long rowKey = rowKeyLookup.apply(key, usePrev);
                     final RowSet range = usePrev

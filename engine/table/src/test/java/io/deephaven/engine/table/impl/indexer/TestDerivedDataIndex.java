@@ -35,7 +35,7 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
     private static final int MAX_STEPS = 100;
     private ColumnInfo<?, ?>[] columnInfo;
     private QueryTable testTable;
-    private List<PrimaryDataIndex> dataIndexes;
+    private List<DataIndex> dataIndexes;
 
     @Override
     public void setUp() throws Exception {
@@ -78,11 +78,11 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                     .build();
             final Function<RowSet, RowSet> intersectInvertMutator = (rs) -> tableRowSet.invert(rs.intersect(reduced));
 
-            for (final PrimaryDataIndex dataIndex : dataIndexes) {
+            for (final DataIndex dataIndex : dataIndexes) {
                 assertRefreshing(dataIndex);
 
                 // Test each transform individually.
-                DataIndex subIndex = dataIndex.transform(intersectTransformer);
+                BasicDataIndex subIndex = dataIndex.transform(intersectTransformer);
                 assertStatic(subIndex);
                 assertLookupMutator(dataIndex, subIndex, intersectMutator);
 
@@ -117,11 +117,11 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                 final Function<RowSet, RowSet> intersectInvertMutator =
                         (rs) -> tableRowSet.invert(rs.intersect(reduced));
 
-                for (final PrimaryDataIndex dataIndex : dataIndexes) {
+                for (final DataIndex dataIndex : dataIndexes) {
                     assertRefreshing(dataIndex);
 
                     // Test each transform individually.
-                    DataIndex subIndex = dataIndex.transform(intersectTransformer);
+                    BasicDataIndex subIndex = dataIndex.transform(intersectTransformer);
                     assertStatic(subIndex);
                     assertLookupMutator(dataIndex, subIndex, intersectMutator);
 
@@ -143,10 +143,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
 
         final DataIndexTransformer transformer = DataIndexTransformer.builder().sortByFirstRowKey(true).build();
 
-        for (final PrimaryDataIndex dataIndex : dataIndexes) {
+        for (final DataIndex dataIndex : dataIndexes) {
             assertRefreshing(dataIndex);
 
-            DataIndex subIndex = dataIndex.transform(transformer);
+            BasicDataIndex subIndex = dataIndex.transform(transformer);
             assertRefreshing(subIndex);
             assertSortedByFirstRowKey(subIndex);
             assertLookup(dataIndex, subIndex);
@@ -157,10 +157,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
             ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(STEP_SIZE, random, testTable, columnInfo));
 
-            for (final PrimaryDataIndex dataIndex : dataIndexes) {
+            for (final DataIndex dataIndex : dataIndexes) {
                 assertRefreshing(dataIndex);
 
-                DataIndex subIndex = dataIndex.transform(transformer);
+                BasicDataIndex subIndex = dataIndex.transform(transformer);
                 assertRefreshing(subIndex);
                 assertSortedByFirstRowKey(subIndex);
                 assertLookup(dataIndex, subIndex);
@@ -174,10 +174,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
 
         final DataIndexTransformer transformer = DataIndexTransformer.builder().immutable(true).build();
 
-        for (final PrimaryDataIndex dataIndex : dataIndexes) {
+        for (final DataIndex dataIndex : dataIndexes) {
             assertRefreshing(dataIndex);
 
-            DataIndex subIndex = dataIndex.transform(transformer);
+            BasicDataIndex subIndex = dataIndex.transform(transformer);
             assertImmutable(subIndex);
             assertLookup(dataIndex, subIndex);
         }
@@ -187,10 +187,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
             ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(STEP_SIZE, random, testTable, columnInfo));
 
-            for (final PrimaryDataIndex dataIndex : dataIndexes) {
+            for (final DataIndex dataIndex : dataIndexes) {
                 assertRefreshing(dataIndex);
 
-                DataIndex subIndex = dataIndex.transform(transformer);
+                BasicDataIndex subIndex = dataIndex.transform(transformer);
                 assertImmutable(subIndex);
                 assertLookup(dataIndex, subIndex);
             }
@@ -208,10 +208,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                     .build();
             final Function<RowSet, RowSet> mutator = (rs) -> rs.intersect(reduced);
 
-            for (final PrimaryDataIndex dataIndex : dataIndexes) {
+            for (final DataIndex dataIndex : dataIndexes) {
                 assertRefreshing(dataIndex);
 
-                DataIndex subIndex = dataIndex.transform(transformer);
+                BasicDataIndex subIndex = dataIndex.transform(transformer);
                 assertStatic(subIndex);
                 assertImmutable(subIndex);
                 assertLookupMutator(dataIndex, subIndex, mutator);
@@ -231,10 +231,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                         .build();
                 final Function<RowSet, RowSet> mutator = (rs) -> rs.intersect(reduced);
 
-                for (final PrimaryDataIndex dataIndex : dataIndexes) {
+                for (final DataIndex dataIndex : dataIndexes) {
                     assertRefreshing(dataIndex);
 
-                    DataIndex subIndex = dataIndex.transform(transformer);
+                    BasicDataIndex subIndex = dataIndex.transform(transformer);
                     assertStatic(subIndex);
                     assertImmutable(subIndex);
                     assertLookupMutator(dataIndex, subIndex, mutator);
@@ -252,10 +252,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                 .immutable(true)
                 .build();
 
-        for (final PrimaryDataIndex dataIndex : dataIndexes) {
+        for (final DataIndex dataIndex : dataIndexes) {
             assertRefreshing(dataIndex);
 
-            DataIndex subIndex = dataIndex.transform(transformer);
+            BasicDataIndex subIndex = dataIndex.transform(transformer);
             assertStatic(subIndex);
             assertImmutable(subIndex);
             assertSortedByFirstRowKey(subIndex);
@@ -267,10 +267,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
             ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(STEP_SIZE, random, testTable, columnInfo));
 
-            for (final PrimaryDataIndex dataIndex : dataIndexes) {
+            for (final DataIndex dataIndex : dataIndexes) {
                 assertRefreshing(dataIndex);
 
-                DataIndex subIndex = dataIndex.transform(transformer);
+                BasicDataIndex subIndex = dataIndex.transform(transformer);
                 assertStatic(subIndex);
                 assertImmutable(subIndex);
                 assertSortedByFirstRowKey(subIndex);
@@ -290,10 +290,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                     .build();
             final Function<RowSet, RowSet> mutator = (rs) -> rs.intersect(reduced);
 
-            for (final PrimaryDataIndex dataIndex : dataIndexes) {
+            for (final DataIndex dataIndex : dataIndexes) {
                 assertRefreshing(dataIndex);
 
-                DataIndex subIndex = dataIndex.transform(transformer);
+                BasicDataIndex subIndex = dataIndex.transform(transformer);
                 assertStatic(subIndex);
                 assertSortedByFirstRowKey(subIndex);
                 assertLookupMutator(dataIndex, subIndex, mutator);
@@ -313,10 +313,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                         .build();
                 final Function<RowSet, RowSet> mutator = (rs) -> rs.intersect(reduced);
 
-                for (final PrimaryDataIndex dataIndex : dataIndexes) {
+                for (final DataIndex dataIndex : dataIndexes) {
                     assertRefreshing(dataIndex);
 
-                    DataIndex subIndex = dataIndex.transform(transformer);
+                    BasicDataIndex subIndex = dataIndex.transform(transformer);
                     assertStatic(subIndex);
                     assertSortedByFirstRowKey(subIndex);
                     assertLookupMutator(dataIndex, subIndex, mutator);
@@ -338,10 +338,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                     .build();
             final Function<RowSet, RowSet> mutator = (rs) -> tableRowSet.invert(rs.intersect(reduced));
 
-            for (final PrimaryDataIndex dataIndex : dataIndexes) {
+            for (final DataIndex dataIndex : dataIndexes) {
                 assertRefreshing(dataIndex);
 
-                DataIndex subIndex = dataIndex.transform(transformer);
+                BasicDataIndex subIndex = dataIndex.transform(transformer);
                 assertStatic(subIndex);
                 assertSortedByFirstRowKey(subIndex);
                 assertLookupMutator(dataIndex, subIndex, mutator);
@@ -363,10 +363,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                         .build();
                 final Function<RowSet, RowSet> mutator = (rs) -> tableRowSet.invert(rs.intersect(reduced));
 
-                for (final PrimaryDataIndex dataIndex : dataIndexes) {
+                for (final DataIndex dataIndex : dataIndexes) {
                     assertRefreshing(dataIndex);
 
-                    DataIndex subIndex = dataIndex.transform(transformer);
+                    BasicDataIndex subIndex = dataIndex.transform(transformer);
                     assertStatic(subIndex);
                     assertSortedByFirstRowKey(subIndex);
                     assertLookupMutator(dataIndex, subIndex, mutator);
@@ -376,17 +376,17 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
     }
 
 
-    private void assertStatic(final DataIndex subIndex) {
+    private void assertStatic(final BasicDataIndex subIndex) {
         Assert.eqFalse(subIndex.isRefreshing(), "subIndex.isRefreshing()");
         Assert.eqFalse(subIndex.table().isRefreshing(), "subIndex.table().isRefreshing()");
     }
 
-    private void assertRefreshing(final DataIndex subIndex) {
+    private void assertRefreshing(final BasicDataIndex subIndex) {
         Assert.eqTrue(subIndex.isRefreshing(), "subIndex.isRefreshing()");
         Assert.eqTrue(subIndex.table().isRefreshing(), "subIndex.table().isRefreshing()");
     }
 
-    private void assertImmutable(final DataIndex subIndex) {
+    private void assertImmutable(final BasicDataIndex subIndex) {
         final Table subIndexTable = subIndex.table();
 
         // This transform should result in a static index.
@@ -400,11 +400,11 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
         Assert.eqTrue(allImmutable, "All columns are immutable");
     }
 
-    private void assertLookup(final PrimaryDataIndex fullIndex,
-            final DataIndex subIndex) {
+    private void assertLookup(final DataIndex fullIndex,
+            final BasicDataIndex subIndex) {
         final Table subIndexTable = subIndex.table();
 
-        final PrimaryDataIndex.RowKeyLookup fullIndexRowKeyLookup = fullIndex.rowKeyLookup();
+        final DataIndex.RowKeyLookup fullIndexRowKeyLookup = fullIndex.rowKeyLookup();
         final TObjectLongHashMap<Object> subIndexKeyMap =
                 BaseDataIndex.buildKeyMap(subIndex.table(), subIndex.keyColumnNames());
 
@@ -428,8 +428,8 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
     }
 
     private void assertLookupMutator(
-            final PrimaryDataIndex fullIndex,
-            final DataIndex subIndex,
+            final DataIndex fullIndex,
+            final BasicDataIndex subIndex,
             final Function<RowSet, RowSet> mutator) {
         final Table fullIndexTable = fullIndex.table();
         final TObjectLongHashMap<Object> subIndexKeyMap =
@@ -460,7 +460,7 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
         }
     }
 
-    private void assertSortedByFirstRowKey(final DataIndex subIndex) {
+    private void assertSortedByFirstRowKey(final BasicDataIndex subIndex) {
         final Table subIndexTable = subIndex.table();
 
         try (final CloseableIterator<RowSet> subRowSetIt =

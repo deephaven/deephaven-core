@@ -56,7 +56,7 @@ public interface ColumnSource<T>
             boolean invertMatch,
             boolean usePrev,
             boolean caseInsensitive,
-            @Nullable final PrimaryDataIndex dataIndex,
+            @Nullable final DataIndex dataIndex,
             @NotNull RowSet mapper,
             Object... keys);
 

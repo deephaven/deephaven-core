@@ -25,21 +25,21 @@ import java.util.function.Function;
 
 import static io.deephaven.engine.table.impl.dataindex.BaseDataIndex.INDEX_COL_NAME;
 
-public class DerivedDataIndex extends LivenessArtifact implements DataIndex {
+public class TransformedDataIndex extends LivenessArtifact implements BasicDataIndex {
     private static final int CHUNK_SIZE = 2048;
     @NotNull
-    private final PrimaryDataIndex parentIndex;
+    private final DataIndex parentIndex;
     @NotNull
     private final DataIndexTransformer transformer;
     private SoftReference<Table> cachedTable = new SoftReference<>(null);
     private long cachedTableStep = -1;
 
-    public static DerivedDataIndex from(@NotNull final PrimaryDataIndex index,
+    public static TransformedDataIndex from(@NotNull final DataIndex index,
             @NotNull final DataIndexTransformer transformer) {
-        return new DerivedDataIndex(index, transformer);
+        return new TransformedDataIndex(index, transformer);
     }
 
-    private DerivedDataIndex(@NotNull final PrimaryDataIndex parentIndex,
+    private TransformedDataIndex(@NotNull final DataIndex parentIndex,
             @NotNull final DataIndexTransformer transformer) {
         this.parentIndex = parentIndex;
         this.transformer = transformer;
@@ -105,7 +105,7 @@ public class DerivedDataIndex extends LivenessArtifact implements DataIndex {
                 || transformer.immutable();
     }
 
-    // region PrimaryDataIndex materialization operations
+    // region DataIndex materialization operations
     private static Function<RowSet, RowSet> getMutator(
             @Nullable final RowSet intersectRowSet,
             @Nullable final RowSet invertRowSet) {
@@ -281,5 +281,5 @@ public class DerivedDataIndex extends LivenessArtifact implements DataIndex {
         // All the sources were already immutable, we can just return the input table.
         return indexTable;
     }
-    // endregion PrimaryDataIndex materialization operations
+    // endregion DataIndex materialization operations
 }

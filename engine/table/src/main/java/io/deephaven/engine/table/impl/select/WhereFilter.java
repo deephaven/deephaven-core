@@ -8,7 +8,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.PrimaryDataIndex;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
@@ -116,11 +116,11 @@ public interface WhereFilter extends Filter {
     }
 
     /**
-     * Get all the {@link PrimaryDataIndex data indexes} that will be used by this filter when executed.
+     * Get all the {@link DataIndex data indexes} that will be used by this filter when executed.
      *
      * @param sourceTable the table to filter
      */
-    default List<PrimaryDataIndex> getDataIndexes(final Table sourceTable) {
+    default List<DataIndex> getDataIndexes(final Table sourceTable) {
         return List.of();
     }
 

@@ -31,7 +31,7 @@ public interface DataIndexTransformer {
 
     /**
      * Create a {@link DataIndexTransformer.Builder builder} that specifies transformations to apply to an existing
-     * {@link PrimaryDataIndex data index}.
+     * {@link DataIndex data index}.
      * <p>
      * When multiple transformations are specified, they are applied in a specific order:
      * <ol>

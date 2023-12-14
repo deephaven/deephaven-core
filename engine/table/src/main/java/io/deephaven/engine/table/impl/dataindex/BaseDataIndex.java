@@ -32,17 +32,17 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
  * This class provides a data index for a table. The index is itself a table with columns corresponding to the indexed
  * key column(s) and a column of RowSets that contain the key values.
  */
-public abstract class BaseDataIndex extends LivenessArtifact implements PrimaryDataIndex {
+public abstract class BaseDataIndex extends LivenessArtifact implements DataIndex {
 
     static final String INDEX_COL_NAME = "dh_row_set";
 
     @Override
-    public DataIndex transform(@NotNull final DataIndexTransformer transformer) {
-        return DerivedDataIndex.from(this, transformer);
+    public BasicDataIndex transform(@NotNull final DataIndexTransformer transformer) {
+        return TransformedDataIndex.from(this, transformer);
     }
 
     @Override
-    public PrimaryDataIndex remapKeyColumns(final @NotNull Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap) {
+    public DataIndex remapKeyColumns(final @NotNull Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap) {
         return new RemappedDataIndex(this, oldToNewColumnMap);
     }
 
