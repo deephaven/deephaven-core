@@ -6,9 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
@@ -19,7 +17,6 @@ import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.*;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import org.jetbrains.annotations.NotNull;
@@ -203,7 +200,7 @@ public class TestPartitioningColumns {
         }
 
         @Override
-        protected @Nullable Table loadDataIndex(@NotNull String... columns) {
+        protected @Nullable BasicDataIndex loadDataIndex(@NotNull String... columns) {
             throw new UnsupportedOperationException();
         }
     }

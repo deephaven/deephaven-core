@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableKey;
@@ -45,7 +46,7 @@ public final class NonexistentTableLocation extends AbstractTableLocation {
 
     @Override
     @Nullable
-    protected Table loadDataIndex(@NotNull String... columns) {
+    protected BasicDataIndex loadDataIndex(@NotNull String... columns) {
         throw new UnsupportedOperationException();
     }
 

@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.locations;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.annotations.FinalDefault;
@@ -113,7 +114,7 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
      * @return the index table or null if one does not exist.
      */
     @Nullable
-    Table getDataIndex(@NotNull String... columns);
+    BasicDataIndex getDataIndex(@NotNull String... columns);
 
     /**
      * @param name The column name

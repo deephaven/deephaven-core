@@ -27,14 +27,10 @@ public interface BasicDataIndex extends LivenessReferent {
     /** Return the index table key sources in the order of the index table. **/
     @FinalDefault
     default ColumnSource<?>[] indexKeyColumns() {
-        // Reverse the map to lookup from column name to column source.
-        final Map<String, ColumnSource<?>> map = keyColumnMap().entrySet().stream()
-                .collect(LinkedHashMap::new, (m, e) -> m.put(e.getValue(), e.getKey()), Map::putAll);
-        final ColumnSource<?>[] columnSources = Arrays.stream(keyColumnNames())
-                .map(map::get)
+        final Table indexTable = table();
+        return Arrays.stream(keyColumnNames())
+                .map(indexTable::getColumnSource)
                 .toArray(ColumnSource[]::new);
-        return indexKeyColumns(columnSources);
-        // TODO-RWC: Should this be in a static helper instead of the interface?
     }
 
     /** Return the index table key sources in the relative order of the indexed sources supplied. **/

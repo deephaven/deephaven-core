@@ -8,7 +8,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.dataindex.LocationDataIndex;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
@@ -35,6 +37,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.IntStream;
+
+import static io.deephaven.parquet.table.ParquetTableWriter.INDEX_COL_NAME;
 
 public class ParquetTableLocation extends AbstractTableLocation {
 
@@ -220,7 +224,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     @Nullable
     @Override
-    public Table loadDataIndex(@NotNull final String... columns) {
-        return ParquetTools.readDataIndexTable(getParquetFile(), tableInfo, columns);
+    public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
+        // Create a new index from the parquet table.
+        final Table table = ParquetTools.readDataIndexTable(getParquetFile(), tableInfo, columns);
+        if (table == null) {
+            return null;
+        }
+        return LocationDataIndex.from(table, columns, INDEX_COL_NAME);
     }
 }

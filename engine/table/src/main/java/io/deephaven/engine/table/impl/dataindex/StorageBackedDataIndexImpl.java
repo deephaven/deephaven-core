@@ -144,7 +144,7 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
                     // Since the index table is already materialized, we need to load the location data index table
                     // and add it to the partitioned table.
                     try {
-                        final Table locationIndexTable = locationState.getCachedIndexTable();
+                        final Table locationIndexTable = locationState.getCachedLocationIndex();
                         partitionTableConstituentSource.set(key, locationIndexTable);
                         addedBuilder.appendKey(key);
                     } catch (Exception e) {
@@ -159,13 +159,13 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
         update.modified().forAllRowKeys((long key) -> {
             final LocationState locationState = locationStates.get((int) key);
             // Reset the cached index table for the modified location states.
-            locationState.cachedIndexTable = null;
+            locationState.cachedTable = null;
 
             if (generateUpdates) {
                 // Since the index table is already materialized, we need to load the new location data index table
                 // and replace it in the partitioned table.
                 try {
-                    final Table locationIndexTable = locationState.getCachedIndexTable();
+                    final Table locationIndexTable = locationState.getCachedLocationIndex();
                     partitionTableConstituentSource.set(key, locationIndexTable);
                     modifiedBuilder.addKey(key);
                 } catch (Exception e) {
@@ -233,7 +233,7 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
                             // block on a future? Or would that lead to a deadlock if this is running on a UGP thread?
                             // How can we tell if this is UGP or initialization pool?
                             for (final LocationState ls : locationStates) {
-                                final Table locationIndexTable = ls.getCachedIndexTable();
+                                final Table locationIndexTable = ls.getCachedLocationIndex();
                                 partitionTableConstituentSource.set(partitionRowKey++, locationIndexTable);
                             }
                         } catch (Exception e) {
@@ -318,7 +318,7 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
         private final TableLocation location;
         private final long offsetKey;
         private final String[] keyColumns;
-        private SoftReference<Table> cachedIndexTable;
+        private SoftReference<Table> cachedTable;
 
         private LocationState(final TableLocation location,
                 final long offsetKey,
@@ -329,37 +329,40 @@ public class StorageBackedDataIndexImpl extends BaseDataIndex {
         }
 
         @Nullable
-        private Table getCachedIndexTable() {
+        private Table getCachedLocationIndex() {
             // Already cached?
-            if (cachedIndexTable != null) {
-                final Table result = cachedIndexTable.get();
+            if (cachedTable != null) {
+                final Table result = cachedTable.get();
                 if (result != null) {
                     return result;
                 }
             }
 
             synchronized (this) {
-                if (cachedIndexTable != null) {
-                    final Table result = cachedIndexTable.get();
+                if (cachedTable != null) {
+                    final Table result = cachedTable.get();
                     if (result != null) {
                         return result;
                     }
                 }
 
-                Table indexTable = location.getDataIndex(keyColumns);
-                if (indexTable != null) {
-                    Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>(indexTable.getColumnSourceMap());
-
-                    // Record the first key as a column of this table using a SingleValueColumnSource.
-                    SingleValueColumnSource<?> offsetKeySource =
-                            SingleValueColumnSource.getSingleValueColumnSource(long.class);
-                    offsetKeySource.set(offsetKey);
-                    columnSourceMap.put(OFFSET_KEY_COL_NAME, offsetKeySource);
-
-                    indexTable = new QueryTable(indexTable.getRowSet(), columnSourceMap);
-                    cachedIndexTable = new SoftReference<>(indexTable);
+                // Load the data index from the location and build a new table with the offset key as a column.
+                BasicDataIndex index = location.getDataIndex(keyColumns);
+                if (index == null) {
+                    return null;
                 }
-                return indexTable;
+                final Table indexTable = index.table();
+                Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>(indexTable.getColumnSourceMap());
+
+                // Record the first key as a column of this table using a SingleValueColumnSource.
+                SingleValueColumnSource<?> offsetKeySource =
+                        SingleValueColumnSource.getSingleValueColumnSource(long.class);
+                offsetKeySource.set(offsetKey);
+                columnSourceMap.put(OFFSET_KEY_COL_NAME, offsetKeySource);
+
+                final Table result = new QueryTable(indexTable.getRowSet(), columnSourceMap);
+                cachedTable = new SoftReference<>(result);
+                return result;
             }
         }
     }
