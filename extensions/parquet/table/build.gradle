@@ -31,6 +31,8 @@ dependencies {
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:apache-client:2.21.43'
 
+    implementation("software.amazon.nio.s3:aws-java-nio-spi-for-s3:1.2.4")
+
     Classpaths.inheritCommonsText(project, 'implementation')
 
     Classpaths.inheritJacksonPlatform(project)

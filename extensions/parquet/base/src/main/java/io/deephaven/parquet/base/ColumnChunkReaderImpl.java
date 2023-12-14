@@ -250,13 +250,8 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                 final long headerOffset = currentOffset;
                 readChannel.position(currentOffset);
                 // deliberately not closing this stream
-                // TODO Assuming header size will be less than 16384
-                final PositionedBufferedInputStream bufferedInput =
-                        new PositionedBufferedInputStream(readChannel, 16384);
-                final PageHeader pageHeader = Util.readPageHeader(bufferedInput);
-                final long headerSize = bufferedInput.position();
-                final long pageDataOffset = currentOffset + headerSize;
-                currentOffset += headerSize + pageHeader.getCompressed_page_size();
+                final PageHeader pageHeader = Util.readPageHeader(Channels.newInputStream(readChannel));
+                currentOffset = readChannel.position() + pageHeader.getCompressed_page_size();
                 if (pageHeader.isSetDictionary_page_header()) {
                     // Dictionary page; skip it
                     return next();
@@ -286,7 +281,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                                 ? dictionarySupplier
                                 : () -> NULL_DICTIONARY;
                 return new ColumnPageReaderImpl(channelsProvider, decompressor, pageDictionarySupplier,
-                        nullMaterializerFactory, path, getFilePath(), fieldTypes, pageDataOffset, pageHeader,
+                        nullMaterializerFactory, path, getFilePath(), fieldTypes, readChannel.position(), pageHeader,
                         ColumnPageReaderImpl.NULL_NUM_VALUES);
             } catch (IOException e) {
                 throw new UncheckedDeephavenException("Error reading page header", e);
