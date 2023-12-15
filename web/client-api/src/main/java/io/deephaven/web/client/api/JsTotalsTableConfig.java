@@ -83,7 +83,8 @@ public class JsTotalsTableConfig {
             JsAggregationOperation.LAST,
             JsAggregationOperation.COUNT_DISTINCT,
             JsAggregationOperation.DISTINCT,
-            JsAggregationOperation.UNIQUE);
+            JsAggregationOperation.UNIQUE,
+            JsAggregationOperation.SKIP);
 
     /**
      * Specifies if a Totals Table should be expanded by default in the UI. Defaults to false.
@@ -111,7 +112,6 @@ public class JsTotalsTableConfig {
      */
     public JsArray<String> groupBy = new JsArray<>();
 
-    private AggregateRequest grpcRequest;
     private JsArray<String> customColumns;
     private JsArray<String> dropColumns;
 
@@ -406,6 +406,10 @@ public class JsTotalsTableConfig {
                 // case JsAggregationOperation.WSUM: {
                 // // TODO #3302 support this
                 // }
+                case JsAggregationOperation.SKIP: {
+                    // cancel entirely, start the loop again
+                    return;
+                }
                 default:
                     JsLog.warn("Aggregation " + aggregationType + " not supported, ignoring");
             }

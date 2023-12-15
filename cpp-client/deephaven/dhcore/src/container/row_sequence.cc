@@ -5,8 +5,7 @@
 
 #include <optional>
 #include "deephaven/dhcore/utility/utility.h"
-
-using deephaven::dhcore::utility::Stringf;
+#include "deephaven/third_party/fmt/format.h"
 
 namespace deephaven::dhcore::container {
 namespace {
@@ -134,7 +133,7 @@ RowSequenceBuilder::~RowSequenceBuilder() = default;
 
 void RowSequenceBuilder::AddInterval(uint64_t begin, uint64_t end) {
   if (begin > end) {
-    auto message = Stringf("Malformed range [%o,%o)", begin, end);
+    auto message = fmt::format("Malformed range [{},{})", begin, end);
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 

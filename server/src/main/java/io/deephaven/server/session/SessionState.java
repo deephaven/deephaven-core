@@ -10,16 +10,13 @@ import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
+import io.deephaven.engine.table.impl.perf.QueryState;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
-import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
-import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.hash.KeyedIntObjectHash;
 import io.deephaven.hash.KeyedIntObjectHashMap;
@@ -217,6 +214,13 @@ public class SessionState {
 
         log.debug().append(logPrefix).append("token, expires at ")
                 .append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis).append(".").endl();
+    }
+
+    /**
+     * @return the session id
+     */
+    public String getSessionId() {
+        return sessionId;
     }
 
     /**
@@ -531,6 +535,9 @@ public class SessionState {
         private final SessionService.ErrorTransformer errorTransformer;
         private final SessionState session;
 
+        /** used to keep track of performance details either for aggregation or for the async ticket resolution */
+        private QueryPerformanceRecorder queryPerformanceRecorder;
+
         /** final result of export */
         private volatile T result;
         private volatile ExportNotification.State state = ExportNotification.State.UNKNOWN;
@@ -620,6 +627,15 @@ public class SessionState {
             return exportId == NON_EXPORT_ID;
         }
 
+        private synchronized void setQueryPerformanceRecorder(
+                final QueryPerformanceRecorder queryPerformanceRecorder) {
+            if (this.queryPerformanceRecorder != null) {
+                throw new IllegalStateException(
+                        "performance query recorder can only be set once on an exportable object");
+            }
+            this.queryPerformanceRecorder = queryPerformanceRecorder;
+        }
+
         /**
          * Sets the dependencies and tracks liveness dependencies.
          *
@@ -662,6 +678,11 @@ public class SessionState {
                 throw new IllegalStateException("export object can only be defined once");
             }
             hasHadWorkSet = true;
+
+            if (queryPerformanceRecorder != null && queryPerformanceRecorder.getState() == QueryState.RUNNING) {
+                // transfer ownership of the qpr to the export before it can be resumed by the scheduler
+                queryPerformanceRecorder.suspendQuery();
+            }
             this.requiresSerialQueue = requiresSerialQueue;
 
             if (isExportStateTerminal(state)) {
@@ -682,7 +703,11 @@ public class SessionState {
             this.errorHandler = errorHandler;
             this.successHandler = successHandler;
 
-            setState(ExportNotification.State.PENDING);
+            if (state != ExportNotification.State.PUBLISHING) {
+                setState(ExportNotification.State.PENDING);
+            } else if (dependentCount > 0) {
+                throw new IllegalStateException("published exports cannot have dependencies");
+            }
             if (dependentCount <= 0) {
                 dependentCount = 0;
                 scheduleExport();
@@ -920,7 +945,7 @@ public class SessionState {
          */
         private void scheduleExport() {
             synchronized (this) {
-                if (state != ExportNotification.State.PENDING) {
+                if (state != ExportNotification.State.PENDING && state != ExportNotification.State.PUBLISHING) {
                     return;
                 }
                 setState(ExportNotification.State.QUEUED);
@@ -959,68 +984,56 @@ public class SessionState {
 
             T localResult = null;
             boolean shouldLog = false;
-            int evaluationNumber = -1;
-            QueryProcessingResults queryProcessingResults = null;
+            final QueryPerformanceRecorder exportRecorder;
             try (final SafeCloseable ignored1 = session.executionContext.open();
                     final SafeCloseable ignored2 = LivenessScopeStack.open()) {
-                try {
-                    queryProcessingResults = new QueryProcessingResults(
-                            QueryPerformanceRecorder.getInstance());
 
-                    evaluationNumber = QueryPerformanceRecorder.getInstance()
-                            .startQuery("session=" + session.sessionId + ",exportId=" + logIdentity);
+                final String queryId;
+                if (isNonExport()) {
+                    queryId = "nonExport=" + logIdentity;
+                } else {
+                    queryId = "exportId=" + logIdentity;
+                }
 
+                final boolean isResume = queryPerformanceRecorder != null
+                        && queryPerformanceRecorder.getState() == QueryState.SUSPENDED;
+                exportRecorder = Objects.requireNonNullElseGet(queryPerformanceRecorder,
+                        () -> QueryPerformanceRecorder.newQuery("ExportObject#doWork(" + queryId + ")",
+                                session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY));
+
+                try (final SafeCloseable ignored3 = isResume
+                        ? exportRecorder.resumeQuery()
+                        : exportRecorder.startQuery()) {
                     try {
                         localResult = capturedExport.call();
-                    } finally {
-                        shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
+                    } catch (final Exception err) {
+                        caughtException = err;
                     }
+                    shouldLog = exportRecorder.endQuery();
                 } catch (final Exception err) {
-                    caughtException = err;
+                    // end query will throw if the export runner left the QPR in a bad state
+                    if (caughtException == null) {
+                        caughtException = err;
+                    }
+                }
+
+                if (caughtException != null) {
                     synchronized (this) {
                         if (!isExportStateTerminal(state)) {
                             maybeAssignErrorId();
                             if (!(caughtException instanceof StatusRuntimeException)) {
-                                log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
+                                log.error().append("Internal Error '").append(errorId).append("' ")
+                                        .append(caughtException).endl();
                             }
                             setState(ExportNotification.State.FAILED);
                         }
                     }
-                } finally {
-                    if (caughtException != null && queryProcessingResults != null) {
-                        queryProcessingResults.setException(caughtException.toString());
-                    }
-                    QueryPerformanceRecorder.resetInstance();
                 }
-                if ((shouldLog || caughtException != null) && queryProcessingResults != null) {
-                    final EngineMetrics memLoggers = EngineMetrics.getInstance();
-                    final QueryPerformanceLogLogger qplLogger = memLoggers.getQplLogger();
-                    final QueryOperationPerformanceLogLogger qoplLogger = memLoggers.getQoplLogger();
-                    try {
-                        final QueryPerformanceNugget nugget = Require.neqNull(
-                                queryProcessingResults.getRecorder().getQueryLevelPerformanceData(),
-                                "queryProcessingResults.getRecorder().getQueryLevelPerformanceData()");
-
-                        // noinspection SynchronizationOnLocalVariableOrMethodParameter
-                        synchronized (qplLogger) {
-                            qplLogger.log(evaluationNumber,
-                                    queryProcessingResults,
-                                    nugget);
-                        }
-                        final List<QueryPerformanceNugget> nuggets =
-                                queryProcessingResults.getRecorder().getOperationLevelPerformanceData();
-                        // noinspection SynchronizationOnLocalVariableOrMethodParameter
-                        synchronized (qoplLogger) {
-                            int opNo = 0;
-                            for (QueryPerformanceNugget n : nuggets) {
-                                qoplLogger.log(opNo++, n);
-                            }
-                        }
-                    } catch (final Exception e) {
-                        log.error().append("Failed to log query performance data: ").append(e).endl();
-                    }
+                if (shouldLog || caughtException != null) {
+                    EngineMetrics.getInstance().logQueryProcessingResults(exportRecorder, caughtException);
                 }
                 if (caughtException == null) {
+                    // must set result after ending the query so that onSuccess may resume / finalize a parent query
                     setResult(localResult);
                 }
             }
@@ -1304,6 +1317,18 @@ public class SessionState {
                 // noinspection unchecked
                 this.export = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
             }
+        }
+
+        /**
+         * Set the performance recorder to resume when running this export.
+         *
+         * @param queryPerformanceRecorder the performance recorder
+         * @return this builder
+         */
+        public ExportBuilder<T> queryPerformanceRecorder(
+                @NotNull final QueryPerformanceRecorder queryPerformanceRecorder) {
+            export.setQueryPerformanceRecorder(queryPerformanceRecorder);
+            return this;
         }
 
         /**

@@ -7,7 +7,7 @@
 \item{col}{String denoting the name of the new column to hold the counts of each aggregation group.}
 }
 \value{
-\code{AggOp} to be used in a call to \code{agg_by()}.
+\code{\link{AggOp}} to be used in a call to \code{agg_by()}.
 }
 \description{
 Creates a Count aggregation that counts the number of rows in each aggregation group.
@@ -23,6 +23,9 @@ function called an \code{\link{AggOp}} intended to be used in a call to \code{ag
 typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 as the output of an \code{agg} function can otherwise seem unexpected.
 
+For more information, see the vignette on \code{agg} functions by running
+\code{vignette("agg_by")}.
+
 Note that this operation is not supported in \code{agg_all_by()}.
 }
 \examples{
@@ -30,7 +33,7 @@ Note that this operation is not supported in \code{agg_all_by()}.
 library(rdeephaven)
 
 # connecting to Deephaven server
-client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 
 # create data frame, push to server, retrieve TableHandle
 df <- data.frame(
@@ -43,11 +46,11 @@ th <- client$import_table(df)
 
 # count number of elements in each group when grouped by X, name resulting column "count"
 th1 <- th$
-  agg_by(agg_count("count"), by="X")
+  agg_by(agg_count("count"), by = "X")
 
 # count number of elements in each group when grouped by X and Y, name resulting column "CountingCol"
 th2 <- th$
-  agg_by(agg_count("CountingCol"), by=c("X", "Y"))
+  agg_by(agg_count("CountingCol"), by = c("X", "Y"))
 
 client$close()
 }

@@ -102,7 +102,7 @@ public final class ColumnWriterImpl implements ColumnWriter {
                 dlEncoder.writeInt(1); // TODO implement a bulk RLE writer
             }
         }
-        writePage(bulkWriter.getByteBufferView(), valuesCount);
+        writePage(bulkWriter.getByteBufferView(), valuesCount, valuesCount);
         bulkWriter.reset();
     }
 
@@ -210,7 +210,7 @@ public final class ColumnWriterImpl implements ColumnWriter {
         initWriter();
         // noinspection unchecked
         bulkWriter.writeBulkFilterNulls(pageData, dlEncoder, valuesCount, statistics);
-        writePage(bulkWriter.getByteBufferView(), valuesCount);
+        writePage(bulkWriter.getByteBufferView(), valuesCount, valuesCount);
         bulkWriter.reset();
     }
 
@@ -229,7 +229,7 @@ public final class ColumnWriterImpl implements ColumnWriter {
         // noinspection unchecked
         final int valueCount =
                 bulkWriter.writeBulkVector(pageData, repeatCount, rlEncoder, dlEncoder, nonNullValueCount, statistics);
-        writePage(bulkWriter.getByteBufferView(), valueCount);
+        writePage(bulkWriter.getByteBufferView(), valueCount, repeatCount.limit());
         bulkWriter.reset();
     }
 
@@ -313,8 +313,8 @@ public final class ColumnWriterImpl implements ColumnWriter {
         compressedData.writeAllTo(bufferedOutput);
     }
 
-    private void writePage(final BytesInput bytes, final int valueCount, final Encoding valuesEncoding)
-            throws IOException {
+    private void writePage(final BytesInput bytes, final int valueCount, final long rowCount,
+            final Encoding valuesEncoding) throws IOException {
         final long initialOffset = bufferedOutput.position();
         if (firstDataPageOffset == -1) {
             firstDataPageOffset = initialOffset;
@@ -354,7 +354,7 @@ public final class ColumnWriterImpl implements ColumnWriter {
         this.pageCount += 1;
 
         compressedBytes.writeAllTo(bufferedOutput);
-        offsetIndexBuilder.add((int) (bufferedOutput.position() - initialOffset), valueCount);
+        offsetIndexBuilder.add((int) (bufferedOutput.position() - initialOffset), rowCount);
         encodings.add(valuesEncoding);
         encodingStatsBuilder.addDataEncoding(valuesEncoding);
     }
@@ -389,9 +389,10 @@ public final class ColumnWriterImpl implements ColumnWriter {
     /**
      * writes the current data to a new page in the page store
      *
-     * @param valueCount how many rows have been written so far
+     * @param valueCount how many values have been written so far
+     * @param rowCount how many rows have been written so far, can be different from valueCount for vector/arrays
      */
-    private void writePage(final ByteBuffer encodedData, final long valueCount) {
+    private void writePage(final ByteBuffer encodedData, final long valueCount, final long rowCount) {
         try {
             BytesInput bytes = BytesInput.from(encodedData);
             if (dlEncoder != null) {
@@ -402,9 +403,7 @@ public final class ColumnWriterImpl implements ColumnWriter {
                 final BytesInput rlBytesInput = rlEncoder.toBytes();
                 bytes = BytesInput.concat(BytesInput.fromInt((int) rlBytesInput.size()), rlBytesInput, bytes);
             }
-            writePage(
-                    bytes,
-                    (int) valueCount, hasDictionary ? Encoding.RLE_DICTIONARY : Encoding.PLAIN);
+            writePage(bytes, (int) valueCount, rowCount, hasDictionary ? Encoding.RLE_DICTIONARY : Encoding.PLAIN);
         } catch (IOException e) {
             throw new ParquetEncodingException("could not write page for " + column.getPath()[0], e);
         }

@@ -95,22 +95,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
     @Override
     public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
-        final MutableObject<List<String>> missingColumnsHolder = new MutableObject<>();
-        sourceNames.forEach(name -> {
-            final ColumnDefinition<?> sourceColumnDefinition = columnDefinitionMap.get(name);
-            if (sourceColumnDefinition == null) {
-                List<String> missingColumnsList;
-                if ((missingColumnsList = missingColumnsHolder.getValue()) == null) {
-                    missingColumnsHolder.setValue(missingColumnsList = new ArrayList<>());
-                }
-                missingColumnsList.add(name);
-            }
-        });
-
-        if (missingColumnsHolder.getValue() != null) {
-            throw new NoSuchColumnException(columnDefinitionMap.keySet(), missingColumnsHolder.getValue());
-        }
-
+        NoSuchColumnException.throwIf(columnDefinitionMap.keySet(), sourceNames);
         return getColumns();
     }
 

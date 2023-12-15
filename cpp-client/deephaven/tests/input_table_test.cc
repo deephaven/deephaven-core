@@ -6,7 +6,6 @@
 #include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::client::utility::TableMaker;
-using deephaven::dhcore::utility::Streamf;
 
 namespace deephaven::client::tests {
 TEST_CASE("Input Table: append", "[input_table]") {

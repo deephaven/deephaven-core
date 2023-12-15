@@ -16,7 +16,6 @@ dependencies {
     implementation project(':engine-function')
     implementation project(':Configuration')
     implementation project(':log-factory')
-    implementation project(':FishUtil')
     implementation depJdom2
 
     testImplementation TestTools.projectDependency(project, 'Base')

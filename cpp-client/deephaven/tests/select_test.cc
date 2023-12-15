@@ -7,13 +7,12 @@
 #include "deephaven/client/client.h"
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/format.h"
 
 using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::utility::TableMaker;
 using deephaven::dhcore::DeephavenConstants;
-using deephaven::dhcore::utility::Streamf;
-using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::tests {
 TEST_CASE("Support all types", "[select]") {
@@ -26,21 +25,21 @@ TEST_CASE("Support all types", "[select]") {
   std::vector<int32_t> int_data;
   std::vector<int64_t> long_data;
   std::vector<float> float_data;
-  std::vector<double> doubleData;
-  std::vector<std::string> stringData;
+  std::vector<double> double_data;
+  std::vector<std::string> string_data;
 
-  const int startValue = -8;
-  const int endValue = 8;
-  for (auto i = startValue; i != endValue; ++i) {
+  const int start_value = -8;
+  const int end_value = 8;
+  for (auto i = start_value; i != end_value; ++i) {
     bool_data.push_back((i % 2) == 0);
     char_data.push_back(i * 10);
     byte_data.push_back(i * 11);
     short_data.push_back(i * 1000);
     int_data.push_back(i * 1'000'000);
-    long_data.push_back(static_cast<long>(i) * 1'000'000'000);
+    long_data.push_back(static_cast<int64_t>(i) * 1'000'000'000);
     float_data.push_back(i * 123.456F);
-    doubleData.push_back(i * 987654.321);
-    stringData.push_back(Stringf("test %o", i));
+    double_data.push_back(i * 987654.321);
+    string_data.push_back(fmt::format("test {}", i));
   }
 
   TableMaker maker;
@@ -51,8 +50,8 @@ TEST_CASE("Support all types", "[select]") {
   maker.AddColumn("intData", int_data);
   maker.AddColumn("longData", long_data);
   maker.AddColumn("floatData", float_data);
-  maker.AddColumn("doubleData", doubleData);
-  maker.AddColumn("stringData", stringData);
+  maker.AddColumn("doubleData", double_data);
+  maker.AddColumn("stringData", string_data);
 
   auto t = maker.MakeTable(tm.Client().GetManager());
 
@@ -67,8 +66,8 @@ TEST_CASE("Support all types", "[select]") {
       "intData", int_data,
       "longData", long_data,
       "floatData", float_data,
-      "doubleData", doubleData,
-      "stringData", stringData
+      "doubleData", double_data,
+      "stringData", string_data
   );
 }
 
@@ -218,7 +217,7 @@ TEST_CASE("Simple 'Where' with syntax error", "[select]") {
     std::cout << t1.Stream(true) << '\n';
   } catch (const std::exception &e) {
     // Expected
-    Streamf(std::cerr, "Caught *expected* exception %o\n", e.what());
+    fmt::print(std::cerr, "Caught *expected* exception {}\n", e.what());
     return;
   }
   throw std::runtime_error("Expected a failure, but didn't experience one");

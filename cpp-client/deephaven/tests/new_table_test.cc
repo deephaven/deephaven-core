@@ -12,8 +12,6 @@ using deephaven::client::TableHandle;
 using deephaven::client::SortPair;
 using deephaven::client::utility::TableMaker;
 using deephaven::dhcore::DeephavenConstants;
-using deephaven::dhcore::utility::Streamf;
-using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::tests {
 TEST_CASE("New Table", "[newtable]") {

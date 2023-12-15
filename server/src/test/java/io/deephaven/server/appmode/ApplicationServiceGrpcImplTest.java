@@ -17,6 +17,7 @@ import io.deephaven.server.session.SessionServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.auth.AuthContext;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.grpc.Context;
 import io.grpc.stub.StreamObserver;
 import org.junit.After;
@@ -87,7 +88,7 @@ public class ApplicationServiceGrpcImplTest {
 
         // trigger a change
         ScriptSession scriptSession = new NoLanguageDeephavenSession(
-                ExecutionContext.getDefaultContext().getUpdateGraph());
+                ExecutionContext.getDefaultContext().getUpdateGraph(), ThreadInitializationFactory.NO_OP);
         scriptSession.setVariable("key", "hello world");
         ScriptSession.Changes changes = new ScriptSession.Changes();
         changes.created.put("key", "Object");

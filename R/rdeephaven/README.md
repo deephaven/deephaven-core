@@ -1,11 +1,12 @@
-# The Deephaven R Client
 
-The Deephaven R client is an R package that enables R users to interface with a Deephaven server and perform various
+# The Deephaven Core R Client
+
+The Deephaven Core R client is an R package that enables R users to interface with a Deephaven server and perform various
 server-side operations from the comfort of RStudio or any other R interface.
 
 ## What can the R client do?
 
-The Deephaven Client provides the following functionalities:
+The R Client provides the following functionalities:
 
 1. Connect to a Deephaven server
    -   with anonymous authentication (no username or password)
@@ -112,13 +113,13 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    ```r
    install.packages(c('Rcpp', 'arrow', 'R6', 'dplyr'))
    ```
-   then install the deephaven client itself:
+   Then, exit the R console with `quit()`. From the rdeephaven directory, build and install the R client:
    ```r
-   install.packages(".", repos=NULL, type="source")
+   cd .. && R CMD build rdeephaven && R CMD INSTALL --no-multiarch --with-keep.source rdeephaven_*.tar.gz && rm rdeephaven_*.tar.gz
    ```
-   This last command can also be executed from RStudio without the need for explicitly starting an R console.
+   This is needed over the typical `install.packages()` to ensure that the vignettes get built and installed.
 
-   ---
+
    **NOTE**
 
    If using RStudio for this step, the environment variables that were set in step 3 may not persist into the RStudio
@@ -138,15 +139,17 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    for the RStudio Server installation (the location of that file may depend on your particular RStudio server
    installation, but a common location is `/etc/rstudio/rserver.conf`).
    
-   ---
+
 
 6. Now, run
    ```r
    library(rdeephaven)
    ```
    in the R session, and start using the client!
+   
+   For an introduction to the package, run `vignette("rdeephaven")`.
 
----
+
 **NOTE**
 
 If an error like this occurs in step 4:
@@ -167,7 +170,7 @@ this means that the C++ compiler does not know where to find the relevant header
    export DHCPP=/path/to/dhcpp
    ```
 3. The Deephaven C++ client is installed and the `DHCPP` environment variable is set, but the current project is not configured to allow the compiler to access the Deephaven `dhcpp` and `src` directories. This is more difficult to give advice on, as it is an IDE-dependent problem. Consult your IDE's documentation on C/C++ compiler include paths for more information.
----
+
 
 ## Running the unit tests
 

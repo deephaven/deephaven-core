@@ -14,9 +14,9 @@ import io.deephaven.server.session.SessionState;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Singleton
 public class SelectDistinctGrpcImpl extends GrpcTableOperation<SelectDistinctRequest> {
@@ -34,8 +34,10 @@ public class SelectDistinctGrpcImpl extends GrpcTableOperation<SelectDistinctReq
         final Table parent = sourceTables.get(0).get();
 
         // explicitly disallow column expressions
-        final Set<String> requestedMissing = new HashSet<>(request.getColumnNamesList());
-        requestedMissing.removeAll(parent.getDefinition().getColumnNameMap().keySet());
+        final List<String> requestedMissing = request.getColumnNamesList()
+                .stream()
+                .filter(Predicate.not(parent.getDefinition().getColumnNameSet()::contains))
+                .collect(Collectors.toList());
         if (!requestedMissing.isEmpty()) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "column(s) not found: " + String.join(", ", requestedMissing));

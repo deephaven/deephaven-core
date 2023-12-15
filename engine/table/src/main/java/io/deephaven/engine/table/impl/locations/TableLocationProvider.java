@@ -77,7 +77,7 @@ public interface TableLocationProvider extends NamedImplementation {
     void unsubscribe(@NotNull Listener listener);
 
     /**
-     * Initialize or run state information about the list of existing locations.
+     * Initialize or refresh state information about the list of existing locations.
      */
     void refresh();
 

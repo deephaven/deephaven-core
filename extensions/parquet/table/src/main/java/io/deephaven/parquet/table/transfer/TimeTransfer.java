@@ -1,6 +1,9 @@
+/**
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.table.transfer;
 
-import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
@@ -10,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.LongBuffer;
 import java.time.LocalTime;
 
-final class TimeTransfer extends GettingPrimitiveTransfer<WritableObjectChunk<LocalTime, Values>, LongBuffer> {
+final class TimeTransfer extends GettingPrimitiveTransfer<ObjectChunk<LocalTime, Values>, LongBuffer> {
 
     TimeTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int targetPageSizeInBytes) {
@@ -23,7 +26,6 @@ final class TimeTransfer extends GettingPrimitiveTransfer<WritableObjectChunk<Lo
     void copyAllFromChunkToBuffer() {
         final int chunkSize = chunk.size();
         for (int chunkIdx = 0; chunkIdx < chunkSize; ++chunkIdx) {
-            // Store the number of nanoseconds after midnight
             buffer.put(DateTimeUtils.nanosOfDay(chunk.get(chunkIdx)));
         }
     }

@@ -1,0 +1,7 @@
+{
+  "files": ["dist/index.d.ts"],
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["es5","es2015", "DOM"]
+  }
+}

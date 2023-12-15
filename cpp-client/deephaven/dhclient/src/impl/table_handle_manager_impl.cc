@@ -11,8 +11,6 @@
 #include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::client::impl::MoveVectorData;
-using deephaven::dhcore::utility::Streamf;
-using deephaven::dhcore::utility::Stringf;
 using deephaven::dhcore::utility::ObjectId;
 using io::deephaven::proto::backplane::grpc::CreateInputTableRequest;
 using io::deephaven::proto::backplane::grpc::EmptyTableRequest;
