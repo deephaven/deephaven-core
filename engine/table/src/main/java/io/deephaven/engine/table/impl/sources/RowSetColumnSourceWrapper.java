@@ -102,7 +102,7 @@ public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet>
 
     @Override
     public @Nullable RowSet getPrev(final long rowKey) {
-        return maybeGetPrevValue(source.get(rowKey));
+        return maybeGetPrevValue(source.getPrev(rowKey));
     }
 
     @Override
@@ -170,7 +170,7 @@ public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet>
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
             @NotNull final RowSequence rowSequence) {
-        source.fillChunk(context, destination, rowSequence);
+        source.fillPrevChunk(context, destination, rowSequence);
         maybeCopyPrevValues(ObjectChunk.downcast(destination.asObjectChunk()), destination.asWritableObjectChunk());
     }
 }

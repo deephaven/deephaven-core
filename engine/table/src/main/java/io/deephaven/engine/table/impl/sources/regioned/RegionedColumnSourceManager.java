@@ -219,12 +219,8 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
             // locations, this is a valid approach.
             final TableLocation firstLocation = includedTableLocations.iterator().next().location;
             for (final String[] keyColumnNames : firstLocation.getDataIndexColumns()) {
-                // Only include the data index if its present on all included locations
-                // TODO-RWC: This pre-validation isn't sufficiently lazy. We need to defer validation until we actually fetch the index from the indexer
-                if (!includedTableLocations.values().stream().allMatch(
-                        entry -> entry.location.hasDataIndex(keyColumnNames))) {
-                    continue;
-                }
+                // Here, we assume the data index is present on all included locations. MergedDataIndex.validate() will
+                // be used to test this before attempting to materialize the data index table later on.
                 final ColumnSource<?>[] keySources = Arrays.stream(keyColumnNames)
                         .map(columnSources::get)
                         .toArray(ColumnSource[]::new);

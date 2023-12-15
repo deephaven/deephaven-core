@@ -89,7 +89,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (localRoot) {
             final DataIndex dataIndex = findIndex(localRoot, keyColumns);
-            return dataIndex != null && ((BaseDataIndex) dataIndex).validate();
+            return dataIndex instanceof BaseDataIndex && ((BaseDataIndex) dataIndex).validate();
         }
     }
 
@@ -147,7 +147,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         synchronized (localRoot) {
             // Only return a valid index.
             final DataIndex dataIndex = findIndex(localRoot, keyColumns);
-            if (dataIndex == null || !((BaseDataIndex) dataIndex).validate()) {
+            if (!(dataIndex instanceof BaseDataIndex) || !((BaseDataIndex) dataIndex).validate()) {
                 return null;
             }
             // Add this index to the current liveness scope so it isn't released while in use.

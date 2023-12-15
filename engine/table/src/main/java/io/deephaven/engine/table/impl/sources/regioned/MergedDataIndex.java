@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.Table;
@@ -20,7 +21,6 @@ import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.vector.ObjectVector;
-import org.gradle.internal.impldep.com.beust.jcommander.Strings;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -56,7 +56,10 @@ class MergedDataIndex extends BaseDataIndex {
     private volatile AggregationRowLookup lookupFunction;
 
     /** Whether this index is known to be corrupt. */
-    private volatile boolean isCorrupt = false;
+    private volatile boolean isCorrupt;
+
+    /** Whether this index is valid. {@code null} means we don't know, yet. */
+    private volatile Boolean isValid;
 
     MergedDataIndex(
             @NotNull final String[] keyColumnNames,
@@ -126,10 +129,12 @@ class MergedDataIndex extends BaseDataIndex {
         // the appropriate region offset.
         // This potentially loads many small row sets into memory, but it avoids the risk of re-materializing row set
         // pages during the accumulation phase.
-        final Table locationDataIndexes = locationTable.update(List.of(new FunctionalColumn<>(
-                columnSourceManager.locationColumnName(), TableLocation.class,
-                LOCATION_DATA_INDEX_TABLE_COLUMN_NAME, Table.class,
-                this::loadIndexTableAndShiftRowSets))).dropColumns(columnSourceManager.locationColumnName());
+        final Table locationDataIndexes = locationTable
+                .update(List.of(new FunctionalColumn<>(
+                        columnSourceManager.locationColumnName(), TableLocation.class,
+                        LOCATION_DATA_INDEX_TABLE_COLUMN_NAME, Table.class,
+                        this::loadIndexTableAndShiftRowSets)))
+                .dropColumns(columnSourceManager.locationColumnName());
 
         // Merge all the location index tables into a single table
         final Table mergedDataIndexes = PartitionedTableFactory.of(locationDataIndexes).merge();
@@ -138,10 +143,11 @@ class MergedDataIndex extends BaseDataIndex {
         final Table groupedByKeyColumns = mergedDataIndexes.groupBy(keyColumnNames);
 
         // Combine the row sets from each group into a single row set
-        final Table combined = groupedByKeyColumns.update(List.of(new FunctionalColumn<>(
-                ROW_SET_COLUMN_NAME, ObjectVector.class,
-                ROW_SET_COLUMN_NAME, RowSet.class,
-                this::mergeRowSets)));
+        final Table combined = groupedByKeyColumns
+                .update(List.of(new FunctionalColumn<>(
+                        ROW_SET_COLUMN_NAME, ObjectVector.class,
+                        ROW_SET_COLUMN_NAME, RowSet.class,
+                        this::mergeRowSets)));
         Assert.assertion(combined.isFlat(), "combined.isFlat()");
         Assert.eq(groupedByKeyColumns.size(), "groupedByKeyColumns.size()", combined.size(), "combined.size()");
 
@@ -155,12 +161,12 @@ class MergedDataIndex extends BaseDataIndex {
     }
 
     private Table loadIndexTableAndShiftRowSets(final long locationRowKey, @NotNull final TableLocation location) {
-        final Table indexTable = location.getDataIndex(keyColumnNames);
-        if (indexTable == null) {
-            isCorrupt = true;
+        final BasicDataIndex dataIndex = location.getDataIndex(keyColumnNames);
+        if (dataIndex == null) {
             throw new UncheckedDeephavenException(String.format("Failed to load data index [%s] for location %s",
-                    Strings.join(", ", keyColumnNames), location));
+                    String.join(", ", keyColumnNames), location));
         }
+        final Table indexTable = dataIndex.table();
         return indexTable.coalesce().update(List.of(new FunctionalColumn<>(
                 ROW_SET_COLUMN_NAME, RowSet.class,
                 ROW_SET_COLUMN_NAME, RowSet.class,
@@ -180,24 +186,7 @@ class MergedDataIndex extends BaseDataIndex {
 
     @Override
     @NotNull
-    public RowSetLookup rowSetLookup() {
-        table();
-        final ColumnSource<RowSet> rowSetColumnSource = rowSetColumn();
-        return (final Object key, final boolean usePrev) -> {
-            // Pass the key to the aggregation row lookup
-            final int keyRowPosition = lookupFunction.get(key);
-            if (keyRowPosition == lookupFunction.noEntryValue()) {
-                return null;
-            }
-            // Return the RowSet at that row position (which is also the row key)
-            // Note that since this is a static data index, there's no need to handle `usePrev
-            return rowSetColumnSource.get(keyRowPosition);
-        };
-    }
-
-    @Override
-    @NotNull
-    public PositionLookup positionLookup() {
+    public RowKeyLookup rowKeyLookup() {
         table();
         return (final Object key, final boolean usePrev) -> {
             // Pass the object to the aggregation lookup, then return the resulting row position (which is also the row
@@ -220,15 +209,17 @@ class MergedDataIndex extends BaseDataIndex {
         if (isCorrupt) {
             return false;
         }
+        if (isValid != null) {
+            return isValid;
+        }
         try (final CloseableIterator<TableLocation> locations =
                 columnSourceManager.locationTable().objectColumnIterator(columnSourceManager.locationColumnName())) {
             while (locations.hasNext()) {
-                final TableLocation location = locations.next();
-                if (!location.hasDataIndex(keyColumnNames)) {
-                    return false;
+                if (!locations.next().hasDataIndex(keyColumnNames)) {
+                    return isValid = false;
                 }
             }
         }
-        return true;
+        return isValid = true;
     }
 }

@@ -253,24 +253,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
 
     @Override
     @NotNull
-    public RowSetLookup rowSetLookup() {
-        final ColumnSource<RowSet> rowSetColumnSource = rowSetColumn();
-        return (final Object key, final boolean usePrev) -> {
-            // Pass the object to the position map, then return the row set at that position
-            final int position = keyPositionMap.get(key);
-            if (position == KEY_NOT_FOUND) {
-                return null;
-            }
-            // The position is *also* the row key in the index table
-            return usePrev
-                    ? rowSetColumnSource.getPrev(position)
-                    : rowSetColumnSource.get(position);
-        };
-    }
-
-    @Override
-    @NotNull
-    public PositionLookup positionLookup() {
+    public RowKeyLookup rowKeyLookup() {
         return (final Object key, final boolean usePrev) -> keyPositionMap.get(key);
     }
 
