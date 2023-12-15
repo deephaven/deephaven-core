@@ -50,6 +50,16 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
     private final ModifiedColumnSet upstreamRowSetModified;
     private final ModifiedColumnSet downstreamRowSetModified;
 
+    /**
+     * Construct a new PartitioningColumnDataIndex. Note that this must be constructed by the
+     * {@link RegionedColumnSourceManager} at a time when there cannot be any concurrent "refresh" behavior, and so we
+     * can safely use the {@link RegionedColumnSourceManager#locationTable() location table} without snapshotting or
+     * considering previous values.
+     * 
+     * @param keyColumnName The key column name
+     * @param keySource The key source in the indexed table
+     * @param columnSourceManager The column source manager that provides locations and region indexes
+     */
     PartitioningColumnDataIndex(
             @NotNull final String keyColumnName,
             @NotNull final ColumnSource<KEY_TYPE> keySource,
@@ -87,6 +97,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
 
         if (locationTable.isRefreshing()) {
             // No need to track previous values; we mutate the index table's RowSets in-place, and we never move a key.
+            indexTable.getRowSet().writableCast().initializePreviousValue();
             upstreamLocationModified = locationTable.newModifiedColumnSet(columnSourceManager.locationColumnName());
             upstreamRowSetModified = locationTable.newModifiedColumnSet(columnSourceManager.rowSetColumnName());
             downstreamRowSetModified = indexTable.newModifiedColumnSet(rowSetColumnName());

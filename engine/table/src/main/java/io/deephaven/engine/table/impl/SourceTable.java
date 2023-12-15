@@ -7,30 +7,25 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.sources.regioned.PartitioningColumnDataIndex;
-import io.deephaven.engine.table.impl.sources.regioned.MergedDataIndex;
-import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.locations.*;
-import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableUpdateListener;
+import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
+import io.deephaven.engine.table.impl.locations.TableLocationProvider;
+import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
 
 /**
  * Basic uncoalesced table that only adds keys.
@@ -99,7 +94,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         this.updateSourceRegistrar = updateSourceRegistrar;
 
         final boolean isRefreshing = updateSourceRegistrar != null;
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = isRefreshing ? LivenessScopeStack.open() : null) {
             columnSourceManager = componentFactory.createColumnSourceManager(
                     isRefreshing,
                     ColumnToCodecMappings.EMPTY,
@@ -238,11 +233,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     return;
                 }
 
-                if (rowSet.isEmpty()) {
-                    // Transitioning from empty to non-empty, so we need to initialize the location-driven data indexes.
-                    initializeLocationDataIndexes();
-                }
-
                 rowSet.insert(added);
                 notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
             } catch (Exception e) {
@@ -307,65 +297,11 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 snapshotControl.setListenerAndResult(listener, resultTable);
             }
 
-            // As part of coalescing, create the RowSet-level data indexes for partitioning and indexed columns.
-
-            // Add the partitioning columns as trivial data indexes
-            initializePartitionDataIndexes();
-
-            // Inspect the locations to see what other data indexes exist.
-            if (!columnSourceManager.isEmpty()) {
-                initializeLocationDataIndexes();
-            }
-
             result.setValue(resultTable);
             return true;
         });
 
         return result.getValue();
-    }
-
-    /*
-     * TODO-RWC: SourceTable to strongly refer to DeferredDataIndex objects, as well as manage them (if refreshing) on
-     * coalesce. SourceTable to manage its own includedLocationsTable. SourceTable destruction should also destroy
-     * includedLocationsTable and DeferredDataIndexes. Create deferred data indexes, use snapshots, etc.
-     */
-
-    private void initializePartitionDataIndexes() {
-        final Map<String, ? extends ColumnSource<?>> columnSourceMap = columnSourceManager.getColumnSources();
-        final DataIndexer dataIndexer = DataIndexer.of(rowSet);
-
-        final TableDefinition tableDefinition = getDefinition();
-        for (final ColumnDefinition<?> partitioningColumnDefinition : tableDefinition.getPartitioningColumns()) {
-            final ColumnSource<?> keySource = columnSourceMap.get(partitioningColumnDefinition.getName());
-            final DataIndex dataIndex = new PartitioningColumnDataIndex<>(
-                    partitioningColumnDefinition.getName(),
-                    keySource,
-                    columnSourceManager);
-            dataIndexer.addDataIndex(dataIndex);
-        }
-    }
-
-    private void initializeLocationDataIndexes() {
-        final Collection<TableLocation> includedLocations = columnSourceManager.includedLocations();
-        Assert.eqFalse(includedLocations.isEmpty(), "includedLocations.isEmpty()");
-
-        final Map<String, ? extends ColumnSource<?>> columnSourceMap = columnSourceManager.getColumnSources();
-        final DataIndexer dataIndexer = DataIndexer.of(rowSet);
-
-        // Use the first location as a proxy for the whole table; since data indexes must be complete over all
-        // locations, this is a valid assumption.
-        final TableLocation firstLocation = includedLocations.iterator().next();
-
-        for (final String[] keyColumnNames : firstLocation.getDataIndexColumns()) {
-            final ColumnSource<?>[] keySources = Arrays.stream(keyColumnNames)
-                    .map(columnSourceMap::get)
-                    .toArray(ColumnSource[]::new);
-            final DataIndex dataIndex = new MergedDataIndex(
-                    keyColumnNames,
-                    keySources,
-                    columnSourceManager);
-            dataIndexer.addDataIndex(dataIndex);
-        }
     }
 
     protected static class QueryTableReference extends DeferredViewTable.TableReference {

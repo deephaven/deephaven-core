@@ -4,11 +4,12 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -20,6 +21,7 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -126,19 +128,22 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
         columnSourceMap.put(LOCATION_COLUMN_NAME, locationSource);
         columnSourceMap.put(ROWSET_COLUMN_NAME, rowSetSource);
 
-        includedLocationsTable = new QueryTable(
-                LOCATION_TABLE_DEFINITION,
-                RowSetFactory.empty().toTracking(),
-                columnSourceMap,
-                null, // No need to pre-allocate a MCS
-                LOCATION_TABLE_ATTRIBUTES) {{
-            setFlat();
-            setRefreshing(isRefreshing);
-        }};
-        if (isRefreshing) {
-            rowSetModifiedColumnSet = includedLocationsTable.newModifiedColumnSet(ROWSET_COLUMN_NAME);
-        } else {
-            rowSetModifiedColumnSet = null;
+        try (final SafeCloseable ignored = isRefreshing ? LivenessScopeStack.open() : null) {
+            includedLocationsTable = new QueryTable(
+                    LOCATION_TABLE_DEFINITION,
+                    RowSetFactory.empty().toTracking(),
+                    columnSourceMap,
+                    null, // No need to pre-allocate a MCS
+                    LOCATION_TABLE_ATTRIBUTES) {{
+                setFlat();
+                setRefreshing(isRefreshing);
+            }};
+            if (isRefreshing) {
+                rowSetModifiedColumnSet = includedLocationsTable.newModifiedColumnSet(ROWSET_COLUMN_NAME);
+                manage(includedLocationsTable);
+            } else {
+                rowSetModifiedColumnSet = null;
+            }
         }
     }
 
@@ -190,31 +195,68 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
 
     @Override
     public synchronized TrackingWritableRowSet initialize() {
+        Assert.assertion(includedLocationsTable.isEmpty(), "includedLocationsTable.isEmpty()");
+
+        // Do our first pass over the locations to include as many as possible and build the initial row set
+        //noinspection resource
         final TrackingWritableRowSet initialRowSet = update(true).toTracking();
 
+        // Add single-column data indexes for all partitioning columns, whether refreshing or not
+        columnDefinitions.stream().filter(ColumnDefinition::isPartitioning).forEach(cd -> {
+            try (final SafeCloseable ignored = isRefreshing ? LivenessScopeStack.open() : null) {
+                final DataIndex partitioningIndex =
+                        new PartitioningColumnDataIndex<>(cd.getName(), columnSources.get(cd.getName()), this);
+                if (isRefreshing) {
+                    manage(partitioningIndex);
+                }
+                DataIndexer.of(initialRowSet).addDataIndex(partitioningIndex);
+            }
+        });
+
+        // If we're static, add all data indexes present in the included locations
+        if (!isRefreshing && initialRowSet.isNonempty()) {
+            // Use the first location as a proxy for the whole table; since data indexes must be complete over all
+            // locations, this is a valid approach.
+            final TableLocation firstLocation = includedTableLocations.iterator().next().location;
+            for (final String[] keyColumnNames : firstLocation.getDataIndexColumns()) {
+                // Only include the data index if its present on all included locations
+                // TODO-RWC: This pre-validation isn't sufficiently lazy. We need to defer validation until we actually fetch the index from the indexer
+                if (!includedTableLocations.values().stream().allMatch(
+                        entry -> entry.location.hasDataIndex(keyColumnNames))) {
+                    continue;
+                }
+                final ColumnSource<?>[] keySources = Arrays.stream(keyColumnNames)
+                        .map(columnSources::get)
+                        .toArray(ColumnSource[]::new);
+                DataIndexer.of(initialRowSet).addDataIndex(new MergedDataIndex(keyColumnNames, keySources, this));
+            }
+        }
+        return initialRowSet;
     }
 
     @Override
     public synchronized WritableRowSet refresh() {
+        if (!isRefreshing) {
+            throw new UnsupportedOperationException("Cannot refresh a static table");
+        }
         return update(false);
     }
 
     @Override
     public void deliverError(@NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
-        // Notify any listeners to the locations table that we had an error.
-        final BaseTable<?> locationTable = (BaseTable<?>) columnSourceManager.locationTable();
-        if (locationTable.getLastNotificationStep() == updateGraph.clock().currentStep()) {
-            delayedErrorReference = new DelayedErrorNotifier(e, entry, locationTable);
+        // Notify any listeners to the locations table that we had an error
+        final long currentStep = includedLocationsTable.getUpdateGraph().clock().currentStep();
+        if (includedLocationsTable.getLastNotificationStep() == currentStep) {
+            delayedErrorReference = new DelayedErrorNotifier(error, entry, includedLocationsTable);
         } else {
-            locationTable.notifyListenersOnError(e, entry);
-            locationTable.forceReferenceCountToZero();
+            includedLocationsTable.notifyListenersOnError(error, entry);
+            includedLocationsTable.forceReferenceCountToZero();
         }
     }
 
     private WritableRowSet update(final boolean initializing) {
         final RowSetBuilderSequential addedRowSetBuilder = RowSetFactory.builderSequential();
 
-        final RowSetBuilderSequential addedRegionBuilder = initializing ? null : RowSetFactory.builderSequential();
         final RowSetBuilderSequential modifiedRegionBuilder = initializing ? null : RowSetFactory.builderSequential();
 
         // Ordering matters, since we're using a sequential builder.
@@ -249,6 +291,7 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
                 iterator.remove();
             }
         }
+
         final int previousNumRegions = includedTableLocations.size();
         final int newNumRegions = previousNumRegions + (entriesToInclude == null ? 0 : entriesToInclude.size());
         if (entriesToInclude != null) {
@@ -267,12 +310,19 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
             }
         }
 
-        if (!isRefreshing) {
-            emptyTableLocations.clear();
+        if (previousNumRegions != newNumRegions) {
+            includedLocationsTable.getRowSet().writableCast().insertRange(previousNumRegions, newNumRegions - 1);
         }
-// TODO-RWC: Finish table initialization and index intialization. Don't forget prev tracking and rowset prev reset
+
         if (initializing) {
-            rowSetSource.startTrackingPrevValues();
+            Assert.eqZero(previousNumRegions, "previousNumRegions");
+            if (isRefreshing) {
+                rowSetSource.startTrackingPrevValues();
+                includedLocationsTable.getRowSet().writableCast().initializePreviousValue();
+                includedLocationsTable.initializeLastNotificationStep(includedLocationsTable.getUpdateGraph().clock());
+            } else {
+                emptyTableLocations.clear();
+            }
         } else {
             final RowSet modifiedRegions = modifiedRegionBuilder.build();
             if (previousNumRegions == newNumRegions && modifiedRegions.isEmpty()) {
@@ -281,12 +331,11 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
                 final TableUpdate update = new TableUpdateImpl(
                         previousNumRegions == newNumRegions
                                 ? RowSetFactory.empty()
-                                : RowSetFactory.fromRange(previousNumRegions + 1, newNumRegions),
+                                : RowSetFactory.fromRange(previousNumRegions, newNumRegions - 1),
                         RowSetFactory.empty(),
                         modifiedRegions,
                         RowSetShiftData.EMPTY,
                         modifiedRegions.isNonempty() ? rowSetModifiedColumnSet : ModifiedColumnSet.EMPTY);
-                includedLocationsTable.getRowSet().writableCast().insertRange(previousNumRegions, newNumRegions - 1);
                 includedLocationsTable.notifyListeners(update);
             }
         }
@@ -403,7 +452,7 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
         private final TableLocationUpdateSubscriptionBuffer subscriptionBuffer;
 
         private final int regionIndex = includedTableLocations.size();
-        private final List<ColumnLocationState> columnLocationStates = new ArrayList<>();
+        private final List<ColumnLocationState<?>> columnLocationStates = new ArrayList<>();
 
         /**
          * RowSet in the region's space, not the table's space.
@@ -430,9 +479,9 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
             initialRowSet.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedRowSetBuilder
                     .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
 
-            for (final ColumnDefinition columnDefinition : columnDefinitions) {
-                // noinspection unchecked
-                final ColumnLocationState state = new ColumnLocationState(
+            for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
+                // noinspection unchecked,rawtypes
+                final ColumnLocationState<?> state = new ColumnLocationState(
                         columnDefinition,
                         columnSources.get(columnDefinition.getName()),
                         location.getColumnLocation(columnDefinition.getName()));
@@ -530,7 +579,7 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
     /**
      * Batches up a definition, source, and location for ease of use. Implements grouping maintenance.
      */
-    private class ColumnLocationState<T> {
+    private static class ColumnLocationState<T> {
 
         protected final ColumnDefinition<T> definition;
         protected final RegionedColumnSource<T> source;
