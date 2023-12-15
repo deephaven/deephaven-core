@@ -33,8 +33,7 @@ import java.util.stream.IntStream;
 import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
 
 /**
- * Unit tests for {@code PartitioningColumnDataIndex} and
- * {@code MergedDataIndex}.
+ * Unit tests for {@code PartitioningColumnDataIndex} and {@code MergedDataIndex}.
  */
 public class TestGroupingProviders {
 

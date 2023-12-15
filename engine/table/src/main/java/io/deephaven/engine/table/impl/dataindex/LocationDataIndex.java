@@ -9,20 +9,22 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 
 public class LocationDataIndex extends LivenessArtifact implements BasicDataIndex {
-    @NotNull
-    private final Table table;
-    private String[] keyColumnNames;
-    final String rowSetColumnName;
 
-    public static LocationDataIndex from(@NotNull final Table table,
-                                         @NotNull final String[] keyColumnNames,
-                                         @NotNull final String rowSetColumnName) {
+    private final Table table;
+    private final String[] keyColumnNames;
+    private final String rowSetColumnName;
+
+    public static LocationDataIndex from(
+            @NotNull final Table table,
+            @NotNull final String[] keyColumnNames,
+            @NotNull final String rowSetColumnName) {
         return new LocationDataIndex(table, keyColumnNames, rowSetColumnName);
     }
 
-    private LocationDataIndex(@NotNull final Table table,
-                              @NotNull final String[] keyColumnNames,
-                              @NotNull final String rowSetColumnName) {
+    private LocationDataIndex(
+            @NotNull final Table table,
+            @NotNull final String[] keyColumnNames,
+            @NotNull final String rowSetColumnName) {
         this.table = table;
         this.keyColumnNames = keyColumnNames;
         this.rowSetColumnName = rowSetColumnName;
@@ -34,17 +36,20 @@ public class LocationDataIndex extends LivenessArtifact implements BasicDataInde
     }
 
     @Override
+    @NotNull
     public Map<ColumnSource<?>, String> keyColumnMap() {
         throw new UnsupportedOperationException("LocationDataIndex#keyColumnMap");
     }
 
     @Override
+    @NotNull
     public String rowSetColumnName() {
         return rowSetColumnName;
     }
 
     @Override
-    public @NotNull Table table() {
+    @NotNull
+    public Table table() {
         return table;
     }
 

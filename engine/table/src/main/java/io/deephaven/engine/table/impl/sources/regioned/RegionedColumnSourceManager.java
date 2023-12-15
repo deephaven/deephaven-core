@@ -4,8 +4,8 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 /**
  * Manage column sources made up of regions in their own row key address space.
  */
-public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode implements ColumnSourceManager {
+public class RegionedColumnSourceManager extends LivenessArtifact implements ColumnSourceManager {
 
     private static final Logger log = LoggerFactory.getLogger(RegionedColumnSourceManager.class);
 
@@ -80,9 +80,6 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
     private static final TableDefinition LOCATION_TABLE_DEFINITION = TableDefinition.of(
             ColumnDefinition.fromGenericType(LOCATION_COLUMN_NAME, TableLocation.class),
             ColumnDefinition.fromGenericType(ROWSET_COLUMN_NAME, RowSet.class));
-    private static final Map<String, Object> LOCATION_TABLE_ATTRIBUTES = Map.of(
-            Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE,
-            Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
     /**
      * Non-empty table locations stored in a table. Rows are keyed by {@link IncludedTableLocationEntry#regionIndex
@@ -134,10 +131,13 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
                     RowSetFactory.empty().toTracking(),
                     columnSourceMap,
                     null, // No need to pre-allocate a MCS
-                    LOCATION_TABLE_ATTRIBUTES) {{
-                setFlat();
-                setRefreshing(isRefreshing);
-            }};
+                    null // No attributes to provide (not add-only or append-only, because locations can grow)
+            ) {
+                {
+                    setFlat();
+                    setRefreshing(isRefreshing);
+                }
+            };
             if (isRefreshing) {
                 rowSetModifiedColumnSet = includedLocationsTable.newModifiedColumnSet(ROWSET_COLUMN_NAME);
                 manage(includedLocationsTable);
@@ -198,7 +198,7 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
         Assert.assertion(includedLocationsTable.isEmpty(), "includedLocationsTable.isEmpty()");
 
         // Do our first pass over the locations to include as many as possible and build the initial row set
-        //noinspection resource
+        // noinspection resource
         final TrackingWritableRowSet initialRowSet = update(true).toTracking();
 
         // Add single-column data indexes for all partitioning columns, whether refreshing or not

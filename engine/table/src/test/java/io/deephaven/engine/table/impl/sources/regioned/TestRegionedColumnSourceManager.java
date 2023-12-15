@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -18,6 +19,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.api.Invocation;
@@ -79,6 +81,8 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     private RowSet expectedAddedRowSet;
     private Map<String, WritableRowSet> expectedPartitioningColumnGrouping;
 
+    private ControlledUpdateGraph updateGraph;
+
     private RegionedColumnSourceManager SUT;
 
     @Before
@@ -105,6 +109,10 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                 oneOf(componentFactory).createRegionedColumnSource(with(same(partitioningColumnDefinition)),
                         with(ColumnToCodecMappings.EMPTY));
                 will(returnValue(partitioningColumnSource));
+                allowing(partitioningColumnSource).getType();
+                will(returnValue(partitioningColumnDefinition.getDataType()));
+                allowing(partitioningColumnSource).getComponentType();
+                will(returnValue(partitioningColumnDefinition.getComponentType()));
                 oneOf(componentFactory).createRegionedColumnSource(with(same(groupingColumnDefinition)),
                         with(ColumnToCodecMappings.EMPTY));
                 will(returnValue(groupingColumnSource));
@@ -142,6 +150,8 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         expectedRowSet = RowSetFactory.empty().toTracking();
         expectedAddedRowSet = RowSetFactory.empty();
         expectedPartitioningColumnGrouping = new LinkedHashMap<>();
+
+        updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
     }
 
     private ImmutableTableLocationKey makeTableKey(@NotNull final String internalPartitionValue,
@@ -454,17 +464,17 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         // Refresh them
         expectPartitioningColumnInitialGrouping();
         setSizeExpectations(true, 5, 1000);
-        checkIndexes(SUT.initialize());
+        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Refresh them with no change
         setSizeExpectations(true, 5, 1000);
-        checkIndexes(SUT.initialize());
+        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Refresh them with a change for the subscription-supporting one
         setSizeExpectations(true, 5, 1001);
-        checkIndexes(SUT.initialize());
+        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Try adding a duplicate
@@ -494,70 +504,78 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with new locations included
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
-        checkIndexes(SUT.initialize());
+        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B), SUT.includedLocations());
 
         // Test no-op run
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
-        checkIndexes(SUT.initialize());
+        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B), SUT.includedLocations());
 
         // Test run with a location updated from null to not
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
-        checkIndexes(SUT.initialize());
+        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
         // Test run with a location updated
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 10000002);
-        checkIndexes(SUT.initialize());
+        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
         // Test run with a size decrease
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
         expectPoison();
-        try {
-            checkIndexes(SUT.initialize());
-            fail("Expected exception");
-        } catch (AssertionFailure expected) {
-            maybePrintStackTrace(expected);
-        }
+        updateGraph.runWithinUnitTestCycle(() -> {
+            try {
+                checkIndexes(SUT.refresh());
+                fail("Expected exception");
+            } catch (AssertionFailure expected) {
+                maybePrintStackTrace(expected);
+            }
+        });
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
         // Test run with a location truncated
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
         expectPoison();
-        try {
-            checkIndexes(SUT.initialize());
-            fail("Expected exception");
-        } catch (TableDataException expected) {
-            maybePrintStackTrace(expected);
-        }
+        updateGraph.runWithinUnitTestCycle(() -> {
+            try {
+                checkIndexes(SUT.refresh());
+                fail("Expected exception");
+            } catch (TableDataException expected) {
+                maybePrintStackTrace(expected);
+            }
+        });
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
         // Test run with an overflow
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, REGION_CAPACITY_IN_ELEMENTS + 1);
-        try {
-            checkIndexes(SUT.initialize());
-            fail("Expected exception");
-        } catch (TableDataException expected) {
-            maybePrintStackTrace(expected);
-        }
+        updateGraph.runWithinUnitTestCycle(() -> {
+            try {
+                checkIndexes(SUT.refresh());
+                fail("Expected exception");
+            } catch (TableDataException expected) {
+                maybePrintStackTrace(expected);
+            }
+        });
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
         // Test run with an exception
         subscriptionBuffers[3].handleException(new TableDataException("TEST"));
         expectPoison();
-        try {
-            checkIndexes(SUT.initialize());
-            fail("Expected exception");
-        } catch (TableDataException expected) {
-            assertEquals("TEST", expected.getCause().getMessage());
-        }
+        updateGraph.runWithinUnitTestCycle(() -> {
+            try {
+                checkIndexes(SUT.refresh());
+                fail("Expected exception");
+            } catch (TableDataException expected) {
+                assertEquals("TEST", expected.getCause().getMessage());
+            }
+        });
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
     }
