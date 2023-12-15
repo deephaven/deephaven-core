@@ -34,8 +34,8 @@ public class DataIndexUtils {
     }
 
     /**
-     * Make a {@link DataIndexKeySet} that stores data index {@link io.deephaven.engine.table.DataIndex.RowSetLookup row
-     * set lookup} keys that have {@code keyColumnCount} components.
+     * Make a {@link DataIndexKeySet} that stores data index {@link DataIndex.RowKeyLookup lookup} keys that have
+     * {@code keyColumnCount} components.
      *
      * @param keyColumnCount The number of key components
      * @return The key set
@@ -50,9 +50,11 @@ public class DataIndexUtils {
         throw new IllegalArgumentException("Data index must have at least one key column");
     }
 
+    // TODO-RWC: should we delete the unused methods here?
+
     /**
-     * Make a {@link DataIndexKeySet} that stores data index {@link io.deephaven.engine.table.DataIndex.RowSetLookup row
-     * set lookup} keys that have {@code keyColumnCount} components.
+     * Make a {@link DataIndexKeySet} that stores data index {@link DataIndex.RowKeyLookup lookup} keys that have
+     * {@code keyColumnCount} components.
      *
      * @param keyColumnCount The number of key components
      * @param initialCapacity The initial capacity
