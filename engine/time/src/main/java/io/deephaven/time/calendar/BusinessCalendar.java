@@ -147,7 +147,7 @@ public class BusinessCalendar extends Calendar {
      *        is different from the schedule for a standard business day or weekend.
      * @throws RequirementFailure if any argument is null.
      */
-    public BusinessCalendar(final String name, final String description, final ZoneId timeZone,
+    BusinessCalendar(final String name, final String description, final ZoneId timeZone,
             final LocalDate firstValidDate, final LocalDate lastValidDate,
             final CalendarDay<LocalTime> standardBusinessDay, final Set<DayOfWeek> weekendDays,
             final Map<LocalDate, CalendarDay<Instant>> holidays) {

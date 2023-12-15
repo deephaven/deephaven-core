@@ -41,7 +41,7 @@ public class Calendar {
      * @param timeZone calendar time zone.
      * @throws RequirementFailure if any parameter is {@code null}
      */
-    public Calendar(final String name, final String description, final ZoneId timeZone) {
+    Calendar(final String name, final String description, final ZoneId timeZone) {
         this.name = Require.neqNull(name, "name");
         this.description = Require.neqNull(description, "description");
         this.timeZone = Require.neqNull(timeZone, "timeZone");
