@@ -54,7 +54,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * }
  * </pre>
  */
-public class BusinessCalendarXMLParser {
+class BusinessCalendarXMLParser {
 
     private static class BusinessCalendarInputs {
         private String calendarName;
