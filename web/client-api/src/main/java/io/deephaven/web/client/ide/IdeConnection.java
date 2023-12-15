@@ -16,6 +16,7 @@ import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableDescriptor;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.ConnectToken;
@@ -130,9 +131,28 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         }
     }
 
+    /**
+     * Gets an object from the server, given a definition object. The definition object you can get:
+     * - From {@link #getVariableDefinition(String)}, or
+     * - Returned from a {@link #subscribeToFieldUpdates(JsConsumer)} callback, or
+     * - Created manually, see {@link JsVariableDefinition}
+     * @param definitionObject A VariableDefinition object. See {@link JsVariableDefinition}
+     * @return Promise that will resolve to the object being fetched
+     */
     public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
         WorkerConnection conn = connection.get();
         return onConnected().then(e -> conn.getJsObject(definitionObject));
+    }
+
+    /**
+     * Gets a variable definition from the server, given a name. Can be used to get the type of the variable, and then
+     * use {@link #getObject(JsPropertyMap)} to get the actual object by passing in the definition returned from this.
+     * @param name Name of the variable to get the definition for
+     * @return Promise that will resolve to the variable definition, or reject if it is not found.
+     */
+    public Promise<JsVariableDefinition> getVariableDefinition(String name) {
+        WorkerConnection conn = connection.get();
+        return onConnected().then(e -> conn.getVariableDefinition(name, null));
     }
 
     public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
