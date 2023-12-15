@@ -23,6 +23,8 @@
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/ranges.h"
 
 using io::deephaven::proto::backplane::grpc::AddTableRequest;
 using io::deephaven::proto::backplane::grpc::AddTableResponse;
@@ -77,8 +79,6 @@ using deephaven::dhcore::ticking::TickingUpdate;
 using deephaven::dhcore::utility::GetWhat;
 using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::dhcore::utility::separatedList;
-using deephaven::dhcore::utility::Streamf;
-using deephaven::dhcore::utility::Stringf;
 
 using UpdateByOperationProto = io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation;
 
@@ -621,13 +621,12 @@ void TableHandleImpl::LookupHelper(const std::string &column_name,
     }
   }
 
-  auto render = [](std::ostream &s, ElementTypeId::Enum item) {
-    // TODO(kosak): render this as a human-readable string.
-    s << static_cast<int>(item);
-  };
-  auto message = Stringf("Column lookup for %o: Expected Arrow type: one of {%o}. Actual type %o",
-      column_name, separatedList(valid_types.begin(), valid_types.end(), ", ", render),
-      static_cast<int>(actual_type));
+  auto renderable_valid_types = MakeReservedVector<int32_t>(valid_types.size());
+  for (const auto &item : valid_types) {
+    renderable_valid_types.push_back(static_cast<int32_t>(item));
+  }
+  auto message = fmt::format("Column lookup for {}: Expected Arrow type: one of {{{}}}. Actual type {}",
+      column_name, renderable_valid_types, static_cast<int>(actual_type));
   throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
 }
 

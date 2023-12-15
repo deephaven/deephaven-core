@@ -2,16 +2,16 @@
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 #include "test_util.h"
+#include <cstdlib>
 #include "deephaven/client/utility/table_maker.h"
 #include "deephaven/dhcore/utility/utility.h"
-#include <cstdlib>
+#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/ostream.h"
 
 using deephaven::client::TableHandle;
 using deephaven::client::utility::OkOrThrow;
 using deephaven::client::utility::TableMaker;
 using deephaven::client::utility::ValueOrThrow;
-using deephaven::dhcore::utility::Streamf;
-using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::tests {
 ColumnNamesForTests::ColumnNamesForTests() : importDate_("ImportDate"), ticker_("Ticker"),
@@ -120,16 +120,16 @@ Client TableMakerForTests::CreateClient(const ClientOptions &options) {
   std::string host = (hostptr == nullptr) ? "localhost" : hostptr;
   std::string port = (portptr == nullptr) ? "10000" : portptr;
   std::string connection_string(host + ":" + port);
-  Streamf(std::cerr, "Connecting to %o\n", connection_string);
+  fmt::print(std::cerr, "Connecting to {}\n", connection_string);
   auto client = Client::Connect(connection_string, options);
   return client;
 }
 
 TableMakerForTests::TableMakerForTests(TableMakerForTests::ClientType &&client,
-    TableHandle &&test_table, ColumnNamesForTests &&column_names, ColumnDataForTests &&columnData) :
+    TableHandle &&test_table, ColumnNamesForTests &&column_names, ColumnDataForTests &&column_data) :
     client_(std::move(client)),
     testTable_(std::move(test_table)), columnNames_(std::move(column_names)),
-    columnData_(std::move(columnData)) {}
+    columnData_(std::move(column_data)) {}
 
 TableMakerForTests::TableMakerForTests(TableMakerForTests &&) noexcept = default;
 TableMakerForTests &TableMakerForTests::operator=(TableMakerForTests &&) noexcept = default;
@@ -143,7 +143,7 @@ void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
   auto column = table->column(depth);
 
   if (field->name() != column_name) {
-    auto message = Stringf("Column %o: Expected column name %o, have %o", depth, column_name,
+    auto message = fmt::format("Column {}: Expected column name {}, have {}", depth, column_name,
         field->name());
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
@@ -154,13 +154,13 @@ void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
   }
 
   if (column->length() != chunked_data.length()) {
-    auto message = Stringf("Column %o: Expected length %o, got %o", depth, chunked_data.length(),
+    auto message = fmt::format("Column {}: Expected length {}, got {}", depth, chunked_data.length(),
         column->length());
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   if (!column->type()->Equals(chunked_data.type())) {
-    auto message = Stringf("Column %o: Expected type %o, got %o", depth,
+    auto message = fmt::format("Column {}: Expected type {}, got {}", depth,
         chunked_data.type()->ToString(), column->type()->ToString());
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
@@ -192,7 +192,7 @@ void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
     const auto r_item = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(r_chunk->GetScalar(r_chunk_index)));
 
     if (!l_item->Equals(*r_item)) {
-      auto message = Stringf("Column %o: Columns differ at element %o: %o vs %o",
+      auto message = fmt::format("Column {}: Columns differ at element {}: {} vs {}",
           depth, element_index, l_item->ToString(), r_item->ToString());
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
@@ -208,16 +208,17 @@ void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
 
 std::shared_ptr<arrow::Table> BasicValidate(const deephaven::client::TableHandle &table, int expected_columns) {
   auto fsr = table.GetFlightStreamReader();
-  std::shared_ptr<arrow::Table> arrow_table;
-  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr->ReadAll(&arrow_table)));
+  auto table_res = fsr->ToTable();
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(table_res));
 
+  auto &arrow_table = *table_res;
   if (expected_columns != arrow_table->num_columns()) {
-    auto message = Stringf("Expected %o columns, but Table actually has %o columns",
+    auto message = fmt::format("Expected {} columns, but Table actually has {} columns",
         expected_columns, arrow_table->num_columns());
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
-  return arrow_table;
+  return std::move(arrow_table);
 }
 }  // namespace internal
 }  // namespace deephaven::client::tests

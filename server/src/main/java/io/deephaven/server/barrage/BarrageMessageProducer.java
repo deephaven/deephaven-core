@@ -501,18 +501,19 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             final Subscription subscription =
                     new Subscription(listener, options, cols, initialViewport, reverseViewport);
 
-            log.debug().append(logPrefix)
-                    .append(subscription.logPrefix)
-                    .append("subbing to columns ")
-                    .append(FormatBitSet.formatBitSet(cols))
-                    .endl();
+            if (log.isDebugEnabled()) {
+                log.debug().append(logPrefix)
+                        .append(subscription.logPrefix)
+                        .append("subbing to columns ")
+                        .append(FormatBitSet.formatBitSet(cols))
+                        .append(" and scheduling update immediately, for initial snapshot.")
+                        .endl();
+            }
 
             subscription.hasPendingUpdate = true;
             pendingSubscriptions.add(subscription);
 
             // we'd like to send the initial snapshot as soon as possible
-            log.debug().append(logPrefix).append(subscription.logPrefix)
-                    .append("scheduling update immediately, for initial snapshot.").endl();
             updatePropagationJob.scheduleImmediately();
         }
     }
@@ -528,6 +529,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         pendingSubscriptions.add(sub);
                     }
 
+                    if (log.isDebugEnabled()) {
+                        log.debug().append(logPrefix).append("Find and update subscription scheduling immediately.")
+                                .endl();
+                    }
                     updatePropagationJob.scheduleImmediately();
                     return true;
                 }
@@ -570,16 +575,20 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
 
             sub.pendingColumns = cols;
-            log.debug().append(logPrefix).append(sub.logPrefix)
-                    .append("scheduling update immediately, for viewport and column updates.").endl();
+            if (log.isDebugEnabled()) {
+                log.debug().append(logPrefix).append(sub.logPrefix)
+                        .append("scheduling update immediately, for viewport and column updates.").endl();
+            }
         });
     }
 
     public void removeSubscription(final StreamObserver<MessageView> listener) {
         findAndUpdateSubscription(listener, sub -> {
             sub.pendingDelete = true;
-            log.debug().append(logPrefix).append(sub.logPrefix)
-                    .append("scheduling update immediately, for removed subscription.").endl();
+            if (log.isDebugEnabled()) {
+                log.debug().append(logPrefix).append(sub.logPrefix)
+                        .append("scheduling update immediately, for removed subscription.").endl();
+            }
         });
     }
 
@@ -587,7 +596,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     // Update Processing and Data Recording Methods //
     //////////////////////////////////////////////////
 
-    public DeltaListener constructListener() {
+    public InstrumentedTableUpdateListener constructListener() {
         return parentIsRefreshing ? new DeltaListener() : null;
     }
 
@@ -1340,7 +1349,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 long elapsed = System.nanoTime() - start;
                 recordMetric(stats -> stats.snapshot, elapsed);
 
-                if (SUBSCRIPTION_GROWTH_ENABLED && snapshot.rowsIncluded.size() > 0) {
+                if (SUBSCRIPTION_GROWTH_ENABLED && !snapshot.rowsIncluded.isEmpty()) {
                     // very simplistic logic to take the last snapshot and extrapolate max number of rows that will
                     // not exceed the target UGP processing time percentage
                     PeriodicUpdateGraph updateGraph = parent.getUpdateGraph().cast();
@@ -1364,7 +1373,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         synchronized (this) {
-            if (growingSubscriptions.size() == 0 && pendingDeltas.isEmpty() && pendingError == null) {
+            if (growingSubscriptions.isEmpty() && pendingDeltas.isEmpty() && pendingError == null) {
                 return;
             }
 
@@ -1450,6 +1459,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         if (snapshot != null) {
             try (final BarrageStreamGenerator<MessageView> snapshotGenerator =
                     streamGeneratorFactory.newGenerator(snapshot, this::recordWriteMetrics)) {
+                if (log.isDebugEnabled()) {
+                    log.debug().append(logPrefix).append("Sending snapshot to ").append(activeSubscriptions.size())
+                            .append(" subscriber(s).").endl();
+                }
                 for (final Subscription subscription : growingSubscriptions) {
                     if (subscription.pendingDelete) {
                         continue;
@@ -1488,6 +1501,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         if (numGrowingSubscriptions > 0) {
+            if (log.isDebugEnabled()) {
+                log.info().append(logPrefix).append("Have ").append(numGrowingSubscriptions)
+                        .append(" growing subscriptions; scheduling next snapshot immediately.").endl();
+            }
             updatePropagationJob.scheduleImmediately();
         }
 
@@ -1882,7 +1899,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     delta.update.shifted().unapply(modifiedRemaining);
                 }
 
-                if (unfilledAdds.size() > 0) {
+                if (!unfilledAdds.isEmpty()) {
                     Assert.assertion(false, "Error: added:" + coalescer.added + " unfilled:" + unfilledAdds
                             + " missing:" + coalescer.added.subSetForPositions(unfilledAdds));
                 }
@@ -2023,6 +2040,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             boolean isComplete = subscription.growingRemainingViewport.isEmpty()
                     || subscription.growingRemainingViewport.firstRowKey() >= parentTableSize
                     || isBlinkTable;
+
+            if (log.isDebugEnabled()) {
+                log.debug().append(logPrefix)
+                        .append(subscription.logPrefix)
+                        .append("finalizing snapshot isComplete=").append(isComplete)
+                        .endl();
+            }
 
             if (isComplete) {
                 // this subscription is complete, remove it from the growing list
@@ -2195,14 +2219,15 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
             if (log.isDebugEnabled()) {
                 log.debug().append(logPrefix)
-                        .append("success=").append(success).append(", validStep=").append(resultValidStep).endl();
+                        .append("success=").append(success).append(", validStep=").append(resultValidStep)
+                        .append(", numSnapshotSubscriptions=").append(snapshotSubscriptions.size()).endl();
             }
             return success;
         }
 
         @Override
         public UpdateGraph getUpdateGraph() {
-            return parent.getUpdateGraph();
+            return parent.isRefreshing() ? parent.getUpdateGraph() : null;
         }
     }
 

@@ -24,10 +24,9 @@ from deephaven.update_graph import auto_locking_ctx
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JDynamicTableWriter = jpy.get_type("io.deephaven.engine.table.impl.util.DynamicTableWriter")
-_JMutableInputTable = jpy.get_type("io.deephaven.engine.util.config.MutableInputTable")
-_JAppendOnlyArrayBackedMutableTable = jpy.get_type(
-    "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable")
-_JKeyedArrayBackedMutableTable = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable")
+_JAppendOnlyArrayBackedInputTable = jpy.get_type(
+    "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable")
+_JKeyedArrayBackedInputTable = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JTable = jpy.get_type("io.deephaven.engine.table.Table")
 _J_INPUT_TABLE_ATTRIBUTE = _JTable.INPUT_TABLE_ATTRIBUTE
@@ -63,7 +62,7 @@ def time_table(period: Union[Duration, int, str, datetime.timedelta, np.timedelt
         period (Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
             time interval between new row additions, can be expressed as an integer in nanoseconds,
             a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time duration types.
-        start_time (Union[None, str, datetime.datetime, np.datetime64], optional):
+        start_time (Union[None, Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp], optional):
             start time for adding new rows, defaults to None which means use the current time
             as the start time.
         blink_table (bool, optional): if the time table should be a blink table, defaults to False
@@ -257,9 +256,9 @@ class InputTable(Table):
 
             key_cols = to_sequence(key_cols)
             if key_cols:
-                super().__init__(_JKeyedArrayBackedMutableTable.make(j_arg_1, key_cols))
+                super().__init__(_JKeyedArrayBackedInputTable.make(j_arg_1, key_cols))
             else:
-                super().__init__(_JAppendOnlyArrayBackedMutableTable.make(j_arg_1))
+                super().__init__(_JAppendOnlyArrayBackedInputTable.make(j_arg_1))
             self.j_input_table = self.j_table.getAttribute(_J_INPUT_TABLE_ATTRIBUTE)
             self.key_columns = key_cols
         except Exception as e:

@@ -1728,6 +1728,10 @@ public class ChunkedOperatorAggregationHelper {
         outputPosition.setValue(0);
         final OperatorAggregationStateManager stateManager = stateManagerSupplier.get();
 
+        if (initialKeys.isEmpty()) {
+            return stateManager;
+        }
+
         final RowSequence rowsToInsert = usePrev ? initialKeys.getRowSet().prev() : initialKeys.getRowSet();;
         final ColumnSource<?>[] keyColumnsToInsert = Arrays.stream(keySources)
                 .map(ReinterpretUtils::maybeConvertToPrimitive)

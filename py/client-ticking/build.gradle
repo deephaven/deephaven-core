@@ -56,15 +56,16 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
         copyFile('README.md', "${prefix}/src/py-client-ticking")
         copyFile('src/', "${prefix}/src/py-client-ticking/src/")
         copyFile('wheels/', "${prefix}/src/py-client-ticking/in-wheels")
-        runCommand("PREFIX=${prefix}; " +
+        runCommand("PREFIX=${prefix}; DEEPHAVEN_VERSION=${project.version};" +
                    '''set -eux ; \
                      cd "${PREFIX}/src/py-client-ticking"; \
                      . "${PREFIX}/env.sh"; \
                      MAKEFLAGS="-j${NCPUS}" \
                        CFLAGS="-I${DHCPP}/include" \
                        LDFLAGS="-L${DHCPP}/lib" \
+                       DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" \
                        python3 setup.py build_ext -i; \
-                     python3 setup.py bdist_wheel; \
+                     DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" python3 setup.py bdist_wheel; \
                      pip3 install in-wheels/*.whl; \
                      pip3 install --force --no-deps dist/*.whl; \
                      ln dist/*.whl /out; \

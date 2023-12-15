@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -85,7 +86,7 @@ class InitialFilterExecution extends AbstractFilterExecution {
 
     private void enqueueJobs(Iterable<? extends NotificationQueue.Notification> subFilters) {
         for (NotificationQueue.Notification notification : subFilters) {
-            OperationInitializationThreadPool.executorService().submit(() -> {
+            ExecutionContext.getContext().getInitializer().submit(() -> {
                 root.runningChildren.put(Thread.currentThread(), Thread.currentThread());
                 try {
                     if (!root.cancelled.get()) {

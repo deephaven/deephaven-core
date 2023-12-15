@@ -17,25 +17,15 @@ TEST_CASE("Base64encode", "[utility]") {
 }
 
 TEST_CASE("EpochMillisToStr", "[utility]") {
-  const char *tz_key = "TZ";
-  const char *original_tz = getenv(tz_key);
-  setenv(tz_key, "America/Denver", 1);
-  tzset();
   auto d1 = EpochMillisToStr(1689136824000);
   auto d2 = EpochMillisToStr(123456);
-  CHECK(d1 == "2023-07-11T22:40:24.000-0600");
-  CHECK(d2 == "1969-12-31T17:02:03.456-0700");
-  if (original_tz != nullptr) {
-    setenv(tz_key, original_tz, 1);
-  } else {
-    unsetenv(tz_key);
-  }
-  tzset();
+  CHECK(d1 == "2023-07-12T04:40:24.000Z");
+  CHECK(d2 == "1970-01-01T00:02:03.456Z");
 }
 
 TEST_CASE("ObjectId", "[utility]") {
   uintptr_t p = 0xdeadbeef;
-  auto id = ObjectId("hello", (void *) p);
+  auto id = ObjectId("hello", reinterpret_cast<void *>(p));
   CHECK(id == "hello(0xdeadbeef)");
 }
 }  // namespace deephaven::client::tests

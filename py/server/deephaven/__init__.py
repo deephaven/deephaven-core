@@ -7,7 +7,7 @@ unlocks the unique power of Deephaven to the Python community.
 
 """
 
-__version__ = "0.31.0"
+import importlib.metadata
 
 from deephaven_internal import jvm
 
@@ -31,3 +31,8 @@ from .dbc import read_sql
 __all__ = ["read_csv", "write_csv", "kafka_consumer", "kafka_producer", "empty_table", "time_table", "merge",
            "merge_sorted", "new_table", "input_table", "ring_table", "function_generated_table", "DynamicTableWriter",
            "TableReplayer", "garbage_collect", "read_sql", "DHError", "SortDirection"]
+
+# Note: this is the _distribution_ name, not the _package_ name. Until 3.10, there is not an easy way to get the
+# distribution name from the package name.
+# https://docs.python.org/3/library/importlib.metadata.html#package-distributions
+__version__ = importlib.metadata.version('deephaven-core')

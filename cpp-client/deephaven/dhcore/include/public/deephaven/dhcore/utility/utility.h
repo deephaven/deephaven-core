@@ -12,6 +12,8 @@
 #include <thread>
 #include <typeinfo>
 #include <vector>
+#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/ostream.h"
 
 namespace deephaven::dhcore::utility {
 template<typename Dest, typename Src>
@@ -51,54 +53,6 @@ private:
   std::string internalBuffer_;
   std::string *dest_;
 };
-
-namespace internal {
-// Dumps chars up to the next %o or NUL. Updates *fmt to the point past the %o or at the NUL.
-// Returns true iff %o was the last thing seen.
-bool DumpFormat(std::ostream &s, const char **fmt, bool placeholder_expected);
-}  // namespace internal
-
-std::ostream &Streamf(std::ostream &s, const char *fmt);
-
-template<typename HEAD, typename... REST>
-std::ostream &Streamf(std::ostream &s, const char *fmt, HEAD &&head, REST &&... rest) {
-  if (!deephaven::dhcore::utility::internal::DumpFormat(s, &fmt, true)) {
-    return s;
-  }
-  s << std::forward<HEAD>(head);
-  return Streamf(s, fmt, std::forward<REST>(rest)...);
-}
-
-template<typename... ARGS>
-std::ostream &Coutf(const char *fmt, ARGS &&... args) {
-  Streamf(std::cout, fmt, std::forward<ARGS>(args)...);
-#ifndef NDEBUG
-  std::cout.flush();
-#endif
-  return std::cout;
-}
-
-template<typename... ARGS>
-std::ostream &Cerrf(const char *fmt, ARGS &&... args) {
-  Streamf(std::cerr, fmt, std::forward<ARGS>(args)...);
-#ifndef NDEBUG
-  std::cerr.flush();
-#endif
-  return std::cerr;
-}
-
-template<typename... ARGS>
-void Appendf(std::string *buffer, const char *fmt, ARGS &&... args) {
-  SimpleOstringstream s(buffer);
-  Streamf(s, fmt, std::forward<ARGS>(args)...);
-}
-
-template<typename... ARGS>
-std::string Stringf(const char *fmt, ARGS &&... args) {
-  std::string result;
-  Appendf(&result, fmt, std::forward<ARGS>(args)...);
-  return result;
-}
 
 namespace internal {
 // Forward declaration for class
@@ -196,16 +150,14 @@ std::string FormatDebugString(const char *func, const char *file, size_t line,
 [[nodiscard]] std::string demangle(const char* name);
 
 template<typename DESTP, typename SRCP>
-DESTP VerboseCast(const DebugInfo &debugInfo, SRCP ptr) {
-  using deephaven::dhcore::utility::Stringf;
-
-  auto *typedPtr = dynamic_cast<DESTP>(ptr);
-  if (typedPtr != nullptr) {
-    return typedPtr;
+DESTP VerboseCast(const DebugInfo &debug_info, SRCP ptr) {
+  auto *typed_ptr = dynamic_cast<DESTP>(ptr);
+  if (typed_ptr != nullptr) {
+    return typed_ptr;
   }
   typedef decltype(*std::declval<DESTP>()) destType_t;
-  auto message = Stringf("%o: Expected type %o. Got type %o",
-      debugInfo,
+  auto message = fmt::format("{}: Expected type {}. Got type {}",
+      debug_info,
       demangle(typeid(destType_t).name()),
       demangle(typeid(*ptr).name()));
   throw std::runtime_error(message);
@@ -217,11 +169,11 @@ namespace internal {
 void TrueOrThrowHelper(const DebugInfo &debug_info);
 }  // namespace internal
 
-inline void TrueOrThrow(const DebugInfo &debugInfo, bool value) {
+inline void TrueOrThrow(const DebugInfo &debug_info, bool value) {
   if (value) {
     return;
   }
-  internal::TrueOrThrowHelper(debugInfo);
+  internal::TrueOrThrowHelper(debug_info);
 }
 
 [[nodiscard]] std::string
@@ -229,11 +181,11 @@ EpochMillisToStr(std::chrono::milliseconds::rep epoch_millis);
 
 [[nodiscard]] std::int64_t
 TimePointToEpochMillis(
-    const std::chrono::time_point<std::chrono::system_clock> time_point);
+    std::chrono::time_point<std::chrono::system_clock> time_point);
 
 [[nodiscard]] std::string
 TimePointToStr(
-    const std::chrono::time_point<std::chrono::system_clock> time_point);
+    std::chrono::time_point<std::chrono::system_clock> time_point);
 
 template <class T> [[nodiscard]] std::string
 TypeName(const T& t) {
@@ -242,8 +194,7 @@ TypeName(const T& t) {
 
 [[nodiscard]] std::string
 ObjectId(const std::string &class_short_name, void* this_ptr);
-
-[[nodiscard]] inline std::string
-ThreadIdToString(std::thread::id tid);
-
 }  // namespace deephaven::dhcore::utility
+
+// Add the specialization for the DebugInfo formatter
+template<> struct fmt::formatter<deephaven::dhcore::utility::DebugInfo> : fmt::ostream_formatter {};

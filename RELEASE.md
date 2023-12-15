@@ -64,7 +64,11 @@ and are published as the following:
 * [C++ Client API](https://deephaven.io/core/client-api/cpp/)
 * [C++ Examples](https://deephaven.io/core/client-api/cpp-examples/)
 * [R Client API](https://deephaven.io/core/client-api/r/)
-* [TypeScript Client API](https://deephaven.io/core/client-api/javascript/)
+* [JavaScript/TypeScript Client API](https://deephaven.io/core/client-api/javascript/)
+
+### Deephaven JS API types
+The npm package `@deephaven/jsapi-types` allow TypeScript clients to use their IDE's autocomplete and compiler's typechecks.
+It is released to [npm](https://www.npmjs.com/package/@deephaven/jsapi-types).
 
 ## Release process
 
@@ -96,7 +100,7 @@ We also separate out the release branch from `upstream/main` with an empty commi
 ```shell
 $ git fetch upstream
 $ git checkout upstream/main
-$ ./gradlew printVersion -q
+$ ./gradlew printVersion -PdeephavenBaseQualifier= -q
 $ git checkout -b release/vX.Y.Z
 $ git commit --allow-empty -m "Cut for X.Y.Z"
 ```
@@ -261,19 +265,11 @@ mention the version explicitly. These files are listed below:
 
 ```
 #
-# Edit files for version change, updating from 0.31.0 to 0.32.0
+# Edit files for version change
 #
-authorization-codegen/protoc-gen-contextual-auth-wiring
-authorization-codegen/protoc-gen-service-auth-wiring
-buildSrc/src/main/groovy/io.deephaven.common-conventions.gradle
-py/client-ticking/README.md
-py/client-ticking/setup.py
-py/client/README.md
-py/client/pydeephaven/__init__.py
-py/client/setup.py
-py/embedded-server/deephaven_server/__init__.py
-py/server/deephaven/__init__.py
+gradle.properties
 R/rdeephaven/DESCRIPTION
+web/client-api/types/package.json
 ```
 
 This leaves the files "ready" for the next regular release, and also ensures any build done from

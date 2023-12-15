@@ -17,8 +17,6 @@ using deephaven::client::TableHandleManager;
 using deephaven::client::TableHandle;
 using deephaven::client::SortPair;
 using deephaven::dhcore::DeephavenConstants;
-using deephaven::dhcore::utility::Streamf;
-using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::tests {
 TEST_CASE("Various Aggregates", "[aggregates]") {

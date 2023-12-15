@@ -123,7 +123,7 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
     }
 
     @Override
-    public synchronized void setListenerAndResult(@NotNull final TableUpdateListener listener,
+    public synchronized void setListenerAndResult(final TableUpdateListener listener,
             @NotNull final NotificationStepReceiver resultTable) {
         super.setListenerAndResult(listener, resultTable);
         if (DEBUG) {

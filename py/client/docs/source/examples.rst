@@ -185,6 +185,8 @@ Subscribe to a ticking table
 The `pydeephaven_ticking` package can be used to subscribe to ticking tables. This is useful for getting asynchronous callbacks when
 they change. The package maintains a complete local copy of the table and notifies callers when the table changes.
 
+Note that `pydeephaven_ticking` must be built before running this example; find build instructions <ahref='https://github.com/deephaven/deephaven-core/tree/main/py/client-ticking#readme'>here</a>
+
 The listener can be specified either as a python function or as an implementation of the TableListener abstract base class. In the
 case of implementing
 :py:class:`TableListener <pydeephaven.ticking.TableListener>`

@@ -3,19 +3,42 @@
  */
 package io.deephaven.client.impl;
 
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.util.SafeCloseable;
 
 import java.util.BitSet;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * A {@code BarrageSubscription} represents a subscription over a table that may or may not be filtered to a viewport of
  * the remote source table.
  */
 public interface BarrageSubscription {
+    /**
+     * Create a {@code BarrageSubscription} from a {@link TableHandle}.
+     *
+     * @param session the Deephaven session that this export belongs to
+     * @param executorService an executor service used to flush stats
+     * @param tableHandle the tableHandle to subscribe to (ownership is transferred to the subscription)
+     * @param options the transport level options for this subscription
+     * @return a {@code BarrageSubscription} from a {@link TableHandle}
+     */
+    static BarrageSubscription make(
+            final BarrageSession session, final ScheduledExecutorService executorService,
+            final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
+        final LivenessScope scope = new LivenessScope();
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
+            return new BarrageSubscriptionImpl(session, executorService, tableHandle, options, scope);
+        }
+    }
+
     interface Factory {
         /**
          * Sources a barrage subscription from a {@link TableSpec}.

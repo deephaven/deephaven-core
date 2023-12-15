@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <ostream>
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/ostream.h"
 
 namespace deephaven::dhcore {
 struct ElementTypeId {
@@ -68,8 +69,7 @@ void VisitElementTypeId(ElementTypeId::Enum type_id, T *visitor) {
       break;
     }
     default: {
-      auto message = deephaven::dhcore::utility::Stringf("Unrecognized ElementTypeId %o",
-          static_cast<int>(type_id));
+      auto message = fmt::format("Unrecognized ElementTypeId {}", static_cast<int>(type_id));
       throw std::runtime_error(message);
     }
   }
@@ -392,3 +392,5 @@ private:
   friend std::ostream &operator<<(std::ostream &s, const DateTime &o);
 };
 }  // namespace deephaven::dhcore
+
+template<> struct fmt::formatter<deephaven::dhcore::DateTime> : ostream_formatter {};

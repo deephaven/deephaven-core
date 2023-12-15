@@ -56,6 +56,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private final List<DataIndexInfo> dataIndexes;
     private final Map<String, ColumnTypeInfo> columnTypes;
     private final TableInfo tableInfo;
+
+    private final String version;
+
     private volatile RowGroupReader[] rowGroupReaders;
 
     public ParquetTableLocation(@NotNull final TableKey tableKey,
@@ -97,9 +100,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 ParquetSchemaReader.parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData())
                         .orElse(TableInfo.builder().build());
         groupingColumns = tableInfo.groupingColumnMap();
-        dataIndexes = tableInfo.dataIndexes();
         columnTypes = tableInfo.columnTypeMap();
-
+        version = tableInfo.version();
+        dataIndexes = tableInfo.dataIndexes();
         sortingColumns = tableInfo.sortingColumns();
 
         handleUpdate(computeIndex(), tableLocationKey.getFile().lastModified());
@@ -147,7 +150,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 return local;
             }
             return rowGroupReaders = IntStream.of(rowGroupIndices)
-                    .mapToObj(parquetFileReader::getRowGroup)
+                    .mapToObj(idx -> parquetFileReader.getRowGroup(idx, version))
                     .sorted(Comparator.comparingInt(rgr -> rgr.getRowGroup().getOrdinal()))
                     .toArray(RowGroupReader[]::new);
         }

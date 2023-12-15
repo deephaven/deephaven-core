@@ -14,7 +14,6 @@ dependencies {
     implementation project(':extensions-jdbc')
     implementation project(':Util');
     implementation project(':Integrations')
-    implementation project(':FishUtil')
     implementation depCommonsLang3
     Classpaths.inheritCommonsText(project, 'implementation')
 

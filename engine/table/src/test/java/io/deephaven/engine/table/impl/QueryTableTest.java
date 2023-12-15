@@ -3003,7 +3003,13 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testMemoizeConcurrent() {
-        final ExecutorService dualPool = Executors.newFixedThreadPool(2);
+        final ExecutorService dualPool = Executors.newFixedThreadPool(2, new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable runnable) {
+                ExecutionContext captured = ExecutionContext.getContext();
+                return new Thread(() -> captured.apply(runnable));
+            }
+        });
 
         final boolean old = QueryTable.setMemoizeResults(true);
         try {
@@ -3629,5 +3635,8 @@ public class QueryTableTest extends QueryTableTestBase {
         public void requestRefresh() {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public void stop() {}
     }
 }

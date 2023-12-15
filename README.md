@@ -109,7 +109,7 @@ docker compose up
 
 ### pip-installed Deephaven
 
-Users who wish to use Python but not Docker should use [pip-installed Deephaven](https://deephaven.io/core/docs/tutorials/quickstart-pip/).
+Users who wish to use Python but not Docker should use [pip-installed Deephaven](https://deephaven.io/core/docs/tutorials/quickstart-pip/). For users with Windows operating systems, WSL is **not** required to use Deephaven this way.
 
 ```sh
 pip install --upgrade pip setuptools wheel
@@ -150,18 +150,10 @@ docker compose version
 docker run hello-world
 ```
 
-:::note
-
-Internally, the Java build process will use [Gradle Auto Provisioning](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning)
+> **_NOTE:_** Internally, the Java build process will use [Gradle Auto Provisioning](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning)
 to download and use the appropriate Java version for building and testing.
 
-:::
-
-:::note
-
-On Windows, all commands must be run inside a WSL 2 terminal.
-
-:::
+> **_NOTE:_** On Windows, all commands must be run inside a WSL 2 terminal.
 
 #### Python
 

@@ -5,7 +5,11 @@ plugins {
 }
 
 group = 'io.deephaven'
-version = '0.31.0'
+
+def deephavenBaseVersion = project.property('deephavenBaseVersion').toString().trim()
+def deephavenBaseQualifier = project.property('deephavenBaseQualifier').toString().trim()
+def versionSeparator = deephavenBaseQualifier.isEmpty() ? "" : "-"
+version = "${deephavenBaseVersion}${versionSeparator}${deephavenBaseQualifier}"
 
 if (!name.startsWith('deephaven-')) {
     archivesBaseName = "deephaven-${name}"

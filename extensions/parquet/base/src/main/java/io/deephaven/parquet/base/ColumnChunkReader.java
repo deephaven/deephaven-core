@@ -4,18 +4,15 @@
 package io.deephaven.parquet.base;
 
 import org.apache.parquet.column.Dictionary;
+import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.schema.PrimitiveType;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.function.Supplier;
 
 public interface ColumnChunkReader {
-    /**
-     * @return -1 if the current column doesn't guarantee fixed page size, otherwise the fixed page size
-     */
-    int getPageFixedSize();
-
     /**
      * @return The number of rows in this ColumnChunk, or -1 if it's unknown.
      */
@@ -32,15 +29,28 @@ public interface ColumnChunkReader {
      */
     int getMaxRl();
 
-    interface ColumnPageReaderIterator extends Iterator<ColumnPageReader>, AutoCloseable {
-        @Override
-        void close() throws IOException;
-    }
+    /**
+     * @return The offset index for this column chunk, or null if it not found in the metadata.
+     */
+    @Nullable
+    OffsetIndex getOffsetIndex();
 
     /**
      * @return An iterator over individual parquet pages
      */
-    ColumnPageReaderIterator getPageIterator() throws IOException;
+    Iterator<ColumnPageReader> getPageIterator() throws IOException;
+
+    interface ColumnPageDirectAccessor {
+        /**
+         * Directly access a page reader for a given page number.
+         */
+        ColumnPageReader getPageReader(final int pageNum);
+    }
+
+    /**
+     * @return An accessor for individual parquet pages
+     */
+    ColumnPageDirectAccessor getPageAccessor();
 
     /**
      * @return Whether this column chunk uses a dictionary-based encoding on every page
@@ -69,4 +79,10 @@ public interface ColumnChunkReader {
     }
 
     PrimitiveType getType();
+
+    /**
+     * @return The "version" string from deephaven specific parquet metadata, or null if it's not present.
+     */
+    @Nullable
+    String getVersion();
 }

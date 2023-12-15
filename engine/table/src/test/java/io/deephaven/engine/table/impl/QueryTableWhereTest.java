@@ -897,7 +897,7 @@ public abstract class QueryTableWhereTest {
 
         // we want to make sure we can push something through the thread pool and are not hogging it
         final CountDownLatch latch = new CountDownLatch(1);
-        OperationInitializationThreadPool.executorService().submit(latch::countDown);
+        ExecutionContext.getContext().getInitializer().submit(latch::countDown);
         waitForLatch(latch);
 
         assertEquals(0, fastCounter.invokes.get());
@@ -1212,7 +1212,7 @@ public abstract class QueryTableWhereTest {
     public void testBigTable() {
         final Table source = new QueryTable(
                 RowSetFactory.flat(10_000_000L).toTracking(),
-                Collections.singletonMap("A", new RowKeySource()));
+                Collections.singletonMap("A", RowKeySource.INSTANCE));
         final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(0, 1000000L);
         final Table filtered = source.where(incrementalReleaseFilter);
         final Table result = filtered.where("A >= 6_000_000L", "A < 7_000_000L");
@@ -1231,7 +1231,7 @@ public abstract class QueryTableWhereTest {
     public void testBigTableInitial() {
         final Table source = new QueryTable(
                 RowSetFactory.flat(10_000_000L).toTracking(),
-                Collections.singletonMap("A", new RowKeySource()));
+                Collections.singletonMap("A", RowKeySource.INSTANCE));
         final Table result = source.where("A >= 6_000_000L", "A < 7_000_000L");
 
         assertEquals(1_000_000, result.size());

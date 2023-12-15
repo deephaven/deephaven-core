@@ -29,6 +29,7 @@ public class EngineMetrics {
     private static final Logger log = LoggerFactory.getLogger(EngineMetrics.class);
     private static final boolean STATS_LOGGING_ENABLED = Configuration.getInstance().getBooleanWithDefault(
             "statsLoggingEnabled", true);
+
     private static volatile ProcessInfo PROCESS_INFO;
     private static volatile EngineMetrics ENGINE_METRICS;
 
@@ -105,7 +106,9 @@ public class EngineMetrics {
     }
 
     public QueryTable getProcessMetricsQueryTable() {
-        return statsImpl == null ? null : (QueryTable) BlinkTableTools.blinkToAppendOnly(statsImpl.blinkTable());
+        return statsImpl == null
+                ? null
+                : (QueryTable) BlinkTableTools.blinkToAppendOnly(statsImpl.blinkTable());
     }
 
     private StatsIntradayLogger getStatsLogger() {
