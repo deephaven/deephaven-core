@@ -20,8 +20,8 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  * A calendar is associated with a specific time zone.
  * <p>
  * Date strings must be in a format that can be parsed by {@link DateTimeUtils#parseLocalDate(String)}. Methods that
- * accept strings can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or
- * {@code LocalDate}.
+ * accept strings can be slower than methods written explicitly for {@link Instant}, {@link ZonedDateTime}, or
+ * {@link LocalDate}.
  */
 public class Calendar {
 
