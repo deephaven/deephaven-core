@@ -10,9 +10,6 @@
     "url": "https://github.com/deephaven/deephaven-core.git",
     "directory": "web/client-api/types"
   },
-  "engines": {
-    "node": ">=16"
-  },
   "devDependencies": {
     "typedoc": "^0.24.8",
     "typescript": "^5.1.6"
