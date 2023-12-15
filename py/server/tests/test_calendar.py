@@ -31,7 +31,7 @@ class CalendarTestCase(BaseTestCase):
         path1 = self.get_resource_path("/TEST1.calendar")
         path2 = self.get_resource_path("/TEST2.calendar")
 
-        cal = jpy.get_type("io.deephaven.time.calendar.BusinessCalendarParser").loadBusinessCalendar(path2)
+        cal = jpy.get_type("io.deephaven.time.calendar.BusinessCalendarXMLParser").loadBusinessCalendar(path2)
 
         with self.assertRaises(DHError) as cm:
             add_calendar(None)
@@ -70,7 +70,7 @@ class CalendarTestCase(BaseTestCase):
         self.assertEqual(calendar_names(), ['CAL1', 'CAL2', 'USBANK_EXAMPLE', 'USNYSE_EXAMPLE', 'UTC'])
 
     def test_calendar(self):
-        self.assertEqual('USNYSE', calendar("USNYSE_EXAMPLE").name())
+        self.assertEqual('USNYSE_EXAMPLE', calendar("USNYSE_EXAMPLE").name())
         self.assertEqual('CAL1', calendar("CAL1").name())
         self.assertEqual(calendar_name(), calendar().name())
 
