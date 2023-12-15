@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.by;
 
+import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -20,6 +21,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.NoSuchColumnException.Type;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sort.findruns.IntFindRunsKernel;
@@ -1569,7 +1571,7 @@ public class ChunkedOperatorAggregationHelper {
             final String[] keyNames,
             final ColumnSource<?>[] keySources,
             final AggregationContext ac) {
-        final DataIndex dataIndex = preTransformDataIndex.transform(DataIndexTransformer.builder()
+        final BasicDataIndex dataIndex = preTransformDataIndex.transform(DataIndexTransformer.builder()
                 .sortByFirstRowKey(true) // Preserve encounter order
                 .immutable(true) // Ensure that we can re-use the key column sources in the result table
                 .build());
@@ -1594,8 +1596,9 @@ public class ChunkedOperatorAggregationHelper {
         final QueryTable result = new QueryTable(RowSetFactory.flat(groupCount).toTracking(), resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result, groupCount);
 
-        // Leverage the lookup function from the index for this table.
-        ac.supplyRowLookup(() -> key -> dataIndex.positionLookup().apply(key, false));
+        // Create a hashmap lookup function from the index table.
+        final TObjectLongHashMap<Object> lookup = BaseDataIndex.buildKeyMap(indexTable, keyNames);
+        ac.supplyRowLookup(() -> key -> (int) lookup.get(key));
 
         return ac.transformResult(result);
     }
@@ -1678,7 +1681,7 @@ public class ChunkedOperatorAggregationHelper {
         final Table initialKeys;
         final ColumnSource<?>[] keySources;
         if (dataIndexer != null && dataIndexer.hasDataIndex(inputKeySources)) {
-            final DataIndex dataIndex = dataIndexer.getDataIndex(inputKeySources).transform(
+            final BasicDataIndex dataIndex = dataIndexer.getDataIndex(inputKeySources).transform(
                     DataIndexTransformer.builder()
                             .sortByFirstRowKey(true) // Preserve encounter order
                             .build());
@@ -1854,7 +1857,7 @@ public class ChunkedOperatorAggregationHelper {
             final MutableInt outputPosition,
             final RowSetBuilderRandom initialRowsBuilder,
             final boolean usePrev) {
-        final DataIndex dataIndex = preTransformDataIndex.transform(DataIndexTransformer.builder()
+        final BasicDataIndex dataIndex = preTransformDataIndex.transform(DataIndexTransformer.builder()
                 .sortByFirstRowKey(true) // Preserve encounter order
                 .build());
         final Table indexTable = dataIndex.table();

@@ -893,7 +893,8 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(fromDisk, table);
 
         // Read the legacy grouping table.
-        final DataIndex fromDiskIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(fromDisk, groupingColName);
+        final DataIndex fromDiskIndex =
+                DataIndexer.of(fromDisk.getRowSet()).getDataIndex(fromDisk, groupingColName);
         final Table fromDiskIndexTable = fromDiskIndex.table();
 
         // Create a dynamic index from the table.

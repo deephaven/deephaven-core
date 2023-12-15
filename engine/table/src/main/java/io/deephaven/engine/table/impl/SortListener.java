@@ -45,6 +45,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final Table parent;
     private final QueryTable result;
     private final HashMapK4V4 reverseLookup;
+    private final ColumnSource<Comparable<?>>[] originalColumnsToSortBy;
     private final ColumnSource<Comparable<?>>[] columnsToSortBy;
     private final WritableRowSet resultRowSet;
     private final SortingOrder[] order;
@@ -57,14 +58,22 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final ModifiedColumnSet.Transformer mcsTransformer;
     private final ModifiedColumnSet sortColumnSet;
 
-    public SortListener(Table parent, QueryTable result, HashMapK4V4 reverseLookup,
-            ColumnSource<Comparable<?>>[] columnsToSortBy, SortingOrder[] order,
-            WritableRowRedirection sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
-            ModifiedColumnSet.Transformer mcsTransformer, ModifiedColumnSet sortColumnSet) {
+    public SortListener(
+            final Table parent,
+            final QueryTable result,
+            final HashMapK4V4 reverseLookup,
+            final ColumnSource<Comparable<?>>[] originalColumnsToSortBy,
+            final ColumnSource<Comparable<?>>[] columnsToSortBy,
+            final SortingOrder[] order,
+            final WritableRowRedirection sortMapping,
+            final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
+            final ModifiedColumnSet.Transformer mcsTransformer,
+            final ModifiedColumnSet sortColumnSet) {
         super("sortInternal", parent, result);
         this.parent = parent;
         this.result = result;
         this.reverseLookup = reverseLookup;
+        this.originalColumnsToSortBy = originalColumnsToSortBy;
         this.columnsToSortBy = columnsToSortBy;
         this.resultRowSet = result.getRowSet().writableCast();
         this.order = order;
@@ -224,7 +233,9 @@ public class SortListener extends BaseTable.ListenerImpl {
             final RowSet addedAndModified =
                     modifiedNeedsSorting ? closer.add(upstream.added().union(upstream.modified())) : upstream.added();
             final long[] addedInputKeys =
-                    SortHelpers.getSortedKeys(order, columnsToSortBy, null, addedAndModified, false, false)
+                    SortHelpers
+                            .getSortedKeys(order, originalColumnsToSortBy, columnsToSortBy, null, addedAndModified,
+                                    false, false)
                             .getArrayMapping();
             final long[] addedOutputKeys = new long[addedInputKeys.length];
             final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified().intSize()]

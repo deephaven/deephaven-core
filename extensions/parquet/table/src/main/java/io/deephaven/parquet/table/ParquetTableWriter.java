@@ -133,7 +133,7 @@ public class ParquetTableWriter {
                     if (!dataIndexer.hasDataIndex(indexColumns)) {
                         dataIndexer.createDataIndex(t, indexColumnNames);
                     }
-                    final DataIndex dataIndex = dataIndexer.getDataIndex(t, indexColumnNames)
+                    final BasicDataIndex dataIndex = dataIndexer.getDataIndex(t, indexColumnNames)
                             .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
                     final Table indexTable = dataIndex.table();
 

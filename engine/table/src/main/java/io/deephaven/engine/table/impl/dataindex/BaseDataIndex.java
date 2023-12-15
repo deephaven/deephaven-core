@@ -1,15 +1,17 @@
 package io.deephaven.engine.table.impl.dataindex;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.DataIndexTransformer;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -29,6 +31,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+
 /**
  * This class provides a data index for a table. The index is itself a table with columns corresponding to the indexed
  * key column(s) and a column of RowSets that contain the key values.
@@ -39,69 +43,14 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
 
     @Override
     @NotNull
-    public DataIndex transform(@NotNull final DataIndexTransformer transformer) {
-        return DerivedDataIndex.from(this, transformer);
+    public BasicDataIndex transform(@NotNull final DataIndexTransformer transformer) {
+        return TransformedDataIndex.from(this, transformer);
     }
 
-    /**
-     * Build a map from the keys of the provided index table to positions in the table.
-     *
-     * @param indexTable the table to search
-     * @param keyColumnNames the key columns to search
-     * @return a map from keys to table positions
-     */
-    static TObjectIntHashMap<Object> buildPositionMap(
-            final Table indexTable,
-            final String[] keyColumnNames,
-            final boolean usePrev) {
-        // TODO-RWC: Come back to this, since we might not want to keep it.
-        final RowSet rowSetToUse = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
-
-        int position = 0;
-        // If we have only one key column, we will push values directly into the hashmap.
-        if (keyColumnNames.length == 1) {
-            TObjectIntHashMap<Object> result = new TObjectIntHashMap<>(indexTable.intSize(), 0.5f, -1);
-
-            final ColumnSource<?> keyColumn = usePrev
-                    ? indexTable.getColumnSource(keyColumnNames[0]).getPrevSource()
-                    : indexTable.getColumnSource(keyColumnNames[0]);
-            try (final CloseableIterator<Object> keyIterator = ChunkedColumnIterator.make(keyColumn, rowSetToUse)) {
-                while (keyIterator.hasNext()) {
-                    result.put(keyIterator.next(), position++);
-                }
-                return result;
-            }
-        } else {
-            // Override the comparison and hashcode methods to handle arrays of keys.
-            TObjectIntHashMap<Object> result = new TObjectIntHashMap<>(indexTable.intSize(), 0.5f, -1) {
-                @Override
-                protected boolean equals(Object k1, Object k2) {
-                    return Arrays.equals((Object[]) k1, (Object[]) k2);
-                }
-
-                @Override
-                protected int hash(Object key) {
-                    return Arrays.hashCode((Object[]) key);
-                }
-            };
-
-            // Use Object[] as the keys for the map.
-            ColumnIterator<?>[] keyIterators = Arrays.stream(keyColumnNames)
-                    .map(colName -> usePrev
-                            ? indexTable.getColumnSource(colName).getPrevSource()
-                            : indexTable.getColumnSource(colName))
-                    .map(col -> ChunkedColumnIterator.make(col, rowSetToUse))
-                    .toArray(ColumnIterator[]::new);
-
-            while (keyIterators[0].hasNext()) {
-                final Object[] complexKey = Arrays.stream(keyIterators).map(ColumnIterator::next).toArray();
-                result.put(complexKey, position++);
-            }
-
-            SafeCloseableArray.close(keyIterators);
-
-            return result;
-        }
+    @Override
+    @NotNull
+    public DataIndex remapKeyColumns(final @NotNull Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap) {
+        return new RemappedDataIndex(this, oldToNewColumnMap);
     }
 
     /**
@@ -124,6 +73,22 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
     protected static QueryTable indexTableWrapper(
             @NotNull final QueryTable parent,
             @NotNull final String rowSetColumn) {
+        return indexTableWrapper(parent, rowSetColumn, rowSetColumn);
+    }
+
+    /**
+     * Return a copy of {@code parent} with the row set column replaced with a {@link RowSetColumnSourceWrapper wrapper}
+     * column that adds {@link TrackingRowSet#prev() prev} calls on access to previous values.
+     *
+     * @param parent The table to copy
+     * @param rowSetColumn The name of the row set column to wrap
+     * @param renamedRowSetColumn The name of the row set column in the output table
+     * @return The copied table
+     */
+    protected static QueryTable indexTableWrapper(
+            @NotNull final QueryTable parent,
+            @NotNull final String rowSetColumn,
+            @NotNull final String renamedRowSetColumn) {
         // TODO-RWC/LAB: Use new assertions to assert that parent has a RowSet ColumnSource of name rowSetColumn.
         final UpdateGraph updateGraph = parent.getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
@@ -134,7 +99,8 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
                 parent.getColumnSourceMap().forEach((columnName, columnSource) -> {
                     if (columnName.equals(rowSetColumn)) {
                         resultColumnSourceMap.put(
-                                columnName, RowSetColumnSourceWrapper.from(parent.getColumnSource(rowSetColumn)));
+                                renamedRowSetColumn,
+                                RowSetColumnSourceWrapper.from(parent.getColumnSource(rowSetColumn)));
                     } else {
                         // Convert the key columns to primitive column sources.
                         resultColumnSourceMap.put(columnName, ReinterpretUtils.maybeConvertToPrimitive(columnSource));
@@ -143,8 +109,8 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
                 final OperationSnapshotControl snapshotControl =
                         parent.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                 QueryTable.initializeWithSnapshot("wrapRowSetColumn", snapshotControl, (usePrev, beforeClockValue) -> {
-                    final QueryTable resultTable = new QueryTable(parent.getDefinition(), parent.getRowSet(),
-                            resultColumnSourceMap, null, parent.getAttributes());
+                    final QueryTable resultTable = new QueryTable(TableDefinition.inferFrom(resultColumnSourceMap),
+                            parent.getRowSet(), resultColumnSourceMap, null, parent.getAttributes());
                     parent.propagateFlatness(resultTable);
                     if (snapshotControl != null) {
                         final BaseTable.ListenerImpl listener =
@@ -162,17 +128,61 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
     }
 
     /**
-     * Return the previous version of the index table, created by returning previous column sources for all columns and
-     * using the previous row set of the index table.
+     * Build a map from the lookup keys of the provided index table to row keys in the table.
+     *
+     * @param indexTable the table to search
+     * @param keyColumnNames the key columns to search
+     * @return a map from keys to table positions
      */
-    public Table prevTable() {
-        final Table inputTable = table();
-        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ? extends ColumnSource<?>> entry : inputTable.getColumnSourceMap().entrySet()) {
-            final String columnName = entry.getKey();
-            final ColumnSource<?> columnSource = entry.getValue().getPrevSource();
-            columnSourceMap.put(columnName, columnSource);
+    public static TObjectLongHashMap<Object> buildKeyMap(
+            final Table indexTable,
+            final String[] keyColumnNames) {
+        // TODO-RWC: Come back to this, since we might not want to keep it.
+        final RowSet rowSetToUse = indexTable.getRowSet();
+
+        // If we have only one key column, we will push values directly into the hashmap.
+        if (keyColumnNames.length == 1) {
+            TObjectLongHashMap<Object> result = new TObjectLongHashMap<>(indexTable.intSize(), 0.5f, NULL_ROW_KEY);
+
+            final ColumnSource<?> keyColumn = indexTable.getColumnSource(keyColumnNames[0]);
+            try (final CloseableIterator<Object> keyIterator = ChunkedColumnIterator.make(keyColumn, rowSetToUse);
+                    final RowSet.Iterator rsIterator = rowSetToUse.iterator()) {
+                while (keyIterator.hasNext()) {
+                    result.put(keyIterator.next(), rsIterator.next());
+                }
+                return result;
+            }
+        } else {
+            // Override the comparison and hashcode methods to handle arrays of keys.
+            TObjectLongHashMap<Object> result = new TObjectLongHashMap<>(indexTable.intSize(), 0.5f, NULL_ROW_KEY) {
+                @Override
+                protected boolean equals(Object k1, Object k2) {
+                    return Arrays.equals((Object[]) k1, (Object[]) k2);
+                }
+
+                @Override
+                protected int hash(Object key) {
+                    return Arrays.hashCode((Object[]) key);
+                }
+            };
+
+            // Use Object[] as the keys for the map.
+            ColumnIterator<?>[] keyIterators = Arrays.stream(keyColumnNames)
+                    .map(indexTable::getColumnSource)
+                    .map(col -> ChunkedColumnIterator.make(col, rowSetToUse))
+                    .toArray(ColumnIterator[]::new);
+
+            final RowSet.Iterator rsIterator = rowSetToUse.iterator();
+
+            while (keyIterators[0].hasNext()) {
+                final Object[] complexKey = Arrays.stream(keyIterators).map(ColumnIterator::next).toArray();
+                result.put(complexKey, rsIterator.next());
+            }
+
+            SafeCloseableArray.close(keyIterators);
+            rsIterator.close();
+
+            return result;
         }
-        return new QueryTable(inputTable.getRowSet().prev().writableCast().toTracking(), columnSourceMap);
     }
 }

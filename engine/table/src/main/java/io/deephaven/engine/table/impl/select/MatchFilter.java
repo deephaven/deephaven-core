@@ -203,7 +203,7 @@ public class MatchFilter extends WhereFilterImpl {
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
         final WritableRowSet result =
                 columnSource.match(invertMatch, usePrev, caseInsensitive, sourceDataIndex, selection, values);
-        // We cannot rely on the data index being in the correct state for the next cycle, so we clear it.
+        // We won't use the data index for incremental changes, so we should clear it.
         sourceDataIndex = null;
         return result;
     }
@@ -215,7 +215,7 @@ public class MatchFilter extends WhereFilterImpl {
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
         final WritableRowSet result =
                 columnSource.match(!invertMatch, usePrev, caseInsensitive, sourceDataIndex, selection, values);
-        // We cannot rely on the data index being in the correct state for the next cycle, so we clear it.
+        // We won't use the data index for incremental changes, so we should clear it.
         sourceDataIndex = null;
         return result;
     }

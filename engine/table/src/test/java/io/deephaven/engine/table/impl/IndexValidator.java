@@ -4,20 +4,21 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
+import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import junit.framework.TestCase;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Objects;
 
 /**
  * This class listens to a table and on each update verifies that the indexes returned by the table's RowSet for a set
@@ -111,96 +112,19 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
         SafeCloseable.closeAll(rsIt);
 
         // Verify that every key in the row set is in the index at the correct position.
-        final DataIndex.RowSetLookup lookup = dataIndex.rowSetLookup();
+        final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
+        final ColumnSource<RowSet> rowSetColumn = dataIndex.rowSetColumn();
+
         for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
             long next = it.nextLong();
             Object[] key = Arrays.stream(groupColumns).map(cs -> cs.get(next)).toArray();
-            final RowSet keyRowSet;
+            final long rowKey;
             if (key.length == 1) {
-                keyRowSet = lookup.apply(key[0], usePrev);
+                rowKey = rowKeyLookup.apply(key[0], usePrev);
             } else {
-                keyRowSet = lookup.apply(key, usePrev);
+                rowKey = rowKeyLookup.apply(key, usePrev);
             }
-            Assert.assertion(keyRowSet != null, "keyRowSet != null", next, "next", key, "key", context, "context");
-            if (keyRowSet != null) {
-                Assert.assertion(keyRowSet.find(next) >= 0, "keyRowSet.find(next) >= 0", next, "next", key, "key",
-                        keyRowSet, "keyRowSet", context, "context");
-            }
-        }
-    }
-
-    public static void validateRestrictedIndex(String[] indexToCheck, RowSet rowSet, Table source,
-            String context, Map<Object, RowSet> index, Set<Object> validKeys) {
-        ColumnSource[] groupColumns = getColumnSources(indexToCheck, source);
-        for (Map.Entry<Object, RowSet> objectIndexEntry : index.entrySet()) {
-            final Object groupKey = objectIndexEntry.getKey();
-            Assert.assertion(validKeys.contains(groupKey), "validKeys.contains(objectIndexEntry.getKey())", groupKey,
-                    "groupKey", validKeys, "validKeys");
-            for (RowSet.Iterator it = objectIndexEntry.getValue().iterator(); it.hasNext();) {
-                long next = it.nextLong();
-                checkGroupKey(groupColumns, next, groupKey, context);
-            }
-        }
-
-        for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
-            long next = it.nextLong();
-            Object key = getValue(groupColumns, next);
-            RowSet keyRowSet = index.get(key);
-
-            if (validKeys.contains(key)) {
-                Assert.assertion(keyRowSet != null, "keyRowSet != null", next, "next", key, "key", context, "context");
-                if (keyRowSet != null) {
-                    Assert.assertion(keyRowSet.find(next) >= 0, "keyRowSet.find(next) >= 0", next, "next", key, "key",
-                            keyRowSet, "keyRowSet", context, "context");
-                }
-            } else {
-                Assert.assertion(keyRowSet == null, "keyRowSet == null", next, "next", key, "key", context, "context");
-            }
-        }
-    }
-
-    private void validatePrevIndex(String[] indexToCheck, TrackingRowSet rowSet) {
-        final ColumnSource[] groupColumns = getColumnSources(indexToCheck, source);
-
-        final DataIndexer dataIndexer = DataIndexer.of(rowSet);
-        if (!dataIndexer.hasDataIndex(groupColumns)) {
-            return;
-        }
-        final DataIndex index = dataIndexer.getDataIndex(groupColumns);
-        final Table indexTable = index.table();
-
-        // Create column iterators for the keys and the row set
-        final CloseableIterator<?>[] keyIterators =
-                Arrays.stream(indexToCheck).map(indexTable::columnIterator).toArray(CloseableIterator[]::new);
-        final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(index.rowSetColumnName());
-
-        // Verify that the keys are correct in the table vs. the index.
-        while (rsIt.hasNext()) {
-            final RowSet rs = rsIt.next();
-            final Object[] keyValues = Arrays.stream(keyIterators).map(CloseableIterator::next).toArray();
-            final Object keys = getFromValues(groupColumns, keyValues);
-
-            final RowSet.Iterator it = rs.iterator();
-            while (it.hasNext()) {
-                final long next = it.nextLong();
-                if (indexToCheck.length == 1) {
-                    checkGroupPrevKey(groupColumns, next, keyValues[0], context);
-                } else {
-                    checkGroupPrevKey(groupColumns, next, keys, context);
-                }
-            }
-        }
-
-        final DataIndex.RowSetLookup lookup = index.rowSetLookup();
-        for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
-            long next = it.nextLong();
-            Object[] key = Arrays.stream(groupColumns).map(cs -> cs.getPrev(next)).toArray();
-            final RowSet keyRowSet;
-            if (key.length == 1) {
-                keyRowSet = lookup.apply(key[0], true);
-            } else {
-                keyRowSet = lookup.apply(key, true);
-            }
+            final RowSet keyRowSet = rowSetColumn.get(rowKey);
             Assert.assertion(keyRowSet != null, "keyRowSet != null", next, "next", key, "key", context, "context");
             if (keyRowSet != null) {
                 Assert.assertion(keyRowSet.find(next) >= 0, "keyRowSet.find(next) >= 0", next, "next", key, "key",
@@ -216,6 +140,11 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
     static private void checkGroupKey(final ColumnSource[] groupColumns, final long next, final Object key,
             final String context) {
         final Object value = getValue(groupColumns, next);
+        if (key instanceof Object[]) {
+            Assert.assertion(Arrays.equals((Object[]) value, (Object[]) key), "Arrays.equals(value, key)", value,
+                    "value", key, "key", context, "context");
+            return;
+        }
         Assert.assertion(Objects.equals(value, key), "value.equals(key)", value, "value", key, "key", context,
                 "context");
     }
@@ -223,20 +152,36 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
     static private void checkGroupPrevKey(final ColumnSource[] groupColumns, final long next, final Object key,
             final String context) {
         Object value = getPrevValue(groupColumns, next);
+        if (key instanceof Object[]) {
+            Assert.assertion(Arrays.equals((Object[]) value, (Object[]) key), "Arrays.equals(value, key)", value,
+                    "value", key, "key", context, "context");
+            return;
+        }
         Assert.assertion(value == key || value.equals(key), "value.equals(key)", value, "value", key, "key", context,
                 "context");
     }
 
     static private Object getValue(ColumnSource[] groupColumns, long next) {
-        return TupleSourceFactory.makeTupleSource(groupColumns).createTuple(next);
+        // pretty inefficient, since this is a chunk source
+        final ChunkSource.WithPrev<Values> source = DataIndexUtils.makeBoxedKeySource(groupColumns);
+        try (final ChunkSource.GetContext ctx = source.makeGetContext(1)) {
+            return source.getChunk(ctx, next, next).asObjectChunk().get(0);
+        }
     }
 
     static private Object getPrevValue(ColumnSource[] groupColumns, long next) {
-        return TupleSourceFactory.makeTupleSource(groupColumns).createPreviousTuple(next);
+        // pretty inefficient, since this is a chunk source
+        final ChunkSource.WithPrev<Values> source = DataIndexUtils.makeBoxedKeySource(groupColumns);
+        try (final ChunkSource.GetContext ctx = source.makeGetContext(1)) {
+            return source.getPrevChunk(ctx, next, next).asObjectChunk().get(0);
+        }
     }
 
     static private Object getFromValues(ColumnSource[] groupColumns, Object... values) {
-        return TupleSourceFactory.makeTupleSource(groupColumns).createTupleFromValues(values);
+        if (values.length == 1) {
+            return values[0];
+        }
+        return values;
     }
 
     public void validateIndexes() {

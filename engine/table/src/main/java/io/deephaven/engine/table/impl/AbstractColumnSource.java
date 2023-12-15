@@ -159,9 +159,12 @@ public abstract class AbstractColumnSource<T> implements
                 }
             } else {
                 // Use the lookup function to get the matching RowSets intersected with the mapper
-                final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup();
+                final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
                 for (Object key : keys) {
-                    final RowSet range = rowSetLookup.apply(key, usePrev);
+                    final long rowKey = rowKeyLookup.apply(key, usePrev);
+                    final RowSet range = usePrev
+                            ? dataIndex.rowSetColumn().getPrev(rowKey)
+                            : dataIndex.rowSetColumn().get(rowKey);
                     if (range != null) {
                         allInMatchingGroups.addRowSet(range);
                     }

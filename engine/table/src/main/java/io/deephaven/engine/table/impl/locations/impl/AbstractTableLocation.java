@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.table.impl.locations.*;
@@ -24,7 +25,7 @@ import java.util.Map;
 public abstract class AbstractTableLocation
         extends SubscriptionAggregator<TableLocation.Listener>
         implements TableLocation {
-    protected static final SoftReference<Table> NO_INDEX_SENTINEL = new SoftReference<>(null);
+    protected static final SoftReference<BasicDataIndex> NO_INDEX_SENTINEL = new SoftReference<>(null);
 
     private final ImmutableTableKey tableKey;
     private final ImmutableTableLocationKey tableLocationKey;
@@ -34,7 +35,7 @@ public abstract class AbstractTableLocation
             new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
 
     /** A map of data index columns to materialized index tables for this location. */
-    protected volatile Map<List<String>, SoftReference<Table>> cachedIndexes;
+    protected volatile Map<List<String>, SoftReference<BasicDataIndex>> cachedIndexes;
 
     /**
      * @param tableKey Table key for the table this location belongs to
@@ -154,19 +155,19 @@ public abstract class AbstractTableLocation
 
     @Nullable
     @Override
-    public final Table getDataIndex(@NotNull final String... columns) {
+    public final BasicDataIndex getDataIndex(@NotNull final String... columns) {
         final List<String> colNames = Arrays.asList(columns);
-        Table indexTable = null;
+        BasicDataIndex index = null;
         if (cachedIndexes != null) {
-            final SoftReference<Table> cachedIndex = cachedIndexes.get(colNames);
+            final SoftReference<BasicDataIndex> cachedIndex = cachedIndexes.get(colNames);
             if (cachedIndex == NO_INDEX_SENTINEL) {
                 return null;
             }
 
             if (cachedIndex != null) {
-                indexTable = cachedIndex.get();
-                if (indexTable != null) {
-                    return indexTable;
+                index = cachedIndex.get();
+                if (index != null) {
+                    return index;
                 }
             }
         }
@@ -176,26 +177,26 @@ public abstract class AbstractTableLocation
                 cachedIndexes = new HashMap<>();
             }
 
-            final SoftReference<Table> cachedGrouping = cachedIndexes.get(colNames);
-            if (cachedGrouping == NO_INDEX_SENTINEL) {
+            final SoftReference<BasicDataIndex> cachedIndex = cachedIndexes.get(colNames);
+            if (cachedIndex == NO_INDEX_SENTINEL) {
                 return null;
             }
 
-            if (cachedGrouping != null) {
-                indexTable = cachedGrouping.get();
+            if (cachedIndex != null) {
+                index = cachedIndex.get();
             }
 
-            if (indexTable == null) {
-                indexTable = loadDataIndex(columns);
+            if (index == null) {
+                index = loadDataIndex(columns);
 
-                if (indexTable == null || indexTable.isEmpty()) {
+                if (index == null) {
                     cachedIndexes.put(colNames, NO_INDEX_SENTINEL);
                 } else {
-                    cachedIndexes.put(colNames, new SoftReference<>(indexTable));
+                    cachedIndexes.put(colNames, new SoftReference<>(index));
                 }
             }
 
-            return indexTable;
+            return index;
         }
     }
 
@@ -207,5 +208,5 @@ public abstract class AbstractTableLocation
      * @return the data index table, or an empty table or null if none existed.
      */
     @Nullable
-    protected abstract Table loadDataIndex(@NotNull final String... columns);
+    protected abstract BasicDataIndex loadDataIndex(@NotNull final String... columns);
 }

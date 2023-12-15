@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.dataindex.DataIndexKeySet;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -174,10 +175,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         } else {
             this.setTable = null;
             setKeySource = null;
+
             if (setTable.getRowSet().isNonempty()) {
-                final TupleSource<?> temporaryTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
+                final ChunkSource.WithPrev<Values> tmpKeySource = DataIndexUtils.makeBoxedKeySource(setColumns);
                 try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
-                        temporaryTupleSource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
+                        tmpKeySource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
                     initialKeysIterator.forEachRemaining(this::addKeyUnchecked);
                 }
             }
@@ -214,6 +216,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         liveValues.add(key);
     }
 
+    /**
+     * Returns the optimal data index for the supplied table, or null if no index is available. The ideal index would
+     * contain all key columns but a partial match is also acceptable.
+     */
     @Nullable
     private DataIndex optimalIndex(final Table inputTable) {
         final String[] keyColumnNames = MatchPair.getLeftColumns(matchPairs);
@@ -269,8 +275,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                 liveValuesArray = liveValues.toArray();
                 liveValuesArrayValid = true;
             }
-            return table.getColumnSource(matchPairs[0].leftColumn())
-                    .match(!inclusion, false, false, sourceDataIndex, selection, liveValuesArray);
+            // Our keys are reinterpreted, so we need to reinterpret the column source for correct matching.
+            final ColumnSource<?> source =
+                    ReinterpretUtils.maybeConvertToPrimitive(table.getColumnSource(matchPairs[0].leftColumn()));
+            return source.match(!inclusion, false, false, sourceDataIndex, selection, liveValuesArray);
         }
 
         final ColumnSource<?>[] keyColumns = Arrays.stream(matchPairs)
@@ -304,10 +312,12 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             final ColumnSource<?>[] keyColumns) {
         // Use the index RowSetLookup to create a combined row set of matching rows.
         final RowSetBuilderRandom rowSetBuilder = RowSetFactory.builderRandom();
-        final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup(keyColumns);
+        final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup(keyColumns);
+        final ColumnSource<RowSet> rowSetColumn = dataIndex.rowSetColumn();
 
         liveValues.forEach(key -> {
-            final RowSet rowSet = rowSetLookup.apply(key, false);
+            final long rowKey = rowKeyLookup.apply(key, false);
+            final RowSet rowSet = rowSetColumn.get(rowKey);
             if (rowSet != null) {
                 rowSetBuilder.addRowSet(rowSet);
             }
@@ -340,14 +350,16 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         Assert.geqZero(indexedSourceList.size(), "indexedSourceList.size()");
 
         final List<RowSet> indexRowSets = new ArrayList<>(indexedSourceList.size());
-        final DataIndex.RowSetLookup rowSetLookup = dataIndex.rowSetLookup();
+        final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
+        final ColumnSource<RowSet> rowSetColumn = dataIndex.rowSetColumn();
 
         if (indexedSourceIndices.size() == 1) {
             // Only one indexed source, so we can use the RowSetLookup directly.
             final int keyIndex = indexedSourceIndices.get(0);
             liveValues.forEach(key -> {
                 final Object[] keys = (Object[]) key;
-                final RowSet rowSet = rowSetLookup.apply(keys[keyIndex], false);
+                final long rowKey = rowKeyLookup.apply(keys[keyIndex], false);
+                final RowSet rowSet = rowSetColumn.get(rowKey);
                 if (rowSet != null) {
                     indexRowSets.add(rowSet);
                 }
@@ -365,7 +377,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                 }
 
                 // Perform the lookup using the partial key.
-                final RowSet rowSet = rowSetLookup.apply(partialKey, false);
+                final long rowKey = rowKeyLookup.apply(partialKey, false);
+                final RowSet rowSet = rowSetColumn.get(rowKey);
                 if (rowSet != null) {
                     indexRowSets.add(rowSet);
                 }

@@ -8,6 +8,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
@@ -19,9 +20,9 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 /**
- * {@link ChunkSource} that produces data index {@link io.deephaven.engine.table.DataIndex.RowSetLookup row set lookup}
- * keys from multiple {@link ColumnSource sources}. This can be used to extract keys from a data index table, or from a
- * table of probe values.
+ * {@link ChunkSource} that produces data index {@link DataIndex.RowKeyLookup row set lookup} keys from multiple
+ * {@link ColumnSource sources}. This can be used to extract keys from a data index table, or from a table of probe
+ * values.
  */
 final class DataIndexBoxedKeySourceCompound implements DefaultChunkSource.WithPrev<Values> {
 

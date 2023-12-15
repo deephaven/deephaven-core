@@ -9,14 +9,12 @@ import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
-import io.deephaven.engine.table.TupleSource;
-import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.table.impl.util.*;
 
 import java.time.Instant;
@@ -87,7 +85,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
                 Arrays.stream(groupingColumns).map(input::get).toArray(ColumnSource[]::new);
 
         final DataIndexer dataIndexer = DataIndexer.of(rowSet);
-        final DataIndex dataIndex = dataIndexer.getDataIndex(columnSources);
+        final BasicDataIndex dataIndex = dataIndexer.getDataIndex(columnSources);
         final Table indexTable = dataIndex.table();
 
         // noinspection unchecked
