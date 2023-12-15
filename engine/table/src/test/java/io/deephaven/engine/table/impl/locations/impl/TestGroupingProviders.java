@@ -8,8 +8,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.sources.regioned.MergedDataIndex;
-import io.deephaven.engine.table.impl.sources.regioned.PartitioningColumnDataIndex;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
@@ -35,7 +33,8 @@ import java.util.stream.IntStream;
 import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
 
 /**
- * Unit tests for {@link PartitioningColumnDataIndex} and {@link MergedDataIndex}.
+ * Unit tests for {@code PartitioningColumnDataIndex} and
+ * {@code MergedDataIndex}.
  */
 public class TestGroupingProviders {
 
