@@ -22,7 +22,7 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  * <p>
  * A calendar is associated with a specific time zone.
  * <p>
- * Date strings must be in a format that can be parsed by {@code DateTimeUtils#parseDate}. Methods that accept strings
+ * Date strings must be in a format that can be parsed by {@link DateTimeUtils#parseLocalDate(String)}. Methods that accept strings
  * can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or {@code LocalDate}.
  */
 public class Calendar {
@@ -209,7 +209,7 @@ public class Calendar {
 
     /**
      * Adds a specified number of days to an input time. Adding negative days is equivalent to subtracting days.
-     *
+     * <p>
      * Day additions are not always 24 hours. The resultant time will have the same local time as the input time, as
      * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
      * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
@@ -230,7 +230,7 @@ public class Calendar {
 
     /**
      * Adds a specified number of days to an input time. Adding negative days is equivalent to subtracting days.
-     *
+     * <p>
      * Day additions are not always 24 hours. The resultant time will have the same local time as the input time, as
      * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
      * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
@@ -290,7 +290,7 @@ public class Calendar {
 
     /**
      * Subtracts a specified number of days to an input time. Subtracting negative days is equivalent to adding days.
-     *
+     * <p>
      * Day subtractions are not always 24 hours. The resultant time will have the same local time as the input time, as
      * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
      * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
@@ -311,12 +311,12 @@ public class Calendar {
 
     /**
      * Subtracts a specified number of days to an input time. Subtracting negative days is equivalent to adding days.
-     *
+     * <p>
      * Day subtractions are not always 24 hours. The resultant time will have the same local time as the input time, as
      * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
      * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
      * is a 25-hour difference.
-     *
+     * <p>
      * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
      * the input {@link ZonedDateTime}.
      *

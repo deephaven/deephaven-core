@@ -17,7 +17,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 /**
  * Schedule for a single calendar day. The schedule contains a list of business time ranges, which are the ranges of
  * time during which businesses are open.
- *
+ * <p>
  * A business day may contain multiple business time ranges. For example, some financial exchanges have a morning and an
  * afternoon trading session. This would be represented by a business day with two business time ranges.
  *
