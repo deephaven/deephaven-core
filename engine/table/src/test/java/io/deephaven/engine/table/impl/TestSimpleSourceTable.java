@@ -173,7 +173,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
-                oneOf(columnSourceManager).refresh(true);
+                oneOf(columnSourceManager).initialize();
                 if (throwException) {
                     will(throwException(exception));
                 } else {
@@ -233,7 +233,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
-                oneOf(columnSourceManager).refresh(true);
+                oneOf(columnSourceManager).initialize();
                 will(returnValue(RowSetFactory.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices1)));
@@ -266,7 +266,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
-                oneOf(columnSourceManager).refresh(true);
+                oneOf(columnSourceManager).initialize();
                 will(returnValue(RowSetFactory.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices2)));
@@ -308,7 +308,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
-                oneOf(columnSourceManager).refresh(true);
+                oneOf(columnSourceManager).initialize();
                 will(returnValue(RowSetFactory.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices3)));

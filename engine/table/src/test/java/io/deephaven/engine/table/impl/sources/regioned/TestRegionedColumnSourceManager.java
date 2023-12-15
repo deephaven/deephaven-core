@@ -406,7 +406,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         expectGroupingColumnInitialGrouping();
         setSizeExpectations(false, NULL_SIZE, 100, 0, REGION_CAPACITY_IN_ELEMENTS);
 
-        checkIndexes(SUT.refresh(true));
+        checkIndexes(SUT.initialize());
         assertEquals(Arrays.asList(tableLocation1A, tableLocation1B), SUT.includedLocations());
     }
 
@@ -427,7 +427,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
             }
         });
         try {
-            SUT.refresh(true);
+            SUT.initialize();
             fail("Expected exception");
         } catch (TableDataException expected) {
             maybePrintStackTrace(expected);
@@ -444,7 +444,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         assertTrue(SUT.includedLocations().isEmpty());
 
         // Check run with no locations
-        checkIndexes(SUT.refresh(true));
+        checkIndexes(SUT.initialize());
 
         // Add a few locations
         Arrays.stream(tableLocations).limit(2).forEach(SUT::addLocation);
@@ -454,17 +454,17 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         // Refresh them
         expectPartitioningColumnInitialGrouping();
         setSizeExpectations(true, 5, 1000);
-        checkIndexes(SUT.refresh(true));
+        checkIndexes(SUT.initialize());
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Refresh them with no change
         setSizeExpectations(true, 5, 1000);
-        checkIndexes(SUT.refresh(true));
+        checkIndexes(SUT.initialize());
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Refresh them with a change for the subscription-supporting one
         setSizeExpectations(true, 5, 1001);
-        checkIndexes(SUT.refresh(true));
+        checkIndexes(SUT.initialize());
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Try adding a duplicate
@@ -494,23 +494,23 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with new locations included
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
-        checkIndexes(SUT.refresh(true));
+        checkIndexes(SUT.initialize());
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B), SUT.includedLocations());
 
         // Test no-op run
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
-        checkIndexes(SUT.refresh(true));
+        checkIndexes(SUT.initialize());
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B), SUT.includedLocations());
 
         // Test run with a location updated from null to not
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
-        checkIndexes(SUT.refresh(true));
+        checkIndexes(SUT.initialize());
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
         // Test run with a location updated
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 10000002);
-        checkIndexes(SUT.refresh(true));
+        checkIndexes(SUT.initialize());
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
@@ -518,7 +518,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
         expectPoison();
         try {
-            checkIndexes(SUT.refresh(true));
+            checkIndexes(SUT.initialize());
             fail("Expected exception");
         } catch (AssertionFailure expected) {
             maybePrintStackTrace(expected);
@@ -530,7 +530,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
         expectPoison();
         try {
-            checkIndexes(SUT.refresh(true));
+            checkIndexes(SUT.initialize());
             fail("Expected exception");
         } catch (TableDataException expected) {
             maybePrintStackTrace(expected);
@@ -541,7 +541,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         // Test run with an overflow
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, REGION_CAPACITY_IN_ELEMENTS + 1);
         try {
-            checkIndexes(SUT.refresh(true));
+            checkIndexes(SUT.initialize());
             fail("Expected exception");
         } catch (TableDataException expected) {
             maybePrintStackTrace(expected);
@@ -553,7 +553,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         subscriptionBuffers[3].handleException(new TableDataException("TEST"));
         expectPoison();
         try {
-            checkIndexes(SUT.refresh(true));
+            checkIndexes(SUT.initialize());
             fail("Expected exception");
         } catch (TableDataException expected) {
             assertEquals("TEST", expected.getCause().getMessage());
