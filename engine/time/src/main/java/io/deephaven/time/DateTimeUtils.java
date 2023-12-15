@@ -2752,6 +2752,52 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns athe day of the week for a {@link ZonedDateTime} in the specified time zone.
+     *
+     * @param date date to find the day of the week of
+     * @return {@code null} if either input is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static DayOfWeek dayOfWeek(@Nullable final LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+
+        return date.getDayOfWeek();
+    }
+
+    /**
+     * Returns the day of the week for an {@link Instant} in the specified time zone.
+     *
+     * @param instant time to find the day of the week of
+     * @param timeZone time zone
+     * @return {@code null} if either input is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static DayOfWeek dayOfWeek(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+        if (instant == null || timeZone == null) {
+            return null;
+        }
+
+        return dayOfWeek(toZonedDateTime(instant, timeZone));
+    }
+
+    /**
+     * Returns the day of the week for a {@link ZonedDateTime} in the specified time zone.
+     *
+     * @param dateTime time to find the day of the week of
+     * @return {@code null} if either input is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static DayOfWeek dayOfWeek(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        return dateTime.getDayOfWeek();
+    }
+
+    /**
      * Returns a 1-based int value of the day of the week for a {@link ZonedDateTime} in the specified time zone, with 1
      * being Monday and 7 being Sunday.
      *
@@ -2759,7 +2805,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
      */
     @ScriptApi
-    public static int dayOfWeek(@Nullable final LocalDate date) {
+    public static int dayOfWeekValue(@Nullable final LocalDate date) {
         if (date == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -2776,12 +2822,12 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
      */
     @ScriptApi
-    public static int dayOfWeek(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+    public static int dayOfWeekValue(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
             return NULL_INT;
         }
 
-        return dayOfWeek(toZonedDateTime(instant, timeZone));
+        return dayOfWeekValue(toZonedDateTime(instant, timeZone));
     }
 
     /**
@@ -2792,7 +2838,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
      */
     @ScriptApi
-    public static int dayOfWeek(@Nullable final ZonedDateTime dateTime) {
+    public static int dayOfWeekValue(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
             return NULL_INT;
         }

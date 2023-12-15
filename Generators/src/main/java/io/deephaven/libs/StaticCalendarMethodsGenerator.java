@@ -86,6 +86,8 @@ public class StaticCalendarMethodsGenerator extends AbstractBasicJavaGenerator {
                         (s) -> {
                             if (s.equals("dayOfWeek")) {
                                 return "calendarDayOfWeek";
+                            } else if (s.equals("dayOfWeekValue")) {
+                                return "calendarDayOfWeekValue";
                             } else if (s.equals("timeZone")) {
                                 return "calendarTimeZone";
                             } else {

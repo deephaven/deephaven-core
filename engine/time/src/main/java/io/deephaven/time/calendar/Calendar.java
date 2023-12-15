@@ -7,10 +7,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.time.DateTimeUtils;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,8 +19,9 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  * <p>
  * A calendar is associated with a specific time zone.
  * <p>
- * Date strings must be in a format that can be parsed by {@link DateTimeUtils#parseLocalDate(String)}. Methods that accept strings
- * can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or {@code LocalDate}.
+ * Date strings must be in a format that can be parsed by {@link DateTimeUtils#parseLocalDate(String)}. Methods that
+ * accept strings can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or
+ * {@code LocalDate}.
  */
 public class Calendar {
 
@@ -105,7 +103,7 @@ public class Calendar {
      *
      * @return current day of the week
      */
-    public int dayOfWeek() {
+    public DayOfWeek dayOfWeek() {
         return dayOfWeek(calendarDate());
     }
 
@@ -113,14 +111,9 @@ public class Calendar {
      * The current day of the week for the calendar.
      *
      * @param date date
-     * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
-     *         {@code null}.
+     * @return current day of the week, or {@code null} if the input is {@code null}.
      */
-    public int dayOfWeek(final LocalDate date) {
-        if (date == null) {
-            return NULL_INT;
-        }
-
+    public DayOfWeek dayOfWeek(final LocalDate date) {
         return DateTimeUtils.dayOfWeek(date);
     }
 
@@ -128,12 +121,11 @@ public class Calendar {
      * The current day of the week for the calendar.
      *
      * @param date date
-     * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
-     *         {@code null}.
+     * @return current day of the week, or {@code null} if the input is {@code null}.
      */
-    public int dayOfWeek(final String date) {
+    public DayOfWeek dayOfWeek(final String date) {
         if (date == null) {
-            return NULL_INT;
+            return null;
         }
 
         return DateTimeUtils.dayOfWeek(DateTimeUtils.parseLocalDate(date));
@@ -143,12 +135,11 @@ public class Calendar {
      * The current day of the week for the calendar.
      *
      * @param time time
-     * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
-     *         {@code null}.
+     * @return current day of the week, or {@code null} if the input is {@code null}.
      */
-    public int dayOfWeek(final Instant time) {
+    public DayOfWeek dayOfWeek(final Instant time) {
         if (time == null) {
-            return NULL_INT;
+            return null;
         }
 
         return DateTimeUtils.dayOfWeek(time, timeZone);
@@ -158,15 +149,83 @@ public class Calendar {
      * The current day of the week for the calendar.
      *
      * @param time time
+     * @return current day of the week, or {@code null} if the input is {@code null}.
+     */
+    public DayOfWeek dayOfWeek(final ZonedDateTime time) {
+        if (time == null) {
+            return null;
+        }
+
+        return DateTimeUtils.dayOfWeek(time.toInstant(), timeZone);
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for the calendar, where 1 is Monday and 7 is Sunday.
+     *
+     * @return current day of the week
+     */
+    public int dayOfWeekValue() {
+        return dayOfWeekValue(calendarDate());
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for the calendar, where 1 is Monday and 7 is Sunday.
+     *
+     * @param date date
      * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
      *         {@code null}.
      */
-    public int dayOfWeek(final ZonedDateTime time) {
+    public int dayOfWeekValue(final LocalDate date) {
+        if (date == null) {
+            return NULL_INT;
+        }
+
+        return DateTimeUtils.dayOfWeekValue(date);
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for the calendar, where 1 is Monday and 7 is Sunday.
+     *
+     * @param date date
+     * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
+     *         {@code null}.
+     */
+    public int dayOfWeekValue(final String date) {
+        if (date == null) {
+            return NULL_INT;
+        }
+
+        return DateTimeUtils.dayOfWeekValue(DateTimeUtils.parseLocalDate(date));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for the calendar, where 1 is Monday and 7 is Sunday.
+     *
+     * @param time time
+     * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
+     *         {@code null}.
+     */
+    public int dayOfWeekValue(final Instant time) {
         if (time == null) {
             return NULL_INT;
         }
 
-        return DateTimeUtils.dayOfWeek(time.toInstant(), timeZone);
+        return DateTimeUtils.dayOfWeekValue(time, timeZone);
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for the calendar, where 1 is Monday and 7 is Sunday.
+     *
+     * @param time time
+     * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
+     *         {@code null}.
+     */
+    public int dayOfWeekValue(final ZonedDateTime time) {
+        if (time == null) {
+            return NULL_INT;
+        }
+
+        return DateTimeUtils.dayOfWeekValue(time.toInstant(), timeZone);
     }
 
     // endregion

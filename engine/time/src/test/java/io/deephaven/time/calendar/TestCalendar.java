@@ -3,10 +3,7 @@ package io.deephaven.time.calendar;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
@@ -36,14 +33,25 @@ public class TestCalendar extends BaseArrayTestCase {
 
     public void testDayOfWeek() {
         assertEquals(DateTimeUtils.dayOfWeek(calendar.calendarDate()), calendar.dayOfWeek());
-        assertEquals(1, calendar.dayOfWeek("2020-03-02"));
-        assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2)));
-        assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2).atTime(1, 2, 3).atZone(timeZone)));
-        assertEquals(1, calendar.dayOfWeek(LocalDate.of(2020, 3, 2).atTime(1, 2, 3).atZone(timeZone).toInstant()));
-        assertEquals(NULL_INT, calendar.dayOfWeek((LocalDate) null));
-        assertEquals(NULL_INT, calendar.dayOfWeek((String) null));
-        assertEquals(NULL_INT, calendar.dayOfWeek((Instant) null));
-        assertEquals(NULL_INT, calendar.dayOfWeek((ZonedDateTime) null));
+        assertEquals(DayOfWeek.MONDAY, calendar.dayOfWeek("2020-03-02"));
+        assertEquals(DayOfWeek.MONDAY, calendar.dayOfWeek(LocalDate.of(2020, 3, 2)));
+        assertEquals(DayOfWeek.MONDAY, calendar.dayOfWeek(LocalDate.of(2020, 3, 2).atTime(1, 2, 3).atZone(timeZone)));
+        assertEquals(DayOfWeek.MONDAY,
+                calendar.dayOfWeek(LocalDate.of(2020, 3, 2).atTime(1, 2, 3).atZone(timeZone).toInstant()));
+        assertNull(calendar.dayOfWeek((LocalDate) null));
+        assertNull(calendar.dayOfWeek((String) null));
+        assertNull(calendar.dayOfWeek((Instant) null));
+        assertNull(calendar.dayOfWeek((ZonedDateTime) null));
+
+        assertEquals(DateTimeUtils.dayOfWeekValue(calendar.calendarDate()), calendar.dayOfWeekValue());
+        assertEquals(1, calendar.dayOfWeekValue("2020-03-02"));
+        assertEquals(1, calendar.dayOfWeekValue(LocalDate.of(2020, 3, 2)));
+        assertEquals(1, calendar.dayOfWeekValue(LocalDate.of(2020, 3, 2).atTime(1, 2, 3).atZone(timeZone)));
+        assertEquals(1, calendar.dayOfWeekValue(LocalDate.of(2020, 3, 2).atTime(1, 2, 3).atZone(timeZone).toInstant()));
+        assertEquals(NULL_INT, calendar.dayOfWeekValue((LocalDate) null));
+        assertEquals(NULL_INT, calendar.dayOfWeekValue((String) null));
+        assertEquals(NULL_INT, calendar.dayOfWeekValue((Instant) null));
+        assertEquals(NULL_INT, calendar.dayOfWeekValue((ZonedDateTime) null));
     }
 
     public void testPlusDays() {

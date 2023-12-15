@@ -2529,15 +2529,22 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant dt2 = DateTimeUtils.parseInstant("2023-02-03T11:23:45.123456789 JP");
         final ZonedDateTime dt3 = dt2.atZone(TZ_JP);
 
-        TestCase.assertEquals(DayOfWeek.FRIDAY.getValue(), DateTimeUtils.dayOfWeek(dt1));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeek((LocalDate) null));
+        TestCase.assertEquals(DayOfWeek.FRIDAY, DateTimeUtils.dayOfWeek(dt1));
+        TestCase.assertNull(DateTimeUtils.dayOfWeek((LocalDate) null));
+        TestCase.assertEquals(DayOfWeek.FRIDAY.getValue(), DateTimeUtils.dayOfWeekValue(dt1));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeekValue((LocalDate) null));
 
-        TestCase.assertEquals(DayOfWeek.FRIDAY.getValue(), DateTimeUtils.dayOfWeek(dt2, TZ_JP));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeek(dt2, null));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeek(null, TZ_JP));
+        TestCase.assertEquals(DayOfWeek.FRIDAY, DateTimeUtils.dayOfWeek(dt2, TZ_JP));
+        TestCase.assertNull(DateTimeUtils.dayOfWeek(dt2, null));
+        TestCase.assertNull(DateTimeUtils.dayOfWeek(null, TZ_JP));
+        TestCase.assertEquals(DayOfWeek.FRIDAY.getValue(), DateTimeUtils.dayOfWeekValue(dt2, TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeekValue(dt2, null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeekValue(null, TZ_JP));
 
-        TestCase.assertEquals(DayOfWeek.FRIDAY.getValue(), DateTimeUtils.dayOfWeek(dt3));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeek((ZonedDateTime) null));
+        TestCase.assertEquals(DayOfWeek.FRIDAY, DateTimeUtils.dayOfWeek(dt3));
+        TestCase.assertNull(DateTimeUtils.dayOfWeek((ZonedDateTime) null));
+        TestCase.assertEquals(DayOfWeek.FRIDAY.getValue(), DateTimeUtils.dayOfWeekValue(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeekValue((ZonedDateTime) null));
     }
 
     public void testDayOfYear() {

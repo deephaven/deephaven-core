@@ -97,19 +97,34 @@ public class StaticCalendarMethods {
     public static  io.deephaven.time.calendar.CalendarDay<java.time.Instant> calendarDay( java.time.ZonedDateTime time ) {return Calendars.calendar().calendarDay( time );}
 
     /** @see io.deephaven.time.calendar.Calendar#dayOfWeek() */
-    public static  int calendarDayOfWeek( ) {return Calendars.calendar().dayOfWeek( );}
+    public static  java.time.DayOfWeek calendarDayOfWeek( ) {return Calendars.calendar().dayOfWeek( );}
 
     /** @see io.deephaven.time.calendar.Calendar#dayOfWeek(java.lang.String) */
-    public static  int calendarDayOfWeek( java.lang.String date ) {return Calendars.calendar().dayOfWeek( date );}
+    public static  java.time.DayOfWeek calendarDayOfWeek( java.lang.String date ) {return Calendars.calendar().dayOfWeek( date );}
 
     /** @see io.deephaven.time.calendar.Calendar#dayOfWeek(java.time.Instant) */
-    public static  int calendarDayOfWeek( java.time.Instant time ) {return Calendars.calendar().dayOfWeek( time );}
+    public static  java.time.DayOfWeek calendarDayOfWeek( java.time.Instant time ) {return Calendars.calendar().dayOfWeek( time );}
 
     /** @see io.deephaven.time.calendar.Calendar#dayOfWeek(java.time.LocalDate) */
-    public static  int calendarDayOfWeek( java.time.LocalDate date ) {return Calendars.calendar().dayOfWeek( date );}
+    public static  java.time.DayOfWeek calendarDayOfWeek( java.time.LocalDate date ) {return Calendars.calendar().dayOfWeek( date );}
 
     /** @see io.deephaven.time.calendar.Calendar#dayOfWeek(java.time.ZonedDateTime) */
-    public static  int calendarDayOfWeek( java.time.ZonedDateTime time ) {return Calendars.calendar().dayOfWeek( time );}
+    public static  java.time.DayOfWeek calendarDayOfWeek( java.time.ZonedDateTime time ) {return Calendars.calendar().dayOfWeek( time );}
+
+    /** @see io.deephaven.time.calendar.Calendar#dayOfWeekValue() */
+    public static  int calendarDayOfWeekValue( ) {return Calendars.calendar().dayOfWeekValue( );}
+
+    /** @see io.deephaven.time.calendar.Calendar#dayOfWeekValue(java.lang.String) */
+    public static  int calendarDayOfWeekValue( java.lang.String date ) {return Calendars.calendar().dayOfWeekValue( date );}
+
+    /** @see io.deephaven.time.calendar.Calendar#dayOfWeekValue(java.time.Instant) */
+    public static  int calendarDayOfWeekValue( java.time.Instant time ) {return Calendars.calendar().dayOfWeekValue( time );}
+
+    /** @see io.deephaven.time.calendar.Calendar#dayOfWeekValue(java.time.LocalDate) */
+    public static  int calendarDayOfWeekValue( java.time.LocalDate date ) {return Calendars.calendar().dayOfWeekValue( date );}
+
+    /** @see io.deephaven.time.calendar.Calendar#dayOfWeekValue(java.time.ZonedDateTime) */
+    public static  int calendarDayOfWeekValue( java.time.ZonedDateTime time ) {return Calendars.calendar().dayOfWeekValue( time );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#diffBusinessDays(java.time.Instant,java.time.Instant) */
     public static  double diffBusinessDays( java.time.Instant start, java.time.Instant end ) {return Calendars.calendar().diffBusinessDays( start, end );}

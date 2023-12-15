@@ -17,12 +17,13 @@ import java.util.*;
 
 /**
  * Tests for {@link StaticCalendarMethods}
- *
+ * <p>
  * See also {@code StaticCalendarMethodsGenerator}.
  */
 public class TestStaticCalendarMethods extends BaseArrayTestCase {
 
     private final Map<Class<?>, Object[]> data = new HashMap<>();
+
     {
         data.put(String.class, new String[] {"2017-08-01", "2017-08-05"});
         data.put(LocalDate.class, new LocalDate[] {DateTimeUtils.parseLocalDate("2017-08-01"),
@@ -118,6 +119,8 @@ public class TestStaticCalendarMethods extends BaseArrayTestCase {
 
                 if (name2.equals("dayOfWeek")) {
                     name2 = "calendarDayOfWeek";
+                } else if (name2.equals("dayOfWeekValue")) {
+                    name2 = "calendarDayOfWeekValue";
                 } else if (name2.equals("timeZone")) {
                     name2 = "calendarTimeZone";
                 }
