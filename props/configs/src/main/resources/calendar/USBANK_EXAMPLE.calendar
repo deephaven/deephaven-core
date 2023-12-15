@@ -3,7 +3,7 @@
   -->
 
 <calendar>
-    <name>USBANK</name>
+    <name>USBANK_EXAMPLE</name>
     <timeZone>America/New_York</timeZone>
     <language>en</language>
     <country>US</country>
@@ -11,6 +11,7 @@
     <lastValidDate>2027-12-31</lastValidDate>
     <description>
         United States Banking Business Calendar.
+        *** NOTE: This is an example calendar, and is not intended to be used for trading or other production purposes. ***
         Sources: https://www.frbservices.org/about/holiday-schedules, https://www.federalreserve.gov/aboutthefed/k8.htm, https://www.chicagofed.org/utilities/about-us/bank-holidays
         Last updated 11/10/2023
     </description>

@@ -105,13 +105,13 @@ public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
 
     // tests bugs where first day was transformed incorrectly
     public void testFirstTransformedDay() {
-        AxisTransform transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE"));
+        AxisTransform transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE_EXAMPLE"));
         double d = transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-02T09:30:01 NY")));
         double d2 = transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-02T14:30:01 NY")));
         assertFalse(d == d2);
 
         // first day holiday
-        transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE"));
+        transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE_EXAMPLE"));
         transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-03T09:30:01 NY")));
         assertEquals(0.0 + 30 * DateTimeUtils.MINUTE,
                 transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-02T10:00:00 NY"))));
@@ -119,13 +119,13 @@ public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
                 transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-05T10:00:00 NY"))));
 
         // first time outside business hours
-        transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE"));
+        transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE_EXAMPLE"));
         transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-02T09:29:00 NY")));
         assertEquals(2.34E13 + 30 * DateTimeUtils.MINUTE,
                 transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-02T10:00:00 NY"))));
 
         // previous day was holiday
-        transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE"));
+        transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE_EXAMPLE"));
         transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-01-29T09:29:00 NY")));
         assertEquals(2 * 2.34E13 + 30 * DateTimeUtils.MINUTE,
                 transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-01-30T10:00:00 NY"))));

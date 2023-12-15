@@ -67,10 +67,10 @@ class CalendarTestCase(BaseTestCase):
             set_calendar(default)
 
     def test_calendar_names(self):
-        self.assertEqual(calendar_names(), ['CAL1', 'CAL2', 'USBANK', 'USNYSE', 'UTC'])
+        self.assertEqual(calendar_names(), ['CAL1', 'CAL2', 'USBANK_EXAMPLE', 'USNYSE_EXAMPLE', 'UTC'])
 
     def test_calendar(self):
-        self.assertEqual('USNYSE', calendar("USNYSE").name())
+        self.assertEqual('USNYSE', calendar("USNYSE_EXAMPLE").name())
         self.assertEqual('CAL1', calendar("CAL1").name())
         self.assertEqual(calendar_name(), calendar().name())
 
@@ -88,12 +88,12 @@ class CalendarTestCase(BaseTestCase):
         ])
 
         try:
-            set_calendar("USNYSE")
-            cal = calendar("USNYSE")
+            set_calendar("USNYSE_EXAMPLE")
+            cal = calendar("USNYSE_EXAMPLE")
             t2 = t.update([
                 "EQUAL_NYSE_1 = isBusinessDay(Date) == TARGET_NYSE",
                 "EQUAL_NYSE_2 = cal.isBusinessDay(Date) == TARGET_NYSE",
-                "EQUAL_NYSE_3 = calendar(`USNYSE`).isBusinessDay(Date) == TARGET_NYSE",
+                "EQUAL_NYSE_3 = calendar(`USNYSE_EXAMPLE`).isBusinessDay(Date) == TARGET_NYSE",
                 "EQUAL_UTC = calendar(`UTC`).isBusinessDay(Date) == TARGET_UTC",
             ])
             self.assertEqual(t2.where("!EQUAL_NYSE_1").size, 0)

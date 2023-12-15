@@ -32,7 +32,7 @@ public class BusinessTime {
         Figure fig = FigureFactory.figure(2, 1);
         Figure cht = fig.newChart(0)
                 .chartTitle("Business");
-        Figure axs = cht.newAxes().xTransform(new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE")))
+        Figure axs = cht.newAxes().xTransform(new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE_EXAMPLE")))
                 .xTicksVisible(false)
                 .xLabel("X")
                 .yLabel("Y")

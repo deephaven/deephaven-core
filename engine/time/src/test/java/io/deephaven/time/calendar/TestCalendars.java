@@ -28,7 +28,7 @@ public class TestCalendars extends BaseArrayTestCase {
     }
 
     public void testCalendarNames() {
-        assertEquals(new String[] {"CAL1", "CAL2", "USBANK", "USNYSE", "UTC"}, Calendars.calendarNames());
+        assertEquals(new String[] {"CAL1", "CAL2", "USBANK_EXAMPLE", "USNYSE_EXAMPLE", "UTC"}, Calendars.calendarNames());
     }
 
     public void testCalendar() {

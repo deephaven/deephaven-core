@@ -3,7 +3,7 @@
   -->
 
 <calendar>
-    <name>USNYSE</name>
+    <name>USNYSE_EXAMPLE</name>
     <timeZone>America/New_York</timeZone>
     <language>en</language>
     <country>US</country>
@@ -11,6 +11,7 @@
     <lastValidDate>2025-12-31</lastValidDate>
     <description>
         New York Stock Exchange Business Calendar.
+        *** NOTE: This is an example calendar, and is not intended to be used for trading or other production purposes. ***
         Sources: https://www.nyse.com/markets/hours-calendars
         Historical reference: https://www.thestreet.com/markets/stock-market-open-or-closed-fourth-of-july
         Last updated 11/10/2023
