@@ -171,11 +171,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     @Override
-    public TableDefinition getTableDefinition() {
-        return resultTable.getDefinition();
-    }
-
-    @Override
     public Future<Table> entireTable() {
         return partialTable(null, null, false);
     }

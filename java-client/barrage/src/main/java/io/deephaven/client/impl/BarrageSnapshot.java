@@ -57,11 +57,6 @@ public interface BarrageSnapshot {
     }
 
     /**
-     * @return the {@link TableDefinition} of the subscribed table
-     */
-    TableDefinition getTableDefinition();
-
-    /**
      * Request a full snapshot of the data and populate a {@link Table} with the data that is received. The returned
      * future will block until all rows for the snapshot table are available.
      *

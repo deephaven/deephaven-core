@@ -423,6 +423,10 @@ public class BarrageUtil {
         result.conversionFactors[i] = factor;
     }
 
+    public static TableDefinition convertTableDefinition(final ExportedTableCreationResponse response) {
+        return convertArrowSchema(SchemaHelper.flatbufSchema(response)).tableDef;
+    }
+
     public static ConvertedArrowSchema convertArrowSchema(final ExportedTableCreationResponse response) {
         return convertArrowSchema(SchemaHelper.flatbufSchema(response));
     }
