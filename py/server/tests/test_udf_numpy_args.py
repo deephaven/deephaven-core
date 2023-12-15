@@ -392,6 +392,41 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t2 = t.update(["X1 = f31(null, Y)"])
             self.assertEqual(10, t2.to_string("X1").count("true"))
 
+    def test_non_np_typehints(self):
+        py_types = {"int", "float"}
+
+        for p_type in py_types:
+            with self.subTest(p_type):
+                func_str = f"""
+def f(x: {p_type}) -> bool:  # note typing
+    return type(x) == {p_type}
+"""
+                exec(func_str, globals())
+                t = empty_table(1).update(["X = i", f"Y = f(({p_type})X)"])
+                self.assertEqual(1, t.to_string(cols="Y").count("true"))
+
+
+        np_int_types = {"np.int8", "np.int16", "np.int32", "np.int64"}
+        for p_type in np_int_types:
+            with self.subTest(p_type):
+                func_str = f"""
+def f(x: {p_type}) -> bool:  # note typing
+    return type(x) == {p_type}
+"""
+                exec(func_str, globals())
+                t = empty_table(1).update(["X = i", f"Y = f(X)"])
+                self.assertEqual(1, t.to_string(cols="Y").count("true"))
+
+        np_floating_types = {"np.float32", "np.float64"}
+        for p_type in np_floating_types:
+            with self.subTest(p_type):
+                func_str = f"""
+def f(x: {p_type}) -> bool:  # note typing
+    return type(x) == {p_type}
+"""
+                exec(func_str, globals())
+                t = empty_table(1).update(["X = i", f"Y = f((float)X)"])
+                self.assertEqual(1, t.to_string(cols="Y").count("true"))
 
 if __name__ == "__main__":
     unittest.main()
