@@ -235,7 +235,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         }
 
         final Map<String, ColumnSource<?>> symbolTableColumnSources = new LinkedHashMap<>();
-        symbolTableColumnSources.put(SymbolTableSource.ID_COLUMN_NAME, new RowKeySource());
+        symbolTableColumnSources.put(SymbolTableSource.ID_COLUMN_NAME, RowKeySource.INSTANCE);
         symbolTableColumnSources.put(SymbolTableSource.SYMBOL_COLUMN_NAME, dictionaryColumn);
 
         return new QueryTable(symbolTableRowSet, symbolTableColumnSources);
