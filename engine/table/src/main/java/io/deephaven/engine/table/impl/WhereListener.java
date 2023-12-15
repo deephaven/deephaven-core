@@ -138,8 +138,7 @@ class WhereListener extends MergedListener {
         final TableUpdateImpl update = new TableUpdateImpl();
 
         // intersect removed with pre-shift keyspace
-        update.removed = upstream.removed().intersect(currentMapping);
-        currentMapping.remove(update.removed);
+        update.removed = currentMapping.extract(upstream.removed());
 
         // shift keyspace
         upstream.shifted().apply(currentMapping);

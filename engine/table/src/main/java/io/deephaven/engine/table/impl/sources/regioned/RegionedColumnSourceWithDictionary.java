@@ -12,7 +12,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
-import io.deephaven.engine.table.impl.sources.RowIdSource;
+import io.deephaven.engine.table.impl.sources.RowKeySource;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.chunk.attributes.Values;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -235,7 +235,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         }
 
         final Map<String, ColumnSource<?>> symbolTableColumnSources = new LinkedHashMap<>();
-        symbolTableColumnSources.put(SymbolTableSource.ID_COLUMN_NAME, new RowIdSource());
+        symbolTableColumnSources.put(SymbolTableSource.ID_COLUMN_NAME, RowKeySource.INSTANCE);
         symbolTableColumnSources.put(SymbolTableSource.SYMBOL_COLUMN_NAME, dictionaryColumn);
 
         return new QueryTable(symbolTableRowSet, symbolTableColumnSources);

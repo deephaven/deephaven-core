@@ -17,6 +17,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Collectors;
@@ -48,13 +49,13 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
         /** The index at this level. */
         @Nullable
-        private volatile DataIndex localIndex; // TODO-RWC: Weak reference
+        private volatile WeakReference<DataIndex> localIndex; // TODO-RWC: Weak reference
 
         /** The sub-indexes below this level. */
         private final WeakHashMap<ColumnSource<?>, DataIndexCache> descendantCaches;
 
         DataIndexCache(@Nullable final DataIndex localIndex) {
-            this.localIndex = localIndex;
+            this.localIndex = new WeakReference<>(localIndex);
             this.descendantCaches = new WeakHashMap<>();
         }
     }
@@ -88,7 +89,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (localRoot) {
             final DataIndex dataIndex = findIndex(localRoot, keyColumns);
-            return dataIndex != null && ((BaseDataIndex) dataIndex).validate();
+            return dataIndex instanceof BaseDataIndex && ((BaseDataIndex) dataIndex).validate();
         }
     }
 
@@ -146,7 +147,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         synchronized (localRoot) {
             // Only return a valid index.
             final DataIndex dataIndex = findIndex(localRoot, keyColumns);
-            if (dataIndex == null || !((BaseDataIndex) dataIndex).validate()) {
+            if (!(dataIndex instanceof BaseDataIndex) || !((BaseDataIndex) dataIndex).validate()) {
                 return null;
             }
             // Add this index to the current liveness scope so it isn't released while in use.
@@ -293,13 +294,20 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         for (final Map.Entry<ColumnSource<?>, DataIndexCache> entry : dataIndexes.entrySet()) {
             final DataIndexCache subCache = entry.getValue();
 
-            if (subCache.localIndex != null) {
-                resultList.add(subCache.localIndex);
+            final DataIndex localSubIndex = dereferenceCachedIndex(subCache);
+            if (localSubIndex != null) {
+                resultList.add(localSubIndex);
             }
             if (subCache.descendantCaches != null) {
                 addIndexesToList(subCache.descendantCaches, resultList);
             }
         }
+    }
+
+    @Nullable
+    private static DataIndex dereferenceCachedIndex(DataIndexCache subCache) {
+        final WeakReference<DataIndex> localSubIndexRef = subCache.localIndex;
+        return localSubIndexRef == null ? null : localSubIndexRef.get();
     }
 
     /** Check a specified map for an index with these column sources. */
@@ -310,7 +318,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         if (keyColumnSources.size() == 1) {
             final ColumnSource<?> keyColumnSource = keyColumnSources.iterator().next();
             final DataIndexCache cache = indexMap.get(keyColumnSource);
-            return cache == null ? null : cache.localIndex;
+            return cache == null ? null : dereferenceCachedIndex(cache);
         }
 
         // Test every column source in the map for a match. This handles mis-ordered keys.
@@ -348,7 +356,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                     return new DataIndexCache(isLast ? index : null);
                 });
         if (isLast && !created.booleanValue()) {
-            cache.localIndex = index;
+            cache.localIndex = new WeakReference<>(index);
         }
         if (!isLast) {
             addIndex(cache.descendantCaches, keyColumnSources, index, nextColumnSourceIndex + 1);

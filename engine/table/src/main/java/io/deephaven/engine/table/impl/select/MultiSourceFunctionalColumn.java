@@ -37,14 +37,19 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     @NotNull
     private final Class<D> destDataType;
     @NotNull
-    private final BiFunction<Long, ColumnSource<?>[], D> function;
+    private final RowKeyAndSourcesFunction<D> function;
     @NotNull
     private final Class<?> componentType;
+
+    @FunctionalInterface
+    public interface RowKeyAndSourcesFunction<D> {
+        D apply(long rowKey, ColumnSource<?>[] sources);
+    }
 
     public MultiSourceFunctionalColumn(@NotNull List<String> sourceNames,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
-            @NotNull BiFunction<Long, ColumnSource<?>[], D> function) {
+            @NotNull RowKeyAndSourcesFunction<D> function) {
         this(sourceNames, destName, destDataType, Object.class, function);
     }
 
@@ -52,7 +57,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
             @NotNull String destName,
             @NotNull Class<D> destDataType,
             @NotNull Class<?> componentType,
-            @NotNull BiFunction<Long, ColumnSource<?>[], D> function) {
+            @NotNull RowKeyAndSourcesFunction<D> function) {
         this.sourceNames = sourceNames.stream()
                 .map(NameValidator::validateColumnName)
                 .collect(Collectors.toList());
@@ -135,7 +140,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
             @Override
             public FillContext makeFillContext(int chunkCapacity) {
-                // Not sure this is right.
                 return new FunctionalColumnFillContext(getChunkType());
             }
 
@@ -168,7 +172,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     @NotNull
     @Override
     public ColumnSource<?> getLazyView() {
-        // TODO: memoize
         return getDataView();
     }
 

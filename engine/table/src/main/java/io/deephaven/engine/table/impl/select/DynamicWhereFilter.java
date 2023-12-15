@@ -68,7 +68,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         this.matchPairs = setColumnsNames;
         this.inclusion = inclusion;
 
-        liveValues = new DataIndexKeySet();
+        liveValues = DataIndexUtils.makeKeySet(setColumnsNames.length);
 
         final ColumnSource<?>[] setColumns = Arrays.stream(matchPairs)
                 .map(mp -> setTable.getColumnSource(mp.rightColumn())).toArray(ColumnSource[]::new);

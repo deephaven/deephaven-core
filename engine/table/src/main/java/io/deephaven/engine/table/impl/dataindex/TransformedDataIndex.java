@@ -23,10 +23,12 @@ import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.function.Function;
 
-import static io.deephaven.engine.table.impl.dataindex.BaseDataIndex.INDEX_COL_NAME;
+import static io.deephaven.engine.table.impl.dataindex.BaseDataIndex.ROW_SET_COLUMN_NAME;
 
 public class TransformedDataIndex extends LivenessArtifact implements BasicDataIndex {
+
     private static final int CHUNK_SIZE = 2048;
+
     @NotNull
     private final DataIndex parentIndex;
     @NotNull
@@ -34,7 +36,8 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
     private SoftReference<Table> cachedTable = new SoftReference<>(null);
     private long cachedTableStep = -1;
 
-    public static TransformedDataIndex from(@NotNull final DataIndex index,
+    public static TransformedDataIndex from(
+            @NotNull final DataIndex index,
             @NotNull final DataIndexTransformer transformer) {
         return new TransformedDataIndex(index, transformer);
     }
@@ -51,17 +54,20 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
     }
 
     @Override
+    @NotNull
     public Map<ColumnSource<?>, String> keyColumnMap() {
         return parentIndex.keyColumnMap();
     }
 
     @Override
+    @NotNull
     public String rowSetColumnName() {
         return parentIndex.rowSetColumnName();
     }
 
     @Override
-    public @NotNull Table table() {
+    @NotNull
+    public Table table() {
         // Return a valid cached table if possible. If the index was computed on this cycle or is derived from a static
         // index, it remains valid. Otherwise, we need to recompute the index from its parent.
         Table cached = cachedTable.get();
@@ -147,8 +153,7 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
         // Build a new table with redirected column sources for the key column(s) and an in-memory column for the
         // mutated output row sets.
 
-        // noinspection unchecked
-        final ColumnSource<RowSet> indexSource = indexTable.getColumnSource(INDEX_COL_NAME);
+        final ColumnSource<RowSet> indexSource = indexTable.getColumnSource(ROW_SET_COLUMN_NAME);
 
         final RowSetBuilderSequential redirectionBuilder = RowSetFactory.builderSequential();
         final ObjectArraySource<RowSet> resultIndexSource =
@@ -185,7 +190,7 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
                 // We don't need Redirected sources.
                 for (Map.Entry<String, ? extends ColumnSource<?>> entry : indexTable.getColumnSourceMap().entrySet()) {
                     final String columnName = entry.getKey();
-                    if (columnName.equals(INDEX_COL_NAME)) {
+                    if (columnName.equals(ROW_SET_COLUMN_NAME)) {
                         // Add the result row set column source.
                         csm.put(columnName, resultIndexSource);
                     } else {
@@ -202,7 +207,7 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
                 // Add a redirected column source for each key column.
                 for (Map.Entry<String, ? extends ColumnSource<?>> entry : indexTable.getColumnSourceMap().entrySet()) {
                     final String columnName = entry.getKey();
-                    if (columnName.equals(INDEX_COL_NAME)) {
+                    if (columnName.equals(ROW_SET_COLUMN_NAME)) {
                         // Add the result row set column source.
                         csm.put(columnName, resultIndexSource);
                     } else {
@@ -227,7 +232,7 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
             return indexTable;
         }
 
-        return indexTable.updateView("FirstKey=" + INDEX_COL_NAME + ".firstRowKey()")
+        return indexTable.updateView("FirstKey=" + ROW_SET_COLUMN_NAME + ".firstRowKey()")
                 .sort("FirstKey")
                 .dropColumns("FirstKey");
     }

@@ -177,7 +177,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     }
 
     @Override
-    protected final BaseTable redefine(@NotNull final TableDefinition newDefinition) {
+    protected final BaseTable<?> redefine(@NotNull final TableDefinition newDefinition) {
         if (newDefinition.getColumnNames().equals(definition.getColumnNames())) {
             // Nothing changed - we have the same columns in the same order.
             return this;
@@ -305,7 +305,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
         WhereFilter[] partitionFilterArray = partitionFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
         final String filteredTableDescription = "getFilteredTable(" + Arrays.toString(partitionFilterArray) + ")";
-        SourceTable filteredTable = QueryPerformanceRecorder.withNugget(filteredTableDescription,
+        SourceTable<?> filteredTable = QueryPerformanceRecorder.withNugget(filteredTableDescription,
                 () -> getFilteredTable(partitionFilterArray));
 
         copyAttributes(filteredTable, CopyAttributeOperation.Filter);
@@ -356,7 +356,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
     private boolean isValidAgainstColumnPartitionTable(@NotNull final Collection<String> columnNames,
             @NotNull final Collection<String> columnArrayNames) {
-        if (columnArrayNames.size() > 0) {
+        if (!columnArrayNames.isEmpty()) {
             return false;
         }
         return columnNames.stream().allMatch(partitioningColumnDefinitions::containsKey);

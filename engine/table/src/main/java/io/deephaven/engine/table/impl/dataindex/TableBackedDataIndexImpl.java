@@ -60,13 +60,15 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
     }
 
     @Override
+    @NotNull
     public Map<ColumnSource<?>, String> keyColumnMap() {
         return keyColumnMap;
     }
 
     @Override
+    @NotNull
     public String rowSetColumnName() {
-        return INDEX_COL_NAME;
+        return ROW_SET_COLUMN_NAME;
     }
 
     @Override
@@ -95,14 +97,15 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
                         lookupFunction = AggregationProcessor.getRowLookup(groupedTable);
                         Assert.neqNull(lookupFunction, "AggregationRowLookup lookupFunction should never be null");
 
-                        return indexTableWrapper(groupedTable, EXPOSED_GROUP_ROW_SETS.name(), INDEX_COL_NAME);
+                        return indexTableWrapper(groupedTable, EXPOSED_GROUP_ROW_SETS.name(), ROW_SET_COLUMN_NAME);
                     });
         }
         return indexTable;
     }
 
     @Override
-    public @NotNull RowKeyLookup rowKeyLookup() {
+    @NotNull
+    public RowKeyLookup rowKeyLookup() {
         return (Object key, boolean usePrev) -> {
             // Pass the object to the aggregation lookup, then return the resulting row key. This index will be
             // correct in prev or current space because of the aggregation's hash-based lookup.

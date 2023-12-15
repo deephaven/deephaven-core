@@ -22,19 +22,60 @@ public class DataIndexUtils {
      * @param keySources The individual key sources
      * @return The boxed key source
      */
-    public static ChunkSource.WithPrev<Values> makeBoxedKeySource(final ColumnSource<?>... keySources) {
+    public static ChunkSource.WithPrev<Values> makeBoxedKeySource(@NotNull final ColumnSource<?>... keySources) {
         switch (keySources.length) {
             case 0:
                 throw new IllegalArgumentException("Data index must have at least one key column");
             case 1:
-                return new SingleDataIndexBoxedKeySource(keySources[0]);
+                return new DataIndexBoxedKeySourceSingle(keySources[0]);
             default:
-                return new CompoundDataIndexBoxedKeySource(keySources);
+                return new DataIndexBoxedKeySourceCompound(keySources);
         }
     }
 
-    /** Return true if the two keys are equal. */
-    public static boolean keysEqual(@Nullable final Object key1, @NotNull final Object key2) {
+    /**
+     * Make a {@link DataIndexKeySet} that stores data index {@link DataIndex.RowKeyLookup lookup} keys that have
+     * {@code keyColumnCount} components.
+     *
+     * @param keyColumnCount The number of key components
+     * @return The key set
+     */
+    public static DataIndexKeySet makeKeySet(final int keyColumnCount) {
+        if (keyColumnCount == 1) {
+            return new DataIndexKeySetSingle();
+        }
+        if (keyColumnCount > 1) {
+            return new DataIndexKeySetCompound();
+        }
+        throw new IllegalArgumentException("Data index must have at least one key column");
+    }
+
+    // TODO-RWC: should we delete the unused methods here?
+
+    /**
+     * Make a {@link DataIndexKeySet} that stores data index {@link DataIndex.RowKeyLookup lookup} keys that have
+     * {@code keyColumnCount} components.
+     *
+     * @param keyColumnCount The number of key components
+     * @param initialCapacity The initial capacity
+     * @return The key set
+     */
+    public static DataIndexKeySet makeKeySet(final int keyColumnCount, final int initialCapacity) {
+        if (keyColumnCount == 1) {
+            return new DataIndexKeySetSingle(initialCapacity);
+        }
+        if (keyColumnCount > 1) {
+            return new DataIndexKeySetCompound(initialCapacity);
+        }
+        throw new IllegalArgumentException("Data index must have at least one key column");
+    }
+
+    /**
+     * Test equality between two data index {@link DataIndex.RowKeyLookup lookup} keys.
+     *
+     * @return Whether the two keys are equal
+     */
+    public static boolean keysEqual(@Nullable final Object key1, @Nullable final Object key2) {
         if (key1 instanceof Object[] && key2 instanceof Object[]) {
             return Arrays.equals((Object[]) key1, (Object[]) key2);
         }

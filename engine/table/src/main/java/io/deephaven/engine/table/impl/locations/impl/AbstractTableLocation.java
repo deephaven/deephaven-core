@@ -201,7 +201,7 @@ public abstract class AbstractTableLocation
     }
 
     /**
-     * Load the data index from the location implementaiton. Implementations of this method should not perform any
+     * Load the data index from the location implementation. Implementations of this method should not perform any
      * result caching.
      *
      * @param columns the columns to load an index for.

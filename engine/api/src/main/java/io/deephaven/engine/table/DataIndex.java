@@ -34,7 +34,7 @@ public interface DataIndex extends BasicDataIndex {
          * @param key The key to lookup
          * @return The result position
          */
-        long apply(Object key, boolean usePrev);
+        long apply(Object key, boolean usePrev); // TODO-RWC: Decide about prev impl for the lookups
     }
 
     /**
@@ -109,7 +109,8 @@ public interface DataIndex extends BasicDataIndex {
      *
      * @return the transformed {@link BasicDataIndex}
      */
-    BasicDataIndex transform(final @NotNull DataIndexTransformer transformer);
+    @NotNull
+    BasicDataIndex transform(@NotNull DataIndexTransformer transformer);
 
     /**
      * Create a new {@link DataIndex} by remapping the source table key columns to new columns.
@@ -118,5 +119,5 @@ public interface DataIndex extends BasicDataIndex {
      *
      * @return the transformed {@link BasicDataIndex}
      */
-    DataIndex remapKeyColumns(final @NotNull Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap);
+    DataIndex remapKeyColumns(@NotNull Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap);
 }

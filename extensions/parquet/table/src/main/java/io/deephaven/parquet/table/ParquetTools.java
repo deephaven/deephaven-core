@@ -1225,7 +1225,8 @@ public class ParquetTools {
             if (!indexTable.isEmpty() && indexTable.hasColumns(GROUPING_KEY, BEGIN_POS, END_POS)) {
                 // This table will be written like the older style grouping format of Key, start, end so we
                 // have to convert
-                return indexTable.select(String.format("%s=%s", keyColumnNames[0], GROUPING_KEY),
+                // TODO-RWC: Verify that this produces a DeferredViewTable... or should we use `lazyUpdate`?
+                return indexTable.view(String.format("%s=%s", keyColumnNames[0], GROUPING_KEY),
                         String.format(
                                 "%s=(io.deephaven.engine.rowset.RowSet)io.deephaven.engine.rowset.RowSetFactory.fromRange(%s, %s-1)",
                                 INDEX_COL_NAME, BEGIN_POS, END_POS));

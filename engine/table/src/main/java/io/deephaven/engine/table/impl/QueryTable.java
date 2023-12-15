@@ -1060,9 +1060,9 @@ public class QueryTable extends BaseTable<QueryTable> {
             // Remove upstream keys first, so that keys at rows that were removed and then added are propagated as such.
             // Note that it is a failure to propagate these as modifies, since modifiedColumnSet may not mark that all
             // columns have changed.
-            update.removed = upstream == null ? RowSetFactory.empty()
-                    : upstream.removed().intersect(getRowSet());
-            getRowSet().writableCast().remove(update.removed);
+            update.removed = upstream == null
+                    ? RowSetFactory.empty()
+                    : getRowSet().writableCast().extract(upstream.removed());
 
             // Update our rowSet and compute removals due to splatting.
             if (upstream != null && upstream.shifted().nonempty()) {

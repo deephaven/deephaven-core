@@ -15,26 +15,33 @@ import java.util.Map;
  * or created using aggregations
  */
 public interface BasicDataIndex extends LivenessReferent {
+
     /** Get the key column names for the index {@link #table() table}. */
+    @NotNull
     String[] keyColumnNames();
 
     /** Get a map from indexed column sources to key column names for the index {@link #table() table}. */
+    @NotNull
     Map<ColumnSource<?>, String> keyColumnMap();
 
     /** Get the output row set column name for this index. */
+    @NotNull
     String rowSetColumnName();
 
     /** Return the index table key sources in the order of the index table. **/
     @FinalDefault
+    @NotNull
     default ColumnSource<?>[] indexKeyColumns() {
         final Table indexTable = table();
         return Arrays.stream(keyColumnNames())
                 .map(indexTable::getColumnSource)
                 .toArray(ColumnSource[]::new);
+        // TODO-RWC: Should this be in a static helper instead of the interface?
     }
 
     /** Return the index table key sources in the relative order of the indexed sources supplied. **/
     @FinalDefault
+    @NotNull
     default ColumnSource<?>[] indexKeyColumns(@NotNull final ColumnSource<?>[] columnSources) {
         final Table indexTable = table();
         final Map<ColumnSource<?>, String> keyColumnMap = keyColumnMap();
@@ -52,9 +59,11 @@ public interface BasicDataIndex extends LivenessReferent {
 
     /** Return the index table row set source. **/
     @FinalDefault
+    @NotNull
     default ColumnSource<RowSet> rowSetColumn() {
         return table().getColumnSource(rowSetColumnName(), RowSet.class);
     }
+
 
     /** Get the index as a table. */
     @NotNull

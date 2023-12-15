@@ -24,17 +24,17 @@ import java.util.stream.Stream;
  * {@link ColumnSource sources}. This can be used to extract keys from a data index table, or from a table of probe
  * values.
  */
-final class CompoundDataIndexBoxedKeySource implements DefaultChunkSource.WithPrev<Values> {
+final class DataIndexBoxedKeySourceCompound implements DefaultChunkSource.WithPrev<Values> {
 
     private final ColumnSource<?>[] keySources;
     private final int keyWidth;
 
     /**
-     * Construct a new CompoundDataIndexBoxedKeySource backed by the supplied {@link ColumnSource column sources}.
+     * Construct a new DataIndexBoxedKeySourceCompound backed by the supplied {@link ColumnSource column sources}.
      *
      * @param keySources Sources corresponding to the key columns
      */
-    CompoundDataIndexBoxedKeySource(@NotNull final ColumnSource<?>... keySources) {
+    DataIndexBoxedKeySourceCompound(@NotNull final ColumnSource<?>... keySources) {
         this.keySources = Arrays.stream(keySources)
                 .map(ReinterpretUtils::maybeConvertToPrimitive).toArray(ColumnSource[]::new);
         keyWidth = keySources.length;

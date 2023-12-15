@@ -6,126 +6,83 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.sized.SizedObjectChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
-import org.apache.commons.lang3.NotImplementedException;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-
 /**
- * This class wraps a {@link ColumnSource} of {@link TrackingRowSet} and returns {@link TrackingRowSet#prev()} when
- * previous values are requested. This should be used when the row set objects are mutated instead of replaced during a
- * cycle, e.g. when {@link Table#aggBy(Aggregation)} is used with {@link AggregationProcessor#forExposeGroupRowSets()}.
+ * This class wraps a {@link ColumnSource} of {@link RowSet} and returns {@link TrackingRowSet#prev()} when previous
+ * values are requested and the accessed value is {@link TrackingRowSet tracking}. This should be used when the row set
+ * objects are mutated instead of replaced during a cycle, e.g. when {@link Table#aggBy(Aggregation)} is used with
+ * {@link AggregationProcessor#forExposeGroupRowSets()}.
  */
-public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet> {
-    private final ColumnSource<? extends TrackingRowSet> source;
+public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet>
+        implements MutableColumnSourceGetDefaults.ForObject<RowSet> {
 
-    private static class GetContext implements ChunkSource.GetContext {
-        private final ChunkSource.GetContext parentContext;
-        protected WritableObjectChunk<RowSet, ? extends Values> localChunk;
-
-        private GetContext(ChunkSource.GetContext sourceContext) {
-            this.parentContext = sourceContext;
-        }
-
-        @Override
-        public void close() {
-            if (localChunk != null) {
-                localChunk.close();
-                localChunk = null;
-            }
-            parentContext.close();
-        }
+    public static RowSetColumnSourceWrapper from(@NotNull final ColumnSource<? extends RowSet> source) {
+        return new RowSetColumnSourceWrapper(source);
     }
 
-    private RowSetColumnSourceWrapper(ColumnSource<? extends TrackingRowSet> source) {
+    private final ColumnSource<? extends RowSet> source;
+
+    private RowSetColumnSourceWrapper(@NotNull final ColumnSource<? extends RowSet> source) {
         super(RowSet.class);
         this.source = source;
     }
 
-    public static RowSetColumnSourceWrapper from(ColumnSource<? extends TrackingRowSet> source) {
-        return new RowSetColumnSourceWrapper(source);
-    }
+    private static class GetContext implements ChunkSource.GetContext {
 
-    @Override
-    public Chunk<? extends Values> getChunk(@NotNull ColumnSource.GetContext context,
-            @NotNull RowSequence rowSequence) {
-        final GetContext ctx = (GetContext) context;
-        return source.getChunk(ctx.parentContext, rowSequence);
-    }
+        private final ChunkSource.GetContext sourceContext;
 
-    @Override
-    public Chunk<? extends Values> getChunk(@NotNull ColumnSource.GetContext context, long firstKey, long lastKey) {
-        final GetContext ctx = (GetContext) context;
-        return source.getChunk(ctx.parentContext, firstKey, lastKey);
-    }
+        private final SizedObjectChunk<? super RowSet, ? super Values> previousValues;
 
-    @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
-            @NotNull RowSequence rowSequence) {
-        source.fillChunk(context, destination, rowSequence);
-    }
-
-    private WritableObjectChunk<RowSet, ? extends Values> ensureContextChunk(@NotNull GetContext context,
-            int minCapacity) {
-        if (context.localChunk != null && context.localChunk.capacity() >= minCapacity) {
-            return context.localChunk;
-        } else if (context.localChunk != null) {
-            context.localChunk.close();
+        private GetContext(@NotNull final ChunkSource.GetContext sourceContext) {
+            this.sourceContext = sourceContext;
+            previousValues = new SizedObjectChunk<>();
         }
-        return context.localChunk = WritableObjectChunk.makeWritableChunk(minCapacity);
+
+        private WritableObjectChunk<? super RowSet, ? super Values> getPreviousValues(final int minCapacity) {
+            previousValues.ensureCapacity(minCapacity);
+            return previousValues.get();
+        }
+
+        @Override
+        public void close() {
+            SafeCloseable.closeAll(sourceContext, previousValues);
+        }
     }
 
-    @Override
-    public Chunk<? extends Values> getPrevChunk(@NotNull ChunkSource.GetContext context,
-            @NotNull RowSequence rowSequence) {
-        final GetContext ctx = (RowSetColumnSourceWrapper.GetContext) context;
-
-        // Must return a chunk of the prev() values for each row in rowSequence
-        ObjectChunk<TrackingRowSet, ? extends Values> chunk =
-                (ObjectChunk<TrackingRowSet, ? extends Values>) source.getChunk(ctx.parentContext,
-                        rowSequence);
-        WritableObjectChunk<RowSet, ? extends Values> contextChunk = ensureContextChunk(ctx, chunk.size());
-
-        for (int ii = 0; ii < chunk.size(); ii++) {
-            contextChunk.set(ii, chunk.get(ii).prev());
-        }
-        return contextChunk;
+    private static RowSet maybeGetPrevValue(@Nullable final RowSet value) {
+        return value != null && value.isTracking() ? value.trackingCast().prev() : value;
     }
 
-    @Override
-    public Chunk<? extends Values> getPrevChunk(@NotNull ColumnSource.GetContext context, long firstKey, long lastKey) {
-        final GetContext ctx = (RowSetColumnSourceWrapper.GetContext) context;
-
-        // Must return a chunk of the prev() values for each row in rowSequence
-        ObjectChunk<TrackingRowSet, ? extends Values> chunk =
-                (ObjectChunk<TrackingRowSet, ? extends Values>) source.getChunk(ctx.parentContext, firstKey,
-                        lastKey);
-        WritableObjectChunk<RowSet, ? extends Values> contextChunk = ensureContextChunk(ctx, chunk.size());
-
-        for (int ii = 0; ii < chunk.size(); ii++) {
-            contextChunk.set(ii, chunk.get(ii).prev());
+    /**
+     * Copy values from {@code source} to {@code destination}, re-mapping any {@link TrackingRowSet tracking} values to
+     * {@link TrackingRowSet#prev()}.
+     *
+     * @param source The source chunk
+     * @param destination The destination chunk
+     * @apiNote {@code source} and {@code destination} may be the same chunk
+     */
+    private static void maybeCopyPrevValues(
+            @NotNull final ObjectChunk<? extends RowSet, ? extends Values> source,
+            @NotNull final WritableObjectChunk<? super RowSet, ? super Values> destination) {
+        final int size = source.size();
+        for (int ii = 0; ii < size; ii++) {
+            destination.set(ii, maybeGetPrevValue(source.get(ii)));
         }
-        return contextChunk;
-    }
-
-    @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
-            @NotNull RowSequence rowSequence) {
-        // Must fill a chunk with the prev() values for each row in rowSequence
-        source.fillChunk(context, destination, rowSequence);
-        WritableObjectChunk localChunk = (WritableObjectChunk) destination;
-        for (int ii = 0; ii < localChunk.size(); ii++) {
-            // Replace each row set with its prev() row set
-            localChunk.set(ii, ((TrackingRowSet) localChunk.get(ii)).prev());
-        }
+        destination.setSize(size);
     }
 
     @Override
@@ -139,128 +96,81 @@ public class RowSetColumnSourceWrapper extends AbstractColumnSource<RowSet> {
     }
 
     @Override
-    public WritableRowSet match(
-            boolean invertMatch,
-            boolean usePrev,
-            boolean caseInsensitive,
-            @Nullable final DataIndex dataIndex,
-            @NotNull RowSet mapper, Object... keys) {
-        throw new NotImplementedException("RowSetColumnSourceWrapper.match");
-    }
-
-    @Override
-    public boolean isImmutable() {
-        return source.isImmutable();
-    }
-
-    @Override
-    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return false;
-    }
-
-    @Override
-    public @Nullable RowSet get(long rowKey) {
+    public @Nullable RowSet get(final long rowKey) {
         return source.get(rowKey);
     }
 
     @Override
-    public @Nullable Boolean getBoolean(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getBoolean");
+    public @Nullable RowSet getPrev(final long rowKey) {
+        return maybeGetPrevValue(source.getPrev(rowKey));
     }
 
     @Override
-    public byte getByte(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getBoolean");
-    }
-
-    @Override
-    public char getChar(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getBoolean");
-    }
-
-    @Override
-    public double getDouble(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getBoolean");
-    }
-
-    @Override
-    public float getFloat(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getBoolean");
-    }
-
-    @Override
-    public int getInt(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getBoolean");
-    }
-
-    @Override
-    public long getLong(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getBoolean");
-    }
-
-    @Override
-    public short getShort(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getBoolean");
-    }
-
-    @Override
-    public @Nullable RowSet getPrev(long rowKey) {
-        // Return the prev() row set for TrackingRowSet at this row key
-        return source.get(rowKey).prev();
-    }
-
-    @Override
-    public @Nullable Boolean getPrevBoolean(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getPrevBoolean");
-    }
-
-    @Override
-    public byte getPrevByte(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getPrevByte");
-    }
-
-    @Override
-    public char getPrevChar(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getPrevChar");
-    }
-
-    @Override
-    public double getPrevDouble(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getPrevDouble");
-    }
-
-    @Override
-    public float getPrevFloat(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getPrevFloat");
-    }
-
-    @Override
-    public int getPrevInt(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getPrevInt");
-    }
-
-    @Override
-    public long getPrevLong(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getPrevLong");
-    }
-
-    @Override
-    public short getPrevShort(long rowKey) {
-        throw new UnsupportedOperationException("RowSetColumnSourceWrapper.getPrevShort");
-    }
-
-    @Override
-    public FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
-        return source.makeFillContext(chunkCapacity, sharedContext);
-    }
-
-    @Override
-    public GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
+    public ChunkSource.GetContext makeGetContext(final int chunkCapacity, final SharedContext sharedContext) {
         return new GetContext(source.makeGetContext(chunkCapacity, sharedContext));
     }
 
     @Override
-    public List<ColumnSource<?>> getColumnSources() {
-        return null;
+    public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+        return source.makeFillContext(chunkCapacity, sharedContext);
+    }
+
+    @Override
+    public Chunk<? extends Values> getChunk(
+            @NotNull final ColumnSource.GetContext context,
+            @NotNull final RowSequence rowSequence) {
+        return source.getChunk(((GetContext) context).sourceContext, rowSequence);
+    }
+
+    @Override
+    public Chunk<? extends Values> getChunk(
+            @NotNull final ColumnSource.GetContext context,
+            final long firstKey,
+            final long lastKey) {
+        return source.getChunk(((GetContext) context).sourceContext, firstKey, lastKey);
+    }
+
+    @Override
+    public void fillChunk(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
+        source.fillChunk(context, destination, rowSequence);
+    }
+
+    @Override
+    public Chunk<? extends Values> getPrevChunk(
+            @NotNull final ChunkSource.GetContext context,
+            @NotNull final RowSequence rowSequence) {
+        final GetContext typedContext = (GetContext) context;
+        final ObjectChunk<? extends RowSet, ? extends Values> sourceChunk =
+                source.getPrevChunk(typedContext.sourceContext, rowSequence).asObjectChunk();
+        final WritableObjectChunk<? super RowSet, ? super Values> destination =
+                typedContext.getPreviousValues(sourceChunk.size());
+        maybeCopyPrevValues(sourceChunk, destination);
+        return ObjectChunk.downcast(destination);
+    }
+
+    @Override
+    public Chunk<? extends Values> getPrevChunk(
+            @NotNull final ColumnSource.GetContext context,
+            final long firstKey,
+            final long lastKey) {
+        final GetContext typedContext = (GetContext) context;
+        final ObjectChunk<? extends RowSet, ? extends Values> sourceChunk =
+                source.getPrevChunk(typedContext.sourceContext, firstKey, lastKey).asObjectChunk();
+        final WritableObjectChunk<? super RowSet, ? super Values> destination =
+                typedContext.getPreviousValues(sourceChunk.size());
+        maybeCopyPrevValues(sourceChunk, destination);
+        return ObjectChunk.downcast(destination);
+    }
+
+    @Override
+    public void fillPrevChunk(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
+        source.fillPrevChunk(context, destination, rowSequence);
+        maybeCopyPrevValues(ObjectChunk.downcast(destination.asObjectChunk()), destination.asWritableObjectChunk());
     }
 }

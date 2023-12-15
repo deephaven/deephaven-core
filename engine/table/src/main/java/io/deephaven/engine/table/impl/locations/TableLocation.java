@@ -86,7 +86,7 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
     /**
      * Get an ordered list of columns this location is sorted by.
      * 
-     * @return a non-null ordered list of {@link SortColumn SortColumns}
+     * @return A non-null ordered list of {@link SortColumn SortColumns}
      */
     @NotNull
     List<SortColumn> getSortedColumns();
@@ -94,7 +94,7 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
     /**
      * Get a list of the columns by which this location is indexed
      *
-     * @return a non-null list of {@code String[]} arrays containing the keys for each existing index
+     * @return A non-null list of {@code String[]} arrays containing the key column names for each existing index
      */
     @NotNull
     List<String[]> getDataIndexColumns();
@@ -102,16 +102,25 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
     /**
      * Check if this location has a data index for the specified columns.
      * 
-     * @param columns the set of columns to check for.
-     * @return true if the table has a Data Index for the specified columns
+     * @param columns The set of columns to check for
+     * @return Whether the table has an index for the specified columns
+     *
+     * @apiNote Implementations must guarantee that the result of this method remains constant over the life of an
+     *          instance, and is consistent with the result of {@link #getDataIndex(String...)}.
      */
     boolean hasDataIndex(@NotNull String... columns);
 
     /**
      * Get the data index table for the specified set of columns. Note that the order of columns does not matter here.
      *
-     * @param columns the key columns for the index
-     * @return the index table or null if one does not exist.
+     * 
+     * @param columns The key columns for the index
+     * @return The index table or null if one does not exist
+     * @apiNote If this table location is not static, the returned table must be {@link Table#isRefreshing()
+     *          refreshing}, and should be updated to reflect changes in a manner that is consistent with the results
+     *          provided to a subscriber.
+     * @implNote Implementations should attempt to provide a lazily-coalesced result wherever possible, allowing work to
+     *           be deferred or parallelized.
      */
     @Nullable
     BasicDataIndex getDataIndex(@NotNull String... columns);
@@ -122,21 +131,6 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
      */
     @NotNull
     ColumnLocation getColumnLocation(@NotNull CharSequence name);
-
-    /**
-     * Get the column location for the specified column name, casting to the requested type.
-     *
-     * @param name The column name
-     * @param locationType type desired {@link ColumnLocation} type
-     * @return The ColumnLocation for the defined column under this table location
-     */
-    @NotNull
-    @FinalDefault
-    default <CL extends ColumnLocation> CL getColumnLocation(
-            @NotNull final CharSequence name,
-            @SuppressWarnings("unused") Class<CL> locationType) {
-        return getColumnLocation(name).cast();
-    }
 
     // ------------------------------------------------------------------------------------------------------------------
     // LogOutputAppendable implementation / toString() override helper

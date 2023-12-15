@@ -37,11 +37,16 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     @NotNull
     private final Class<D> destDataType;
     @NotNull
-    private final BiFunction<Long, S, D> function;
+    private final RowKeyAndValueFunction<S, D> function;
     @NotNull
     private final Class<?> componentType;
 
     private ColumnSource<S> sourceColumnSource;
+
+    @FunctionalInterface
+    public interface RowKeyAndValueFunction<S, D> {
+        D apply(long rowKey, S value);
+    }
 
     public FunctionalColumn(@NotNull String sourceName,
             @NotNull Class<S> sourceDataType,
@@ -64,7 +69,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
             @NotNull Class<S> sourceDataType,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
-            @NotNull BiFunction<Long, S, D> function) {
+            @NotNull RowKeyAndValueFunction<S, D> function) {
         this(sourceName, sourceDataType, destName, destDataType, Object.class, function);
     }
 
@@ -73,7 +78,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
             @NotNull String destName,
             @NotNull Class<D> destDataType,
             @NotNull Class<?> componentType,
-            @NotNull BiFunction<Long, S, D> function) {
+            @NotNull RowKeyAndValueFunction<S, D> function) {
         this.sourceName = NameValidator.validateColumnName(sourceName);
         this.sourceDataType = Require.neqNull(sourceDataType, "sourceDataType");
         this.destName = NameValidator.validateColumnName(destName);
@@ -156,7 +161,6 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
             @Override
             public FillContext makeFillContext(int chunkCapacity) {
-                // Not sure this is right.
                 return new FunctionalColumnFillContext(getChunkType());
             }
 
@@ -189,7 +193,6 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     @NotNull
     @Override
     public ColumnSource<?> getLazyView() {
-        // TODO: memoize
         return getDataView();
     }
 

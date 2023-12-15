@@ -47,7 +47,7 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
     }
 
     @Override
-    protected final SourceTable redefine(TableDefinition newDefinition) {
+    protected final SourceTable<?> redefine(TableDefinition newDefinition) {
         if (newDefinition.getColumnNames().equals(definition.getColumnNames())) {
             // Nothing changed - we have the same columns in the same order.
             return this;

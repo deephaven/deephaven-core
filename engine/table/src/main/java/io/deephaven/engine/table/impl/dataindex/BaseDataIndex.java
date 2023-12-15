@@ -6,7 +6,12 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.BasicDataIndex;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.DataIndexTransformer;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -34,14 +39,16 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
  */
 public abstract class BaseDataIndex extends LivenessArtifact implements DataIndex {
 
-    static final String INDEX_COL_NAME = "dh_row_set";
+    protected static final String ROW_SET_COLUMN_NAME = "dh_row_set";
 
     @Override
+    @NotNull
     public BasicDataIndex transform(@NotNull final DataIndexTransformer transformer) {
         return TransformedDataIndex.from(this, transformer);
     }
 
     @Override
+    @NotNull
     public DataIndex remapKeyColumns(final @NotNull Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap) {
         return new RemappedDataIndex(this, oldToNewColumnMap);
     }
