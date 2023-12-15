@@ -2120,18 +2120,18 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     public void testMinusLocalDate() {
         final LocalDate d = LocalDate.of(2010, 1, 2);
-        TestCase.assertEquals(LocalDate.of(2009, 12, 30), DateTimeUtils.minus(d, 3));
-        TestCase.assertEquals(LocalDate.of(2010, 1, 5), DateTimeUtils.minus(d, -3));
+        TestCase.assertEquals(LocalDate.of(2009, 12, 30), DateTimeUtils.minusDays(d, 3));
+        TestCase.assertEquals(LocalDate.of(2010, 1, 5), DateTimeUtils.minusDays(d, -3));
         TestCase.assertEquals(LocalDate.of(2009, 12, 30), DateTimeUtils.minus(d, Period.ofDays(3)));
         TestCase.assertEquals(LocalDate.of(2010, 1, 5), DateTimeUtils.minus(d, Period.ofDays(-3)));
 
 
-        TestCase.assertNull(DateTimeUtils.minus((LocalDate) null, 3));
+        TestCase.assertNull(DateTimeUtils.minusDays((LocalDate) null, 3));
         TestCase.assertNull(DateTimeUtils.minus((LocalDate) null, Period.ofDays(3)));
         TestCase.assertNull(DateTimeUtils.minus(d, (Period) null));
 
         try {
-            DateTimeUtils.minus(d, Long.MAX_VALUE);
+            DateTimeUtils.minusDays(d, Long.MAX_VALUE);
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok

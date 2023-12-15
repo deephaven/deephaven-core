@@ -1658,7 +1658,7 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static LocalDate minus(@Nullable final LocalDate date, final long days) {
+    public static LocalDate minusDays(@Nullable final LocalDate date, final long days) {
         if (date == null || days == NULL_LONG) {
             return null;
         }
