@@ -144,9 +144,6 @@ public class DeephavenApiServer {
         // noinspection resource
         executionContextProvider.get().open();
 
-        log.info().append("Starting Operation Initialization Thread Pool...").endl();
-        OperationInitializationThreadPool.start();
-
         log.info().append("Starting Update Graph...").endl();
         getUpdateGraph().<PeriodicUpdateGraph>cast().start();
 

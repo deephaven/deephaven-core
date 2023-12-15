@@ -20,7 +20,7 @@ import io.deephaven.qst.type.Type;
 
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.util.TestKeyedArrayBackedMutableTable.handleDelayedRefresh;
+import static io.deephaven.engine.table.impl.util.TestKeyedArrayBackedInputTable.handleDelayedRefresh;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 
@@ -68,13 +68,13 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
     }
 
     public void testMultipleSources() throws Exception {
-        final AppendOnlyArrayBackedMutableTable source1 = AppendOnlyArrayBackedMutableTable.make(TableDefinition.of(
+        final AppendOnlyArrayBackedInputTable source1 = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
                 ColumnDefinition.of("StringCol", Type.stringType())));
-        final BaseArrayBackedMutableTable.ArrayBackedMutableInputTable inputTable1 = source1.makeHandler();
+        final BaseArrayBackedInputTable.ArrayBackedInputTableUpdater inputTable1 = source1.makeUpdater();
 
-        final AppendOnlyArrayBackedMutableTable source2 = AppendOnlyArrayBackedMutableTable.make(TableDefinition.of(
+        final AppendOnlyArrayBackedInputTable source2 = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
                 ColumnDefinition.of("IntCol", Type.intType())));
-        final BaseArrayBackedMutableTable.ArrayBackedMutableInputTable inputTable2 = source2.makeHandler();
+        final BaseArrayBackedInputTable.ArrayBackedInputTableUpdater inputTable2 = source2.makeUpdater();
 
         final Table functionBacked =
                 FunctionGeneratedTableFactory.create(() -> source1.lastBy().naturalJoin(source2, ""), source1, source2);
@@ -82,9 +82,9 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertEquals(functionBacked.size(), 0);
 
         handleDelayedRefresh(() -> {
-            inputTable1.addAsync(newTable(stringCol("StringCol", "MyString")), false, t -> {
+            inputTable1.addAsync(newTable(stringCol("StringCol", "MyString")), t -> {
             });
-            inputTable2.addAsync(newTable(intCol("IntCol", 12345)), false, t -> {
+            inputTable2.addAsync(newTable(intCol("IntCol", 12345)), t -> {
             });
         }, source1, source2);
 

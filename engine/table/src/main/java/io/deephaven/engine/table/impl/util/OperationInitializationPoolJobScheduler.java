@@ -4,6 +4,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -11,7 +12,12 @@ import io.deephaven.util.process.ProcessEnvironment;
 import java.util.function.Consumer;
 
 public class OperationInitializationPoolJobScheduler implements JobScheduler {
-    final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
+    private final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
+    private final OperationInitializer threadPool;
+
+    public OperationInitializationPoolJobScheduler(OperationInitializer threadPool) {
+        this.threadPool = threadPool;
+    }
 
     @Override
     public void submit(
@@ -19,7 +25,7 @@ public class OperationInitializationPoolJobScheduler implements JobScheduler {
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
-        OperationInitializationThreadPool.executorService().submit(() -> {
+        threadPool.submit(() -> {
             final BasePerformanceEntry basePerformanceEntry = new BasePerformanceEntry();
             basePerformanceEntry.onBaseEntryStart();
             try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
