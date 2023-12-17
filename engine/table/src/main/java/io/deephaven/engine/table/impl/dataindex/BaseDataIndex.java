@@ -39,7 +39,7 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
  */
 public abstract class BaseDataIndex extends LivenessArtifact implements DataIndex {
 
-    protected static final String ROW_SET_COLUMN_NAME = "dh_row_set";
+    protected static final String ROW_SET_COLUMN_NAME = "dh_row_set"; // TODO-RWC: Move this to TableBackedDataIndexImpl
 
     @Override
     @NotNull

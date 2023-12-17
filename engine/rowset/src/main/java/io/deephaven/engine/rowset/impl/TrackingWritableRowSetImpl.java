@@ -76,6 +76,12 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
     }
 
     @Override
+    public <INDEXER_TYPE extends Indexer> INDEXER_TYPE indexer() {
+        // noinspection unchecked
+        return (INDEXER_TYPE) indexer;
+    }
+
+    @Override
     protected void preMutationHook() {
         checkAndGetPrev();
     }

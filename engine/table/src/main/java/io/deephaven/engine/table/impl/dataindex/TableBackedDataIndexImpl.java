@@ -35,7 +35,8 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
 
     private AggregationRowLookup lookupFunction;
 
-    public TableBackedDataIndexImpl(@NotNull final QueryTable sourceTable,
+    public TableBackedDataIndexImpl(
+            @NotNull final QueryTable sourceTable,
             @NotNull final String[] keyColumnNames) {
 
         this.sourceTable = sourceTable;

@@ -7,12 +7,14 @@ import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -21,7 +23,9 @@ import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.qst.column.Column;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jmock.api.Invocation;
 import org.jmock.lib.action.CustomAction;
 import org.junit.Before;
@@ -33,6 +37,7 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.engine.table.impl.locations.TableLocationState.NULL_SIZE;
 import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.REGION_CAPACITY_IN_ELEMENTS;
+import static io.deephaven.engine.testutil.TstUtils.assertRowSetEquals;
 
 /**
  * Tests for {@link RegionedColumnSourceManager}.
@@ -49,7 +54,9 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     private static final int NORMAL_INDEX = 2;
 
     @SuppressWarnings("FieldCanBeLocal")
-    private static boolean PRINT_STACK_TRACES = false;
+    private final static boolean PRINT_STACK_TRACES = false;
+
+    private static final String ROW_SET_COLUMN_NAME = "RowSet";
 
     private RegionedTableComponentFactory componentFactory;
 
@@ -58,10 +65,10 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     private ColumnDefinition<?> groupingColumnDefinition;
     private ColumnDefinition<?> normalColumnDefinition;
 
-    private RegionedColumnSource[] columnSources;
-    private RegionedColumnSource partitioningColumnSource;
-    private RegionedColumnSource groupingColumnSource;
-    private RegionedColumnSource normalColumnSource;
+    private RegionedColumnSource<String>[] columnSources;
+    private RegionedColumnSource<String> partitioningColumnSource;
+    private RegionedColumnSource<String> groupingColumnSource;
+    private RegionedColumnSource<String> normalColumnSource;
 
     private ColumnLocation[][] columnLocations;
 
@@ -73,13 +80,18 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
     private TableLocation duplicateTableLocation0A;
 
+    private RowSet capturedRowSet;
+    private DataIndex capturedPartitioningColumnIndex;
+    private DataIndex capturedGroupingColumnIndex;
+
     private TableLocationUpdateSubscriptionBuffer[] subscriptionBuffers;
     private long[] lastSizes;
     private int regionCount;
     private TIntIntMap locationIndexToRegionIndex;
     private WritableRowSet expectedRowSet;
     private RowSet expectedAddedRowSet;
-    private Map<String, WritableRowSet> expectedPartitioningColumnGrouping;
+    private Map<String, WritableRowSet> expectedPartitioningColumnIndex;
+    private Map<String, WritableRowSet> expectedGroupingColumnIndex;
 
     private ControlledUpdateGraph updateGraph;
 
@@ -149,7 +161,8 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         locationIndexToRegionIndex = new TIntIntHashMap(4, 0.5f, -1, -1);
         expectedRowSet = RowSetFactory.empty().toTracking();
         expectedAddedRowSet = RowSetFactory.empty();
-        expectedPartitioningColumnGrouping = new LinkedHashMap<>();
+        expectedPartitioningColumnIndex = new LinkedHashMap<>();
+        expectedGroupingColumnIndex = new LinkedHashMap<>();
 
         updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
     }
@@ -187,6 +200,10 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                         return RowSetFactory.flat(lastSizes[li]);
                     }
                 });
+                allowing(tl).getDataIndexColumns();
+                will(returnValue(Collections.singletonList((new String[] {groupingColumnDefinition.getName()}))));
+                allowing(tl).hasDataIndex(groupingColumnDefinition.getName());
+                will(returnValue(true));
             }
         });
         IntStream.range(0, NUM_COLUMNS).forEach(ci -> {
@@ -203,35 +220,22 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         return tl;
     }
 
-    private Map<String, ColumnSource> makeColumnSourceMap() {
-        final Map<String, ColumnSource> result = new LinkedHashMap<>();
+    private Map<String, ColumnSource<?>> makeColumnSourceMap() {
+        final Map<String, ColumnSource<?>> result = new LinkedHashMap<>();
         IntStream.range(0, columnDefinitions.size())
                 .forEachOrdered(ci -> result.put(columnDefinitions.get(ci).getName(), columnSources[ci]));
         return result;
     }
 
-    private void expectPartitioningColumnInitialGrouping() {
-        // partitioningColumnGroupingProvider = null;
-        // checking(new Expectations() {
-        // {
-        // allowing(partitioningColumnSource).getGroupingProvider();
-        // will(new CustomAction("Return previously set partitioning column grouping") {
-        // @Override
-        // public Object invoke(Invocation invocation) {
-        // return partitioningColumnGroupingProvider;
-        // }
-        // });
-        // oneOf(partitioningColumnSource).setGroupingProvider(with(any(GroupingProvider.class)));
-        // will(new CustomAction("Capture partitioning column grouping provider") {
-        // @Override
-        // public Object invoke(Invocation invocation) {
-        // partitioningColumnGroupingProvider =
-        // (PartitionColumnGroupingProvider) invocation.getParameter(0);
-        // return null;
-        // }
-        // });
-        // }
-        // });
+    private void captureIndexes(@NotNull final RowSet rowSet) {
+        capturedRowSet = rowSet;
+        if (rowSet.isTracking()) {
+            final DataIndexer dataIndexer = DataIndexer.existingOf(rowSet.trackingCast());
+            capturedPartitioningColumnIndex =
+                    dataIndexer == null ? null : dataIndexer.getDataIndex(partitioningColumnSource);
+            capturedGroupingColumnIndex =
+                    dataIndexer == null ? null : dataIndexer.getDataIndex(groupingColumnSource);
+        }
     }
 
     private void expectPoison() {
@@ -244,32 +248,9 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         });
     }
 
-    private void expectGroupingColumnInitialGrouping() {
-        // groupingColumnGroupingProvider = null;
-        // checking(new Expectations() {
-        // {
-        // allowing(groupingColumnSource).getGroupingProvider();
-        // will(new CustomAction("Return previously set grouping column grouping provider") {
-        // @Override
-        // public Object invoke(Invocation invocation) {
-        // return groupingColumnGroupingProvider;
-        // }
-        // });
-        // oneOf(groupingColumnSource).setGroupingProvider(with(any(GroupingProvider.class)));
-        // will(new CustomAction("Capture grouping column grouping provider") {
-        // @Override
-        // public Object invoke(Invocation invocation) {
-        // groupingColumnGroupingProvider = (KeyRangeGroupingProvider) invocation.getParameter(0);
-        // return null;
-        // }
-        // });
-        // }
-        // });
-    }
-
-    private void setSizeExpectations(final boolean refreshing, final long... sizes) {
+    private void setSizeExpectations(final boolean refreshing, final boolean success, final long... sizes) {
         final WritableRowSet newExpectedRowSet = RowSetFactory.empty().toTracking();
-        expectedPartitioningColumnGrouping = new LinkedHashMap<>();
+        final Map<String, WritableRowSet> newExpectedPartitioningColumnIndex = new LinkedHashMap<>();
         IntStream.range(0, sizes.length).forEachOrdered(li -> {
             final long size = sizes[li];
             final long lastSize = lastSizes[li];
@@ -344,32 +325,54 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                 newExpectedRowSet.insertRange(
                         RegionedColumnSource.getFirstRowKey(regionIndex),
                         RegionedColumnSource.getFirstRowKey(regionIndex) + size - 1);
-                expectedPartitioningColumnGrouping.computeIfAbsent(cp, cpk -> RowSetFactory.empty())
-                        .insertRange(
-                                RegionedColumnSource.getFirstRowKey(regionIndex),
-                                RegionedColumnSource.getFirstRowKey(regionIndex) + size - 1);
+                if (success) {
+                    // noinspection resource
+                    newExpectedPartitioningColumnIndex.computeIfAbsent(cp, cpk -> RowSetFactory.empty())
+                            .insertRange(
+                                    RegionedColumnSource.getFirstRowKey(regionIndex),
+                                    RegionedColumnSource.getFirstRowKey(regionIndex) + size - 1);
+                }
             }
         });
-        expectedAddedRowSet = newExpectedRowSet.minus(expectedRowSet);
-        expectedRowSet.clear();
-        expectedRowSet.insert(newExpectedRowSet);
+        if (success) {
+            expectedAddedRowSet = newExpectedRowSet.minus(expectedRowSet);
+            expectedRowSet.clear();
+            expectedRowSet.insert(newExpectedRowSet);
+            expectedPartitioningColumnIndex = newExpectedPartitioningColumnIndex;
+        } else {
+            expectedAddedRowSet = null;
+        }
     }
 
-    private void checkIndexes(@NotNull final RowSet addedRowSet) {
-        // assertIsSatisfied();
-        // assertRowSetEquals(expectedAddedRowSet, addedRowSet);
-        // if (partitioningColumnGroupingProvider == null) {
-        // assertTrue(expectedPartitioningColumnGrouping.isEmpty());
-        // } else {
-        // final Map<String, RowSet> partitioningColumnGrouping =
-        // partitioningColumnGroupingProvider.getGroupingBuilder().buildGroupingMap();
-        // assertEquals(expectedPartitioningColumnGrouping.keySet(), partitioningColumnGrouping.keySet());
-        // expectedPartitioningColumnGrouping
-        // .forEach((final String columnPartition, final RowSet expectedGrouping) -> {
-        // final RowSet grouping = partitioningColumnGrouping.get(columnPartition);
-        // assertRowSetEquals(expectedGrouping, grouping);
-        // });
-        // }
+    private void checkIndexes() {
+        assertIsSatisfied();
+        if (capturedRowSet == null) {
+            assertNull(expectedAddedRowSet);
+        } else {
+            assertRowSetEquals(expectedAddedRowSet, capturedRowSet);
+        }
+        checkIndex(expectedPartitioningColumnIndex, capturedPartitioningColumnIndex);
+        checkIndex(expectedGroupingColumnIndex, capturedGroupingColumnIndex);
+        capturedRowSet = null;
+    }
+
+    private static void checkIndex(
+            @NotNull final Map<String, ? extends RowSet> expected,
+            @Nullable final DataIndex index) {
+        if (index == null) {
+            assertTrue(expected.isEmpty());
+            return;
+        }
+        final Table indexTable = index.table();
+        final DataIndex.RowKeyLookup rowKeyLookup = index.rowKeyLookup();
+        final ColumnSource<RowSet> rowSets = indexTable.getColumnSource(index.rowSetColumnName(), RowSet.class);
+        assertEquals(expected.size(), indexTable.size());
+        expected.forEach((final String expectedKey, final RowSet expectedRows) -> {
+            final long indexRowKey = rowKeyLookup.apply(expectedKey, false);
+            final RowSet indexRows = rowSets.get(indexRowKey);
+            assertNotNull(indexRows);
+            assertRowSetEquals(expectedRows, indexRows);
+        });
     }
 
     @Test
@@ -412,12 +415,70 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         assertTrue(SUT.includedLocations().isEmpty());
 
         // Test run
-        expectPartitioningColumnInitialGrouping();
-        expectGroupingColumnInitialGrouping();
-        setSizeExpectations(false, NULL_SIZE, 100, 0, REGION_CAPACITY_IN_ELEMENTS);
+        setSizeExpectations(false, true, NULL_SIZE, 100, 0, REGION_CAPACITY_IN_ELEMENTS);
 
-        checkIndexes(SUT.initialize());
+        try (final RowSet first = RowSetFactory.fromRange(0, 49);
+                final RowSet second = RowSetFactory.fromRange(50, 99);
+                final RowSet third = RowSetFactory.fromRange(50, REGION_CAPACITY_IN_ELEMENTS)) {
+            checking(new Expectations() {
+                {
+                    oneOf(tableLocation1A).getDataIndex(groupingColumnDefinition.getName());
+                    will(returnValue(new DataIndexImpl(TableFactory.newTable(
+                            Column.of(groupingColumnDefinition.getName(), "ABC", "DEF"),
+                            Column.of(ROW_SET_COLUMN_NAME, RowSet.class, first.copy(), second.copy())))));
+                    oneOf(tableLocation1B).getDataIndex(groupingColumnDefinition.getName());
+                    will(returnValue(new DataIndexImpl(TableFactory.newTable(
+                            Column.of(groupingColumnDefinition.getName(), "DEF", "XYZ"),
+                            Column.of(ROW_SET_COLUMN_NAME, RowSet.class, first.copy(), third.copy())))));
+                }
+            });
+
+            expectedGroupingColumnIndex.put("ABC", first.copy());
+            expectedGroupingColumnIndex.put("DEF", second.copy());
+            expectedGroupingColumnIndex.get("DEF").insertWithShift(RegionedColumnSource.getFirstRowKey(1), first);
+            expectedGroupingColumnIndex.put("XYZ", third.shift(RegionedColumnSource.getFirstRowKey(1)));
+        }
+
+        captureIndexes(SUT.initialize());
+        capturedGroupingColumnIndex.table(); // Force us to build the merged index *before* we check satisfaction
+
+        checkIndexes();
         assertEquals(Arrays.asList(tableLocation1A, tableLocation1B), SUT.includedLocations());
+    }
+
+    private final class DataIndexImpl extends ReferenceCountedLivenessNode implements BasicDataIndex {
+
+        private final Table table;
+
+        private DataIndexImpl(@NotNull final Table table) {
+            super(false);
+            this.table = table;
+        }
+
+        @Override
+        public @NotNull String[] keyColumnNames() {
+            return new String[] {groupingColumnDefinition.getName()};
+        }
+
+        @Override
+        public @NotNull Map<ColumnSource<?>, String> keyColumnMap() {
+            return Map.of(groupingColumnSource, groupingColumnDefinition.getName());
+        }
+
+        @Override
+        public @NotNull String rowSetColumnName() {
+            return ROW_SET_COLUMN_NAME;
+        }
+
+        @Override
+        public @NotNull Table table() {
+            return table;
+        }
+
+        @Override
+        public boolean isRefreshing() {
+            return false;
+        }
     }
 
     @Test
@@ -437,6 +498,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
             }
         });
         try {
+            // noinspection resource
             SUT.initialize();
             fail("Expected exception");
         } catch (TableDataException expected) {
@@ -454,7 +516,8 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         assertTrue(SUT.includedLocations().isEmpty());
 
         // Check run with no locations
-        checkIndexes(SUT.initialize());
+        captureIndexes(SUT.initialize());
+        checkIndexes();
 
         // Add a few locations
         Arrays.stream(tableLocations).limit(2).forEach(SUT::addLocation);
@@ -462,19 +525,21 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         assertTrue(SUT.includedLocations().isEmpty());
 
         // Refresh them
-        expectPartitioningColumnInitialGrouping();
-        setSizeExpectations(true, 5, 1000);
-        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
+        setSizeExpectations(true, true, 5, 1000);
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Refresh them with no change
-        setSizeExpectations(true, 5, 1000);
-        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
+        setSizeExpectations(true, true, 5, 1000);
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Refresh them with a change for the subscription-supporting one
-        setSizeExpectations(true, 5, 1001);
-        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
+        setSizeExpectations(true, true, 5, 1001);
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Try adding a duplicate
@@ -503,65 +568,72 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Test run with new locations included
-        setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
-        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
+        setSizeExpectations(true, true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B), SUT.includedLocations());
 
         // Test no-op run
-        setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
-        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
+        setSizeExpectations(true, true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B), SUT.includedLocations());
 
         // Test run with a location updated from null to not
-        setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
-        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
+        setSizeExpectations(true, true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
         // Test run with a location updated
-        setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 10000002);
-        updateGraph.runWithinUnitTestCycle(() -> checkIndexes(SUT.refresh()));
+        setSizeExpectations(true, true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 10000002);
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
         // Test run with a size decrease
-        setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
+        setSizeExpectations(true, false, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
         expectPoison();
         updateGraph.runWithinUnitTestCycle(() -> {
             try {
-                checkIndexes(SUT.refresh());
+                SUT.refresh();
                 fail("Expected exception");
             } catch (AssertionFailure expected) {
                 maybePrintStackTrace(expected);
             }
         });
+        checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
         // Test run with a location truncated
-        setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
+        setSizeExpectations(true, false, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
         expectPoison();
         updateGraph.runWithinUnitTestCycle(() -> {
             try {
-                checkIndexes(SUT.refresh());
+                SUT.refresh();
                 fail("Expected exception");
             } catch (TableDataException expected) {
                 maybePrintStackTrace(expected);
             }
         });
+        checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
         // Test run with an overflow
-        setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, REGION_CAPACITY_IN_ELEMENTS + 1);
+        setSizeExpectations(true, false, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, REGION_CAPACITY_IN_ELEMENTS + 1);
         updateGraph.runWithinUnitTestCycle(() -> {
             try {
-                checkIndexes(SUT.refresh());
+                SUT.refresh();
                 fail("Expected exception");
             } catch (TableDataException expected) {
                 maybePrintStackTrace(expected);
             }
         });
+        checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
@@ -570,12 +642,13 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         expectPoison();
         updateGraph.runWithinUnitTestCycle(() -> {
             try {
-                checkIndexes(SUT.refresh());
+                SUT.refresh();
                 fail("Expected exception");
             } catch (TableDataException expected) {
                 assertEquals("TEST", expected.getCause().getMessage());
             }
         });
+        checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
     }

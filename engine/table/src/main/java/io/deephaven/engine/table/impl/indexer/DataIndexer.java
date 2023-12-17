@@ -37,6 +37,10 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         return rowSet.indexer(DataIndexer::new);
     }
 
+    public static DataIndexer existingOf(TrackingRowSet rowSet) {
+        return rowSet.indexer();
+    }
+
     private final TrackingRowSet rowSet;
 
     /**
