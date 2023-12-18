@@ -1,11 +1,12 @@
 /**
  * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.server.jetty;
+package io.deephaven.server.plugin.js;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.plugin.js.JsPlugin;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -14,7 +15,7 @@ import org.immutables.value.Value.Parameter;
  */
 @Immutable
 @SimpleStyle
-abstract class JsPluginManifestEntry {
+public abstract class JsPluginManifestEntry {
 
     public static final String NAME = "name";
     public static final String VERSION = "version";
@@ -26,6 +27,10 @@ abstract class JsPluginManifestEntry {
             @JsonProperty(value = VERSION, required = true) String version,
             @JsonProperty(value = MAIN, required = true) String main) {
         return ImmutableJsPluginManifestEntry.of(name, version, main);
+    }
+
+    public static JsPluginManifestEntry from(JsPlugin plugin) {
+        return of(plugin.name(), plugin.version(), plugin.main().toString());
     }
 
     /**

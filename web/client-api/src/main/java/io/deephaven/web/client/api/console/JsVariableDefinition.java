@@ -12,8 +12,8 @@ import jsinterop.annotations.JsProperty;
 /**
  * A format to describe a variable available to be read from the server. Application fields are optional, and only
  * populated when a variable is provided by application mode.
- *
- * APIs which take a VariableDefinition` must at least be provided an object with a <b>type</b> and <b>id</b> field.
+ * <p>
+ * APIs which take a VariableDefinition must at least be provided an object with a <b>type</b> and <b>id</b> field.
  */
 @TsInterface
 @TsName(namespace = "dh.ide", name = "VariableDefinition")
@@ -28,6 +28,10 @@ public class JsVariableDefinition {
     private final String applicationName;
 
     public JsVariableDefinition(String type, String title, String id, String description) {
+        // base64('s/') ==> 'cy8'
+        if (!id.startsWith("cy8")) {
+            throw new IllegalArgumentException("Cannot create a VariableDefinition from a non-scope ticket");
+        }
         this.type = type;
         this.title = title == null ? JS_UNAVAILABLE : title;
         this.id = id;

@@ -4,6 +4,7 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.auth.AuthContext;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
@@ -13,10 +14,26 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+/**
+ * Container for context-specific objects, that can be activated on a thread or passed to certain operations.
+ * ExecutionContexts are immutable, and support a builder pattern to create new instances and "with" methods to
+ * customize existing ones. Any thread that interacts with the Deephaven engine will need to have an active
+ * ExecutionContext.
+ */
 public class ExecutionContext {
 
+    /**
+     * Creates a new builder for an ExecutionContext, capturing the current thread's auth context, update graph, and
+     * operation initializer. Typically, this method should be called on a thread that already has an active
+     * ExecutionContext, to more easily reuse those.
+     *
+     * @return a new builder to create an ExecutionContext
+     */
     public static Builder newBuilder() {
-        return new Builder();
+        ExecutionContext existing = getContext();
+        return new Builder()
+                .setUpdateGraph(existing.getUpdateGraph())
+                .setOperationInitializer(existing.getInitializer());
     }
 
     public static ExecutionContext makeExecutionContext(boolean isSystemic) {
@@ -83,6 +100,7 @@ public class ExecutionContext {
     private final QueryScope queryScope;
     private final QueryCompiler queryCompiler;
     private final UpdateGraph updateGraph;
+    private final OperationInitializer operationInitializer;
 
     private ExecutionContext(
             final boolean isSystemic,
@@ -90,13 +108,15 @@ public class ExecutionContext {
             final QueryLibrary queryLibrary,
             final QueryScope queryScope,
             final QueryCompiler queryCompiler,
-            final UpdateGraph updateGraph) {
+            final UpdateGraph updateGraph,
+            OperationInitializer operationInitializer) {
         this.isSystemic = isSystemic;
         this.authContext = authContext;
         this.queryLibrary = Objects.requireNonNull(queryLibrary);
         this.queryScope = Objects.requireNonNull(queryScope);
         this.queryCompiler = Objects.requireNonNull(queryCompiler);
-        this.updateGraph = updateGraph;
+        this.updateGraph = Objects.requireNonNull(updateGraph);
+        this.operationInitializer = Objects.requireNonNull(operationInitializer);
     }
 
     /**
@@ -110,7 +130,8 @@ public class ExecutionContext {
         if (isSystemic == this.isSystemic) {
             return this;
         }
-        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph);
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
+                operationInitializer);
     }
 
     /**
@@ -124,7 +145,8 @@ public class ExecutionContext {
         if (authContext == this.authContext) {
             return this;
         }
-        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph);
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
+                operationInitializer);
     }
 
     /**
@@ -138,7 +160,16 @@ public class ExecutionContext {
         if (updateGraph == this.updateGraph) {
             return this;
         }
-        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph);
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
+                operationInitializer);
+    }
+
+    public ExecutionContext withOperationInitializer(final OperationInitializer operationInitializer) {
+        if (operationInitializer == this.operationInitializer) {
+            return this;
+        }
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
+                operationInitializer);
     }
 
     /**
@@ -198,6 +229,10 @@ public class ExecutionContext {
         return updateGraph;
     }
 
+    public OperationInitializer getInitializer() {
+        return operationInitializer;
+    }
+
     @SuppressWarnings("unused")
     public static class Builder {
         private boolean isSystemic = false;
@@ -208,6 +243,7 @@ public class ExecutionContext {
         private QueryScope queryScope = PoisonedQueryScope.INSTANCE;
         private QueryCompiler queryCompiler = PoisonedQueryCompiler.INSTANCE;
         private UpdateGraph updateGraph = PoisonedUpdateGraph.INSTANCE;
+        private OperationInitializer operationInitializer = PoisonedOperationInitializer.INSTANCE;
 
         private Builder() {
             // propagate the auth context from the current context
@@ -356,10 +392,22 @@ public class ExecutionContext {
 
         /**
          * Use the current ExecutionContext's UpdateGraph instance.
+         *
+         * @deprecated The update graph is automatically captured, this method should no longer be needed.
          */
         @ScriptApi
+        @Deprecated(forRemoval = true, since = "0.31")
         public Builder captureUpdateGraph() {
             this.updateGraph = getContext().getUpdateGraph();
+            return this;
+        }
+
+        /**
+         * Use the specified operation initializer instead of the captured instance.
+         */
+        @ScriptApi
+        public Builder setOperationInitializer(OperationInitializer operationInitializer) {
+            this.operationInitializer = operationInitializer;
             return this;
         }
 
@@ -368,7 +416,8 @@ public class ExecutionContext {
          */
         @ScriptApi
         public ExecutionContext build() {
-            return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph);
+            return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
+                    operationInitializer);
         }
     }
 }

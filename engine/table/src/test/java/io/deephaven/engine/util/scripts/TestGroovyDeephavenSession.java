@@ -16,6 +16,7 @@ import io.deephaven.function.Numeric;
 import io.deephaven.function.Sort;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
 import org.junit.Assert;
@@ -48,7 +49,7 @@ public class TestGroovyDeephavenSession {
         livenessScope = new LivenessScope();
         LivenessScopeStack.push(livenessScope);
         session = new GroovyDeephavenSession(
-                ExecutionContext.getContext().getUpdateGraph(), NoOp.INSTANCE, null,
+                ExecutionContext.getContext().getUpdateGraph(), ThreadInitializationFactory.NO_OP, NoOp.INSTANCE, null,
                 GroovyDeephavenSession.RunScripts.none());
         executionContext = session.getExecutionContext().open();
     }

@@ -56,7 +56,7 @@ setup(
     python_requires='>=3.8',
     install_requires=[
         'jpy>=0.14.0',
-        'deephaven-plugin==0.5.0',
+        'deephaven-plugin>=0.6.0',
         'numpy',
         'pandas>=1.5.0',
         'pyarrow',

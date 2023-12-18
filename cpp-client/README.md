@@ -34,10 +34,20 @@ on them anymore so we do notguarantee they are current for those platforms.
 
 6. Build and install dependencies for Deephaven C++ client.
 
-   Get the `build-dependencies.sh` script from Deephaven's base images repository
-   at the correct version.
-   You can download it directly from the link
+   Get the `build-dependencies.sh` script from Deephaven's base images repository.
+
+   ***Note you need the right version of `build-dependencies.sh` matching
+   your sources***.
+
+   The link in the paragraph that follows points to a specific
+   version that works with the code this README.md files accompanies;
+   if you are reading a different version of the README.md compared
+   to the source version you will be trying to compile, go back
+   to the right `README.md` now.
+
+   Download `build-dependencies.sh` directly from
    https://github.com/deephaven/deephaven-base-images/raw/47f51e769612785c6f320302a3f4f52bc0cff187/cpp-client/build-dependencies.sh
+
    (this script is also used from our automated tools, to generate a docker image to
    support tests runs; that's why it lives in a separate repo).
    The script downloads, builds and installs the dependent libraries
