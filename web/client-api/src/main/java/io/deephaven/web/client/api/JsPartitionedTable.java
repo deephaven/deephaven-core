@@ -102,12 +102,8 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             for (int i = 0; i < keyColumnNames.length; i++) {
                 String name = keyColumnNames.getAt(i);
                 ColumnDefinition columnDefinition = tableDefinition.getColumnsByName().get(false).get(name);
-                int index = 0;
-                while (!columns[index].getName().equals(name)) {
-                    index++;
-                }
                 keyColumnTypes.add(columnDefinition.getType());
-                keyColumns[keyColumns.length] = columns[index];
+                keyColumns[keyColumns.length] = columns[columnDefinition.getColumnIndex()];
             }
             this.columns = JsObject.freeze(columns);
             this.keyColumns = JsObject.freeze(keyColumns);
