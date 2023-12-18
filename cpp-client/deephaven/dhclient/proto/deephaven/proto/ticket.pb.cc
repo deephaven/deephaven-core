@@ -26,8 +26,9 @@ namespace proto {
 namespace backplane {
 namespace grpc {
 PROTOBUF_CONSTEXPR Ticket::Ticket(
-    ::_pbi::ConstantInitialized)
-  : ticket_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.ticket_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct TicketDefaultTypeInternal {
   PROTOBUF_CONSTEXPR TicketDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -38,9 +39,10 @@ struct TicketDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TicketDefaultTypeInternal _Ticket_default_instance_;
 PROTOBUF_CONSTEXPR TypedTicket::TypedTicket(
-    ::_pbi::ConstantInitialized)
-  : type_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
-  , ticket_(nullptr){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.type_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.ticket_)*/nullptr
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct TypedTicketDefaultTypeInternal {
   PROTOBUF_CONSTEXPR TypedTicketDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -66,15 +68,15 @@ const uint32_t TableStruct_deephaven_2fproto_2fticket_2eproto::offsets[] PROTOBU
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::Ticket, ticket_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::Ticket, _impl_.ticket_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TypedTicket, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TypedTicket, ticket_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TypedTicket, type_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TypedTicket, _impl_.ticket_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TypedTicket, _impl_.type_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Ticket)},
@@ -125,28 +127,40 @@ class Ticket::_Internal {
 Ticket::Ticket(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.Ticket)
 }
 Ticket::Ticket(const Ticket& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  Ticket* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.ticket_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  ticket_.InitDefault();
+  _impl_.ticket_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    ticket_.Set("", GetArenaForAllocation());
+    _impl_.ticket_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_ticket().empty()) {
-    ticket_.Set(from._internal_ticket(), 
-      GetArenaForAllocation());
+    _this->_impl_.ticket_.Set(from._internal_ticket(), 
+      _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.Ticket)
 }
 
-inline void Ticket::SharedCtor() {
-ticket_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  ticket_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void Ticket::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.ticket_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.ticket_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.ticket_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 Ticket::~Ticket() {
@@ -160,11 +174,11 @@ Ticket::~Ticket() {
 
 inline void Ticket::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  ticket_.Destroy();
+  _impl_.ticket_.Destroy();
 }
 
 void Ticket::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void Ticket::Clear() {
@@ -173,7 +187,7 @@ void Ticket::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  ticket_.ClearToEmpty();
+  _impl_.ticket_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -250,32 +264,28 @@ size_t Ticket::ByteSizeLong() const {
         this->_internal_ticket());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData Ticket::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     Ticket::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*Ticket::GetClassData() const { return &_class_data_; }
 
-void Ticket::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<Ticket *>(to)->MergeFrom(
-      static_cast<const Ticket &>(from));
-}
 
-
-void Ticket::MergeFrom(const Ticket& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.Ticket)
-  GOOGLE_DCHECK_NE(&from, this);
+void Ticket::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<Ticket*>(&to_msg);
+  auto& from = static_cast<const Ticket&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.Ticket)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_ticket().empty()) {
-    _internal_set_ticket(from._internal_ticket());
+    _this->_internal_set_ticket(from._internal_ticket());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void Ticket::CopyFrom(const Ticket& from) {
@@ -295,8 +305,8 @@ void Ticket::InternalSwap(Ticket* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &ticket_, lhs_arena,
-      &other->ticket_, rhs_arena
+      &_impl_.ticket_, lhs_arena,
+      &other->_impl_.ticket_, rhs_arena
   );
 }
 
@@ -315,39 +325,50 @@ class TypedTicket::_Internal {
 
 const ::io::deephaven::proto::backplane::grpc::Ticket&
 TypedTicket::_Internal::ticket(const TypedTicket* msg) {
-  return *msg->ticket_;
+  return *msg->_impl_.ticket_;
 }
 TypedTicket::TypedTicket(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.TypedTicket)
 }
 TypedTicket::TypedTicket(const TypedTicket& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  TypedTicket* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.type_){}
+    , decltype(_impl_.ticket_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  type_.InitDefault();
+  _impl_.type_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    type_.Set("", GetArenaForAllocation());
+    _impl_.type_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_type().empty()) {
-    type_.Set(from._internal_type(), 
-      GetArenaForAllocation());
+    _this->_impl_.type_.Set(from._internal_type(), 
+      _this->GetArenaForAllocation());
   }
   if (from._internal_has_ticket()) {
-    ticket_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from.ticket_);
-  } else {
-    ticket_ = nullptr;
+    _this->_impl_.ticket_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.ticket_);
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.TypedTicket)
 }
 
-inline void TypedTicket::SharedCtor() {
-type_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  type_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-ticket_ = nullptr;
+inline void TypedTicket::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.type_){}
+    , decltype(_impl_.ticket_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.type_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.type_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 TypedTicket::~TypedTicket() {
@@ -361,12 +382,12 @@ TypedTicket::~TypedTicket() {
 
 inline void TypedTicket::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  type_.Destroy();
-  if (this != internal_default_instance()) delete ticket_;
+  _impl_.type_.Destroy();
+  if (this != internal_default_instance()) delete _impl_.ticket_;
 }
 
 void TypedTicket::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void TypedTicket::Clear() {
@@ -375,11 +396,11 @@ void TypedTicket::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  type_.ClearToEmpty();
-  if (GetArenaForAllocation() == nullptr && ticket_ != nullptr) {
-    delete ticket_;
+  _impl_.type_.ClearToEmpty();
+  if (GetArenaForAllocation() == nullptr && _impl_.ticket_ != nullptr) {
+    delete _impl_.ticket_;
   }
-  ticket_ = nullptr;
+  _impl_.ticket_ = nullptr;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -480,38 +501,35 @@ size_t TypedTicket::ByteSizeLong() const {
   if (this->_internal_has_ticket()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *ticket_);
+        *_impl_.ticket_);
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData TypedTicket::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     TypedTicket::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*TypedTicket::GetClassData() const { return &_class_data_; }
 
-void TypedTicket::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<TypedTicket *>(to)->MergeFrom(
-      static_cast<const TypedTicket &>(from));
-}
 
-
-void TypedTicket::MergeFrom(const TypedTicket& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.TypedTicket)
-  GOOGLE_DCHECK_NE(&from, this);
+void TypedTicket::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<TypedTicket*>(&to_msg);
+  auto& from = static_cast<const TypedTicket&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.TypedTicket)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_type().empty()) {
-    _internal_set_type(from._internal_type());
+    _this->_internal_set_type(from._internal_type());
   }
   if (from._internal_has_ticket()) {
-    _internal_mutable_ticket()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(from._internal_ticket());
+    _this->_internal_mutable_ticket()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+        from._internal_ticket());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void TypedTicket::CopyFrom(const TypedTicket& from) {
@@ -531,10 +549,10 @@ void TypedTicket::InternalSwap(TypedTicket* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &type_, lhs_arena,
-      &other->type_, rhs_arena
+      &_impl_.type_, lhs_arena,
+      &other->_impl_.type_, rhs_arena
   );
-  swap(ticket_, other->ticket_);
+  swap(_impl_.ticket_, other->_impl_.ticket_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata TypedTicket::GetMetadata() const {
