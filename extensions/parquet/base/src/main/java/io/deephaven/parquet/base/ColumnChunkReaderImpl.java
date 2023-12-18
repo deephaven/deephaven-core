@@ -229,17 +229,6 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
             return remainingValues > 0;
         }
 
-        // TODO Move to a separate file
-        final class PositionedBufferedInputStream extends BufferedInputStream {
-            PositionedBufferedInputStream(final ReadableByteChannel readChannel, final int size) {
-                super(Channels.newInputStream(readChannel), size);
-            }
-
-            long position() throws IOException {
-                return this.pos;
-            }
-        }
-
         @Override
         public ColumnPageReader next() {
             if (!hasNext()) {

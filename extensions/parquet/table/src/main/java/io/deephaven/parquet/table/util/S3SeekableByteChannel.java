@@ -1,38 +1,70 @@
 package io.deephaven.parquet.table.util;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.stats.CacheStats;
+import io.deephaven.configuration.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.NonReadableChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.StandardOpenOption;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class S3SeekableByteChannel implements SeekableByteChannel {
-
+public final class S3SeekableByteChannel implements SeekableByteChannel {
     private long position;
     private final S3AsyncClient s3Client;
-    private final String bucket;
-    private final String key;
-    private final ReadableByteChannel readDelegate;
+    private volatile boolean closed;
+    private final String s3uri, bucket, key;
+    private final int maxFragmentSize;
+    private final int maxNumberFragments;
+    private final int numFragmentsInObject;
+    private final long size;
+    private final Long timeout;
+    private final TimeUnit timeUnit;
+    private final Cache<Integer, CompletableFuture<ByteBuffer>> readAheadBuffersCache;
 
-    private boolean closed;
-    private long size = -1L;
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    public S3SeekableByteChannel(String s3uri, String bucket, String key, S3AsyncClient s3Client, long startAt, int maxFragmentSize, int maxNumberFragments, Long timeout, TimeUnit timeUnit) throws IOException {
-        position = startAt;
+    private static final int MAX_FRAGMENT_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("s3.spi.read.max-fragment-size", 512 * 1024); // 512 KB
+    private static final int MAX_FRAGMENT_NUMBER =
+            Configuration.getInstance().getIntegerWithDefault("s3.spi.read.max-fragment-number", 2);
+
+
+    S3SeekableByteChannel(String s3uri, String bucket, String key, S3AsyncClient s3Client, long startAt, long size,
+                          Long timeout, TimeUnit timeUnit, final Cache<Integer, CompletableFuture<ByteBuffer>> readAheadBuffersCache) throws IOException {
+        Objects.requireNonNull(s3Client);
+        if (MAX_FRAGMENT_SIZE < 1)
+            throw new IllegalArgumentException("maxFragmentSize must be >= 1");
+        if (MAX_FRAGMENT_NUMBER < 1)
+            throw new IllegalArgumentException("maxNumberFragments must be >= 1");
+        if (size < 1)
+            throw new IllegalArgumentException("size must be >= 1");
+
+        this.position = startAt;
         this.bucket = bucket;
         this.key = key;
-        closed = false;
+        this.closed = false;
         this.s3Client = s3Client;
-        readDelegate = new S3ReadAheadByteChannel(s3uri, bucket, key, maxFragmentSize, maxNumberFragments, s3Client, this, timeout, timeUnit);
+
+        this.s3uri = s3uri;
+        this.maxFragmentSize = MAX_FRAGMENT_SIZE;
+        this.readAheadBuffersCache = readAheadBuffersCache;
+        this.maxNumberFragments = MAX_FRAGMENT_NUMBER;
+        this.timeout = timeout != null ? timeout : 5L;
+        this.timeUnit = timeUnit != null ? timeUnit : TimeUnit.MINUTES;
+        this.size = size;
+        this.numFragmentsInObject = (int) Math.ceil((double) size / maxFragmentSize);
     }
 
     /**
@@ -47,14 +79,86 @@ public class S3SeekableByteChannel implements SeekableByteChannel {
      * @return the number of bytes read or -1 if no more bytes can be read.
      */
     @Override
-    public int read(ByteBuffer dst) throws IOException {
+    public int read(final ByteBuffer dst) throws IOException {
         validateOpen();
 
-        if (readDelegate == null) {
-            throw new NonReadableChannelException();
+        Objects.requireNonNull(dst);
+
+        final long channelPosition = this.position();
+
+        // if the position of the delegator is at the end (>= size) return -1. we're finished reading.
+        if (channelPosition >= size) {
+            return -1;
         }
 
-        return readDelegate.read(dst);
+        //figure out the index of the fragment the bytes would start in
+        final int fragmentIndex = fragmentIndexForByteNumber(channelPosition);
+        final int fragmentOffset = (int) (channelPosition - ((long) fragmentIndex * maxFragmentSize));
+        try {
+            final ByteBuffer fragment = Objects.requireNonNull(readAheadBuffersCache.get(fragmentIndex, this::computeFragmentFuture))
+                    .get(timeout, timeUnit)
+                    .asReadOnlyBuffer();
+
+            //put the bytes from fragment from the offset upto the min of fragment remaining or dst remaining
+            fragment.position(fragmentOffset);
+            final int limit = Math.min(fragment.remaining(), dst.remaining());
+            fragment.limit(fragment.position() + limit);
+            dst.put(fragment);
+
+            if (fragment.position() >= fragment.limit() / 2) {
+
+                // until available cache slots are filled or number of fragments in file
+                final int maxFragmentsToLoad = Math.min(maxNumberFragments - 1, numFragmentsInObject - fragmentIndex - 1);
+
+                for (int i = 0; i < maxFragmentsToLoad; i++) {
+                    final int idxToLoad = i + fragmentIndex + 1;
+
+                    //  add the index if it's not already there
+                    if (readAheadBuffersCache.asMap().containsKey(idxToLoad))
+                        continue;
+
+                    readAheadBuffersCache.put(idxToLoad, computeFragmentFuture(idxToLoad));
+                }
+            }
+
+            position(channelPosition + limit);
+            return limit;
+
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } catch (final ExecutionException e) {
+            // the async execution completed exceptionally.
+            // not currently obvious when this will happen or if we can recover
+            logger.error("an exception occurred while reading bytes from {} that was not recovered by the S3 Client RetryCondition(s)", s3uri);
+            throw new IOException(e);
+        } catch (final TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Compute which buffer a byte should be in
+     *
+     * @param byteNumber the number of the byte in the object accessed by this channel
+     * @return the index of the fragment in which {@code byteNumber} will be found.
+     */
+    private int fragmentIndexForByteNumber(final long byteNumber) {
+        return Math.toIntExact(Math.floorDiv(byteNumber, (long) maxFragmentSize));
+    }
+
+    private CompletableFuture<ByteBuffer> computeFragmentFuture(final int fragmentIndex) {
+        final long readFrom = (long) fragmentIndex * maxFragmentSize;
+        final long readTo = Math.min(readFrom + maxFragmentSize, size) - 1;
+        final String range = "bytes=" + readFrom + "-" + readTo;
+        logger.debug("byte range for {} is '{}'", key, range);
+
+        return s3Client.getObject(
+                        builder -> builder
+                                .bucket(bucket)
+                                .key(key)
+                                .range(range),
+                        new AsyncAWSResponseTransformer<>(maxFragmentSize));
     }
 
     /**
@@ -124,11 +228,6 @@ public class S3SeekableByteChannel implements SeekableByteChannel {
             throw new ClosedChannelException();
         }
 
-        // this is only valid to read channels
-        if (readDelegate == null) {
-            throw new NonReadableChannelException();
-        }
-
         synchronized (this) {
             position = newPosition;
             return this;
@@ -144,28 +243,6 @@ public class S3SeekableByteChannel implements SeekableByteChannel {
     @Override
     public long size() throws IOException {
         validateOpen();
-
-        if (size < 0) {
-
-            long timeOut = 1L;
-            TimeUnit unit = TimeUnit.MINUTES;
-
-            synchronized (this) {
-                final HeadObjectResponse headObjectResponse;
-                try {
-                    headObjectResponse = s3Client.headObject(builder -> builder
-                            .bucket(bucket)
-                            .key(key)).get(timeOut, unit);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException(e);
-                } catch (ExecutionException | TimeoutException e) {
-                    throw new IOException(e);
-                }
-
-                this.size = headObjectResponse.contentLength();
-            }
-        }
         return this.size;
     }
 
@@ -204,6 +281,26 @@ public class S3SeekableByteChannel implements SeekableByteChannel {
     }
 
     /**
+     * The number of fragments currently in the cache.
+     *
+     * @return the size of the cache after any async evictions or reloads have happened.
+     */
+    int numberOfCachedFragments() {
+        readAheadBuffersCache.cleanUp();
+        return (int) readAheadBuffersCache.estimatedSize();
+    }
+
+    /**
+     * Obtain a snapshot of the statistics of the internal cache, provides information about hits, misses, requests, evictions etc.
+     * that are useful for tuning.
+     *
+     * @return the statistics of the internal cache.
+     */
+    CacheStats cacheStatistics() {
+        return readAheadBuffersCache.stats();
+    }
+
+    /**
      * Closes this channel.
      *
      * <p> After a channel is closed, any further attempt to invoke I/O
@@ -221,9 +318,6 @@ public class S3SeekableByteChannel implements SeekableByteChannel {
     @Override
     public void close() throws IOException {
         synchronized (this) {
-            if (readDelegate != null) {
-                readDelegate.close();
-            }
             closed = true;
         }
     }
