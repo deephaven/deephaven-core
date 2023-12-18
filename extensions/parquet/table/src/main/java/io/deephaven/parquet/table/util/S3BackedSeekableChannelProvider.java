@@ -1,31 +1,29 @@
 package io.deephaven.parquet.table.util;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.nio.spi.s3.FixedS3ClientProvider;
-import software.amazon.nio.spi.s3.S3FileSystem;
-import software.amazon.nio.spi.s3.S3FileSystemProvider;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.Collections;
 
 public final class S3BackedSeekableChannelProvider implements SeekableChannelsProvider {
 
-    private final S3FileSystemProvider provider;
-    private final S3FileSystem fileSystem;
     private final S3AsyncClient s3AsyncClient;
     private final URI uri;
+    private final String s3uri, bucket, key;
+
+    public static final int MAX_FRAGMENT_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("s3.spi.read.max-fragment-size", 512 * 1024); // 512 KB
+    private static final int MAX_FRAGMENT_NUMBER =
+            Configuration.getInstance().getIntegerWithDefault("s3.spi.read.max-fragment-number", 2);
 
     public S3BackedSeekableChannelProvider(final String awsRegionName, final String uriStr) throws IOException {
         if (awsRegionName == null || awsRegionName.isEmpty()) {
@@ -39,24 +37,18 @@ public final class S3BackedSeekableChannelProvider implements SeekableChannelsPr
         } catch (final URISyntaxException e) {
             throw new UncheckedDeephavenException("Failed to parse URI " + uriStr, e);
         }
-        final String bucket = uri.getHost();
-        provider = new S3FileSystemProvider();
-        S3FileSystem tempFileSystem;
-        try {
-            tempFileSystem = provider.newFileSystem(URI.create("s3://" + bucket));
-        } catch (final FileSystemAlreadyExistsException e) {
-            tempFileSystem = provider.getFileSystem(URI.create("s3://" + bucket));
-        }
-        fileSystem = tempFileSystem;
+        this.s3uri = uriStr;
+        this.bucket = uri.getHost();
+        this.key = uri.getPath().substring(1);
         s3AsyncClient = S3AsyncClient.builder()
                 .region(Region.of(awsRegionName))
                 .build();
-        fileSystem.clientProvider(new FixedS3ClientProvider(s3AsyncClient));
     }
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
-        return provider.newByteChannel(Paths.get(uri), Collections.singleton(StandardOpenOption.READ));
+        return new S3SeekableByteChannel(s3uri, bucket, key, s3AsyncClient, 0, MAX_FRAGMENT_SIZE, MAX_FRAGMENT_NUMBER,
+                null, null);
     }
 
     @Override
@@ -66,7 +58,6 @@ public final class S3BackedSeekableChannelProvider implements SeekableChannelsPr
     }
 
     public void close() throws IOException {
-        fileSystem.close();
         s3AsyncClient.close();
     }
 }

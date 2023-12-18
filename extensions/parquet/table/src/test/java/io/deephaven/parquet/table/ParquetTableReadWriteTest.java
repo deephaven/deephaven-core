@@ -640,15 +640,47 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void profileReadingFromS3() {
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+        ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setAwsRegionName("us-east-1")
                 .build();
 
         long totalTime = 0;
-        long NUM_RUNS = 5;
+        long NUM_RUNS = 10;
         for (int i = 0; i < NUM_RUNS; i++) {
             final long start = System.nanoTime();
             ParquetTools.readTable("s3://dh-s3-parquet-test1/multiColFile.parquet", readInstructions).select();
+            final long end = System.nanoTime();
+            totalTime += end - start;
+            System.out.println((i + 1) + ". Execution time AWS is " + (end - start) / 1000_000_000.0 + " sec");
+        }
+        System.out.println("Average execution time AWS is " + totalTime / (NUM_RUNS * 1000_000_000.0) + " sec");
+
+
+        readInstructions = new ParquetInstructions.Builder()
+                .setAwsRegionName("us-east-2")
+                .build();
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofString("hash"),
+                ColumnDefinition.ofLong("version"),
+                ColumnDefinition.ofLong("size"),
+                ColumnDefinition.ofString("block_hash"),
+                ColumnDefinition.ofLong("block_number"),
+                ColumnDefinition.ofLong("index"),
+                ColumnDefinition.ofLong("virtual_size"),
+                ColumnDefinition.ofLong("lock_time"),
+                ColumnDefinition.ofLong("input_count"),
+                ColumnDefinition.ofLong("output_count"),
+                ColumnDefinition.ofBoolean("isCoinbase"),
+                ColumnDefinition.ofDouble("output_value"),
+                ColumnDefinition.ofTime("last_modified"),
+                ColumnDefinition.ofDouble("input_value"));
+
+        totalTime = 0;
+        for (int i = 0; i < NUM_RUNS; i++) {
+            final long start = System.nanoTime();
+            ParquetTools.readTable(
+                    "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
+                    readInstructions, tableDefinition).head(5).select();
             final long end = System.nanoTime();
             totalTime += end - start;
             System.out.println((i + 1) + ". Execution time AWS is " + (end - start) / 1000_000_000.0 + " sec");
@@ -662,7 +694,7 @@ public final class ParquetTableReadWriteTest {
             ParquetTools.readTable("/Users/shivammalhotra/documents/multiColFile.parquet").select();
             final long end = System.nanoTime();
             totalTime += end - start;
-            System.out.println((i + 1) + ". Execution time local is " + (end - start) / 1000_000_000.0 + " sec");
+            // System.out.println((i + 1) + ". Execution time local is " + (end - start) / 1000_000_000.0 + " sec");
         }
         System.out.println("Average execution time local is " + totalTime / (NUM_RUNS * 1000_000_000.0) + " sec");
     }
