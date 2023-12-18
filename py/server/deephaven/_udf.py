@@ -240,6 +240,14 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
         return p_sig
 
 
+def _is_from_np_type(param_types:set[type], np_type_char: str) -> bool:
+    """ Determine if the given numpy type char comes for a numpy type in the given set of parameter type annotations"""
+    for t in param_types:
+        if issubclass(t, np.generic) and np.dtype(t).char == np_type_char:
+            return True
+    return False
+
+
 def _convert_arg(param: _ParsedParamAnnotation, arg: Any) -> Any:
     """ Convert a single argument to the type specified by the annotation """
     if arg is None:
@@ -279,13 +287,21 @@ def _convert_arg(param: _ParsedParamAnnotation, arg: Any) -> Any:
                         else:
                             raise DHError(f"Argument {arg} is not compatible with annotation {param.orig_types}")
                     else:
-                        return np.dtype(param.int_char).type(arg)
+                        # return a numpy integer instance only if the annotation is a numpy type
+                        if _is_from_np_type(param.orig_types, param.int_char):
+                            return np.dtype(param.int_char).type(arg)
+                        else:
+                            return arg
                 elif param.floating_char and isinstance(arg, float):
                     if isinstance(arg, float):
                         if arg == dh_null:
                             return np.nan if "N" not in param.encoded_types else None
                         else:
-                            return np.dtype(param.floating_char).type(arg)
+                            # return a numpy floating instance only if the annotation is a numpy type
+                            if _is_from_np_type(param.orig_types, param.floating_char):
+                                return np.dtype(param.floating_char).type(arg)
+                            else:
+                                return arg
                 elif t == "?" and isinstance(arg, bool):
                     return arg
                 elif t == "M":
