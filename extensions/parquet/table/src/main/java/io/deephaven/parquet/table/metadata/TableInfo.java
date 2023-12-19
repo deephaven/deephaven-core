@@ -67,7 +67,7 @@ public abstract class TableInfo {
     @Value.Default
     public String version() {
         final String version = TableInfo.class.getPackage().getImplementationVersion();
-        //noinspection ReplaceNullCheck
+        // noinspection ReplaceNullCheck
         if (version == null) {
             // When the code is run from class files as opposed to jars, like in unit tests
             return "unknown";

@@ -210,9 +210,10 @@ public abstract class AbstractTableLocation
         Collections.addAll(columnNames, columns);
         columnNames.sort(String::compareTo);
 
-        //noinspection unchecked
+        // noinspection unchecked
         final KeyedObjectHashMap<List<String>, CachedDataIndex> localCachedDataIndexes =
-                FieldUtils.ensureField(this, CACHED_DATA_INDEXES_UPDATER, null, () -> new KeyedObjectHashMap<>(CACHED_DATA_INDEX_KEY));
+                FieldUtils.ensureField(this, CACHED_DATA_INDEXES_UPDATER, null,
+                        () -> new KeyedObjectHashMap<>(CACHED_DATA_INDEX_KEY));
         return localCachedDataIndexes.putIfAbsent(columnNames, CachedDataIndex::new).getDataIndex();
     }
 
