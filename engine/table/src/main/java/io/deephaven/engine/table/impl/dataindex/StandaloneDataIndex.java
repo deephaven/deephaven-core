@@ -8,20 +8,20 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
-public class LocationDataIndex extends LivenessArtifact implements BasicDataIndex {
+public class StandaloneDataIndex extends LivenessArtifact implements BasicDataIndex {
 
     private final Table table;
     private final String[] keyColumnNames;
     private final String rowSetColumnName;
 
-    public static LocationDataIndex from(
+    public static StandaloneDataIndex from(
             @NotNull final Table table,
             @NotNull final String[] keyColumnNames,
             @NotNull final String rowSetColumnName) {
-        return new LocationDataIndex(table, keyColumnNames, rowSetColumnName);
+        return new StandaloneDataIndex(table, keyColumnNames, rowSetColumnName);
     }
 
-    private LocationDataIndex(
+    private StandaloneDataIndex(
             @NotNull final Table table,
             @NotNull final String[] keyColumnNames,
             @NotNull final String rowSetColumnName) {
@@ -38,7 +38,7 @@ public class LocationDataIndex extends LivenessArtifact implements BasicDataInde
     @Override
     @NotNull
     public Map<ColumnSource<?>, String> keyColumnMap() {
-        throw new UnsupportedOperationException("LocationDataIndex#keyColumnMap");
+        throw new UnsupportedOperationException("StandaloneDataIndex#keyColumnMap");
     }
 
     @Override

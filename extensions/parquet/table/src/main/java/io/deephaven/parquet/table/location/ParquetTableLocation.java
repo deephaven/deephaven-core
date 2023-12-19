@@ -4,13 +4,13 @@
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.api.SortColumn;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.dataindex.LocationDataIndex;
+import io.deephaven.engine.table.impl.dataindex.StandaloneDataIndex;
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
@@ -52,10 +52,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private final RowGroup[] rowGroups;
     private final RegionedPageStore.Parameters regionParameters;
     private final Map<String, String[]> parquetColumnNameToPath;
+
+    private final TableInfo tableInfo;
     private final Map<String, GroupingColumnInfo> groupingColumns;
     private final List<DataIndexInfo> dataIndexes;
     private final Map<String, ColumnTypeInfo> columnTypes;
-    private final TableInfo tableInfo;
 
     private final String version;
 
@@ -94,15 +95,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // TODO (https://github.com/deephaven/deephaven-core/issues/958):
         // When/if we support _metadata files for Deephaven-written Parquet tables, we may need to revise this
         // in order to read *this* file's metadata, rather than inheriting file metadata from the _metadata file.
-        // Obvious issues included grouping table paths, codecs, etc.
+        // Obvious issues included data index table paths, codecs, etc.
         // Presumably, we could store per-file instances of the metadata in the _metadata file's map.
-        tableInfo =
-                ParquetSchemaReader.parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData())
-                        .orElse(TableInfo.builder().build());
-        groupingColumns = tableInfo.groupingColumnMap();
-        columnTypes = tableInfo.columnTypeMap();
+        tableInfo = ParquetSchemaReader
+                .parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData())
+                .orElse(TableInfo.builder().build());
         version = tableInfo.version();
+        groupingColumns = tableInfo.groupingColumnMap();
         dataIndexes = tableInfo.dataIndexes();
+        columnTypes = tableInfo.columnTypeMap();
         sortingColumns = tableInfo.sortingColumns();
 
         handleUpdate(computeIndex(), tableLocationKey.getFile().lastModified());
@@ -156,15 +157,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
     }
 
-    @NotNull
     @Override
+    @NotNull
     public List<SortColumn> getSortedColumns() {
         return sortingColumns;
     }
 
-    @NotNull
     @Override
-    protected ParquetColumnLocation<Values> makeColumnLocation(@NotNull final String columnName) {
+    @NotNull
+    protected ColumnLocation makeColumnLocation(@NotNull final String columnName) {
         final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
         final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
         final List<String> nameList =
@@ -192,10 +193,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     @NotNull
     public List<String[]> getDataIndexColumns() {
-        List<String[]> dataIndexColumns = new ArrayList<>();
-        // Add the data indexes to the list.
+        if (dataIndexes.isEmpty() && groupingColumns.isEmpty()) {
+            return List.of();
+        }
+        final List<String[]> dataIndexColumns = new ArrayList<>(dataIndexes.size() + groupingColumns.size());
+        // Add the data indexes to the list
         dataIndexes.stream().map(di -> di.columns().toArray(String[]::new)).forEach(dataIndexColumns::add);
-        // Add grouping columns to the list.
+        // Add grouping columns to the list
         groupingColumns.keySet().stream().map(colName -> new String[] {colName}).forEach(dataIndexColumns::add);
         return dataIndexColumns;
     }
@@ -204,8 +208,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
     public boolean hasDataIndex(@NotNull final String... columns) {
         // Check if the column name matches any of the grouping columns
         if (columns.length == 1 && groupingColumns.containsKey(columns[0])) {
-            // Validate the index file exists (without loading and parsing it).
-            ParquetTools.IndexFileMetaData metaData = ParquetTools.getIndexFileMetaData(
+            // Validate the index file exists (without loading and parsing it)
+            final ParquetTools.IndexFileMetaData metaData = ParquetTools.getIndexFileMetaData(
                     getParquetFile(),
                     tableInfo,
                     columns);
@@ -214,7 +218,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // Check if the column names match any of the data indexes
         for (final DataIndexInfo dataIndex : dataIndexes) {
             if (dataIndex.matchesColumns(columns)) {
-                // Validate the index file exists (without loading and parsing it).
+                // Validate the index file exists (without loading and parsing it)
                 ParquetTools.IndexFileMetaData metaData = ParquetTools.getIndexFileMetaData(
                         getParquetFile(),
                         tableInfo,
@@ -228,11 +232,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Nullable
     @Override
     public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
-        // Create a new index from the parquet table.
+        // Create a new index from the parquet table
         final Table table = ParquetTools.readDataIndexTable(getParquetFile(), tableInfo, columns);
         if (table == null) {
             return null;
         }
-        return LocationDataIndex.from(table, columns, INDEX_COL_NAME);
+        return StandaloneDataIndex.from(table, columns, INDEX_COL_NAME);
     }
 }

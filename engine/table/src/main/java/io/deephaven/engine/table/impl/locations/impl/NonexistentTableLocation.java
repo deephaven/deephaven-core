@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.locations.impl;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.BasicDataIndex;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
@@ -14,7 +13,6 @@ import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -38,31 +36,32 @@ public final class NonexistentTableLocation extends AbstractTableLocation {
     @Override
     public void refresh() {}
 
+    @Override
+    @NotNull
+    public List<SortColumn> getSortedColumns() {
+        return List.of();
+    }
+
+    @Override
+    @NotNull
+    public List<String[]> getDataIndexColumns() {
+        return List.of();
+    }
+
+    @Override
+    public boolean hasDataIndex(@NotNull final String... columns) {
+        return false;
+    }
+
     @NotNull
     @Override
-    protected ColumnLocation makeColumnLocation(@NotNull String name) {
+    protected ColumnLocation makeColumnLocation(@NotNull final String name) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     @Nullable
-    protected BasicDataIndex loadDataIndex(@NotNull String... columns) {
+    protected BasicDataIndex loadDataIndex(@NotNull final String... columns) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    @NotNull
-    public List<SortColumn> getSortedColumns() {
-        return Collections.EMPTY_LIST;
-    }
-
-    @Override
-    public @NotNull List<String[]> getDataIndexColumns() {
-        return Collections.EMPTY_LIST;
-    }
-
-    @Override
-    public boolean hasDataIndex(@NotNull String... columns) {
-        return false;
     }
 }

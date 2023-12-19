@@ -2,18 +2,15 @@ package io.deephaven.engine.testutil.locations;
 
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.BasicDataIndex;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
 import java.util.List;
 
 public final class TableBackedTableLocation extends AbstractTableLocation {
@@ -67,7 +64,18 @@ public final class TableBackedTableLocation extends AbstractTableLocation {
     @Override
     @NotNull
     public List<SortColumn> getSortedColumns() {
-        throw new NotImplementedException("TODO: implement me");
+        return List.of();
+    }
+
+    @Override
+    @NotNull
+    public List<String[]> getDataIndexColumns() {
+        return List.of();
+    }
+
+    @Override
+    public boolean hasDataIndex(@NotNull final String... columns) {
+        return false;
     }
 
     @Override
@@ -78,18 +86,7 @@ public final class TableBackedTableLocation extends AbstractTableLocation {
 
     @Override
     @Nullable
-    protected BasicDataIndex loadDataIndex(@NotNull String... columns) {
+    protected BasicDataIndex loadDataIndex(@NotNull final String... columns) {
         return null;
-    }
-
-    @Override
-    @NotNull
-    public List<String[]> getDataIndexColumns() {
-        return Collections.EMPTY_LIST;
-    }
-
-    @Override
-    public boolean hasDataIndex(@NotNull String... columns) {
-        return false;
     }
 }
