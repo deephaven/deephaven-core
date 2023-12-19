@@ -611,4 +611,10 @@ public class ConditionFilter extends AbstractConditionFilter {
     public ConditionFilter renameFilter(Map<String, String> renames) {
         return new ConditionFilter(formula, renames);
     }
+
+    @Override
+    public boolean permitParallelization() {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/4896): Assume statelessness by default.
+        return false;
+    }
 }
