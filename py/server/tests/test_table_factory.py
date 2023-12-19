@@ -136,8 +136,68 @@ class TableFactoryTestCase(BaseTestCase):
             jobj_col(name="JObj", data=[jobj1, jobj2]),
         ]
 
-        t = new_table(cols=cols)
-        self.assertEqual(t.size, 2)
+    def test_new_table_dict(self):
+        jobj1 = JArrayList()
+        jobj1.add(1)
+        jobj1.add(-1)
+        jobj2 = JArrayList()
+        jobj2.add(2)
+        jobj2.add(-2)
+        bool_cols = {
+            "Boolean": [True, False],
+        }
+        integer_cols = {
+            "Byte": (1, -1),
+            "Short": [1, -1],
+            "Int": [1, -1],
+            "Long": [1, -1],
+        }
+        float_cols = {
+            "Float": [1.01, -1.01],
+            "Double": [1.01, -1.01],
+        }
+        string_cols = {
+            "String": np.array(["foo", "bar"]),
+        }
+        datetime_cols = {
+            "Datetime": np.array([1, -1], dtype=np.dtype("datetime64[ns]"))
+        }
+
+        obj_cols = {
+            "PyObj": [CustomClass(1, "1"), CustomClass(-1, "-1")],
+            "PyObj1": [[1, 2, 3], CustomClass(-1, "-1")],
+            "PyObj2": [False, 'False'],
+            "JObj": [jobj1, jobj2],
+        }
+
+        dtype_cols_map = {
+            dtypes.bool_: bool_cols,
+            dtypes.int64: integer_cols,
+            dtypes.float64: float_cols,
+            dtypes.string: string_cols,
+            dtypes.Instant: datetime_cols,
+            dtypes.PyObject: obj_cols
+        }
+
+        for dtype, cols in dtype_cols_map.items():
+            with self.subTest(f"Testing {dtype}"):
+                t = new_table(cols=cols)
+                self.assertEqual(t.size, 2)
+                for c in t.columns:
+                    self.assertEqual(c.data_type, dtype)
+
+        dtype_np_cols_map = {
+            dtypes.int8: np.array([1, -1], dtype=np.int8),
+            dtypes.int16: np.array([1, -1], dtype=np.int16),
+            dtypes.int32: np.array([1, -1], dtype=np.int32),
+            dtypes.int64: np.array([1, -1], dtype=np.int64),
+            dtypes.float32: np.array([1.01, -1.01], dtype=np.float32),
+            dtypes.float64: np.array([1.01, -1.01], dtype=np.float64),
+        }
+        d_cols = {dtype.j_name.capitalize(): cols for dtype, cols in dtype_np_cols_map.items()}
+        t = new_table(cols=d_cols)
+        for tc, dtype in zip(t.columns, dtype_np_cols_map.keys()):
+            self.assertEqual(tc.data_type, dtype)
 
     def test_new_table_nulls(self):
         null_cols = [
@@ -154,6 +214,7 @@ class TableFactoryTestCase(BaseTestCase):
         ]
         t = new_table(cols=null_cols)
         self.assertEqual(t.to_string().count("null"), len(null_cols))
+
 
     def test_input_column_error(self):
         j_al = JArrayList()
