@@ -1198,15 +1198,19 @@ public class QueryTable extends BaseTable<QueryTable> {
         // Copy the priority filters to a temporary array
         final int numPriorityFilters = priorityFilterIndexes.cardinality();
         final WhereFilter[] priorityFilters = new WhereFilter[numPriorityFilters];
+        // @formatter:off
         for (int pfi = 0, fi = priorityFilterIndexes.nextSetBit(0);
              fi >= 0;
              fi = priorityFilterIndexes.nextSetBit(fi + 1)) {
+            // @formatter:on
             priorityFilters[pfi++] = filters[fi];
         }
         // Move the regular (non-priority) filters to the back of the array
+        // @formatter:off
         for (int rfi = numFilters - 1, fi = priorityFilterIndexes.previousClearBit(numFilters - 1);
              fi >= 0;
              fi = priorityFilterIndexes.previousClearBit(fi - 1)) {
+            // @formatter:on
             filters[rfi--] = filters[fi];
         }
         // Re-add the priority filters at the front of the array
