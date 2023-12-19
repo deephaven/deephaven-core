@@ -19,11 +19,10 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 // TODO: Comment the heck out of this...
@@ -38,7 +37,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     private final Class<D> destDataType;
     @NotNull
     private final RowKeyAndSourcesFunction<D> function;
-    @NotNull
+    @Nullable
     private final Class<?> componentType;
 
     @FunctionalInterface
@@ -50,13 +49,13 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
             @NotNull String destName,
             @NotNull Class<D> destDataType,
             @NotNull RowKeyAndSourcesFunction<D> function) {
-        this(sourceNames, destName, destDataType, Object.class, function);
+        this(sourceNames, destName, destDataType, null, function);
     }
 
     public MultiSourceFunctionalColumn(@NotNull List<String> sourceNames,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
-            @NotNull Class<?> componentType,
+            @Nullable Class<?> componentType,
             @NotNull RowKeyAndSourcesFunction<D> function) {
         this.sourceNames = sourceNames.stream()
                 .map(NameValidator::validateColumnName)
@@ -64,7 +63,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
         this.destName = NameValidator.validateColumnName(destName);
         this.destDataType = Require.neqNull(destDataType, "destDataType");
-        this.componentType = Require.neqNull(componentType, "componentType");
+        this.componentType = componentType;
         this.function = function;
         Require.gtZero(destName.length(), "destName.length()");
     }

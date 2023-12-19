@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
 import io.deephaven.hash.KeyedObjectHashMap;
@@ -75,17 +76,22 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
      */
     private final List<IncludedTableLocationEntry> orderedIncludedTableLocations = new ArrayList<>();
 
-    private static final String LOCATION_COLUMN_NAME = "dh_location";
-    private static final String ROWSET_COLUMN_NAME = "dh_rowset";
-    private static final TableDefinition LOCATION_TABLE_DEFINITION = TableDefinition.of(
-            ColumnDefinition.fromGenericType(LOCATION_COLUMN_NAME, TableLocation.class),
-            ColumnDefinition.fromGenericType(ROWSET_COLUMN_NAME, RowSet.class));
+    private static final String LOCATION_COLUMN_NAME = "__TableLocation";
+    private static final ColumnDefinition<TableLocation> LOCATION_COLUMN_DEFINITION =
+            ColumnDefinition.fromGenericType(LOCATION_COLUMN_NAME, TableLocation.class);
+    private static final String ROWS_SET_COLUMN_NAME = "__RowSet";
+    private static final ColumnDefinition<RowSet> ROWS_SET_COLUMN_DEFINITION =
+            ColumnDefinition.fromGenericType(ROWS_SET_COLUMN_NAME, RowSet.class);
+    private static final TableDefinition SIMPLE_LOCATION_TABLE_DEFINITION = TableDefinition.of(
+            LOCATION_COLUMN_DEFINITION,
+            ROWS_SET_COLUMN_DEFINITION);
 
     /**
      * Non-empty table locations stored in a table. Rows are keyed by {@link IncludedTableLocationEntry#regionIndex
      * region index}.
      */
     private final QueryTable includedLocationsTable;
+    private final Map<String, WritableColumnSource<?>> partitioningColumnValueSources;
     private final ObjectArraySource<TableLocation> locationSource;
     private final ObjectArraySource<RowSet> rowSetSource;
     private final ModifiedColumnSet rowSetModifiedColumnSet;
@@ -119,15 +125,24 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         }
 
         // Create the table that will hold the location data
+        partitioningColumnValueSources = columnDefinitions.stream()
+                .filter(ColumnDefinition::isPartitioning)
+                .collect(Collectors.toMap(
+                        ColumnDefinition::getName,
+                        cd -> ArrayBackedColumnSource.getMemoryColumnSource(cd.getDataType(), cd.getComponentType())));
         locationSource = new ObjectArraySource<>(TableLocation.class);
         rowSetSource = new ObjectArraySource<>(RowSet.class);
-        final LinkedHashMap<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+        final LinkedHashMap<String, ColumnSource<?>> columnSourceMap =
+                new LinkedHashMap<>(partitioningColumnValueSources);
         columnSourceMap.put(LOCATION_COLUMN_NAME, locationSource);
-        columnSourceMap.put(ROWSET_COLUMN_NAME, rowSetSource);
+        columnSourceMap.put(ROWS_SET_COLUMN_NAME, rowSetSource);
+        final TableDefinition locationTableDefinition = partitioningColumnValueSources.isEmpty()
+                ? SIMPLE_LOCATION_TABLE_DEFINITION
+                : TableDefinition.inferFrom(columnSourceMap);
 
         try (final SafeCloseable ignored = isRefreshing ? LivenessScopeStack.open() : null) {
             includedLocationsTable = new QueryTable(
-                    LOCATION_TABLE_DEFINITION,
+                    locationTableDefinition,
                     RowSetFactory.empty().toTracking(),
                     columnSourceMap,
                     null, // No need to pre-allocate a MCS
@@ -139,7 +154,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 }
             };
             if (isRefreshing) {
-                rowSetModifiedColumnSet = includedLocationsTable.newModifiedColumnSet(ROWSET_COLUMN_NAME);
+                rowSetModifiedColumnSet = includedLocationsTable.newModifiedColumnSet(ROWS_SET_COLUMN_NAME);
                 manage(includedLocationsTable);
             } else {
                 rowSetModifiedColumnSet = null;
@@ -291,6 +306,8 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         final int previousNumRegions = includedTableLocations.size();
         final int newNumRegions = previousNumRegions + (entriesToInclude == null ? 0 : entriesToInclude.size());
         if (entriesToInclude != null) {
+            partitioningColumnValueSources.values().forEach(
+                    (final WritableColumnSource<?> wcs) -> wcs.ensureCapacity(newNumRegions));
             locationSource.ensureCapacity(newNumRegions);
             rowSetSource.ensureCapacity(newNumRegions);
 
@@ -301,6 +318,12 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 entry.processInitial(addedRowSetBuilder, entryToInclude.initialRowSet);
 
                 // We have a new location, add the row set to the table and mark the row as added.
+                // @formatter:off
+                // noinspection rawtypes,unchecked
+                partitioningColumnValueSources.forEach(
+                        (final String key, final WritableColumnSource wcs) ->
+                                wcs.set(entry.regionIndex, entry.location.getKey().getPartitionValue(key)));
+                // @formatter:on
                 locationSource.set(entry.regionIndex, entry.location);
                 rowSetSource.set(entry.regionIndex, entry.location.getRowSet());
             }
@@ -352,32 +375,19 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    /**
-     * Get the added locations that have been found to exist and have non-zero size as a table containing the
-     * {@link RowSet row sets} for each location.
-     *
-     * @return The added locations that have been found to exist and have non-zero size
-     */
-    Table locationTable() {
+    @Override
+    public Table locationTable() {
         return includedLocationsTable;
     }
 
-    /**
-     * Get the name of the column that contains the {@link TableLocation} values from {@link #locationTable()}.
-     *
-     * @return The name of the location column
-     */
-    String locationColumnName() {
+    @Override
+    public String locationColumnName() {
         return LOCATION_COLUMN_NAME;
     }
 
-    /**
-     * Get the name of the column that contains the {@link RowSet} values from {@link #locationTable()}.
-     *
-     * @return The name of the row set column
-     */
-    String rowSetColumnName() {
-        return ROWSET_COLUMN_NAME;
+    @Override
+    public String rowSetColumnName() {
+        return ROWS_SET_COLUMN_NAME;
     }
 
     @Override

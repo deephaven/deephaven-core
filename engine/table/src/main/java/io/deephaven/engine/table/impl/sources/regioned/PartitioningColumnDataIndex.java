@@ -17,7 +17,6 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
-import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.RowSetColumnSourceWrapper;
@@ -138,20 +137,20 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
         final int previousSize = keyPositionMap.size();
         final RowSetBuilderRandom modifiedBuilder = initializing ? null : RowSetFactory.builderRandom();
 
-        final ColumnSource<TableLocation> locationColumnSource =
-                locationTable.getColumnSource(columnSourceManager.locationColumnName(), TableLocation.class);
+        final ColumnSource<KEY_TYPE> keyColumnSource =
+                locationTable.getColumnSource(keyColumnName, indexKeySource.getType());
         final ColumnSource<RowSet> rowSetColumnSource =
                 locationTable.getColumnSource(columnSourceManager.rowSetColumnName(), RowSet.class);
 
         if (upstream.added().isNonempty()) {
             upstream.added().forAllRowKeys((final long locationRowKey) -> handleKey(
-                    locationRowKey, false, locationColumnSource, rowSetColumnSource, previousSize, modifiedBuilder));
+                    locationRowKey, false, keyColumnSource, rowSetColumnSource, previousSize, modifiedBuilder));
         }
 
         if (upstream.modified().isNonempty() && upstream.modifiedColumnSet().containsAny(upstreamRowSetModified)) {
             Assert.eqFalse(initializing, "initializing");
             upstream.modified().forAllRowKeys((final long locationRowKey) -> handleKey(
-                    locationRowKey, true, locationColumnSource, rowSetColumnSource, previousSize, modifiedBuilder));
+                    locationRowKey, true, keyColumnSource, rowSetColumnSource, previousSize, modifiedBuilder));
         }
 
         final int newSize = keyPositionMap.size();
@@ -182,21 +181,17 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
     private void handleKey(
             final long locationRowKey,
             final boolean isModify,
-            @NotNull final ColumnSource<TableLocation> locationColumnSource,
+            @NotNull final ColumnSource<KEY_TYPE> keyColumnSource,
             @NotNull final ColumnSource<RowSet> rowSetColumnSource,
             final int previousSize,
             @Nullable final RowSetBuilderRandom modifiedBuilder) {
-        final TableLocation location = locationColumnSource.get(locationRowKey);
-        if (location == null) {
-            throw new IllegalStateException(String.format("Null location found at location index %d", locationRowKey));
-        }
+        final KEY_TYPE locationKey = keyColumnSource.get(locationRowKey);
         final RowSet regionRowSet = rowSetColumnSource.get(locationRowKey);
         if (regionRowSet == null) {
             throw new IllegalStateException(String.format("Null row set found at location index %d", locationRowKey));
         }
 
         final long regionFirstRowKey = RegionedColumnSource.getFirstRowKey(Math.toIntExact(locationRowKey));
-        final KEY_TYPE locationKey = location.getKey().getPartitionValue(keyColumnName);
         final int pos = keyPositionMap.get(locationKey);
         if (pos == KEY_NOT_FOUND) {
             if (isModify) {

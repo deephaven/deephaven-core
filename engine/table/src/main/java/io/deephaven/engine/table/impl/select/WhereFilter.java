@@ -98,7 +98,8 @@ public interface WhereFilter extends Filter {
     List<String> getColumnArrays();
 
     /**
-     * Initialize this select filter given the table definition
+     * Initialize this filter given the table definition. If this filter has already been initialized, this should be a
+     * no-op, or optionally validate that the table definition is compatible with previous initialization.
      *
      * @param tableDefinition the definition of the table that will be filtered
      * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
@@ -241,8 +242,8 @@ public interface WhereFilter extends Filter {
     /**
      * The database system may automatically generate a filter, for example, when applying an ACL to a table. There are
      * certain operations which may bypass these filters.
-     *
-     * This function returns whether or not this filter is automated.
+     * <p>
+     * This function returns whether this filter is automated.
      *
      * @return true if this filter was automatically applied by the database system. False otherwise.
      */
@@ -251,7 +252,7 @@ public interface WhereFilter extends Filter {
     /**
      * The database system may automatically generate a filter, for example, when applying an ACL to a table. There are
      * certain operations which may bypass these filters.
-     *
+     * <p>
      * This function indicates that this filter is automated.
      *
      * @param value true if this filter was automatically applied by the database system. False otherwise.

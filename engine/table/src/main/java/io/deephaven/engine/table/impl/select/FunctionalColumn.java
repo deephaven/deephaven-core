@@ -19,11 +19,11 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class FunctionalColumn<S, D> implements SelectColumn {
@@ -38,7 +38,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     private final Class<D> destDataType;
     @NotNull
     private final RowKeyAndValueFunction<S, D> function;
-    @NotNull
+    @Nullable
     private final Class<?> componentType;
 
     private ColumnSource<S> sourceColumnSource;
@@ -60,7 +60,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
             @NotNull Class<S> sourceDataType,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
-            @NotNull Class<?> componentType,
+            @Nullable Class<?> componentType,
             @NotNull Function<S, D> function) {
         this(sourceName, sourceDataType, destName, destDataType, componentType, (l, v) -> function.apply(v));
     }
@@ -70,20 +70,20 @@ public class FunctionalColumn<S, D> implements SelectColumn {
             @NotNull String destName,
             @NotNull Class<D> destDataType,
             @NotNull RowKeyAndValueFunction<S, D> function) {
-        this(sourceName, sourceDataType, destName, destDataType, Object.class, function);
+        this(sourceName, sourceDataType, destName, destDataType, null, function);
     }
 
     public FunctionalColumn(@NotNull String sourceName,
             @NotNull Class<S> sourceDataType,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
-            @NotNull Class<?> componentType,
+            @Nullable Class<?> componentType,
             @NotNull RowKeyAndValueFunction<S, D> function) {
         this.sourceName = NameValidator.validateColumnName(sourceName);
         this.sourceDataType = Require.neqNull(sourceDataType, "sourceDataType");
         this.destName = NameValidator.validateColumnName(destName);
         this.destDataType = Require.neqNull(destDataType, "destDataType");
-        this.componentType = Require.neqNull(componentType, "componentType");
+        this.componentType = componentType;
         this.function = function;
         Require.gtZero(destName.length(), "destName.length()");
     }

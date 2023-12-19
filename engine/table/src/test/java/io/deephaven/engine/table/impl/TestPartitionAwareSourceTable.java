@@ -32,6 +32,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -142,6 +143,11 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
                         with(equal(TABLE_DEFINITION.getColumns())));
                 will(returnValue(columnSourceManager));
+                allowing(columnSourceManager).tryRetainReference();
+                will(returnValue(true));
+                allowing(columnSourceManager).getWeakReference();
+                will(returnValue(new WeakReference<>(columnSourceManager)));
+                allowing(columnSourceManager).dropReference();
             }
         });
 
@@ -232,7 +238,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         final TableDataException exception = new TableDataException("test");
         final RowSet toAdd =
                 RowSetFactory.fromRange(expectedRowSet.lastRowKey() + 1,
-                        expectedRowSet.lastRowKey() + INDEX_INCREMENT);
+                        expectedRowSet.lastRowKey() + INDEX_INCREMENT).toTracking();
 
         checking(new Expectations() {
             {
@@ -379,6 +385,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                         return errorNotification;
                     }
                 });
+                oneOf(columnSourceManager).deliverError(with(any(TableDataException.class)),
+                        with(any(PerformanceEntry.class)));
             }
         });
 
@@ -458,7 +466,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     }
                 });
                 oneOf(columnSourceManager).initialize();
-                will(returnValue(RowSetFactory.empty()));
+                will(returnValue(RowSetFactory.empty().toTracking()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(includedColumns1.stream()
                         .collect(Collectors.toMap(ColumnDefinition::getName,
@@ -499,7 +507,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     }
                 });
                 oneOf(columnSourceManager).initialize();
-                will(returnValue(RowSetFactory.empty()));
+                will(returnValue(RowSetFactory.empty().toTracking()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(includedColumns2.stream()
                         .collect(Collectors.toMap(ColumnDefinition::getName,
@@ -549,7 +557,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     }
                 });
                 oneOf(columnSourceManager).initialize();
-                will(returnValue(RowSetFactory.empty()));
+                will(returnValue(RowSetFactory.empty().toTracking()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(includedColumns3.stream()
                         .collect(Collectors.toMap(ColumnDefinition::getName,
@@ -622,7 +630,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(locationProvider).subscribe(with(any(TableLocationSubscriptionBuffer.class)));
                 // noinspection resource
                 oneOf(columnSourceManager).initialize();
-                will(returnValue(RowSetFactory.empty()));
+                will(returnValue(RowSetFactory.empty().toTracking()));
                 allowing(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(0, 1, 2, 3, 4)));
             }
