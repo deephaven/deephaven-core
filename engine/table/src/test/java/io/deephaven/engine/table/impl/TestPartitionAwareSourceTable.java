@@ -25,6 +25,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.qst.column.Column;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.api.Invocation;
 import org.jmock.lib.action.CustomAction;
@@ -598,22 +599,16 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         final String[] expectedDistinctDates =
                 IntStream.of(1, 3, 5).mapToObj(li -> COLUMN_PARTITIONS[li]).distinct().toArray(String[]::new);
         doInitializeCheck(locationKeysSlice(1, 3, 5), passedLocations, false, true);
-        passedLocations.forEach(tl -> checking(new Expectations() {
-            {
-                oneOf(tl).refresh();
-                oneOf(tl).getSize();
-                will(returnValue(1L));
-            }
-        }));
         checking(new Expectations() {
             {
-                oneOf(columnSourceManager).allLocations();
-                will(returnValue(passedLocations));
+                oneOf(columnSourceManager).locationTable();
+                will(returnValue(TableFactory.newTable(
+                        Column.of(PARTITIONING_COLUMN_DEFINITION.getName(),
+                                IntStream.of(1, 3, 5).mapToObj(li -> COLUMN_PARTITIONS[li]).toArray(String[]::new)))));
             }
         });
         final Table result = SUT.selectDistinct(PARTITIONING_COLUMN_DEFINITION.getName());
         assertIsSatisfied();
-        // noinspection unchecked
         final DataColumn<String> distinctDateColumn =
                 DataAccessHelpers.getColumn(result, PARTITIONING_COLUMN_DEFINITION.getName());
         assertEquals(expectedDistinctDates.length, distinctDateColumn.size());
