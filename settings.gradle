@@ -16,7 +16,6 @@ String[] mods = [
         'ModelFarm',
         'ClientSupport',
         'BenchmarkSupport',
-        'python-engine-test',
         'server',
         'table-api',
         'qst',
