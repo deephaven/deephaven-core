@@ -4,10 +4,12 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
@@ -78,6 +80,30 @@ public interface ColumnSourceManager extends LivenessReferent {
      */
     @SuppressWarnings("unused")
     Collection<TableLocation> includedLocations();
+
+    /**
+     * Get the added locations that have been found to exist and have non-zero size as a table containing the
+     * {@link io.deephaven.engine.rowset.RowSet row sets} for each location. May only be called after
+     * {@link #initialize()}. The returned table will also have columns corresponding to the partitions found in the
+     * locations, for the convenience of many downstream operations.
+     *
+     * @return The added locations that have been found to exist and have non-zero size
+     */
+    Table locationTable();
+
+    /**
+     * Get the name of the column that contains the {@link TableLocation} values from {@link #locationTable()}.
+     *
+     * @return The name of the location column
+     */
+    String locationColumnName();
+
+    /**
+     * Get the name of the column that contains the {@link RowSet} values from {@link #locationTable()}.
+     *
+     * @return The name of the row set column
+     */
+    String rowSetColumnName();
 
     /**
      * Report whether this ColumnSourceManager has no locations that have been "included" (i.e. found to exist with

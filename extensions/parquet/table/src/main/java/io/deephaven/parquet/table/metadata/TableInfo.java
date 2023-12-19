@@ -67,6 +67,7 @@ public abstract class TableInfo {
     @Value.Default
     public String version() {
         final String version = TableInfo.class.getPackage().getImplementationVersion();
+        // noinspection ReplaceNullCheck
         if (version == null) {
             // When the code is run from class files as opposed to jars, like in unit tests
             return "unknown";
@@ -114,6 +115,12 @@ public abstract class TableInfo {
 
         Builder addAllGroupingColumns(Iterable<? extends GroupingColumnInfo> groupingColumns);
 
+        Builder addDataIndexes(DataIndexInfo info);
+
+        Builder addDataIndexes(DataIndexInfo... infos);
+
+        Builder addAllDataIndexes(Iterable<? extends DataIndexInfo> infos);
+
         Builder addColumnTypes(ColumnTypeInfo columnType);
 
         Builder addColumnTypes(ColumnTypeInfo... columnTypes);
@@ -125,12 +132,6 @@ public abstract class TableInfo {
         Builder addSortingColumns(SortColumn... sortPairs);
 
         Builder addAllSortingColumns(Iterable<? extends SortColumn> sortPairs);
-
-        Builder addDataIndexes(DataIndexInfo info);
-
-        Builder addDataIndexes(DataIndexInfo... infos);
-
-        Builder addAllDataIndexes(Iterable<? extends DataIndexInfo> infos);
 
         TableInfo build();
     }

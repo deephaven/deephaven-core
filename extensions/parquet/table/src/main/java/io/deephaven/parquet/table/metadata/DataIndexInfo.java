@@ -8,14 +8,14 @@ import io.deephaven.engine.util.string.StringUtils;
 import org.immutables.value.Value;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Representation class for grouping column information stored in key-value metadata for Deephaven-written Parquet
- * files.
+ * Representation class for data index information stored in key-value metadata for Deephaven-written Parquet files.
  */
-
 @Value.Immutable
 @SimpleStyle
 @JsonSerialize(as = ImmutableDataIndexInfo.class)
@@ -24,13 +24,13 @@ import java.util.List;
 public abstract class DataIndexInfo {
 
     /**
-     * @return The column name
+     * @return The column names
      */
     @Value.Parameter
     public abstract List<String> columns();
 
     /**
-     * @return The relative path name for the column's grouping sidecar table
+     * @return The relative path name for the columns' data index sidecar table
      */
     @Value.Parameter
     public abstract String indexTablePath();
@@ -39,7 +39,8 @@ public abstract class DataIndexInfo {
     final void checkColumns() {
         if (columns().isEmpty()) {
             throw new IllegalArgumentException("No columns provided");
-        } else if (columns().stream().anyMatch(StringUtils::isNullOrEmpty)) {
+        }
+        if (columns().stream().anyMatch(StringUtils::isNullOrEmpty)) {
             throw new IllegalArgumentException("Empty column name");
         }
     }
@@ -52,12 +53,16 @@ public abstract class DataIndexInfo {
     }
 
     public boolean matchesColumns(final String... columnsToMatch) {
-        Arrays.sort(columnsToMatch);
-        return Arrays.asList(columnsToMatch).equals(columns());
+        final List<String> columnsToMatchList = new ArrayList<>(columnsToMatch.length);
+        Collections.addAll(columnsToMatchList, columnsToMatch);
+        columnsToMatchList.sort(String::compareTo);
+        return columnsToMatchList.equals(columns());
     }
 
     public static DataIndexInfo of(@NotNull final String indexTablePath, final String... columnNames) {
-        Arrays.sort(columnNames);
-        return ImmutableDataIndexInfo.of(Arrays.asList(columnNames), indexTablePath);
+        final List<String> columnNamesList = new ArrayList<>(columnNames.length);
+        Collections.addAll(columnNamesList, columnNames);
+        columnNamesList.sort(String::compareTo);
+        return ImmutableDataIndexInfo.of(columnNamesList, indexTablePath);
     }
 }

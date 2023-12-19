@@ -4,20 +4,22 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.BasicDataIndex;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.SoftReference;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
  * Partial TableLocation implementation for use by TableDataService implementations.
@@ -25,7 +27,6 @@ import java.util.Map;
 public abstract class AbstractTableLocation
         extends SubscriptionAggregator<TableLocation.Listener>
         implements TableLocation {
-    protected static final SoftReference<BasicDataIndex> NO_INDEX_SENTINEL = new SoftReference<>(null);
 
     private final ImmutableTableKey tableKey;
     private final ImmutableTableLocationKey tableLocationKey;
@@ -34,8 +35,17 @@ public abstract class AbstractTableLocation
     private final KeyedObjectHashMap<CharSequence, ColumnLocation> columnLocations =
             new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
 
-    /** A map of data index columns to materialized index tables for this location. */
-    protected volatile Map<List<String>, SoftReference<BasicDataIndex>> cachedIndexes;
+    @SuppressWarnings("rawtypes")
+    private static final AtomicReferenceFieldUpdater<AbstractTableLocation, KeyedObjectHashMap> CACHED_DATA_INDEXES_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(
+                    AbstractTableLocation.class, KeyedObjectHashMap.class, "cachedDataIndexes");
+    private static final SoftReference<BasicDataIndex> NO_INDEX_SENTINEL = new SoftReference<>(null);
+    private static final KeyedObjectKey<List<String>, CachedDataIndex> CACHED_DATA_INDEX_KEY =
+            new KeyedObjectKey.BasicAdapter<>(CachedDataIndex::getColumns);
+
+    /** A map of data index columns to cache nodes for materialized data indexes for this location. */
+    @SuppressWarnings("unused")
+    private volatile KeyedObjectHashMap<List<String>, CachedDataIndex> cachedDataIndexes;
 
     /**
      * @param tableKey Table key for the table this location belongs to
@@ -48,7 +58,6 @@ public abstract class AbstractTableLocation
         super(supportsSubscriptions);
         this.tableKey = Require.neqNull(tableKey, "tableKey").makeImmutable();
         this.tableLocationKey = Require.neqNull(tableLocationKey, "tableLocationKey").makeImmutable();
-        cachedIndexes = new HashMap<>();
     }
 
     @Override
@@ -153,60 +162,68 @@ public abstract class AbstractTableLocation
         columnLocations.clear();
     }
 
-    @Nullable
+    /**
+     * Caching structure for loaded data indexes.
+     */
+    private class CachedDataIndex {
+
+        private final List<String> columns;
+
+        private volatile SoftReference<BasicDataIndex> indexReference;
+
+        private CachedDataIndex(@NotNull final List<String> columns) {
+            this.columns = columns;
+        }
+
+        private List<String> getColumns() {
+            return columns;
+        }
+
+        private BasicDataIndex getDataIndex() {
+            SoftReference<BasicDataIndex> localReference = indexReference;
+            BasicDataIndex localIndex;
+            if (localReference == NO_INDEX_SENTINEL) {
+                return null;
+            }
+            if (localReference != null && (localIndex = localReference.get()) != null) {
+                return localIndex;
+            }
+            synchronized (this) {
+                localReference = indexReference;
+                if (localReference == NO_INDEX_SENTINEL) {
+                    return null;
+                }
+                if (localReference != null && (localIndex = localReference.get()) != null) {
+                    return localIndex;
+                }
+                localIndex = loadDataIndex(columns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                indexReference = localIndex == null ? NO_INDEX_SENTINEL : new SoftReference<>(localIndex);
+                return localIndex;
+            }
+        }
+    }
+
     @Override
+    @Nullable
     public final BasicDataIndex getDataIndex(@NotNull final String... columns) {
-        final List<String> colNames = Arrays.asList(columns);
-        BasicDataIndex index = null;
-        if (cachedIndexes != null) {
-            final SoftReference<BasicDataIndex> cachedIndex = cachedIndexes.get(colNames);
-            if (cachedIndex == NO_INDEX_SENTINEL) {
-                return null;
-            }
+        final List<String> columnNames = new ArrayList<>(columns.length);
+        Collections.addAll(columnNames, columns);
+        columnNames.sort(String::compareTo);
 
-            if (cachedIndex != null) {
-                index = cachedIndex.get();
-                if (index != null) {
-                    return index;
-                }
-            }
-        }
-
-        synchronized (this) {
-            if (cachedIndexes == null) {
-                cachedIndexes = new HashMap<>();
-            }
-
-            final SoftReference<BasicDataIndex> cachedIndex = cachedIndexes.get(colNames);
-            if (cachedIndex == NO_INDEX_SENTINEL) {
-                return null;
-            }
-
-            if (cachedIndex != null) {
-                index = cachedIndex.get();
-            }
-
-            if (index == null) {
-                index = loadDataIndex(columns);
-
-                if (index == null) {
-                    cachedIndexes.put(colNames, NO_INDEX_SENTINEL);
-                } else {
-                    cachedIndexes.put(colNames, new SoftReference<>(index));
-                }
-            }
-
-            return index;
-        }
+        // noinspection unchecked
+        final KeyedObjectHashMap<List<String>, CachedDataIndex> localCachedDataIndexes =
+                FieldUtils.ensureField(this, CACHED_DATA_INDEXES_UPDATER, null,
+                        () -> new KeyedObjectHashMap<>(CACHED_DATA_INDEX_KEY));
+        return localCachedDataIndexes.putIfAbsent(columnNames, CachedDataIndex::new).getDataIndex();
     }
 
     /**
      * Load the data index from the location implementation. Implementations of this method should not perform any
      * result caching.
      *
-     * @param columns the columns to load an index for.
-     * @return the data index table, or an empty table or null if none existed.
+     * @param columns The columns to load an index for
+     * @return The data index, or {@code null} if none exists
      */
     @Nullable
-    protected abstract BasicDataIndex loadDataIndex(@NotNull final String... columns);
+    protected abstract BasicDataIndex loadDataIndex(@NotNull String... columns);
 }

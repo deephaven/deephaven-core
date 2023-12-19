@@ -89,6 +89,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.engine.table.impl.MatchPair.matchString;
 import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 
@@ -1170,16 +1171,61 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
     }
 
+    private void initializeAndPrioritizeFilters(@NotNull final WhereFilter... filters) {
+        final DataIndexer dataIndexer = DataIndexer.existingOf(rowSet);
+        final int numFilters = filters.length;
+        final BitSet priorityFilterIndexes = new BitSet(numFilters);
+        for (int fi = 0; fi < numFilters; ++fi) {
+            final WhereFilter filter = filters[fi];
+
+            // Initialize our filters immediately so we can examine the columns they use. Note that filter
+            // initialization is safe to invoke repeatedly.
+            filter.init(getDefinition());
+
+            // Simple filters against indexed columns get priority
+            if (dataIndexer != null
+                    && !(filter instanceof ReindexingFilter)
+                    && filter.isSimpleFilter()
+                    && dataIndexer.hasDataIndex(this, filter.getColumns().toArray(ZERO_LENGTH_STRING_ARRAY))) {
+                priorityFilterIndexes.set(fi);
+            }
+        }
+
+        if (priorityFilterIndexes.isEmpty()) {
+            return;
+        }
+
+        // Copy the priority filters to a temporary array
+        final int numPriorityFilters = priorityFilterIndexes.cardinality();
+        final WhereFilter[] priorityFilters = new WhereFilter[numPriorityFilters];
+        // @formatter:off
+        for (int pfi = 0, fi = priorityFilterIndexes.nextSetBit(0);
+             fi >= 0;
+             fi = priorityFilterIndexes.nextSetBit(fi + 1)) {
+            // @formatter:on
+            priorityFilters[pfi++] = filters[fi];
+        }
+        // Move the regular (non-priority) filters to the back of the array
+        // @formatter:off
+        for (int rfi = numFilters - 1, fi = priorityFilterIndexes.previousClearBit(numFilters - 1);
+             fi >= 0;
+             fi = priorityFilterIndexes.previousClearBit(fi - 1)) {
+            // @formatter:on
+            filters[rfi--] = filters[fi];
+        }
+        // Re-add the priority filters at the front of the array
+        System.arraycopy(priorityFilters, 0, filters, 0, numPriorityFilters);
+    }
+
     private QueryTable whereInternal(final WhereFilter... filters) {
         if (filters.length == 0) {
-            if (isRefreshing()) {
-                manageWithCurrentScope();
-            }
-            return this;
+            return (QueryTable) prepareReturnThis();
         }
 
         return QueryPerformanceRecorder.withNugget("where(" + Arrays.toString(filters) + ")", sizeForInstrumentation(),
                 () -> {
+                    initializeAndPrioritizeFilters(filters);
+
                     for (int fi = 0; fi < filters.length; ++fi) {
                         if (!(filters[fi] instanceof ReindexingFilter)) {
                             continue;
@@ -1207,20 +1253,20 @@ public class QueryTable extends BaseTable<QueryTable> {
                         return result;
                     }
 
-                    List<WhereFilter> selectFilters = new LinkedList<>();
-                    List<Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs = new LinkedList<>();
-                    for (final WhereFilter filter : filters) {
-                        filter.init(getDefinition());
-                        if (filter instanceof AbstractConditionFilter
-                                && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
-                            shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
-                        } else {
-                            selectFilters.add(filter);
+                    {
+                        final List<WhereFilter> whereFilters = new LinkedList<>();
+                        final List<Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs = new LinkedList<>();
+                        for (final WhereFilter filter : filters) {
+                            if (filter instanceof AbstractConditionFilter
+                                    && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
+                                shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
+                            } else {
+                                whereFilters.add(filter);
+                            }
                         }
-                    }
-
-                    if (!shiftColPairs.isEmpty()) {
-                        return (QueryTable) ShiftedColumnsFactory.where(this, shiftColPairs, selectFilters);
+                        if (!shiftColPairs.isEmpty()) {
+                            return (QueryTable) ShiftedColumnsFactory.where(this, shiftColPairs, whereFilters);
+                        }
                     }
 
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
@@ -2236,7 +2282,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final Table naturalJoinResult = naturalJoinImpl(rightGrouped, columnsToMatch,
                             columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
                     final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
-                            .ungroup(columnsToUngroupBy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                            .ungroup(columnsToUngroupBy.toArray(ZERO_LENGTH_STRING_ARRAY));
 
                     maybeCopyColumnDescriptions(ungroupedResult, rightTable, columnsToMatch, realColumnsToAdd);
 

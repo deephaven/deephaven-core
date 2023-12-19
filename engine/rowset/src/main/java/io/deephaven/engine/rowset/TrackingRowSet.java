@@ -102,6 +102,13 @@ public interface TrackingRowSet extends RowSet {
      */
     <INDEXER_TYPE extends Indexer> INDEXER_TYPE indexer(@NotNull Function<TrackingRowSet, INDEXER_TYPE> indexerFactory);
 
+    /**
+     * Get an opaque {@link Indexer} object previously associated with this TrackingRowSet.
+     *
+     * @return An opaque indexer object associated with this TrackingRowSet, or {@code null} if none has been set
+     */
+    <INDEXER_TYPE extends Indexer> INDEXER_TYPE indexer();
+
     @Override
     default TrackingWritableRowSet writableCast() {
         return (TrackingWritableRowSet) this;

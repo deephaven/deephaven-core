@@ -11,7 +11,7 @@ import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
-import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndexImpl;
+import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -35,6 +35,10 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
     public static DataIndexer of(TrackingRowSet rowSet) {
         return rowSet.indexer(DataIndexer::new);
+    }
+
+    public static DataIndexer existingOf(TrackingRowSet rowSet) {
+        return rowSet.indexer();
     }
 
     private final TrackingRowSet rowSet;
@@ -251,7 +255,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
         // Create an index, add it to the map and return it.
         QueryTable coalesced = (QueryTable) sourceTable.coalesce();
-        final DataIndex index = new TableBackedDataIndexImpl(coalesced, keyColumnNames);
+        final DataIndex index = new TableBackedDataIndex(coalesced, keyColumnNames);
 
         final WeakHashMap<ColumnSource<?>, DataIndexCache> localRoot = ensureRoot();
         // noinspection SynchronizationOnLocalVariableOrMethodParameter

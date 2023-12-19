@@ -20,7 +20,7 @@ import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GRO
  * This class creates a data index for a table. The index is a table containing the key column(s) and the RowSets that
  * contain these values. DataIndexes may be loaded from storage or created in-memory using aggregations.
  */
-public class TableBackedDataIndexImpl extends BaseDataIndex {
+public class TableBackedDataIndex extends BaseDataIndex {
     /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
     private Table indexTable;
 
@@ -35,7 +35,8 @@ public class TableBackedDataIndexImpl extends BaseDataIndex {
 
     private AggregationRowLookup lookupFunction;
 
-    public TableBackedDataIndexImpl(@NotNull final QueryTable sourceTable,
+    public TableBackedDataIndex(
+            @NotNull final QueryTable sourceTable,
             @NotNull final String[] keyColumnNames) {
 
         this.sourceTable = sourceTable;

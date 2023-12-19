@@ -51,7 +51,7 @@ public abstract class AbstractColumnSource<T> implements
     protected volatile List<ColumnSource<?>> rowSetIndexerKey;
 
     protected AbstractColumnSource(@NotNull final Class<T> type) {
-        this(type, Object.class);
+        this(type, null);
     }
 
     public AbstractColumnSource(@NotNull final Class<T> type, @Nullable final Class<?> elementType) {
@@ -84,7 +84,7 @@ public abstract class AbstractColumnSource<T> implements
             } else if (ShortVector.class.isAssignableFrom(type)) {
                 componentType = short.class;
             } else {
-                componentType = elementType;
+                componentType = elementType == null ? Object.class : elementType;
             }
         } else {
             componentType = null;

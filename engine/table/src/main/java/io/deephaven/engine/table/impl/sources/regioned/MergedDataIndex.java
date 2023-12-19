@@ -168,7 +168,7 @@ class MergedDataIndex extends BaseDataIndex {
         }
         final Table indexTable = dataIndex.table();
         return indexTable.coalesce().update(List.of(new FunctionalColumn<>(
-                ROW_SET_COLUMN_NAME, RowSet.class,
+                dataIndex.rowSetColumnName(), RowSet.class,
                 ROW_SET_COLUMN_NAME, RowSet.class,
                 (final RowSet rowSet) -> rowSet
                         .shift(RegionedColumnSource.getFirstRowKey(Math.toIntExact(locationRowKey))))));

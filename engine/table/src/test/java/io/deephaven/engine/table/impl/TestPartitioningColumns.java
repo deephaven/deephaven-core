@@ -24,7 +24,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,7 +97,7 @@ public class TestPartitioningColumns {
 
     private static final class DummyTableLocation extends AbstractTableLocation {
 
-        protected DummyTableLocation(@NotNull final TableKey tableKey,
+        private DummyTableLocation(@NotNull final TableKey tableKey,
                 @NotNull final TableLocationKey tableLocationKey) {
             super(tableKey, tableLocationKey, false);
         }
@@ -108,22 +107,23 @@ public class TestPartitioningColumns {
 
         @Override
         public @NotNull List<SortColumn> getSortedColumns() {
-            return Collections.EMPTY_LIST;
+            return List.of();
         }
 
         @Override
-        public @NotNull List<String[]> getDataIndexColumns() {
-            return Collections.EMPTY_LIST;
+        @NotNull
+        public List<String[]> getDataIndexColumns() {
+            return List.of();
         }
 
         @Override
-        public boolean hasDataIndex(@NotNull String... columns) {
+        public boolean hasDataIndex(@NotNull final String... columns) {
             return false;
         }
 
         @NotNull
         @Override
-        protected ColumnLocation makeColumnLocation(@NotNull String name) {
+        protected ColumnLocation makeColumnLocation(@NotNull final String name) {
             return new ColumnLocation() {
                 @NotNull
                 @Override
@@ -144,55 +144,55 @@ public class TestPartitioningColumns {
 
                 @Nullable
                 @Override
-                public <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull ColumnDefinition<?> columnDefinition) {
+                public <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull final ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionChar<Values> makeColumnRegionChar(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull final ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionByte<Values> makeColumnRegionByte(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull final ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionShort<Values> makeColumnRegionShort(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull final ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionInt<Values> makeColumnRegionInt(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull final ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionLong<Values> makeColumnRegionLong(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull final ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionFloat<Values> makeColumnRegionFloat(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull final ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionDouble<Values> makeColumnRegionDouble(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull final ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(
-                        @NotNull ColumnDefinition<TYPE> columnDefinition) {
+                        @NotNull final ColumnDefinition<TYPE> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
@@ -200,7 +200,7 @@ public class TestPartitioningColumns {
         }
 
         @Override
-        protected @Nullable BasicDataIndex loadDataIndex(@NotNull String... columns) {
+        protected @Nullable BasicDataIndex loadDataIndex(@NotNull final String... columns) {
             throw new UnsupportedOperationException();
         }
     }

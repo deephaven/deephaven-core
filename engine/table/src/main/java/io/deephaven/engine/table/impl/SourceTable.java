@@ -11,6 +11,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -112,7 +113,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     /**
      * Force this table to determine its initial state (available locations, size, RowSet) if it hasn't already done so.
      */
-    private void initialize() {
+    protected final void initialize() {
         initializeAvailableLocations();
         initializeLocationSizes();
     }
@@ -132,8 +133,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
     }
 
-    @SuppressWarnings("WeakerAccess")
-    protected final void initializeAvailableLocations() {
+    private void initializeAvailableLocations() {
         if (locationsInitialized) {
             return;
         }
@@ -191,7 +191,11 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             QueryPerformanceRecorder.withNugget(description + ".initializeLocationSizes()", sizeForInstrumentation(),
                     () -> {
                         Assert.eqNull(rowSet, "rowSet");
-                        rowSet = columnSourceManager.initialize();
+                        try {
+                            rowSet = columnSourceManager.initialize();
+                        } catch (Exception e) {
+                            throw new TableDataException("Error initializing location sizes", e);
+                        }
                         if (!isRefreshing()) {
                             return;
                         }
@@ -228,7 +232,12 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     return;
                 }
 
-                final RowSet added = columnSourceManager.refresh();
+                final RowSet added;
+                try {
+                    added = columnSourceManager.refresh();
+                } catch (Exception e) {
+                    throw new TableDataException("Error refreshing location sizes", e);
+                }
                 if (added.isEmpty()) {
                     return;
                 }
