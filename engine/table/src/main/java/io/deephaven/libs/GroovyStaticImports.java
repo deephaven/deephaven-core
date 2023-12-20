@@ -2339,6 +2339,22 @@ public class GroovyStaticImports {
     public static  int rawBinSearchIndex( io.deephaven.vector.ShortVector values, short key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, key, choiceWhenEquals );}
     /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(io.deephaven.vector.ObjectVector,java.lang.Comparable,io.deephaven.function.BinSearchAlgo) */
     public static <T extends java.lang.Comparable<? super T>> int rawBinSearchIndex( io.deephaven.vector.ObjectVector<T> values, T key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(io.deephaven.vector.ByteVector,int,int,byte,io.deephaven.function.BinSearchAlgo) */
+    public static  int rawBinSearchIndex( io.deephaven.vector.ByteVector values, int fromIndex, int toIndex, byte key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, fromIndex, toIndex, key, choiceWhenEquals );}
+    /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(io.deephaven.vector.CharVector,int,int,char,io.deephaven.function.BinSearchAlgo) */
+    public static  int rawBinSearchIndex( io.deephaven.vector.CharVector values, int fromIndex, int toIndex, char key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, fromIndex, toIndex, key, choiceWhenEquals );}
+    /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(io.deephaven.vector.DoubleVector,int,int,double,io.deephaven.function.BinSearchAlgo) */
+    public static  int rawBinSearchIndex( io.deephaven.vector.DoubleVector values, int fromIndex, int toIndex, double key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, fromIndex, toIndex, key, choiceWhenEquals );}
+    /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(io.deephaven.vector.FloatVector,int,int,float,io.deephaven.function.BinSearchAlgo) */
+    public static  int rawBinSearchIndex( io.deephaven.vector.FloatVector values, int fromIndex, int toIndex, float key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, fromIndex, toIndex, key, choiceWhenEquals );}
+    /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(io.deephaven.vector.IntVector,int,int,int,io.deephaven.function.BinSearchAlgo) */
+    public static  int rawBinSearchIndex( io.deephaven.vector.IntVector values, int fromIndex, int toIndex, int key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, fromIndex, toIndex, key, choiceWhenEquals );}
+    /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(io.deephaven.vector.LongVector,int,int,long,io.deephaven.function.BinSearchAlgo) */
+    public static  int rawBinSearchIndex( io.deephaven.vector.LongVector values, int fromIndex, int toIndex, long key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, fromIndex, toIndex, key, choiceWhenEquals );}
+    /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(io.deephaven.vector.ShortVector,int,int,short,io.deephaven.function.BinSearchAlgo) */
+    public static  int rawBinSearchIndex( io.deephaven.vector.ShortVector values, int fromIndex, int toIndex, short key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, fromIndex, toIndex, key, choiceWhenEquals );}
+    /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(io.deephaven.vector.ObjectVector,int,int,java.lang.Comparable,io.deephaven.function.BinSearchAlgo) */
+    public static <T extends java.lang.Comparable<? super T>> int rawBinSearchIndex( io.deephaven.vector.ObjectVector<T> values, int fromIndex, int toIndex, T key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, fromIndex, toIndex, key, choiceWhenEquals );}
     /** @see io.deephaven.function.Basic#repeat(java.lang.Object,int) */
     public static <T> T[] repeat( T value, int size ) {return Basic.repeat( value, size );}
     /** @see io.deephaven.function.Basic#repeat(byte,int) */
