@@ -7,6 +7,7 @@ import com.google.common.base.Throwables;
 import com.google.rpc.Code;
 import io.deephaven.base.LockFreeArrayQueue;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -282,7 +283,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 ScriptSession scriptSession =
                         exportedConsole != null ? exportedConsole.get() : scriptSessionProvider.get();
                 Table table = exportedTable.get();
-                scriptSession.getVariableProvider().setVariable(request.getVariableName(), table);
+                ExecutionContext.getContext().getQueryScope().putParam(request.getVariableName(), table);
                 if (DynamicNode.notDynamicOrIsRefreshing(table)) {
                     scriptSession.manage(table);
                 }

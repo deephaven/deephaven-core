@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * Interface for interactive console script sessions.
  */
-public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
+public interface ScriptSession extends LivenessNode {
 
     /**
      * A {@link VariableProvider} instance, for services like autocomplete which may want a limited "just the variables"

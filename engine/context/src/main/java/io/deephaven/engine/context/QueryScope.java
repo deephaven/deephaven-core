@@ -3,6 +3,9 @@
  */
 package io.deephaven.engine.context;
 
+import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -21,7 +24,7 @@ import java.util.*;
 /**
  * Variable scope used to resolve parameter values during query execution.
  */
-public abstract class QueryScope implements LogOutputAppendable {
+public abstract class QueryScope extends LivenessScope implements LogOutputAppendable {
 
     /**
      * Adds a parameter to the default instance {@link QueryScope}, or updates the value of an existing parameter.
@@ -32,15 +35,6 @@ public abstract class QueryScope implements LogOutputAppendable {
      */
     public static <T> void addParam(final String name, final T value) {
         ExecutionContext.getContext().getQueryScope().putParam(name, value);
-    }
-
-    /**
-     * Adds an object's declared fields to the scope.
-     *
-     * @param object object whose fields will be added.
-     */
-    public static void addObjectFields(final Object object) {
-        ExecutionContext.getContext().getQueryScope().putObjectFields(object);
     }
 
     /**
@@ -194,12 +188,15 @@ public abstract class QueryScope implements LogOutputAppendable {
     public abstract <T> void putParam(final String name, final T value);
 
     /**
-     * Add an object's public members (referenced reflectively, not a shallow copy!) to this scope if supported.
-     * <b>Note:</b> This is an optional method.
+     * Asks the session to remove any wrapping that exists on scoped objects so that clients can fetch them. Defaults to
+     * returning the object itself.
      *
-     * @param object object to add public members from.
+     * @param object the scoped object
+     * @return an obj which can be consumed by a client
      */
-    public abstract void putObjectFields(final Object object);
+    public Object unwrapObject(Object object) {
+        return object;
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // LogOutputAppendable implementation
@@ -276,15 +273,12 @@ public abstract class QueryScope implements LogOutputAppendable {
 
         @Override
         public <T> void putParam(final String name, final T value) {
+            if (value instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(value)) {
+                manage((LivenessReferent) value);
+            }
             NameValidator.validateQueryParameterName(name);
             // TODO: Can I get rid of this applyValueConversions? It's too inconsistent to feel safe.
             valueRetrievers.put(name, new SimpleValueRetriever<>(name, applyValueConversions(value)));
-        }
-
-        public void putObjectFields(final Object object) {
-            for (final Field field : object.getClass().getDeclaredFields()) {
-                valueRetrievers.put(field.getName(), new ReflectiveValueRetriever(object, field));
-            }
         }
 
         private static abstract class ValueRetriever<T> {

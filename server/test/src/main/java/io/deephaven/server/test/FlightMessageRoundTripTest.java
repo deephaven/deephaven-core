@@ -302,7 +302,6 @@ public abstract class FlightMessageRoundTripTest {
         clientChannel.shutdownNow();
 
         sessionService.closeAllSessions();
-        scriptSession.release();
         executionContext.close();
 
         closeClient();
@@ -365,7 +364,7 @@ public abstract class FlightMessageRoundTripTest {
                 .allocator(new RootAllocator())
                 .build();
 
-        scriptSession.getVariableProvider().setVariable("test", TableTools.emptyTable(10).update("I=i"));
+        ExecutionContext.getContext().getQueryScope().putParam("test", TableTools.emptyTable(10).update("I=i"));
 
         // do get cannot be invoked by unauthenticated user
         final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
@@ -386,7 +385,7 @@ public abstract class FlightMessageRoundTripTest {
                 .allocator(new RootAllocator())
                 .build();
 
-        scriptSession.getVariableProvider().setVariable("test", TableTools.emptyTable(10).update("I=i"));
+        ExecutionContext.getContext().getQueryScope().putParam("test", TableTools.emptyTable(10).update("I=i"));
 
         // do get cannot be invoked by unauthenticated user
         final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
@@ -407,7 +406,7 @@ public abstract class FlightMessageRoundTripTest {
     @Test
     public void testLoginHeaderCustomBearer() {
         closeClient();
-        scriptSession.getVariableProvider().setVariable("test", TableTools.emptyTable(10).update("I=i"));
+        ExecutionContext.getContext().getQueryScope().putParam("test", TableTools.emptyTable(10).update("I=i"));
 
         // add the bearer token override
         final MutableBoolean tokenChanged = new MutableBoolean();
@@ -447,7 +446,7 @@ public abstract class FlightMessageRoundTripTest {
                 .allocator(new RootAllocator())
                 .build();
 
-        scriptSession.getVariableProvider().setVariable("test", TableTools.emptyTable(10).update("I=i"));
+        ExecutionContext.getContext().getQueryScope().putParam("test", TableTools.emptyTable(10).update("I=i"));
 
         // do get cannot be invoked by unauthenticated user
         final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
@@ -651,8 +650,8 @@ public abstract class FlightMessageRoundTripTest {
                 () -> TableTools.timeTable(1_000_000).update("I = i"));
 
         // stuff table into the scope
-        scriptSession.getVariableProvider().setVariable(staticTableName, table);
-        scriptSession.getVariableProvider().setVariable(tickingTableName, tickingTable);
+        ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
+        ExecutionContext.getContext().getQueryScope().putParam(tickingTableName, tickingTable);
 
         // test fetch info from scoped ticket
         assertInfoMatchesTable(flightClient.getInfo(arrowFlightDescriptorForName(staticTableName)), table);
@@ -681,10 +680,10 @@ public abstract class FlightMessageRoundTripTest {
         final Table tickingTable = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
                 () -> TableTools.timeTable(1_000_000).update("I = i"));
 
-        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession.getQueryScope(), false)) {
             // stuff table into the scope
-            scriptSession.getVariableProvider().setVariable(staticTableName, table);
-            scriptSession.getVariableProvider().setVariable(tickingTableName, tickingTable);
+            ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
+            ExecutionContext.getContext().getQueryScope().putParam(tickingTableName, tickingTable);
 
             // test fetch info from scoped ticket
             assertSchemaMatchesTable(flightClient.getSchema(arrowFlightDescriptorForName(staticTableName)).getSchema(),
@@ -712,9 +711,9 @@ public abstract class FlightMessageRoundTripTest {
         final String staticTableName = "flightInfoTest";
         final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
 
-        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession.getQueryScope(), false)) {
             // stuff table into the scope
-            scriptSession.getVariableProvider().setVariable(staticTableName, table);
+            ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
 
             // build up a snapshot request
             byte[] magic = new byte[] {100, 112, 104, 110}; // equivalent to '0x6E687064' (ASCII "dphn")
@@ -788,9 +787,9 @@ public abstract class FlightMessageRoundTripTest {
         final String staticTableName = "flightInfoTest";
         final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
 
-        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession.getQueryScope(), false)) {
             // stuff table into the scope
-            scriptSession.getVariableProvider().setVariable(staticTableName, table);
+            ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
 
             // java-flight requires us to send a message, but cannot add app metadata, send a dummy message
             byte[] empty = new byte[] {};
@@ -837,7 +836,7 @@ public abstract class FlightMessageRoundTripTest {
             }
         };
 
-        scriptSession.getVariableProvider().setVariable(tableName, table);
+        ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
         // export from query scope to our session; this transforms the table
         assertEquals(0, numTransforms.intValue());
@@ -849,8 +848,8 @@ public abstract class FlightMessageRoundTripTest {
         assertEquals(1, numTransforms.intValue());
 
         // check that the table was transformed
-        Object result = scriptSession.getVariableProvider().getVariable(resultTableName, null);
-        assertTrue(result instanceof Table);
+        Object result = ExecutionContext.getContext().getQueryScope().readParamValue(resultTableName, null);
+        assertTrue(result + "", result instanceof Table);
         assertEquals(1, ((Table) result).getColumnSources().size());
         assertEquals(2, table.getColumnSources().size());
     }
@@ -861,7 +860,7 @@ public abstract class FlightMessageRoundTripTest {
         final String tableName = "testSimpleServiceAuthWiringTest";
         final String resultTableName = tableName + "Result";
         final Table table = TableTools.emptyTable(10).update("I = -i", "J = -i");
-        scriptSession.getVariableProvider().setVariable(tableName, table);
+        ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
         // export from query scope to our session; this transforms the table
         try (final TableHandle handle = clientSession.session().execute(TicketTable.fromQueryScopeField(tableName))) {
@@ -894,7 +893,7 @@ public abstract class FlightMessageRoundTripTest {
         // stuff table into the scope
         final String tableName = "testSimpleContextualAuthWiringTest";
         final Table table = TableTools.emptyTable(10).update("I = -i", "J = -i");
-        scriptSession.getVariableProvider().setVariable(tableName, table);
+        ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
         // export from query scope to our session; this transforms the table
         try (final TableHandle handle = clientSession.session().execute(TicketTable.fromQueryScopeField(tableName))) {
@@ -1017,7 +1016,7 @@ public abstract class FlightMessageRoundTripTest {
     public void testBarrageMessageAppendingMarshaller() {
         final int size = 100;
         final Table source = TableTools.emptyTable(size).update("I = ii", "J = `str_` + i");
-        scriptSession.getVariableProvider().setVariable("test", source);
+        ExecutionContext.getContext().getQueryScope().putParam("test", source);
 
         // fetch schema over flight
         final SchemaResult schema = flightClient.getSchema(arrowFlightDescriptorForName("test"));
@@ -1068,7 +1067,7 @@ public abstract class FlightMessageRoundTripTest {
             final Table appendOnly = TableTools.timeTable("PT1s")
                     .update("I = ii % 3", "J = `str_` + i");
             final Table withMods = appendOnly.lastBy("I");
-            scriptSession.getVariableProvider().setVariable("test", withMods);
+            ExecutionContext.getContext().getQueryScope().putParam("test", withMods);
         }
 
         final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()

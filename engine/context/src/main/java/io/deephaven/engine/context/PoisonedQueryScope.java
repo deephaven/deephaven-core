@@ -46,9 +46,4 @@ public class PoisonedQueryScope extends QueryScope {
     public <T> void putParam(String name, T value) {
         fail();
     }
-
-    @Override
-    public void putObjectFields(Object object) {
-        fail();
-    }
 }

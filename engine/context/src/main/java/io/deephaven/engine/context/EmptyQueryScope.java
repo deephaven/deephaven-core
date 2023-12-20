@@ -40,9 +40,4 @@ public class EmptyQueryScope extends QueryScope {
     public <T> void putParam(String name, T value) {
         throw new IllegalStateException("EmptyQueryScope cannot create parameters");
     }
-
-    @Override
-    public void putObjectFields(Object object) {
-        throw new IllegalStateException("EmptyQueryScope cannot create parameters");
-    }
 }

@@ -8,10 +8,7 @@ import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.flight.util.TicketRouterHelper;
 import io.deephaven.proto.util.ByteHelper;
@@ -25,7 +22,6 @@ import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -38,14 +34,10 @@ import static io.deephaven.proto.util.ScopeTicketHelper.TICKET_PREFIX;
 @Singleton
 public class ScopeTicketResolver extends TicketResolverBase {
 
-    private final Provider<ScriptSession> scriptSessionProvider;
-
     @Inject
     public ScopeTicketResolver(
-            final AuthorizationProvider authProvider,
-            final Provider<ScriptSession> globalSessionProvider) {
+            final AuthorizationProvider authProvider) {
         super(authProvider, (byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
-        this.scriptSessionProvider = globalSessionProvider;
     }
 
     @Override
@@ -59,7 +51,8 @@ public class ScopeTicketResolver extends TicketResolverBase {
         // there is no mechanism to wait for a scope variable to resolve; require that the scope variable exists now
         final String scopeName = nameForDescriptor(descriptor, logId);
 
-        Object scopeVar = scriptSessionProvider.get().getVariableProvider().getVariable(scopeName, null);
+        QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        Object scopeVar = queryScope.readParamValue(scopeName, null);
         if (scopeVar == null) {
             throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
                     "Could not resolve '" + logId + ": no variable exists with name '" + scopeName + "'");
@@ -102,12 +95,12 @@ public class ScopeTicketResolver extends TicketResolverBase {
 
     private <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session, final String scopeName, final String logId) {
-        final ScriptSession gss = scriptSessionProvider.get();
         // fetch the variable from the scope right now
         T export = null;
         try {
+            QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
             // noinspection unchecked
-            export = (T) gss.unwrapObject(gss.getVariableProvider().getVariable(scopeName, null));
+            export = (T) queryScope.unwrapObject(queryScope.readParamValue(scopeName));
         } catch (QueryScope.MissingVariableException ignored) {
         }
 
@@ -154,12 +147,9 @@ public class ScopeTicketResolver extends TicketResolverBase {
                 .requiresSerialQueue()
                 .require(resultExport)
                 .submit(() -> {
-                    final ScriptSession gss = scriptSessionProvider.get();
                     T value = resultExport.get();
-                    if (value instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(value)) {
-                        gss.manage((LivenessReferent) value);
-                    }
-                    gss.getVariableProvider().setVariable(varName, value);
+                    ExecutionContext.getContext().getQueryScope().putParam(varName, value);
+
                     if (onPublish != null) {
                         onPublish.run();
                     }

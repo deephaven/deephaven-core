@@ -29,15 +29,7 @@ public class ApplicationTest {
     @Rule
     public final EngineCleanup base = new EngineCleanup();
 
-    private AbstractScriptSession session = null;
-
-    @After
-    public void tearDown() {
-        if (session != null) {
-            session.release();
-            session = null;
-        }
-    }
+    private AbstractScriptSession<?> session = null;
 
     @Test
     public void app00() {

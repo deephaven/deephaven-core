@@ -110,9 +110,4 @@ public class DelegatingScriptSession implements ScriptSession {
     public WeakReference<? extends LivenessReferent> getWeakReference() {
         return delegate.getWeakReference();
     }
-
-    @Override
-    public void release() {
-        delegate.release();
-    }
 }

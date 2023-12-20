@@ -10,6 +10,8 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.CacheDir;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.PartitionedTable;
@@ -19,6 +21,7 @@ import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
@@ -44,7 +47,7 @@ import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;
  * This class exists to make all script sessions to be liveness artifacts, and provide a default implementation for
  * evaluateScript which handles liveness and diffs in a consistent way.
  */
-public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snapshot> extends LivenessScope
+public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snapshot> extends LivenessArtifact
         implements ScriptSession {
 
     private static final Path CLASS_CACHE_LOCATION = CacheDir.get().resolve("script-session-classes");
@@ -74,6 +77,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     private final ReadWriteLock variableAccessLock = new ReentrantReadWriteLock();
 
     private S lastSnapshot;
+    private final QueryScope queryScope;
 
     protected AbstractScriptSession(
             UpdateGraph updateGraph,
@@ -88,7 +92,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         classCacheDirectory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId)).toFile();
         createOrClearDirectory(classCacheDirectory);
 
-        final QueryScope queryScope = newQueryScope();
+        queryScope = new ScriptSessionQueryScope();
+        manage(queryScope);
         final QueryCompiler compilerContext =
                 QueryCompiler.create(classCacheDirectory, Thread.currentThread().getContextClassLoader());
 
@@ -148,7 +153,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         // closes
         variableAccessLock.writeLock().lock();
         try (final S initialSnapshot = takeSnapshot();
-                final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
+                final SafeCloseable ignored = LivenessScopeStack.open(queryScope, false)) {
 
             try {
                 // Actually evaluate the script; use the enclosing auth context, since AbstractScriptSession's
@@ -253,10 +258,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     protected abstract void evaluate(String command, @Nullable String scriptName);
 
     /**
-     * @return a query scope for this session; only invoked during construction
+     * @return a query scope that wraps
      */
-    protected QueryScope newQueryScope() {
-        return new ScriptSessionQueryScope();
+    public QueryScope getQueryScope() {
+        return queryScope;
     }
 
     private Class<?> getVariableType(final String var) {
@@ -402,15 +407,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     public class ScriptSessionQueryScope extends QueryScope {
         @Override
-        public void putObjectFields(Object object) {
-            throw new UnsupportedOperationException();
-        }
-
-        public ScriptSession scriptSession() {
-            return AbstractScriptSession.this;
-        }
-
-        @Override
         public Set<String> getParamNames() {
             final Set<String> result = new LinkedHashSet<>();
             for (final String name : getVariableProvider().getVariableNames()) {
@@ -455,7 +451,15 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         @Override
         public <T> void putParam(final String name, final T value) {
+            if (value instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(value)) {
+                manage((LivenessReferent) value);
+            }
             getVariableProvider().setVariable(NameValidator.validateQueryParameterName(name), value);
+        }
+
+        @Override
+        public Object unwrapObject(Object object) {
+            return AbstractScriptSession.this.unwrapObject(object);
         }
     }
 }
