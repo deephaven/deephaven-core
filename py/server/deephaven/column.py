@@ -25,8 +25,6 @@ _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.comm
 class ColumnType(Enum):
     NORMAL = _JColumnDefinitionType.Normal
     """ A regular column. """
-    GROUPING = _JColumnDefinitionType.Grouping
-    """ A grouping column. """
     PARTITIONING = _JColumnDefinitionType.Partitioning
     """ A partitioning column. """
 
