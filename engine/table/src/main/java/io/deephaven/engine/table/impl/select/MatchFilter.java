@@ -137,8 +137,7 @@ public class MatchFilter extends WhereFilterImpl {
     @Override
     public List<DataIndex> getDataIndexes(final Table sourceTable) {
         if (sourceDataIndex == null) {
-            // The outside world knows we would like to use this index, we can rely on it being in the correct state
-            // for this cycle only.
+            // We can only use this index on initialization, so after use it must be cleared.
             sourceDataIndex = DataIndexer.of(sourceTable.getRowSet()).getDataIndex(sourceTable, columnName);
         }
         if (sourceDataIndex == null) {
@@ -203,7 +202,7 @@ public class MatchFilter extends WhereFilterImpl {
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
         final WritableRowSet result =
                 columnSource.match(invertMatch, usePrev, caseInsensitive, sourceDataIndex, selection, values);
-        // We won't use the data index for incremental changes, so we should clear it.
+        // We can only use this index on initialization, so after use it must be cleared.
         sourceDataIndex = null;
         return result;
     }
@@ -215,7 +214,7 @@ public class MatchFilter extends WhereFilterImpl {
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
         final WritableRowSet result =
                 columnSource.match(!invertMatch, usePrev, caseInsensitive, sourceDataIndex, selection, values);
-        // We won't use the data index for incremental changes, so we should clear it.
+        // We can only use this index on initialization, so after use it must be cleared.
         sourceDataIndex = null;
         return result;
     }

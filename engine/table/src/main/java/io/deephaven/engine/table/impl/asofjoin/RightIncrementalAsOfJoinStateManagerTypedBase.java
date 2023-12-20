@@ -679,8 +679,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
                         throw new IllegalStateException(
                                 "Grouped rowSet should have exactly one value: " + groupedRowSet);
                     }
-                    // Set a copy of the RowSet into the row set source to protect the original from being closed
-                    // when/if this table is closed.
+                    // Set a copy of the RowSet into the row set source because the original is owned by the index.
                     rightRowSetSource.set(slot, rowSetSource.get(groupedRowSet.firstRowKey()).copy());
                     stateSource.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_ROWSET));
                 }
@@ -709,8 +708,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
                         throw new IllegalStateException(
                                 "Grouped rowSet should have exactly one value: " + groupedRowSet);
                     }
-                    // Set a copy of the RowSet into the row set source to protect the original from being closed
-                    // when/if this table is closed.
+                    // Set a copy of the RowSet into the row set source because the original is owned by the index.
                     leftRowSetSource.set(slot, rowSetSource.get(groupedRowSet.firstRowKey()).copy());
                     stateSource.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_ROWSET));
                 }

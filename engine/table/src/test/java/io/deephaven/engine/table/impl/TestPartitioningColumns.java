@@ -5,8 +5,14 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
@@ -83,6 +89,39 @@ public class TestPartitioningColumns {
                         },
                         null),
                 null);
+
+        for (String colName : partitionKeys) {
+            final DataIndex fullIndex = DataIndexer.of(result.getRowSet()).getDataIndex(result, colName);
+            Assert.neqNull(fullIndex, "fullIndex");
+
+            final ColumnSource<?>[] columns = new ColumnSource<?>[] {result.getColumnSource(colName)};
+
+            final DataIndex.RowKeyLookup fullIndexRowKeyLookup = fullIndex.rowKeyLookup(columns);
+            final ColumnSource<RowSet> fullIndexRowSetColumn = fullIndex.rowSetColumn();
+
+            ChunkSource.WithPrev<?> tableKeys = DataIndexUtils.makeBoxedKeySource(columns);
+
+            // Iterate through the entire source table and verify the lookup row set is valid and contains this row.
+            try (final RowSet.Iterator rsIt = result.getRowSet().iterator();
+                    final CloseableIterator<Object> keyIt =
+                            ChunkedColumnIterator.make(tableKeys, result.getRowSet())) {
+
+                while (rsIt.hasNext() && keyIt.hasNext()) {
+                    final long rowKey = rsIt.nextLong();
+                    final Object key = keyIt.next();
+
+                    // Verify the row sets at the lookup keys match.
+                    final long fullRowKey = fullIndexRowKeyLookup.apply(key, false);
+                    Assert.geqZero(fullRowKey, "fullRowKey");
+
+                    final RowSet fullRowSet = fullIndexRowSetColumn.get(fullRowKey);
+                    Assert.neqNull(fullRowSet, "fullRowSet");
+
+                    Assert.eqTrue(fullRowSet.containsRange(rowKey, rowKey), "fullRowSet.containsRange(rowKey, rowKey)");
+                }
+            }
+
+        }
 
         final Table expected = input.sort(input.getDefinition().getColumnNamesArray());
 

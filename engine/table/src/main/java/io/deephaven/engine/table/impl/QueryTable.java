@@ -1658,7 +1658,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         // Maintain a list of unique old to new mappings.
         // NOTE: this is complex because select() may return multiple aliases for the same source column. Until/unless
-        // we have a guarantee that only a single alias is creating, we must create a new data index for each alias and
+        // we have a guarantee that only a single alias is created, we must create a new data index for each alias and
         // this requires generating all unique mappings for these columns.
         final List<Map<ColumnSource<?>, ColumnSource<?>>> oldToNewMaps = new ArrayList<>();
 

@@ -358,8 +358,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
                         throw new IllegalStateException(
                                 "Grouped rowSet should have exactly one value: " + groupedRowSet);
                     }
-                    // Set a copy of the RowSet into the row set source to protect the original from being closed
-                    // when/if this table is closed.
+                    // Store a copy of the RowSet since this is owned by the index.
                     rightRowSetSource.set(slot, rowSetSource.get(groupedRowSet.firstRowKey()).copy());
                 }
             }

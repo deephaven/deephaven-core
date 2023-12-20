@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.RowSetColumnSourceWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,8 +43,13 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
     private final WritableColumnSource<KEY_TYPE> indexKeySource;
     private final ObjectArraySource<RowSet> indexRowSetSource;
 
+    private final ColumnSource<KEY_TYPE> locationTableKeySource;
+    private final ColumnSource<?> locationTableKeySourceReinterpreted;
+    private final ColumnSource<RowSet> locationTableRowSetSource;
+
+
     /** Provides fast lookup from keys to positions in the index table **/
-    private final TObjectIntHashMap<KEY_TYPE> keyPositionMap;
+    private final TObjectIntHashMap<Object> keyPositionMap;
 
     private final ModifiedColumnSet upstreamLocationModified;
     private final ModifiedColumnSet upstreamRowSetModified;
@@ -79,6 +85,10 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
                 keyColumnName, indexKeySource,
                 ROW_SET_COLUMN_NAME, RowSetColumnSourceWrapper.from(indexRowSetSource)));
 
+        locationTableKeySource = locationTable.getColumnSource(keyColumnName, keySource.getType());
+        locationTableKeySourceReinterpreted = ReinterpretUtils.maybeConvertToPrimitive(locationTableKeySource);
+        locationTableRowSetSource = locationTable.getColumnSource(columnSourceManager.rowSetColumnName(), RowSet.class);
+
         keyPositionMap = new TObjectIntHashMap<>(locationTable.intSize(), 0.5F, KEY_NOT_FOUND);
 
         // Create a dummy update for the initial state.
@@ -89,7 +99,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
                 RowSetShiftData.EMPTY,
                 ModifiedColumnSet.EMPTY);
         try {
-            processUpdate(locationTable, initialUpdate, true);
+            processUpdate(initialUpdate, true);
         } finally {
             initialUpdate.release();
         }
@@ -104,7 +114,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
                     "Partitioning Column Data Index - %s", keyColumnName), locationTable, indexTable) {
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {
-                    processUpdate(getParent(), upstream, false);
+                    processUpdate(upstream, false);
                 }
             };
             locationTable.addUpdateListener(tableListener);
@@ -117,7 +127,6 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
     }
 
     private synchronized void processUpdate(
-            @NotNull final Table locationTable,
             @NotNull final TableUpdate upstream,
             final boolean initializing) {
         if (upstream.empty()) {
@@ -137,20 +146,15 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
         final int previousSize = keyPositionMap.size();
         final RowSetBuilderRandom modifiedBuilder = initializing ? null : RowSetFactory.builderRandom();
 
-        final ColumnSource<KEY_TYPE> keyColumnSource =
-                locationTable.getColumnSource(keyColumnName, indexKeySource.getType());
-        final ColumnSource<RowSet> rowSetColumnSource =
-                locationTable.getColumnSource(columnSourceManager.rowSetColumnName(), RowSet.class);
-
         if (upstream.added().isNonempty()) {
             upstream.added().forAllRowKeys((final long locationRowKey) -> handleKey(
-                    locationRowKey, false, keyColumnSource, rowSetColumnSource, previousSize, modifiedBuilder));
+                    locationRowKey, false, previousSize, modifiedBuilder));
         }
 
         if (upstream.modified().isNonempty() && upstream.modifiedColumnSet().containsAny(upstreamRowSetModified)) {
             Assert.eqFalse(initializing, "initializing");
             upstream.modified().forAllRowKeys((final long locationRowKey) -> handleKey(
-                    locationRowKey, true, keyColumnSource, rowSetColumnSource, previousSize, modifiedBuilder));
+                    locationRowKey, true, previousSize, modifiedBuilder));
         }
 
         final int newSize = keyPositionMap.size();
@@ -181,25 +185,27 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
     private void handleKey(
             final long locationRowKey,
             final boolean isModify,
-            @NotNull final ColumnSource<KEY_TYPE> keyColumnSource,
-            @NotNull final ColumnSource<RowSet> rowSetColumnSource,
             final int previousSize,
             @Nullable final RowSetBuilderRandom modifiedBuilder) {
-        final KEY_TYPE locationKey = keyColumnSource.get(locationRowKey);
-        final RowSet regionRowSet = rowSetColumnSource.get(locationRowKey);
+        final KEY_TYPE locationKey = locationTableKeySource.get(locationRowKey);
+        final Object locationKeyReinterpreted = locationTableKeySourceReinterpreted.get(locationRowKey);
+        final RowSet regionRowSet = locationTableRowSetSource.get(locationRowKey);
         if (regionRowSet == null) {
             throw new IllegalStateException(String.format("Null row set found at location index %d", locationRowKey));
         }
 
         final long regionFirstRowKey = RegionedColumnSource.getFirstRowKey(Math.toIntExact(locationRowKey));
-        final int pos = keyPositionMap.get(locationKey);
+        // Test using the (maybe) reinterpreted key
+        final int pos = keyPositionMap.get(locationKeyReinterpreted);
         if (pos == KEY_NOT_FOUND) {
             if (isModify) {
                 throw new IllegalStateException(String.format("Modified partition key %s not found", locationKey));
             }
             final int addedKeyPos = keyPositionMap.size();
-            keyPositionMap.put(locationKey, addedKeyPos);
+            // Store the (maybe) reinterpreted key in the lookup hashmap.
+            keyPositionMap.put(locationKeyReinterpreted, addedKeyPos);
 
+            // Use the original key for the index table output column.
             indexKeySource.ensureCapacity(addedKeyPos + 1);
             indexKeySource.set(addedKeyPos, locationKey);
 
