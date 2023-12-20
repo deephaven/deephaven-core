@@ -23,10 +23,7 @@ import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.IntStream;
 
 /**
@@ -74,6 +71,10 @@ class MergedDataIndex extends BaseDataIndex {
         // Create an in-order reverse lookup map for the key column names
         keyColumnMap = Collections.unmodifiableMap(IntStream.range(0, keySources.length).sequential()
                 .collect(LinkedHashMap::new, (m, i) -> m.put(keySources[i], keyColumnNames[i]), Assert::neverInvoked));
+        if (keyColumnMap.size() != keySources.length) {
+            throw new IllegalArgumentException(String.format("Duplicate key sources found in %s for %s",
+                    Arrays.toString(keySources), Arrays.toString(keyColumnNames)));
+        }
 
         if (columnSourceManager.locationTable().isRefreshing()) {
             throw new UnsupportedOperationException("Refreshing location tables are not currently supported");

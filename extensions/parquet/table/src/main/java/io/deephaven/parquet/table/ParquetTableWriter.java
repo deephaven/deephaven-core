@@ -3,7 +3,6 @@
  */
 package io.deephaven.parquet.table;
 
-import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -43,19 +42,19 @@ import java.nio.IntBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.IntSupplier;
 
 /**
  * API for writing DH tables in parquet format
  */
 public class ParquetTableWriter {
+
     public static final String METADATA_KEY = "deephaven";
-    public static final String BEGIN_POS = "dh_begin_pos";
-    public static final String END_POS = "dh_end_pos";
-    public static final String GROUPING_KEY = "dh_key";
 
-    public static final String INDEX_COL_NAME = "dh_row_set";
+    public static final String GROUPING_KEY_COLUMN_NAME = "dh_key";
+    public static final String GROUPING_BEGIN_POS_COLUMN_NAME = "dh_begin_pos";
+    public static final String GROUPING_END_POS_COLUMN_NAME = "dh_end_pos";
 
+    public static final String INDEX_ROW_SET_COLUMN_NAME = "dh_row_set";
 
     public static final String PARQUET_FILE_EXTENSION = ".parquet";
 
@@ -64,11 +63,11 @@ public class ParquetTableWriter {
      */
     public static class IndexWritingInfo {
         /**
-         * Name(s) of the indexing key column(s)
+         * Names of the indexing key columns
          */
         public final String[] indexColumnNames;
         /**
-         * Parquet name(s) of the indexing key column(s)
+         * Parquet names of the indexing key columns
          */
         public final String[] parquetColumnNames;
         /**
@@ -78,12 +77,13 @@ public class ParquetTableWriter {
 
         /**
          * Destination path for writing the index file. The two filenames can differ because we write index files to
-         * shadow file paths first and then place them at the final path once the write is complete. But the metadata
-         * should always hold the accurate path.
+         * shadow file paths first and then place them at the final path once the write is complete. The metadata should
+         * always hold the accurate path.
          */
         public final File destFile;
 
-        public IndexWritingInfo(final String[] indexColumnNames,
+        public IndexWritingInfo(
+                final String[] indexColumnNames,
                 final String[] parquetColumnNames,
                 final File metadataFilePath,
                 final File destFile) {
@@ -102,8 +102,7 @@ public class ParquetTableWriter {
      * @param writeInstructions Write instructions for customizations while writing
      * @param destPathName The destination path
      * @param incomingMeta A map of metadata values to be stores in the file footer
-     * @param indexInfoList column arrays containing the column names(s) for written indexes (the write operation will
-     *        store the index info as sidecar tables)
+     * @param indexInfoList Arrays containing the column namesS for indexes to persist as sidecar tables
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
      *         unsupported types)
      * @throws IOException For file writing related errors
@@ -120,33 +119,32 @@ public class ParquetTableWriter {
         List<File> cleanupFiles = null;
         try {
             if (indexInfoList != null) {
+                if (t.isRefreshing()) {
+                    // We mustn't write inconsistent data indexes. This check is "basic". Writing snapshotting logic
+                    // here is probably "too far to go" for Parquet writing code, but hopefully users aren't naively
+                    // writing indexed Parquet tables from within listeners or transforms.
+                    t.getUpdateGraph().checkInitiateSerialTableOperation();
+                }
+
                 cleanupFiles = new ArrayList<>(indexInfoList.size());
                 final Path destDirPath = Paths.get(destPathName).getParent();
                 final DataIndexer dataIndexer = DataIndexer.of(t.getRowSet());
                 for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
-                    final String[] indexColumnNames = info.indexColumnNames;
-                    final ColumnSource<?>[] indexColumns = Arrays.stream(indexColumnNames)
-                            .map(t::getColumnSource)
-                            .toArray(ColumnSource[]::new);
+                    try (final SafeCloseable ignored = t.isRefreshing() ? LivenessScopeStack.open() : null) {
+                        // This will retrieve an existing index if one exists, or create a new one if not
+                        final BasicDataIndex dataIndex = Optional
+                                .ofNullable(dataIndexer.getDataIndex(t, info.indexColumnNames))
+                                .orElse(dataIndexer.createDataIndex(t, info.indexColumnNames))
+                                .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
+                        final Table indexTable = dataIndex.table();
 
-                    // This will retrieve an existing index if one exists, or create a new one if not.
-                    if (!dataIndexer.hasDataIndex(indexColumns)) {
-                        dataIndexer.createDataIndex(t, indexColumnNames);
+                        cleanupFiles.add(info.destFile);
+                        tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
+                                destDirPath.relativize(info.metadataFilePath.toPath()).toString(),
+                                info.parquetColumnNames));
+                        write(indexTable, indexTable.getDefinition(), writeInstructions,
+                                info.destFile.getAbsolutePath(), Collections.emptyMap(), TableInfo.builder());
                     }
-                    final BasicDataIndex dataIndex = dataIndexer.getDataIndex(t, indexColumnNames)
-                            .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
-                    final Table indexTable = dataIndex.table();
-
-                    final String[] parquetColumnNames = info.parquetColumnNames;
-                    final File metadataFilePath = info.metadataFilePath;
-                    final File indexDestFile = info.destFile;
-                    cleanupFiles.add(indexDestFile);
-
-                    tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
-                            destDirPath.relativize(metadataFilePath.toPath()).toString(),
-                            parquetColumnNames));
-                    write(indexTable, indexTable.getDefinition(), writeInstructions,
-                            indexDestFile.getAbsolutePath(), Collections.emptyMap(), TableInfo.builder());
                 }
             }
             write(t, definition, writeInstructions, destPathName, incomingMeta, tableInfoBuilder);
@@ -343,84 +341,6 @@ public class ParquetTableWriter {
                 writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData);
-    }
-
-    private interface ColumnWriteHelper {
-
-        boolean isVectorFormat();
-
-        IntSupplier valuePageSizeSupplier();
-    }
-
-    /**
-     * ColumnWriteHelper for columns of "flat" data with no nesting or vector encoding.
-     */
-    private static class FlatColumnWriterHelper implements ColumnWriteHelper {
-
-        /**
-         * The maximum page size for values.
-         */
-        private final int maxValuePageSize;
-
-        private FlatColumnWriterHelper(final int maxValuePageSize) {
-            this.maxValuePageSize = maxValuePageSize;
-        }
-
-        public boolean isVectorFormat() {
-            return false;
-        }
-
-        public IntSupplier valuePageSizeSupplier() {
-            return () -> maxValuePageSize;
-        }
-    }
-
-    /**
-     * This is a helper struct storing useful data required to write column source in the parquet file, particularly
-     * helpful for writing array/vector data.
-     */
-    private static class VectorColumnWriterHelper implements ColumnWriteHelper {
-
-        /**
-         * The source for per-row array/vector lengths.
-         */
-        private final ColumnSource<?> lengthSource;
-
-        /**
-         * The RowSet for (ungrouped) values.
-         */
-        private final RowSet valueRowSet;
-
-        /**
-         * The size of each value page. Parallel to {@link #lengthPageSizes}.
-         */
-        private final TIntArrayList valuePageSizes;
-
-        /**
-         * The size of each length page. Parallel to {@link #valuePageSizes}.
-         */
-        private final TIntArrayList lengthPageSizes;
-
-        private VectorColumnWriterHelper(
-                @NotNull final ColumnSource<?> lengthSource,
-                @NotNull final RowSet valueRowSet) {
-            this.lengthSource = lengthSource;
-            this.valueRowSet = valueRowSet;
-            valuePageSizes = new TIntArrayList();
-            lengthPageSizes = new TIntArrayList();
-        }
-
-        public boolean isVectorFormat() {
-            return true;
-        }
-
-        public IntSupplier lengthPageSizeSupplier() {
-            return lengthPageSizes.iterator()::next;
-        }
-
-        public IntSupplier valuePageSizeSupplier() {
-            return valuePageSizes.iterator()::next;
-        }
     }
 
     @VisibleForTesting
