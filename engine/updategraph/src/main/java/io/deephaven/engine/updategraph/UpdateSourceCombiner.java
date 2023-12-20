@@ -23,6 +23,14 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
         this.updateGraph = updateGraph;
     }
 
+    /**
+     * Add this UpdateSourceCombiner to the {@link UpdateGraph update graph} passed at construction. This should only be
+     * done once.
+     */
+    public void install() {
+        updateGraph.addSource(this);
+    }
+
     @Override
     public void run() {
         combinedTables.forEachValidReference(Runnable::run);
