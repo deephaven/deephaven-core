@@ -282,7 +282,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 ScriptSession scriptSession =
                         exportedConsole != null ? exportedConsole.get() : scriptSessionProvider.get();
                 Table table = exportedTable.get();
-                scriptSession.setVariable(request.getVariableName(), table);
+                scriptSession.getVariableProvider().setVariable(request.getVariableName(), table);
                 if (DynamicNode.notDynamicOrIsRefreshing(table)) {
                     scriptSession.manage(table);
                 }
@@ -305,7 +305,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 final ScriptSession scriptSession = scriptSessionProvider.get();
                 scriptSession.evaluateScript(
                         "from deephaven_internal.auto_completer import jedi_settings ; jedi_settings.set_scope(globals())");
-                settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
+                settings[0] = scriptSession.getVariableProvider().getVariable("jedi_settings", null);
             } catch (Exception err) {
                 log.error().append("Error trying to enable jedi autocomplete").append(err).endl();
             }

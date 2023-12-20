@@ -23,7 +23,6 @@ import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
-import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.thread.NamingThreadFactory;
 import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
@@ -142,13 +141,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
             module._register_named_java_executor("serial", executorService::submit);
             module._register_named_java_executor("concurrent", executorService::submit);
         }
-    }
-
-    @Override
-    @VisibleForTesting
-    public QueryScope newQueryScope() {
-        // depend on the GIL instead of local synchronization
-        return new UnsynchronizedScriptSessionQueryScope(this);
     }
 
     /**

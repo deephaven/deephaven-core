@@ -49,7 +49,8 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
         switch (value.getRequestCase()) {
             case OPEN_DOCUMENT: {
                 final TextDocumentItem doc = value.getOpenDocument().getTextDocument();
-                PyObject completer = (PyObject) scriptSession.get().getVariable("jedi_settings");
+                PyObject completer =
+                        (PyObject) scriptSession.get().getVariableProvider().getVariable("jedi_settings", null);
                 completer.callMethod("open_doc", doc.getText(), doc.getUri(), doc.getVersion());
                 break;
             }
@@ -57,7 +58,8 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 ChangeDocumentRequest request = value.getChangeDocument();
                 final VersionedTextDocumentIdentifier text = request.getTextDocument();
 
-                PyObject completer = (PyObject) scriptSession.get().getVariable("jedi_settings");
+                PyObject completer =
+                        (PyObject) scriptSession.get().getVariableProvider().getVariable("jedi_settings", null);
                 String uri = text.getUri();
                 int version = text.getVersion();
                 String document = completer.callMethod("get_doc", text.getUri()).getStringValue();
@@ -75,7 +77,8 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 break;
             }
             case CLOSE_DOCUMENT: {
-                PyObject completer = (PyObject) scriptSession.get().getVariable("jedi_settings");
+                PyObject completer =
+                        (PyObject) scriptSession.get().getVariableProvider().getVariable("jedi_settings", null);
                 CloseDocumentRequest request = value.getCloseDocument();
                 completer.callMethod("close_doc", request.getTextDocument().getUri());
                 break;
@@ -110,7 +113,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 request.getRequestId() > 0 ? request.getRequestId() : request.getGetCompletionItems().getRequestId();
         try {
             final ScriptSession scriptSession = exportedConsole.get();
-            PyObject completer = (PyObject) scriptSession.getVariable("jedi_settings");
+            PyObject completer = (PyObject) scriptSession.getVariableProvider().getVariable("jedi_settings", null);
             boolean canJedi = completer.callMethod("is_enabled").getBooleanValue();
             if (!canJedi) {
                 log.trace().append("Ignoring completion request because jedi is disabled").endl();

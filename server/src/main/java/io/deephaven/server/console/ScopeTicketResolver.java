@@ -6,6 +6,7 @@ package io.deephaven.server.console;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.Table;
@@ -58,29 +59,28 @@ public class ScopeTicketResolver extends TicketResolverBase {
         // there is no mechanism to wait for a scope variable to resolve; require that the scope variable exists now
         final String scopeName = nameForDescriptor(descriptor, logId);
 
-        final ScriptSession gss = scriptSessionProvider.get();
-        final Flight.FlightInfo flightInfo =
-                gss.getExecutionContext().getUpdateGraph().sharedLock().computeLocked(() -> {
-                    Object scopeVar = gss.getVariable(scopeName, null);
-                    if (scopeVar == null) {
-                        throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                                "Could not resolve '" + logId + ": no variable exists with name '" + scopeName + "'");
-                    }
-                    if (scopeVar instanceof Table) {
-                        scopeVar = authorization.transform(scopeVar);
-                        return TicketRouter.getFlightInfo((Table) scopeVar, descriptor, flightTicketForName(scopeName));
-                    }
+        Object scopeVar = scriptSessionProvider.get().getVariableProvider().getVariable(scopeName, null);
+        if (scopeVar == null) {
+            throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
+                    "Could not resolve '" + logId + ": no variable exists with name '" + scopeName + "'");
+        }
+        if (!(scopeVar instanceof Table)) {
+            throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
+                    "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
+        }
 
-                    throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                            "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
-                });
+        Table transformed = authorization.transform((Table) scopeVar);
+        Flight.FlightInfo flightInfo =
+                TicketRouter.getFlightInfo(transformed, descriptor, flightTicketForName(scopeName));
 
         return SessionState.wrapAsExport(flightInfo);
     }
 
     @Override
     public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
-        scriptSessionProvider.get().getVariables().forEach((varName, varObj) -> {
+        QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        queryScope.getParamNames().forEach((varName) -> {
+            Object varObj = queryScope.readParamValue(varName);
             if (varObj instanceof Table) {
                 visitor.accept(TicketRouter.getFlightInfo((Table) varObj, descriptorForName(varName),
                         flightTicketForName(varName)));
@@ -104,15 +104,12 @@ public class ScopeTicketResolver extends TicketResolverBase {
             @Nullable final SessionState session, final String scopeName, final String logId) {
         final ScriptSession gss = scriptSessionProvider.get();
         // fetch the variable from the scope right now
-        T export = gss.getExecutionContext().getUpdateGraph().sharedLock().computeLocked(() -> {
-            T scopeVar = null;
-            try {
-                // noinspection unchecked
-                scopeVar = (T) gss.unwrapObject(gss.getVariable(scopeName));
-            } catch (QueryScope.MissingVariableException ignored) {
-            }
-            return scopeVar;
-        });
+        T export = null;
+        try {
+            // noinspection unchecked
+            export = (T) gss.unwrapObject(gss.getVariableProvider().getVariable(scopeName, null));
+        } catch (QueryScope.MissingVariableException ignored) {
+        }
 
         export = authorization.transform(export);
 
@@ -162,7 +159,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
                     if (value instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(value)) {
                         gss.manage((LivenessReferent) value);
                     }
-                    gss.setVariable(varName, value);
+                    gss.getVariableProvider().setVariable(varName, value);
                     if (onPublish != null) {
                         onPublish.run();
                     }

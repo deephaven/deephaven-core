@@ -248,11 +248,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         return script + "_" + (++counter) + ".groovy";
     }
 
-    @Override
-    public QueryScope newQueryScope() {
-        return new SynchronizedScriptSessionQueryScope(this);
-    }
-
     public static InputStream findScript(String relativePath) throws IOException {
         return new ScriptFinder(DEFAULT_SCRIPT_PATH).findScript(relativePath);
     }

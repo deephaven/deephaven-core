@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * ScriptSession implementation that simply allows variables to be exported. This is not intended for use in user
@@ -36,11 +35,6 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
 
         this.scriptType = scriptType;
         variables = new LinkedHashMap<>();
-    }
-
-    @Override
-    public QueryScope newQueryScope() {
-        return new SynchronizedScriptSessionQueryScope(this);
     }
 
     @NotNull

@@ -31,9 +31,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;
 
@@ -42,7 +45,7 @@ import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;
  * evaluateScript which handles liveness and diffs in a consistent way.
  */
 public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snapshot> extends LivenessScope
-        implements ScriptSession, VariableProvider {
+        implements ScriptSession {
 
     private static final Path CLASS_CACHE_LOCATION = CacheDir.get().resolve("script-session-classes");
 
@@ -67,6 +70,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
+
+    private final ReadWriteLock variableAccessLock = new ReentrantReadWriteLock();
 
     private S lastSnapshot;
 
@@ -141,6 +146,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         final Changes diff;
         // retain any objects which are created in the executed code, we'll release them when the script session
         // closes
+        variableAccessLock.writeLock().lock();
         try (final S initialSnapshot = takeSnapshot();
                 final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
 
@@ -157,6 +163,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             observeScopeChanges();
             // Use the "last" snapshot created as a side effect of observeScopeChanges() as our "to"
             diff = createDiff(initialSnapshot, lastSnapshot, evaluateErr);
+        } finally {
+            variableAccessLock.writeLock().unlock();
         }
 
         return diff;
@@ -247,10 +255,11 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     /**
      * @return a query scope for this session; only invoked during construction
      */
-    protected abstract QueryScope newQueryScope();
+    protected QueryScope newQueryScope() {
+        return new ScriptSessionQueryScope();
+    }
 
-    @Override
-    public Class<?> getVariableType(final String var) {
+    private Class<?> getVariableType(final String var) {
         final Object result = getVariable(var, null);
         if (result == null) {
             return null;
@@ -262,47 +271,149 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     }
 
 
-    @Override
     public TableDefinition getTableDefinition(final String var) {
         Object o = getVariable(var, null);
         return o instanceof Table ? ((Table) o).getDefinition() : null;
     }
 
+
+    /**
+     * Retrieve a variable from the script session's bindings.
+     * <p/>
+     * Please use {@link ScriptSession#getVariable(String, Object)} if you expect the variable may not exist.
+     *
+     * @param name the variable to retrieve
+     * @return the variable
+     * @throws QueryScope.MissingVariableException if the variable does not exist
+     */
+    @NotNull
+    protected abstract Object getVariable(String name) throws QueryScope.MissingVariableException;
+
+    /**
+     * Retrieve a variable from the script session's bindings. If the variable is not present, return defaultValue.
+     * <p>
+     * If the variable is present, but is not of type (T), a ClassCastException may result.
+     *
+     * @param name the variable to retrieve
+     * @param defaultValue the value to use when no value is present in the session's scope
+     * @param <T> the type of the variable
+     * @return the value of the variable, or defaultValue if not present
+     */
+    protected abstract <T> T getVariable(String name, T defaultValue);
+
+    /**
+     * Retrieves all of the variables present in the session's scope (e.g., Groovy binding, Python globals()).
+     *
+     * @return an unmodifiable map with variable names as the keys, and the Objects as the result
+     */
+    protected abstract Map<String, Object> getVariables();
+
+    /**
+     * Retrieves all of the variable names present in the session's scope
+     *
+     * @return an unmodifiable set of variable names
+     */
+    protected abstract Set<String> getVariableNames();
+
+    /**
+     * Check if the scope has the given variable name
+     *
+     * @param name the variable name
+     * @return True iff the scope has the given variable name
+     */
+    protected abstract boolean hasVariableName(String name);
+
+    /**
+     * Inserts a value into the script's scope.
+     *
+     * @param name the variable name to set
+     * @param value the new value of the variable
+     */
+    protected abstract void setVariable(String name, @Nullable Object value);
+
     @Override
     public VariableProvider getVariableProvider() {
-        return this;
+        return new VariableProvider() {
+            @Override
+            public Set<String> getVariableNames() {
+                variableAccessLock.readLock().lock();
+                try {
+                    return AbstractScriptSession.this.getVariableNames();
+                } finally {
+                    variableAccessLock.readLock().unlock();
+                }
+            }
+
+            @Override
+            public Class<?> getVariableType(String var) {
+                variableAccessLock.readLock().lock();
+                try {
+                    return AbstractScriptSession.this.getVariableType(var);
+                } finally {
+                    variableAccessLock.readLock().unlock();
+                }
+            }
+
+            @Override
+            public <T> T getVariable(String var, T defaultValue) {
+                variableAccessLock.readLock().lock();
+                try {
+                    return AbstractScriptSession.this.getVariable(var, defaultValue);
+                } finally {
+                    variableAccessLock.readLock().unlock();
+                }
+            }
+
+            @Override
+            public TableDefinition getTableDefinition(String var) {
+                variableAccessLock.readLock().lock();
+                try {
+                    return AbstractScriptSession.this.getTableDefinition(var);
+                } finally {
+                    variableAccessLock.readLock().unlock();
+                }
+            }
+
+            @Override
+            public boolean hasVariableName(String name) {
+                variableAccessLock.readLock().lock();
+                try {
+                    return AbstractScriptSession.this.hasVariableName(name);
+                } finally {
+                    variableAccessLock.readLock().unlock();
+                }
+            }
+
+            @Override
+            public <T> void setVariable(String name, T value) {
+                variableAccessLock.writeLock().lock();
+                try {
+                    AbstractScriptSession.this.setVariable(name, value);
+                } finally {
+                    variableAccessLock.writeLock().unlock();
+                }
+            }
+        };
     }
 
     // -----------------------------------------------------------------------------------------------------------------
     // ScriptSession-based QueryScope implementation, with no remote scope or object reflection support
     // -----------------------------------------------------------------------------------------------------------------
 
-    public abstract static class ScriptSessionQueryScope extends QueryScope {
-        final ScriptSession scriptSession;
-
-        public ScriptSessionQueryScope(ScriptSession scriptSession) {
-            this.scriptSession = scriptSession;
-        }
-
+    public class ScriptSessionQueryScope extends QueryScope {
         @Override
         public void putObjectFields(Object object) {
             throw new UnsupportedOperationException();
         }
 
         public ScriptSession scriptSession() {
-            return scriptSession;
-        }
-    }
-
-    public static class UnsynchronizedScriptSessionQueryScope extends ScriptSessionQueryScope {
-        public UnsynchronizedScriptSessionQueryScope(@NotNull final ScriptSession scriptSession) {
-            super(scriptSession);
+            return AbstractScriptSession.this;
         }
 
         @Override
         public Set<String> getParamNames() {
             final Set<String> result = new LinkedHashSet<>();
-            for (final String name : scriptSession.getVariableNames()) {
+            for (final String name : getVariableProvider().getVariableNames()) {
                 if (NameValidator.isValidQueryParameterName(name)) {
                     result.add(name);
                 }
@@ -312,7 +423,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         @Override
         public boolean hasParamName(String name) {
-            return NameValidator.isValidQueryParameterName(name) && scriptSession.hasVariableName(name);
+            return NameValidator.isValidQueryParameterName(name) && getVariableProvider().hasVariableName(name);
         }
 
         @Override
@@ -322,7 +433,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 throw new QueryScope.MissingVariableException("Name " + name + " is invalid");
             }
             // noinspection unchecked
-            return new QueryScopeParam<>(name, (T) scriptSession.getVariable(name));
+            return new QueryScopeParam<>(name, (T) getVariableProvider().getVariable(name, null));
         }
 
         @Override
@@ -331,7 +442,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 throw new QueryScope.MissingVariableException("Name " + name + " is invalid");
             }
             // noinspection unchecked
-            return (T) scriptSession.getVariable(name);
+            return (T) getVariableProvider().getVariable(name, null);
         }
 
         @Override
@@ -339,49 +450,12 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             if (!NameValidator.isValidQueryParameterName(name)) {
                 return defaultValue;
             }
-            return scriptSession.getVariable(name, defaultValue);
+            return getVariableProvider().getVariable(name, defaultValue);
         }
 
         @Override
         public <T> void putParam(final String name, final T value) {
-            scriptSession.setVariable(NameValidator.validateQueryParameterName(name), value);
-        }
-    }
-
-    public static class SynchronizedScriptSessionQueryScope extends UnsynchronizedScriptSessionQueryScope {
-        public SynchronizedScriptSessionQueryScope(@NotNull final ScriptSession scriptSession) {
-            super(scriptSession);
-        }
-
-        @Override
-        public synchronized Set<String> getParamNames() {
-            return super.getParamNames();
-        }
-
-        @Override
-        public synchronized boolean hasParamName(String name) {
-            return super.hasParamName(name);
-        }
-
-        @Override
-        protected synchronized <T> QueryScopeParam<T> createParam(final String name)
-                throws QueryScope.MissingVariableException {
-            return super.createParam(name);
-        }
-
-        @Override
-        public synchronized <T> T readParamValue(final String name) throws QueryScope.MissingVariableException {
-            return super.readParamValue(name);
-        }
-
-        @Override
-        public synchronized <T> T readParamValue(final String name, final T defaultValue) {
-            return super.readParamValue(name, defaultValue);
-        }
-
-        @Override
-        public synchronized <T> void putParam(final String name, final T value) {
-            super.putParam(name, value);
+            getVariableProvider().setVariable(NameValidator.validateQueryParameterName(name), value);
         }
     }
 }

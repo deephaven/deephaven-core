@@ -3,12 +3,11 @@ package io.deephaven.engine.sql;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutput.ObjFormatter;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableCreatorImpl;
-import io.deephaven.engine.util.AbstractScriptSession.ScriptSessionQueryScope;
-import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.qst.column.header.ColumnHeader;
@@ -83,16 +82,14 @@ public final class Sql {
         final Map<String, Table> scope = new HashMap<>();
         // getVariables() is inefficient
         // See SQLTODO(catalog-reader-implementation)
-        for (Entry<String, Object> e : currentScriptSession().getVariables().entrySet()) {
-            if (e.getValue() instanceof Table) {
-                scope.put(e.getKey(), (Table) e.getValue());
+        QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        for (String name : queryScope.getParamNames()) {
+            Object paramValue = queryScope.readParamValue(name);
+            if (paramValue instanceof Table) {
+                scope.put(name, (Table) paramValue);
             }
         }
         return scope;
-    }
-
-    private static ScriptSession currentScriptSession() {
-        return ((ScriptSessionQueryScope) ExecutionContext.getContext().getQueryScope()).scriptSession();
     }
 
     private static TableHeader adapt(TableDefinition tableDef) {
