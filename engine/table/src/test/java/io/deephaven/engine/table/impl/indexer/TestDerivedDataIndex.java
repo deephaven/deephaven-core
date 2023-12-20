@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
@@ -58,6 +59,80 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
         dataIndexes.add(dataIndexer.getDataIndex(testTable, "Sym"));
         dataIndexes.add(dataIndexer.getDataIndex(testTable, "Sym2"));
         dataIndexes.add(dataIndexer.getDataIndex(testTable, "Sym", "Sym2"));
+    }
+
+    @Test
+    public void testFullIndexLookup() {
+        final Random random = new Random(0);
+
+        for (final DataIndex dataIndex : dataIndexes) {
+            assertRefreshing(dataIndex);
+
+            final ColumnSource<?>[] columns = Arrays.stream(dataIndex.keyColumnNames())
+                    .map(testTable::getColumnSource)
+                    .toArray(ColumnSource[]::new);
+            assertLookupFromTable(testTable, dataIndex, columns);
+        }
+
+        // Transform and validate
+        for (int ii = 0; ii < MAX_STEPS; ++ii) {
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateTableUpdates(STEP_SIZE, random, testTable, columnInfo));
+
+            for (final DataIndex dataIndex : dataIndexes) {
+                assertRefreshing(dataIndex);
+
+                final ColumnSource<?>[] columns = Arrays.stream(dataIndex.keyColumnNames())
+                        .map(testTable::getColumnSource)
+                        .toArray(ColumnSource[]::new);
+                assertLookupFromTable(testTable, dataIndex, columns);
+            }
+        }
+    }
+
+
+    @Test
+    public void testMultiColumnOutOfOrderLookup() {
+        final Random random = new Random(0);
+        final DataIndexer dataIndexer = DataIndexer.of(testTable.getRowSet());
+
+        final DataIndex dataIndex = dataIndexer.getDataIndex(testTable, "Sym", "Sym2");
+        Assert.neqNull(dataIndex, "dataIndex");
+
+        // Make sure the index is found with the re-ordered column names.
+        Assert.eqTrue(dataIndexer.hasDataIndex(testTable, "Sym2", "Sym"),
+                "dataIndexer.hasDataIndex(testTable, \"Sym2\", \"Sym\")");
+        final DataIndex tmp1 = dataIndexer.getDataIndex(testTable, "Sym2", "Sym");
+        Assert.eq(dataIndex, "dataIndex", tmp1, "tmp1");
+
+        final ColumnSource<?>[] columnsReordered = new ColumnSource<?>[] {
+                testTable.getColumnSource("Sym2"),
+                testTable.getColumnSource("Sym")
+        };
+        // Make sure the index is found with re-ordered columns.
+        Assert.eqTrue(dataIndexer.hasDataIndex(columnsReordered), "dataIndexer.hasDataIndex(columnsReordered)");
+        final DataIndex tmp2 = dataIndexer.getDataIndex(columnsReordered);
+        Assert.eq(dataIndex, "dataIndex", tmp2, "tmp2");
+
+        final ColumnSource<?>[] columns = Arrays.stream(new String[] {"Sym", "Sym2"})
+                .map(testTable::getColumnSource)
+                .toArray(ColumnSource[]::new);
+        final ColumnSource<?>[] reorderedColumns = Arrays.stream(new String[] {"Sym2", "Sym"})
+                .map(testTable::getColumnSource)
+                .toArray(ColumnSource[]::new);
+
+        assertRefreshing(dataIndex);
+        assertLookupFromTable(testTable, dataIndex, columns);
+        assertLookupFromTable(testTable, dataIndex, reorderedColumns);
+
+        for (int ii = 0; ii < MAX_STEPS; ++ii) {
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateTableUpdates(STEP_SIZE, random, testTable, columnInfo));
+
+            assertRefreshing(dataIndex);
+            assertLookupFromTable(testTable, dataIndex, columns);
+            assertLookupFromTable(testTable, dataIndex, reorderedColumns);
+        }
     }
 
     @Test
@@ -456,6 +531,36 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                     Assert.eqTrue(subIndex.rowSetColumn().get(subRowKey).equals(mutator.apply(fullRowSet)),
                             "subIndex.rowSetColumn().get(subRowKey).equals(mutator.apply(fullRowSet))");
                 }
+            }
+        }
+    }
+
+    private void assertLookupFromTable(
+            final Table sourceTable,
+            final DataIndex fullIndex,
+            final ColumnSource<?>[] columns) {
+        final DataIndex.RowKeyLookup fullIndexRowKeyLookup = fullIndex.rowKeyLookup(columns);
+        final ColumnSource<RowSet> fullIndexRowSetColumn = fullIndex.rowSetColumn();
+
+        ChunkSource.WithPrev<?> tableKeys = DataIndexUtils.makeBoxedKeySource(columns);
+
+        // Iterate through the entire source table and verify the lookup row set is valid and contains this row.
+        try (final RowSet.Iterator rsIt = sourceTable.getRowSet().iterator();
+                final CloseableIterator<Object> keyIt =
+                        ChunkedColumnIterator.make(tableKeys, sourceTable.getRowSet())) {
+
+            while (rsIt.hasNext() && keyIt.hasNext()) {
+                final long rowKey = rsIt.nextLong();
+                final Object key = keyIt.next();
+
+                // Verify the row sets at the lookup keys match.
+                final long fullRowKey = fullIndexRowKeyLookup.apply(key, false);
+                Assert.geqZero(fullRowKey, "fullRowKey");
+
+                final RowSet fullRowSet = fullIndexRowSetColumn.get(fullRowKey);
+                Assert.neqNull(fullRowSet, "fullRowSet");
+
+                Assert.eqTrue(fullRowSet.containsRange(rowKey, rowKey), "fullRowSet.containsRange(rowKey, rowKey)");
             }
         }
     }

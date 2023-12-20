@@ -6,13 +6,16 @@ package io.deephaven.parquet.table;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.function.ByteConsumer;
 import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.primitive.function.FloatConsumer;
 import io.deephaven.engine.primitive.function.ShortConsumer;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -319,13 +322,30 @@ public final class ParquetTableReadWriteTest {
                         .groupBy("someLong").ungroup("someInt")).withDefinitionUnsafe(definition);
 
         DataIndexer.of(testTable.getRowSet()).createDataIndex(testTable, "someLong");
+        DataIndexer.of(testTable.getRowSet()).createDataIndex(testTable, "someInt", "someLong");
 
         final File dest = new File(rootFile, "ParquetTest_groupByLong_test.parquet");
         writeTable(testTable, dest);
         final Table fromDisk = checkSingleTable(testTable, dest);
-        TestCase.assertTrue(
-                "Should have index for column 'someLong'",
-                DataIndexer.of(fromDisk.getRowSet()).hasDataIndex(fromDisk.getColumnSource("someLong")));
+
+        // Validate the indexes and lookup functions.
+        ColumnSource<?>[] columns = Arrays.stream(new String[] {"someLong"}).map(fromDisk::getColumnSource)
+                .toArray(ColumnSource[]::new);
+        DataIndex fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
+        Assert.neqNull(fullIndex, "fullIndex");
+        assertLookupFromTable(fromDisk, fullIndex, columns);
+
+        columns = Arrays.stream(new String[] {"someInt", "someLong"}).map(fromDisk::getColumnSource)
+                .toArray(ColumnSource[]::new);
+        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
+        Assert.neqNull(fullIndex, "fullIndex");
+        assertLookupFromTable(fromDisk, fullIndex, columns);
+
+        columns = Arrays.stream(new String[] {"someLong", "someInt"}).map(fromDisk::getColumnSource)
+                .toArray(ColumnSource[]::new);
+        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
+        Assert.neqNull(fullIndex, "fullIndex");
+        assertLookupFromTable(fromDisk, fullIndex, columns);
     }
 
     @Test
@@ -339,13 +359,30 @@ public final class ParquetTableReadWriteTest {
                         .withDefinitionUnsafe(definition);
 
         DataIndexer.of(testTable.getRowSet()).createDataIndex(testTable, "someString");
+        DataIndexer.of(testTable.getRowSet()).createDataIndex(testTable, "someInt", "someString");
 
         final File dest = new File(rootFile, "ParquetTest_groupByString_test.parquet");
         writeTable(testTable, dest);
         final Table fromDisk = checkSingleTable(testTable, dest);
-        TestCase.assertTrue(
-                "Should have index for column 'someString'",
-                DataIndexer.of(fromDisk.getRowSet()).hasDataIndex(fromDisk.getColumnSource("someString")));
+
+        // Validate the indexes and lookup functions.
+        ColumnSource<?>[] columns = Arrays.stream(new String[] {"someString"}).map(fromDisk::getColumnSource)
+                .toArray(ColumnSource[]::new);
+        DataIndex fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
+        Assert.neqNull(fullIndex, "fullIndex");
+        assertLookupFromTable(fromDisk, fullIndex, columns);
+
+        columns = Arrays.stream(new String[] {"someInt", "someString"}).map(fromDisk::getColumnSource)
+                .toArray(ColumnSource[]::new);
+        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
+        Assert.neqNull(fullIndex, "fullIndex");
+        assertLookupFromTable(fromDisk, fullIndex, columns);
+
+        columns = Arrays.stream(new String[] {"someString", "someInt"}).map(fromDisk::getColumnSource)
+                .toArray(ColumnSource[]::new);
+        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
+        Assert.neqNull(fullIndex, "fullIndex");
+        assertLookupFromTable(fromDisk, fullIndex, columns);
     }
 
     @Test
@@ -359,14 +396,60 @@ public final class ParquetTableReadWriteTest {
                 .groupBy("someBigInt").ungroup("someInt")).withDefinitionUnsafe(definition);
 
         DataIndexer.of(testTable.getRowSet()).createDataIndex(testTable, "someBigInt");
-
+        DataIndexer.of(testTable.getRowSet()).createDataIndex(testTable, "someInt", "someBigInt");
 
         final File dest = new File(rootFile, "ParquetTest_groupByBigInt_test.parquet");
         writeTable(testTable, dest);
         final Table fromDisk = checkSingleTable(testTable, dest);
-        TestCase.assertTrue(
-                "Should have index for column 'someBigInt'",
-                DataIndexer.of(fromDisk.getRowSet()).hasDataIndex(fromDisk.getColumnSource("someBigInt")));
+
+        // Validate the indexes and lookup functions.
+        ColumnSource<?>[] columns = Arrays.stream(new String[] {"someBigInt"}).map(fromDisk::getColumnSource)
+                .toArray(ColumnSource[]::new);
+        DataIndex fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
+        Assert.neqNull(fullIndex, "fullIndex");
+        assertLookupFromTable(fromDisk, fullIndex, columns);
+
+        columns = Arrays.stream(new String[] {"someInt", "someBigInt"}).map(fromDisk::getColumnSource)
+                .toArray(ColumnSource[]::new);
+        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
+        Assert.neqNull(fullIndex, "fullIndex");
+        assertLookupFromTable(fromDisk, fullIndex, columns);
+
+        columns = Arrays.stream(new String[] {"someBigInt", "someInt"}).map(fromDisk::getColumnSource)
+                .toArray(ColumnSource[]::new);
+        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
+        Assert.neqNull(fullIndex, "fullIndex");
+        assertLookupFromTable(fromDisk, fullIndex, columns);
+    }
+
+    private void assertLookupFromTable(
+            final Table sourceTable,
+            final DataIndex fullIndex,
+            final ColumnSource<?>[] columns) {
+        final DataIndex.RowKeyLookup fullIndexRowKeyLookup = fullIndex.rowKeyLookup(columns);
+        final ColumnSource<RowSet> fullIndexRowSetColumn = fullIndex.rowSetColumn();
+
+        ChunkSource.WithPrev<?> tableKeys = DataIndexUtils.makeBoxedKeySource(columns);
+
+        // Iterate through the entire source table and verify the lookup row set is valid and contains this row.
+        try (final RowSet.Iterator rsIt = sourceTable.getRowSet().iterator();
+                final CloseableIterator<Object> keyIt =
+                        ChunkedColumnIterator.make(tableKeys, sourceTable.getRowSet())) {
+
+            while (rsIt.hasNext() && keyIt.hasNext()) {
+                final long rowKey = rsIt.nextLong();
+                final Object key = keyIt.next();
+
+                // Verify the row sets at the lookup keys match.
+                final long fullRowKey = fullIndexRowKeyLookup.apply(key, false);
+                Assert.geqZero(fullRowKey, "fullRowKey");
+
+                final RowSet fullRowSet = fullIndexRowSetColumn.get(fullRowKey);
+                Assert.neqNull(fullRowSet, "fullRowSet");
+
+                Assert.eqTrue(fullRowSet.containsRange(rowKey, rowKey), "fullRowSet.containsRange(rowKey, rowKey)");
+            }
+        }
     }
 
     private void compressionCodecTestHelper(final ParquetInstructions codec) {
@@ -914,12 +997,12 @@ public final class ParquetTableReadWriteTest {
      * unnecessary files left in the directory after we finish writing.
      */
     @Test
-    public void groupingColumnsBasicWriteTests() {
-        groupingColumnsBasicWriteTestsImpl(SINGLE_WRITER);
-        groupingColumnsBasicWriteTestsImpl(MULTI_WRITER);
+    public void indexedColumnsBasicWriteTests() {
+        indexedColumnsBasicWriteTestsImpl(SINGLE_WRITER);
+        indexedColumnsBasicWriteTestsImpl(MULTI_WRITER);
     }
 
-    public void groupingColumnsBasicWriteTestsImpl(TestParquetTableWriter writer) {
+    public void indexedColumnsBasicWriteTestsImpl(TestParquetTableWriter writer) {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
