@@ -38,7 +38,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.IntStream;
 
-import static io.deephaven.parquet.table.ParquetTableWriter.INDEX_COL_NAME;
+import static io.deephaven.parquet.table.ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME;
 
 public class ParquetTableLocation extends AbstractTableLocation {
 
@@ -174,8 +174,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 .map(rgr -> rgr.getColumnChunk(nameList)).toArray(ColumnChunkReader[]::new);
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
-                exists ? columnChunkReaders : null,
-                exists && groupingColumns.containsKey(parquetColumnName));
+                exists ? columnChunkReaders : null);
     }
 
     private RowSet computeIndex() {
@@ -232,11 +231,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Nullable
     @Override
     public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
+        if (tableInfo == null) {
+            return null;
+        }
         // Create a new index from the parquet table
         final Table table = ParquetTools.readDataIndexTable(getParquetFile(), tableInfo, columns);
         if (table == null) {
             return null;
         }
-        return StandaloneDataIndex.from(table, columns, INDEX_COL_NAME);
+        return StandaloneDataIndex.from(table, columns, INDEX_ROW_SET_COLUMN_NAME);
     }
 }

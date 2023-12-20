@@ -231,12 +231,13 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     /**
-     * Create a refreshing DataIndex for the given table and key columns.
+     * Create a (possibly refreshing) DataIndex for the given table and key columns.
      *
      * @param sourceTable the table to index
      * @param keyColumnNames the column sources to include in the index
+     * @return The created index
      */
-    public void createDataIndex(final Table sourceTable, final String... keyColumnNames) {
+    public DataIndex createDataIndex(final Table sourceTable, final String... keyColumnNames) {
         final List<String> keys = Arrays.asList(keyColumnNames);
         final List<ColumnSource<?>> keyColumns =
                 keys.stream().map(sourceTable::getColumnSource).collect(Collectors.toList());
@@ -262,6 +263,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         synchronized (localRoot) {
             addIndex(ensureRoot(), keyColumns, index, 0);
         }
+        return index;
     }
 
     /**

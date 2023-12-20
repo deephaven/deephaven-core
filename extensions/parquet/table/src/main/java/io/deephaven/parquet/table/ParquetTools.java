@@ -11,6 +11,8 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.SimpleSourceTable;
@@ -22,6 +24,8 @@ import io.deephaven.engine.table.impl.locations.impl.PollingTableLocationProvide
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
+import io.deephaven.engine.table.impl.select.MultiSourceFunctionalColumn;
+import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
@@ -58,6 +62,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.deephaven.parquet.table.ParquetTableWriter.*;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
@@ -185,7 +191,7 @@ public class ParquetTools {
     }
 
     /**
-     * Write a table to a file.
+     * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
      *
      * @param sourceTable source table
      * @param destPath destination file path; the file name should end in ".parquet" extension If the path includes
@@ -199,7 +205,7 @@ public class ParquetTools {
     }
 
     /**
-     * Write a table to a file.
+     * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
      *
      * @param sourceTable source table
      * @param destFile destination file; the file name should end in ".parquet" extension If the path includes
@@ -212,7 +218,7 @@ public class ParquetTools {
     }
 
     /**
-     * Write a table to a file.
+     * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
      *
      * @param sourceTable source table
      * @param destFile destination file; its path must end in ".parquet". Any non existing directories in the path are
@@ -228,7 +234,7 @@ public class ParquetTools {
     }
 
     /**
-     * Write a table to a file.
+     * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
      *
      * @param sourceTable source table
      * @param destFile destination file; its path must end in ".parquet". Any non existing directories in the path are
@@ -244,7 +250,7 @@ public class ParquetTools {
     }
 
     /**
-     * Write a table to a file.
+     * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
      *
      * @param sourceTable source table
      * @param destPath destination path; it must end in ".parquet". Any non existing directories in the path are created
@@ -253,7 +259,8 @@ public class ParquetTools {
      * @param definition table definition to use (instead of the one implied by the table itself)
      * @param writeInstructions instructions for customizations while writing
      */
-    public static void writeTable(@NotNull final Table sourceTable,
+    public static void writeTable(
+            @NotNull final Table sourceTable,
             @NotNull final String destPath,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions) {
@@ -261,7 +268,7 @@ public class ParquetTools {
     }
 
     /**
-     * Write a table to a file.
+     * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
      *
      * @param sourceTable source table
      * @param destFile destination file; its path must end in ".parquet". Any non-existing directories in the path are
@@ -270,7 +277,8 @@ public class ParquetTools {
      * @param definition table definition to use (instead of the one implied by the table itself)
      * @param writeInstructions instructions for customizations while writing
      */
-    public static void writeTable(@NotNull final Table sourceTable,
+    public static void writeTable(
+            @NotNull final Table sourceTable,
             @NotNull final File destFile,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions) {
@@ -449,13 +457,13 @@ public class ParquetTools {
             prepareDestinationFileLocation(indexFile);
             deleteBackupFile(indexFile);
 
-            final File shadowGroupingFile = getShadowFile(indexFile);
+            final File shadowIndexFile = getShadowFile(indexFile);
 
             final ParquetTableWriter.IndexWritingInfo info = new ParquetTableWriter.IndexWritingInfo(
                     indexColumnNames,
                     parquetColumnNames,
                     indexFile,
-                    shadowGroupingFile);
+                    shadowIndexFile);
 
             indexInfoList.add(info);
         }
@@ -463,21 +471,21 @@ public class ParquetTools {
     }
 
     /**
-     * Writes tables to disk in parquet format to a supplied set of destinations. If you specify index columns, there
-     * must already be index information for those columns in the sources. This can be accomplished with
-     * {@code DataInder.of(table.getRowSet()).createDataIndex()}.
+     * Writes tables to disk in parquet format to a supplied set of destinations.
      *
      * @param sources The tables to write
      * @param definition The common schema for all the tables to write
      * @param writeInstructions Write instructions for customizations while writing
      * @param destinations The destinations paths. Any non-existing directories in the paths provided are created. If
      *        there is an error any intermediate directories previously created are removed; note this makes this method
-     *        unsafe for concurrent use
-     * @param indexColumnArr arrays containing the column names(s) for written indexes (the write operation will store
-     *        the index info as sidecar tables)
-     * @param indexColumnArr List of columns the tables are indexed by (the write operation will store the index info)
+     *        unsafe for concurrent use.
+     * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
+     *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
+     *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
+     *        will be computed on demand.
      */
-    public static void writeParquetTables(@NotNull final Table[] sources,
+    public static void writeParquetTables(
+            @NotNull final Table[] sources,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final File[] destinations,
@@ -501,7 +509,7 @@ public class ParquetTools {
         final List<File> destFiles = new ArrayList<>();
         try {
             final List<List<ParquetTableWriter.IndexWritingInfo>> indexInfoLists;
-            if (indexColumnArr.length == 0) {
+            if (indexColumnArr == null || indexColumnArr.length == 0) {
                 // Write the tables without any index info
                 indexInfoLists = null;
                 for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
@@ -522,7 +530,6 @@ public class ParquetTools {
                         .toArray(String[][]::new);
 
                 for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
-
                     final File tableDestination = destinations[tableIdx];
                     final List<ParquetTableWriter.IndexWritingInfo> indexInfoList =
                             indexInfoBuilderHelper(indexColumnArr, parquetColumnNameArr, tableDestination);
@@ -533,8 +540,7 @@ public class ParquetTools {
 
                     final Table sourceTable = sources[tableIdx];
                     ParquetTableWriter.write(sourceTable, definition, writeInstructions,
-                            shadowDestFiles[tableIdx].getPath(),
-                            Collections.emptyMap(), indexInfoList);
+                            shadowDestFiles[tableIdx].getPath(), Collections.emptyMap(), indexInfoList);
                 }
             }
 
@@ -570,61 +576,81 @@ public class ParquetTools {
             }
             throw new UncheckedDeephavenException("Error writing parquet tables", e);
         }
-        destFiles.stream().forEach(ParquetTools::deleteBackupFileNoExcept);
+        destFiles.forEach(ParquetTools::deleteBackupFileNoExcept);
     }
 
     /**
      * Examine the source tables to retrieve the list of indexes as String[] arrays.
      *
-     * @param sources the tables from which to retrieve the indexes
-     * @return an array containing the indexes as String[] arrays
+     * @param sources The tables from which to retrieve the indexes
+     * @return An array containing the indexes as String[] arrays
+     * @implNote This only examines the first source table. The writing code will compute missing indexes for the other
+     *           source tables.
      */
     private static String[][] indexedColumnNames(@NotNull Table @NotNull [] sources) {
-        Assert.geqZero(sources.length, "sources.length");
+        if (sources.length == 0) {
+            return new String[0][];
+        }
 
-        // Use the first table as the source of indexed columns.
+        // Use the first table as the source of indexed columns
         final Table firstTable = sources[0];
-        final Map<String, ? extends ColumnSource<?>> columnSourceMap = firstTable.getColumnSourceMap();
-        final DataIndexer dataIndexer = DataIndexer.of(firstTable.getRowSet());
+        final DataIndexer dataIndexer = DataIndexer.existingOf(firstTable.getRowSet());
+        if (dataIndexer == null) {
+            return new String[0][];
+        }
         final List<DataIndex> dataIndexes = dataIndexer.dataIndexes();
-        final Set<String[]> indexesToWrite = new HashSet<>();
+        if (dataIndexes.isEmpty()) {
+            return new String[0][];
+        }
+        final Map<String, ? extends ColumnSource<?>> nameToColumn = firstTable.getColumnSourceMap();
+        // We disregard collisions, here; any mapped name is an adequate choice.
+        final Map<ColumnSource<?>, String> columnToName = nameToColumn.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
 
-        // Build the list of indexes to write.
+        final List<String[]> indexesToWrite = new ArrayList<>();
+
+        // Build the list of indexes to write
         dataIndexes.forEach(di -> {
-            final String[] indexColumns = di.keyColumnNames();
-            // Make sure all the columns actually exist in the table.
-            final boolean allInTable = Arrays.stream(indexColumns).allMatch(columnSourceMap::containsKey);
-            if (allInTable && !indexesToWrite.contains(indexColumns)) {
-                indexesToWrite.add(indexColumns);
+            final Map<ColumnSource<?>, String> indexKeyColumnMap = di.keyColumnMap();
+
+            // Re-map the columns to their names
+            final String[] keyColumnNames = indexKeyColumnMap.keySet().stream()
+                    .map(columnToName::get)
+                    .filter(Objects::nonNull)
+                    .toArray(String[]::new);
+
+            // Make sure all the columns actually exist in the table
+            if (keyColumnNames.length == indexKeyColumnMap.size()) {
+                indexesToWrite.add(keyColumnNames);
             }
         });
-        String[][] indexColumnArr = indexesToWrite.toArray(String[][]::new);
-        return indexColumnArr;
+        return indexesToWrite.toArray(String[][]::new);
     }
 
     /**
-     * Write out tables to disk.
+     * Write out tables to disk. Data indexes to write are determined by those already present on the first source.
      *
      * @param sources source tables
      * @param definition table definition
      * @param destinations destinations
      */
-    public static void writeTables(@NotNull final Table[] sources,
+    public static void writeTables(
+            @NotNull final Table[] sources,
             @NotNull final TableDefinition definition,
             @NotNull final File[] destinations) {
         writeParquetTables(sources, definition, ParquetInstructions.EMPTY, destinations, indexedColumnNames(sources));
     }
 
-
     /**
-     * Write out tables to disk.
+     * Write out tables to disk. Data indexes to write are determined by those already present on the first source.
      *
      * @param sources source tables
      * @param definition table definition
      * @param destinations destinations
      * @param writeInstructions instructions for customizations while writing
      */
-    public static void writeTables(@NotNull final Table[] sources,
+    public static void writeTables(
+            @NotNull final Table[] sources,
             @NotNull final TableDefinition definition,
             @NotNull final File[] destinations,
             @NotNull final ParquetInstructions writeInstructions) {
@@ -1155,6 +1181,7 @@ public class ParquetTools {
         final Path parentPath = tableFile.toPath().getParent();
 
         if (keyColumnNames.length == 1) {
+            // If there's only one key column, there might be (legacy) grouping info
             final GroupingColumnInfo groupingColumnInfo = info.groupingColumnMap().get(keyColumnNames[0]);
             if (groupingColumnInfo != null) {
                 return new IndexFileMetaData(
@@ -1166,54 +1193,42 @@ public class ParquetTools {
 
         // Either there are more than 1 key columns, or there was no grouping info, so lets see if there was a
         // DataIndex.
-        final DataIndexInfo di = info.dataIndexes().stream()
+        final DataIndexInfo dataIndexInfo = info.dataIndexes().stream()
                 .filter(item -> item.matchesColumns(keyColumnNames))
                 .findFirst()
                 .orElse(null);
 
-        if (di != null) {
+        if (dataIndexInfo != null) {
             return new IndexFileMetaData(
-                    parentPath.resolve(di.indexTablePath()).toString(),
+                    parentPath.resolve(dataIndexInfo.indexTablePath()).toString(),
                     null,
-                    di);
+                    dataIndexInfo);
         }
 
-        // We have no metadata and we no longer fallback to a default file.
+        // We have no index metadata. We intentionally do not fall back to the legacy path from pre-metadata versions
+        // of this codee, as it's not expected that such tables exist in the wild.
         return null;
-
     }
 
     // region Indexing
     /**
-     * Read a Data Index table from disk. If {@link TableInfo} are provided, it will be used to aid in locating the
-     * table.
+     * Read a Data Index table from disk.
      *
      * @param tableFile The path to the base table
-     * @param info An optional {@link TableInfo} object to assist in locating files
-     * @param keyColumnNames the names of key columns
+     * @param info A {@link TableInfo} object to assist in locating files
+     * @param keyColumnNames The names of the key columns
      *
-     * @return the data index table for the specified key columns or {@code null} if none was found.
+     * @return The data index table for the specified key columns or {@code null} if none was found
      */
     @Nullable
-    public static Table readDataIndexTable(@NotNull final File tableFile,
-            @Nullable TableInfo info,
+    public static Table readDataIndexTable(
+            @NotNull final File tableFile,
+            @NotNull final TableInfo info,
             @NotNull final String... keyColumnNames) {
-        // There are a couple of unfortunate variations here
-        // 1: There is 1 column and it is grouping
-        // - These are written in parquet format
-        // 2; There is 1 column and it is a data index
-        // - These are written in Deephaven format
-        // 3: There are > 1 columns
-        // - These are written in Deephaven format.
-
-        if (info == null) {
-            throw new IllegalStateException("TableInfo metadata must be provided to read a data index table");
-        }
-
-        IndexFileMetaData metaData = getIndexFileMetaData(tableFile, info, keyColumnNames);
+        final IndexFileMetaData metaData = getIndexFileMetaData(tableFile, info, keyColumnNames);
 
         if (metaData == null) {
-            throw new IllegalStateException(
+            throw new TableDataException(
                     String.format(
                             "No index metadata for table %s with index key columns %s was present in TableInfo",
                             tableFile,
@@ -1222,24 +1237,31 @@ public class ParquetTools {
 
         if (metaData.groupingColumnInfo != null) {
             final Table indexTable = ParquetTools.readTable(metaData.filename, ParquetInstructions.EMPTY);
-            if (!indexTable.isEmpty() && indexTable.hasColumns(GROUPING_KEY, BEGIN_POS, END_POS)) {
-                // This table will be written like the older style grouping format of Key, start, end so we
-                // have to convert
-                // TODO-RWC: Verify that this produces a DeferredViewTable... or should we use `lazyUpdate`?
-                return indexTable.view(String.format("%s=%s", keyColumnNames[0], GROUPING_KEY),
-                        String.format(
-                                "%s=(io.deephaven.engine.rowset.RowSet)io.deephaven.engine.rowset.RowSetFactory.fromRange(%s, %s-1)",
-                                INDEX_COL_NAME, BEGIN_POS, END_POS));
+            if (indexTable.hasColumns(
+                    GROUPING_KEY_COLUMN_NAME, GROUPING_BEGIN_POS_COLUMN_NAME, GROUPING_END_POS_COLUMN_NAME)) {
+                // Legacy grouping tables are written with a key, start position, and end position. We must convert
+                // the ranges to RowSets.
+                return indexTable.view(List.of(
+                        new SourceColumn(GROUPING_KEY_COLUMN_NAME, keyColumnNames[0]),
+                        // Using this lets us avoid a compilation or boxing, but does force us to do single-cell access
+                        // rather than using chunks.
+                        new MultiSourceFunctionalColumn<>(
+                                List.of(GROUPING_BEGIN_POS_COLUMN_NAME, GROUPING_END_POS_COLUMN_NAME),
+                                INDEX_ROW_SET_COLUMN_NAME,
+                                RowSet.class,
+                                (final long rowKey, final ColumnSource<?>[] sources) -> RowSetFactory
+                                        .fromRange(sources[0].getLong(rowKey), sources[1].getLong(rowKey) - 1))));
             } else {
-                throw new IllegalStateException(
-                        String.format(
-                                "Index table %s for table %s was not in the expected format. Expected columns %s but encountered %s",
-                                metaData.filename,
-                                tableFile,
-                                Arrays.toString(new String[] {GROUPING_KEY, BEGIN_POS, END_POS}),
-                                Arrays.toString(indexTable.getDefinition().getColumnNamesArray())));
+                throw new TableDataException(String.format(
+                        "Index table %s for table %s was not in the expected format. Expected columns [%s] but encountered [%s]",
+                        metaData.filename,
+                        tableFile,
+                        String.join(", ",
+                                GROUPING_KEY_COLUMN_NAME, GROUPING_BEGIN_POS_COLUMN_NAME, GROUPING_END_POS_COLUMN_NAME),
+                        indexTable.getDefinition().getColumnNamesAsString()));
             }
         }
+
         return readTable(metaData.filename, ParquetInstructions.EMPTY);
     }
     // endregion

@@ -25,8 +25,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-// TODO: Comment the heck out of this...
 public class MultiSourceFunctionalColumn<D> implements SelectColumn {
+
     private final List<String> sourceNames;
     private ColumnSource<?>[] sourceColumns;
     private ColumnSource<?>[] prevSources;

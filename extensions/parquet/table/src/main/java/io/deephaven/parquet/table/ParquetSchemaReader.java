@@ -39,7 +39,7 @@ public class ParquetSchemaReader {
     }
 
     public static final class ParquetMessageDefinition {
-        /** Yes you guessed right. This is the column name. */
+        /** The column name. */
         public String name;
         /** The parquet type. */
         public Class<?> baseType;
@@ -52,10 +52,10 @@ public class ParquetSchemaReader {
         /**
          * Parquet 1.0 did not support logical types; if we encounter a type like this is true. For example, in parquet
          * 1.0 binary columns with no annotation are used to represent strings. They are also used to represent other
-         * things that are not strings. Good luck, may the force be with you.
+         * things that are not strings.
          */
         public boolean noLogicalType;
-        /** Your guess is good here */
+        /** Whether this column is an array. */
         public boolean isArray;
         /**
          * When codec metadata is present (which will be returned as modified read instructions below for actual codec
@@ -67,16 +67,16 @@ public class ParquetSchemaReader {
         public String codecComponentType;
 
         /**
-         * We reuse the guts of this poor object between calls to avoid allocating. Like prometheus nailed to a
-         * mountain, this poor object has to suffer his guts being eaten forever. Or not forever but at least for one
-         * stack frame activation of readParquetSchema and as many columns that function finds in the file.
+         * We reuse this object between calls to avoid allocating.
          */
         void reset() {
             name = null;
             baseType = null;
             dhSpecialType = null;
-            noLogicalType = isArray = false;
-            codecType = codecComponentType = null;
+            noLogicalType = false;
+            isArray = false;
+            codecType = null;
+            codecComponentType = null;
         }
     }
 
