@@ -16,7 +16,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.annotations.SingletonStyle;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -34,6 +33,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.BlinkTableTools;
+import io.deephaven.engine.table.impl.ConstituentDependency;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
@@ -41,6 +41,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.AvroImpl.AvroConsume;
@@ -70,6 +71,7 @@ import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
 import io.deephaven.kafka.publish.KafkaPublisherException;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
 import io.deephaven.kafka.publish.PublishToKafka;
+import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.stream.StreamChunkUtils;
@@ -1025,7 +1027,7 @@ public class KafkaTools {
                         final StreamToBlinkTableAdapter streamToBlinkTableAdapter = new StreamToBlinkTableAdapter(
                                 tableDefinition,
                                 streamPublisher,
-                                result.refreshCombiner,
+                                result.getRegistrar(),
                                 "Kafka-" + topic + '-' + topicPartition.partition());
                         final Table blinkTable = streamToBlinkTableAdapter.table();
                         final Table derivedTable = tableType.walk(new BlinkTableOperation(blinkTable));
@@ -1438,7 +1440,9 @@ public class KafkaTools {
             final KeyOrValueSerializer<?> keySerializer = keySpec.getKeyOrValueSerializer(effectiveTable, keyColumns);
             final KeyOrValueSerializer<?> valueSerializer =
                     valueSpec.getKeyOrValueSerializer(effectiveTable, valueColumns);
-            final PublishToKafka producer = new PublishToKafka(
+            // PublishToKafka is a LivenessArtifact; it will be kept reachable and alive by the publisherScope, since
+            // it is constructed with enforceStrongReachability=true.
+            new PublishToKafka(
                     options.config(),
                     effectiveTable,
                     options.topic(),
@@ -1479,19 +1483,37 @@ public class KafkaTools {
             partitionColumn = (WritableColumnSource<Integer>) table().getColumnSource(PARTITION_COLUMN_NAME, int.class);
             constituentColumn =
                     (WritableColumnSource<Table>) table().getColumnSource(CONSTITUENT_COLUMN_NAME, Table.class);
-            UpdateGraph updateGraph = table().getUpdateGraph();
-            refreshCombiner = new UpdateSourceCombiner(updateGraph);
+
+            /*
+             * We use an UpdateSourceCombiner to drive both the StreamPartitionedTable and its constituents, with the
+             * StreamPartitionedTable added first. This to ensure that newly-added constituents cannot process their
+             * initial update until after they have been added to the StreamPartitionedTable. The StreamPartitionedTable
+             * creates the combiner, and constituent-building code is responsible for using it, accessed via
+             * getRegistrar(). We could remove the combiner and use the "raw" UpdateGraph plus a ConstituentDependency
+             * if we demanded a guarantee that new constituents would only be constructed in such a way that they were
+             * unable to fire before being added to the partitioned table. Without that guarantee, we would risk data
+             * loss for blink or ring tables.
+             */
+            refreshCombiner = new UpdateSourceCombiner(table().getUpdateGraph());
             manage(refreshCombiner);
             refreshCombiner.addSource(this);
-            updateGraph.addSource(refreshCombiner);
+            refreshCombiner.install();
+
             /*
-             * Note: We do not need to use a ConstituentDependency here, because using the combiner effectively prevents
-             * delivery of the partitioned table's notification until its constituents have also had their chance to
-             * complete their update for the cycle. We could remove the combiner and use the "raw" UpdateGraph plus a
-             * ConstituentDependency if we demanded a guarantee that new constituents would only be constructed in such
-             * a way that they were unable to fire before being added to the partitioned table. Without that guarantee,
-             * we risk data loss for blink or ring tables.
+             * We use a ConstituentDependency to ensure that the partitioned table's notification is not delivered
+             * before all of its constituents have become satisfied on this cycle. For "raw" (blink) constituents, the
+             * UpdateSourceCombiner trivially guarantees this. However, since constituents may be transformed to ring or
+             * append-only tables before they are added to the StreamPartitionedTable, we must test constituent
+             * satisfaction before allowing the partitioned table to become satisfied on a given cycle.
              */
+            ConstituentDependency.install(table(), refreshCombiner);
+        }
+
+        /**
+         * @return The {@link UpdateSourceRegistrar} to be used for all constituent roots.
+         */
+        public UpdateSourceRegistrar getRegistrar() {
+            return refreshCombiner;
         }
 
         @Override
