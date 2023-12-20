@@ -100,8 +100,7 @@ def to_table(pa_table: pa.Table, cols: List[str] = None) -> Table:
     dh_schema = pa.schema(dh_fields)
 
     try:
-        pa_buffer = dh_schema.serialize()
-        j_barrage_table_builder.setSchema(pa_buffer)
+        j_barrage_table_builder.setSchema(jpy.byte_buffer(dh_schema.serialize()))
 
         record_batches = pa_table.to_batches()
         j_barrage_table_builder.addRecordBatches([jpy.byte_buffer(rb.serialize()) for rb in record_batches])
