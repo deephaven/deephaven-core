@@ -1495,7 +1495,7 @@ public class KafkaTools {
              * loss for blink or ring tables.
              */
             refreshCombiner = new UpdateSourceCombiner(table().getUpdateGraph());
-            manage(refreshCombiner);
+            table().manage(refreshCombiner);
             refreshCombiner.addSource(this);
             refreshCombiner.install();
 
@@ -1551,6 +1551,10 @@ public class KafkaTools {
                     ArrayBackedColumnSource.getMemoryColumnSource(int.class, null));
             resultSources.put(CONSTITUENT_COLUMN_NAME,
                     ArrayBackedColumnSource.getMemoryColumnSource(Table.class, null));
+            /*
+             * This is subtle, but this QueryTable is an inner class of StreamPartitionedTable, and so it will have a
+             * hard-ref to this, which will keep this reachable for the UpdateSourceCombiner.
+             */
             // noinspection resource
             return new QueryTable(RowSetFactory.empty().toTracking(), resultSources) {
                 {
