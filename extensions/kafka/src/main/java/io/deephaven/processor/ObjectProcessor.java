@@ -83,6 +83,19 @@ public interface ObjectProcessor<T> {
     }
 
     /**
+     * Creates a "combined" object processor. The resulting {@link ObjectProcessor#outputTypes()} is the combined
+     * in-order outputs from {@code processors} and the {@link ObjectProcessor#processAll(ObjectChunk, List)}
+     * implementation is the in-order processing of {@code processors}.
+     *
+     * @param processors the processors
+     * @return the combined object processor
+     * @param <T> the object type
+     */
+    static <T> ObjectProcessor<T> combined(List<ObjectProcessor<? super T>> processors) {
+        return new ObjectProcessorCombined<>(processors);
+    }
+
+    /**
      * The relationship between {@link #outputTypes() output types} and the {@link #processAll(ObjectChunk, List)
      * processAll out param} {@link WritableChunk#getChunkType()}.
      *
