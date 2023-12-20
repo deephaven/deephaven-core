@@ -406,6 +406,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     // -----------------------------------------------------------------------------------------------------------------
 
     public class ScriptSessionQueryScope extends QueryScope {
+        public ScriptSession scriptSession() {
+            return AbstractScriptSession.this;
+        }
+
         @Override
         public Set<String> getParamNames() {
             final Set<String> result = new LinkedHashSet<>();
