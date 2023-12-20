@@ -191,7 +191,7 @@ public class ParquetTools {
     }
 
     /**
-     * Write a table to a file.
+     * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
      *
      * @param sourceTable source table
      * @param destPath destination file path; the file name should end in ".parquet" extension If the path includes
@@ -205,7 +205,7 @@ public class ParquetTools {
     }
 
     /**
-     * Write a table to a file.
+     * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
      *
      * @param sourceTable source table
      * @param destFile destination file; the file name should end in ".parquet" extension If the path includes
@@ -218,7 +218,7 @@ public class ParquetTools {
     }
 
     /**
-     * Write a table to a file.
+     * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
      *
      * @param sourceTable source table
      * @param destFile destination file; its path must end in ".parquet". Any non existing directories in the path are
@@ -234,7 +234,7 @@ public class ParquetTools {
     }
 
     /**
-     * Write a table to a file.
+     * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
      *
      * @param sourceTable source table
      * @param destFile destination file; its path must end in ".parquet". Any non existing directories in the path are
@@ -250,7 +250,7 @@ public class ParquetTools {
     }
 
     /**
-     * Write a table to a file.
+     * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
      *
      * @param sourceTable source table
      * @param destPath destination path; it must end in ".parquet". Any non existing directories in the path are created
@@ -259,7 +259,8 @@ public class ParquetTools {
      * @param definition table definition to use (instead of the one implied by the table itself)
      * @param writeInstructions instructions for customizations while writing
      */
-    public static void writeTable(@NotNull final Table sourceTable,
+    public static void writeTable(
+            @NotNull final Table sourceTable,
             @NotNull final String destPath,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions) {
@@ -267,7 +268,7 @@ public class ParquetTools {
     }
 
     /**
-     * Write a table to a file.
+     * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
      *
      * @param sourceTable source table
      * @param destFile destination file; its path must end in ".parquet". Any non-existing directories in the path are
@@ -276,7 +277,8 @@ public class ParquetTools {
      * @param definition table definition to use (instead of the one implied by the table itself)
      * @param writeInstructions instructions for customizations while writing
      */
-    public static void writeTable(@NotNull final Table sourceTable,
+    public static void writeTable(
+            @NotNull final Table sourceTable,
             @NotNull final File destFile,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions) {
@@ -479,7 +481,8 @@ public class ParquetTools {
      *        unsafe for concurrent use.
      * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
      *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
-     *        explicit about the expected set of indexes present on all sources.
+     *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
+     *        will be computed on demand.
      */
     public static void writeParquetTables(
             @NotNull final Table[] sources,

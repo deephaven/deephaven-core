@@ -102,7 +102,8 @@ public class ParquetTableWriter {
      * @param writeInstructions Write instructions for customizations while writing
      * @param destPathName The destination path
      * @param incomingMeta A map of metadata values to be stores in the file footer
-     * @param indexInfoList Arrays containing the column names for indexes to persist as sidecar tables
+     * @param indexInfoList Arrays containing the column names for indexes to persist as sidecar tables. Indexes that
+     *        are specified but missing will be computed on demand.
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
      *         unsupported types)
      * @throws IOException For file writing related errors
@@ -115,17 +116,20 @@ public class ParquetTableWriter {
             @NotNull final Map<String, String> incomingMeta,
             @Nullable final List<ParquetTableWriter.IndexWritingInfo> indexInfoList)
             throws SchemaMappingException, IOException {
+        if (t.isRefreshing()) {
+            /*
+             * We mustn't write inconsistent tables or data indexes. This check is "basic". Snapshotting logic here
+             * would probably be inappropriate, as we might be writing very large tables. Hopefully users aren't naively
+             * writing Parquet tables from within listeners or transforms without ensuring proper dependency
+             * satisfaction for the table and any indexes it has.
+             */
+            t.getUpdateGraph().checkInitiateSerialTableOperation();
+        }
+
         final TableInfo.Builder tableInfoBuilder = TableInfo.builder();
         List<File> cleanupFiles = null;
         try {
             if (indexInfoList != null) {
-                if (t.isRefreshing()) {
-                    // We mustn't write inconsistent data indexes. This check is "basic". Writing snapshotting logic
-                    // here is probably "too far to go" for Parquet writing code, but hopefully users aren't naively
-                    // writing indexed Parquet tables from within listeners or transforms.
-                    t.getUpdateGraph().checkInitiateSerialTableOperation();
-                }
-
                 cleanupFiles = new ArrayList<>(indexInfoList.size());
                 final Path destDirPath = Paths.get(destPathName).getParent();
                 final DataIndexer dataIndexer = DataIndexer.of(t.getRowSet());
