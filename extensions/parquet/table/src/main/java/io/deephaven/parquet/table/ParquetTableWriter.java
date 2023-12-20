@@ -102,7 +102,7 @@ public class ParquetTableWriter {
      * @param writeInstructions Write instructions for customizations while writing
      * @param destPathName The destination path
      * @param incomingMeta A map of metadata values to be stores in the file footer
-     * @param indexInfoList Arrays containing the column namesS for indexes to persist as sidecar tables
+     * @param indexInfoList Arrays containing the column names for indexes to persist as sidecar tables
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
      *         unsupported types)
      * @throws IOException For file writing related errors
