@@ -27,6 +27,12 @@ public interface ScriptSession extends LivenessNode {
     VariableProvider getVariableProvider();
 
     /**
+     *
+     * @return
+     */
+    QueryScope getQueryScope();
+
+    /**
      * Obtain an {@link ExecutionContext} instance for the current script session. This is the execution context that is
      * used when executing scripts.
      */

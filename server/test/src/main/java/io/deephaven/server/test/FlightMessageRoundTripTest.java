@@ -680,30 +680,30 @@ public abstract class FlightMessageRoundTripTest {
         final Table tickingTable = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
                 () -> TableTools.timeTable(1_000_000).update("I = i"));
 
-        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession.getQueryScope(), false)) {
-            // stuff table into the scope
-            ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
-            ExecutionContext.getContext().getQueryScope().putParam(tickingTableName, tickingTable);
+        // try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession.getQueryScope(), false)) {
+        // stuff table into the scope
+        ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
+        ExecutionContext.getContext().getQueryScope().putParam(tickingTableName, tickingTable);
 
-            // test fetch info from scoped ticket
-            assertSchemaMatchesTable(flightClient.getSchema(arrowFlightDescriptorForName(staticTableName)).getSchema(),
-                    table);
-            assertSchemaMatchesTable(flightClient.getSchema(arrowFlightDescriptorForName(tickingTableName)).getSchema(),
-                    tickingTable);
+        // test fetch info from scoped ticket
+        assertSchemaMatchesTable(flightClient.getSchema(arrowFlightDescriptorForName(staticTableName)).getSchema(),
+                table);
+        assertSchemaMatchesTable(flightClient.getSchema(arrowFlightDescriptorForName(tickingTableName)).getSchema(),
+                tickingTable);
 
-            // test list flights which runs through scoped tickets
-            final MutableInt seenTables = new MutableInt();
-            flightClient.listFlights(Criteria.ALL).forEach(fi -> {
-                seenTables.increment();
-                if (fi.getDescriptor().equals(arrowFlightDescriptorForName(staticTableName))) {
-                    assertInfoMatchesTable(fi, table);
-                } else {
-                    assertInfoMatchesTable(fi, tickingTable);
-                }
-            });
+        // test list flights which runs through scoped tickets
+        final MutableInt seenTables = new MutableInt();
+        flightClient.listFlights(Criteria.ALL).forEach(fi -> {
+            seenTables.increment();
+            if (fi.getDescriptor().equals(arrowFlightDescriptorForName(staticTableName))) {
+                assertInfoMatchesTable(fi, table);
+            } else {
+                assertInfoMatchesTable(fi, tickingTable);
+            }
+        });
 
-            Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
-        }
+        Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
+        // }
     }
 
     @Test

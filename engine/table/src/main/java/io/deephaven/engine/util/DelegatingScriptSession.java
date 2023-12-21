@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.util;
 
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.context.ExecutionContext;
 import org.jetbrains.annotations.NotNull;
@@ -64,6 +65,11 @@ public class DelegatingScriptSession implements ScriptSession {
     @Override
     public VariableProvider getVariableProvider() {
         return delegate.getVariableProvider();
+    }
+
+    @Override
+    public QueryScope getQueryScope() {
+        return delegate.getQueryScope();
     }
 
     @Override

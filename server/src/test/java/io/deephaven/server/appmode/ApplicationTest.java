@@ -31,6 +31,14 @@ public class ApplicationTest {
 
     private AbstractScriptSession<?> session = null;
 
+    @After
+    public void tearDown() {
+        if (session != null) {
+            session.forceReferenceCountToZero();
+            session = null;
+        }
+    }
+
     @Test
     public void app00() {
         ApplicationState app = ApplicationFactory.create(ApplicationConfigs.testAppDir(), ApplicationConfigs.app00(),

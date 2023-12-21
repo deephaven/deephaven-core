@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -265,7 +266,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     }
 
     private Class<?> getVariableType(final String var) {
-        final Object result = getVariable(var, null);
+        if (hasVariableName(var)) {
+            return null;
+        }
+        final Object result = getVariable(var);
         if (result == null) {
             return null;
         } else if (result instanceof Table) {
@@ -277,46 +281,27 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
 
     public TableDefinition getTableDefinition(final String var) {
-        Object o = getVariable(var, null);
+        if (!hasVariableName(var)) {
+            return null;
+        }
+        Object o = getVariable(var);
         return o instanceof Table ? ((Table) o).getDefinition() : null;
     }
 
 
     /**
      * Retrieve a variable from the script session's bindings.
-     * <p/>
-     * Please use {@link ScriptSession#getVariable(String, Object)} if you expect the variable may not exist.
      *
      * @param name the variable to retrieve
      * @return the variable
      * @throws QueryScope.MissingVariableException if the variable does not exist
      */
-    @NotNull
-    protected abstract Object getVariable(String name) throws QueryScope.MissingVariableException;
-
-    /**
-     * Retrieve a variable from the script session's bindings. If the variable is not present, return defaultValue.
-     * <p>
-     * If the variable is present, but is not of type (T), a ClassCastException may result.
-     *
-     * @param name the variable to retrieve
-     * @param defaultValue the value to use when no value is present in the session's scope
-     * @param <T> the type of the variable
-     * @return the value of the variable, or defaultValue if not present
-     */
-    protected abstract <T> T getVariable(String name, T defaultValue);
-
-    /**
-     * Retrieves all of the variables present in the session's scope (e.g., Groovy binding, Python globals()).
-     *
-     * @return an unmodifiable map with variable names as the keys, and the Objects as the result
-     */
-    protected abstract Map<String, Object> getVariables();
+    protected abstract <T> T getVariable(String name) throws QueryScope.MissingVariableException;
 
     /**
      * Retrieves all of the variable names present in the session's scope
      *
-     * @return an unmodifiable set of variable names
+     * @return an immutable set of variable names
      */
     protected abstract Set<String> getVariableNames();
 
@@ -363,7 +348,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             public <T> T getVariable(String var, T defaultValue) {
                 variableAccessLock.readLock().lock();
                 try {
-                    return AbstractScriptSession.this.getVariable(var, defaultValue);
+                    if (!hasVariableName(var)) {
+                        return defaultValue;
+                    }
+                    return AbstractScriptSession.this.getVariable(var);
                 } finally {
                     variableAccessLock.readLock().unlock();
                 }
@@ -418,7 +406,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                     result.add(name);
                 }
             }
-            return result;
+            return Collections.unmodifiableSet(result);
         }
 
         @Override
@@ -432,14 +420,16 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             if (!NameValidator.isValidQueryParameterName(name)) {
                 throw new QueryScope.MissingVariableException("Name " + name + " is invalid");
             }
-            // noinspection unchecked
-            return new QueryScopeParam<>(name, (T) getVariableProvider().getVariable(name, null));
+            return new QueryScopeParam<>(name, readParamValue(name));
         }
 
         @Override
         public <T> T readParamValue(final String name) throws QueryScope.MissingVariableException {
             if (!NameValidator.isValidQueryParameterName(name)) {
                 throw new QueryScope.MissingVariableException("Name " + name + " is invalid");
+            }
+            if (!getVariableProvider().hasVariableName(name)) {
+                throw new MissingVariableException("Missing variable " + name);
             }
             // noinspection unchecked
             return (T) getVariableProvider().getVariable(name, null);
@@ -455,10 +445,11 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         @Override
         public <T> void putParam(final String name, final T value) {
+            NameValidator.validateQueryParameterName(name);
             if (value instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(value)) {
                 manage((LivenessReferent) value);
             }
-            getVariableProvider().setVariable(NameValidator.validateQueryParameterName(name), value);
+            getVariableProvider().setVariable(name, value);
         }
 
         @Override

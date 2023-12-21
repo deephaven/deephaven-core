@@ -11,14 +11,12 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 import org.jpy.PyObject;
 
 import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNext;
@@ -113,7 +111,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 request.getRequestId() > 0 ? request.getRequestId() : request.getGetCompletionItems().getRequestId();
         try {
             final ScriptSession scriptSession = exportedConsole.get();
-            PyObject completer = (PyObject) scriptSession.getVariableProvider().getVariable("jedi_settings", null);
+            PyObject completer = scriptSession.getVariableProvider().getVariable("jedi_settings", null);
             boolean canJedi = completer.callMethod("is_enabled").getBooleanValue();
             if (!canJedi) {
                 log.trace().append("Ignoring completion request because jedi is disabled").endl();

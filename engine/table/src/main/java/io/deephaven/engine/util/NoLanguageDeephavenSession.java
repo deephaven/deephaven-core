@@ -37,24 +37,13 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
         variables = new LinkedHashMap<>();
     }
 
-    @NotNull
     @Override
-    public Object getVariable(String name) throws QueryScope.MissingVariableException {
-        final Object var = variables.get(name);
-        if (var != null) {
-            return var;
+    protected <T> T getVariable(String name) throws QueryScope.MissingVariableException {
+        if (!variables.containsKey(name)) {
+            throw new QueryScope.MissingVariableException("No global variable for: " + name);
         }
-        throw new QueryScope.MissingVariableException("No global variable for: " + name);
-    }
-
-    @Override
-    public <T> T getVariable(String name, T defaultValue) {
-        try {
-            // noinspection unchecked
-            return (T) getVariable(name);
-        } catch (QueryScope.MissingVariableException e) {
-            return defaultValue;
-        }
+        // noinspection unchecked
+        return (T) variables.get(name);
     }
 
     @Override
@@ -81,22 +70,17 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     @Override
-    public Map<String, Object> getVariables() {
-        return Collections.unmodifiableMap(variables);
+    protected Set<String> getVariableNames() {
+        return Set.copyOf(variables.keySet());
     }
 
     @Override
-    public Set<String> getVariableNames() {
-        return Collections.unmodifiableSet(variables.keySet());
-    }
-
-    @Override
-    public boolean hasVariableName(String name) {
+    protected boolean hasVariableName(String name) {
         return variables.containsKey(name);
     }
 
     @Override
-    public void setVariable(String name, @Nullable Object newValue) {
+    protected void setVariable(String name, @Nullable Object newValue) {
         variables.put(name, newValue);
         // changeListener is always null for NoLanguageDeephavenSession; we have no mechanism for reporting scope
         // changes

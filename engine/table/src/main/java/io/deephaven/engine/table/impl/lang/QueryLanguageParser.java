@@ -2710,10 +2710,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 addLiteralArg(expressions[i], argTypes[i], pyCallableWrapper);
             } else if (expressions[i] instanceof NameExpr) {
                 String name = expressions[i].asNameExpr().getNameAsString();
-                try {
+                if (queryScope.hasParamName(name)) {
                     Object param = queryScope.readParamValue(name);
                     pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(param, argTypes[i]));
-                } catch (QueryScope.MissingVariableException ex) {
+                } else {
                     // A column name or one of the special variables
                     pyCallableWrapper.addChunkArgument(new ColumnChunkArgument(name, argTypes[i]));
                 }

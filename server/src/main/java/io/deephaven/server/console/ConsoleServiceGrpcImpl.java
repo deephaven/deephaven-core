@@ -8,6 +8,7 @@ import com.google.rpc.Code;
 import io.deephaven.base.LockFreeArrayQueue;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -280,13 +281,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             }
 
             exportBuilder.submit(() -> {
-                ScriptSession scriptSession =
-                        exportedConsole != null ? exportedConsole.get() : scriptSessionProvider.get();
+                QueryScope queryScope = exportedConsole != null ? exportedConsole.get().getQueryScope()
+                        : ExecutionContext.getContext().getQueryScope();
+
                 Table table = exportedTable.get();
-                ExecutionContext.getContext().getQueryScope().putParam(request.getVariableName(), table);
-                if (DynamicNode.notDynamicOrIsRefreshing(table)) {
-                    scriptSession.manage(table);
-                }
+                queryScope.putParam(request.getVariableName(), table);
                 responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
                 responseObserver.onCompleted();
             });

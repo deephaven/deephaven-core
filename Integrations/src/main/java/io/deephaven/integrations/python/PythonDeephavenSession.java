@@ -169,20 +169,14 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         }
     }
 
-    @NotNull
+    @SuppressWarnings("unchecked")
     @Override
-    public Object getVariable(String name) throws QueryScope.MissingVariableException {
-        return scope
+    protected <T> T getVariable(String name) throws QueryScope.MissingVariableException {
+        return (T) scope
                 .getValue(name)
                 .orElseThrow(() -> new QueryScope.MissingVariableException("No variable for: " + name));
     }
 
-    @Override
-    public <T> T getVariable(String name, T defaultValue) {
-        return scope
-                .<T>getValueUnchecked(name)
-                .orElse(defaultValue);
-    }
 
     @SuppressWarnings("unused")
     @ScriptApi
@@ -208,13 +202,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         } catch (InterruptedException e) {
             throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
         }
-    }
-
-    @Override
-    public Map<String, Object> getVariables() {
-        final Map<String, Object> outMap = new LinkedHashMap<>();
-        scope.getEntriesMap().forEach((key, value) -> outMap.put(key, maybeUnwrap(value)));
-        return outMap;
     }
 
     protected static class PythonSnapshot implements Snapshot, SafeCloseable {
@@ -281,17 +268,17 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     }
 
     @Override
-    public Set<String> getVariableNames() {
-        return Collections.unmodifiableSet(scope.getKeys().collect(Collectors.toSet()));
+    protected Set<String> getVariableNames() {
+        return scope.getKeys().collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
-    public boolean hasVariableName(String name) {
+    protected boolean hasVariableName(String name) {
         return scope.containsKey(name);
     }
 
     @Override
-    public synchronized void setVariable(String name, @Nullable Object newValue) {
+    protected synchronized void setVariable(String name, @Nullable Object newValue) {
         final PyDictWrapper globals = scope.mainGlobals();
         if (newValue == null) {
             try {

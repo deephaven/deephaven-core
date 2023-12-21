@@ -52,7 +52,6 @@ import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.Phases;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.codehaus.groovy.tools.GroovyClass;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.tools.JavaFileObject;
@@ -276,23 +275,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         executedScripts.add(script);
     }
 
-    @NotNull
     @Override
-    public Object getVariable(String name) throws QueryScope.MissingVariableException {
-        try {
-            return groovyShell.getContext().getVariable(name);
-        } catch (MissingPropertyException mpe) {
-            throw new QueryScope.MissingVariableException("No binding for: " + name, mpe);
-        }
-    }
-
-    @Override
-    public <T> T getVariable(String name, T defaultValue) {
+    protected <T> T getVariable(String name) throws QueryScope.MissingVariableException {
         try {
             // noinspection unchecked
-            return (T) getVariable(name);
-        } catch (QueryScope.MissingVariableException e) {
-            return defaultValue;
+            return (T) groovyShell.getContext().getVariable(name);
+        } catch (MissingPropertyException mpe) {
+            throw new QueryScope.MissingVariableException("No binding for: " + name, mpe);
         }
     }
 
@@ -705,12 +694,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     @Override
-    public Map<String, Object> getVariables() {
-        // noinspection unchecked
-        return Collections.unmodifiableMap(groovyShell.getContext().getVariables());
-    }
-
-    @Override
     protected GroovySnapshot emptySnapshot() {
         return new GroovySnapshot(Collections.emptyMap());
     }
@@ -755,18 +738,19 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
-    public Set<String> getVariableNames() {
+    @Override
+    protected Set<String> getVariableNames() {
         // noinspection unchecked
-        return Collections.unmodifiableSet(groovyShell.getContext().getVariables().keySet());
+        return Set.copyOf(groovyShell.getContext().getVariables().keySet());
     }
 
     @Override
-    public boolean hasVariableName(String name) {
+    protected boolean hasVariableName(String name) {
         return groovyShell.getContext().hasVariable(name);
     }
 
     @Override
-    public void setVariable(String name, @Nullable Object newValue) {
+    protected void setVariable(String name, @Nullable Object newValue) {
         groovyShell.getContext().setVariable(NameValidator.validateQueryParameterName(name), newValue);
 
         // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
