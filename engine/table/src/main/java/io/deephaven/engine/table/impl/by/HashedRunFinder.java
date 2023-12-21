@@ -72,7 +72,8 @@ public class HashedRunFinder {
 
         for (int chunkPosition = 0; chunkPosition < size; ++chunkPosition) {
             final int outputPosition = outputPositions.get(chunkPosition);
-            int hashSlot = outputPosition & context.tableMask;
+            // Increase the chance of hash collision, but reduce the linear probing needed in pathological cases.
+            int hashSlot = (outputPosition * 2) & context.tableMask;
 
             do {
                 final int baseSlot = hashSlot * 3;
