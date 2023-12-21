@@ -151,9 +151,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         RuntimeException evaluateErr = null;
         final Changes diff;
 
-        // Take the write lock while running script code, so that readers can't look at variables again until
-        // the script has finished.
-        variableAccessLock.writeLock().lock();
         // retain any objects which are created in the executed code, we'll release them when the script session
         // closes
         try (final S initialSnapshot = takeSnapshot();
@@ -163,7 +160,11 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 // Actually evaluate the script; use the enclosing auth context, since AbstractScriptSession's
                 // ExecutionContext never has a non-null AuthContext
                 executionContext.withAuthContext(ExecutionContext.getContext().getAuthContext())
-                        .apply(() -> evaluate(script, scriptName));
+                        .apply(() -> {
+                            // Take the write lock while running script code, so that readers can't look at variables again until
+                            // the script has finished.
+                            doLocked(variableAccessLock.writeLock(), () -> evaluate(script, scriptName));
+                        });
             } catch (final RuntimeException err) {
                 evaluateErr = err;
             }
@@ -172,8 +173,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             observeScopeChanges();
             // Use the "last" snapshot created as a side effect of observeScopeChanges() as our "to"
             diff = createDiff(initialSnapshot, lastSnapshot, evaluateErr);
-        } finally {
-            variableAccessLock.writeLock().unlock();
         }
 
         return diff;
@@ -263,20 +262,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     public QueryScope getQueryScope() {
         return queryScope;
-    }
-
-    private Class<?> getVariableType(final String var) {
-        if (hasVariableName(var)) {
-            return null;
-        }
-        final Object result = getVariable(var);
-        if (result == null) {
-            return null;
-        } else if (result instanceof Table) {
-            return Table.class;
-        } else {
-            return result.getClass();
-        }
     }
 
     /**
