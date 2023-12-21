@@ -2,7 +2,7 @@ package io.deephaven.lang.completion
 
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
-import io.deephaven.engine.util.VariableProvider
+import io.deephaven.engine.context.EmptyQueryScope
 import io.deephaven.internal.log.LoggerFactory
 import io.deephaven.io.logger.Logger
 import io.deephaven.lang.generated.Node
@@ -38,8 +38,6 @@ trait ChunkerParseTestMixin {
         }
     }
 
-    abstract VariableProvider getVariables()
-
     ParsedDocument parse(String command) {
         CompletionParser p = new CompletionParser();
         doc = p.parse(command)
@@ -57,7 +55,7 @@ trait ChunkerParseTestMixin {
     String doCompletion(String command, int completionPos, int resultIndex) {
         Logger log = LoggerFactory.getLogger(CompletionHandler)
 
-        ChunkerCompleter completer = new ChunkerCompleter(log, variables)
+        ChunkerCompleter completer = new ChunkerCompleter(log, EmptyQueryScope.INSTANCE)
         parse(command)
         Set<CompletionItem> results = completer.runCompletion(doc, completionPos)
         List<CompletionItem.Builder> result = results.toList()

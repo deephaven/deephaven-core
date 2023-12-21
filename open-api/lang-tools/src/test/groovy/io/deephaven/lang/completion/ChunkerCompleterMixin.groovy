@@ -1,6 +1,6 @@
 package io.deephaven.lang.completion
 
-import io.deephaven.engine.util.VariableProvider
+import io.deephaven.engine.context.QueryScope
 import io.deephaven.internal.log.LoggerFactory
 import io.deephaven.io.logger.Logger
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
@@ -10,7 +10,7 @@ import io.deephaven.lang.parse.ParsedDocument
  */
 trait ChunkerCompleterMixin extends ChunkerParseTestMixin {
 
-    Set<CompletionItem> performSearch(ParsedDocument doc, int from, VariableProvider vars) {
+    Set<CompletionItem> performSearch(ParsedDocument doc, int from, QueryScope vars) {
 
         Logger log = LoggerFactory.getLogger(CompletionHandler)
 

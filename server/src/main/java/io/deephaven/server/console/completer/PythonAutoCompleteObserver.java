@@ -48,7 +48,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
             case OPEN_DOCUMENT: {
                 final TextDocumentItem doc = value.getOpenDocument().getTextDocument();
                 PyObject completer =
-                        (PyObject) scriptSession.get().getVariableProvider().getVariable("jedi_settings", null);
+                        (PyObject) scriptSession.get().getQueryScope().readParamValue("jedi_settings");
                 completer.callMethod("open_doc", doc.getText(), doc.getUri(), doc.getVersion());
                 break;
             }
@@ -57,7 +57,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 final VersionedTextDocumentIdentifier text = request.getTextDocument();
 
                 PyObject completer =
-                        (PyObject) scriptSession.get().getVariableProvider().getVariable("jedi_settings", null);
+                        (PyObject) scriptSession.get().getQueryScope().readParamValue("jedi_settings");
                 String uri = text.getUri();
                 int version = text.getVersion();
                 String document = completer.callMethod("get_doc", text.getUri()).getStringValue();
@@ -76,7 +76,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
             }
             case CLOSE_DOCUMENT: {
                 PyObject completer =
-                        (PyObject) scriptSession.get().getVariableProvider().getVariable("jedi_settings", null);
+                        (PyObject) scriptSession.get().getQueryScope().readParamValue("jedi_settings");
                 CloseDocumentRequest request = value.getCloseDocument();
                 completer.callMethod("close_doc", request.getTextDocument().getUri());
                 break;
@@ -111,7 +111,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 request.getRequestId() > 0 ? request.getRequestId() : request.getGetCompletionItems().getRequestId();
         try {
             final ScriptSession scriptSession = exportedConsole.get();
-            PyObject completer = scriptSession.getVariableProvider().getVariable("jedi_settings", null);
+            PyObject completer = scriptSession.getQueryScope().readParamValue("jedi_settings");
             boolean canJedi = completer.callMethod("is_enabled").getBooleanValue();
             if (!canJedi) {
                 log.trace().append("Ignoring completion request because jedi is disabled").endl();

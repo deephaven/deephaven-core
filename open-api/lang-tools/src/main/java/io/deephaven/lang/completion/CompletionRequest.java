@@ -4,9 +4,10 @@
 package io.deephaven.lang.completion;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.generated.ChunkerAssign;
@@ -83,7 +84,7 @@ public class CompletionRequest {
     }
 
     public TableDefinition getTableDefinition(final ChunkerCompleter completer, final ParsedDocument doc,
-            VariableProvider variables, String name) {
+            QueryScope variables, String name) {
         // Each request maintains a local cache of looked-up table definitions, to avoid going to the VariableHandler
         // unless needed
         // Note that we do NOT go to the completer.getReferencedTables map at all;
@@ -95,8 +96,11 @@ public class CompletionRequest {
             // variable exists.
             return localDefs.get(name);
         }
-        TableDefinition result = variables.getTableDefinition(name);
-        if (result == null) {
+        Object value = variables.readParamValue(name, null);
+        TableDefinition result = null;
+        if (value instanceof Table) {
+            result = ((Table) value).getDefinition();
+        } else {
             // If the result was null, we can try to search for an assign statement that is initialized w/ something we
             // _can_ grok.
             final List<ChunkerAssign> assignment = completer.findAssignment(doc, this, name);

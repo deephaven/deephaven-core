@@ -1,14 +1,13 @@
 package io.deephaven.lang.completion
 
-import io.deephaven.base.clock.Clock
+import io.deephaven.engine.context.QueryScope
 import io.deephaven.engine.context.TestExecutionContext;
-import io.deephaven.engine.table.Table
-import io.deephaven.engine.table.TableDefinition
-import io.deephaven.engine.util.VariableProvider
+import io.deephaven.engine.table.TableFactory
 import io.deephaven.internal.log.LoggerFactory
 import io.deephaven.io.logger.Logger
 import io.deephaven.lang.parse.CompletionParser
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
+import io.deephaven.qst.column.Column
 import io.deephaven.util.SafeCloseable
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -41,12 +40,11 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
             doc = p.parse(src)
 
             Logger log = LoggerFactory.getLogger(CompletionHandler)
-        VariableProvider variables = Mock(VariableProvider) {
-                (0..1) * getVariableNames() >> ['t']
-                (0..1) * getVariableType('t') >> Table
-                (0..1) * getTableDefinition('t') >> TableDefinition.from(['Date', 'DateTime'], [String, Instant]
-                )
-            }
+            QueryScope variables = new QueryScope.StandaloneImpl()
+            variables.putParam("t", TableFactory.newTable(
+                    Column.of('Date', String.class, new String[0]),
+                    Column.of('DateTime', Instant.class, new Instant[0]))
+            )
 
             ChunkerCompleter completer = new ChunkerCompleter(log, variables)
 
@@ -103,17 +101,17 @@ t = t.updateView ( 'D
         doc = p.parse(src)
 
         Logger log = LoggerFactory.getLogger(CompletionHandler)
-        VariableProvider variables = Mock() {
-            (0..1) * getTableDefinition('t') >> TableDefinition.from(
-                    ['Date', 'Delta', 'NotMeThough'], [String, Long, Integer])
-            (0..1) * getVariableType('t') >> Table
-            (0..1) * getVariableNames() >> []
-        }
+        QueryScope variables = new QueryScope.StandaloneImpl();
+        variables.putParam('t', TableFactory.newTable(
+            Column.of('Date', String.class, new String[0]),
+            Column.of('Delta', Long.class, new Long[0]),
+            Column.of('NotMeThough', Integer.class, new Integer[0]),
+        ));
 
         ChunkerCompleter completer = new ChunkerCompleter(log, variables)
 
         when: "Cursor is at EOF, table name completion from t is returned"
-        Set<CompletionItem.Builder> result = completer.runCompletion(doc, pos)
+        Set<CompletionItem> result = completer.runCompletion(doc, pos)
         result.removeIf({it.textEdit.text == 'updateView('})
 
 //       t = t.where ( 'D
@@ -143,10 +141,11 @@ t = t.update('A=') .update( 'B=')
         doc = p.parse(src)
 
         Logger log = LoggerFactory.getLogger(CompletionHandler)
-        VariableProvider variables = Mock(VariableProvider) {
-            _ * getTableDefinition('t') >> TableDefinition.from(['A1', 'A2'], [Long, Integer])
-            0 * _
-        }
+        QueryScope variables = new QueryScope.StandaloneImpl()
+        variables.putParam('t', TableFactory.newTable(
+                Column.of('A1', Long.class, new Long[0]),
+                Column.of('A2', Integer.class, new Integer[0]),
+        ));
 
         ChunkerCompleter completer = new ChunkerCompleter(log, variables)
 
@@ -200,10 +199,8 @@ t.where('"""
         doc = p.parse(src)
 
         Logger log = LoggerFactory.getLogger(CompletionHandler)
-        VariableProvider variables = Mock(VariableProvider) {
-            _ * getTableDefinition('t') >> null
-            0 * _
-        }
+        QueryScope variables = new QueryScope.StandaloneImpl()
+        variables.putParam('t', null);
 
         ChunkerCompleter completer = new ChunkerCompleter(log, variables)
 
@@ -218,11 +215,5 @@ t.where('"""
 
         cleanup:
         System.clearProperty(ChunkerCompleter.PROP_SUGGEST_STATIC_METHODS)
-    }
-    @Override
-    VariableProvider getVariables() {
-        return Mock(VariableProvider) {
-            _ * getVariableNames() >> []
-        }
     }
 }

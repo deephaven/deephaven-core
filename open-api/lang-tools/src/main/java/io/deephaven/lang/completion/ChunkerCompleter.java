@@ -3,11 +3,11 @@
  */
 package io.deephaven.lang.completion;
 
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope.MissingVariableException;
-import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.api.HasScope;
 import io.deephaven.lang.api.IsScope;
@@ -44,16 +44,16 @@ public class ChunkerCompleter implements CompletionHandler {
     public static final String PROP_SUGGEST_STATIC_METHODS = "suggest.all.static.methods";
 
     private final Logger log;
-    private final VariableProvider variables;
+    private final QueryScope variables;
     private final CompletionLookups lookups;
     private String defaultQuoteType;
     private ParsedDocument doc;
 
-    public ChunkerCompleter(final Logger log, VariableProvider variables) {
+    public ChunkerCompleter(final Logger log, QueryScope variables) {
         this(log, variables, new CompletionLookups(Collections.emptySet()));
     }
 
-    public ChunkerCompleter(final Logger log, VariableProvider variables, CompletionLookups lookups) {
+    public ChunkerCompleter(final Logger log, QueryScope variables, CompletionLookups lookups) {
         this.log = log;
         this.variables = variables;
         this.lookups = lookups;
@@ -574,7 +574,7 @@ public class ChunkerCompleter implements CompletionHandler {
             // no value for this assignment... offer up anything from scope.
             FuzzyList<String> sorted = new FuzzyList<>("");
 
-            for (String varName : variables.getVariableNames()) {
+            for (String varName : variables.getParamNames()) {
                 sorted.add(varName, varName);
             }
             for (String varName : sorted) {
@@ -593,7 +593,7 @@ public class ChunkerCompleter implements CompletionHandler {
             // Really, we should be adding all variable names like we do, then visiting all source,
             // removing anything which occurs later than here in source, and adding any assignments which
             // occur earlier in source-but-not-in-runtime-variable-pool. IDS-1517-23
-            for (String varName : variables.getVariableNames()) {
+            for (String varName : variables.getParamNames()) {
                 if (camelMatch(varName, startWith)) {
                     sorted.add(varName, varName);
                 }
@@ -883,7 +883,7 @@ public class ChunkerCompleter implements CompletionHandler {
     private void doVariableCompletion(Collection<CompletionItem.Builder> results, String variablePrefix,
             Token replacing, CompletionRequest request) {
         FuzzyList<String> sorter = new FuzzyList<>(variablePrefix);
-        for (String name : variables.getVariableNames()) {
+        for (String name : variables.getParamNames()) {
             if (!name.equals(variablePrefix) && camelMatch(name, variablePrefix)) {
                 // only suggest names which are camel-case-matches (ignoring same-as-existing-variable names)
                 sorter.add(name, name);
@@ -1018,9 +1018,12 @@ public class ChunkerCompleter implements CompletionHandler {
 
         IsScope o = scope.get(0);
 
-        final Class<?> type = variables.getVariableType(o.getName());
-        if (type != null) {
-            return Optional.of(type);
+        final Object instance = variables.readParamValue(o.getName(), null);
+        if (instance != null) {
+            if (instance instanceof Table) {
+                return Optional.of(Table.class);
+            }
+            return Optional.of(instance.getClass());
         }
         Optional<Class<?>> result = resolveScope(scope)
                 .map(Object::getClass);
@@ -1099,7 +1102,7 @@ public class ChunkerCompleter implements CompletionHandler {
         // TODO: also handle static classes / variables only present in source (code not run yet) IDS-1517-23
         try {
 
-            final Object var = variables.getVariable(o.getName(), null);
+            final Object var = variables.readParamValue(o.getName(), null);
             if (var == null) {
                 return Optional.empty();
             }

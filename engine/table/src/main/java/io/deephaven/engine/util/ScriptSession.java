@@ -19,16 +19,9 @@ import java.util.Map;
 public interface ScriptSession extends LivenessNode {
 
     /**
-     * A {@link VariableProvider} instance, for services like autocomplete which may want a limited "just the variables"
-     * view of our session state.
+     * Provides access to the query scope defined by the state in this script session.
      *
-     * @return a VariableProvider instance backed by the global/binding context of this script session.
-     */
-    VariableProvider getVariableProvider();
-
-    /**
-     *
-     * @return
+     * @return an implementation defined QueryScope, allowing access to state in the script session
      */
     QueryScope getQueryScope();
 

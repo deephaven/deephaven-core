@@ -1,6 +1,5 @@
 package io.deephaven.lang.completion
 
-import io.deephaven.engine.util.VariableProvider
 import io.deephaven.lang.parse.CompletionParser
 import spock.lang.Specification
 
@@ -31,12 +30,5 @@ def typesafe(param: Type = None) -> int:
         // the goal here is merely survival without parse exceptions bubbling out.
         assertAllValid(doc, src)
 
-    }
-
-    @Override
-    VariableProvider getVariables() {
-        return Mock(VariableProvider) {
-            _ * getVariableNames() >> []
-        }
     }
 }

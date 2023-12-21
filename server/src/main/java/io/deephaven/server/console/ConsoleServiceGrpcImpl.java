@@ -305,7 +305,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 final ScriptSession scriptSession = scriptSessionProvider.get();
                 scriptSession.evaluateScript(
                         "from deephaven_internal.auto_completer import jedi_settings ; jedi_settings.set_scope(globals())");
-                settings[0] = scriptSession.getVariableProvider().getVariable("jedi_settings", null);
+                settings[0] = scriptSession.getQueryScope().readParamValue("jedi_settings");
             } catch (Exception err) {
                 log.error().append("Error trying to enable jedi autocomplete").append(err).endl();
             }

@@ -481,7 +481,7 @@ public abstract class FlightMessageRoundTripTest {
         final String ANONYMOUS = "Anonymous";
 
         closeClient();
-        scriptSession.getVariableProvider().setVariable("test", TableTools.emptyTable(10).update("I=i"));
+        ExecutionContext.getContext().getQueryScope().putParam("test", TableTools.emptyTable(10).update("I=i"));
 
         final MutableBoolean tokenChanged = new MutableBoolean();
         flightClient = FlightClient.builder().location(serverLocation)

@@ -63,11 +63,6 @@ public class DelegatingScriptSession implements ScriptSession {
     }
 
     @Override
-    public VariableProvider getVariableProvider() {
-        return delegate.getVariableProvider();
-    }
-
-    @Override
     public QueryScope getQueryScope() {
         return delegate.getQueryScope();
     }
