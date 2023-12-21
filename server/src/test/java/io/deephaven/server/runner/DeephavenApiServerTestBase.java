@@ -86,7 +86,8 @@ public abstract class DeephavenApiServerTestBase {
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
-    private ExecutionContext executionContext;
+    @Inject
+    ExecutionContext executionContext;
     private SafeCloseable executionContextCloseable;
 
     private LogBuffer logBuffer;
@@ -129,7 +130,6 @@ public abstract class DeephavenApiServerTestBase {
                 .injectFields(this);
 
         final PeriodicUpdateGraph updateGraph = server.getUpdateGraph().cast();
-        executionContext = TestExecutionContext.createForUnitTests().withUpdateGraph(updateGraph);
         executionContextCloseable = executionContext.open();
         if (updateGraph.isUnitTestModeAllowed()) {
             updateGraph.enableUnitTestMode();

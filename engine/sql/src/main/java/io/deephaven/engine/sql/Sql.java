@@ -84,7 +84,7 @@ public final class Sql {
         // See SQLTODO(catalog-reader-implementation)
         QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         for (String name : queryScope.getParamNames()) {
-            Object paramValue = queryScope.readParamValue(name);
+            Object paramValue = queryScope.unwrapObject(queryScope.readParamValue(name));
             if (paramValue instanceof Table) {
                 scope.put(name, (Table) paramValue);
             }
