@@ -160,8 +160,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 // ExecutionContext never has a non-null AuthContext
                 executionContext.withAuthContext(ExecutionContext.getContext().getAuthContext())
                         .apply(() -> {
-                            // Take the write lock while running script code, so that readers can't look at variables again until
-                            // the script has finished.
+                            // Take the write lock while running script code, so that readers can't look at variables
+                            // again until the script has finished.
                             doLocked(variableAccessLock.writeLock(), () -> evaluate(script, scriptName));
                         });
             } catch (final RuntimeException err) {
