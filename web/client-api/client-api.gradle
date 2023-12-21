@@ -19,6 +19,8 @@ dependencies {
     implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
 
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
+
+    testImplementation 'org.seleniumhq.selenium:selenium-remote-driver:4.16.1'
 }
 Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')
 Classpaths.inheritElemental(project, 'elemental2-promise', 'implementation')
@@ -66,7 +68,8 @@ deephavenDocker {
 tasks.register('gwtIntegrationTest', Test) { t ->
     t.dependsOn(deephavenDocker.portTask)
     doFirst {
-        t.systemProperty('gwt.args', '-runStyle Manual:1 -ea -style PRETTY -setProperty dh.server=http://localhost:' + deephavenDocker.port.get())
+        def webdriverUrl = 'http://localhost:4444'
+        t.systemProperty('gwt.args', "-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:webdriverUrl:firefox -ea -style PRETTY -setProperty dh.server=http://localhost:${deephavenDocker.port.get()}")
         t.classpath += tasks.getByName('gwtCompile').src
         t.classpath.files.each {
             println it
