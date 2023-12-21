@@ -193,13 +193,9 @@ public abstract class FlightMessageRoundTripTest {
 
         SessionService sessionService();
 
-        AbstractScriptSession<?> scriptSession();
-
         GrpcServer server();
 
         TestAuthModule.BasicAuthTestImpl basicAuthHandler();
-
-        Map<String, AuthenticationRequestHandler> authRequestHandlers();
 
         ExecutionContext executionContext();
 
@@ -216,7 +212,6 @@ public abstract class FlightMessageRoundTripTest {
     protected SessionService sessionService;
 
     private SessionState currentSession;
-    private AbstractScriptSession<?> scriptSession;
     private SafeCloseable executionContext;
     private Location serverLocation;
     protected TestComponent component;
@@ -243,7 +238,6 @@ public abstract class FlightMessageRoundTripTest {
         server.start();
         localPort = server.getPort();
 
-        scriptSession = component.scriptSession();
         sessionService = component.sessionService();
 
         serverLocation = Location.forGrpcInsecure("localhost", localPort);
@@ -680,7 +674,6 @@ public abstract class FlightMessageRoundTripTest {
         final Table tickingTable = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
                 () -> TableTools.timeTable(1_000_000).update("I = i"));
 
-        // try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession.getQueryScope(), false)) {
         // stuff table into the scope
         ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
         ExecutionContext.getContext().getQueryScope().putParam(tickingTableName, tickingTable);
@@ -703,7 +696,6 @@ public abstract class FlightMessageRoundTripTest {
         });
 
         Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
-        // }
     }
 
     @Test
@@ -711,74 +703,72 @@ public abstract class FlightMessageRoundTripTest {
         final String staticTableName = "flightInfoTest";
         final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
 
-        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession.getQueryScope(), false)) {
-            // stuff table into the scope
-            ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
+        // stuff table into the scope
+        ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
 
-            // build up a snapshot request
-            byte[] magic = new byte[] {100, 112, 104, 110}; // equivalent to '0x6E687064' (ASCII "dphn")
+        // build up a snapshot request
+        byte[] magic = new byte[] {100, 112, 104, 110}; // equivalent to '0x6E687064' (ASCII "dphn")
 
-            FlightDescriptor fd = FlightDescriptor.command(magic);
+        FlightDescriptor fd = FlightDescriptor.command(magic);
 
-            try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
-                    final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+        try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
+                final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
-                final FlatBufferBuilder metadata = new FlatBufferBuilder();
+            final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
-                // use 0 for batch size and max message size to use server-side defaults
-                int optOffset =
-                        BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, ColumnConversionMode.Stringify,
-                                false, 0, 0);
+            // use 0 for batch size and max message size to use server-side defaults
+            int optOffset =
+                    BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, ColumnConversionMode.Stringify,
+                            false, 0, 0);
 
-                final int ticOffset =
-                        BarrageSnapshotRequest.createTicketVector(metadata,
-                                ScopeTicketHelper.nameToBytes(staticTableName));
-                BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
-                BarrageSnapshotRequest.addColumns(metadata, 0);
-                BarrageSnapshotRequest.addViewport(metadata, 0);
-                BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
-                BarrageSnapshotRequest.addTicket(metadata, ticOffset);
-                metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
+            final int ticOffset =
+                    BarrageSnapshotRequest.createTicketVector(metadata,
+                            ScopeTicketHelper.nameToBytes(staticTableName));
+            BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
+            BarrageSnapshotRequest.addColumns(metadata, 0);
+            BarrageSnapshotRequest.addViewport(metadata, 0);
+            BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
+            BarrageSnapshotRequest.addTicket(metadata, ticOffset);
+            metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
 
-                final FlatBufferBuilder wrapper = new FlatBufferBuilder();
-                final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
-                wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
-                        wrapper,
-                        0x6E687064, // the numerical representation of the ASCII "dphn".
-                        BarrageMessageType.BarrageSnapshotRequest,
-                        innerOffset));
+            final FlatBufferBuilder wrapper = new FlatBufferBuilder();
+            final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
+            wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
+                    wrapper,
+                    0x6E687064, // the numerical representation of the ASCII "dphn".
+                    BarrageMessageType.BarrageSnapshotRequest,
+                    innerOffset));
 
-                // extract the bytes and package them in an ArrowBuf for transmission
-                byte[] msg = wrapper.sizedByteArray();
-                ArrowBuf data = allocator.buffer(msg.length);
-                data.writeBytes(msg);
+            // extract the bytes and package them in an ArrowBuf for transmission
+            byte[] msg = wrapper.sizedByteArray();
+            ArrowBuf data = allocator.buffer(msg.length);
+            data.writeBytes(msg);
 
-                erw.getWriter().putMetadata(data);
-                erw.getWriter().completed();
+            erw.getWriter().putMetadata(data);
+            erw.getWriter().completed();
 
-                // read everything from the server (expecting schema message and one data message)
-                int totalRowCount = 0;
-                while (erw.getReader().next()) {
-                    final int offset = totalRowCount;
-                    final VectorSchemaRoot root = erw.getReader().getRoot();
-                    final int rowCount = root.getRowCount();
-                    totalRowCount += rowCount;
+            // read everything from the server (expecting schema message and one data message)
+            int totalRowCount = 0;
+            while (erw.getReader().next()) {
+                final int offset = totalRowCount;
+                final VectorSchemaRoot root = erw.getReader().getRoot();
+                final int rowCount = root.getRowCount();
+                totalRowCount += rowCount;
 
-                    // check the values against the source table
-                    org.apache.arrow.vector.IntVector iv =
-                            (org.apache.arrow.vector.IntVector) root.getVector(0);
-                    for (int i = 0; i < rowCount; ++i) {
-                        assertEquals("int match:", DataAccessHelpers.getColumn(table, 0).get(offset + i), iv.get(i));
-                    }
-                    org.apache.arrow.vector.Float8Vector dv =
-                            (org.apache.arrow.vector.Float8Vector) root.getVector(1);
-                    for (int i = 0; i < rowCount; ++i) {
-                        assertEquals("double match: ", DataAccessHelpers.getColumn(table, 1).get(offset + i),
-                                dv.get(i));
-                    }
+                // check the values against the source table
+                org.apache.arrow.vector.IntVector iv =
+                        (org.apache.arrow.vector.IntVector) root.getVector(0);
+                for (int i = 0; i < rowCount; ++i) {
+                    assertEquals("int match:", DataAccessHelpers.getColumn(table, 0).get(offset + i), iv.get(i));
                 }
-                assertEquals(table.size(), totalRowCount);
+                org.apache.arrow.vector.Float8Vector dv =
+                        (org.apache.arrow.vector.Float8Vector) root.getVector(1);
+                for (int i = 0; i < rowCount; ++i) {
+                    assertEquals("double match: ", DataAccessHelpers.getColumn(table, 1).get(offset + i),
+                            dv.get(i));
+                }
             }
+            assertEquals(table.size(), totalRowCount);
         }
     }
 
@@ -787,34 +777,32 @@ public abstract class FlightMessageRoundTripTest {
         final String staticTableName = "flightInfoTest";
         final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
 
-        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession.getQueryScope(), false)) {
-            // stuff table into the scope
-            ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
+        // stuff table into the scope
+        ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
 
-            // java-flight requires us to send a message, but cannot add app metadata, send a dummy message
-            byte[] empty = new byte[] {};
-            final FlightDescriptor fd = FlightDescriptor.command(empty);
-            try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
-                    final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+        // java-flight requires us to send a message, but cannot add app metadata, send a dummy message
+        byte[] empty = new byte[] {};
+        final FlightDescriptor fd = FlightDescriptor.command(empty);
+        try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
+                final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
-                byte[] msg = new byte[0];
-                ArrowBuf data = allocator.buffer(msg.length);
-                data.writeBytes(msg);
+            byte[] msg = new byte[0];
+            ArrowBuf data = allocator.buffer(msg.length);
+            data.writeBytes(msg);
 
-                erw.getWriter().putMetadata(data);
-                erw.getWriter().completed();
+            erw.getWriter().putMetadata(data);
+            erw.getWriter().completed();
 
-                Exception exception = assertThrows(FlightRuntimeException.class, () -> {
-                    erw.getReader().next();
-                });
+            Exception exception = assertThrows(FlightRuntimeException.class, () -> {
+                erw.getReader().next();
+            });
 
-                String expectedMessage = "failed to receive Barrage request metadata";
-                String actualMessage = exception.getMessage();
+            String expectedMessage = "failed to receive Barrage request metadata";
+            String actualMessage = exception.getMessage();
 
-                assertTrue(actualMessage.contains(expectedMessage));
-            }
-
+            assertTrue(actualMessage.contains(expectedMessage));
         }
+
     }
 
     @Test

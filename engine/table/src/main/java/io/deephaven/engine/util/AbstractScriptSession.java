@@ -279,16 +279,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         }
     }
 
-
-    public TableDefinition getTableDefinition(final String var) {
-        if (!hasVariableName(var)) {
-            return null;
-        }
-        Object o = getVariable(var);
-        return o instanceof Table ? ((Table) o).getDefinition() : null;
-    }
-
-
     /**
      * Retrieve a variable from the script session's bindings.
      *
