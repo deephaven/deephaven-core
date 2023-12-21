@@ -68,17 +68,16 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         }
     }
 
-    private final File classCacheDirectory;
-
-    protected final ExecutionContext executionContext;
+    private final ReadWriteLock variableAccessLock = new ReentrantReadWriteLock();
 
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
+    private final File classCacheDirectory;
+    private final QueryScope queryScope;
 
-    private final ReadWriteLock variableAccessLock = new ReentrantReadWriteLock();
+    protected final ExecutionContext executionContext;
 
     private S lastSnapshot;
-    private final QueryScope queryScope;
 
     protected AbstractScriptSession(
             UpdateGraph updateGraph,
