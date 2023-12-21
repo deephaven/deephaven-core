@@ -2,21 +2,26 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
 
-public class OperationInitializationPoolJobScheduler implements JobScheduler {
-    private final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
-    private final OperationInitializer threadPool;
+public class OperationInitializerJobScheduler implements JobScheduler {
 
-    public OperationInitializationPoolJobScheduler(OperationInitializer threadPool) {
-        this.threadPool = threadPool;
+    private final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
+    private final OperationInitializer operationInitializer;
+
+    public OperationInitializerJobScheduler(@NotNull final OperationInitializer operationInitializer) {
+        this.operationInitializer = operationInitializer;
+    }
+
+    public OperationInitializerJobScheduler() {
+        this(ExecutionContext.getContext().getOperationInitializer());
     }
 
     @Override
@@ -25,7 +30,7 @@ public class OperationInitializationPoolJobScheduler implements JobScheduler {
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
-        threadPool.submit(() -> {
+        operationInitializer.submit(() -> {
             final BasePerformanceEntry basePerformanceEntry = new BasePerformanceEntry();
             basePerformanceEntry.onBaseEntryStart();
             try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
@@ -50,6 +55,6 @@ public class OperationInitializationPoolJobScheduler implements JobScheduler {
 
     @Override
     public int threadCount() {
-        return OperationInitializationThreadPool.NUM_THREADS;
+        return operationInitializer.parallelismFactor();
     }
 }

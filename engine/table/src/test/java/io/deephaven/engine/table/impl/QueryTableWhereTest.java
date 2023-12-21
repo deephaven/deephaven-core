@@ -47,7 +47,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.IntSupplier;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.IntStream;
 
@@ -833,7 +832,7 @@ public abstract class QueryTableWhereTest {
 
         // we want to make sure we can push something through the thread pool and are not hogging it
         final CountDownLatch latch = new CountDownLatch(1);
-        ExecutionContext.getContext().getInitializer().submit(latch::countDown);
+        ExecutionContext.getContext().getOperationInitializer().submit(latch::countDown);
         waitForLatch(latch);
 
         assertEquals(0, fastCounter.invokes.get());

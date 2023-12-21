@@ -330,10 +330,10 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             return null;
         }
         ExecutionContext current = ExecutionContext.getContext();
-        if (!provided.getInitializer().canParallelize()) {
+        if (!provided.getOperationInitializer().canParallelize()) {
             return provided;
         }
-        if (current.getInitializer() != provided.getInitializer()) {
+        if (current.getOperationInitializer() != provided.getOperationInitializer()) {
             return provided;
         }
 

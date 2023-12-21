@@ -7,7 +7,6 @@ import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.engine.table.impl.util.EngineMetrics;

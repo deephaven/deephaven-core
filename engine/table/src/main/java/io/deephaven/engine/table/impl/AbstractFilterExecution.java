@@ -328,8 +328,7 @@ abstract class AbstractFilterExecution extends AbstractNotification {
 
     boolean doParallelizationBase(long numberOfRows) {
         return !QueryTable.DISABLE_PARALLEL_WHERE && numberOfRows != 0
-                && (QueryTable.FORCE_PARALLEL_WHERE || numberOfRows / 2 > QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT)
-                && ExecutionContext.getContext().getInitializer().canParallelize();
+                && (QueryTable.FORCE_PARALLEL_WHERE || numberOfRows / 2 > QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT);
     }
 
     /**

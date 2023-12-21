@@ -131,7 +131,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
             this.updateThreads = numUpdateThreads;
         }
 
-        OperationInitializer captured = ExecutionContext.getContext().getInitializer();
+        OperationInitializer captured = ExecutionContext.getContext().getOperationInitializer();
         refreshThread = new Thread(threadInitializationFactory.createInitializer(() -> {
             configureRefreshThread(captured);
             while (running) {
@@ -1097,7 +1097,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
 
         @Override
         public Thread newThread(@NotNull final Runnable r) {
-            OperationInitializer captured = ExecutionContext.getContext().getInitializer();
+            OperationInitializer captured = ExecutionContext.getContext().getOperationInitializer();
             return super.newThread(threadInitializationFactory.createInitializer(() -> {
                 configureRefreshThread(captured);
                 r.run();
@@ -1118,7 +1118,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
 
         @Override
         public Thread newThread(@NotNull final Runnable r) {
-            OperationInitializer captured = ExecutionContext.getContext().getInitializer();
+            OperationInitializer captured = ExecutionContext.getContext().getOperationInitializer();
             return super.newThread(() -> {
                 configureUnitTestRefreshThread(captured);
                 r.run();
