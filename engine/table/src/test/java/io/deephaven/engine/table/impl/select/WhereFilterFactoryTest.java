@@ -254,7 +254,7 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         assertEquals(1, idx.size());
         assertEquals(b, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
         // match one of two items
-        f = WhereFilterFactory.getExpression("BigDecimal in " + a + ", " + b + "");
+        f = WhereFilterFactory.getExpression("BigDecimal in " + a + ", " + b);
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
