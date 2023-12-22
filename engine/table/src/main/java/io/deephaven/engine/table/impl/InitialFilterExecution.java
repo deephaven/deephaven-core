@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A FilterExecution that is used for initial filters. When we split off sub filters as child jobs, they are enqueued in
- * the {@link OperationInitializationThreadPool}.
+ * the {@link io.deephaven.engine.updategraph.OperationInitializer OperationInitializer}.
  */
 class InitialFilterExecution extends AbstractFilterExecution {
     private final QueryTable sourceTable;
@@ -60,7 +60,8 @@ class InitialFilterExecution extends AbstractFilterExecution {
         if (parent == null) {
             pendingSatisfaction = new IntrusiveDoublyLinkedQueue<>(
                     IntrusiveDoublyLinkedNode.Adapter.<NotificationQueue.Notification>getInstance());
-            segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS <= 0 ? OperationInitializationThreadPool.NUM_THREADS
+            segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS <= 0
+                    ? ExecutionContext.getContext().getOperationInitializer().parallelismFactor()
                     : QueryTable.PARALLEL_WHERE_SEGMENTS;
             runningChildren = Collections.synchronizedMap(new IdentityHashMap<>());
             cancelled = new AtomicBoolean(false);
@@ -86,7 +87,7 @@ class InitialFilterExecution extends AbstractFilterExecution {
 
     private void enqueueJobs(Iterable<? extends NotificationQueue.Notification> subFilters) {
         for (NotificationQueue.Notification notification : subFilters) {
-            ExecutionContext.getContext().getInitializer().submit(() -> {
+            ExecutionContext.getContext().getOperationInitializer().submit(() -> {
                 root.runningChildren.put(Thread.currentThread(), Thread.currentThread());
                 try {
                     if (!root.cancelled.get()) {
@@ -113,7 +114,9 @@ class InitialFilterExecution extends AbstractFilterExecution {
 
     @Override
     boolean doParallelization(long numberOfRows) {
-        return permitParallelization && doParallelizationBase(numberOfRows);
+        return permitParallelization
+                && ExecutionContext.getContext().getOperationInitializer().canParallelize()
+                && doParallelizationBase(numberOfRows);
     }
 
     @Override

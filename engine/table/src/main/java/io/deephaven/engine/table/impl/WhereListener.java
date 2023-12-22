@@ -237,7 +237,9 @@ class WhereListener extends MergedListener {
 
         @Override
         boolean doParallelization(long numberOfRows) {
-            return permitParallelization && doParallelizationBase(numberOfRows);
+            return permitParallelization
+                    && (QueryTable.FORCE_PARALLEL_WHERE || getUpdateGraph().parallelismFactor() > 1)
+                    && doParallelizationBase(numberOfRows);
         }
 
         @Override
@@ -262,7 +264,8 @@ class WhereListener extends MergedListener {
         }
 
         @Override
-        void enqueueSubFilters(List<AbstractFilterExecution> subFilters,
+        void enqueueSubFilters(
+                List<AbstractFilterExecution> subFilters,
                 CombinationNotification combinationNotification) {
             getUpdateGraph().addNotifications(subFilters);
             getUpdateGraph().addNotification(combinationNotification);

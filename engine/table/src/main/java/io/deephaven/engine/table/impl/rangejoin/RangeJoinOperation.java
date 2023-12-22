@@ -252,8 +252,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         final JobScheduler jobScheduler;
-        if (ExecutionContext.getContext().getInitializer().canParallelize()) {
-            jobScheduler = new OperationInitializationPoolJobScheduler(ExecutionContext.getContext().getInitializer());
+        if (ExecutionContext.getContext().getOperationInitializer().canParallelize()) {
+            jobScheduler = new OperationInitializerJobScheduler();
         } else {
             jobScheduler = ImmediateJobScheduler.INSTANCE;
         }
