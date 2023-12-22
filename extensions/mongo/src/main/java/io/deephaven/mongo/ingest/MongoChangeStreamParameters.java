@@ -1,9 +1,12 @@
 package io.deephaven.mongo.ingest;
 
 import io.deephaven.streampublisher.TableType;
+import org.bson.conversions.Bson;
 import org.immutables.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 @Value.Immutable
 public abstract class MongoChangeStreamParameters {
@@ -48,6 +51,8 @@ public abstract class MongoChangeStreamParameters {
 
     @Nullable
     public abstract String documentSizeColumnName();
+    @Nullable
+    public abstract List<Bson> pipeline();
 
     public interface Builder {
         Builder uri(String uri);
@@ -73,6 +78,8 @@ public abstract class MongoChangeStreamParameters {
         Builder documentColumnName(String name);
 
         Builder tableType(TableType tableType);
+
+        Builder pipeline(List<Bson> pipeline);
 
         default Builder tableType(String typeName) {
             return tableType(TableType.friendlyNameToTableType(typeName));

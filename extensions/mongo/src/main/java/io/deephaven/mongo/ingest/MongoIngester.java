@@ -16,6 +16,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.RawBsonDocument;
+import org.bson.conversions.Bson;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,6 +40,7 @@ public class MongoIngester {
     private final String uri;
     private final String databaseName;
     private final String collectionName;
+    private final List<Bson> pipeline;
     private final BsonDocument resumeDocument;
     private final String name;
     private final String logPrefix;
@@ -70,6 +72,7 @@ public class MongoIngester {
         name = String.format("%s(%s, %s)", MongoIngester.class.getSimpleName(), parameters.database(),
                 parameters.collection());
         logPrefix = name + ": ";
+        this.pipeline = parameters.pipeline();
 
         final List<ColumnDefinition<?>> columnDefinitionList = new ArrayList<>();
         if (parameters.receiveTimeColumnName() != null) {
@@ -137,8 +140,14 @@ public class MongoIngester {
             final MongoDatabase db = mongoClient.getDatabase(databaseName);
             final MongoCollection<Document> collection = db.getCollection(collectionName);
 
-            ChangeStreamIterable<RawBsonDocument> watcher =
-                    collection.watch(RawBsonDocument.class).fullDocument(FullDocument.UPDATE_LOOKUP);
+            ChangeStreamIterable<RawBsonDocument> watcher;
+            if (pipeline != null) {
+                watcher = collection.watch(pipeline, RawBsonDocument.class);
+            } else {
+                watcher = collection.watch(RawBsonDocument.class);
+            }
+
+            watcher = watcher.fullDocument(FullDocument.UPDATE_LOOKUP);
             if (resumeDocument != null) {
                 watcher.resumeAfter(resumeDocument);
             }
