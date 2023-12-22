@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.util;
 
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.Nullable;
@@ -10,7 +11,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -37,12 +37,12 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     @Override
-    protected <T> Optional<T> getVariable(String name) {
+    protected <T> T getVariable(String name) {
         if (!variables.containsKey(name)) {
-            return Optional.empty();
+            throw new QueryScope.MissingVariableException("Missing variable " + name);
         }
         // noinspection unchecked
-        return Optional.of((T) variables.get(name));
+        return (T) variables.get(name);
     }
 
     @Override

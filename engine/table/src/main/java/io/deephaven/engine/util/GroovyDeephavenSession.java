@@ -276,13 +276,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     @Override
-    protected <T> Optional<T> getVariable(String name) {
+    protected <T> T getVariable(String name) {
         synchronized (bindingBackingMap) {
             if (bindingBackingMap.containsKey(name)) {
                 // noinspection unchecked
-                return Optional.of((T) bindingBackingMap.get(name));
+                return (T) bindingBackingMap.get(name);
             }
-            return Optional.empty();
+            throw new QueryScope.MissingVariableException("Missing variable " + name);
         }
     }
 

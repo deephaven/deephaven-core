@@ -169,9 +169,10 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @SuppressWarnings("unchecked")
     @Override
-    protected <T> Optional<T> getVariable(String name) throws QueryScope.MissingVariableException {
-        return (Optional<T>) scope
-                .getValue(name);
+    protected <T> T getVariable(String name) throws QueryScope.MissingVariableException {
+        return (T) scope
+                .getValue(name)
+                .orElseThrow(() -> new QueryScope.MissingVariableException("Missing variable " + name));
     }
 
 

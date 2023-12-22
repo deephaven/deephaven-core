@@ -255,10 +255,11 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     /**
      * Retrieve a variable from the script session's bindings. Values may need to be unwrapped.
      *
-     * @param name the variable to retrieve
-     * @return the variable value, or empty if not present
+     * @param name the name of the variable to retrieve
+     * @return the variable value
+     * @throws QueryScope.MissingVariableException if the variable does not exist
      */
-    protected abstract <T> Optional<T> getVariable(String name);
+    protected abstract <T> T getVariable(String name) throws QueryScope.MissingVariableException;
 
     /**
      * Retrieves all variable names present in the session's scope.
@@ -329,7 +330,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 throw new QueryScope.MissingVariableException("Name " + name + " is invalid");
             }
             // noinspection unchecked
-            return (T) getVariable(name).orElseThrow(() -> new MissingVariableException("Missing variable " + name));
+            return (T) getVariable(name);
         }
 
         @Override
@@ -337,8 +338,13 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             if (!NameValidator.isValidQueryParameterName(name)) {
                 return defaultValue;
             }
-            // noinspection unchecked
-            return (T) getVariable(name).orElse(defaultValue);
+
+            try {
+                // noinspection unchecked
+                return (T) getVariable(name);
+            } catch (MissingVariableException e) {
+                return defaultValue;
+            }
         }
 
         @Override
