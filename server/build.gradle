@@ -103,7 +103,7 @@ dependencies {
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
     Classpaths.inheritAssertJ(project)
 
-    runtimeOnly project(':Numerics'), project(':extensions-kafka')
+    runtimeOnly project(':Numerics'), project(':extensions-kafka'), project(":extensions-mongo")
     Classpaths.inheritAssertJ(project)
 
     testRuntimeOnly project(':log-to-slf4j')

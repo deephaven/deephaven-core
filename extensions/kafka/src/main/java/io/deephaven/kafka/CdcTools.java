@@ -7,6 +7,7 @@ import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
+import io.deephaven.streampublisher.TableType;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
@@ -313,7 +314,7 @@ public class CdcTools {
                 KafkaTools.ALL_PARTITIONS_SEEK_TO_BEGINNING,
                 KafkaTools.Consume.avroSpec(keySchema),
                 KafkaTools.Consume.avroSpec(valueSchema),
-                KafkaTools.TableType.blink());
+                TableType.blink());
         final List<String> dbTableColumnNames = dbTableColumnNames(streamingIn);
         List<String> allDroppedColumns = null;
         if (dropColumns != null && !dropColumns.isEmpty()) {
@@ -349,7 +350,7 @@ public class CdcTools {
             @NotNull final Properties kafkaProperties,
             @NotNull final CdcSpec cdcSpec,
             @NotNull final IntPredicate partitionFilter,
-            @NotNull final KafkaTools.TableType tableType) {
+            @NotNull final TableType tableType) {
         return KafkaTools.consumeToTable(
                 kafkaProperties,
                 cdcSpec.topic(),

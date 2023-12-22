@@ -1,0 +1,11 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Stream Publisher: Tools for publishing a stream to column-chunks.'
+
+dependencies {
+    api project(':engine-table')
+    Classpaths.inheritImmutables(project)
+}
