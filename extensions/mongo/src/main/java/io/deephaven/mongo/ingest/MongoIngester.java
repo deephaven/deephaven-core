@@ -67,7 +67,8 @@ public class MongoIngester {
         }
         this.databaseName = parameters.database();
         this.collectionName = parameters.collection();
-        name = String.format("%s(%s, %s)", MongoIngester.class.getSimpleName(), parameters.database(), parameters.collection());
+        name = String.format("%s(%s, %s)", MongoIngester.class.getSimpleName(), parameters.database(),
+                parameters.collection());
         logPrefix = name + ": ";
 
         final List<ColumnDefinition<?>> columnDefinitionList = new ArrayList<>();
@@ -136,7 +137,8 @@ public class MongoIngester {
             final MongoDatabase db = mongoClient.getDatabase(databaseName);
             final MongoCollection<Document> collection = db.getCollection(collectionName);
 
-            ChangeStreamIterable<RawBsonDocument> watcher = collection.watch(RawBsonDocument.class).fullDocument(FullDocument.UPDATE_LOOKUP);
+            ChangeStreamIterable<RawBsonDocument> watcher =
+                    collection.watch(RawBsonDocument.class).fullDocument(FullDocument.UPDATE_LOOKUP);
             if (resumeDocument != null) {
                 watcher.resumeAfter(resumeDocument);
             }
@@ -157,7 +159,8 @@ public class MongoIngester {
                                 .append(", messages=").append(periodMessages)
                                 .append(", bytes=").append(periodBytes)
                                 .append(", time=").append(periodNanos / 1000_000L).append("ms")
-                                .append(", msgs/sec=").append(rateFormat.format(unitsPerSec(periodMessages, periodNanos)))
+                                .append(", msgs/sec=")
+                                .append(rateFormat.format(unitsPerSec(periodMessages, periodNanos)))
                                 .append(", bytes/sec=").append(rateFormat.format(unitsPerSec(periodBytes, periodNanos)))
                                 .endl();
                         lastReportNanos = afterPoll;
@@ -179,11 +182,11 @@ public class MongoIngester {
         if (done) {
             return;
         }
-//        synchronized (streamConsumers) {
-//            streamConsumers.clear();
-//        }
+        // synchronized (streamConsumers) {
+        // streamConsumers.clear();
+        // }
         done = true;
         // need to figure out how to wakeup our consumer, we probably should convert to async
-//        kafkaConsumer.wakeup();
+        // kafkaConsumer.wakeup();
     }
 }

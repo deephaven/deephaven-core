@@ -14,6 +14,7 @@ public abstract class MongoChangeStreamParameters {
     }
 
     public abstract String uri();
+
     public abstract String database();
 
     @Value.Default
@@ -29,10 +30,13 @@ public abstract class MongoChangeStreamParameters {
 
     @Nullable
     public abstract String receiveTimeColumnName();
+
     @Nullable
     public abstract String documentKeyColumnName();
+
     @Nullable
     public abstract String clusterTimeColumnName();
+
     @Nullable
     public abstract String clusterTimeIncrementColumnName();
 
@@ -47,17 +51,27 @@ public abstract class MongoChangeStreamParameters {
 
     public interface Builder {
         Builder uri(String uri);
+
         Builder database(String database);
+
         Builder collection(String collection);
 
         Builder receiveTimeColumnName(String name);
+
         Builder documentKeyColumnName(String name);
+
         Builder operationTypeColumnName(String name);
+
         Builder clusterTimeColumnName(String name);
+
         Builder clusterTimeIncrementColumnName(String name);
+
         Builder resumeFromColumnName(String name);
+
         Builder documentSizeColumnName(String name);
+
         Builder documentColumnName(String name);
+
         Builder tableType(TableType tableType);
 
         default Builder tableType(String typeName) {

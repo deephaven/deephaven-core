@@ -132,7 +132,7 @@ public class MongoStreamPublisher extends StreamPublisherBase {
         final ByteBuf buf = fullDocument.getByteBuffer();
         final int sz = buf.remaining();
         log.info().append(logPrefix).append("BSON Bytes: ").append(sz).endl();
-        final byte [] byteArray = new byte[sz];
+        final byte[] byteArray = new byte[sz];
         buf.get(byteArray);
         if (buf.hasRemaining()) {
             throw new IllegalStateException("Did not fully consume buffer!");

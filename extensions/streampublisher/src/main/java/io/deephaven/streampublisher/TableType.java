@@ -87,8 +87,8 @@ public interface TableType {
 
     /**
      * <p>
-     * Consume data into an in-memory blink table, which will present only newly-available rows to downstream
-     * operations and visualizations.
+     * Consume data into an in-memory blink table, which will present only newly-available rows to downstream operations
+     * and visualizations.
      * <p>
      * See {@link Table#BLINK_TABLE_ATTRIBUTE} for a detailed explanation of blink table semantics, and
      * {@link BlinkTableTools} for related tooling.
