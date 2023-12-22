@@ -5,7 +5,7 @@
 """ This module provides various ways to make a Deephaven table. """
 
 import datetime
-from typing import Callable, List, Dict, Any, Union, Sequence, Tuple
+from typing import Callable, List, Dict, Any, Union, Sequence, Tuple, Mapping
 
 import jpy
 import numpy as np
@@ -93,11 +93,17 @@ def time_table(period: Union[Duration, int, str, datetime.timedelta, np.timedelt
         raise DHError(e, "failed to create a time table.") from e
 
 
-def new_table(cols: List[InputColumn]) -> Table:
-    """Creates an in-memory table from a list of input columns. Each column must have an equal number of elements.
+def new_table(cols: Union[List[InputColumn], Mapping[str, Sequence]]) -> Table:
+    """Creates an in-memory table from a list of input columns or a Dict (mapping) of column names and column data.
+    Each column must have an equal number of elements.
+
+    When the input is a mapping, an intermediary Pandas DataFrame is created from the mapping, which then is converted
+    to an in-memory table. In this case, as opposed to when the input is a list of InputColumns, the column types are
+    determined by Pandas' type inference logic.
 
     Args:
-        cols (List[InputColumn]): a list of InputColumn
+        cols (Union[List[InputColumn], Mapping[str, Sequence]]): a list of InputColumns or a mapping of columns
+            names and column data.
 
     Returns:
         a Table
@@ -106,7 +112,12 @@ def new_table(cols: List[InputColumn]) -> Table:
         DHError
     """
     try:
-        return Table(j_table=_JTableFactory.newTable(*[col.j_column for col in cols]))
+        if isinstance(cols, list):
+            return Table(j_table=_JTableFactory.newTable(*[col.j_column for col in cols]))
+        else:
+            from deephaven.pandas import to_table
+            df = pd.DataFrame(cols).convert_dtypes()
+            return to_table(df)
     except Exception as e:
         raise DHError(e, "failed to create a new time table.") from e
 
