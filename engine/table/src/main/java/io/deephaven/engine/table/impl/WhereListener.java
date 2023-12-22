@@ -264,7 +264,8 @@ class WhereListener extends MergedListener {
         }
 
         @Override
-        void enqueueSubFilters(List<AbstractFilterExecution> subFilters,
+        void enqueueSubFilters(
+                List<AbstractFilterExecution> subFilters,
                 CombinationNotification combinationNotification) {
             getUpdateGraph().addNotifications(subFilters);
             getUpdateGraph().addNotification(combinationNotification);
