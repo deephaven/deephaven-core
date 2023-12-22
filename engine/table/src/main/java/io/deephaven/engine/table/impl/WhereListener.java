@@ -238,7 +238,7 @@ class WhereListener extends MergedListener {
         @Override
         boolean doParallelization(long numberOfRows) {
             return permitParallelization
-                    && getUpdateGraph().parallelismFactor() > 1
+                    && (QueryTable.FORCE_PARALLEL_WHERE || getUpdateGraph().parallelismFactor() > 1)
                     && doParallelizationBase(numberOfRows);
         }
 
