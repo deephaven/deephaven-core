@@ -20,13 +20,15 @@ services:
     command:
     - redpanda
     - start
-    - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
-    - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+    - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+    - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
     - --smp 1
-    - --reserve-memory 0M
-    - --overprovisioned
-    - --node-id 0
+    - --memory 1G
+    - --mode dev-container
     image: docker.redpanda.com/redpandadata/redpanda:v23.2.18
     ports:
+    - 8081:8081
+    - 18081:18081
     - 9092:9092
-    - 29092:29092
+    - 19092:19092
