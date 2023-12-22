@@ -8,6 +8,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
@@ -78,9 +79,10 @@ public class BarrageUtil {
             Configuration.getInstance().getDoubleForClassWithDefault(BarrageUtil.class,
                     "targetSnapshotPercentage", 0.25);
 
+    // TODO (deephaven-core#188): drop this default to 50k once the jsapi can handle many batches
     public static final long MIN_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
-                    "minSnapshotCellCount", 50000);
+                    "minSnapshotCellCount", Long.MAX_VALUE);
     public static final long MAX_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
                     "maxSnapshotCellCount", Long.MAX_VALUE);
@@ -704,22 +706,18 @@ public class BarrageUtil {
             try (final RowSequence.Iterator rsIt = targetViewport.getRowSequenceIterator()) {
                 while (rsIt.hasMore()) {
                     // compute the next range to snapshot
-                    final long cellCount =
-                            Math.max(MIN_SNAPSHOT_CELL_COUNT,
-                                    Math.min(snapshotTargetCellCount, MAX_SNAPSHOT_CELL_COUNT));
+                    final long cellCount = Math.max(
+                            MIN_SNAPSHOT_CELL_COUNT, Math.min(snapshotTargetCellCount, MAX_SNAPSHOT_CELL_COUNT));
+                    final long numRows = Math.min(Math.max(1, cellCount / columnCount), ArrayUtil.MAX_ARRAY_SIZE);
 
-                    final RowSequence snapshotPartialViewport = rsIt.getNextRowSequenceWithLength(cellCount);
+                    final RowSequence snapshotPartialViewport = rsIt.getNextRowSequenceWithLength(numRows);
                     // add these ranges to the running total
-                    snapshotPartialViewport.forEachRowKeyRange((start, end) -> {
-                        snapshotViewport.insertRange(start, end);
-                        return true;
-                    });
+                    snapshotPartialViewport.forAllRowKeyRanges(snapshotViewport::insertRange);
 
                     // grab the snapshot and measure elapsed time for next projections
                     long start = System.nanoTime();
-                    final BarrageMessage msg =
-                            ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(log, table,
-                                    columns, snapshotPartialViewport, null);
+                    final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
+                            log, table, columns, snapshotPartialViewport, null);
                     msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS; // no mod column data for DoGet
                     long elapsed = System.nanoTime() - start;
                     // accumulate snapshot time in the metrics
@@ -741,7 +739,7 @@ public class BarrageUtil {
                         }
                     }
 
-                    if (msg.rowsIncluded.size() > 0) {
+                    if (!msg.rowsIncluded.isEmpty()) {
                         // very simplistic logic to take the last snapshot and extrapolate max
                         // number of rows that will not exceed the target UGP processing time
                         // percentage
