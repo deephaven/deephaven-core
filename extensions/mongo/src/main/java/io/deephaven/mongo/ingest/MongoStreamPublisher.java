@@ -99,10 +99,8 @@ public class MongoStreamPublisher extends StreamPublisherBase {
             chunks[receiveTimeColumnIndex].asWritableLongChunk().add(receiveTime);
         }
         if (documentKeyColumnIndex >= 0) {
-            // TODO: this seems a little stupid, but I don't see how to watch the key as anything but a BsonDocument which is already parsed
-            final RawBsonDocument rawKey = RawBsonDocument.parse(nv.getDocumentKey().toJson());
-            final byte [] keyByteArray = getByteArray(rawKey);
-            chunks[documentKeyColumnIndex].asWritableObjectChunk().add(keyByteArray);
+            final String keyByteHexString = nv.getDocumentKey().get("_id").asObjectId().getValue().toHexString();
+            chunks[documentKeyColumnIndex].asWritableObjectChunk().add(keyByteHexString);
         }
         chunks[operationTypeColumnIndex].asWritableObjectChunk().add(operationTypeString);
         if (clusterTimeColumnIndex >= 0) {

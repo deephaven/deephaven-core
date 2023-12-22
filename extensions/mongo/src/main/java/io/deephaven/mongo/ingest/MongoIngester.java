@@ -75,7 +75,7 @@ public class MongoIngester {
             columnDefinitionList.add(ColumnDefinition.of(parameters.receiveTimeColumnName(), Type.instantType()));
         }
         if (parameters.documentKeyColumnName() != null) {
-            columnDefinitionList.add(ColumnDefinition.of(parameters.documentKeyColumnName(), Type.find(byte[].class)));
+            columnDefinitionList.add(ColumnDefinition.of(parameters.documentKeyColumnName(), Type.stringType()));
         }
         columnDefinitionList.add(ColumnDefinition.of(parameters.operationTypeColumnName(), Type.stringType()));
         if (parameters.clusterTimeColumnName() != null) {
@@ -142,16 +142,10 @@ public class MongoIngester {
             }
 
             try (MongoCursor<ChangeStreamDocument<RawBsonDocument>> cursor = watcher.iterator()) {
-                log.info().append(logPrefix).append("Entering watcher loop.").endl();
                 while (!done && cursor.hasNext()) {
-                    log.info().append(logPrefix).append("Retrieving document.").endl();
                     final ChangeStreamDocument<RawBsonDocument> nv = cursor.next();
                     ++messagesProcessed;
-                    log.info().append(logPrefix).append("Next document: ").append(nv.toString()).endl();
-
                     bytesProcessed += streamPublisher.processDocument(nv);
-                    // need to do something better with a time limit for when we are getting documents quickly (vs. not getting them quickly)
-//                    streamPublisher.flush();
 
                     final long afterPoll = System.nanoTime();
                     if (afterPoll > nextReport) {
