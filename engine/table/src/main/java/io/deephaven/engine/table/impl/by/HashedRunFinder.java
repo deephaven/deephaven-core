@@ -72,9 +72,8 @@ public class HashedRunFinder {
 
         for (int chunkPosition = 0; chunkPosition < size; ++chunkPosition) {
             final int outputPosition = outputPositions.get(chunkPosition);
-            // Increase the chance of hash collision, but reduce the linear probing needed in pathological cases.
-            int hashSlot = (outputPosition * 2) & context.tableMask;
-
+            int hashSlot = outputPosition & context.tableMask;
+            int probeOffset = 0;
             do {
                 final int baseSlot = hashSlot * 3;
                 if (context.table.get(baseSlot) == UNUSED_HASH_TABLE_VALUE) {
@@ -93,8 +92,8 @@ public class HashedRunFinder {
                     overflowPointer += 2;
                     break;
                 } else {
-                    // linear probe
-                    hashSlot = (hashSlot + 1) & context.tableMask;
+                    // quadratic probing to prevent excessive clustering
+                    hashSlot = (hashSlot + (++probeOffset * probeOffset)) & context.tableMask;
                 }
             } while (true);
         }
