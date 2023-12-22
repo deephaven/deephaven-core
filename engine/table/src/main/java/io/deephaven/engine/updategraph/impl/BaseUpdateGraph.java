@@ -574,6 +574,16 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
                 }
             }
             if (outstandingCountAtStart == 0 && nothingBecameSatisfied) {
+                if (!printDependencyInformation) {
+                    // Let's drop some breadcrumbs here, because this is a very bad state to be in and hard to debug.
+                    log.error().append(Thread.currentThread().getName())
+                            .append(": No outstanding notifications, yet notification queue size=")
+                            .append(pendingToEvaluate.size()).endl();
+                    for (final Notification notification : pendingToEvaluate) {
+                        log.error().append(Thread.currentThread().getName()).append(": Unmet dependencies for ")
+                                .append(notification).endl();
+                    }
+                }
                 throw new IllegalStateException(
                         "No outstanding notifications, yet the notification queue is not empty!");
             }
