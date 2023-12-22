@@ -54,16 +54,19 @@ public class MongoReplicator {
     public static KeyOrValueSpec jsonSpec(
             @NotNull final ColumnDefinition<?>[] columnDefinitions,
             @Nullable final Map<String, String> fieldToColumnName) {
-        return new JsonConsumeImpl(columnDefinitions, fieldToColumnName, new com.fasterxml.jackson.databind.ObjectMapper(new BsonFactory()));
+        return new JsonConsumeImpl(columnDefinitions, fieldToColumnName,
+                new com.fasterxml.jackson.databind.ObjectMapper(new BsonFactory()));
     }
 
     public static KeyOrValueSpec jsonSpec(
             @NotNull final ColumnDefinition<?>[] columnDefinitions) {
-        return new JsonConsumeImpl(columnDefinitions, null, new com.fasterxml.jackson.databind.ObjectMapper(new BsonFactory()));
+        return new JsonConsumeImpl(columnDefinitions, null,
+                new com.fasterxml.jackson.databind.ObjectMapper(new BsonFactory()));
     }
 
     public static KeyOrValueSpec jsonSpec(
             @NotNull final Collection<ColumnDefinition<?>> columnDefinitions) {
-        return new JsonConsumeImpl(columnDefinitions.toArray(ColumnDefinition[]::new), null, new com.fasterxml.jackson.databind.ObjectMapper(new BsonFactory()));
+        return new JsonConsumeImpl(columnDefinitions.toArray(ColumnDefinition[]::new), null,
+                new com.fasterxml.jackson.databind.ObjectMapper(new BsonFactory()));
     }
 }

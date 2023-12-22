@@ -67,7 +67,7 @@ class KeyOrValueSpecObjectProcessorImpl<T> implements KeyOrValueSpec {
 
     @Override
     public KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
-                                                 Map<String, ?> configs, MutableInt nextColumnIndexMut, List<ColumnDefinition<?>> columnDefinitionsOut) {
+            Map<String, ?> configs, MutableInt nextColumnIndexMut, List<ColumnDefinition<?>> columnDefinitionsOut) {
         final KeyOrValueIngestData data = new KeyOrValueIngestData();
         data.fieldPathToColumnName = new LinkedHashMap<>();
         final int L = columnNames.size();

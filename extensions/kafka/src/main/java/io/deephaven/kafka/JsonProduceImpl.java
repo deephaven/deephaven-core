@@ -26,11 +26,11 @@ final class JsonProduceImpl extends KafkaTools.Produce.KeyOrValueSpec {
     private final String timestampFieldName;
 
     JsonProduceImpl(final String[] includeColumns,
-                    final Predicate<String> excludeColumns,
-                    final Map<String, String> columnNameToFieldName,
-                    final String nestedObjectDelimiter,
-                    final boolean outputNulls,
-                    final String timestampFieldName) {
+            final Predicate<String> excludeColumns,
+            final Map<String, String> columnNameToFieldName,
+            final String nestedObjectDelimiter,
+            final boolean outputNulls,
+            final String timestampFieldName) {
         this.includeColumns = includeColumns;
         this.excludeColumns = excludeColumns;
         this.columnNameToFieldName = columnNameToFieldName;

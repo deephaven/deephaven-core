@@ -9,17 +9,17 @@ import java.util.List;
 import java.util.Map;
 
 public interface KeyOrValueSpec {
-        public enum KeyOrValue {
-                KEY, VALUE
-        }
+    public enum KeyOrValue {
+        KEY, VALUE
+    }
 
-        KeyOrValueIngestData getIngestData(
-                KeyOrValue keyOrValue,
-                Map<String, ?> configs,
-                MutableInt nextColumnIndexMut,
-                List<ColumnDefinition<?>> columnDefinitionsOut);
+    KeyOrValueIngestData getIngestData(
+            KeyOrValue keyOrValue,
+            Map<String, ?> configs,
+            MutableInt nextColumnIndexMut,
+            List<ColumnDefinition<?>> columnDefinitionsOut);
 
-        KeyOrValueProcessor getProcessor(
-                TableDefinition tableDef,
-                KeyOrValueIngestData data);
+    KeyOrValueProcessor getProcessor(
+            TableDefinition tableDef,
+            KeyOrValueIngestData data);
 }

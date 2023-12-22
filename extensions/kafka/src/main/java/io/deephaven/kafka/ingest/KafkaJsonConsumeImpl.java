@@ -19,7 +19,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public final class KafkaJsonConsumeImpl extends JsonConsumeImpl implements KafkaTools.Consume.KeyOrValueSpec {
-    public KafkaJsonConsumeImpl(@NotNull ColumnDefinition<?>[] columnDefinitions, @Nullable Map<String, String> fieldNameToColumnName, @Nullable ObjectMapper objectMapper) {
+    public KafkaJsonConsumeImpl(@NotNull ColumnDefinition<?>[] columnDefinitions,
+            @Nullable Map<String, String> fieldNameToColumnName, @Nullable ObjectMapper objectMapper) {
         super(columnDefinitions, fieldNameToColumnName, objectMapper);
     }
 
@@ -30,13 +31,17 @@ public final class KafkaJsonConsumeImpl extends JsonConsumeImpl implements Kafka
 
     @Override
     public Deserializer<?> getDeserializer(KafkaTools.KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
-                                              Map<String, ?> configs) {
+            Map<String, ?> configs) {
         return new StringDeserializer();
     }
 
     @Override
-    public KeyOrValueIngestData getIngestData(KafkaTools.KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut, List<ColumnDefinition<?>> columnDefinitionsOut) {
-        final KeyOrValueSpec.KeyOrValue keyOrValue1 = keyOrValue == KafkaTools.KeyOrValue.KEY ? KeyOrValueSpec.KeyOrValue.KEY : KeyOrValueSpec.KeyOrValue.VALUE;
+    public KeyOrValueIngestData getIngestData(KafkaTools.KeyOrValue keyOrValue,
+            SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+            List<ColumnDefinition<?>> columnDefinitionsOut) {
+        final KeyOrValueSpec.KeyOrValue keyOrValue1 =
+                keyOrValue == KafkaTools.KeyOrValue.KEY ? KeyOrValueSpec.KeyOrValue.KEY
+                        : KeyOrValueSpec.KeyOrValue.VALUE;
         return super.getIngestData(keyOrValue1, configs, nextColumnIndexMut, columnDefinitionsOut);
     }
 }

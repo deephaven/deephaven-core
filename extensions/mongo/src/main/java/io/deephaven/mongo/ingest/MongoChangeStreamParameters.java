@@ -85,11 +85,13 @@ public abstract class MongoChangeStreamParameters {
         Builder documentSpec(KeyOrValueSpec documentSpec);
 
         Builder addAllPipeline(Iterable<? extends Bson> pipeline);
+
         Builder addPipeline(Bson pipeline);
 
         default Builder tableType(String typeName) {
             return tableType(TableType.friendlyNameToTableType(typeName));
         }
+
         MongoChangeStreamParameters build();
     }
 }

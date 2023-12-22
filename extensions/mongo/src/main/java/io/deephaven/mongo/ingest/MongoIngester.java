@@ -103,10 +103,12 @@ public class MongoIngester {
 
         final MutableInt nextColumnIndex = new MutableInt(columnDefinitionList.size());
 
-        final KeyOrValueIngestData ingestData = parameters.documentSpec().getIngestData(KeyOrValueSpec.KeyOrValue.VALUE, null, nextColumnIndex, columnDefinitionList);
+        final KeyOrValueIngestData ingestData = parameters.documentSpec().getIngestData(KeyOrValueSpec.KeyOrValue.VALUE,
+                null, nextColumnIndex, columnDefinitionList);
 
         tableDefinition = TableDefinition.of(columnDefinitionList);
-        streamPublisher = new MongoStreamPublisher(log, logPrefix, tableDefinition, this::shutdown, parameters, ingestData);
+        streamPublisher =
+                new MongoStreamPublisher(log, logPrefix, tableDefinition, this::shutdown, parameters, ingestData);
     }
 
     public TableDefinition getTableDefinition() {

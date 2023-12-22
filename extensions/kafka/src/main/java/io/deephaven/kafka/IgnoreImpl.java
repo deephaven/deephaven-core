@@ -41,8 +41,8 @@ class IgnoreImpl {
 
         @Override
         public KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
-                                                     SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
-                                                     List<ColumnDefinition<?>> columnDefinitionsOut) {
+                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                List<ColumnDefinition<?>> columnDefinitionsOut) {
             return null;
         }
 
