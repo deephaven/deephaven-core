@@ -3,15 +3,14 @@
  */
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.thread.ThreadInitializationFactory;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -34,16 +33,16 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
         super(updateGraph, threadInitializationFactory, null, null);
 
         this.scriptType = scriptType;
-        variables = new LinkedHashMap<>();
+        variables = Collections.synchronizedMap(new LinkedHashMap<>());
     }
 
     @Override
-    protected <T> T getVariable(String name) throws QueryScope.MissingVariableException {
+    protected <T> Optional<T> getVariable(String name) {
         if (!variables.containsKey(name)) {
-            throw new QueryScope.MissingVariableException("No global variable for: " + name);
+            return Optional.empty();
         }
         // noinspection unchecked
-        return (T) variables.get(name);
+        return Optional.of((T) variables.get(name));
     }
 
     @Override
@@ -80,8 +79,8 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     @Override
-    protected void setVariable(String name, @Nullable Object newValue) {
-        variables.put(name, newValue);
+    protected Object setVariable(String name, @Nullable Object newValue) {
+        return variables.put(name, newValue);
         // changeListener is always null for NoLanguageDeephavenSession; we have no mechanism for reporting scope
         // changes
     }

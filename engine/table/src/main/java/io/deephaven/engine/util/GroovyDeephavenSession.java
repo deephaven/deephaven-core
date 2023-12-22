@@ -7,7 +7,6 @@ import com.google.auto.service.AutoService;
 import groovy.lang.Binding;
 import groovy.lang.GroovyClassLoader;
 import groovy.lang.GroovyShell;
-import groovy.lang.MissingPropertyException;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.DeltaControl;
@@ -134,6 +133,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private final ImportCustomizer loadedGroovyScriptImports = new ImportCustomizer();
 
     private final Set<String> dynamicClasses = new HashSet<>();
+    private final Map<String, Object> bindingBackingMap = Collections.synchronizedMap(new LinkedHashMap<>());
     private final GroovyShell groovyShell;
 
     private int counter;
@@ -176,8 +176,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         consoleConfig.getCompilationCustomizers().add(consoleImports);
         consoleConfig.setTargetDirectory(executionContext.getQueryCompiler().getFakeClassDestination());
 
-
-        groovyShell = new GroovyShell(scriptClassLoader, consoleConfig) {
+        Binding binding = new Binding(bindingBackingMap);
+        groovyShell = new GroovyShell(scriptClassLoader, binding, consoleConfig) {
             protected synchronized String generateScriptName() {
                 return GroovyDeephavenSession.this.generateScriptName();
             }
@@ -276,12 +276,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     @Override
-    protected <T> T getVariable(String name) throws QueryScope.MissingVariableException {
-        try {
-            // noinspection unchecked
-            return (T) groovyShell.getContext().getVariable(name);
-        } catch (MissingPropertyException mpe) {
-            throw new QueryScope.MissingVariableException("No binding for: " + name, mpe);
+    protected <T> Optional<T> getVariable(String name) {
+        synchronized (bindingBackingMap) {
+            if (bindingBackingMap.containsKey(name)) {
+                // noinspection unchecked
+                return Optional.of((T) bindingBackingMap.get(name));
+            }
+            return Optional.empty();
         }
     }
 
@@ -740,22 +741,26 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     @Override
     protected Set<String> getVariableNames() {
-        // noinspection unchecked
-        return Set.copyOf(groovyShell.getContext().getVariables().keySet());
+        synchronized (bindingBackingMap) {
+            return Set.copyOf(bindingBackingMap.keySet());
+        }
     }
 
     @Override
     protected boolean hasVariableName(String name) {
-        return groovyShell.getContext().hasVariable(name);
+        return bindingBackingMap.containsKey(name);
     }
 
     @Override
-    protected void setVariable(String name, @Nullable Object newValue) {
-        groovyShell.getContext().setVariable(NameValidator.validateQueryParameterName(name), newValue);
+    protected Object setVariable(String name, @Nullable Object newValue) {
+        NameValidator.validateQueryParameterName(name);
+
+        Object oldValue = bindingBackingMap.put(name, newValue);
 
         // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
         // other threads)
         observeScopeChanges();
+        return oldValue;
     }
 
     public Binding getBinding() {

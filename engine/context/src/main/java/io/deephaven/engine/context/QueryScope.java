@@ -278,7 +278,15 @@ public abstract class QueryScope extends LivenessScope implements LogOutputAppen
             }
             NameValidator.validateQueryParameterName(name);
             // TODO: Can I get rid of this applyValueConversions? It's too inconsistent to feel safe.
-            valueRetrievers.put(name, new SimpleValueRetriever<>(name, applyValueConversions(value)));
+            ValueRetriever<?> oldValueRetriever =
+                    valueRetrievers.put(name, new SimpleValueRetriever<>(name, applyValueConversions(value)));
+
+            if (oldValueRetriever != null) {
+                Object oldValue = oldValueRetriever.getValue();
+                if (oldValue instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(oldValue)) {
+                    unmanage((LivenessReferent) oldValue);
+                }
+            }
         }
 
         private static abstract class ValueRetriever<T> {

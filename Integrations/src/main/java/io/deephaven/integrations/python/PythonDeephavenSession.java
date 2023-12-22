@@ -39,10 +39,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -171,10 +169,9 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @SuppressWarnings("unchecked")
     @Override
-    protected <T> T getVariable(String name) throws QueryScope.MissingVariableException {
-        return (T) scope
-                .getValue(name)
-                .orElseThrow(() -> new QueryScope.MissingVariableException("No variable for: " + name));
+    protected <T> Optional<T> getVariable(String name) throws QueryScope.MissingVariableException {
+        return (Optional<T>) scope
+                .getValue(name);
     }
 
 
@@ -278,24 +275,33 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     }
 
     @Override
-    protected synchronized void setVariable(String name, @Nullable Object newValue) {
+    protected synchronized Object setVariable(String name, @Nullable Object newValue) {
         final PyDictWrapper globals = scope.mainGlobals();
+
+        Object old;
         if (newValue == null) {
             try {
-                globals.delItem(name);
+                old = globals.unwrap().callMethod("pop", name);
             } catch (KeyError key) {
-                // ignore
+                old = null;
             }
         } else {
             if (!(newValue instanceof PyObject)) {
                 newValue = PythonObjectWrapper.wrap(newValue);
             }
+            // This isn't thread safe, we're relying on the GIL being kind to us (as we have historically done). There
+            // is no built-in for "replace a variable and return the old one".
+            old = globals.get(name);
             globals.setItem(name, newValue);
         }
 
         // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
         // other threads)
         observeScopeChanges();
+
+        // This doesn't return the same Java instance of PyObject, so we won't decref it properly, but
+        // again, that is consistent with how we've historically treated these references.
+        return old;
     }
 
     @Override

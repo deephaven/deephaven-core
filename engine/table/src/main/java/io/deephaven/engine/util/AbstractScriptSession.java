@@ -15,7 +15,6 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
@@ -26,7 +25,6 @@ import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.thread.ThreadInitializationFactory;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -37,10 +35,6 @@ import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Supplier;
 
 import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;
 
@@ -67,8 +61,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                     "Failed to create class cache directory " + directory.getAbsolutePath());
         }
     }
-
-    private final ReadWriteLock variableAccessLock = new ReentrantReadWriteLock();
 
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
@@ -159,11 +151,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 // Actually evaluate the script; use the enclosing auth context, since AbstractScriptSession's
                 // ExecutionContext never has a non-null AuthContext
                 executionContext.withAuthContext(ExecutionContext.getContext().getAuthContext())
-                        .apply(() -> {
-                            // Take the write lock while running script code, so that readers can't look at variables
-                            // again until the script has finished.
-                            doLocked(variableAccessLock.writeLock(), () -> evaluate(script, scriptName));
-                        });
+                        .withQueryScope(queryScope)
+                        .apply(() -> evaluate(script, scriptName));
             } catch (final RuntimeException err) {
                 evaluateErr = err;
             }
@@ -264,23 +253,22 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     }
 
     /**
-     * Retrieve a variable from the script session's bindings.
+     * Retrieve a variable from the script session's bindings. Values may need to be unwrapped.
      *
      * @param name the variable to retrieve
-     * @return the variable
-     * @throws QueryScope.MissingVariableException if the variable does not exist
+     * @return the variable value, or empty if not present
      */
-    protected abstract <T> T getVariable(String name) throws QueryScope.MissingVariableException;
+    protected abstract <T> Optional<T> getVariable(String name);
 
     /**
-     * Retrieves all of the variable names present in the session's scope
+     * Retrieves all variable names present in the session's scope.
      *
      * @return an immutable set of variable names
      */
     protected abstract Set<String> getVariableNames();
 
     /**
-     * Check if the scope has the given variable name
+     * Check if the scope has the given variable name.
      *
      * @param name the variable name
      * @return True iff the scope has the given variable name
@@ -292,26 +280,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
      *
      * @param name the variable name to set
      * @param value the new value of the variable
+     * @return the old previous value for this name, if any. As with {@link #getVariable(String)}, may need to be
+     *         unwrapped.
      */
-    protected abstract void setVariable(String name, @Nullable Object value);
-
-    private static void doLocked(@NotNull final Lock lock, @NotNull final Runnable runnable) {
-        lock.lock();
-        try {
-            runnable.run();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    private static <T> T doLocked(@NotNull final Lock lock, @NotNull final Supplier<T> supplier) {
-        lock.lock();
-        try {
-            return supplier.get();
-        } finally {
-            lock.unlock();
-        }
-    }
+    protected abstract Object setVariable(String name, @Nullable Object value);
 
     // -----------------------------------------------------------------------------------------------------------------
     // ScriptSession-based QueryScope implementation, with no remote scope or object reflection support
@@ -328,8 +300,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         @Override
         public Set<String> getParamNames() {
             final Set<String> result = new LinkedHashSet<>();
-            Set<String> variables =
-                    doLocked(variableAccessLock.readLock(), AbstractScriptSession.this::getVariableNames);
+            Set<String> variables = AbstractScriptSession.this.getVariableNames();
             for (final String name : variables) {
                 if (NameValidator.isValidQueryParameterName(name)) {
                     result.add(name);
@@ -340,8 +311,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         @Override
         public boolean hasParamName(String name) {
-            return NameValidator.isValidQueryParameterName(name)
-                    && doLocked(variableAccessLock.readLock(), () -> AbstractScriptSession.this.hasVariableName(name));
+            return NameValidator.isValidQueryParameterName(name) && hasVariableName(name);
         }
 
         @Override
@@ -358,15 +328,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             if (!NameValidator.isValidQueryParameterName(name)) {
                 throw new QueryScope.MissingVariableException("Name " + name + " is invalid");
             }
-            variableAccessLock.readLock().lock();
-            try {
-                if (!hasVariableName(name)) {
-                    throw new MissingVariableException("Missing variable " + name);
-                }
-                return AbstractScriptSession.this.getVariable(name);
-            } finally {
-                variableAccessLock.readLock().unlock();
-            }
+            // noinspection unchecked
+            return (T) getVariable(name).orElseThrow(() -> new MissingVariableException("Missing variable " + name));
         }
 
         @Override
@@ -374,7 +337,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             if (!NameValidator.isValidQueryParameterName(name)) {
                 return defaultValue;
             }
-            return doLocked(variableAccessLock.readLock(), () -> AbstractScriptSession.this.getVariable(name));
+            // noinspection unchecked
+            return (T) getVariable(name).orElse(defaultValue);
         }
 
         @Override
@@ -383,7 +347,15 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             if (value instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(value)) {
                 manage((LivenessReferent) value);
             }
-            doLocked(variableAccessLock.writeLock(), () -> AbstractScriptSession.this.setVariable(name, value));
+
+            Object oldValue = AbstractScriptSession.this.setVariable(name, value);
+
+            Object unwrappedOldValue = unwrapObject(oldValue);
+
+            if (unwrappedOldValue instanceof LivenessReferent
+                    && DynamicNode.notDynamicOrIsRefreshing(unwrappedOldValue)) {
+                unmanage((LivenessReferent) unwrappedOldValue);
+            }
         }
 
         @Override

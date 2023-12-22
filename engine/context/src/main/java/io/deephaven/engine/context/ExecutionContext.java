@@ -173,6 +173,22 @@ public class ExecutionContext {
     }
 
     /**
+     * Returns, or creates, an execution context with the given value for {@code queryScope} and existing values for the
+     * other members.
+     *
+     * @param queryScope the query scope to use instead
+     * @return the execution context
+     */
+    public ExecutionContext withQueryScope(QueryScope queryScope) {
+        if (queryScope == this.queryScope) {
+            return this;
+        }
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
+                operationInitializer);
+    }
+
+
+    /**
      * Execute runnable within this execution context.
      */
     public void apply(Runnable runnable) {
