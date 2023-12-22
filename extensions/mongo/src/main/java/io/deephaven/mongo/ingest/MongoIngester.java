@@ -11,7 +11,10 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.qst.type.Type;
+import io.deephaven.streampublisher.KeyOrValueIngestData;
+import io.deephaven.streampublisher.KeyOrValueSpec;
 import io.deephaven.util.annotations.InternalUseOnly;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
@@ -94,9 +97,16 @@ public class MongoIngester {
         if (parameters.documentSizeColumnName() != null) {
             columnDefinitionList.add(ColumnDefinition.of(parameters.documentSizeColumnName(), Type.intType()));
         }
-        columnDefinitionList.add(ColumnDefinition.of(parameters.documentColumnName(), Type.find(byte[].class)));
+        if (parameters.documentColumnName() != null) {
+            columnDefinitionList.add(ColumnDefinition.of(parameters.documentColumnName(), Type.find(byte[].class)));
+        }
+
+        final MutableInt nextColumnIndex = new MutableInt(columnDefinitionList.size());
+
+        final KeyOrValueIngestData ingestData = parameters.documentSpec().getIngestData(KeyOrValueSpec.KeyOrValue.VALUE, null, nextColumnIndex, columnDefinitionList);
+
         tableDefinition = TableDefinition.of(columnDefinitionList);
-        streamPublisher = new MongoStreamPublisher(log, logPrefix, tableDefinition, this::shutdown, parameters);
+        streamPublisher = new MongoStreamPublisher(log, logPrefix, tableDefinition, this::shutdown, parameters, ingestData);
     }
 
     public TableDefinition getTableDefinition() {

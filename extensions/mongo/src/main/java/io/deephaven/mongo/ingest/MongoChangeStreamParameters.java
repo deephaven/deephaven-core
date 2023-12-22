@@ -1,5 +1,6 @@
 package io.deephaven.mongo.ingest;
 
+import io.deephaven.streampublisher.KeyOrValueSpec;
 import io.deephaven.streampublisher.TableType;
 import org.bson.conversions.Bson;
 import org.immutables.value.Value;
@@ -43,7 +44,6 @@ public abstract class MongoChangeStreamParameters {
     @Nullable
     public abstract String clusterTimeIncrementColumnName();
 
-    @NotNull
     public abstract String documentColumnName();
 
     @Nullable
@@ -51,8 +51,11 @@ public abstract class MongoChangeStreamParameters {
 
     @Nullable
     public abstract String documentSizeColumnName();
+
     @Nullable
     public abstract List<Bson> pipeline();
+
+    public abstract KeyOrValueSpec documentSpec();
 
     public interface Builder {
         Builder uri(String uri);
@@ -79,12 +82,14 @@ public abstract class MongoChangeStreamParameters {
 
         Builder tableType(TableType tableType);
 
-        Builder pipeline(List<Bson> pipeline);
+        Builder documentSpec(KeyOrValueSpec documentSpec);
+
+        Builder addAllPipeline(Iterable<? extends Bson> pipeline);
+        Builder addPipeline(Bson pipeline);
 
         default Builder tableType(String typeName) {
             return tableType(TableType.friendlyNameToTableType(typeName));
         }
-
         MongoChangeStreamParameters build();
     }
 }

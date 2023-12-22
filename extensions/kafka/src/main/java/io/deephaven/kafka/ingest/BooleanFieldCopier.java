@@ -7,6 +7,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.functions.ToBooleanFunction;
+import io.deephaven.streampublisher.FieldCopier;
 
 import java.util.Objects;
 

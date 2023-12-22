@@ -9,12 +9,12 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.kafka.KafkaTools.Consume.KeyOrValueSpec;
 import io.deephaven.kafka.KafkaTools.KeyOrValue;
-import io.deephaven.kafka.KafkaTools.KeyOrValueIngestData;
 import io.deephaven.kafka.ingest.KafkaStreamPublisher;
-import io.deephaven.kafka.ingest.KeyOrValueProcessor;
-import io.deephaven.kafka.ingest.MultiFieldChunkAdapter;
+import io.deephaven.streampublisher.KeyOrValueProcessor;
+import io.deephaven.streampublisher.MultiFieldChunkAdapter;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.qst.type.Type;
+import io.deephaven.streampublisher.KeyOrValueIngestData;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.kafka.common.serialization.Deserializer;
 
@@ -35,7 +35,7 @@ import java.util.function.Function;
  * adapting into a {@link KeyOrValueProcessor} until such a time when {@link KafkaStreamPublisher} can be re-written to
  * take advantage of these better interfaces.
  */
-class KeyOrValueSpecObjectProcessorImpl<T> extends KeyOrValueSpec {
+class KeyOrValueSpecObjectProcessorImpl<T> implements KeyOrValueSpec {
     private final Deserializer<? extends T> deserializer;
     private final ObjectProcessor<? super T> processor;
     private final List<String> columnNames;
@@ -59,15 +59,15 @@ class KeyOrValueSpecObjectProcessorImpl<T> extends KeyOrValueSpec {
     }
 
     @Override
-    protected Deserializer<? extends T> getDeserializer(KeyOrValue keyOrValue,
+    public Deserializer<? extends T> getDeserializer(KeyOrValue keyOrValue,
             SchemaRegistryClient schemaRegistryClient,
             Map<String, ?> configs) {
         return deserializer;
     }
 
     @Override
-    protected KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
-            Map<String, ?> configs, MutableInt nextColumnIndexMut, List<ColumnDefinition<?>> columnDefinitionsOut) {
+    public KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+                                                 Map<String, ?> configs, MutableInt nextColumnIndexMut, List<ColumnDefinition<?>> columnDefinitionsOut) {
         final KeyOrValueIngestData data = new KeyOrValueIngestData();
         data.fieldPathToColumnName = new LinkedHashMap<>();
         final int L = columnNames.size();
@@ -81,7 +81,7 @@ class KeyOrValueSpecObjectProcessorImpl<T> extends KeyOrValueSpec {
     }
 
     @Override
-    protected KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
+    public KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
         return new KeyOrValueProcessorImpl(
                 offsetsFunction(MultiFieldChunkAdapter.chunkOffsets(tableDef, data.fieldPathToColumnName)));
     }

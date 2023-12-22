@@ -11,11 +11,11 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.kafka.KafkaTools.Consume;
 import io.deephaven.kafka.KafkaTools.KeyOrValue;
-import io.deephaven.kafka.KafkaTools.KeyOrValueIngestData;
 import io.deephaven.kafka.KafkaTools.Produce;
-import io.deephaven.kafka.ingest.KeyOrValueProcessor;
+import io.deephaven.streampublisher.KeyOrValueProcessor;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
 import io.deephaven.kafka.publish.SimpleKeyOrValueSerializer;
+import io.deephaven.streampublisher.KeyOrValueIngestData;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
@@ -29,7 +29,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 class RawImpl {
-    static final class RawConsume extends Consume.KeyOrValueSpec {
+    static final class RawConsume implements Consume.KeyOrValueSpec {
         private final ColumnDefinition<?> cd;
         private final Supplier<Deserializer<?>> supplier;
 
@@ -55,15 +55,15 @@ class RawImpl {
         }
 
         @Override
-        protected Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+        public Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
             return supplier.get();
         }
 
         @Override
-        protected KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
-                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
-                List<ColumnDefinition<?>> columnDefinitionsOut) {
+        public KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
+                                                     SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                                                     List<ColumnDefinition<?>> columnDefinitionsOut) {
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.simpleColumnIndex = nextColumnIndexMut.getAndIncrement();
             columnDefinitionsOut.add(cd);
@@ -71,7 +71,7 @@ class RawImpl {
         }
 
         @Override
-        protected KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
+        public KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
             return null;
         }
     }

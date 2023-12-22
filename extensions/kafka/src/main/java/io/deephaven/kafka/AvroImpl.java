@@ -18,14 +18,14 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.kafka.KafkaTools.Consume;
 import io.deephaven.kafka.KafkaTools.KeyOrValue;
-import io.deephaven.kafka.KafkaTools.KeyOrValueIngestData;
 import io.deephaven.kafka.KafkaTools.Produce;
 import io.deephaven.kafka.ingest.GenericRecordChunkAdapter;
-import io.deephaven.kafka.ingest.KeyOrValueProcessor;
+import io.deephaven.streampublisher.KeyOrValueProcessor;
 import io.deephaven.kafka.publish.GenericRecordKeyOrValueSerializer;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
 import io.deephaven.qst.type.Type;
 import io.deephaven.stream.StreamChunkUtils;
+import io.deephaven.streampublisher.KeyOrValueIngestData;
 import io.deephaven.vector.ByteVector;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
@@ -62,7 +62,7 @@ class AvroImpl {
 
     private static final Type<Utf8> utf8Type = Type.find(Utf8.class);
 
-    static final class AvroConsume extends Consume.KeyOrValueSpec {
+    static final class AvroConsume implements Consume.KeyOrValueSpec {
         private static final Pattern NESTED_FIELD_NAME_SEPARATOR_PATTERN =
                 Pattern.compile(Pattern.quote(NESTED_FIELD_NAME_SEPARATOR));
 
@@ -105,15 +105,15 @@ class AvroImpl {
         }
 
         @Override
-        protected Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+        public Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
             return new KafkaAvroDeserializer(Objects.requireNonNull(schemaRegistryClient));
         }
 
         @Override
-        protected KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
-                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
-                List<ColumnDefinition<?>> columnDefinitionsOut) {
+        public KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
+                                                     SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                                                     List<ColumnDefinition<?>> columnDefinitionsOut) {
             KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.fieldPathToColumnName = new HashMap<>();
             final Schema localSchema = schema != null
@@ -126,7 +126,7 @@ class AvroImpl {
         }
 
         @Override
-        protected KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
+        public KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
             return GenericRecordChunkAdapter.make(
                     tableDef,
                     ci -> StreamChunkUtils.chunkTypeForColumnIndex(tableDef, ci),

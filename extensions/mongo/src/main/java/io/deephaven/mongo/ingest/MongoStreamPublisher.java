@@ -3,12 +3,15 @@
  */
 package io.deephaven.mongo.ingest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
+import de.undercouch.bson4jackson.BsonFactory;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.streampublisher.StreamPublisherBase;
+import io.deephaven.streampublisher.*;
 import io.deephaven.time.DateTimeUtils;
 import org.bson.BsonDocument;
 import org.bson.BsonTimestamp;
@@ -16,9 +19,11 @@ import org.bson.ByteBuf;
 import org.bson.RawBsonDocument;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -27,12 +32,9 @@ import java.util.stream.Collectors;
  */
 public class MongoStreamPublisher extends StreamPublisherBase {
 
-    public static final int NULL_COLUMN_INDEX = -1;
-
     private final Logger log;
     private final String logPrefix;
     private final Runnable shutdownCallback;
-    private final MongoChangeStreamParameters parameters;
     private final int receiveTimeColumnIndex;
     private final int documentKeyColumnIndex;
     private final int operationTypeColumnIndex;
@@ -41,18 +43,23 @@ public class MongoStreamPublisher extends StreamPublisherBase {
     private final int clusterTimeIncrementColumnIndex;
     private final int documentColumnIndex;
     private final int documentSizeColumnIndex;
+    private final ObjectMapper objectMapper;
+
+    private WritableObjectChunk<Object, Values> currentDocumentChunk;
+
+    private final KeyOrValueProcessor processor;
 
     MongoStreamPublisher(
             @NotNull final Logger log,
             @NotNull final String logPrefix,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Runnable shutdownCallback,
-            @NotNull final MongoChangeStreamParameters parameters) {
+            @NotNull final MongoChangeStreamParameters parameters,
+            @NotNull KeyOrValueIngestData ingestData) {
         super(tableDefinition);
         this.log = log;
         this.logPrefix = logPrefix;
         this.shutdownCallback = shutdownCallback;
-        this.parameters = parameters;
         receiveTimeColumnIndex = indexOf(tableDefinition, parameters.receiveTimeColumnName());
         documentKeyColumnIndex = indexOf(tableDefinition, parameters.documentKeyColumnName());
         operationTypeColumnIndex = indexOf(tableDefinition, parameters.operationTypeColumnName());
@@ -61,6 +68,14 @@ public class MongoStreamPublisher extends StreamPublisherBase {
         resumeFromColumnIndex = indexOf(tableDefinition, parameters.resumeFromColumnName());
         documentSizeColumnIndex = indexOf(tableDefinition, parameters.documentSizeColumnName());
         documentColumnIndex = indexOf(tableDefinition, parameters.documentColumnName());
+        final KeyOrValueSpec documentSpec = parameters.documentSpec();
+        if (documentSpec == null) {
+            processor = null;
+            objectMapper = null;
+        } else {
+            processor = documentSpec.getProcessor(tableDefinition, ingestData);
+            objectMapper = new ObjectMapper(new BsonFactory());
+        }
     }
 
     private static int indexOf(TableDefinition tableDefinition, String name) {
@@ -93,7 +108,6 @@ public class MongoStreamPublisher extends StreamPublisherBase {
         final int documentBytes = byteArray.length;
 
         WritableChunk<Values>[] chunks = getChunksToFill();
-        checkChunkSizes(chunks);
 
         if (receiveTimeColumnIndex >= 0) {
             chunks[receiveTimeColumnIndex].asWritableLongChunk().add(receiveTime);
@@ -117,7 +131,17 @@ public class MongoStreamPublisher extends StreamPublisherBase {
             chunks[documentSizeColumnIndex].asWritableIntChunk().add(documentBytes);
         }
 
-        chunks[documentColumnIndex].asWritableObjectChunk().add(byteArray);
+        if (documentColumnIndex >= 0) {
+            chunks[documentColumnIndex].asWritableObjectChunk().add(byteArray);
+        }
+
+        if (processor != null) {
+            try {
+                currentDocumentChunk.add(objectMapper.readTree(byteArray));
+            } catch (IOException e) {
+                throw new IngesterException("Could not process BSON data", e);
+            }
+        }
 
         final int remaining = chunks[0].capacity() - chunks[0].size();
         if (remaining == 0) {
@@ -152,5 +176,28 @@ public class MongoStreamPublisher extends StreamPublisherBase {
     @Override
     public void shutdown() {
         shutdownCallback.run();
+    }
+
+    @Override
+    protected synchronized WritableChunk<Values>[] getChunksToFill() {
+        final WritableChunk<Values>[] chunksToFill = super.getChunksToFill();
+        if (processor != null && currentDocumentChunk == null) {
+            currentDocumentChunk = WritableObjectChunk.makeWritableChunk(chunksToFill[0].capacity());
+            currentDocumentChunk.setSize(0);
+        }
+        return chunksToFill;
+    }
+
+    @Override
+    public synchronized void flush() {
+        if (processor != null && chunks != null) {
+            processor.handleChunk(currentDocumentChunk, chunks);
+            currentDocumentChunk.close();
+            currentDocumentChunk = null;
+        }
+        if (chunks != null) {
+            checkChunkSizes(chunks);
+        }
+        super.flush();
     }
 }

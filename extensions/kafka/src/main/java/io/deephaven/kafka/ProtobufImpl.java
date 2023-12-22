@@ -22,11 +22,10 @@ import io.deephaven.functions.ToPrimitiveFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.kafka.KafkaTools.Consume;
 import io.deephaven.kafka.KafkaTools.KeyOrValue;
-import io.deephaven.kafka.KafkaTools.KeyOrValueIngestData;
-import io.deephaven.kafka.ingest.FieldCopier;
+import io.deephaven.streampublisher.FieldCopier;
 import io.deephaven.kafka.ingest.FieldCopierAdapter;
-import io.deephaven.kafka.ingest.KeyOrValueProcessor;
-import io.deephaven.kafka.ingest.MultiFieldChunkAdapter;
+import io.deephaven.streampublisher.KeyOrValueProcessor;
+import io.deephaven.streampublisher.MultiFieldChunkAdapter;
 import io.deephaven.kafka.protobuf.DescriptorMessageClass;
 import io.deephaven.kafka.protobuf.DescriptorProvider;
 import io.deephaven.kafka.protobuf.DescriptorSchemaRegistry;
@@ -39,6 +38,7 @@ import io.deephaven.protobuf.ProtobufFunction;
 import io.deephaven.protobuf.ProtobufFunctions;
 import io.deephaven.protobuf.ProtobufFunctions.Builder;
 import io.deephaven.qst.type.Type;
+import io.deephaven.streampublisher.KeyOrValueIngestData;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -69,7 +69,7 @@ class ProtobufImpl {
         return withMostAppropriateType(ProtobufDescriptorParser.parse(descriptor, options));
     }
 
-    static final class ProtobufConsumeImpl extends Consume.KeyOrValueSpec {
+    static final class ProtobufConsumeImpl implements Consume.KeyOrValueSpec {
 
         private static final ToObjectFunction<Object, Message> PROTOBUF_MESSAGE_OBJ =
                 ToObjectFunction.identity(Type.ofCustom(Message.class));
@@ -89,7 +89,7 @@ class ProtobufImpl {
         }
 
         @Override
-        protected Deserializer<? extends Message> getDeserializer(
+        public Deserializer<? extends Message> getDeserializer(
                 KeyOrValue keyOrValue,
                 SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
@@ -138,7 +138,7 @@ class ProtobufImpl {
         }
 
         @Override
-        protected KeyOrValueIngestData getIngestData(
+        public KeyOrValueIngestData getIngestData(
                 KeyOrValue keyOrValue,
                 SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs,
@@ -176,7 +176,7 @@ class ProtobufImpl {
         }
 
         @Override
-        protected KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
+        public KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
             // noinspection unchecked
             return new KeyOrValueProcessorImpl(
                     MultiFieldChunkAdapter.chunkOffsets(tableDef, data.fieldPathToColumnName),

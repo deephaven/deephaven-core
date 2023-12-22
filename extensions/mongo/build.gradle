@@ -14,6 +14,9 @@ dependencies {
 
     implementation 'org.mongodb:mongodb-driver-sync:4.3.4'
     implementation 'de.undercouch:bson4jackson:2.15.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation depCommonsLang3
+    Classpaths.inheritJacksonPlatform(project)
 
     Classpaths.inheritImmutables(project)
 

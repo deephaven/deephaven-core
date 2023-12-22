@@ -44,22 +44,17 @@ import io.deephaven.kafka.AvroImpl.AvroConsume;
 import io.deephaven.kafka.AvroImpl.AvroProduce;
 import io.deephaven.kafka.IgnoreImpl.IgnoreConsume;
 import io.deephaven.kafka.IgnoreImpl.IgnoreProduce;
-import io.deephaven.kafka.JsonImpl.JsonConsume;
-import io.deephaven.kafka.JsonImpl.JsonProduce;
 import io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.PerPartition;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.Single;
+import io.deephaven.kafka.ingest.*;
 import io.deephaven.streampublisher.BlinkTableOperation;
 import io.deephaven.kafka.ProtobufImpl.ProtobufConsumeImpl;
 import io.deephaven.kafka.RawImpl.RawConsume;
 import io.deephaven.kafka.RawImpl.RawProduce;
 import io.deephaven.kafka.SimpleImpl.SimpleConsume;
 import io.deephaven.kafka.SimpleImpl.SimpleProduce;
-import io.deephaven.kafka.ingest.ConsumerRecordToStreamPublisherAdapter;
-import io.deephaven.kafka.ingest.KafkaIngester;
-import io.deephaven.kafka.ingest.KafkaRecordConsumer;
-import io.deephaven.kafka.ingest.KafkaStreamPublisher;
-import io.deephaven.kafka.ingest.KeyOrValueProcessor;
+import io.deephaven.streampublisher.KeyOrValueProcessor;
 import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
 import io.deephaven.kafka.publish.KafkaPublisherException;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
@@ -71,6 +66,8 @@ import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
+import io.deephaven.streampublisher.KeyOrValueIngestData;
+import io.deephaven.streampublisher.json.JsonConsumeImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
@@ -123,8 +120,6 @@ import java.util.function.IntPredicate;
 import java.util.function.IntToLongFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-import static io.deephaven.kafka.ingest.KafkaStreamPublisher.NULL_COLUMN_INDEX;
 
 public class KafkaTools {
 
@@ -311,21 +306,20 @@ public class KafkaTools {
         /**
          * Class to specify conversion of Kafka KEY or VALUE fields to table columns.
          */
-        public static abstract class KeyOrValueSpec implements SchemaProviderProvider {
-
-            protected abstract Deserializer<?> getDeserializer(
+        public interface KeyOrValueSpec extends SchemaProviderProvider {
+            Deserializer<?> getDeserializer(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs);
 
-            protected abstract KeyOrValueIngestData getIngestData(
+            KeyOrValueIngestData getIngestData(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs,
                     MutableInt nextColumnIndexMut,
                     List<ColumnDefinition<?>> columnDefinitionsOut);
 
-            protected abstract KeyOrValueProcessor getProcessor(
+            KeyOrValueProcessor getProcessor(
                     TableDefinition tableDef,
                     KeyOrValueIngestData data);
         }
@@ -364,7 +358,7 @@ public class KafkaTools {
                 @NotNull final ColumnDefinition<?>[] columnDefinitions,
                 @Nullable final Map<String, String> fieldToColumnName,
                 @Nullable final ObjectMapper objectMapper) {
-            return new JsonConsume(columnDefinitions, fieldToColumnName, objectMapper);
+            return new KafkaJsonConsumeImpl(columnDefinitions, fieldToColumnName, objectMapper);
         }
 
         /**
@@ -382,7 +376,7 @@ public class KafkaTools {
         public static KeyOrValueSpec jsonSpec(
                 @NotNull final ColumnDefinition<?>[] columnDefinitions,
                 @Nullable final Map<String, String> fieldToColumnName) {
-            return new JsonConsume(columnDefinitions, fieldToColumnName, null);
+            return new KafkaJsonConsumeImpl(columnDefinitions, fieldToColumnName, null);
         }
 
         /**
@@ -683,7 +677,7 @@ public class KafkaTools {
                                 ") and excludeColumns (=" + excludeColumns + ") are not null, " +
                                 "at least one of them should be null.");
             }
-            return new JsonProduce(
+            return new JsonProduceImpl(
                     includeColumns,
                     excludeColumns,
                     columnToFieldMapping,
@@ -1428,13 +1422,6 @@ public class KafkaTools {
             sources.put(CONSTITUENT_COLUMN_NAME, ArrayBackedColumnSource.getMemoryColumnSource(Table.class, null));
             return sources;
         }
-    }
-
-    public static class KeyOrValueIngestData {
-        public Map<String, String> fieldPathToColumnName;
-        public int simpleColumnIndex = NULL_COLUMN_INDEX;
-        public Function<Object, Object> toObjectChunkMapper = Function.identity();
-        public Object extra;
     }
 
     private interface SetColumnIndex {

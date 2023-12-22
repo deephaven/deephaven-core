@@ -10,10 +10,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.kafka.KafkaTools.Consume;
 import io.deephaven.kafka.KafkaTools.KeyOrValue;
-import io.deephaven.kafka.KafkaTools.KeyOrValueIngestData;
 import io.deephaven.kafka.KafkaTools.Produce;
-import io.deephaven.kafka.ingest.KeyOrValueProcessor;
+import io.deephaven.streampublisher.KeyOrValueProcessor;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
+import io.deephaven.streampublisher.KeyOrValueIngestData;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 
 class IgnoreImpl {
-    static final class IgnoreConsume extends Consume.KeyOrValueSpec {
+    static final class IgnoreConsume implements Consume.KeyOrValueSpec {
 
         @Override
         public Optional<SchemaProvider> getSchemaProvider() {
@@ -34,20 +34,20 @@ class IgnoreImpl {
         }
 
         @Override
-        protected Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+        public Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
             return new ByteArrayDeserializer();
         }
 
         @Override
-        protected KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
-                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
-                List<ColumnDefinition<?>> columnDefinitionsOut) {
+        public KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
+                                                     SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                                                     List<ColumnDefinition<?>> columnDefinitionsOut) {
             return null;
         }
 
         @Override
-        protected KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
+        public KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
             return null;
         }
     }

@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.kafka.ingest;
+package io.deephaven.streampublisher;
 
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
@@ -83,7 +83,7 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
         if (!allowNulls) {
             for (int ii = 0; ii < inputChunk.size(); ++ii) {
                 if (inputChunk.get(ii) == null) {
-                    throw new KafkaIngesterException("Null records are not permitted");
+                    throw new IngesterException("Null records are not permitted");
                 }
             }
         }

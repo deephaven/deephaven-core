@@ -11,9 +11,8 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.kafka.KafkaTools.Consume;
 import io.deephaven.kafka.KafkaTools.KeyOrValue;
-import io.deephaven.kafka.KafkaTools.KeyOrValueIngestData;
 import io.deephaven.kafka.KafkaTools.Produce;
-import io.deephaven.kafka.ingest.KeyOrValueProcessor;
+import io.deephaven.streampublisher.KeyOrValueProcessor;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
 import io.deephaven.kafka.publish.SimpleKeyOrValueSerializer;
 import io.deephaven.qst.type.ArrayType;
@@ -32,6 +31,7 @@ import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
+import io.deephaven.streampublisher.KeyOrValueIngestData;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -69,7 +69,7 @@ class SimpleImpl {
     /**
      * Single spec for unidimensional (basic Kafka encoded for one type) fields.
      */
-    static final class SimpleConsume extends Consume.KeyOrValueSpec {
+    static final class SimpleConsume implements Consume.KeyOrValueSpec {
         private final String columnName;
         private final Class<?> dataType;
 
@@ -84,7 +84,7 @@ class SimpleImpl {
         }
 
         @Override
-        protected Deserializer<?> getDeserializer(
+        public Deserializer<?> getDeserializer(
                 KeyOrValue keyOrValue,
                 SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
@@ -99,7 +99,7 @@ class SimpleImpl {
         }
 
         @Override
-        protected KeyOrValueIngestData getIngestData(
+        public KeyOrValueIngestData getIngestData(
                 KeyOrValue keyOrValue,
                 SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
                 List<ColumnDefinition<?>> columnDefinitionsOut) {
@@ -113,7 +113,7 @@ class SimpleImpl {
         }
 
         @Override
-        protected KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
+        public KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
             return null;
         }
 

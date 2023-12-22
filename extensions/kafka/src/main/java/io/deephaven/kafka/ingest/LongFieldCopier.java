@@ -8,6 +8,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.functions.ToLongFunction;
 import io.deephaven.functions.ToObjectFunction;
+import io.deephaven.streampublisher.FieldCopier;
 import io.deephaven.util.type.TypeUtils;
 
 import java.util.Objects;

@@ -7,5 +7,8 @@ description 'Stream Publisher: Tools for publishing a stream to column-chunks.'
 
 dependencies {
     api project(':engine-table')
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation depCommonsLang3
     Classpaths.inheritImmutables(project)
+    Classpaths.inheritJacksonPlatform(project)
 }

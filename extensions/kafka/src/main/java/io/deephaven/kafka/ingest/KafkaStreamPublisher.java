@@ -9,7 +9,9 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.unboxer.ChunkUnboxer;
+import io.deephaven.streampublisher.KeyOrValueIngestData;
 import io.deephaven.stream.StreamChunkUtils;
+import io.deephaven.streampublisher.KeyOrValueProcessor;
 import io.deephaven.streampublisher.StreamPublisherBase;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -28,7 +30,7 @@ import java.util.stream.Collectors;
  */
 public class KafkaStreamPublisher extends StreamPublisherBase implements ConsumerRecordToStreamPublisherAdapter {
 
-    public static final int NULL_COLUMN_INDEX = -1;
+    public static final int NULL_COLUMN_INDEX = KeyOrValueIngestData.NULL_COLUMN_INDEX;
 
     private final Runnable shutdownCallback;
     private final int kafkaPartitionColumnIndex;
