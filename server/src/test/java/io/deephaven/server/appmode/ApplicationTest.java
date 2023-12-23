@@ -53,7 +53,7 @@ public class ApplicationTest {
     public void app01() throws IOException {
         session = new GroovyDeephavenSession(
                 ExecutionContext.getContext().getUpdateGraph(),
-                ThreadInitializationFactory.NO_OP,
+                ExecutionContext.getContext().getOperationInitializer(),
                 NoOp.INSTANCE, null,
                 GroovyDeephavenSession.RunScripts.none());
         ApplicationState app = ApplicationFactory.create(ApplicationConfigs.testAppDir(), ApplicationConfigs.app01(),
@@ -69,7 +69,7 @@ public class ApplicationTest {
     public void app02() throws IOException, InterruptedException, TimeoutException {
         session = new PythonDeephavenSession(
                 ExecutionContext.getDefaultContext().getUpdateGraph(),
-                ThreadInitializationFactory.NO_OP,
+                ExecutionContext.getContext().getOperationInitializer(), ThreadInitializationFactory.NO_OP,
                 NoOp.INSTANCE, null, false,
                 PythonEvaluatorJpy.withGlobalCopy());
         ApplicationState app = ApplicationFactory.create(ApplicationConfigs.testAppDir(), ApplicationConfigs.app02(),

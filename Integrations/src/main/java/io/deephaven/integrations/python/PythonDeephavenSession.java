@@ -9,6 +9,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.PythonEvaluator;
@@ -70,6 +71,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * Create a Python ScriptSession.
      *
      * @param updateGraph the default update graph to install for the repl
+     * @param operationInitializer the default operation initializer to install for the repl
      * @param objectTypeLookup the object type lookup
      * @param listener an optional listener that will be notified whenever the query scope changes
      * @param runInitScripts if init scripts should be executed
@@ -78,12 +80,13 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      */
     public PythonDeephavenSession(
             final UpdateGraph updateGraph,
+            final OperationInitializer operationInitializer,
             final ThreadInitializationFactory threadInitializationFactory,
             final ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener listener,
             final boolean runInitScripts,
             final PythonEvaluatorJpy pythonEvaluator) throws IOException {
-        super(updateGraph, threadInitializationFactory, objectTypeLookup, listener);
+        super(updateGraph, operationInitializer, objectTypeLookup, listener);
 
         evaluator = pythonEvaluator;
         scope = pythonEvaluator.getScope();
@@ -112,9 +115,12 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * Creates a Python "{@link ScriptSession}", for use where we should only be reading from the scope, such as an
      * IPython kernel session.
      */
-    public PythonDeephavenSession(final UpdateGraph updateGraph,
-            final ThreadInitializationFactory threadInitializationFactory, final PythonScope<?> scope) {
-        super(updateGraph, threadInitializationFactory, NoOp.INSTANCE, null);
+    public PythonDeephavenSession(
+            final UpdateGraph updateGraph,
+            final OperationInitializer operationInitializer,
+            final ThreadInitializationFactory threadInitializationFactory,
+            final PythonScope<?> scope) {
+        super(updateGraph, operationInitializer, NoOp.INSTANCE, null);
 
         evaluator = null;
         this.scope = (PythonScope<PyObject>) scope;

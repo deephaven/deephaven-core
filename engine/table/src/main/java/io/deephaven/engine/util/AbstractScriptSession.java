@@ -18,12 +18,11 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
-import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -72,7 +71,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     protected AbstractScriptSession(
             UpdateGraph updateGraph,
-            final ThreadInitializationFactory threadInitializationFactory,
+            final OperationInitializer operationInitializer,
             ObjectTypeLookup objectTypeLookup,
             @Nullable Listener changeListener) {
         this.objectTypeLookup = objectTypeLookup;
@@ -93,7 +92,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 .setQueryScope(queryScope)
                 .setQueryCompiler(compilerContext)
                 .setUpdateGraph(updateGraph)
-                .setOperationInitializer(new OperationInitializationThreadPool(threadInitializationFactory))
+                .setOperationInitializer(operationInitializer)
                 .build();
     }
 
