@@ -3082,7 +3082,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 .groupBy("Symbol").ungroup();
 
         // Create the index for "Symbol" column.
-        DataIndexer.of(source.getRowSet()).createDataIndex(source, "Symbol");
+        DataIndexer.of(source.getRowSet()).getOrCreateDataIndex(source, "Symbol");
 
         testDirectory.mkdirs();
         final File dest = new File(testDirectory, "Table.parquet");
@@ -3328,7 +3328,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable t1 = new QueryTable(rowSet, columns);
 
         // Create an index for "T"
-        DataIndexer.of(t1.getRowSet()).createDataIndex(t1, "T");
+        DataIndexer.of(t1.getRowSet()).getOrCreateDataIndex(t1, "T");
 
         final Table t2 = t1.select("T");
 

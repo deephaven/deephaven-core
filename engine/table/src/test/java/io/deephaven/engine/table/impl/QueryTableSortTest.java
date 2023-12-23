@@ -250,7 +250,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 col("Sentinel", 7, 8, 6, 4, 5, 3, 1, 2, 0)), sorted2);
 
         // Add a new index covering both columns.
-        DataIndexer.of(table.getRowSet()).createDataIndex(table, "A", "Secondary");
+        DataIndexer.of(table.getRowSet()).getOrCreateDataIndex(table, "A", "Secondary");
 
         final QueryTable sorted3 = (QueryTable) table.sort(List.of(
                 SortColumn.desc(ColumnName.of("A")),
@@ -317,7 +317,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         grouped = testTable(RowSetFactory.flat(values.length).toTracking(),
                 col("Captain", values),
                 col("Secondary", values)).update("Sentinel=i");
-        DataIndexer.of(grouped.getRowSet()).createDataIndex(grouped, "Captain", "Secondary");
+        DataIndexer.of(grouped.getRowSet()).getOrCreateDataIndex(grouped, "Captain", "Secondary");
         nogroups = testTable(RowSetFactory.flat(values.length).toTracking(),
                 col("Captain", values),
                 col("Secondary", values)).update("Sentinel=i");

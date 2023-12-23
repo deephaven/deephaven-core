@@ -75,7 +75,7 @@ public class TestDataIndexer extends RefreshingTableTestCase {
                 continue;
             }
             System.out.println("Creating index for " + set);
-            dataIndexer.createDataIndex(queryTable, set.toArray(String[]::new));
+            dataIndexer.getOrCreateDataIndex(queryTable, set.toArray(String[]::new));
         }
 
         addIndexValidator(queryTable, "queryTable");
@@ -208,10 +208,10 @@ public class TestDataIndexer extends RefreshingTableTestCase {
         assertFalse(indexer.hasDataIndex(intColumnSource, symColumnSource, doubleColumnSource));
 
         // Add the multi-column indexes.
-        indexer.createDataIndex(countingTable, "intCol", "Sym");
-        indexer.createDataIndex(countingTable, "intCol", "Sym", "Sym2");
-        indexer.createDataIndex(countingTable, "intCol", "Sym", "doubleCol");
-        indexer.createDataIndex(countingTable, "intCol", "Sym", "Sym2", "doubleCol");
+        indexer.getOrCreateDataIndex(countingTable, "intCol", "Sym");
+        indexer.getOrCreateDataIndex(countingTable, "intCol", "Sym", "Sym2");
+        indexer.getOrCreateDataIndex(countingTable, "intCol", "Sym", "doubleCol");
+        indexer.getOrCreateDataIndex(countingTable, "intCol", "Sym", "Sym2", "doubleCol");
 
         assertTrue(indexer.hasDataIndex(intColumnSource, symColumnSource));
         assertTrue(indexer.hasDataIndex(intColumnSource, symColumnSource, sym2ColumnSource));

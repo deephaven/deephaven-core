@@ -138,7 +138,7 @@ public class ParquetTableWriter {
                         // This will retrieve an existing index if one exists, or create a new one if not
                         final BasicDataIndex dataIndex = Optional
                                 .ofNullable(dataIndexer.getDataIndex(t, info.indexColumnNames))
-                                .or(() -> Optional.of(dataIndexer.createDataIndex(t, info.indexColumnNames)))
+                                .or(() -> Optional.of(dataIndexer.getOrCreateDataIndex(t, info.indexColumnNames)))
                                 .get()
                                 .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
                         final Table indexTable = dataIndex.table();

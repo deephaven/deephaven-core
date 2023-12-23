@@ -297,9 +297,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         rightInt2Generator));
         if (rightIndexed) {
             final DataIndexer dataIndexer = DataIndexer.of(rightTable.getRowSet());
-            dataIndexer.createDataIndex(rightTable, "I1");
-            dataIndexer.createDataIndex(rightTable, "I1", "C1");
-            dataIndexer.createDataIndex(rightTable, "I1", "C1", "C2");
+            dataIndexer.getOrCreateDataIndex(rightTable, "I1");
+            dataIndexer.getOrCreateDataIndex(rightTable, "I1", "C1");
+            dataIndexer.getOrCreateDataIndex(rightTable, "I1", "C1", "C2");
         }
 
         final ColumnInfo<?, ?>[] leftColumnInfo;
@@ -310,9 +310,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         new FromUniqueIntGenerator(rightInt2Generator, new IntGenerator(20, 10000), 0.75)));
         if (leftIndexed) {
             final DataIndexer dataIndexer = DataIndexer.of(leftTable.getRowSet());
-            dataIndexer.createDataIndex(leftTable, "I1");
-            dataIndexer.createDataIndex(leftTable, "I1", "C1");
-            dataIndexer.createDataIndex(leftTable, "I1", "C1", "C2");
+            dataIndexer.getOrCreateDataIndex(leftTable, "I1");
+            dataIndexer.getOrCreateDataIndex(leftTable, "I1", "C1");
+            dataIndexer.getOrCreateDataIndex(leftTable, "I1", "C1", "C2");
         }
 
         final EvalNugget[] en = new EvalNugget[] {
@@ -414,7 +414,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final TrackingRowSet flatRowSet = leftFlat.getRowSet();
 
         // Create the data index for this table and column.
-        DataIndexer.of(flatRowSet).createDataIndex(leftFlat, "I1");
+        DataIndexer.of(flatRowSet).getOrCreateDataIndex(leftFlat, "I1");
 
         final Table resultFlat = leftFlat.naturalJoin(rightTable, "I1", "LC1=C1,LC2=C2");
         assertTableEquals(noGroupingResult, resultFlat);

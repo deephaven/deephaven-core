@@ -246,8 +246,8 @@ public abstract class QueryTableWhereTest {
                 col("A", 1, 2, 3, 4, 5, 6), col("B", 2, 4, 6, 8, 10, 12), col("C", 'a', 'b', 'c', 'd', 'e', 'f'));
         if (filterIndexed) {
             final DataIndexer dataIndexer = DataIndexer.of(tableToFilter.getRowSet());
-            dataIndexer.createDataIndex(tableToFilter, "A");
-            dataIndexer.createDataIndex(tableToFilter, "B");
+            dataIndexer.getOrCreateDataIndex(tableToFilter, "A");
+            dataIndexer.getOrCreateDataIndex(tableToFilter, "B");
         }
 
         final QueryTable setTable = testRefreshingTable(i(100, 101, 102).toTracking(),
@@ -255,14 +255,14 @@ public abstract class QueryTableWhereTest {
         final Table setTable1 = setTable.where("A > 2");
         final Table setTable2 = setTable.where("B > 6");
         if (setIndexed) {
-            DataIndexer.of(setTable.getRowSet()).createDataIndex(setTable, "A");
-            DataIndexer.of(setTable.getRowSet()).createDataIndex(setTable, "B");
+            DataIndexer.of(setTable.getRowSet()).getOrCreateDataIndex(setTable, "A");
+            DataIndexer.of(setTable.getRowSet()).getOrCreateDataIndex(setTable, "B");
 
-            DataIndexer.of(setTable1.getRowSet()).createDataIndex(setTable1, "A");
-            DataIndexer.of(setTable1.getRowSet()).createDataIndex(setTable1, "B");
+            DataIndexer.of(setTable1.getRowSet()).getOrCreateDataIndex(setTable1, "A");
+            DataIndexer.of(setTable1.getRowSet()).getOrCreateDataIndex(setTable1, "B");
 
-            DataIndexer.of(setTable2.getRowSet()).createDataIndex(setTable2, "A");
-            DataIndexer.of(setTable2.getRowSet()).createDataIndex(setTable2, "B");
+            DataIndexer.of(setTable2.getRowSet()).getOrCreateDataIndex(setTable2, "A");
+            DataIndexer.of(setTable2.getRowSet()).getOrCreateDataIndex(setTable2, "B");
         }
 
         final DynamicWhereFilter dynamicFilter1 =
@@ -501,11 +501,11 @@ public abstract class QueryTableWhereTest {
             // Add an index on every column but "doubleCol"
             for (final String columnName : columnNames) {
                 if (!columnName.equals("doubleCol")) {
-                    dataIndexer.createDataIndex(setTable, columnName);
+                    dataIndexer.getOrCreateDataIndex(setTable, columnName);
                 }
             }
             // Add the multi-column index for "Sym", "intCol"
-            dataIndexer.createDataIndex(setTable, "Sym", "intCol");
+            dataIndexer.getOrCreateDataIndex(setTable, "Sym", "intCol");
         }
 
         final QueryTable filteredTable = getTable(filteredSize, random, filteredInfo = initColumnInfos(
@@ -524,11 +524,11 @@ public abstract class QueryTableWhereTest {
             // Add an index on every column but "doubleCol"
             for (final String columnName : columnNames) {
                 if (!columnName.equals("doubleCol")) {
-                    dataIndexer.createDataIndex(filteredTable, columnName);
+                    dataIndexer.getOrCreateDataIndex(filteredTable, columnName);
                 }
             }
             // Add the multi-column index for "Sym", "intCol"
-            dataIndexer.createDataIndex(filteredTable, "Sym", "intCol");
+            dataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "intCol");
         }
 
         final EvalNugget[] en = new EvalNugget[] {
@@ -1248,7 +1248,7 @@ public abstract class QueryTableWhereTest {
                 initColumnInfos(
                         new String[] {"A"},
                         new LongGenerator(0, 1000, 0.01)));
-        DataIndexer.of(source.getRowSet()).createDataIndex(source, "A");
+        DataIndexer.of(source.getRowSet()).getOrCreateDataIndex(source, "A");
 
         final Table result = source.where("A >= 600", "A < 700");
         Table sorted = result.sort("A");

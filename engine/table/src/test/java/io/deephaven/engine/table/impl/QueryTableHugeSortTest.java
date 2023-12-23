@@ -88,7 +88,7 @@ public class QueryTableHugeSortTest {
         final ColumnSource<Object> captainSource = (ColumnSource<Object>) grouped.getColumnSource("Captain");
 
         // Create the index for this table and column.
-        DataIndexer.of(grouped.getRowSet()).createDataIndex(grouped, "Captain");
+        DataIndexer.of(grouped.getRowSet()).getOrCreateDataIndex(grouped, "Captain");
 
         final long sortStart = System.currentTimeMillis();
         final Table sortedGrouped = grouped.sortDescending("Captain");

@@ -120,7 +120,7 @@ public class TableBackedDataIndex extends BaseDataIndex {
     }
 
     @Override
-    public boolean validate() {
+    public boolean isValid() {
         return true;
     }
 }

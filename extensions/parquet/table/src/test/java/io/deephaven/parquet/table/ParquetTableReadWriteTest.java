@@ -318,7 +318,7 @@ public final class ParquetTableReadWriteTest {
                 ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someLong  = ii % 3")
                         .groupBy("someLong").ungroup("someInt")).withDefinitionUnsafe(definition);
 
-        DataIndexer.of(testTable.getRowSet()).createDataIndex(testTable, "someLong");
+        DataIndexer.of(testTable.getRowSet()).getOrCreateDataIndex(testTable, "someLong");
 
         final File dest = new File(rootFile, "ParquetTest_groupByLong_test.parquet");
         writeTable(testTable, dest);
@@ -338,7 +338,7 @@ public final class ParquetTableReadWriteTest {
                         .where("i % 2 == 0").groupBy("someString").ungroup("someInt"))
                         .withDefinitionUnsafe(definition);
 
-        DataIndexer.of(testTable.getRowSet()).createDataIndex(testTable, "someString");
+        DataIndexer.of(testTable.getRowSet()).getOrCreateDataIndex(testTable, "someString");
 
         final File dest = new File(rootFile, "ParquetTest_groupByString_test.parquet");
         writeTable(testTable, dest);
@@ -358,7 +358,7 @@ public final class ParquetTableReadWriteTest {
                 .select("someInt = i", "someBigInt  =  BigInteger.valueOf(i % 3)").where("i % 2 == 0")
                 .groupBy("someBigInt").ungroup("someInt")).withDefinitionUnsafe(definition);
 
-        DataIndexer.of(testTable.getRowSet()).createDataIndex(testTable, "someBigInt");
+        DataIndexer.of(testTable.getRowSet()).getOrCreateDataIndex(testTable, "someBigInt");
 
 
         final File dest = new File(rootFile, "ParquetTest_groupByBigInt_test.parquet");
@@ -932,7 +932,7 @@ public final class ParquetTableReadWriteTest {
         final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv"));
         final Table tableToSave = TableTools.newTable(tableDefinition, TableTools.col("vvv", data));
 
-        DataIndexer.of(tableToSave.getRowSet()).createDataIndex(tableToSave, "vvv");
+        DataIndexer.of(tableToSave.getRowSet()).getOrCreateDataIndex(tableToSave, "vvv");
 
         // For a completed write, there should be two parquet files in the directory, the table data and the index
         // data
@@ -999,7 +999,7 @@ public final class ParquetTableReadWriteTest {
         final Table fromDiskIndexTable = fromDiskIndex.table();
 
         // Create a dynamic index from the table.
-        DataIndexer.of(table.getRowSet()).createDataIndex(table, groupingColName);
+        DataIndexer.of(table.getRowSet()).getOrCreateDataIndex(table, groupingColName);
         final DataIndex tableIndex = DataIndexer.of(table.getRowSet()).getDataIndex(table, groupingColName);
         final Table tableIndexTable = tableIndex.table();
 
@@ -1021,7 +1021,7 @@ public final class ParquetTableReadWriteTest {
         final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv"));
         final Table tableToSave = newTable(tableDefinition, TableTools.col("vvv", data));
 
-        DataIndexer.of(tableToSave.getRowSet()).createDataIndex(tableToSave, "vvv");
+        DataIndexer.of(tableToSave.getRowSet()).getOrCreateDataIndex(tableToSave, "vvv");
 
         final String destFilename = "data.parquet";
         final File destFile = new File(parentDir, destFilename);
@@ -1106,7 +1106,7 @@ public final class ParquetTableReadWriteTest {
         final String firstFilename = "firstTable.parquet";
         final File firstDestFile = new File(parentDir, firstFilename);
 
-        DataIndexer.of(firstTable.getRowSet()).createDataIndex(firstTable, "vvv");
+        DataIndexer.of(firstTable.getRowSet()).getOrCreateDataIndex(firstTable, "vvv");
 
         final Table secondTable = newTable(tableDefinition, TableTools.col("vvv", data));
         final String secondFilename = "secondTable.parquet";
@@ -1154,7 +1154,7 @@ public final class ParquetTableReadWriteTest {
         final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv"));
         final Table tableToSave = newTable(tableDefinition, TableTools.col("vvv", data));
 
-        DataIndexer.of(tableToSave.getRowSet()).createDataIndex(tableToSave, "vvv");
+        DataIndexer.of(tableToSave.getRowSet()).getOrCreateDataIndex(tableToSave, "vvv");
 
         final String destFilename = "groupingColumnsWriteTests.parquet";
         final File destFile = new File(parentDir, destFilename);
@@ -1165,7 +1165,7 @@ public final class ParquetTableReadWriteTest {
         final TableDefinition anotherTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("xxx"));
         Table anotherTableToSave = newTable(anotherTableDefinition, TableTools.col("xxx", data));
 
-        DataIndexer.of(anotherTableToSave.getRowSet()).createDataIndex(anotherTableToSave, "xxx");
+        DataIndexer.of(anotherTableToSave.getRowSet()).getOrCreateDataIndex(anotherTableToSave, "xxx");
 
         writer.writeTable(anotherTableToSave, destFile);
         final String xxxIndexFilePath = ".dh_metadata/indexes/xxx/index_xxx_groupingColumnsWriteTests.parquet";

@@ -144,7 +144,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
         final QueryTable t = getTable(tableSize, random, columnInfos);
 
         if (!isRefreshing && includeGroups) {
-            DataIndexer.of(t.getRowSet()).createDataIndex(t, "Sym");
+            DataIndexer.of(t.getRowSet()).getOrCreateDataIndex(t, "Sym");
         }
 
         t.setRefreshing(isRefreshing);

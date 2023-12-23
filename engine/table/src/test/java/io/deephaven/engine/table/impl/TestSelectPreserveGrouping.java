@@ -104,7 +104,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
                     ColumnDefinition.ofInt("Sentinel"));
             final Table x = new QueryTable(definition, rowSet, columns);
 
-            DataIndexer.of(x.getRowSet()).createDataIndex(x, "Sym");
+            DataIndexer.of(x.getRowSet()).getOrCreateDataIndex(x, "Sym");
 
             System.out.println(x.getDefinition());
             ParquetTools.writeTable(x, dest);

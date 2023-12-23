@@ -170,7 +170,7 @@ public class TestParquetTools {
                 ColumnDefinition.ofString("aString")),
                 col("anInt", 1, 2, 3),
                 col("aString", "ab", "ab", "bc"));
-        DataIndexer.of(test.getRowSet()).createDataIndex(test, "aString");
+        DataIndexer.of(test.getRowSet()).getOrCreateDataIndex(test, "aString");
 
         path = testRoot + File.separator + "Table4.parquet";
         ParquetTools.writeTable(test, path);

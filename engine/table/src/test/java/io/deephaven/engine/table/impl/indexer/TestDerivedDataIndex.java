@@ -50,9 +50,9 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
 
         // Add some data indexes.
         final DataIndexer dataIndexer = DataIndexer.of(testTable.getRowSet());
-        dataIndexer.createDataIndex(testTable, "Sym");
-        dataIndexer.createDataIndex(testTable, "Sym2");
-        dataIndexer.createDataIndex(testTable, "Sym", "Sym2");
+        dataIndexer.getOrCreateDataIndex(testTable, "Sym");
+        dataIndexer.getOrCreateDataIndex(testTable, "Sym2");
+        dataIndexer.getOrCreateDataIndex(testTable, "Sym", "Sym2");
 
         dataIndexes = new ArrayList<>();
         dataIndexes.add(dataIndexer.getDataIndex(testTable, "Sym"));

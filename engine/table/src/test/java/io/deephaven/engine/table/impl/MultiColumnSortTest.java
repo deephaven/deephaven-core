@@ -96,13 +96,13 @@ public class MultiColumnSortTest {
                     // Won't consider the empty or full set.
                     continue;
                 }
-                dataIndexer.createDataIndex(table, keyColumnSubset.toArray(String[]::new));
+                dataIndexer.getOrCreateDataIndex(table, keyColumnSubset.toArray(String[]::new));
             }
         } else if (indexType == IndexType.PARTIAL) {
             // Only create single-column indexes
             final DataIndexer dataIndexer = DataIndexer.of(table.getRowSet());
             for (String keyColumn : columnNames) {
-                dataIndexer.createDataIndex(table, keyColumn);
+                dataIndexer.getOrCreateDataIndex(table, keyColumn);
             }
         }
 
@@ -291,7 +291,7 @@ public class MultiColumnSortTest {
             final long startGen = System.currentTimeMillis();
             System.out.println(new Date(startGen) + " Generating Table.");
             final Table table = bmTable.getTable();
-            DataIndexer.of(table.getRowSet()).createDataIndex(table, "Enum1", "L1");
+            DataIndexer.of(table.getRowSet()).getOrCreateDataIndex(table, "Enum1", "L1");
 
             final long endGen = System.currentTimeMillis();
             System.out.println(new Date(endGen) + " Completed generate in " + (endGen - startGen) + "ms");
@@ -337,7 +337,7 @@ public class MultiColumnSortTest {
             final long startGen = System.currentTimeMillis();
             System.out.println(new Date(startGen) + " Generating Table.");
             final Table table = bmTable.getTable();
-            DataIndexer.of(table.getRowSet()).createDataIndex(table, "Enum1");
+            DataIndexer.of(table.getRowSet()).getOrCreateDataIndex(table, "Enum1");
 
             final long endGen = System.currentTimeMillis();
             System.out.println(new Date(endGen) + " Completed generate in " + (endGen - startGen) + "ms");

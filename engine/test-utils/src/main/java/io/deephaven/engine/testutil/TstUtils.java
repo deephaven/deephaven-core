@@ -579,7 +579,7 @@ public class TstUtils {
         final DataIndexer dataIndexer = DataIndexer.of(rowSet);
         for (int i = 0; i < columnHolders.length; i++) {
             if (columnHolders[i].grouped) {
-                dataIndexer.createDataIndex(queryTable, columnHolders[i].name);
+                dataIndexer.getOrCreateDataIndex(queryTable, columnHolders[i].name);
             }
         }
 

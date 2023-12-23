@@ -258,7 +258,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
     }
 
     @Override
-    public boolean validate() {
+    public boolean isValid() {
         return true;
     }
 }

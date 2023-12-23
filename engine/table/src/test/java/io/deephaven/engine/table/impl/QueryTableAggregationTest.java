@@ -198,8 +198,8 @@ public class QueryTableAggregationTest {
         final Table input1 = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
         DataIndexer indexer1 = DataIndexer.of(input1.getRowSet());
 
-        indexer1.createDataIndex(input1, "A");
-        indexer1.createDataIndex(input1, "B");
+        indexer1.getOrCreateDataIndex(input1, "A");
+        indexer1.getOrCreateDataIndex(input1, "B");
 
         individualStaticByTest(input1, null, "A");
         individualStaticByTest(input1, null, "B");
@@ -3749,13 +3749,13 @@ public class QueryTableAggregationTest {
         final Table data = testTable(col("S", "A", "A", "B", "B"), col("I", 10, 20, 30, 40));
         final DataIndexer dataIndexer = DataIndexer.of(data.getRowSet());
 
-        dataIndexer.createDataIndex(data, "S");
+        dataIndexer.getOrCreateDataIndex(data, "S");
         final Table distinct = data.selectDistinct("S");
         assertTableEquals(testTable(col("S", "A", "B")), distinct);
 
         final Table reversed = data.reverse();
         final DataIndexer reversedIndexer = DataIndexer.of(reversed.getRowSet());
-        reversedIndexer.createDataIndex(reversed, "S");
+        reversedIndexer.getOrCreateDataIndex(reversed, "S");
         final Table initializedDistinct =
                 data.aggBy(List.of(Count.of("C")), false, reversed, ColumnName.from("S")).dropColumns("C");
         assertTableEquals(testTable(col("S", "B", "A")), initializedDistinct);

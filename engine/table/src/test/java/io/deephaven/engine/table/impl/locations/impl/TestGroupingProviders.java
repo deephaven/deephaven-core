@@ -88,7 +88,7 @@ public class TestGroupingProviders {
 
         // Create a local index for each partition
         for (final Table t : partitions) {
-            DataIndexer.of(t.getRowSet()).createDataIndex(t, "Sym");
+            DataIndexer.of(t.getRowSet()).getOrCreateDataIndex(t, "Sym");
         }
 
         if (missingGroups) {
