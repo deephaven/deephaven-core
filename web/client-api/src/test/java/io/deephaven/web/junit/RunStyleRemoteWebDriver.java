@@ -4,7 +4,6 @@ import com.google.gwt.core.ext.TreeLogger;
 import com.google.gwt.core.ext.UnableToCompleteException;
 import com.google.gwt.junit.JUnitShell;
 import com.google.gwt.junit.RunStyle;
-import org.openqa.selenium.Platform;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
@@ -91,7 +90,8 @@ public class RunStyleRemoteWebDriver extends RunStyle {
         String[] browserNames = parts[1].split(",");
         config.setBrowserCapabilities(new ArrayList<>());
         for (String browserName : browserNames) {
-            DesiredCapabilities capabilities = new DesiredCapabilities(browserName, "", Platform.ANY);
+            DesiredCapabilities capabilities = new DesiredCapabilities();
+            capabilities.setBrowserName(browserName);
             config.getBrowserCapabilities().add(capabilities.asMap());
         }
 
@@ -139,7 +139,7 @@ public class RunStyleRemoteWebDriver extends RunStyle {
                                     }
                                     for (RemoteWebDriver browser : browsers) {
                                         try {
-                                            browser.quit();
+                                            browser.close();
                                         } catch (Exception ignored) {
                                             // ignore, we're shutting down, continue shutting down others
                                         }

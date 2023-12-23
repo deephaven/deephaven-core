@@ -1,3 +1,8 @@
+import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
+import io.deephaven.tools.docker.WaitForHealthyContainer
+
 plugins {
     id 'io.deephaven.project.register'
     id 'io.deephaven.deephaven-in-docker'
@@ -65,15 +70,43 @@ deephavenDocker {
     networkName.set "js-test-network-${randomSuffix}"
 }
 
+def seleniumContainerId = "selenium-${randomSuffix}"
+
+def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t ->
+    t.containerName.set(seleniumContainerId)
+    t.targetImageId('selenium/standalone-firefox:4.16.1-20231219')// TODO create a registry entry for this
+    t.hostConfig.shmSize.set(2L * 1024 * 1024 * 1024)
+    t.hostConfig.portBindings.set(['4444:4444', '7900:7900'])//TODO don't expose 7900, and make 4444 dynamic
+    t.hostConfig.network.set('host')
+}
+def startSelenium = tasks.register('startSelenium', DockerStartContainer) {t ->
+    t.dependsOn(createSelenium)
+    t.containerId.set(seleniumContainerId)
+}
+def seleniumHealthy = project.tasks.register('seleniumHealthy', WaitForHealthyContainer) { task ->
+    task.dependsOn startSelenium
+
+    task.awaitStatusTimeout.set 120
+    task.checkInterval.set 100
+
+    task.containerId.set(seleniumContainerId)
+}
+def stopSelenium = project.tasks.register('stopSelenium', DockerRemoveContainer) { task ->
+    task.dependsOn startSelenium
+    task.targetContainerId seleniumContainerId
+    task.force.set true
+    task.removeVolumes.set true
+}
+// before/after:
+// docker run -d -p 4444:4444 -p 7900:7900 --shm-size="2g" --net=host selenium/standalone-firefox:4.16.1-20231219
+
 tasks.register('gwtIntegrationTest', Test) { t ->
-    t.dependsOn(deephavenDocker.portTask)
+    t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
+    t.finalizedBy(deephavenDocker.endTask, stopSelenium)
     doFirst {
-        def webdriverUrl = 'http://localhost:4444'
-        t.systemProperty('gwt.args', "-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:webdriverUrl:firefox -ea -style PRETTY -setProperty dh.server=http://localhost:${deephavenDocker.port.get()}")
+        def webdriverUrl = 'http://localhost:4444/'
+        t.systemProperty('gwt.args', "-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox -ea -style PRETTY -setProperty dh.server=http://localhost:${deephavenDocker.port.get()}")
         t.classpath += tasks.getByName('gwtCompile').src
-        t.classpath.files.each {
-            println it
-        }
     }
     t.finalizedBy(deephavenDocker.endTask)
     t.systemProperties = [
