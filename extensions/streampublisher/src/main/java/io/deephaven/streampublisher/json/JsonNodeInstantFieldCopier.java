@@ -1,12 +1,14 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.kafka.ingest;
+package io.deephaven.streampublisher.json;
 
 import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.streampublisher.FieldCopier;
+import io.deephaven.streampublisher.json.JsonNodeUtil;
 import io.deephaven.time.DateTimeUtils;
 
 import java.time.Instant;

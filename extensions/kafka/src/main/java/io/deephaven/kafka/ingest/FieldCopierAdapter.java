@@ -15,6 +15,7 @@ import io.deephaven.functions.ToObjectFunction;
 import io.deephaven.functions.ToPrimitiveFunction;
 import io.deephaven.functions.ToShortFunction;
 import io.deephaven.functions.TypedFunction;
+import io.deephaven.streampublisher.FieldCopier;
 
 public enum FieldCopierAdapter
         implements TypedFunction.Visitor<Object, FieldCopier>, ToPrimitiveFunction.Visitor<Object, FieldCopier> {

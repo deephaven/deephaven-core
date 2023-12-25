@@ -14,7 +14,6 @@ import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.annotations.SingletonStyle;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
@@ -31,13 +30,11 @@ import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.ConstituentDependency;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -47,25 +44,17 @@ import io.deephaven.kafka.AvroImpl.AvroConsume;
 import io.deephaven.kafka.AvroImpl.AvroProduce;
 import io.deephaven.kafka.IgnoreImpl.IgnoreConsume;
 import io.deephaven.kafka.IgnoreImpl.IgnoreProduce;
-import io.deephaven.kafka.JsonImpl.JsonConsume;
-import io.deephaven.kafka.JsonImpl.JsonProduce;
 import io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.PerPartition;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.Single;
-import io.deephaven.kafka.KafkaTools.TableType.Append;
-import io.deephaven.kafka.KafkaTools.TableType.Blink;
-import io.deephaven.kafka.KafkaTools.TableType.Ring;
-import io.deephaven.kafka.KafkaTools.TableType.Visitor;
+import io.deephaven.kafka.ingest.*;
+import io.deephaven.streampublisher.BlinkTableOperation;
 import io.deephaven.kafka.ProtobufImpl.ProtobufConsumeImpl;
 import io.deephaven.kafka.RawImpl.RawConsume;
 import io.deephaven.kafka.RawImpl.RawProduce;
 import io.deephaven.kafka.SimpleImpl.SimpleConsume;
 import io.deephaven.kafka.SimpleImpl.SimpleProduce;
-import io.deephaven.kafka.ingest.ConsumerRecordToStreamPublisherAdapter;
-import io.deephaven.kafka.ingest.KafkaIngester;
-import io.deephaven.kafka.ingest.KafkaRecordConsumer;
-import io.deephaven.kafka.ingest.KafkaStreamPublisher;
-import io.deephaven.kafka.ingest.KeyOrValueProcessor;
+import io.deephaven.streampublisher.KeyOrValueProcessor;
 import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
 import io.deephaven.kafka.publish.KafkaPublisherException;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
@@ -77,6 +66,8 @@ import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
+import io.deephaven.streampublisher.KeyOrValueIngestData;
+import io.deephaven.streampublisher.json.JsonConsumeImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
@@ -129,8 +120,6 @@ import java.util.function.IntPredicate;
 import java.util.function.IntToLongFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-import static io.deephaven.kafka.ingest.KafkaStreamPublisher.NULL_COLUMN_INDEX;
 
 public class KafkaTools {
 
@@ -317,21 +306,20 @@ public class KafkaTools {
         /**
          * Class to specify conversion of Kafka KEY or VALUE fields to table columns.
          */
-        public static abstract class KeyOrValueSpec implements SchemaProviderProvider {
-
-            protected abstract Deserializer<?> getDeserializer(
+        public interface KeyOrValueSpec extends SchemaProviderProvider {
+            Deserializer<?> getDeserializer(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs);
 
-            protected abstract KeyOrValueIngestData getIngestData(
+            KeyOrValueIngestData getIngestData(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs,
                     MutableInt nextColumnIndexMut,
                     List<ColumnDefinition<?>> columnDefinitionsOut);
 
-            protected abstract KeyOrValueProcessor getProcessor(
+            KeyOrValueProcessor getProcessor(
                     TableDefinition tableDef,
                     KeyOrValueIngestData data);
         }
@@ -370,7 +358,7 @@ public class KafkaTools {
                 @NotNull final ColumnDefinition<?>[] columnDefinitions,
                 @Nullable final Map<String, String> fieldToColumnName,
                 @Nullable final ObjectMapper objectMapper) {
-            return new JsonConsume(columnDefinitions, fieldToColumnName, objectMapper);
+            return new KafkaJsonConsumeImpl(columnDefinitions, fieldToColumnName, objectMapper);
         }
 
         /**
@@ -388,7 +376,7 @@ public class KafkaTools {
         public static KeyOrValueSpec jsonSpec(
                 @NotNull final ColumnDefinition<?>[] columnDefinitions,
                 @Nullable final Map<String, String> fieldToColumnName) {
-            return new JsonConsume(columnDefinitions, fieldToColumnName, null);
+            return new KafkaJsonConsumeImpl(columnDefinitions, fieldToColumnName, null);
         }
 
         /**
@@ -689,7 +677,7 @@ public class KafkaTools {
                                 ") and excludeColumns (=" + excludeColumns + ") are not null, " +
                                 "at least one of them should be null.");
             }
-            return new JsonProduce(
+            return new JsonProduceImpl(
                     includeColumns,
                     excludeColumns,
                     columnToFieldMapping,
@@ -790,99 +778,11 @@ public class KafkaTools {
         }
     }
 
-    /**
-     * Type for the result {@link Table} returned by kafka consumers.
-     */
-    public interface TableType {
-
-        static Blink blink() {
-            return Blink.of();
-        }
-
-        static Append append() {
-            return Append.of();
-        }
-
-        static Ring ring(int capacity) {
-            return Ring.of(capacity);
-        }
-
-        <T> T walk(Visitor<T> visitor);
-
-        interface Visitor<T> {
-            T visit(Blink blink);
-
-            T visit(Append append);
-
-            T visit(Ring ring);
-        }
-
-        /**
-         * <p>
-         * Consume data into an in-memory blink table, which will present only newly-available rows to downstream
-         * operations and visualizations.
-         * <p>
-         * See {@link Table#BLINK_TABLE_ATTRIBUTE} for a detailed explanation of blink table semantics, and
-         * {@link BlinkTableTools} for related tooling.
-         */
-        @Immutable
-        @SingletonStyle
-        abstract class Blink implements TableType {
-
-            public static Blink of() {
-                return ImmutableBlink.of();
-            }
-
-            @Override
-            public final <T> T walk(Visitor<T> visitor) {
-                return visitor.visit(this);
-            }
-        }
-
-        /**
-         * Consume data into an in-memory append-only table.
-         *
-         * @see BlinkTableTools#blinkToAppendOnly(Table)
-         */
-        @Immutable
-        @SingletonStyle
-        abstract class Append implements TableType {
-
-            public static Append of() {
-                return ImmutableAppend.of();
-            }
-
-            @Override
-            public final <T> T walk(Visitor<T> visitor) {
-                return visitor.visit(this);
-            }
-        }
-
-        /**
-         * Consume data into an in-memory ring table.
-         *
-         * @see RingTableTools#of(Table, int)
-         */
-        @Immutable
-        @SimpleStyle
-        abstract class Ring implements TableType {
-
-            public static Ring of(int capacity) {
-                return ImmutableRing.of(capacity);
-            }
-
-            @Parameter
-            public abstract int capacity();
-
-            @Override
-            public final <T> T walk(Visitor<T> visitor) {
-                return visitor.visit(this);
-            }
-        }
+    public interface TableType extends io.deephaven.streampublisher.TableType {
     }
 
     /**
-     * Map "Python-friendly" table type name to a {@link TableType}. Supported values are:
+     * Map "Python-friendly" table type name to a {@link io.deephaven.streampublisher.TableType}. Supported values are:
      * <ol>
      * <li>{@code "blink"}</li>
      * <li>{@code "stream"} (deprecated; use {@code "blink"})</li>
@@ -892,35 +792,11 @@ public class KafkaTools {
      * </ol>
      *
      * @param typeName The friendly name
-     * @return The mapped {@link TableType}
+     * @return The mapped {@link io.deephaven.streampublisher.TableType}
      */
     @ScriptApi
-    public static TableType friendlyNameToTableType(@NotNull final String typeName) {
-        final String[] split = typeName.split(":");
-        switch (split[0].trim()) {
-            case "blink":
-            case "stream": // TODO (https://github.com/deephaven/deephaven-core/issues/3853): Delete this
-                if (split.length != 1) {
-                    throw unexpectedType(typeName, null);
-                }
-                return TableType.blink();
-            case "append":
-                if (split.length != 1) {
-                    throw unexpectedType(typeName, null);
-                }
-                return TableType.append();
-            case "ring":
-                if (split.length != 2) {
-                    throw unexpectedType(typeName, null);
-                }
-                try {
-                    return TableType.ring(Integer.parseInt(split[1].trim()));
-                } catch (NumberFormatException e) {
-                    throw unexpectedType(typeName, e);
-                }
-            default:
-                throw unexpectedType(typeName, null);
-        }
+    public static io.deephaven.streampublisher.TableType friendlyNameToTableType(@NotNull final String typeName) {
+        return io.deephaven.streampublisher.TableType.friendlyNameToTableType(typeName);
     }
 
     private static IllegalArgumentException unexpectedType(@NotNull final String typeName, @Nullable Exception cause) {
@@ -949,7 +825,7 @@ public class KafkaTools {
             @NotNull final IntToLongFunction partitionToInitialOffset,
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
-            @NotNull final TableType tableType) {
+            @NotNull final io.deephaven.streampublisher.TableType tableType) {
         final MutableObject<Table> resultHolder = new MutableObject<>();
         final ExecutionContext enclosingExecutionContext = ExecutionContext.getContext();
         final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
@@ -1000,7 +876,7 @@ public class KafkaTools {
             @NotNull final IntToLongFunction partitionToInitialOffset,
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
-            @NotNull final TableType tableType) {
+            @NotNull final io.deephaven.streampublisher.TableType tableType) {
         final AtomicReference<StreamPartitionedQueryTable> resultHolder = new AtomicReference<>();
         final ExecutionContext enclosingExecutionContext = ExecutionContext.getContext();
         final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
@@ -1304,29 +1180,6 @@ public class KafkaTools {
                 config.requestHeaders());
     }
 
-    private static class BlinkTableOperation implements Visitor<Table> {
-        private final Table blinkTable;
-
-        public BlinkTableOperation(Table blinkTable) {
-            this.blinkTable = Objects.requireNonNull(blinkTable);
-        }
-
-        @Override
-        public Table visit(Blink blink) {
-            return blinkTable;
-        }
-
-        @Override
-        public Table visit(Append append) {
-            return BlinkTableTools.blinkToAppendOnly(blinkTable);
-        }
-
-        @Override
-        public Table visit(Ring ring) {
-            return RingTableTools.of(blinkTable, ring.capacity());
-        }
-    }
-
     /**
      * Produce a Kafka stream from a Deephaven table.
      * <p>
@@ -1569,13 +1422,6 @@ public class KafkaTools {
             sources.put(CONSTITUENT_COLUMN_NAME, ArrayBackedColumnSource.getMemoryColumnSource(Table.class, null));
             return sources;
         }
-    }
-
-    public static class KeyOrValueIngestData {
-        public Map<String, String> fieldPathToColumnName;
-        public int simpleColumnIndex = NULL_COLUMN_INDEX;
-        public Function<Object, Object> toObjectChunkMapper = Function.identity();
-        public Object extra;
     }
 
     private interface SetColumnIndex {

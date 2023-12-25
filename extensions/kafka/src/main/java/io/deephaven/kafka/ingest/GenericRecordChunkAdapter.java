@@ -5,6 +5,8 @@ package io.deephaven.kafka.ingest;
 
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.chunk.*;
+import io.deephaven.streampublisher.FieldCopier;
+import io.deephaven.streampublisher.MultiFieldChunkAdapter;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;

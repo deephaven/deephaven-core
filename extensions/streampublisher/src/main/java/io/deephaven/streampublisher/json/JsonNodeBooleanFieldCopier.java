@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.kafka.ingest;
+package io.deephaven.streampublisher.json;
 
 import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -10,6 +10,8 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.streampublisher.FieldCopier;
+import io.deephaven.streampublisher.json.JsonNodeUtil;
 import io.deephaven.util.BooleanUtils;
 
 public class JsonNodeBooleanFieldCopier implements FieldCopier {
@@ -34,7 +36,7 @@ public class JsonNodeBooleanFieldCopier implements FieldCopier {
             if (valueAsString == null) {
                 valueAsBoolean = null;
             } else {
-                switch(valueAsString.trim()) {
+                switch (valueAsString.trim()) {
                     case "TRUE":
                     case "True":
                     case "true":
@@ -54,7 +56,8 @@ public class JsonNodeBooleanFieldCopier implements FieldCopier {
                         valueAsBoolean = null;
                         break;
                     default:
-                        throw new UncheckedDeephavenException("value " + valueAsString + " not recognized as Boolean for field " + fieldPointer);
+                        throw new UncheckedDeephavenException(
+                                "value " + valueAsString + " not recognized as Boolean for field " + fieldPointer);
                 }
             }
             output.set(ii + destOffset, BooleanUtils.booleanAsByte(valueAsBoolean));

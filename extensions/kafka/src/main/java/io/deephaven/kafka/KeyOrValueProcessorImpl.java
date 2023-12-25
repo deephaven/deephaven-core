@@ -6,9 +6,9 @@ package io.deephaven.kafka;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.kafka.ingest.FieldCopier;
+import io.deephaven.streampublisher.FieldCopier;
 import io.deephaven.kafka.ingest.KafkaIngesterException;
-import io.deephaven.kafka.ingest.KeyOrValueProcessor;
+import io.deephaven.streampublisher.KeyOrValueProcessor;
 
 import java.util.List;
 import java.util.Objects;

@@ -1,11 +1,13 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.kafka.ingest;
+package io.deephaven.streampublisher.json;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.streampublisher.FieldCopier;
+import io.deephaven.streampublisher.MultiFieldChunkAdapter;
 
 import java.time.Instant;
 import java.util.Map;

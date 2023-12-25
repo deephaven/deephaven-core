@@ -3,6 +3,7 @@
  */
 package io.deephaven.kafka.ingest;
 
+import io.deephaven.streampublisher.FieldCopier;
 import org.apache.avro.Schema;
 
 import java.util.regex.Pattern;
