@@ -19,6 +19,8 @@ import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.*;
 
@@ -281,6 +283,22 @@ public class MatchFilter extends WhereFilterImpl {
                             }
                         }
                         return str.charAt(0);
+                    }
+                };
+            }
+            if (cls == BigDecimal.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        return new BigDecimal(str);
+                    }
+                };
+            }
+            if (cls == BigInteger.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        return new BigInteger(str);
                     }
                 };
             }
